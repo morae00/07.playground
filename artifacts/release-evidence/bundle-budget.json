@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "bytes": 103547,
+  "kib": 101.12,
+  "warningBytes": 107520,
+  "hardLimitBytes": 122880,
+  "baselineBytes": 103547,
+  "growthRatio": 0,
+  "growthLimitRatio": 0.1,
+  "growthPassed": true,
+  "status": "passed",
+  "passed": true,
+  "bundles": [
+    {
+      "file": "index-Ba5wKP8Y.js",
+      "sourceBytes": 339003,
+      "gzipBytes": 103547
+    }
+  ]
+}

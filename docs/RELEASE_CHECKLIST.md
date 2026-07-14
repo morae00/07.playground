@@ -1,0 +1,118 @@
+# Blackline Survivor Release Checklist
+
+This checklist separates locally verifiable gates from Apple account and certificate gates. Do not publish an artifact that has skipped a required section.
+
+## 1. Version and source
+
+- [ ] Working tree and release commit are identified.
+- [ ] `package.json` version and in-product version agree.
+- [ ] `com.blackline.survivor` is owned by the release account and does not collide with an existing product.
+- [ ] Release notes include gameplay, save migration, known issues, and minimum macOS 12.
+- [ ] `npm ci` completes on a clean Node 22.6+ environment.
+
+## 2. Automated gates
+
+```sh
+npm test
+npm run test:balance:full
+npm run test:soak
+npm run test:visual
+npm run build
+```
+
+- [ ] Unit, security, release-integrity, engine integration, balance, and soak gates pass.
+- [ ] Visual golden diff, console/page errors, nonblank output, overlap/occlusion, DPR 1/2, and reduced-motion gates pass at every target viewport.
+- [ ] `artifacts/release-evidence/production-bundle-audit.json` reports no production debug or cheat marker.
+- [ ] The 50 Stage x 3 build policy x 10 seed balance report fingerprint and outlier scenarios are attached to the release record.
+- [ ] Production JavaScript gzip stays below the 105 KB warning budget and never exceeds the 120 KB hard limit.
+- [ ] Bundle growth is at or below 10% of `config/bundle-baseline.json`; any baseline update matches the promoted release evidence.
+- [ ] No CSP violations appear during the menu, gameplay, draft, and settlement flow.
+
+To retain the deterministic balance evidence:
+
+```sh
+BALANCE_FULL_REPORT=artifacts/balance-full-report.json npm run test:balance:full
+```
+
+## 3. Unsigned package smoke
+
+These commands require the matching Electron runtime to exist in the local electron-builder cache. They do not require a signing identity.
+
+```sh
+npm run build:icon
+npm run clean:release
+npm run package:mac:arm64
+npm run package:mac:x64
+```
+
+- [ ] arm64 app launches on Apple Silicon.
+- [ ] x64 app launches on Intel macOS or under a clean x64 validation environment.
+- [ ] Finder, Dock, About, DMG, and Gatekeeper surfaces display the production icon without a white fringe.
+- [ ] Cold start, Stage launch, input, audio, save, restart, and quit pass on each architecture.
+- [ ] Internal navigation cannot leave the packaged `dist/index.html` entry.
+- [ ] Non-HTTPS, credential-bearing, `file:`, and `javascript:` external URLs are rejected.
+
+## 4. Signed release package
+
+Prerequisites: a valid Developer ID Application certificate, Apple notarization credentials, and network access. Configure these only in the release CI secret store.
+
+```sh
+export CSC_LINK='...'
+export CSC_KEY_PASSWORD='...'
+export APPLE_ID='...'
+export APPLE_APP_SPECIFIC_PASSWORD='...'
+export APPLE_TEAM_ID='...'
+npm run package:mac:release
+```
+
+- [ ] electron-builder reports a Developer ID signature for arm64 and x64 artifacts.
+- [ ] DMG and ZIP artifacts are notarized and stapled.
+- [ ] No secret value is printed in the build log or stored in the repository.
+
+## 5. Artifact verification
+
+Run for each produced `.app`, DMG, and ZIP as applicable:
+
+```sh
+npm run verify:mac:release
+```
+
+This command also checks packaged Electron fuse states and writes the checksum, CycloneDX SBOM, and release evidence manifest. To regenerate only the evidence after packaging:
+
+```sh
+npm run release:evidence
+```
+
+Equivalent individual commands for diagnosis:
+
+```sh
+codesign --verify --deep --strict --verbose=2 "release/mac-arm64/Blackline Survivor.app"
+codesign -dv --verbose=4 "release/mac-arm64/Blackline Survivor.app"
+spctl --assess --type execute --verbose=4 "release/mac-arm64/Blackline Survivor.app"
+xcrun stapler validate "release/Blackline Survivor-<version>-mac-arm64.dmg"
+```
+
+- [ ] `codesign` identifies the expected Team ID and hardened runtime.
+- [ ] `spctl` reports `accepted` with `Notarized Developer ID` origin.
+- [ ] `stapler validate` succeeds without a network fallback.
+- [ ] SHA-256 checksums are generated after all signing and stapling operations.
+- [ ] `artifacts/release-evidence/checksums.sha256` matches every DMG, ZIP, blockmap, and update metadata file.
+- [ ] `artifacts/release-evidence/sbom.cdx.json` and `release-evidence.json` are archived with the release.
+- [ ] Packaged Electron fuses match `docs/ELECTRON_HARDENING.md`; the `file:` protocol exception is reviewed before each Electron upgrade.
+
+## 6. Clean-machine acceptance
+
+- [ ] Install from DMG with no development tools present.
+- [ ] Gatekeeper opens the app without override instructions.
+- [ ] Complete: start -> draft -> boss -> settlement -> unlock -> restart.
+- [ ] Upgrade from a v1 save and recovery from a corrupted primary save both pass.
+- [ ] 320x568, 375x812, 768x1024, and 1440x900 layouts have no overlap.
+- [ ] Reduced motion/flash, keyboard-only flow, focus order, and screen reader names pass.
+- [ ] A 15-minute run produces no crash and no material retained-memory growth.
+
+## 7. Publish or rollback
+
+- [ ] Release owner records artifact checksums, balance fingerprint, test results, and known issues.
+- [ ] Previous signed release remains available for rollback.
+- [ ] Save schema compatibility is confirmed before promotion.
+- [ ] Publish only after every applicable box above is checked by a second reviewer.

@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    name: Node 22 gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: git diff --check
+      - run: npm test
+      - run: npm run test:coverage:core
+      - run: npm run build
+      - name: Balance smoke evidence
+        run: |
+          mkdir -p artifacts/ci
+          BALANCE_REPORT=artifacts/ci/balance-smoke.json npm run test:balance:smoke
+      - name: Soak smoke evidence
+        run: |
+          mkdir -p artifacts/ci
+          P2_SOAK_REPORT=artifacts/ci/soak-smoke.json npm run test:soak:smoke | tee artifacts/ci/soak-smoke.log
+      - name: Dependency SBOM
+        run: npm sbom --package-lock-only --sbom-format=cyclonedx > artifacts/ci/sbom.cdx.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: core-evidence-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            artifacts/ci/
+            artifacts/release-evidence/production-bundle-audit.json
+            dist/
+
+  visual:
+    name: Chromium visual evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Console, pixel, overlap, DPR, and reduced-motion gates
+        env:
+          VISUAL_REQUIRE_GOLDENS: "0"
+          VISUAL_VIEWPORTS: 375x812,1440x900
+          VISUAL_DPRS: 1,2
+          VISUAL_MOTIONS: full,reduce
+        run: npm run test:visual
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-evidence-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: artifacts/visual/

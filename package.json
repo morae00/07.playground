@@ -1,0 +1,103 @@
+{
+  "name": "blackline-survivor",
+  "productName": "Blackline Survivor",
+  "version": "0.1.0",
+  "description": "A monochrome ink-line survival action game.",
+  "author": "Blackline Survivor Team",
+  "license": "UNLICENSED",
+  "private": true,
+  "engines": {
+    "node": ">=22.6"
+  },
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc -b && vite build && npm run verify:production && npm run verify:bundle",
+    "verify:production": "node scripts/verify-production-bundle.mjs",
+    "verify:bundle": "node scripts/check-bundle-budget.mjs",
+    "test": "npm run test:unit && npm run test:security && npm run test:release && npm run test:engine",
+    "test:unit": "node --test src/game/*.test.ts src/game/render/*.test.ts src/platform/*.test.ts",
+    "test:coverage:core": "node --test --experimental-test-coverage --test-coverage-branches=90 --test-coverage-lines=90 --test-coverage-include='src/game/p0Core.ts' --test-coverage-include='src/game/worldMath.ts' --test-coverage-include='src/game/audioPolicy.ts' src/game/p0Core.test.ts src/game/worldMath.test.ts src/game/audioPolicy.test.ts",
+    "test:security": "node --test electron/*.test.cjs",
+    "test:release": "node --test test/release*.test.mjs",
+    "test:engine": "mkdir -p /tmp/blackline-survivor-p0 && esbuild src/App.tsx --bundle --platform=node --format=esm --outfile=/tmp/blackline-survivor-p0/App.mjs && node --test test/*.integration.test.mjs",
+    "test:balance": "mkdir -p /tmp/blackline-survivor-p0 && esbuild src/App.tsx --bundle --platform=node --format=esm --outfile=/tmp/blackline-survivor-p0/App.mjs && node scripts/balance-batch.mjs",
+    "test:balance:smoke": "BALANCE_FRAMES=180 BALANCE_SEEDS=17 npm run test:balance",
+    "test:balance:full": "mkdir -p /tmp/blackline-survivor-p0 && esbuild src/App.tsx --bundle --platform=node --format=esm --outfile=/tmp/blackline-survivor-p0/App.mjs && node scripts/balance-full.mjs",
+    "test:balance:pilot": "BALANCE_FULL_STAGES=1:1,1:5,1:10,5:1,5:5,5:10 BALANCE_FULL_SEEDS=17 BALANCE_FULL_MAX_FRAMES=72000 npm run test:balance:full",
+    "test:soak": "mkdir -p /tmp/blackline-survivor-p0 && esbuild src/App.tsx --bundle --platform=node --format=esm --outfile=/tmp/blackline-survivor-p0/App.mjs && node --expose-gc test/p2Soak.mjs",
+    "test:soak:smoke": "P2_SOAK_FRAMES=600 npm run test:soak",
+    "test:visual": "node scripts/visual-gate.mjs",
+    "preview": "vite preview --host 127.0.0.1",
+    "electron": "npm run build && electron .",
+    "build:icon": "CLANG_MODULE_CACHE_PATH=/tmp/blackline-clang-cache SWIFT_MODULECACHE_PATH=/tmp/blackline-swift-cache swift scripts/generate-icon.swift build/icon.png",
+    "clean:release": "node -e \"require('node:fs').rmSync('release',{recursive:true,force:true,maxRetries:5,retryDelay:200});\"",
+    "package:mac": "npm run clean:release && npm run build && electron-builder --mac dir --arm64 --x64",
+    "package:mac:arm64": "npm run build && electron-builder --mac dir --arm64",
+    "package:mac:x64": "npm run build && electron-builder --mac dir --x64",
+    "package:mac:release": "npm run clean:release && npm run build && electron-builder --mac dmg zip --arm64 --x64",
+    "verify:mac:release": "node scripts/verify-macos-release.mjs",
+    "verify:electron:fuses": "node scripts/verify-electron-fuses.mjs",
+    "release:evidence": "node scripts/create-release-evidence.mjs"
+  },
+  "devDependencies": {
+    "@electron/fuses": "^1.8.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^43.0.0",
+    "electron-builder": "^26.0.12",
+    "esbuild": "^0.25.0",
+    "playwright": "^1.61.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
+  },
+  "build": {
+    "appId": "com.blackline.survivor",
+    "productName": "Blackline Survivor",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "copyright": "Copyright 2026 Blackline Survivor",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "!electron/*.test.cjs",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.games",
+      "icon": "build/icon.png",
+      "minimumSystemVersion": "12.0",
+      "hardenedRuntime": true,
+      "notarize": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ]
+    },
+    "asar": true,
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true,
+      "loadBrowserProcessSpecificV8Snapshot": true,
+      "grantFileProtocolExtraPrivileges": true
+    },
+    "npmRebuild": false
+  }
+}
