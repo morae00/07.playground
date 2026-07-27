@@ -184,6 +184,29 @@ function enemyAt(id, x, y) {
   };
 }
 
+test('mirror clone ownership adds persistent side silhouettes to the rendered player', () => {
+  const { engine, recorder } = createEngine();
+  try {
+    engine.enemies = [];
+    engine.skills = { needleStorm: { level: 1, awakened: false } };
+    recorder.reset();
+    engine.render(1);
+    const baseTranslations = recorder.count('translate');
+
+    engine.skills.mirrorClone = { level: 1, awakened: false };
+    recorder.reset();
+    engine.render(1);
+    assert.equal(recorder.count('translate'), baseTranslations + 1);
+
+    engine.skills.mirrorClone = { level: 5, awakened: true };
+    recorder.reset();
+    engine.render(1);
+    assert.equal(recorder.count('translate'), baseTranslations + 2);
+  } finally {
+    engine.dispose();
+  }
+});
+
 function pickupAt(id, x, y) {
   return { id, x, y, prevX: x, prevY: y, vx: 0, vy: 0, radius: 6, kind: 'coin', value: 1, life: 45, maxLife: 45 };
 }

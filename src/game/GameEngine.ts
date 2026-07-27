@@ -43,12 +43,13 @@ import {
   visibleGridLineRange,
   type Viewport,
 } from './render/viewport';
+import { GameRenderer } from './render/GameRenderer';
+import { createRenderFrameSnapshot } from './render/renderSnapshot';
 import {
   CHAPTER_VISUALS,
   bossPhaseForHealth,
   classifyImpact,
   motionPolicy,
-  telegraphPhase,
 } from './visualContracts';
 import {
   circleRectPush,
@@ -65,7 +66,14 @@ import type {
   PaceMode,
   PassiveId,
 } from '../platform/save';
+import { DEVELOPER_UI_AVAILABLE } from '../platform/developerAccess';
 import { readGamepadIntent, watchReducedMotion } from '../ui/inputContracts';
+import {
+  INFINITE_BASELINE,
+  infiniteDifficultyAt,
+  infiniteKillScore,
+  infiniteScoreWithSurvival,
+} from './infiniteMode';
 import {
   BOSS_PHASE_MOVE_SETS,
   CHAPTER_ENCOUNTER_GRAMMARS,
@@ -80,10 +88,9 @@ import {
   type StageId,
 } from '../content';
 
-const DEVELOPMENT_UI = import.meta.env?.DEV === true;
-
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
 export type StageKind = 'normal' | 'midBoss' | 'finalBoss';
+export type RunMode = 'campaign' | 'infinite';
 export type DraftReason = 'level' | 'boss';
 
 export type SkillId =
@@ -170,7 +177,16 @@ export type StageProgress = {
   stage: number;
 };
 
+export type ActiveStatusEffect = {
+  id: string;
+  kind: 'buff' | 'debuff';
+  label: string;
+  value?: string;
+  remaining?: number;
+};
+
 export type HudSnapshot = {
+  runMode: RunMode;
   seed: number;
   chapter: number;
   stage: number;
@@ -189,6 +205,11 @@ export type HudSnapshot = {
   coins: number;
   kills: number;
   enemyCount: number;
+  elapsed: number;
+  score: number;
+  bossKills: number;
+  dangerRank: number;
+  scoreEligible: boolean;
   bossName?: string;
   bossMove?: string;
   bossHp?: number;
@@ -196,10 +217,13 @@ export type HudSnapshot = {
   skills: Partial<Record<SkillId, SkillState>>;
   runUpgrades: Record<RunUpgradeId, number>;
   stats: StatBlock;
+  activeEffects: ActiveStatusEffect[];
   cc: string;
 };
 
 export type Settlement = {
+  runMode: RunMode;
+  seed: number;
   chapter: number;
   stage: number;
   title: string;
@@ -209,6 +233,10 @@ export type Settlement = {
   xp: number;
   cleared: boolean;
   gameComplete: boolean;
+  score: number;
+  survivedSeconds: number;
+  bossKills: number;
+  scoreEligible: boolean;
 };
 
 export type EngineCallbacks = {
@@ -275,6 +303,9 @@ export type Entity = {
   tier: EnemyTier;
   variant: number;
   isBoss: boolean;
+  attackStyle: 'contact' | 'ranged';
+  rangedCooldown: number;
+  rangedTelegraph: number;
   boss?: BossDef;
   legacyBoss?: boolean;
   contactTimer: number;
@@ -323,7 +354,7 @@ export type BossProjectile = {
   radius: number;
   damage: number;
   life: number;
-  kind: 'dot' | 'ring' | 'saw' | 'eclipse';
+  kind: 'dot' | 'ring' | 'saw' | 'eclipse' | 'enemy';
 };
 
 export type Pickup = {
@@ -417,6 +448,8 @@ export type ImpactRing = {
 
 export const WORLD_W = 4200;
 export const WORLD_H = 3000;
+const BOSS_PROJECTILE_HARD_CAP = 320;
+const TARGET_COLOR = '#087e9b';
 
 export const RARITY: Record<Rarity, { label: string; weight: number; className: string }> = {
   common: { label: '일반', weight: 52, className: 'rarityCommon' },
@@ -673,14 +706,14 @@ export const STAGES_PER_CHAPTER = 10;
 export const TOTAL_STAGE_COUNT = CHAPTER_COUNT * STAGES_PER_CHAPTER;
 
 export const OBJECTIVE_POOL = [
-  '소형 무리 소탕',
-  '중형 경계선 돌파',
-  '지형 함정 생존',
-  '정예 무리 제압',
-  '자원 회수와 압박전',
-  '대형 몹 집중 처리',
-  '투사체 포위망 돌파',
-  '보스 전초전',
+  '소형 무리 압박전',
+  '중형 경계선 유지',
+  '지형 함정 구역',
+  '정예 추격전',
+  '자원 회수 압박전',
+  '대형 개체 회피전',
+  '투사체 포위망',
+  '보스 전초 압박전',
 ];
 
 export function stageKind(stageNo: number): StageKind {
@@ -689,15 +722,11 @@ export function stageKind(stageNo: number): StageKind {
   return 'normal';
 }
 
-export function normalObjectiveTarget(chapter: number, stageNo: number) {
-  return 36 + chapter * 7 + stageNo * 4;
-}
-
 export function objectiveFor(chapter: number, stageNo: number) {
   const kind = stageKind(stageNo);
-  if (kind === 'midBoss') return `Objective: ${chapter}챕터 중간보스 처치`;
-  if (kind === 'finalBoss') return `Objective: ${chapter}챕터 보스 처치`;
-  return `Objective: ${OBJECTIVE_POOL[(stageNo + chapter - 2) % OBJECTIVE_POOL.length]} - ${normalObjectiveTarget(chapter, stageNo)}킬 또는 제한시간 생존`;
+  if (kind === 'midBoss') return `Objective: ${chapter}챕터 중간보스 처치 · 시간 종료 시 광폭화`;
+  if (kind === 'finalBoss') return `Objective: ${chapter}챕터 보스 처치 · 시간 종료 시 광폭화`;
+  return `Objective: 제한시간 생존 · ${OBJECTIVE_POOL[(stageNo + chapter - 2) % OBJECTIVE_POOL.length]}`;
 }
 
 export function stageIndex(chapter: number, stageNo: number) {
@@ -895,6 +924,7 @@ export function buildStats(
 export class GameEngine {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
+  private visualRenderer = new GameRenderer();
   private callbacks: EngineCallbacks;
 
   private meta: MetaState;
@@ -918,6 +948,7 @@ export class GameEngine {
 
   private chapter = 1;
   private stage = 1;
+  private runMode: RunMode = 'campaign';
   private kind: StageKind = 'normal';
   private duration = 0;
   private timeLeft = 0;
@@ -929,6 +960,11 @@ export class GameEngine {
   private bossEnraged = false;
   private stageKills = 0;
   private stageCoinsEarned = 0;
+  private infiniteEventScore = 0;
+  private infiniteBossKills = 0;
+  private infiniteBossRespawnTimer = 0;
+  private previousInfiniteBossId = '';
+  private scoreEligible = true;
   private draftQueue: Array<{ reason: DraftReason; after: DraftState['after'] }> = [];
   private activeDraftId: number | null = null;
   private activeDraftAfter: DraftState['after'] | null = null;
@@ -1014,6 +1050,7 @@ export class GameEngine {
   private gridPattern?: CanvasPattern;
   private gridCacheBuilds = 0;
   private playerAimAngle = -Math.PI / 2;
+  private aimTargetId: number | null = null;
   private systemReducedMotion = false;
   private releaseReducedMotion?: () => void;
 
@@ -1104,6 +1141,22 @@ export class GameEngine {
   }
 
   startRun(chapter: number, stageNo: number, seed?: number) {
+    this.runMode = 'campaign';
+    this.startConfiguredRun(chapter, stageNo, seed, true);
+  }
+
+  startInfiniteRun(seed?: number, scoreEligible = true) {
+    this.runMode = 'infinite';
+    this.startConfiguredRun(INFINITE_BASELINE.chapter, INFINITE_BASELINE.stage, seed, scoreEligible);
+  }
+
+  invalidateInfiniteScore() {
+    if (this.runMode !== 'infinite' || !this.scoreEligible) return;
+    this.scoreEligible = false;
+    this.emitSnapshot(true);
+  }
+
+  private startConfiguredRun(chapter: number, stageNo: number, seed: number | undefined, scoreEligible: boolean) {
     this.ensureAudio();
     const randomSeed = seed ?? globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
     this.runSeed = randomSeed || 1;
@@ -1123,6 +1176,11 @@ export class GameEngine {
     this.pendingRoundClear = false;
     this.stageKills = 0;
     this.stageCoinsEarned = 0;
+    this.infiniteEventScore = 0;
+    this.infiniteBossKills = 0;
+    this.infiniteBossRespawnTimer = 0;
+    this.previousInfiniteBossId = '';
+    this.scoreEligible = scoreEligible;
     this.coinFeverRushTimer = 0;
     this.bossEnraged = false;
     this.cheatGodMode = false;
@@ -1181,7 +1239,10 @@ export class GameEngine {
   }
 
   applyCheat(code: string) {
-    if (!DEVELOPMENT_UI) return 'DISABLED';
+    if (!DEVELOPER_UI_AVAILABLE) return 'DISABLED';
+    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR'].includes(code)) {
+      this.invalidateInfiniteScore();
+    }
     if (code === 'GOD') {
       this.cheatGodMode = !this.cheatGodMode;
       this.player.hp = this.player.stats.maxHp;
@@ -1218,7 +1279,7 @@ export class GameEngine {
 
     if (code === 'CLEAR') {
       if (this.kind === 'normal') {
-        this.stageKills = Math.max(this.stageKills, this.objectiveTarget);
+        this.timeLeft = 0;
         this.requestRoundClear();
       } else {
         for (const enemy of this.enemies) {
@@ -1415,8 +1476,13 @@ export class GameEngine {
 
   getDiagnostics() {
     return {
+      runMode: this.runMode,
       elapsed: this.elapsed,
+      score: this.runMode === 'infinite' ? infiniteScoreWithSurvival(this.infiniteEventScore, this.elapsed) : 0,
+      bossKills: this.infiniteBossKills,
+      scoreEligible: this.runMode === 'infinite' && this.scoreEligible,
       enemies: this.enemies.length,
+      rangedEnemies: this.enemies.filter((enemy) => enemy.attackStyle === 'ranged').length,
       projectiles: this.projectiles.length,
       bossProjectiles: this.bossProjectiles.length,
       pickups: this.pickups.length,
@@ -1435,10 +1501,14 @@ export class GameEngine {
 
   private beginRound() {
     this.releaseTransientObjects();
-    this.kind = stageKind(this.stage);
-    this.duration = stageDuration(this.kind, this.options.paceMode);
-    this.objective = objectiveFor(this.chapter, this.stage);
-    this.objectiveTarget = this.kind === 'normal' ? normalObjectiveTarget(this.chapter, this.stage) : 1;
+    this.kind = this.runMode === 'infinite' ? 'midBoss' : stageKind(this.stage);
+    this.duration = this.runMode === 'infinite' ? 0 : stageDuration(this.kind, this.options.paceMode);
+    this.objective = this.runMode === 'infinite' ? 'Objective: 랜덤 보스 연속 처치' : objectiveFor(this.chapter, this.stage);
+    this.objectiveTarget = this.runMode === 'infinite'
+      ? 1
+      : this.kind === 'normal'
+        ? this.duration
+        : 1;
     this.timeLeft = this.duration;
     this.spawnBudget = 0;
     this.fieldBossMarks.clear();
@@ -1468,8 +1538,10 @@ export class GameEngine {
     this.player.root = 0;
     this.player.slow = 1;
     this.player.silence = 0;
+    this.aimTargetId = null;
     this.generateMap();
-    if (this.kind !== 'normal') this.spawnBoss(this.kind, false);
+    if (this.runMode === 'infinite') this.spawnInfiniteBoss();
+    else if (this.kind !== 'normal') this.spawnBoss(this.kind, false);
     this.emitSnapshot(true);
   }
 
@@ -1582,7 +1654,7 @@ export class GameEngine {
     this.capturePreviousPositions();
     this.elapsed += dt;
     this.shake = Math.max(0, this.shake - dt * 12);
-    this.timeLeft = Math.max(0, this.timeLeft - dt);
+    if (this.runMode === 'campaign') this.timeLeft = Math.max(0, this.timeLeft - dt);
 
     if (this.player.hp <= 0) {
       this.flushDeadEnemies(true);
@@ -1640,7 +1712,9 @@ export class GameEngine {
 
   private resolveRoundState() {
     if (this.stageFinished) return;
-    const stageShouldClear = this.kind === 'normal' && (this.timeLeft <= 0 || this.stageKills >= this.objectiveTarget);
+    const stageShouldClear = this.runMode === 'campaign'
+      && this.kind === 'normal'
+      && this.timeLeft <= 0;
     const terminalEvent = resolveTerminalEvent(this.player.hp, stageShouldClear);
     if (terminalEvent === 'gameOver') {
       this.player.hp = 0;
@@ -1651,7 +1725,7 @@ export class GameEngine {
       this.activeDraftAfter = null;
       this.draftQueue = [];
       this.paused = true;
-      this.callbacks.onGameOver(this.makeSettlement('정산'));
+      this.callbacks.onGameOver(this.makeSettlement('정산', false));
       return;
     }
 
@@ -1660,7 +1734,7 @@ export class GameEngine {
       return;
     }
 
-    if (this.kind !== 'normal' && this.timeLeft <= 0 && !this.bossEnraged) {
+    if (this.runMode === 'campaign' && this.kind !== 'normal' && this.timeLeft <= 0 && !this.bossEnraged) {
       this.enrageBosses();
     }
   }
@@ -1684,7 +1758,7 @@ export class GameEngine {
     this.stageFinished = true;
     this.paused = true;
     this.accumulator = 0;
-    this.callbacks.onRoundClear(this.makeSettlement(this.kind === 'normal' ? 'Stage 클리어' : 'Boss Stage 클리어'));
+    this.callbacks.onRoundClear(this.makeSettlement(this.kind === 'normal' ? 'Stage 클리어' : 'Boss Stage 클리어', true));
   }
 
   private updatePlayer(dt: number) {
@@ -2119,6 +2193,25 @@ export class GameEngine {
 
   private spawnEnemies(dt: number) {
     if (this.stageFinished) return;
+    if (this.runMode === 'infinite') {
+      const difficulty = infiniteDifficultyAt(this.elapsed, this.infiniteBossKills);
+      const cap = difficulty.enemyCap;
+      if (this.enemies.length < cap) {
+        this.spawnBudget += dt * 2.25 * INFINITE_BASELINE.mobDifficulty * difficulty.spawnRateScale;
+        while (this.spawnBudget >= 1 && this.enemies.length < cap) {
+          this.spawnBudget -= 1;
+          this.spawnEnemy(INFINITE_BASELINE.mobDifficulty);
+        }
+      }
+
+      const activeBoss = this.enemies.some((enemy) => enemy.isBoss && enemy.hp > 0);
+      if (!activeBoss) {
+        this.infiniteBossRespawnTimer = Math.max(0, this.infiniteBossRespawnTimer - dt);
+        if (this.infiniteBossRespawnTimer <= 0) this.spawnInfiniteBoss();
+      }
+      return;
+    }
+
     const progress = 1 - this.timeLeft / this.duration;
     const stagePressure = this.kind === 'normal' ? (this.stage - 1) * 0.2 : this.kind === 'finalBoss' ? 0.35 : 0.15;
     const difficulty = 1 + (this.chapter - 1) * 0.45 + stagePressure + progress * 0.85 + (this.bossEnraged ? 0.85 : 0);
@@ -2152,6 +2245,7 @@ export class GameEngine {
   }
 
   private enemyCap() {
+    if (this.runMode === 'infinite') return infiniteDifficultyAt(this.elapsed, this.infiniteBossKills).enemyCap;
     return 90 + this.chapter * 18 + (this.kind === 'normal' ? 0 : 24);
   }
 
@@ -2179,9 +2273,25 @@ export class GameEngine {
     y = clamp(y, -80, WORLD_H + 80);
     const roll = this.gameplayRandom();
     const tier = forcedTier ?? (roll < 0.58 ? 'small' : roll < 0.88 ? 'medium' : 'large');
+    const infiniteDifficulty = this.runMode === 'infinite'
+      ? infiniteDifficultyAt(this.elapsed, this.infiniteBossKills)
+      : null;
+    const effectiveDifficulty = infiniteDifficulty
+      ? INFINITE_BASELINE.mobDifficulty * infiniteDifficulty.enemyHealthScale
+      : difficulty;
     const hpBase = tier === 'small' ? 22 : tier === 'medium' ? 62 : 150;
     const radius = tier === 'small' ? 12 : tier === 'medium' ? 19 : 28;
-    const speed = (tier === 'small' ? 128 : tier === 'medium' ? 96 : 62) * (0.9 + this.gameplayRandom() * 0.22);
+    const speed = (tier === 'small' ? 128 : tier === 'medium' ? 96 : 62)
+      * (0.9 + this.gameplayRandom() * 0.22)
+      * (infiniteDifficulty?.enemySpeedScale ?? 1);
+    const rangedCount = this.enemies.reduce((count, candidate) => count + (candidate.attackStyle === 'ranged' ? 1 : 0), 0);
+    const rangedCap = infiniteDifficulty?.rangedCap ?? Math.min(3, 1 + Math.ceil(this.chapter / 2));
+    const rangedChance = infiniteDifficulty?.rangedChance ?? 0.035 + this.chapter * 0.004;
+    const attackStyle = tier !== 'large' && rangedCount < rangedCap && this.gameplayRandom() < rangedChance
+      ? 'ranged'
+      : 'contact';
+    const baseDamage = (tier === 'small' ? 8 : tier === 'medium' ? 14 : 22)
+      * (0.8 + (infiniteDifficulty ? INFINITE_BASELINE.mobDifficulty : difficulty) * 0.14);
     const enemy: Entity = {
       id: this.nextId(),
       x,
@@ -2191,15 +2301,18 @@ export class GameEngine {
       vx: 0,
       vy: 0,
       radius,
-      hp: hpBase * difficulty,
-      maxHp: hpBase * difficulty,
+      hp: hpBase * effectiveDifficulty,
+      maxHp: hpBase * effectiveDifficulty,
       speed,
-      damage: (tier === 'small' ? 8 : tier === 'medium' ? 14 : 22) * (0.8 + difficulty * 0.14),
+      damage: baseDamage * (infiniteDifficulty?.enemyDamageScale ?? 1),
       xp: tier === 'small' ? 4 : tier === 'medium' ? 10 : 22,
       coin: tier === 'small' ? 1 : tier === 'medium' ? 3 : 7,
       tier,
       variant: Math.floor(this.gameplayRandom() * 5),
       isBoss: false,
+      attackStyle,
+      rangedCooldown: attackStyle === 'ranged' ? 1.1 + this.gameplayRandom() * 1.1 : 0,
+      rangedTelegraph: 0,
       contactTimer: 0,
       hitFlash: 0,
       stun: 0,
@@ -2257,6 +2370,9 @@ export class GameEngine {
       tier: 'boss',
       variant: Math.floor(this.gameplayRandom() * 5),
       isBoss: true,
+      attackStyle: 'contact',
+      rangedCooldown: 0,
+      rangedTelegraph: 0,
       boss: def,
       legacyBoss: legacy,
       contactTimer: 0,
@@ -2277,6 +2393,62 @@ export class GameEngine {
     this.burst(x, y, 24, '#111111', 190);
   }
 
+  private spawnInfiniteBoss() {
+    const pool = BOSS_ROUND_BOSSES.filter((boss) => boss.id !== this.previousInfiniteBossId);
+    const candidates = pool.length > 0 ? pool : BOSS_ROUND_BOSSES;
+    const def = candidates[Math.floor(this.gameplayRandom() * candidates.length)];
+    const difficulty = infiniteDifficultyAt(this.elapsed, this.infiniteBossKills);
+    const angle = this.gameplayRandom() * Math.PI * 2;
+    const distanceFromPlayer = 620;
+    const x = clamp(this.player.x + Math.cos(angle) * distanceFromPlayer, 120, WORLD_W - 120);
+    const y = clamp(this.player.y + Math.sin(angle) * distanceFromPlayer, 120, WORLD_H - 120);
+    const patternHealth = 1 + (def.role === 'final' ? 0.12 : 0) + (def.chapter - 1) * 0.025;
+    const patternDamage = 1 + (def.role === 'final' ? 0.08 : 0) + (def.chapter - 1) * 0.015;
+    const hp = INFINITE_BASELINE.bossHp * difficulty.bossHealthScale * patternHealth;
+    const boss: Entity = {
+      id: this.nextId(),
+      x,
+      y,
+      prevX: x,
+      prevY: y,
+      vx: 0,
+      vy: 0,
+      radius: 54,
+      hp,
+      maxHp: hp,
+      speed: Math.min(178, def.speed * difficulty.enemySpeedScale),
+      damage: INFINITE_BASELINE.bossDamage * difficulty.bossDamageScale * patternDamage,
+      xp: 220 + this.infiniteBossKills * 18,
+      coin: 80 + this.infiniteBossKills * 6,
+      tier: 'boss',
+      variant: Math.floor(this.gameplayRandom() * 5),
+      isBoss: true,
+      attackStyle: 'contact',
+      rangedCooldown: 0,
+      rangedTelegraph: 0,
+      boss: def,
+      legacyBoss: false,
+      contactTimer: 0,
+      hitFlash: 0,
+      stun: 0,
+      root: 0,
+      slowMultiplier: 1,
+      slowTimer: 0,
+      patternTimer: 1.2,
+      patternPhase: 'idle',
+      patternX: 0,
+      patternY: 0,
+      damageCooldowns: {},
+      bossPhase: 1,
+      bossPhaseFlash: 0,
+    };
+    this.previousInfiniteBossId = def.id;
+    this.objectiveTarget = this.infiniteBossKills + 1;
+    this.enemies.push(boss);
+    this.burst(x, y, 28, '#111111', 210);
+    this.shake = Math.max(this.shake, 8);
+  }
+
   private updateEnemies(dt: number) {
     for (const enemy of this.enemies) {
       if (enemy.hp <= 0) continue;
@@ -2291,11 +2463,56 @@ export class GameEngine {
       if (enemy.stun > 0 || enemy.root > 0) continue;
 
       const dir = normalize(this.player.x - enemy.x, this.player.y - enemy.y);
+      const playerDistance = distance(enemy, this.player);
       const phaseMove = enemy.isBoss ? this.activeBossPhaseMove(enemy) : undefined;
       const phaseSpeed = enemy.isBoss ? phaseMove?.movement.speedScale ?? 1 + ((enemy.bossPhase ?? 1) - 1) * 0.1 : 1;
       const speed = enemy.speed * phaseSpeed * (enemy.slowMultiplier ?? 1) * (enemy.patternPhase === 'dash' ? 3.8 : 1);
-      enemy.vx = enemy.vx * 0.82 + dir.x * speed * 0.18;
-      enemy.vy = enemy.vy * 0.82 + dir.y * speed * 0.18;
+      let moveX = dir.x;
+      let moveY = dir.y;
+
+      if (!enemy.isBoss && enemy.attackStyle === 'ranged') {
+        enemy.rangedCooldown = Math.max(0, enemy.rangedCooldown - dt);
+        if (enemy.rangedTelegraph > 0) {
+          const previousTelegraph = enemy.rangedTelegraph;
+          enemy.rangedTelegraph = Math.max(0, enemy.rangedTelegraph - dt);
+          if (previousTelegraph > 0 && enemy.rangedTelegraph <= 0) {
+            const shotDirection = normalize(enemy.patternX - enemy.x, enemy.patternY - enemy.y);
+            const projectileSpeed = Math.min(360, 220 * (this.runMode === 'infinite'
+              ? infiniteDifficultyAt(this.elapsed, this.infiniteBossKills).enemySpeedScale
+              : 1));
+            this.spawnBossProjectile(
+              enemy.x,
+              enemy.y,
+              shotDirection.x * projectileSpeed,
+              shotDirection.y * projectileSpeed,
+              7,
+              enemy.damage * 0.72,
+              4.2,
+              'enemy',
+            );
+          }
+        } else if (enemy.rangedCooldown <= 0 && playerDistance <= 760) {
+          enemy.patternX = this.player.x;
+          enemy.patternY = this.player.y;
+          enemy.rangedTelegraph = 0.44;
+          const cadenceScale = this.runMode === 'infinite'
+            ? Math.min(1.55, 1 + infiniteDifficultyAt(this.elapsed, this.infiniteBossKills).minute * 0.012)
+            : 1;
+          enemy.rangedCooldown = (2.25 + this.gameplayRandom() * 0.75) / cadenceScale;
+        }
+
+        if (playerDistance < 235) {
+          moveX = -dir.x;
+          moveY = -dir.y;
+        } else if (playerDistance <= 410) {
+          const strafe = enemy.id % 2 === 0 ? 1 : -1;
+          moveX = -dir.y * strafe;
+          moveY = dir.x * strafe;
+        }
+      }
+
+      enemy.vx = enemy.vx * 0.82 + moveX * speed * 0.18;
+      enemy.vy = enemy.vy * 0.82 + moveY * speed * 0.18;
       enemy.x += enemy.vx * dt;
       enemy.y += enemy.vy * dt;
       enemy.x = clamp(enemy.x, -90, WORLD_W + 90);
@@ -2782,6 +2999,10 @@ export class GameEngine {
     life: number,
     kind: BossProjectile['kind'],
   ) {
+    if (this.bossProjectiles.length >= BOSS_PROJECTILE_HARD_CAP) {
+      const oldest = this.bossProjectiles.shift();
+      if (oldest) this.bossProjectilePool.release(oldest);
+    }
     const projectile = this.bossProjectilePool.acquire();
     Object.assign(projectile, { id: this.nextId(), x, y, prevX: x, prevY: y, vx, vy, radius, damage, life, kind });
     this.bossProjectiles.push(projectile);
@@ -2921,6 +3142,14 @@ export class GameEngine {
   private onEnemyKilled(enemy: Entity, suppressBossDraft = false) {
     this.player.kills += 1;
     this.stageKills += 1;
+    if (this.runMode === 'infinite') {
+      this.infiniteEventScore += infiniteKillScore(enemy.tier, this.elapsed, this.infiniteBossKills);
+      if (enemy.isBoss) {
+        this.infiniteBossKills += 1;
+        this.infiniteBossRespawnTimer = 2.4;
+        this.objectiveTarget = this.infiniteBossKills + 1;
+      }
+    }
     const xpCount = enemy.isBoss ? 7 : enemy.tier === 'large' ? 4 : enemy.tier === 'medium' ? 2 : 1;
     for (let i = 0; i < xpCount; i += 1) {
       this.spawnPickup(
@@ -2950,7 +3179,9 @@ export class GameEngine {
     this.playTone(enemy.isBoss ? 80 : 240, enemy.isBoss ? 0.09 : 0.035, enemy.isBoss ? 'sawtooth' : 'square');
 
     if (enemy.isBoss && !suppressBossDraft) {
-      if (this.kind === 'normal' || enemy.legacyBoss || enemy.boss?.role === 'field') {
+      if (this.runMode === 'infinite') {
+        this.openDraft('boss', 'resume');
+      } else if (this.kind === 'normal' || enemy.legacyBoss || enemy.boss?.role === 'field') {
         this.openDraft('boss', 'resume');
       } else {
         this.openDraft('boss', 'roundClear');
@@ -2975,7 +3206,8 @@ export class GameEngine {
   }
 
   private updatePlayerAim() {
-    const target = this.findNearestEnemy(780, true);
+    const target = this.findNearestEnemy(980);
+    this.aimTargetId = target?.id ?? null;
     this.playerAimAngle = target
       ? Math.atan2(target.y - this.player.y, target.x - this.player.x)
       : -Math.PI / 2;
@@ -3064,8 +3296,11 @@ export class GameEngine {
 
   private weightedSkillPick() {
     const luck = this.meta.passives.rareLuck;
-    const difficultyBias = (stageIndex(this.chapter, this.stage) - 1) / (TOTAL_STAGE_COUNT - 1);
-    const availableSkills = filterSkillsForChapter(SKILL_IDS.map((id) => SKILLS[id]), this.chapter);
+    const difficultyBias = this.runMode === 'infinite'
+      ? clamp(this.elapsed / 1_800, 0, 1)
+      : (stageIndex(this.chapter, this.stage) - 1) / (TOTAL_STAGE_COUNT - 1);
+    const skillChapter = this.runMode === 'infinite' ? CHAPTER_COUNT : this.chapter;
+    const availableSkills = filterSkillsForChapter(SKILL_IDS.map((id) => SKILLS[id]), skillChapter);
     const entries = availableSkills.map(({ id }) => {
       const rarity = SKILLS[id].rarity;
       const luckBonus =
@@ -3145,23 +3380,33 @@ export class GameEngine {
     ];
   }
 
-  private makeSettlement(title: string): Settlement {
-    const cleared = this.stageFinished && this.player.hp > 0;
+  private makeSettlement(title: string, cleared = this.stageFinished && this.player.hp > 0): Settlement {
+    const infinite = this.runMode === 'infinite';
     const base = cleared ? 40 : 16;
-    const bossBonus = this.kind === 'normal' ? 0 : 70 + this.chapter * 20;
+    const bossBonus = infinite
+      ? this.infiniteBossKills * 28
+      : this.kind === 'normal'
+        ? 0
+        : 70 + this.chapter * 20;
     const gold = Math.floor(base + bossBonus + this.stageKills * 0.9 + this.stageCoinsEarned * 0.28 + this.chapter * 18 + this.stage * 8);
-    const xp = Math.floor(70 + this.stageKills * 1.1 + this.chapter * 24 + (this.kind === 'normal' ? 0 : 80));
-    const gameComplete = this.chapter === 5 && this.stage === 10 && cleared;
+    const xp = Math.floor(70 + this.stageKills * 1.1 + this.chapter * 24 + (infinite ? this.infiniteBossKills * 18 : this.kind === 'normal' ? 0 : 80));
+    const gameComplete = !infinite && this.chapter === 5 && this.stage === 10 && cleared;
     return {
+      runMode: this.runMode,
+      seed: this.runSeed,
       chapter: this.chapter,
       stage: this.stage,
-      title,
+      title: infinite ? '무한 기록 정산' : title,
       kills: this.stageKills,
       coins: this.player.coins,
       gold,
       xp,
       cleared,
       gameComplete,
+      score: infinite ? infiniteScoreWithSurvival(this.infiniteEventScore, this.elapsed) : 0,
+      survivedSeconds: infinite ? this.elapsed : 0,
+      bossKills: infinite ? this.infiniteBossKills : 0,
+      scoreEligible: infinite ? this.scoreEligible : false,
     };
   }
 
@@ -3169,14 +3414,14 @@ export class GameEngine {
     this.bossEnraged = true;
     for (const enemy of this.enemies) {
       if (enemy.hp <= 0 || !enemy.isBoss) continue;
-      enemy.damage *= 1.32;
-      enemy.speed *= 1.18;
+      enemy.damage *= 4.5;
+      enemy.speed *= 1.35;
       enemy.patternTimer = Math.min(enemy.patternTimer, 0.65);
       enemy.hitFlash = 0.4;
     }
     const reinforcements = Math.min(14 + this.chapter * 3, Math.max(0, this.enemyCap() - this.enemies.length));
-    for (let i = 0; i < reinforcements; i += 1) {
-      this.spawnEnemy(1.4 + this.chapter * 0.55, i % 5 === 0 ? 'medium' : 'small');
+    for (let index = 0; index < reinforcements; index += 1) {
+      this.spawnEnemy(1.4 + this.chapter * 0.55, index % 5 === 0 ? 'medium' : 'small');
     }
     this.hazards.push({
       id: this.nextId(),
@@ -3219,21 +3464,36 @@ export class GameEngine {
     this.snapshotTimer = 0.12;
     const boss = this.enemies.find((enemy) => enemy.isBoss && !enemy.legacyBoss && (this.kind !== 'normal' || enemy.boss?.role === 'field'));
     const bossMove = boss ? this.activeBossPhaseMove(boss) : undefined;
+    const activeEffects: ActiveStatusEffect[] = [
+      ...(this.player.invuln > 0 ? [{ id: 'invulnerable', kind: 'buff' as const, label: '피격 무적', remaining: this.player.invuln }] : []),
+      ...(this.player.shield > 0 ? [{ id: 'shield', kind: 'buff' as const, label: '보호막', remaining: this.player.shield }] : []),
+      ...(this.coinFeverRushTimer > 0 ? [{ id: 'coin-fever', kind: 'buff' as const, label: '공격속도 폭주', remaining: this.coinFeverRushTimer }] : []),
+      ...(this.cheatGodMode ? [{ id: 'god', kind: 'buff' as const, label: 'GOD', value: 'ON' }] : []),
+      ...(this.player.root > 0 ? [{ id: 'root', kind: 'debuff' as const, label: '이동 불가', remaining: this.player.root }] : []),
+      ...(this.player.slow < 0.99 ? [{ id: 'slow', kind: 'debuff' as const, label: '감속', value: `-${Math.round((1 - this.player.slow) * 100)}%` }] : []),
+      ...(this.player.silence > 0 ? [{ id: 'silence', kind: 'debuff' as const, label: '스킬 침묵', remaining: this.player.silence }] : []),
+    ];
     const cc = [
-      this.player.root > 0 ? '이동불가' : '',
-      this.player.slow < 0.99 ? '감속' : '',
-      this.player.silence > 0 ? '침묵장' : '',
-      this.player.shield > 0 ? '보호막' : '',
-      this.coinFeverRushTimer > 0 ? '동전 열병' : '',
-      this.cheatGodMode ? 'GOD' : '',
+      ...activeEffects.map((effect) => effect.label),
+      this.runMode === 'infinite' && !this.scoreEligible ? '기록 제외' : '',
     ].filter(Boolean).join(' / ');
+    const infiniteDifficulty = this.runMode === 'infinite'
+      ? infiniteDifficultyAt(this.elapsed, this.infiniteBossKills)
+      : null;
     this.callbacks.onSnapshot({
+      runMode: this.runMode,
       seed: this.runSeed,
       chapter: this.chapter,
       stage: this.stage,
       stageKind: this.kind,
       objective: this.objective,
-      objectiveProgress: this.kind === 'normal' ? Math.min(this.stageKills, this.objectiveTarget) : this.enemies.some((enemy) => enemy.isBoss && !enemy.legacyBoss) ? 0 : 1,
+      objectiveProgress: this.runMode === 'infinite'
+        ? this.infiniteBossKills
+        : this.kind === 'normal'
+          ? Math.min(this.duration - this.timeLeft, this.objectiveTarget)
+          : this.enemies.some((enemy) => enemy.isBoss && !enemy.legacyBoss)
+            ? 0
+            : 1,
       objectiveTarget: this.objectiveTarget,
       timeLeft: this.timeLeft,
       duration: this.duration,
@@ -3246,6 +3506,11 @@ export class GameEngine {
       coins: this.player.coins,
       kills: this.player.kills,
       enemyCount: this.enemies.length,
+      elapsed: this.elapsed,
+      score: this.runMode === 'infinite' ? infiniteScoreWithSurvival(this.infiniteEventScore, this.elapsed) : 0,
+      bossKills: this.infiniteBossKills,
+      dangerRank: infiniteDifficulty?.rank ?? stageIndex(this.chapter, this.stage),
+      scoreEligible: this.runMode === 'infinite' && this.scoreEligible,
       bossName: boss?.boss?.name ? `${boss.boss.name} · PHASE ${boss.bossPhase ?? 1}${this.bossEnraged ? ' [광폭화]' : ''}` : undefined,
       bossMove: bossMove?.attackGrammar,
       bossHp: boss?.hp,
@@ -3253,6 +3518,7 @@ export class GameEngine {
       skills: { ...this.skills },
       runUpgrades: { ...this.runUpgrades },
       stats: { ...this.player.stats, attackSpeed: this.effectiveAttackSpeed() },
+      activeEffects,
       cc,
     });
   }
@@ -3271,6 +3537,16 @@ export class GameEngine {
     const camera = this.interpolated(this.camera);
     this.renderViewport = makeViewport(camera.x, camera.y, this.viewW, this.viewH, 160);
     const policy = motionPolicy(this.options.reducedFlash, this.systemReducedMotion);
+    this.visualRenderer.beginFrame(createRenderFrameSnapshot({
+      chapter: this.chapter,
+      elapsed: this.elapsed,
+      alpha,
+      reducedMotion: policy.reduced,
+      aimAngle: this.playerAimAngle,
+      moving: this.keys.size > 0 || this.pointer.active,
+      bossEnraged: this.bossEnraged,
+      enemyCount: this.enemies.length,
+    }));
     const shakeX = this.options.screenShake && !policy.reduced ? (this.effectRandom() - 0.5) * this.shake : 0;
     const shakeY = this.options.screenShake && !policy.reduced ? (this.effectRandom() - 0.5) * this.shake : 0;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
@@ -3282,12 +3558,15 @@ export class GameEngine {
     this.drawWorld(ctx);
     this.drawHazards(ctx);
     this.drawObstacles(ctx);
+    this.drawTargetGuide(ctx);
     this.drawPickups(ctx);
     this.drawBeams(ctx);
     this.drawProjectiles(ctx);
     this.drawEnemies(ctx);
+    this.drawTargetReticle(ctx);
     this.drawImpactRings(ctx);
     this.drawOrbitScythes(ctx);
+    this.drawMirrorClone(ctx);
     this.drawPlayer(ctx);
     this.drawParticles(ctx);
     this.drawDamageNumbers(ctx);
@@ -3406,111 +3685,16 @@ export class GameEngine {
   }
 
   private drawHazards(ctx: CanvasRenderingContext2D) {
-    const policy = motionPolicy(this.options.reducedFlash, this.systemReducedMotion);
     for (const hazard of this.hazards) {
       if (!circleVisible(this.renderViewport, hazard.x, hazard.y, hazard.radius * 1.25 + 8)) continue;
-      ctx.save();
-      const alpha = Number.isFinite(hazard.life) ? clamp(hazard.life / hazard.maxLife, 0, 1) : 1;
-      ctx.globalAlpha = hazard.kind === 'warning' ? 0.28 : 0.18 + alpha * 0.38;
-      if (hazard.kind === 'warning' || hazard.kind === 'shock') {
-        const phase = telegraphPhase(hazard.life, hazard.maxLife, hazard.triggered);
-        ctx.strokeStyle = '#e84131';
-        ctx.fillStyle = 'rgba(232, 65, 49, 0.16)';
-        ctx.lineWidth = phase === 'imminent' ? 5 : 3;
-        if (phase === 'preview') ctx.setLineDash([10, 8]);
-        ctx.beginPath();
-        ctx.arc(hazard.x, hazard.y, hazard.radius, 0, Math.PI * 2);
-        if (phase === 'active') ctx.fill();
-        ctx.stroke();
-        if (phase === 'imminent') {
-          const inset = policy.pulse ? 8 + Math.sin(this.elapsed * 18) * 4 : 8;
-          ctx.beginPath();
-          ctx.arc(hazard.x, hazard.y, Math.max(4, hazard.radius - inset), 0, Math.PI * 2);
-          ctx.stroke();
-        }
-      } else if (hazard.kind === 'water' || hazard.kind === 'slow') {
-        ctx.strokeStyle = '#111111';
-        ctx.fillStyle = '#ddddda';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.ellipse(hazard.x, hazard.y, hazard.radius * 1.25, hazard.radius * 0.78, this.chapter * 0.12, 0, Math.PI * 2);
-        ctx.fill();
-        for (let i = -2; i <= 2; i += 1) {
-          ctx.beginPath();
-          ctx.moveTo(hazard.x - hazard.radius + i * 18, hazard.y + i * 13);
-          ctx.quadraticCurveTo(hazard.x, hazard.y - 18 + i * 7, hazard.x + hazard.radius, hazard.y + i * 13);
-          ctx.stroke();
-        }
-      } else if (hazard.kind === 'fire') {
-        ctx.strokeStyle = '#e84131';
-        ctx.fillStyle = '#ececea';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(hazard.x, hazard.y, hazard.radius, 0, Math.PI * 2);
-        ctx.fill();
-        for (let i = 0; i < 7; i += 1) {
-          const angle = (Math.PI * 2 * i) / 7 + (policy.rotateDanger ? this.elapsed : 0);
-          ctx.beginPath();
-          ctx.moveTo(hazard.x, hazard.y);
-          ctx.lineTo(hazard.x + Math.cos(angle) * hazard.radius, hazard.y + Math.sin(angle) * hazard.radius);
-          ctx.stroke();
-        }
-      } else if (hazard.kind === 'trap' || hazard.kind === 'root') {
-        ctx.strokeStyle = '#0b0b0b';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.rect(hazard.x - hazard.radius, hazard.y - hazard.radius, hazard.radius * 2, hazard.radius * 2);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(hazard.x - hazard.radius, hazard.y - hazard.radius);
-        ctx.lineTo(hazard.x + hazard.radius, hazard.y + hazard.radius);
-        ctx.moveTo(hazard.x + hazard.radius, hazard.y - hazard.radius);
-        ctx.lineTo(hazard.x - hazard.radius, hazard.y + hazard.radius);
-        ctx.stroke();
-      } else if (hazard.kind === 'null') {
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 5;
-        ctx.setLineDash([10, 10]);
-        ctx.beginPath();
-        ctx.arc(hazard.x, hazard.y, hazard.radius, 0, Math.PI * 2);
-        ctx.stroke();
-      } else if (hazard.kind === 'vortex') {
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 3;
-        for (let r = 24; r < hazard.radius; r += 24) {
-          ctx.beginPath();
-          ctx.arc(hazard.x, hazard.y, r, this.elapsed * 1.8, Math.PI * 1.4 + this.elapsed * 1.8);
-          ctx.stroke();
-        }
-      } else {
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.arc(hazard.x, hazard.y, hazard.radius, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-      ctx.restore();
+      this.visualRenderer.drawHazard(ctx, hazard);
     }
   }
 
   private drawObstacles(ctx: CanvasRenderingContext2D) {
     for (const obstacle of this.obstacles) {
-      if (!rectVisible(this.renderViewport, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) continue;
-      ctx.save();
-      ctx.fillStyle = obstacle.kind === 'pillar' ? '#343432' : '#8b8b86';
-      ctx.strokeStyle = '#111111';
-      ctx.lineWidth = 3;
-      ctx.fillRect(obstacle.x, obstacle.y, obstacle.w, obstacle.h);
-      ctx.strokeRect(obstacle.x, obstacle.y, obstacle.w, obstacle.h);
-      ctx.strokeStyle = obstacle.kind === 'pillar' ? '#f3f3ef' : '#3a3a38';
-      ctx.lineWidth = 2;
-      for (let x = obstacle.x + 12; x < obstacle.x + obstacle.w; x += 24) {
-        ctx.beginPath();
-        ctx.moveTo(x, obstacle.y + 6);
-        ctx.lineTo(x - 28, obstacle.y + obstacle.h - 6);
-        ctx.stroke();
-      }
-      ctx.restore();
+      if (!rectVisible(this.renderViewport, obstacle.x - 12, obstacle.y - 12, obstacle.w + 28, obstacle.h + 30)) continue;
+      this.visualRenderer.drawObstacle(ctx, obstacle);
     }
   }
 
@@ -3518,62 +3702,109 @@ export class GameEngine {
     for (const pickup of this.pickups) {
       const point = this.interpolated(pickup);
       if (!circleVisible(this.renderViewport, point.x, point.y, pickup.radius + 10)) continue;
-      ctx.save();
-      ctx.strokeStyle = '#111111';
-      ctx.fillStyle = pickup.kind === 'xp' ? '#dff29a' : '#b9dd3d';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      if (pickup.kind === 'xp') {
-        ctx.moveTo(point.x, point.y - 8);
-        ctx.lineTo(point.x + 7, point.y);
-        ctx.lineTo(point.x, point.y + 8);
-        ctx.lineTo(point.x - 7, point.y);
-        ctx.closePath();
-      } else {
-        ctx.arc(point.x, point.y, pickup.radius, 0, Math.PI * 2);
-      }
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
+      this.visualRenderer.drawPickup(ctx, pickup, point.x, point.y);
     }
+  }
+
+  private currentAimTarget() {
+    if (this.aimTargetId === null) return undefined;
+    return this.enemies.find((enemy) => enemy.id === this.aimTargetId && enemy.hp > 0);
+  }
+
+  private drawTargetGuide(ctx: CanvasRenderingContext2D) {
+    const target = this.currentAimTarget();
+    if (!target) return;
+    const player = this.interpolated(this.player);
+    const point = this.interpolated(target);
+    if (!segmentVisible(this.renderViewport, player.x, player.y, point.x, point.y, 24)) return;
+    const angle = Math.atan2(point.y - player.y, point.x - player.x);
+    const distanceToTarget = Math.hypot(point.x - player.x, point.y - player.y);
+
+    ctx.save();
+    const gradient = ctx.createLinearGradient?.(player.x, player.y, point.x, point.y);
+    if (gradient && typeof gradient.addColorStop === 'function') {
+      gradient.addColorStop(0, 'rgba(8, 126, 155, 0)');
+      gradient.addColorStop(0.18, 'rgba(8, 126, 155, 0.22)');
+      gradient.addColorStop(0.5, 'rgba(8, 126, 155, 0.04)');
+      gradient.addColorStop(0.82, 'rgba(8, 126, 155, 0.38)');
+      gradient.addColorStop(1, 'rgba(8, 126, 155, 0.72)');
+      ctx.strokeStyle = gradient;
+    } else {
+      ctx.strokeStyle = 'rgba(8, 126, 155, 0.36)';
+    }
+    ctx.lineWidth = 2;
+    ctx.setLineDash([3, 10]);
+    ctx.beginPath();
+    ctx.moveTo(
+      player.x + Math.cos(angle) * 48,
+      player.y + Math.sin(angle) * 48,
+    );
+    ctx.lineTo(
+      point.x - Math.cos(angle) * (target.radius + 18),
+      point.y - Math.sin(angle) * (target.radius + 18),
+    );
+    ctx.stroke();
+
+    if (distanceToTarget > 150) {
+      const arrowDistance = Math.max(86, distanceToTarget - target.radius - 44);
+      const arrowX = player.x + Math.cos(angle) * arrowDistance;
+      const arrowY = player.y + Math.sin(angle) * arrowDistance;
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 0.68;
+      ctx.fillStyle = TARGET_COLOR;
+      ctx.beginPath();
+      ctx.moveTo(arrowX + Math.cos(angle) * 8, arrowY + Math.sin(angle) * 8);
+      ctx.lineTo(arrowX + Math.cos(angle + 2.45) * 7, arrowY + Math.sin(angle + 2.45) * 7);
+      ctx.lineTo(arrowX + Math.cos(angle - 2.45) * 7, arrowY + Math.sin(angle - 2.45) * 7);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  private drawTargetReticle(ctx: CanvasRenderingContext2D) {
+    const target = this.currentAimTarget();
+    if (!target) return;
+    const point = this.interpolated(target);
+    const outerRadius = target.radius + (target.isBoss ? 22 : 14);
+    if (!circleVisible(this.renderViewport, point.x, point.y, outerRadius + 12)) return;
+    const policy = motionPolicy(this.options.reducedFlash, this.systemReducedMotion);
+    const rotation = policy.rotateDanger ? this.elapsed * 0.9 : 0;
+
+    ctx.save();
+    ctx.translate(point.x, point.y);
+    ctx.strokeStyle = target.isBoss ? '#e67e00' : TARGET_COLOR;
+    ctx.fillStyle = target.isBoss ? '#e67e00' : TARGET_COLOR;
+    ctx.lineWidth = target.isBoss ? 3 : 2;
+    ctx.globalAlpha = 0.9;
+    for (let index = 0; index < 4; index += 1) {
+      const start = rotation + index * Math.PI / 2 - 0.28;
+      ctx.beginPath();
+      ctx.arc(0, 0, outerRadius, start, start + 0.56);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 0.42;
+    ctx.setLineDash([2, 6]);
+    ctx.beginPath();
+    ctx.arc(0, 0, outerRadius + 7, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 0.95;
+    ctx.beginPath();
+    ctx.arc(0, -outerRadius - 7, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
   private drawBeams(ctx: CanvasRenderingContext2D) {
     for (const beam of this.beams) {
       if (!segmentVisible(this.renderViewport, beam.x1, beam.y1, beam.x2, beam.y2, beam.width)) continue;
-      const alpha = clamp(beam.life / beam.maxLife, 0, 1);
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = beam.width;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(beam.x1, beam.y1);
-      ctx.lineTo(beam.x2, beam.y2);
-      ctx.stroke();
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = Math.max(2, beam.width * 0.28);
-      ctx.stroke();
-      ctx.restore();
+      this.visualRenderer.drawBeam(ctx, beam);
     }
 
     for (const chain of this.chains) {
       if (!chain.points.some((point, index) => index > 0 && segmentVisible(this.renderViewport, chain.points[index - 1].x, chain.points[index - 1].y, point.x, point.y, 5))) continue;
-      ctx.save();
-      ctx.globalAlpha = clamp(chain.life / chain.maxLife, 0, 1);
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 5;
-      ctx.lineJoin = 'miter';
-      ctx.beginPath();
-      chain.points.forEach((point, index) => {
-        if (index === 0) ctx.moveTo(point.x, point.y);
-        else ctx.lineTo(point.x, point.y);
-      });
-      ctx.stroke();
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.restore();
+      this.visualRenderer.drawChain(ctx, chain.points, chain.life, chain.maxLife);
     }
   }
 
@@ -3581,171 +3812,80 @@ export class GameEngine {
     for (const projectile of this.projectiles) {
       const point = this.interpolated(projectile);
       if (!circleVisible(this.renderViewport, point.x, point.y, projectile.radius * 8)) continue;
-      ctx.save();
-      const angle = Math.atan2(projectile.vy, projectile.vx);
-      ctx.strokeStyle = '#111111';
-      ctx.lineWidth = 2;
-      ctx.globalAlpha = 0.28;
-      ctx.beginPath();
-      ctx.moveTo(point.x - Math.cos(angle) * projectile.radius * 8, point.y - Math.sin(angle) * projectile.radius * 8);
-      ctx.lineTo(point.x, point.y);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = '#ffffff';
-      ctx.strokeStyle = '#111111';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      if (projectile.skillId === 'needleStorm' || projectile.skillId === 'recoveryThread' || projectile.skillId === 'fanKnives' || projectile.skillId === 'mirrorClone') {
-        ctx.translate(point.x, point.y);
-        ctx.rotate(angle);
-        ctx.moveTo(projectile.radius * 3, 0);
-        ctx.lineTo(-projectile.radius * 1.4, -projectile.radius);
-        ctx.lineTo(-projectile.radius * 0.7, 0);
-        ctx.lineTo(-projectile.radius * 1.4, projectile.radius);
-        ctx.closePath();
-      } else {
-        ctx.arc(point.x, point.y, projectile.radius, 0, Math.PI * 2);
-      }
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
+      this.visualRenderer.drawFriendlyProjectile(ctx, {
+        x: point.x,
+        y: point.y,
+        vx: projectile.vx,
+        vy: projectile.vy,
+        radius: projectile.radius,
+        life: projectile.life,
+        maxLife: projectile.maxLife,
+        returning: projectile.returning,
+        skillId: projectile.skillId,
+      });
     }
     for (const projectile of this.bossProjectiles) {
       const point = this.interpolated(projectile);
       if (!circleVisible(this.renderViewport, point.x, point.y, projectile.radius * 2.2)) continue;
-      ctx.save();
-      ctx.strokeStyle = '#000000';
-      ctx.fillStyle = projectile.kind === 'saw' ? '#ffffff' : '#111111';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      if (projectile.kind === 'saw') {
-        for (let i = 0; i < 10; i += 1) {
-          const angle = (Math.PI * 2 * i) / 10 + this.elapsed * 5;
-          const r = i % 2 === 0 ? projectile.radius * 1.35 : projectile.radius * 0.72;
-          const x = point.x + Math.cos(angle) * r;
-          const y = point.y + Math.sin(angle) * r;
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
-      } else if (projectile.kind === 'eclipse') {
-        ctx.rect(point.x - projectile.radius, point.y - projectile.radius * 2, projectile.radius * 2, projectile.radius * 4);
-      } else {
-        ctx.arc(point.x, point.y, projectile.radius, 0, Math.PI * 2);
-      }
-      ctx.fill();
-      ctx.stroke();
-      if (projectile.kind !== 'saw') {
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, Math.max(2, projectile.radius * 0.45), 0, Math.PI * 2);
-        ctx.stroke();
-      }
-      ctx.restore();
+      this.visualRenderer.drawHostileProjectile(ctx, {
+        x: point.x,
+        y: point.y,
+        vx: projectile.vx,
+        vy: projectile.vy,
+        radius: projectile.radius,
+        life: projectile.life,
+        kind: projectile.kind,
+      });
     }
   }
 
   private drawEnemies(ctx: CanvasRenderingContext2D) {
-    const policy = motionPolicy(this.options.reducedFlash, this.systemReducedMotion);
     for (const enemy of this.enemies) {
       const point = this.interpolated(enemy);
       if (!circleVisible(this.renderViewport, point.x, point.y, enemy.radius + 24)) continue;
-      ctx.save();
-      ctx.translate(point.x, point.y);
-      ctx.rotate(enemy.variant * 0.4 + (policy.rotateDanger ? this.elapsed * (enemy.tier === 'small' ? 1.2 : 0.25) : 0));
-      ctx.globalAlpha = enemy.hitFlash > 0 && policy.invertFlash ? 0.45 : 1;
-      ctx.fillStyle =
-        enemy.hitFlash > 0 && policy.invertFlash ? '#ffffff' :
-        enemy.tier === 'small' ? '#111111' :
-        enemy.tier === 'medium' ? '#2f2f2d' :
-        enemy.tier === 'large' ? '#4a4a46' :
-        '#080808';
-      ctx.strokeStyle = '#111111';
-      ctx.lineWidth = enemy.isBoss ? 5 : 3;
-      if (enemy.tier === 'small') {
-        const spikes = 6 + enemy.variant;
-        ctx.beginPath();
-        for (let i = 0; i < spikes; i += 1) {
-          const angle = (Math.PI * 2 * i) / spikes;
-          const r = i % 2 === 0 ? enemy.radius * 1.12 : enemy.radius * 0.72;
-          const x = Math.cos(angle) * r;
-          const y = Math.sin(angle) * r;
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
+      this.visualRenderer.drawEnemy(ctx, {
+        id: enemy.id,
+        x: point.x,
+        y: point.y,
+        vx: enemy.vx,
+        vy: enemy.vy,
+        radius: enemy.radius,
+        tier: enemy.tier,
+        variant: enemy.variant,
+        isBoss: enemy.isBoss,
+        attackStyle: enemy.attackStyle,
+        hitFlash: enemy.hitFlash,
+        bossId: enemy.boss?.id,
+        bossPattern: enemy.boss?.pattern,
+        bossPhase: enemy.bossPhase,
+        legacyBoss: enemy.legacyBoss === true,
+      });
+
+      if (!enemy.isBoss && enemy.attackStyle === 'ranged') {
+        ctx.save();
+        ctx.strokeStyle = '#e84131';
+        ctx.lineWidth = enemy.rangedTelegraph > 0 ? 3 : 2;
+        ctx.globalAlpha = enemy.rangedTelegraph > 0 ? 0.78 : 0.62;
+        if (enemy.rangedTelegraph > 0) {
+          ctx.setLineDash([8, 7]);
+          ctx.beginPath();
+          ctx.moveTo(point.x, point.y);
+          ctx.lineTo(enemy.patternX, enemy.patternY);
+          ctx.stroke();
+          ctx.setLineDash([]);
         }
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, enemy.radius + 6, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#e84131';
+        ctx.beginPath();
+        ctx.moveTo(point.x, point.y - enemy.radius - 12);
+        ctx.lineTo(point.x + 5, point.y - enemy.radius - 4);
+        ctx.lineTo(point.x - 5, point.y - enemy.radius - 4);
         ctx.closePath();
         ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.6;
-        ctx.beginPath();
-        ctx.moveTo(-enemy.radius * 0.35, 0);
-        ctx.lineTo(enemy.radius * 0.35, 0);
-        ctx.stroke();
-      } else if (enemy.tier === 'medium') {
-        ctx.beginPath();
-        ctx.rect(-enemy.radius, -enemy.radius * 0.85, enemy.radius * 2, enemy.radius * 1.7);
-        ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(-enemy.radius * 0.65, 0);
-        ctx.lineTo(enemy.radius * 0.65, 0);
-        ctx.moveTo(0, -enemy.radius * 0.62);
-        ctx.lineTo(0, enemy.radius * 0.62);
-        ctx.stroke();
-      } else if (enemy.tier === 'large') {
-        ctx.beginPath();
-        ctx.moveTo(0, -enemy.radius * 1.15);
-        ctx.lineTo(enemy.radius, -enemy.radius * 0.45);
-        ctx.lineTo(enemy.radius * 0.75, enemy.radius);
-        ctx.lineTo(-enemy.radius * 0.75, enemy.radius);
-        ctx.lineTo(-enemy.radius, -enemy.radius * 0.45);
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 3;
-        for (let y = -enemy.radius * 0.55; y < enemy.radius * 0.8; y += 12) {
-          ctx.beginPath();
-          ctx.moveTo(-enemy.radius * 0.5, y);
-          ctx.lineTo(enemy.radius * 0.5, y);
-          ctx.stroke();
-        }
-      } else {
-        const sides = enemy.boss?.pattern === 'rings' ? 12 : enemy.boss?.pattern === 'saw' ? 10 : 8;
-        ctx.beginPath();
-        for (let i = 0; i < sides; i += 1) {
-          const angle = (Math.PI * 2 * i) / sides;
-          const r = enemy.radius * (i % 2 === 0 ? 1.05 : 0.76);
-          const x = Math.cos(angle) * r;
-          const y = Math.sin(angle) * r;
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(0, 0, enemy.radius * 0.42, 0, Math.PI * 2);
-        ctx.stroke();
-        this.drawBossGlyph(ctx, enemy);
-        if ((enemy.bossPhase ?? 1) > 1) {
-          ctx.strokeStyle = (enemy.bossPhase ?? 1) === 3 ? '#e84131' : CHAPTER_VISUALS[this.chapter].accent;
-          ctx.lineWidth = (enemy.bossPhase ?? 1) === 3 ? 5 : 3;
-          if ((enemy.bossPhase ?? 1) === 2) ctx.setLineDash([8, 6]);
-          ctx.beginPath();
-          ctx.arc(0, 0, enemy.radius * 1.34, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-        if (enemy.legacyBoss) {
-          ctx.setLineDash([5, 5]);
-          ctx.beginPath();
-          ctx.arc(0, 0, enemy.radius * 1.22, 0, Math.PI * 2);
-          ctx.stroke();
-        }
+        ctx.restore();
       }
-      ctx.restore();
 
       const showHealth =
         this.options.healthBars === 'all' ||
@@ -3754,57 +3894,10 @@ export class GameEngine {
     }
   }
 
-  private drawBossGlyph(ctx: CanvasRenderingContext2D, enemy: Entity) {
-    const pattern = enemy.boss?.pattern;
-    if (!pattern) return;
-    const radius = enemy.radius;
-    ctx.save();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 3;
-    ctx.setLineDash([]);
-    ctx.beginPath();
-    if (pattern === 'dash') {
-      ctx.moveTo(-radius * 0.72, 0); ctx.lineTo(radius * 0.72, 0); ctx.lineTo(radius * 0.38, -radius * 0.28);
-    } else if (pattern === 'rings') {
-      ctx.arc(0, 0, radius * 0.64, 0, Math.PI * 2); ctx.moveTo(radius * 0.28, 0); ctx.arc(0, 0, radius * 0.28, 0, Math.PI * 2);
-    } else if (pattern === 'clones') {
-      ctx.rect(-radius * 0.6, -radius * 0.38, radius * 0.58, radius * 0.76); ctx.rect(radius * 0.02, -radius * 0.38, radius * 0.58, radius * 0.76);
-    } else if (pattern === 'flame') {
-      ctx.moveTo(-radius * 0.5, radius * 0.45); ctx.lineTo(-radius * 0.2, -radius * 0.48); ctx.lineTo(0, radius * 0.1); ctx.lineTo(radius * 0.25, -radius * 0.55); ctx.lineTo(radius * 0.52, radius * 0.45);
-    } else if (pattern === 'tide') {
-      ctx.moveTo(-radius * 0.7, 0); ctx.quadraticCurveTo(-radius * 0.35, -radius * 0.55, 0, 0); ctx.quadraticCurveTo(radius * 0.35, radius * 0.55, radius * 0.7, 0);
-    } else if (pattern === 'traps') {
-      ctx.rect(-radius * 0.45, -radius * 0.45, radius * 0.9, radius * 0.9); ctx.moveTo(-radius * 0.45, -radius * 0.45); ctx.lineTo(radius * 0.45, radius * 0.45); ctx.moveTo(radius * 0.45, -radius * 0.45); ctx.lineTo(-radius * 0.45, radius * 0.45);
-    } else if (pattern === 'clock') {
-      ctx.arc(0, 0, radius * 0.62, 0, Math.PI * 2); ctx.moveTo(0, 0); ctx.lineTo(0, -radius * 0.48); ctx.moveTo(0, 0); ctx.lineTo(radius * 0.38, radius * 0.18);
-    } else if (pattern === 'saw') {
-      ctx.moveTo(-radius * 0.5, -radius * 0.5); ctx.lineTo(radius * 0.5, radius * 0.5); ctx.moveTo(radius * 0.5, -radius * 0.5); ctx.lineTo(-radius * 0.5, radius * 0.5);
-    } else if (pattern === 'eclipse') {
-      ctx.arc(0, 0, radius * 0.62, Math.PI * 0.3, Math.PI * 1.7); ctx.arc(radius * 0.22, 0, radius * 0.52, Math.PI * 0.3, Math.PI * 1.7);
-    } else if (pattern === 'null') {
-      ctx.rect(-radius * 0.42, -radius * 0.42, radius * 0.84, radius * 0.84);
-    } else {
-      ctx.moveTo(-radius * 0.25, -radius * 0.6); ctx.lineTo(radius * 0.08, -radius * 0.1); ctx.lineTo(-radius * 0.08, radius * 0.05); ctx.lineTo(radius * 0.28, radius * 0.62);
-    }
-    ctx.stroke();
-    ctx.restore();
-  }
-
   private drawImpactRings(ctx: CanvasRenderingContext2D) {
-    const policy = motionPolicy(this.options.reducedFlash, this.systemReducedMotion);
     for (const ring of this.impactRings) {
       if (!circleVisible(this.renderViewport, ring.x, ring.y, ring.radius * 1.5)) continue;
-      const alpha = clamp(ring.life / ring.maxLife, 0, 1);
-      const radius = ring.radius * (policy.pulse ? 1 + (1 - alpha) * 0.45 : 1);
-      ctx.save();
-      ctx.globalAlpha = policy.reduced ? 0.82 : alpha;
-      ctx.strokeStyle = ring.tier === 'critical' ? '#e84131' : CHAPTER_VISUALS[this.chapter].accent;
-      ctx.lineWidth = ring.tier === 'critical' ? 4 : 2;
-      if (policy.reduced) ctx.setLineDash([7, 5]);
-      ctx.beginPath();
-      ctx.arc(ring.x, ring.y, radius, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
+      this.visualRenderer.drawImpactRing(ctx, ring);
     }
   }
 
@@ -3815,10 +3908,6 @@ export class GameEngine {
     const baseRadius = 72 + skill.level * 10;
     const player = this.interpolated(this.player);
     const policy = motionPolicy(this.options.reducedFlash, this.systemReducedMotion);
-    ctx.save();
-    ctx.strokeStyle = '#000000';
-    ctx.fillStyle = '#ffffff';
-    ctx.lineWidth = 3;
     for (let i = 0; i < blades; i += 1) {
       const reverse = skill.awakened && i >= skill.level + 1;
       const speed = reverse ? -2.6 : 3.2;
@@ -3826,138 +3915,65 @@ export class GameEngine {
       const angle = (policy.rotateDanger ? this.elapsed * speed : 0) + (Math.PI * 2 * i) / blades;
       const x = player.x + Math.cos(angle) * bladeRadius;
       const y = player.y + Math.sin(angle) * bladeRadius;
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(angle + Math.PI / 2);
-      ctx.beginPath();
-      ctx.moveTo(0, -18);
-      ctx.quadraticCurveTo(16, 0, 0, 18);
-      ctx.quadraticCurveTo(6, 0, 0, -18);
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
+      this.visualRenderer.drawOrbitBlade(ctx, x, y, angle, reverse);
     }
-    ctx.restore();
+  }
+
+  private drawMirrorClone(ctx: CanvasRenderingContext2D) {
+    const skill = this.skills.mirrorClone;
+    if (!skill) return;
+    const player = this.interpolated(this.player);
+    const sideAngle = this.playerAimAngle + Math.PI / 2;
+    const offsets = skill.awakened ? [-1, 1] : [1];
+    const policy = motionPolicy(this.options.reducedFlash, this.systemReducedMotion);
+
+    for (const side of offsets) {
+      const distanceFromPlayer = 48 + skill.level * 2;
+      const drift = policy.reduced ? 0 : Math.sin(this.elapsed * 4.2 + side) * 3;
+      const x = player.x + Math.cos(sideAngle) * distanceFromPlayer * side + Math.cos(this.playerAimAngle) * drift;
+      const y = player.y + Math.sin(sideAngle) * distanceFromPlayer * side + Math.sin(this.playerAimAngle) * drift;
+      this.visualRenderer.drawMirrorClone(ctx, {
+        x,
+        y,
+        aimAngle: this.playerAimAngle,
+        moving: this.keys.size > 0 || this.pointer.active,
+        shield: 0,
+        silence: 0,
+        alpha: skill.awakened ? 0.28 : 0.36,
+      });
+    }
   }
 
   private drawPlayer(ctx: CanvasRenderingContext2D) {
     const moving = this.keys.size > 0 || this.pointer.active;
-    const policy = motionPolicy(this.options.reducedFlash, this.systemReducedMotion);
-    const walk = moving && !policy.reduced ? Math.sin(this.elapsed * 11) : 0;
-    const aim = this.playerAimAngle;
-    const lean = moving && !policy.reduced ? Math.sin(this.elapsed * 9) * 0.1 : 0;
     const player = this.interpolated(this.player);
-    ctx.save();
-    ctx.translate(player.x, player.y);
-    ctx.rotate(lean);
-    ctx.strokeStyle = '#2374d8';
-    ctx.lineWidth = 6;
-    ctx.beginPath();
-    ctx.arc(0, 3, 43, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(0, 3, 38, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.strokeStyle = '#000000';
-    ctx.fillStyle = '#f8f8f2';
-    ctx.lineWidth = 4;
-    ctx.lineCap = 'round';
-    ctx.globalAlpha = 0.14;
-    ctx.lineWidth = 7;
-    ctx.beginPath();
-    ctx.moveTo(-Math.cos(aim) * 30, 8 - Math.sin(aim) * 30);
-    ctx.lineTo(-Math.cos(aim) * 58, 16 - Math.sin(aim) * 58);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(0, -26, 10, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(-10, -29);
-    ctx.lineTo(13, -31);
-    ctx.moveTo(8, -31);
-    ctx.lineTo(20 + (policy.reduced ? 0 : Math.cos(this.elapsed * 12) * 4), -36 + (policy.reduced ? 0 : Math.sin(this.elapsed * 12) * 3));
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(0, -15);
-    ctx.quadraticCurveTo(Math.cos(aim) * 8, 1, 0, 18);
-    ctx.moveTo(0, -3);
-    ctx.lineTo(Math.cos(aim) * 28, Math.sin(aim) * 20 - 2);
-    ctx.moveTo(0, -3);
-    ctx.lineTo(-Math.cos(aim) * 18, 8 - walk * 3);
-    ctx.moveTo(0, 18);
-    ctx.lineTo(-17, 38 - walk * 6);
-    ctx.moveTo(0, 18);
-    ctx.lineTo(18, 36 + walk * 6);
-    ctx.stroke();
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(Math.cos(aim) * 14, Math.sin(aim) * 14 - 4);
-    ctx.lineTo(Math.cos(aim) * 42, Math.sin(aim) * 42 - 4);
-    ctx.stroke();
-    if (this.player.shield > 0) {
-      ctx.setLineDash([7, 5]);
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(0, 4, 42, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    if (this.player.silence > 0) {
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.moveTo(-24, -34);
-      ctx.lineTo(24, 40);
-      ctx.stroke();
-    }
-    ctx.restore();
+    this.visualRenderer.drawPlayer(ctx, {
+      x: player.x,
+      y: player.y,
+      aimAngle: this.playerAimAngle,
+      moving,
+      shield: this.player.shield,
+      silence: this.player.silence,
+    });
   }
 
   private drawParticles(ctx: CanvasRenderingContext2D) {
     for (const particle of this.particles) {
       if (!circleVisible(this.renderViewport, particle.x, particle.y, particle.size)) continue;
-      const alpha = clamp(particle.life / particle.maxLife, 0, 1);
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = particle.color;
-      ctx.fillRect(particle.x - particle.size / 2, particle.y - particle.size / 2, particle.size, particle.size);
-      ctx.restore();
+      this.visualRenderer.drawParticle(ctx, particle);
     }
   }
 
   private drawDamageNumbers(ctx: CanvasRenderingContext2D) {
     if (!this.options.damageNumbers) return;
-    ctx.save();
-    ctx.font = '700 14px Inter, system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
     for (const number of this.damageNumbers) {
       if (!circleVisible(this.renderViewport, number.x, number.y, 52)) continue;
-      const alpha = clamp(number.life / (number.crit ? 0.9 : 0.72), 0, 1);
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = number.crit ? '#000000' : '#2a2a2a';
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 4;
-      const text = number.crit ? `${Math.round(number.value)}!` : `${Math.round(number.value)}`;
-      ctx.strokeText(text, number.x, number.y);
-      ctx.fillText(text, number.x, number.y);
+      this.visualRenderer.drawDamageNumber(ctx, number);
     }
-    ctx.restore();
   }
 
   private drawHealthBar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, ratio: number) {
-    ctx.save();
-    ctx.fillStyle = '#ffffff';
-    ctx.strokeStyle = '#111111';
-    ctx.lineWidth = 2;
-    ctx.fillRect(x - w / 2, y, w, h);
-    ctx.strokeRect(x - w / 2, y, w, h);
-    ctx.fillStyle = '#111111';
-    ctx.fillRect(x - w / 2, y, w * clamp(ratio, 0, 1), h);
-    ctx.restore();
+    this.visualRenderer.drawHealthBar(ctx, x, y, w, h, ratio);
   }
 
   private burst(x: number, y: number, count: number, color: string, speed: number) {

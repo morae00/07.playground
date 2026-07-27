@@ -2,6 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 export const PRODUCTION_BANNED_MARKERS = Object.freeze([
+  'DEV APP',
   '개발자 모드: 모든 Stage 접근',
   'Cheat Code',
   '개발 도구',

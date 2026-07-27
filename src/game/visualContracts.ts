@@ -1,13 +1,15 @@
+import { CHAPTER_ART } from './render/visualRegistry.ts';
+
 export type ChapterMotif = 'orthogonal' | 'radial' | 'flow' | 'clock' | 'eclipse';
 export type TelegraphPhase = 'preview' | 'imminent' | 'active';
 export type ImpactTier = 'light' | 'heavy' | 'critical';
 
 export const CHAPTER_VISUALS: Record<number, { motif: ChapterMotif; accent: string; label: string }> = {
-  1: { motif: 'orthogonal', accent: '#6d6d68', label: '먹선 골목' },
-  2: { motif: 'radial', accent: '#54545d', label: '철문 예배당' },
-  3: { motif: 'flow', accent: '#477783', label: '무채 운하' },
-  4: { motif: 'clock', accent: '#7a6745', label: '시계 무덤' },
-  5: { motif: 'eclipse', accent: '#493d58', label: '일식 관문' },
+  1: { motif: 'orthogonal', accent: CHAPTER_ART[1].accent, label: CHAPTER_ART[1].label },
+  2: { motif: 'radial', accent: CHAPTER_ART[2].accent, label: CHAPTER_ART[2].label },
+  3: { motif: 'flow', accent: CHAPTER_ART[3].accent, label: CHAPTER_ART[3].label },
+  4: { motif: 'clock', accent: CHAPTER_ART[4].accent, label: CHAPTER_ART[4].label },
+  5: { motif: 'eclipse', accent: CHAPTER_ART[5].accent, label: CHAPTER_ART[5].label },
 };
 
 function finiteOr(value: number, fallback: number) {

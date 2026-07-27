@@ -16,7 +16,7 @@ const viewportCatalog = [
   { name: '768x1024', width: 768, height: 1024 },
   { name: '1440x900', width: 1440, height: 900 },
 ];
-const stateNames = ['menu', 'playing', 'paused', 'draft', 'settlement', 'boss'];
+const stateNames = ['menu', 'infinite-menu', 'infinite-playing', 'playing', 'paused', 'draft', 'settlement', 'boss'];
 
 function selectValues(value, catalog, label) {
   if (!value) return catalog;
@@ -241,7 +241,7 @@ async function captureEvidence(page, viewport, dpr, motion, state) {
   if (layout.reducedMotion !== (motion === 'reduce')) failures.push(`reduced-motion media mismatch: ${layout.reducedMotion}`);
 
   let canvas = null;
-  if (state !== 'menu') {
+  if (state !== 'menu' && state !== 'infinite-menu') {
     canvas = await inspectCanvas(page);
     if (!canvas || canvas.colorBuckets < 3 || canvas.luminanceRange < 20 || canvas.inkRatio < 0.002) {
       failures.push(`canvas nonblank gate failed: ${JSON.stringify(canvas)}`);
@@ -290,6 +290,21 @@ async function runScenario(page, viewport, dpr, motion) {
   await settle(page, 120);
   await unique(page.getByRole('heading', { name: '흑백 타격 생존전' }), 'menu heading');
   await captureEvidence(page, viewport, dpr, motion, 'menu');
+
+  await (await unique(page.getByRole('tab', { name: '무한 경쟁' }), 'infinite menu tab')).click();
+  await settle(page, 40);
+  await unique(page.getByRole('heading', { name: '무한 경쟁' }), 'infinite heading');
+  await captureEvidence(page, viewport, dpr, motion, 'infinite-menu');
+  await (await unique(page.getByRole('button', { name: '무한 모드 시작' }), 'infinite start')).click();
+  await settle(page, 180);
+  await unique(page.getByRole('img', { name: '흑백 타격 생존전 플레이 영역' }), 'infinite game canvas');
+  await captureEvidence(page, viewport, dpr, motion, 'infinite-playing');
+  await page.keyboard.press('p');
+  await settle(page, 40);
+  await (await unique(page.getByRole('button', { name: 'Stage 메뉴' }), 'return to Stage menu')).click();
+  await settle(page, 80);
+  await (await unique(page.getByRole('tab', { name: 'Stage 선택' }), 'Stage menu tab')).click();
+  await settle(page, 40);
 
   await openDeveloperMode(page);
   await (await unique(page.getByRole('button', { name: 'Ch.1 / St.1 시작' }), 'Stage 1 start')).click();

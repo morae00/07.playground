@@ -258,6 +258,22 @@ button:disabled {
   color: #4a4a47;
 }
 
+.recordState {
+  min-height: 12px;
+  margin-top: 4px;
+  border: 1px solid var(--ink);
+  padding: 2px 6px;
+  background: var(--paper-raised);
+  color: var(--ink);
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.recordState.practice {
+  border-color: var(--alert);
+  color: #9d1f14;
+}
+
 .bossStrip {
   width: min(420px, 100%);
   margin: 2px auto 0;
@@ -297,6 +313,81 @@ button:disabled {
   padding: 3px 7px;
   color: #111;
   background: #efefeb;
+  font-weight: 800;
+}
+
+.effectRack {
+  position: absolute;
+  z-index: 4;
+  left: 12px;
+  bottom: 14px;
+  width: min(520px, calc(100vw - 24px));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.effectItem {
+  min-width: 118px;
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  border: 2px solid #111;
+  padding: 5px 8px 5px 5px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 3px 3px 0 rgba(17, 17, 15, 0.88);
+}
+
+.effectItem.buff {
+  border-left: 5px solid #168a72;
+}
+
+.effectItem.debuff {
+  border-left: 5px solid #e84131;
+}
+
+.effectMark {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #111;
+  background: #e4f5ee;
+  color: #0a6554;
+  font-size: 16px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.effectItem.debuff .effectMark {
+  background: #ffe5df;
+  color: #a72418;
+}
+
+.effectCopy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+
+.effectCopy b {
+  overflow: hidden;
+  color: #111;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.effectCopy small {
+  margin-top: 3px;
+  color: #555550;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
   font-weight: 800;
 }
 
@@ -614,6 +705,15 @@ h2 {
   font-variant-numeric: tabular-nums;
 }
 
+.developerBuildBadge {
+  margin-left: 6px;
+  padding: 2px 6px;
+  color: #fff;
+  background: #b42318;
+  font-size: 10px;
+  font-weight: 900;
+}
+
 .titleBlock h1 {
   margin-bottom: 0;
   font-size: clamp(36px, 6vw, 78px);
@@ -654,7 +754,7 @@ h2 {
 
 .menuTabs {
   display: grid;
-  grid-template-columns: repeat(2, minmax(140px, 220px));
+  grid-template-columns: repeat(3, minmax(140px, 220px));
   gap: 6px;
   margin-top: 16px;
   border-bottom: 2px solid var(--ink);
@@ -684,9 +784,195 @@ h2 {
 }
 
 .stageColumn,
+.infiniteColumn,
 .upgradeColumn,
 .menuSection {
   min-width: 0;
+}
+
+.infiniteHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 16px;
+  border-bottom: 3px solid var(--ink);
+}
+
+.infiniteHeader h2,
+.leaderboardHead h2 {
+  margin: 0;
+  font-size: clamp(34px, 5vw, 62px);
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+.infiniteModeFacts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  border: 2px solid var(--ink);
+  background: var(--paper-raised);
+}
+
+.infiniteModeFacts div {
+  min-height: 64px;
+  padding: 9px 11px;
+  border-right: 1px solid var(--ink);
+}
+
+.infiniteModeFacts div:last-child {
+  border-right: 0;
+}
+
+.infiniteModeFacts span,
+.infiniteControls label > span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.infiniteModeFacts b {
+  display: block;
+  font-size: 13px;
+}
+
+.infiniteControls {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) minmax(190px, auto);
+  gap: 10px;
+  align-items: end;
+  padding: 16px 0;
+  border-bottom: 2px solid var(--ink);
+}
+
+.infiniteControls label {
+  min-width: 0;
+}
+
+.infiniteControls input {
+  width: 100%;
+  min-height: 42px;
+  border: 2px solid var(--ink);
+  padding: 7px 9px;
+  color: var(--ink);
+  background: var(--paper-raised);
+  font-weight: 800;
+}
+
+.infiniteControls .launch {
+  min-height: 42px;
+}
+
+.recordWarning,
+.leaderboardStatus {
+  margin-top: 10px;
+  border-left: 5px solid var(--alert);
+  padding: 8px 10px;
+  color: #811a12;
+  background: #fff2ef;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.leaderboardStatus {
+  border-color: var(--player-keyline);
+  color: var(--ink);
+  background: #eef5ff;
+}
+
+.leaderboardSection {
+  margin-top: 20px;
+}
+
+.leaderboardHead {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.leaderboardHead h2 {
+  font-size: clamp(30px, 4vw, 48px);
+}
+
+.leaderboardHead > b {
+  border: 2px solid var(--ink);
+  padding: 7px 10px;
+  background: var(--paper-raised);
+}
+
+.leaderboardTableWrap {
+  overflow-x: auto;
+  border: 2px solid var(--ink);
+  background: var(--paper-raised);
+}
+
+.leaderboardTable {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.leaderboardTable th,
+.leaderboardTable td {
+  height: 48px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 7px 10px;
+  text-align: left;
+}
+
+.leaderboardTable th {
+  height: 34px;
+  color: var(--paper);
+  background: var(--ink);
+  font-size: 10px;
+}
+
+.leaderboardTable tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.leaderboardTable td:first-child,
+.leaderboardTable th:first-child {
+  width: 68px;
+  text-align: center;
+}
+
+.leaderboardTable td:nth-child(3) b {
+  font-size: 18px;
+}
+
+.leaderboardTable td strong,
+.leaderboardTable td small {
+  display: block;
+}
+
+.leaderboardTable td small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.seedChallenge {
+  min-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboardEmpty {
+  min-height: 140px;
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--line);
+  color: var(--muted);
+  background: var(--paper-raised);
+  font-weight: 800;
 }
 
 .stageList {
@@ -1096,6 +1382,29 @@ h2 {
   font-size: 24px;
 }
 
+.infiniteResultGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.infiniteResultGrid .scoreResult {
+  grid-column: span 2;
+  color: var(--paper);
+  background: var(--ink);
+}
+
+.infiniteResultGrid .scoreResult span {
+  color: var(--graphite);
+}
+
+.infiniteResultGrid .scoreResult b {
+  font-size: clamp(28px, 5vw, 46px);
+}
+
+.recordRejected {
+  border-color: var(--alert);
+  color: #811a12;
+}
+
 .soonStrip {
   margin-top: 14px;
   border: 3px double #111;
@@ -1152,6 +1461,23 @@ h2 {
 
   .statGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .infiniteHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .infiniteModeFacts {
+    width: 100%;
+  }
+
+  .infiniteControls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .infiniteControls .launch {
+    grid-column: 1 / -1;
   }
 }
 
@@ -1224,6 +1550,28 @@ h2 {
     max-height: min(48dvh, 360px);
   }
 
+  .effectRack {
+    left: max(8px, env(safe-area-inset-left));
+    right: max(8px, env(safe-area-inset-right));
+    bottom: max(8px, env(safe-area-inset-bottom));
+    width: auto;
+    gap: 4px;
+  }
+
+  .effectItem {
+    min-width: 104px;
+    min-height: 38px;
+    grid-template-columns: 24px minmax(0, 1fr);
+    padding: 4px 6px 4px 4px;
+    box-shadow: 2px 2px 0 rgba(17, 17, 15, 0.82);
+  }
+
+  .effectMark {
+    width: 22px;
+    height: 22px;
+    font-size: 13px;
+  }
+
   .stageList {
     grid-template-columns: none;
     grid-auto-flow: column;
@@ -1262,6 +1610,33 @@ h2 {
     flex-direction: column;
   }
 
+  .menuTabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .menuTab {
+    padding: 6px 4px;
+    font-size: 12px;
+  }
+
+  .infiniteModeFacts,
+  .infiniteControls {
+    grid-template-columns: 1fr;
+  }
+
+  .infiniteModeFacts div {
+    border-right: 0;
+    border-bottom: 1px solid var(--ink);
+  }
+
+  .infiniteModeFacts div:last-child {
+    border-bottom: 0;
+  }
+
+  .infiniteControls .launch {
+    grid-column: auto;
+  }
+
   .wallet {
     width: 100%;
   }
@@ -1272,6 +1647,10 @@ h2 {
   .settlementGrid,
   .draftGrid {
     grid-template-columns: 1fr;
+  }
+
+  .infiniteResultGrid .scoreResult {
+    grid-column: auto;
   }
 
   .coreStats,

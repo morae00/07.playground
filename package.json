@@ -14,7 +14,9 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build && npm run verify:production && npm run verify:bundle",
+    "build:developer": "tsc -b && vite build --mode developer --outDir dist-developer && npm run verify:developer",
     "verify:production": "node scripts/verify-production-bundle.mjs",
+    "verify:developer": "node scripts/verify-developer-bundle.mjs",
     "verify:bundle": "node scripts/check-bundle-budget.mjs",
     "test": "npm run test:unit && npm run test:security && npm run test:release && npm run test:engine",
     "test:unit": "node --test src/game/*.test.ts src/game/render/*.test.ts src/platform/*.test.ts",
@@ -31,12 +33,17 @@
     "test:visual": "node scripts/visual-gate.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "electron": "npm run build && electron .",
+    "electron:developer": "npm run build:developer && BLACKLINE_DEVELOPER_BUILD=1 electron .",
     "build:icon": "CLANG_MODULE_CACHE_PATH=/tmp/blackline-clang-cache SWIFT_MODULECACHE_PATH=/tmp/blackline-swift-cache swift scripts/generate-icon.swift build/icon.png",
+    "build:icon:icns": "node scripts/create-macos-icon.mjs",
     "clean:release": "node -e \"require('node:fs').rmSync('release',{recursive:true,force:true,maxRetries:5,retryDelay:200});\"",
+    "clean:developer": "node -e \"for (const path of ['dist-developer','release-developer']) require('node:fs').rmSync(path,{recursive:true,force:true,maxRetries:5,retryDelay:200});\"",
+    "sign:mac:developer": "codesign --force --deep --sign - --timestamp=none \"release-developer/mac-arm64/Blackline Survivor Dev.app\" && codesign --verify --deep --strict --verbose=2 \"release-developer/mac-arm64/Blackline Survivor Dev.app\"",
     "package:mac": "npm run clean:release && npm run build && electron-builder --mac dir --arm64 --x64",
     "package:mac:arm64": "npm run build && electron-builder --mac dir --arm64",
     "package:mac:x64": "npm run build && electron-builder --mac dir --x64",
     "package:mac:release": "npm run clean:release && npm run build && electron-builder --mac dmg zip --arm64 --x64",
+    "package:mac:developer": "npm run clean:developer && npm run build:developer && npm run build:icon:icns && ELECTRON_BUILDER_CACHE=/tmp/blackline-electron-builder-cache electron-builder --config electron-builder.developer.cjs --mac dir --arm64 && npm run sign:mac:developer",
     "verify:mac:release": "node scripts/verify-macos-release.mjs",
     "verify:electron:fuses": "node scripts/verify-electron-fuses.mjs",
     "release:evidence": "node scripts/create-release-evidence.mjs"
@@ -95,7 +102,7 @@
       "enableNodeCliInspectArguments": false,
       "enableEmbeddedAsarIntegrityValidation": true,
       "onlyLoadAppFromAsar": true,
-      "loadBrowserProcessSpecificV8Snapshot": true,
+      "loadBrowserProcessSpecificV8Snapshot": false,
       "grantFileProtocolExtraPrivileges": true
     },
     "npmRebuild": false

@@ -1,4 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { DEVELOPER_UI_AVAILABLE, DEVELOPER_UI_DEFAULT_ENABLED } from './platform/developerAccess';
+import {
+  addInfiniteScore,
+  loadInfiniteLeaderboard,
+  normalizeInfinitePlayerName,
+  saveInfinitePlayerName,
+  type InfiniteScoreEntry,
+} from './platform/infiniteLeaderboard';
 import {
   createDefaultMeta,
   loadGameSave,
@@ -41,7 +49,6 @@ import {
 
 export { GameEngine } from './game/GameEngine';
 
-const DEVELOPMENT_UI = import.meta.env?.DEV === true;
 const APP_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev';
 
 function StatGrid({ stats }: { stats: StatBlock }) {
@@ -82,13 +89,14 @@ function App() {
   const runPausedRef = useRef(false);
   const phaseRef = useRef<'menu' | 'playing' | 'draft' | 'roundClear' | 'gameOver'>('menu');
   const [initialSave] = useState(() => loadGameSave(window.localStorage));
+  const [initialInfiniteLeaderboard] = useState(() => loadInfiniteLeaderboard(window.localStorage));
   const [meta, setMeta] = useState<MetaState>(() => initialSave.data.meta);
   const [options, setOptions] = useState<GameOptions>(() => initialSave.data.options);
   const [phase, setPhase] = useState<'menu' | 'playing' | 'draft' | 'roundClear' | 'gameOver'>('menu');
   const [selectedChapterId, setSelectedChapterId] = useState(1);
   const [selectedStageNo, setSelectedStageNo] = useState(1);
-  const [developerMode, setDeveloperMode] = useState(false);
-  const [menuView, setMenuView] = useState<'play' | 'growth'>('play');
+  const [developerMode, setDeveloperMode] = useState(DEVELOPER_UI_DEFAULT_ENABLED);
+  const [menuView, setMenuView] = useState<'play' | 'infinite' | 'growth'>('play');
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState<'skills' | 'upgrades' | 'options' | 'cheats'>('skills');
   const [cheatCode, setCheatCode] = useState('');
@@ -99,8 +107,14 @@ function App() {
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [runPaused, setRunPaused] = useState(false);
   const [seedCopyStatus, setSeedCopyStatus] = useState('');
-  const developerAccess = DEVELOPMENT_UI && developerMode;
+  const [infiniteEntries, setInfiniteEntries] = useState<InfiniteScoreEntry[]>(() => initialInfiniteLeaderboard.entries);
+  const [infinitePlayerName, setInfinitePlayerName] = useState(() => initialInfiniteLeaderboard.playerName);
+  const [infiniteSeed, setInfiniteSeed] = useState('');
+  const [leaderboardStatus, setLeaderboardStatus] = useState('');
+  const infiniteEntriesRef = useRef(infiniteEntries);
+  const developerAccess = DEVELOPER_UI_AVAILABLE && developerMode;
   phaseRef.current = phase;
+  infiniteEntriesRef.current = infiniteEntries;
 
   useEffect(() => {
     if (initialSave.writable) saveGameSave(window.localStorage, { meta, options });
@@ -190,6 +204,32 @@ function App() {
     });
   }, []);
 
+  const recordInfiniteSettlement = useCallback((result: Settlement) => {
+    if (result.runMode !== 'infinite') return;
+    if (!result.scoreEligible) {
+      setLeaderboardStatus('치트 또는 개발자 모드 사용으로 경쟁 기록에서 제외되었습니다.');
+      return;
+    }
+    const saved = addInfiniteScore(
+      window.localStorage,
+      infinitePlayerName,
+      infiniteEntriesRef.current,
+      {
+        score: result.score,
+        survivedSeconds: result.survivedSeconds,
+        kills: result.kills,
+        bosses: result.bossKills,
+        seed: result.seed,
+      },
+    );
+    infiniteEntriesRef.current = saved.entries;
+    setInfiniteEntries(saved.entries);
+    const ranked = saved.entries.some((entry) => entry.id === saved.entry.id);
+    setLeaderboardStatus(saved.writable
+      ? ranked ? 'LOCAL TOP 10에 기록되었습니다.' : '기록을 저장했지만 TOP 10에는 들지 못했습니다.'
+      : '브라우저 저장소를 사용할 수 없어 기록을 저장하지 못했습니다.');
+  }, [infinitePlayerName]);
+
   const callbacks = useMemo(
     () => ({
       onSnapshot: setSnapshot,
@@ -211,12 +251,14 @@ function App() {
         runPausedRef.current = false;
         setRunPaused(false);
         setSettlement(result);
+        if (result.runMode === 'infinite') setInfiniteSeed(String(result.seed));
         grantSettlement(result, false);
+        recordInfiniteSettlement(result);
         setPhase('gameOver');
       },
       onPauseIntent: () => toggleManualPause(),
     }),
-    [developerAccess, grantSettlement, toggleManualPause],
+    [developerAccess, grantSettlement, recordInfiniteSettlement, toggleManualPause],
   );
 
   const visibleStats = useMemo(() => buildStats(meta, makeRunUpgrades(), {}), [meta]);
@@ -227,8 +269,7 @@ function App() {
   );
   const selectedStageLocked = !developerAccess && !isStageUnlocked(meta, selectedChapter.id, selectedStage.id);
 
-  const startRun = useCallback(() => {
-    if (selectedStageLocked) return;
+  const beginRun = useCallback((launch: (engine: GameEngine) => void) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     engineRef.current?.dispose();
@@ -241,10 +282,28 @@ function App() {
     runPausedRef.current = false;
     setRunPaused(false);
     setSeedCopyStatus('');
+    setLeaderboardStatus('');
     setCheatMessage('');
     setPhase('playing');
-    engine.startRun(selectedChapter.id, selectedStage.id);
-  }, [callbacks, meta, options, selectedChapter.id, selectedStage.id, selectedStageLocked]);
+    launch(engine);
+  }, [callbacks, meta, options]);
+
+  const startRun = useCallback(() => {
+    if (selectedStageLocked) return;
+    beginRun((engine) => engine.startRun(selectedChapter.id, selectedStage.id));
+  }, [beginRun, selectedChapter.id, selectedStage.id, selectedStageLocked]);
+
+  const startInfiniteRun = useCallback(() => {
+    const normalizedName = normalizeInfinitePlayerName(infinitePlayerName);
+    setInfinitePlayerName(normalizedName);
+    saveInfinitePlayerName(window.localStorage, normalizedName, infiniteEntriesRef.current);
+    const seedText = infiniteSeed.trim();
+    const parsedSeed = seedText && /^\d+$/.test(seedText) ? Number(seedText) : Number.NaN;
+    const seed = Number.isSafeInteger(parsedSeed) && parsedSeed >= 0 && parsedSeed <= 0xffff_ffff
+      ? parsedSeed >>> 0
+      : undefined;
+    beginRun((engine) => engine.startInfiniteRun(seed, !developerAccess));
+  }, [beginRun, developerAccess, infinitePlayerName, infiniteSeed]);
 
   const buyMetaUpgrade = (id: MetaUpgradeId) => {
     setMeta((prev) => {
@@ -336,10 +395,28 @@ function App() {
     }
   };
 
+  const copyInfiniteResult = async () => {
+    if (!settlement || settlement.runMode !== 'infinite') return;
+    const summary = [
+      'BLACKLINE SURVIVOR / INFINITE',
+      `SCORE ${settlement.score}`,
+      `TIME ${formatClock(settlement.survivedSeconds)}`,
+      `BOSS ${settlement.bossKills} / KILLS ${settlement.kills}`,
+      `SEED ${settlement.seed}`,
+    ].join('\n');
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+      await navigator.clipboard.writeText(summary);
+      setSeedCopyStatus('결과와 Challenge Seed를 복사했습니다.');
+    } catch {
+      setSeedCopyStatus(summary.replace(/\n/g, ' / '));
+    }
+  };
+
   const handleMenuTabKey = (event: React.KeyboardEvent<HTMLButtonElement>) => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
-    const next = nextRovingId(['play', 'growth'] as const, menuView, event.key as RovingKey);
+    const next = nextRovingId(['play', 'infinite', 'growth'] as const, menuView, event.key as RovingKey);
     setMenuView(next);
     requestAnimationFrame(() => document.getElementById(`menu-tab-${next}`)?.focus());
   };
@@ -365,10 +442,11 @@ function App() {
   };
 
   const applyCheat = () => {
-    if (!DEVELOPMENT_UI) return;
+    if (!DEVELOPER_UI_AVAILABLE) return;
     const code = cheatCode.trim().toUpperCase();
     if (!code) return;
     setCheatCode('');
+    engineRef.current?.invalidateInfiniteScore();
 
     if (code === 'GOLD999' || code === 'GOLD') {
       setMeta((prev) => ({ ...prev, gold: prev.gold + 9999 }));
@@ -409,8 +487,10 @@ function App() {
       </canvas>
       {phase === 'playing' && snapshot && (
         <p className="srOnly" id="game-state-summary">
-          Chapter {snapshot.chapter}, Stage {snapshot.stage}. 체력 {Math.ceil(snapshot.hp)} / {Math.ceil(snapshot.maxHp)}.
-          남은 시간 {formatClock(snapshot.timeLeft)}. 적 {snapshot.enemyCount}명. WASD, 방향키, 포인터 또는 게임패드로 이동합니다.
+          {snapshot.runMode === 'infinite'
+            ? `무한 모드. 경과 시간 ${formatClock(snapshot.elapsed)}. 점수 ${snapshot.score}. 보스 처치 ${snapshot.bossKills}.`
+            : `Chapter ${snapshot.chapter}, Stage ${snapshot.stage}. 남은 시간 ${formatClock(snapshot.timeLeft)}.`}
+          체력 {Math.ceil(snapshot.hp)} / {Math.ceil(snapshot.maxHp)}. 적 {snapshot.enemyCount}명. WASD, 방향키, 포인터 또는 게임패드로 이동합니다.
           P, Escape 또는 게임패드 Start로 일시정지합니다. {runPaused ? '현재 일시정지 상태입니다.' : ''}
         </p>
       )}
@@ -419,8 +499,14 @@ function App() {
         <div className={sidePanelOpen ? 'gameHud panelOpen' : 'gameHud panelClosed'}>
           <div className="hudLeft">
             <div className="roundBadge">
-              <strong>Ch.{snapshot.chapter} / St.{snapshot.stage}</strong>
-              <span>{snapshot.stageKind === 'normal' ? 'Objective' : snapshot.stageKind === 'midBoss' ? 'Mid Boss' : 'Boss'}</span>
+              <strong>{snapshot.runMode === 'infinite' ? 'INFINITE' : `Ch.${snapshot.chapter} / St.${snapshot.stage}`}</strong>
+              <span>{snapshot.runMode === 'infinite'
+                ? `DANGER ${snapshot.dangerRank}`
+                : snapshot.stageKind === 'normal'
+                  ? 'Objective'
+                  : snapshot.stageKind === 'midBoss'
+                    ? 'Mid Boss'
+                    : 'Boss'}</span>
             </div>
             <div className="barGroup">
               <div className="barLabel">
@@ -432,9 +518,22 @@ function App() {
             <div className="barGroup narrow">
               <div className="barLabel">
                 <span>{snapshot.objective}</span>
-                <b>{snapshot.objectiveProgress} / {snapshot.objectiveTarget}</b>
+                <b>{snapshot.runMode === 'infinite'
+                  ? `${snapshot.bossKills} Boss`
+                  : snapshot.stageKind === 'normal'
+                    ? `${formatClock(snapshot.objectiveProgress)} 생존`
+                    : `${snapshot.objectiveProgress} / ${snapshot.objectiveTarget}`}</b>
               </div>
-              <ProgressBar label="Stage 목표" value={snapshot.objectiveProgress} max={snapshot.objectiveTarget} className="objectiveBar" valueText={`${snapshot.objectiveProgress} / ${snapshot.objectiveTarget}`} />
+              {snapshot.runMode === 'campaign' && <ProgressBar
+                label={snapshot.stageKind === 'normal' ? '생존 진행 시간' : '보스 처치 목표'}
+                value={snapshot.objectiveProgress}
+                max={snapshot.objectiveTarget}
+                className="objectiveBar"
+                valueText={snapshot.stageKind === 'normal'
+                  ? `${formatClock(snapshot.objectiveProgress)} / ${formatClock(snapshot.objectiveTarget)}`
+                  : `${snapshot.objectiveProgress} / ${snapshot.objectiveTarget}`}
+              />}
+              {snapshot.runMode === 'infinite' && <div className={snapshot.scoreEligible ? 'recordState eligible' : 'recordState practice'}>{snapshot.scoreEligible ? 'COMPETITIVE RECORD' : 'PRACTICE / NO RECORD'}</div>}
               <div className="barLabel subXp">
                 <span>LV {snapshot.level}</span>
                 <b>{Math.floor(snapshot.xp)} / {snapshot.nextXp}</b>
@@ -443,8 +542,12 @@ function App() {
             </div>
           </div>
           <div className="hudCenter">
-            <div className="timer">{formatClock(snapshot.timeLeft)}</div>
-            <div className="timerSub">2배속 기준 {formatClock(snapshot.duration / 2)}</div>
+            <div className="timer">{formatClock(snapshot.runMode === 'infinite' ? snapshot.elapsed : snapshot.timeLeft)}</div>
+            <div className="timerSub">{snapshot.runMode === 'infinite'
+              ? `SCORE ${snapshot.score.toLocaleString('ko-KR')} / DANGER ${snapshot.dangerRank}`
+              : snapshot.stageKind === 'normal'
+                ? 'SURVIVE UNTIL ZERO'
+                : 'BOSS ENRAGES AT ZERO'}</div>
             {snapshot.bossName && (
               <div className="bossStrip">
                 <span>{snapshot.bossName}</span>
@@ -461,10 +564,25 @@ function App() {
             </button>
             <button className="ghost small iconButton" onClick={toggleManualPause} aria-pressed={runPaused} aria-label={runPaused ? '게임 계속하기' : '게임 일시정지'} title="일시정지 (P / Esc)"><span aria-hidden="true">{runPaused ? '▶' : 'Ⅱ'}</span></button>
             <div className="metricLine"><span>코인</span><b>{snapshot.coins}</b></div>
-            <div className="metricLine"><span>킬</span><b>{snapshot.kills}</b></div>
+            <div className="metricLine"><span>{snapshot.runMode === 'infinite' ? '보스' : '킬'}</span><b>{snapshot.runMode === 'infinite' ? snapshot.bossKills : snapshot.kills}</b></div>
             <div className="metricLine"><span>적</span><b>{snapshot.enemyCount}</b></div>
-            {snapshot.cc && <div className="ccLine" role="status" aria-live="polite" aria-atomic="true">{snapshot.cc}</div>}
           </div>
+        </div>
+      )}
+
+      {phase !== 'menu' && snapshot && snapshot.activeEffects.length > 0 && (
+        <div className="effectRack" role="status" aria-live="polite" aria-label="현재 버프와 디버프">
+          {snapshot.activeEffects.map((effect) => (
+            <div className={`effectItem ${effect.kind}`} key={effect.id}>
+              <span className="effectMark" aria-hidden="true">{effect.kind === 'buff' ? '+' : '!'}</span>
+              <span className="effectCopy">
+                <b>{effect.label}</b>
+                <small>{effect.value ?? (effect.remaining !== undefined
+                  ? `${effect.remaining < 10 ? effect.remaining.toFixed(1) : Math.ceil(effect.remaining)}s`
+                  : 'ACTIVE')}</small>
+              </span>
+            </div>
+          ))}
         </div>
       )}
 
@@ -589,7 +707,10 @@ function App() {
         <main className="menuLayer">
           <section className="titleBlock">
             <div>
-              <p className="eyebrow">BLACKLINE SURVIVOR <span className="appVersion">v{APP_VERSION}</span></p>
+              <p className="eyebrow">
+                BLACKLINE SURVIVOR <span className="appVersion">v{APP_VERSION}</span>
+                {DEVELOPER_UI_DEFAULT_ENABLED && <span className="developerBuildBadge">DEV APP</span>}
+              </p>
               <h1>흑백 타격 생존전</h1>
             </div>
             <div className="wallet">
@@ -606,6 +727,7 @@ function App() {
 
           <nav className="menuTabs" role="tablist" aria-label="메뉴 보기">
             <button id="menu-tab-play" className={menuView === 'play' ? 'menuTab active' : 'menuTab'} role="tab" aria-selected={menuView === 'play'} aria-controls="menu-panel-play" tabIndex={menuView === 'play' ? 0 : -1} onKeyDown={handleMenuTabKey} onClick={() => setMenuView('play')}>Stage 선택</button>
+            <button id="menu-tab-infinite" className={menuView === 'infinite' ? 'menuTab active' : 'menuTab'} role="tab" aria-selected={menuView === 'infinite'} aria-controls="menu-panel-infinite" tabIndex={menuView === 'infinite' ? 0 : -1} onKeyDown={handleMenuTabKey} onClick={() => setMenuView('infinite')}>무한 경쟁</button>
             <button id="menu-tab-growth" className={menuView === 'growth' ? 'menuTab active' : 'menuTab'} role="tab" aria-selected={menuView === 'growth'} aria-controls="menu-panel-growth" tabIndex={menuView === 'growth' ? 0 : -1} onKeyDown={handleMenuTabKey} onClick={() => setMenuView('growth')}>영구 성장</button>
           </nav>
 
@@ -650,7 +772,7 @@ function App() {
                   <span className="srOnly" id="chapter-6-lock-reason">현재 버전에서는 Chapter 6을 선택할 수 없습니다</span>
                 </button>
               </div>
-              {DEVELOPMENT_UI && <label className="devToggle">
+              {DEVELOPER_UI_AVAILABLE && <label className="devToggle">
                 <input type="checkbox" checked={developerMode} onChange={(event) => { setDeveloperMode(event.target.checked); if (!event.target.checked && drawerTab === 'cheats') setDrawerTab('skills'); }} />
                 <span>개발자 모드: 모든 Stage 접근</span>
               </label>}
@@ -699,6 +821,77 @@ function App() {
                 </div>
                 {cheatMessage && <div className="emptyText" role="status" aria-live="polite" aria-atomic="true">{cheatMessage}</div>}
               </div>}
+            </div>
+
+            <div className="infiniteColumn" id="menu-panel-infinite" role="tabpanel" aria-labelledby="menu-tab-infinite" hidden={menuView !== 'infinite'}>
+              <header className="infiniteHeader">
+                <div>
+                  <p className="eyebrow">ENDLESS SCORE ATTACK</p>
+                  <h2>무한 경쟁</h2>
+                </div>
+                <div className="infiniteModeFacts" aria-label="무한 모드 규칙">
+                  <div><span>START</span><b>Stage 5 Mid Boss</b></div>
+                  <div><span>BOSS</span><b>Random Respawn</b></div>
+                  <div><span>LIMIT</span><b>None</b></div>
+                </div>
+              </header>
+
+              <div className="infiniteControls">
+                <label>
+                  <span>플레이어 이름</span>
+                  <input
+                    value={infinitePlayerName}
+                    maxLength={16}
+                    autoComplete="nickname"
+                    onChange={(event) => setInfinitePlayerName(event.target.value)}
+                    onBlur={() => saveInfinitePlayerName(window.localStorage, infinitePlayerName, infiniteEntriesRef.current)}
+                  />
+                </label>
+                <label>
+                  <span>Challenge Seed</span>
+                  <input
+                    value={infiniteSeed}
+                    inputMode="numeric"
+                    maxLength={10}
+                    placeholder="비우면 랜덤"
+                    onChange={(event) => setInfiniteSeed(event.target.value.replace(/\D/g, '').slice(0, 10))}
+                  />
+                </label>
+                <button className="primary launch" type="button" onClick={startInfiniteRun}>무한 모드 시작</button>
+              </div>
+              {developerAccess && <div className="recordWarning">개발자 모드 Run은 경쟁 기록에서 제외됩니다.</div>}
+              {leaderboardStatus && <div className="leaderboardStatus" role="status" aria-live="polite">{leaderboardStatus}</div>}
+
+              <section className="leaderboardSection" aria-labelledby="infinite-ranking-title">
+                <div className="leaderboardHead">
+                  <div>
+                    <p className="eyebrow">LOCAL RECORDS</p>
+                    <h2 id="infinite-ranking-title">TOP 10</h2>
+                  </div>
+                  <b>{infiniteEntries.length} / 10</b>
+                </div>
+                {infiniteEntries.length > 0 ? (
+                  <div className="leaderboardTableWrap">
+                    <table className="leaderboardTable">
+                      <thead>
+                        <tr><th>RANK</th><th>PLAYER</th><th>SCORE</th><th>TIME</th><th>BOSS</th><th>SEED</th></tr>
+                      </thead>
+                      <tbody>
+                        {infiniteEntries.map((entry, index) => (
+                          <tr key={entry.id}>
+                            <td>{String(index + 1).padStart(2, '0')}</td>
+                            <td><strong>{entry.player}</strong><small>{new Date(entry.endedAt).toLocaleDateString('ko-KR')}</small></td>
+                            <td><b>{entry.score.toLocaleString('ko-KR')}</b></td>
+                            <td>{formatClock(entry.survivedSeconds)}</td>
+                            <td>{entry.bosses}</td>
+                            <td><button className="ghost small seedChallenge" type="button" aria-label={`Seed ${entry.seed}로 도전`} onClick={() => setInfiniteSeed(String(entry.seed))}>{entry.seed}</button></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : <div className="leaderboardEmpty">아직 기록이 없습니다.</div>}
+              </section>
             </div>
 
             <div className="upgradeColumn" id="menu-panel-growth" role="tabpanel" aria-labelledby="menu-tab-growth" hidden={menuView !== 'growth'}>
@@ -805,20 +998,34 @@ function App() {
       {(phase === 'roundClear' || phase === 'gameOver') && settlement && (
         <ModalDialog className="settlementBox" labelledBy="settlement-dialog-title" onEscape={toMenu}>
             <div className="modalHead">
-              <p>{phase === 'gameOver' ? 'STAGE MATCH END' : settlement.gameComplete ? 'CHAPTER 5 CLEAR' : `CH.${settlement.chapter} / ST.${settlement.stage}`}</p>
+              <p>{settlement.runMode === 'infinite' ? 'INFINITE RUN END' : phase === 'gameOver' ? 'STAGE MATCH END' : settlement.gameComplete ? 'CHAPTER 5 CLEAR' : `CH.${settlement.chapter} / ST.${settlement.stage}`}</p>
               <h2 id="settlement-dialog-title">{settlement.gameComplete ? '5챕터 돌파' : settlement.title}</h2>
             </div>
-            <div className="settlementGrid">
-              <div><span>처치</span><b>{settlement.kills}</b></div>
-              <div><span>보유 코인</span><b>{settlement.coins}</b></div>
-              <div><span>획득 골드</span><b>{settlement.gold}</b></div>
-              <div><span>외부 XP</span><b>{settlement.xp}</b></div>
-            </div>
+            {settlement.runMode === 'infinite' ? (
+              <div className="settlementGrid infiniteResultGrid">
+                <div className="scoreResult"><span>최종 점수</span><b>{settlement.score.toLocaleString('ko-KR')}</b></div>
+                <div><span>생존 시간</span><b>{formatClock(settlement.survivedSeconds)}</b></div>
+                <div><span>보스 처치</span><b>{settlement.bossKills}</b></div>
+                <div><span>전체 처치</span><b>{settlement.kills}</b></div>
+                <div><span>획득 골드</span><b>{settlement.gold}</b></div>
+                <div><span>외부 XP</span><b>{settlement.xp}</b></div>
+              </div>
+            ) : (
+              <div className="settlementGrid">
+                <div><span>처치</span><b>{settlement.kills}</b></div>
+                <div><span>보유 코인</span><b>{settlement.coins}</b></div>
+                <div><span>획득 골드</span><b>{settlement.gold}</b></div>
+                <div><span>외부 XP</span><b>{settlement.xp}</b></div>
+              </div>
+            )}
+            {settlement.runMode === 'infinite' && <div className={settlement.scoreEligible ? 'soonStrip recordSaved' : 'soonStrip recordRejected'}>{leaderboardStatus || (settlement.scoreEligible ? '경쟁 기록 판정 완료' : 'PRACTICE / 기록 제외')}</div>}
+            {settlement.runMode === 'infinite' && seedCopyStatus && <p className="seedStatus" role="status" aria-live="polite">{seedCopyStatus}</p>}
             {settlement.gameComplete && <div className="soonStrip">Chapter 6 Coming Soon</div>}
             {settlement.cleared && !settlement.gameComplete && <div className="soonStrip">Stage match complete. 다음 Stage는 메뉴에서 선택하세요.</div>}
             <div className="modalActions">
-              <button className="primary" onClick={toMenu}>Stage 선택</button>
-              <button className="ghost" onClick={startRun}>{phase === 'gameOver' ? '재시작' : '같은 Stage 재시작'}</button>
+              <button className="primary" onClick={toMenu}>{settlement.runMode === 'infinite' ? '무한 경쟁' : 'Stage 선택'}</button>
+              <button className="ghost" onClick={settlement.runMode === 'infinite' ? startInfiniteRun : startRun}>{settlement.runMode === 'infinite' ? '다시 도전' : phase === 'gameOver' ? '재시작' : '같은 Stage 재시작'}</button>
+              {settlement.runMode === 'infinite' && <button className="ghost" type="button" onClick={() => void copyInfiniteResult()}>결과 복사</button>}
             </div>
         </ModalDialog>
       )}

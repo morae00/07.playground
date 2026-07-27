@@ -7,7 +7,10 @@ const {
   withContentSecurityPolicy,
 } = require('./security.cjs');
 
-const entryFile = path.join(__dirname, '..', 'dist', 'index.html');
+const developerBuild = process.env.BLACKLINE_DEVELOPER_BUILD === '1';
+const entryDirectory = developerBuild ? 'dist-developer' : 'dist';
+const entryFile = path.join(__dirname, '..', entryDirectory, 'index.html');
+const windowTitle = developerBuild ? 'Blackline Survivor Dev' : 'Blackline Survivor';
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
 function openExternal(url) {
@@ -22,7 +25,7 @@ function createWindow() {
     minWidth: 1024,
     minHeight: 720,
     backgroundColor: '#f4f4f1',
-    title: 'Blackline Survivor',
+    title: windowTitle,
     autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,

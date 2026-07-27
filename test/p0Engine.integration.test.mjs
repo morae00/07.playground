@@ -116,20 +116,32 @@ const createCanvas = () => {
 function createEngine() {
   const events = [];
   let latestDraft = null;
+  let latestSettlement = null;
+  let latestSnapshot = null;
   const engine = new GameEngine(createCanvas(), defaultMeta(), defaultOptions(), {
-    onSnapshot() {},
+    onSnapshot(snapshot) {
+      latestSnapshot = snapshot;
+    },
     onDraft(draft) {
       latestDraft = draft;
       events.push('draft');
     },
-    onRoundClear() {
+    onRoundClear(settlement) {
+      latestSettlement = settlement;
       events.push('roundClear');
     },
-    onGameOver() {
+    onGameOver(settlement) {
+      latestSettlement = settlement;
       events.push('gameOver');
     },
   });
-  return { engine, events, getDraft: () => latestDraft };
+  return {
+    engine,
+    events,
+    getDraft: () => latestDraft,
+    getSettlement: () => latestSettlement,
+    getSnapshot: () => latestSnapshot,
+  };
 }
 
 function normalize(value) {
@@ -185,6 +197,48 @@ test('actual draft queue emits settlement only after the active draft resolves',
   assert.equal(resolution, 'roundClear');
   assert.deepEqual(events, ['draft', 'roundClear']);
   engine.dispose();
+});
+
+test('campaign normal stages only clear when the survival countdown reaches zero', () => {
+  const { engine, events, getSettlement } = createEngine();
+  try {
+    engine.startRun(1, 1, 78);
+    engine.stageKills = 99_999;
+    engine.timeLeft = 1;
+    engine.resolveRoundState();
+    assert.deepEqual(events, [], 'kill totals must never clear a survival stage');
+
+    engine.timeLeft = 0;
+    engine.resolveRoundState();
+    assert.deepEqual(events, ['roundClear']);
+    assert.equal(getSettlement().cleared, true);
+  } finally {
+    engine.dispose();
+  }
+});
+
+test('campaign boss stages enter a single enrage phase when their countdown expires', () => {
+  const { engine, events } = createEngine();
+  try {
+    engine.startRun(1, 5, 79);
+    const boss = engine.enemies.find((enemy) => enemy.isBoss && !enemy.legacyBoss);
+    assert.ok(boss);
+    const initialDamage = boss.damage;
+    const initialSpeed = boss.speed;
+    engine.timeLeft = 0;
+    engine.resolveRoundState();
+    assert.deepEqual(events, []);
+    assert.equal(engine.bossEnraged, true);
+    assert.equal(boss.damage, initialDamage * 4.5);
+    assert.equal(boss.speed, initialSpeed * 1.35);
+    assert.ok(engine.hazards.some((hazard) => hazard.kind === 'null' && hazard.life === 8));
+
+    const enemyCount = engine.enemies.length;
+    engine.resolveRoundState();
+    assert.equal(engine.enemies.length, enemyCount, 'enrage reinforcements must only spawn once');
+  } finally {
+    engine.dispose();
+  }
 });
 
 test('simultaneous player and boss death emits only game over', () => {
@@ -308,6 +362,45 @@ function combatEnemy(id, x, y, overrides = {}) {
   };
 }
 
+test('player aim tracks the nearest enemy without boss preference', () => {
+  const { engine } = createEngine();
+  try {
+    engine.startRun(1, 1, 80);
+    const nearest = combatEnemy(1_001, engine.player.x + 120, engine.player.y);
+    const fartherBoss = combatEnemy(1_002, engine.player.x + 260, engine.player.y, {
+      tier: 'boss',
+      isBoss: true,
+    });
+    engine.enemies = [fartherBoss, nearest];
+    engine.rebuildEnemyIndex();
+    engine.updatePlayerAim();
+    assert.equal(engine.aimTargetId, nearest.id);
+    assert.equal(engine.playerAimAngle, 0);
+  } finally {
+    engine.dispose();
+  }
+});
+
+test('HUD snapshots expose timed buffs and debuffs as structured effects', () => {
+  const { engine, getSnapshot } = createEngine();
+  try {
+    engine.startRun(1, 1, 81);
+    engine.player.shield = 0.3;
+    engine.player.root = 0.6;
+    engine.player.slow = 0.58;
+    engine.player.silence = 0.4;
+    engine.emitSnapshot(true);
+
+    const effects = getSnapshot().activeEffects;
+    assert.deepEqual(effects.map((effect) => effect.id), ['shield', 'root', 'slow', 'silence']);
+    assert.equal(effects.find((effect) => effect.id === 'shield').kind, 'buff');
+    assert.equal(effects.find((effect) => effect.id === 'root').kind, 'debuff');
+    assert.equal(effects.find((effect) => effect.id === 'slow').value, '-42%');
+  } finally {
+    engine.dispose();
+  }
+});
+
 test('P4 awakened skills retain their visible delayed and returning contracts', () => {
   const { engine } = createEngine();
   try {
@@ -378,6 +471,59 @@ test('P4 Black Sun collapse applies max-health damage and a timed slow', () => {
     assert.ok(enemy.hp <= 954, `expected 4.5% max-health collapse damage, got hp=${enemy.hp}`);
     assert.equal(enemy.slowMultiplier, 0.52);
     assert.equal(enemy.slowTimer, 3.5);
+  } finally {
+    engine.dispose();
+  }
+});
+
+test('infinite mode rewards each random boss and respawns a different boss without a clock limit', () => {
+  const { engine, getDraft } = createEngine();
+  try {
+    engine.startInfiniteRun(0x1f1f2026, true);
+    assert.equal(engine.runMode, 'infinite');
+    assert.equal(engine.duration, 0);
+    assert.equal(engine.timeLeft, 0);
+    const firstBoss = engine.enemies.find((enemy) => enemy.isBoss);
+    assert.ok(firstBoss);
+
+    firstBoss.hp = 0;
+    engine.flushDeadEnemies();
+    assert.equal(engine.infiniteBossKills, 1);
+    assert.ok(engine.infiniteEventScore >= 2_500);
+    const draft = getDraft();
+    assert.equal(draft.reason, 'boss');
+    assert.equal(draft.after, 'resume');
+    assert.equal(engine.completeDraft(draft.cards[0], draft.id), 'resume');
+
+    engine.infiniteBossRespawnTimer = 0;
+    engine.spawnEnemies(1 / 60);
+    const secondBoss = engine.enemies.find((enemy) => enemy.isBoss);
+    assert.ok(secondBoss);
+    assert.notEqual(secondBoss.boss.id, firstBoss.boss.id);
+  } finally {
+    engine.dispose();
+  }
+});
+
+test('infinite normal waves keep ranged enemies sparse and fire a telegraphed projectile', () => {
+  const { engine } = createEngine();
+  try {
+    engine.startInfiniteRun(0x7072026, true);
+    engine.enemies = [];
+    for (let index = 0; index < 114; index += 1) engine.spawnEnemy(1.15);
+    const ranged = engine.enemies.filter((enemy) => enemy.attackStyle === 'ranged');
+    assert.ok(ranged.length > 0, 'seeded wave should contain a ranged enemy');
+    assert.ok(ranged.length <= 2, `initial ranged cap must stay at two, received ${ranged.length}`);
+
+    const shooter = ranged[0];
+    shooter.x = engine.player.x + 320;
+    shooter.y = engine.player.y;
+    shooter.rangedCooldown = 0;
+    engine.enemies = [shooter];
+    engine.updateEnemies(0.01);
+    assert.ok(shooter.rangedTelegraph > 0);
+    engine.updateEnemies(0.5);
+    assert.equal(engine.bossProjectiles.at(-1)?.kind, 'enemy');
   } finally {
     engine.dispose();
   }

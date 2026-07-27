@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const test = require('node:test');
 const packageJson = require('../package.json');
+const developerBuild = require('../electron-builder.developer.cjs');
 const {
   CONTENT_SECURITY_POLICY,
   focusPrimaryWindow,
@@ -51,6 +52,24 @@ test('release metadata exposes isolated arm64 and x64 package paths', () => {
   assert.equal(packageJson.scripts['verify:mac:release'], 'node scripts/verify-macos-release.mjs');
 });
 
+test('developer app uses an isolated identity, renderer, and local output', () => {
+  assert.equal(developerBuild.appId, 'com.blackline.survivor.dev');
+  assert.equal(developerBuild.productName, 'Blackline Survivor Dev');
+  assert.equal(developerBuild.electronDist, 'node_modules/electron/dist');
+  assert.equal(developerBuild.directories.output, 'release-developer');
+  assert.equal(developerBuild.extraMetadata.main, 'electron/main.developer.cjs');
+  assert.equal(developerBuild.extraMetadata.name, 'blackline-survivor-dev');
+  assert.ok(developerBuild.files.includes('dist-developer/**/*'));
+  assert.ok(!developerBuild.files.includes('dist/**/*'));
+  assert.equal(developerBuild.mac.identity, null);
+  assert.equal(developerBuild.mac.notarize, false);
+  assert.equal(developerBuild.mac.icon, 'build/icon.icns');
+  assert.deepEqual(developerBuild.electronFuses, packageJson.build.electronFuses);
+  assert.match(packageJson.scripts['package:mac:developer'], /electron-builder\.developer\.cjs/);
+  assert.match(packageJson.scripts['package:mac:developer'], /sign:mac:developer/);
+  assert.match(packageJson.scripts['sign:mac:developer'], /codesign --force --deep --sign -/);
+});
+
 test('a second instance restores, shows, and focuses the primary window', () => {
   const calls = [];
   const window = {
@@ -73,7 +92,7 @@ test('electron fuses disable Node escape hatches and require the packaged ASAR',
     enableNodeCliInspectArguments: false,
     enableEmbeddedAsarIntegrityValidation: true,
     onlyLoadAppFromAsar: true,
-    loadBrowserProcessSpecificV8Snapshot: true,
+    loadBrowserProcessSpecificV8Snapshot: false,
     grantFileProtocolExtraPrivileges: true,
   });
 });

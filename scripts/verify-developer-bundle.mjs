@@ -1,0 +1,44 @@
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
+
+const REQUIRED_DEVELOPER_MARKERS = Object.freeze([
+  'DEV APP',
+  '개발자 모드: 모든 Stage 접근',
+  'Cheat Code',
+  '개발 도구',
+  'DEV MODE ON',
+  'GOLD999',
+  'GOD ON',
+  'COIN +999',
+  'MAGNET +5',
+  'DRAFT OPEN',
+  'OBJECTIVE CLEARED',
+  'ENDLESS SCORE ATTACK',
+  '무한 모드 시작',
+  'PRACTICE / NO RECORD',
+]);
+
+async function collectText(root) {
+  const contents = [];
+  async function visit(current) {
+    for (const entry of await readdir(current, { withFileTypes: true })) {
+      const target = path.join(current, entry.name);
+      if (entry.isDirectory()) await visit(target);
+      if (entry.isFile() && /\.(?:css|html|js|mjs)$/.test(entry.name)) {
+        contents.push(await readFile(target, 'utf8'));
+      }
+    }
+  }
+  await visit(root);
+  return contents.join('\n');
+}
+
+const distRoot = path.resolve(process.env.DEVELOPER_DIST ?? 'dist-developer');
+const content = await collectText(distRoot);
+const missing = REQUIRED_DEVELOPER_MARKERS.filter((marker) => !content.includes(marker));
+
+if (missing.length > 0) {
+  throw new Error(`Developer bundle is missing required controls:\n${missing.map((marker) => `- ${marker}`).join('\n')}`);
+}
+
+console.log(`Developer bundle passed: ${REQUIRED_DEVELOPER_MARKERS.length} required controls found`);

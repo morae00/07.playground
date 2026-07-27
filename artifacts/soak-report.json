@@ -1,31 +1,31 @@
 {
   "scenario": "Ch5 St10 / 2x / max skills / max meta / auto-draft / silence-neutralized",
   "renderer": "headless no-op Canvas command proxy",
-  "warmupFrameCount": 600,
-  "frameCount": 54000,
-  "expectedFixedSteps": 108000,
-  "wallEquivalentSeconds": 900,
-  "simulationSeconds": 1800,
-  "executionMs": 7210.5,
+  "warmupFrameCount": 60,
+  "frameCount": 600,
+  "expectedFixedSteps": 1200,
+  "wallEquivalentSeconds": 10,
+  "simulationSeconds": 20,
+  "executionMs": 445.5,
   "frameMs": {
-    "p50": 0.127,
-    "p95": 0.14,
-    "p99": 0.389
+    "p50": 0.7,
+    "p95": 1.064,
+    "p99": 1.245
   },
   "highWater": {
-    "enemies": 18,
-    "projectiles": 90,
-    "bossProjectiles": 32,
-    "pickups": 50,
-    "particles": 506,
-    "damageNumbers": 36
+    "enemies": 22,
+    "projectiles": 89,
+    "bossProjectiles": 16,
+    "pickups": 44,
+    "particles": 515,
+    "damageNumbers": 46
   },
   "heap": {
-    "startMiB": 5.66,
-    "endMiB": 5.92,
-    "deltaMiB": 0.26
+    "startMiB": 5.74,
+    "endMiB": 6.42,
+    "deltaMiB": 0.68
   },
-  "drawCommands": 148255065,
+  "drawCommands": 4143676,
   "gates": {
     "p95": true,
     "p99": true,

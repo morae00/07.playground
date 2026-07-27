@@ -1,13 +1,17 @@
 .DS_Store
 node_modules/
 dist/
+dist-developer/
 release/
+release-developer/
 coverage/
 playwright-report/
 test-results/
 tsconfig.tsbuildinfo
 .repo-git/
 *.bundle
+/blackline-*.html
+/build/icon.icns
 
 # Generated verification output. Keep curated reference evidence only.
 artifacts/visual/
