@@ -205,8 +205,8 @@ export type Particle = {
 };
 
 /**
- * A fallen enemy (FX-03): presentation only, with no gameplay id. It falls for CORPSE_FALL_SECONDS, then its ink
- * stain fades for the rest of its life.
+ * A fallen enemy (FX-03): presentation only, with no gameplay id. It bursts or falls for CORPSE_FALL_SECONDS, then
+ * its ink stain dries and fades for the rest of its life.
  */
 export type Corpse = {
   x: number;
@@ -217,6 +217,18 @@ export type Corpse = {
   isBoss: boolean;
   /** 1 falls to the right (away from a player on the left), -1 to the left. */
   fall: 1 | -1;
+  life: number;
+  maxLife: number;
+};
+
+/** The comic hit star at an impact (FX-03, kit PN.vfx.hit): presentation only. */
+export type HitStamp = {
+  x: number;
+  y: number;
+  radius: number;
+  /** Direction the blow travelled, in radians. */
+  angle: number;
+  crit: boolean;
   life: number;
   maxLife: number;
 };

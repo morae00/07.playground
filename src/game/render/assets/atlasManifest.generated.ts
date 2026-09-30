@@ -10,6 +10,14 @@ export const ATLAS_MANIFEST = {
         "assets/atlas/common-0.png"
       ],
       "frames": {
+        "fx/hit-crit/0": [0, 857, 152, 36, 40, 18, 20],
+        "fx/hit-crit/1": [0, 722, 152, 56, 59, 24, 27],
+        "fx/hit-crit/2": [0, 640, 152, 78, 74, 26, 39],
+        "fx/hit-crit/3": [0, 528, 152, 108, 88, 30, 50],
+        "fx/hit/0": [0, 987, 152, 24, 25, 12, 12],
+        "fx/hit/1": [0, 949, 152, 34, 35, 15, 17],
+        "fx/hit/2": [0, 897, 152, 48, 39, 17, 26],
+        "fx/hit/3": [0, 782, 152, 71, 55, 20, 33],
         "hero/hurt/0": [0, 258, 2, 92, 144, 54, 134],
         "hero/hurt/1": [0, 1065, 2, 95, 140, 51, 131],
         "hero/hurt/2": [0, 1164, 2, 97, 140, 48, 131],
@@ -62,34 +70,78 @@ export const ATLAS_MANIFEST = {
         "boss/1/gaoler/phase3-windup-enraged/0": [0, 672, 2, 331, 452, 168, 429.6],
         "boss/1/gaoler/phase3-windup/0": [0, 1007, 2, 315, 444, 160, 421.6],
         "boss/1/gaoler/phase3/0": [0, 1034, 458, 324, 355, 160, 332.6],
-        "enemy/1/charger/hit/0": [0, 1262, 1488, 153, 111, 70, 102.1],
-        "enemy/1/charger/idle/0": [0, 149, 1678, 143, 101, 65, 97.1],
-        "enemy/1/charger/walk/0": [0, 2, 1678, 143, 102, 65, 97.1],
-        "enemy/1/charger/walk/1": [0, 1713, 1488, 144, 103, 65, 99.1],
-        "enemy/1/charger/walk/2": [0, 1419, 1488, 143, 104, 65, 100.1],
-        "enemy/1/charger/walk/3": [0, 296, 1678, 143, 101, 65, 97.1],
-        "enemy/1/charger/walk/4": [0, 1861, 1488, 144, 103, 65, 99.1],
-        "enemy/1/charger/walk/5": [0, 1566, 1488, 143, 104, 65, 100.1],
-        "enemy/1/charger/windup/0": [0, 443, 1678, 148, 96, 74, 89.1],
-        "enemy/1/shooter/hit/0": [0, 595, 1678, 94, 96, 30.4, 89.4],
-        "enemy/1/shooter/idle/0": [0, 797, 1678, 86, 88, 26.4, 85.4],
-        "enemy/1/shooter/walk/0": [0, 887, 1678, 85, 88, 25.4, 85.4],
-        "enemy/1/shooter/walk/1": [0, 976, 1678, 85, 88, 25.4, 85.4],
-        "enemy/1/shooter/windup/0": [0, 693, 1678, 100, 90, 28.4, 87.4],
-        "enemy/1/stalker/hit/0": [0, 1065, 1678, 109, 65, 52, 57.7],
-        "enemy/1/stalker/idle/0": [0, 1610, 1678, 101, 57, 48, 53.7],
-        "enemy/1/stalker/walk/0": [0, 1402, 1678, 100, 59, 48, 55.7],
-        "enemy/1/stalker/walk/1": [0, 1178, 1678, 108, 64, 56, 60.7],
-        "enemy/1/stalker/walk/2": [0, 1506, 1678, 100, 59, 48, 55.7],
-        "enemy/1/stalker/walk/3": [0, 1290, 1678, 108, 64, 56, 60.7],
-        "enemy/1/stalker/windup/0": [0, 1715, 1678, 102, 55, 48, 51.7],
-        "enemy/1/warden/hit/0": [0, 2, 1488, 185, 186, 88, 176.8],
-        "enemy/1/warden/idle/0": [0, 725, 1488, 175, 176, 83, 171.8],
-        "enemy/1/warden/walk/0": [0, 904, 1488, 175, 169, 83, 164.8],
-        "enemy/1/warden/walk/1": [0, 369, 1488, 176, 178, 82, 173.8],
-        "enemy/1/warden/walk/2": [0, 1083, 1488, 175, 169, 83, 164.8],
-        "enemy/1/warden/walk/3": [0, 549, 1488, 172, 178, 83, 173.8],
-        "enemy/1/warden/windup/0": [0, 191, 1488, 174, 185, 88, 180.8]
+        "enemy/1/charger/death/0": [0, 314, 1691, 139, 108, 64.1, 98.7],
+        "enemy/1/charger/death/1": [0, 2, 1691, 151, 118, 71.1, 105.7],
+        "enemy/1/charger/death/2": [0, 1834, 1488, 156, 128, 73.1, 110.7],
+        "enemy/1/charger/death/3": [0, 788, 1907, 135, 50, 62.1, 48.7],
+        "enemy/1/charger/death/4": [0, 1019, 1907, 120, 40, 56.1, 35.7],
+        "enemy/1/charger/death/5": [0, 1143, 1907, 120, 37, 56.1, 32.7],
+        "enemy/1/charger/decal/0": [0, 1267, 1907, 124, 36, 61.1, 32.6],
+        "enemy/1/charger/decal/1": [0, 1395, 1907, 124, 36, 61.1, 32.6],
+        "enemy/1/charger/decal/2": [0, 1523, 1907, 124, 36, 61.1, 32.6],
+        "enemy/1/charger/decal/3": [0, 1651, 1907, 124, 36, 61.1, 32.6],
+        "enemy/1/charger/decal/4": [0, 1779, 1907, 124, 36, 61.1, 32.6],
+        "enemy/1/charger/hit/0": [0, 157, 1691, 153, 111, 70, 102.1],
+        "enemy/1/charger/idle/0": [0, 1194, 1691, 143, 101, 65, 97.1],
+        "enemy/1/charger/walk/0": [0, 1047, 1691, 143, 102, 65, 97.1],
+        "enemy/1/charger/walk/1": [0, 751, 1691, 144, 103, 65, 99.1],
+        "enemy/1/charger/walk/2": [0, 457, 1691, 143, 104, 65, 100.1],
+        "enemy/1/charger/walk/3": [0, 1341, 1691, 143, 101, 65, 97.1],
+        "enemy/1/charger/walk/4": [0, 899, 1691, 144, 103, 65, 99.1],
+        "enemy/1/charger/walk/5": [0, 604, 1691, 143, 104, 65, 100.1],
+        "enemy/1/charger/windup/0": [0, 1590, 1691, 148, 96, 74, 89.1],
+        "enemy/1/shooter/death/0": [0, 1941, 1691, 92, 93, 29.8, 86.6],
+        "enemy/1/shooter/death/1": [0, 1488, 1691, 98, 100, 34.8, 90.6],
+        "enemy/1/shooter/death/2": [0, 1742, 1691, 97, 96, 31.8, 85.6],
+        "enemy/1/shooter/death/3": [0, 927, 1907, 88, 43, 26.8, 41.6],
+        "enemy/1/shooter/death/4": [0, 1907, 1907, 85, 34, 35.8, 30.6],
+        "enemy/1/shooter/death/5": [0, 2, 1970, 83, 31, 34.8, 27.6],
+        "enemy/1/shooter/decal/0": [0, 89, 1970, 87, 30, 38.8, 27.3],
+        "enemy/1/shooter/decal/1": [0, 180, 1970, 87, 30, 38.8, 27.3],
+        "enemy/1/shooter/decal/2": [0, 271, 1970, 87, 30, 38.8, 27.3],
+        "enemy/1/shooter/decal/3": [0, 362, 1970, 87, 30, 38.8, 27.3],
+        "enemy/1/shooter/decal/4": [0, 453, 1970, 87, 30, 38.8, 27.3],
+        "enemy/1/shooter/hit/0": [0, 1843, 1691, 94, 96, 30.4, 89.4],
+        "enemy/1/shooter/idle/0": [0, 106, 1813, 86, 88, 26.4, 85.4],
+        "enemy/1/shooter/walk/0": [0, 196, 1813, 85, 88, 25.4, 85.4],
+        "enemy/1/shooter/walk/1": [0, 285, 1813, 85, 88, 25.4, 85.4],
+        "enemy/1/shooter/windup/0": [0, 2, 1813, 100, 90, 28.4, 87.4],
+        "enemy/1/stalker/death/0": [0, 932, 1813, 101, 67, 48, 59.6],
+        "enemy/1/stalker/death/1": [0, 660, 1813, 111, 75, 55, 63.6],
+        "enemy/1/stalker/death/2": [0, 551, 1813, 105, 76, 51, 64.6],
+        "enemy/1/stalker/death/3": [0, 544, 1970, 95, 30, 46, 28.6],
+        "enemy/1/stalker/death/4": [0, 643, 1970, 83, 25, 39, 21.6],
+        "enemy/1/stalker/death/5": [0, 730, 1970, 83, 23, 39, 19.6],
+        "enemy/1/stalker/decal/0": [0, 817, 1970, 86, 23, 43, 19.7],
+        "enemy/1/stalker/decal/1": [0, 907, 1970, 86, 23, 43, 19.7],
+        "enemy/1/stalker/decal/2": [0, 997, 1970, 86, 23, 43, 19.7],
+        "enemy/1/stalker/decal/3": [0, 1087, 1970, 86, 23, 43, 19.7],
+        "enemy/1/stalker/decal/4": [0, 1177, 1970, 86, 23, 43, 19.7],
+        "enemy/1/stalker/hit/0": [0, 1037, 1813, 109, 65, 52, 57.7],
+        "enemy/1/stalker/idle/0": [0, 577, 1907, 101, 57, 48, 53.7],
+        "enemy/1/stalker/walk/0": [0, 1845, 1813, 100, 59, 48, 55.7],
+        "enemy/1/stalker/walk/1": [0, 1307, 1813, 108, 64, 56, 60.7],
+        "enemy/1/stalker/walk/2": [0, 2, 1907, 100, 59, 48, 55.7],
+        "enemy/1/stalker/walk/3": [0, 1419, 1813, 108, 64, 56, 60.7],
+        "enemy/1/stalker/windup/0": [0, 682, 1907, 102, 55, 48, 51.7],
+        "enemy/1/warden/death/0": [0, 762, 1488, 175, 179, 86, 169],
+        "enemy/1/warden/death/1": [0, 399, 1488, 181, 185, 89, 172],
+        "enemy/1/warden/death/2": [0, 2, 1488, 204, 199, 102, 176],
+        "enemy/1/warden/death/3": [0, 374, 1813, 173, 85, 85, 83],
+        "enemy/1/warden/death/4": [0, 775, 1813, 153, 70, 75, 65],
+        "enemy/1/warden/death/5": [0, 1150, 1813, 153, 65, 75, 60],
+        "enemy/1/warden/decal/0": [0, 1531, 1813, 153, 63, 75, 59.2],
+        "enemy/1/warden/decal/1": [0, 1688, 1813, 153, 63, 75, 59.2],
+        "enemy/1/warden/decal/2": [0, 106, 1907, 153, 59, 75, 55.2],
+        "enemy/1/warden/decal/3": [0, 263, 1907, 153, 59, 75, 55.2],
+        "enemy/1/warden/decal/4": [0, 420, 1907, 153, 59, 75, 55.2],
+        "enemy/1/warden/hit/0": [0, 210, 1488, 185, 186, 88, 176.8],
+        "enemy/1/warden/idle/0": [0, 1297, 1488, 175, 176, 83, 171.8],
+        "enemy/1/warden/walk/0": [0, 1476, 1488, 175, 169, 83, 164.8],
+        "enemy/1/warden/walk/1": [0, 941, 1488, 176, 178, 82, 173.8],
+        "enemy/1/warden/walk/2": [0, 1655, 1488, 175, 169, 83, 164.8],
+        "enemy/1/warden/walk/3": [0, 1121, 1488, 172, 178, 83, 173.8],
+        "enemy/1/warden/windup/0": [0, 584, 1488, 174, 185, 88, 180.8]
       }
     }
   },
@@ -210,6 +262,14 @@ export const ATLAS_MANIFEST = {
       "hit": {
         "frames": 1,
         "fps": 1
+      },
+      "death": {
+        "frames": 6,
+        "fps": 24
+      },
+      "decal": {
+        "frames": 5,
+        "fps": 0
       }
     },
     "enemy/1/shooter": {
@@ -228,6 +288,14 @@ export const ATLAS_MANIFEST = {
       "hit": {
         "frames": 1,
         "fps": 1
+      },
+      "death": {
+        "frames": 6,
+        "fps": 24
+      },
+      "decal": {
+        "frames": 5,
+        "fps": 0
       }
     },
     "enemy/1/stalker": {
@@ -246,6 +314,14 @@ export const ATLAS_MANIFEST = {
       "hit": {
         "frames": 1,
         "fps": 1
+      },
+      "death": {
+        "frames": 6,
+        "fps": 24
+      },
+      "decal": {
+        "frames": 5,
+        "fps": 0
       }
     },
     "enemy/1/warden": {
@@ -264,6 +340,24 @@ export const ATLAS_MANIFEST = {
       "hit": {
         "frames": 1,
         "fps": 1
+      },
+      "death": {
+        "frames": 6,
+        "fps": 24
+      },
+      "decal": {
+        "frames": 5,
+        "fps": 0
+      }
+    },
+    "fx": {
+      "hit": {
+        "frames": 4,
+        "fps": 25
+      },
+      "hit-crit": {
+        "frames": 4,
+        "fps": 25
       }
     },
     "hero": {

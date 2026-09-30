@@ -126,13 +126,15 @@ test('a Ch1 shooter keeps its windup pose for a moment after the shot leaves', a
   }
 });
 
-test('a Ch1 kill tips its body over, leaves an ink stain, and the stain dries away (FX-03)', async () => {
+test('a Ch1 kill plays the kit burst, then its decal dries through its stages and fades (FX-03)', async () => {
   const atlas = new SpriteAtlas({ loadManifest: async () => ATLAS_MANIFEST, loadImage: async (url) => ({ url, width: 2048, height: 2048 }) });
   await atlas.load('common');
   await atlas.load('chapter-01');
-  const { engine, probe, images, rotations } = arena(1, 2);
+  const { engine, probe, images } = arena(1, 2);
   try {
     engine.setSprites(atlas);
+    const frames = ATLAS_MANIFEST.packs['chapter-01'].frames;
+    const drawn = (key) => images.some((draw) => draw.sx === frames[key][1] && draw.sy === frames[key][2]);
     const { player } = probe.read();
     const id = probe.spawnEnemy({ tier: 'small', x: player.x + 160, y: player.y, speed: 0, damage: 0, hp: 5 });
     probe.render(1);
@@ -140,15 +142,40 @@ test('a Ch1 kill tips its body over, leaves an ink stain, and the stain dries aw
     probe.step(1);
     const [corpse] = probe.effects().corpses;
     assert.ok(corpse && corpse.fall === 1, 'the body falls away from the player on its left');
-    images.length = 0;
-    rotations.length = 0;
     probe.step(8);
+    images.length = 0;
     probe.render(1);
-    const hit = ATLAS_MANIFEST.packs['chapter-01'].frames['enemy/1/stalker/hit/0'];
-    assert.ok(images.some((draw) => draw.sx === hit[1] && draw.sy === hit[2]), 'the hit pose is drawn while it falls');
-    assert.ok(rotations.some((angle) => angle > 0.1), 'tipped over to the right');
+    assert.ok(drawn('enemy/1/stalker/death/3'), 'the burst is on its fourth frame at 0.15 s');
     probe.step(60 * 2);
-    assert.equal(probe.effects().corpses.length, 0, 'the stain has dried after 1.75 s');
+    images.length = 0;
+    probe.render(1);
+    assert.ok(drawn('enemy/1/stalker/decal/2'), 'a 1.9 s stain shows the third decal stage');
+    probe.step(60 * 29);
+    assert.equal(probe.effects().corpses.length, 0, 'the stain is gone after 30 s');
+  } finally {
+    engine.dispose();
+  }
+});
+
+test('a hit shows the kit star turned to the blow', async () => {
+  const atlas = new SpriteAtlas({ loadManifest: async () => ATLAS_MANIFEST, loadImage: async (url) => ({ url, width: 2048, height: 2048 }) });
+  await atlas.load('common');
+  await atlas.load('chapter-01');
+  const { engine, probe, images } = arena(1, 2);
+  try {
+    engine.setSprites(atlas);
+    engine.setOptions({ ...standardOptions(), reducedFlash: false, effects: 1 });
+    const { player } = probe.read();
+    probe.spawnEnemy({ tier: 'small', x: player.x + 200, y: player.y, speed: 0, damage: 0, hp: 1e6 });
+    probe.setSkills({ railSpear: { level: 1 } });
+    probe.cast('railSpear');
+    const [stamp] = probe.effects().hitStamps;
+    assert.ok(stamp && Math.abs(stamp.angle) < 0.05, 'the blow travelled right');
+    images.length = 0;
+    probe.render(1);
+    const common = ATLAS_MANIFEST.packs.common.frames;
+    const star = stamp.crit ? common['fx/hit-crit/0'] : common['fx/hit/0'];
+    assert.ok(images.some((draw) => draw.sx === star[1] && draw.sy === star[2]), 'the first star frame is drawn');
   } finally {
     engine.dispose();
   }

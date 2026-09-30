@@ -8,7 +8,7 @@ import { ATLAS_SCALE, BAKE_MARGIN, COLOR_MAP, ENEMY_ROLES, FRAME_PADDING, HERO_S
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const kitDir = path.join(root, 'art/concept-kit');
-const KIT_FILES = ['lib.js', 'k-hero.js', 'k-enemies.js', 'k-bosses1.js'];
+const KIT_FILES = ['lib.js', 'k-hero.js', 'k-enemies.js', 'k-bosses1.js', 'k-icons.js'];
 
 const browser = await chromium.launch();
 try {
@@ -35,7 +35,8 @@ try {
     });
     manifest.packs[packName] = { pages: pagePaths, frames: Object.fromEntries(Object.entries(table).sort(([a], [b]) => a.localeCompare(b))) };
     for (const item of frames) if (item.animation) manifest.animations[item.animation.key] = item.animation.spec;
-    Object.assign(manifest.animations, pack.animations ?? {});
+    // Pack animations add states to a slot (the Ch1 death and decal poses) rather than replace it.
+    for (const [slot, states] of Object.entries(pack.animations ?? {})) manifest.animations[slot] = { ...manifest.animations[slot], ...states };
     console.log(`${packName}: ${frames.length} frames on ${pages.length} page(s): ${pages.map((sheet) => `${sheet.width}x${sheet.height}`).join(', ')}`);
   }
   manifest.animations.hero = Object.fromEntries(Object.entries(HERO_STATES).map(([state, spec]) => [state, spec]));

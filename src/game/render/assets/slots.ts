@@ -10,6 +10,8 @@ export const DISABLED_SLOTS: ReadonlySet<string> = new Set<string>([
 ]);
 
 export const HERO_SLOT = 'hero';
+/** Shared effects in the common pack: the hit star (FX-03). */
+export const FX_SLOT = 'fx';
 export type HeroState = 'idle' | 'run' | 'throw' | 'hurt';
 
 export const slotEnabled = (slot: string) => !DISABLED_SLOTS.has(slot);

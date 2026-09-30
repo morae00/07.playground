@@ -71,8 +71,9 @@ Detail follows the enemies on screen: full below 80, reduced from 80 (crowd anim
 
 Enemy feedback (FX-03):
 
-- A hit flashes a white cut-out of the enemy's sprite frame in three steps over 0.08 s. The cut-out is built once per frame with a source-in fill and cached. The hit's ink sprays out of the far side, because `enemy/hit` carries the direction the hit travelled.
-- A kill leaves a corpse in the presentation, with no gameplay id. For 0.25 s the body falls: a baked death pose plays as drawn; until one exists, the hit pose tips away from the player and fades. Its ink stain soaks out on the floor layer and dries over 1.5 s.
+- A hit flashes a white cut-out of the enemy's sprite frame in three steps over 0.08 s. The cut-out is built once per frame with a source-in fill and cached. The hit's ink sprays out of the far side, because `enemy/hit` carries the direction the hit travelled, and the kit's comic hit star (`PN.vfx.hit`, four frames in 0.16 s) is drawn turned to the blow. Light hits skip the star at reduced effect density.
+- A kill leaves a corpse in the presentation, with no gameplay id. For 0.25 s the body bursts: Ch1 roles play the kit's six-frame kill (`PN.vfx.kill`), baked as the enemy slot's `death` pose. Without one, the hit pose tips away from the player and fades.
+- The stain then dries through the kit's decal stages (`PN.vfx.decal`): 3 s from ink.700 to ink.300, gone between 25 and 30 s. Vector chapters and bosses draw a plain ink stain on the same timing.
 - Stains are capped at 48, or 24 at reduced effect density, and skipped at minimal detail (style bible P6).
 - A new enemy rises out of an ink bloom during its 0.25 s spawn state. Hit and contact rules do not change meanwhile.
 

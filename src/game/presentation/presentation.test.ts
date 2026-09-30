@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { CueId, SoundOutput } from '../audioPolicy.ts';
 import { createDefaultOptions } from '../../platform/save.ts';
-import { CORPSE_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HURT_VIGNETTE_SECONDS, Presentation } from './presentation.ts';
+import { CORPSE_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HIT_STAMP_SECONDS, HURT_VIGNETTE_SECONDS, Presentation } from './presentation.ts';
 
 function setup(overrides: Partial<ReturnType<typeof createDefaultOptions>> = {}) {
   let id = 0;
@@ -220,6 +220,22 @@ test('the death moment plays the fall, and ink drifts in slow motion while the e
   const still = drop.x;
   presentation.endFrame(0.1, true, false);
   assert.equal(drop.x, still, 'after the moment the paused frame holds still');
+});
+
+test('hits leave a star facing the blow; light hits skip it at reduced density, and the oldest goes at the cap', () => {
+  const full = setup({ effects: 1 }).presentation;
+  full.handle({ type: 'enemy/hit', x: 5, y: 6, radius: 12, damage: 3, crit: false, tier: 'light', dx: 0, dy: 1 });
+  assert.equal(full.hitStamps.length, 1);
+  assert.ok(Math.abs(full.hitStamps[0].angle - Math.PI / 2) < 1e-9);
+  full.step(HIT_STAMP_SECONDS);
+  assert.equal(full.hitStamps.length, 0, 'the star is over after four frames');
+  for (let index = 0; index < 40; index += 1) full.handle({ type: 'enemy/hit', x: index, y: 0, radius: 12, damage: 3, crit: true, tier: 'critical', dx: 1, dy: 0 });
+  assert.equal(full.hitStamps.length, 32);
+  assert.equal(full.hitStamps[0].x, 8);
+  const reduced = setup({ effects: 0.4 }).presentation;
+  reduced.handle({ type: 'enemy/hit', x: 0, y: 0, radius: 12, damage: 3, crit: false, tier: 'light', dx: 1, dy: 0 });
+  reduced.handle({ type: 'enemy/hit', x: 0, y: 0, radius: 12, damage: 9, crit: false, tier: 'heavy', dx: 1, dy: 0 });
+  assert.equal(reduced.hitStamps.length, 1, 'only the heavy hit');
 });
 
 test('sound never draws from the cosmetic stream that places particles', () => {

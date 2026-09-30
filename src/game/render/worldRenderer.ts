@@ -6,6 +6,7 @@ import type {
   ChainEffect,
   Corpse,
   DamageNumber,
+  HitStamp,
   Entity,
   Hazard,
   ImpactRing,
@@ -23,11 +24,11 @@ import { SKILL_NUMBERS, scaleAt } from '../skillNumbers.ts';
 import type { ViewFrame } from '../viewPolicy.ts';
 import { motionPolicy } from '../visualContracts.ts';
 import { clamp, distance } from '../worldMath.ts';
-import { CORPSE_FALL_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HURT_VIGNETTE_SECONDS } from '../presentation/presentation.ts';
+import { CORPSE_FALL_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HURT_VIGNETTE_SECONDS, STAIN_DRY_SECONDS, STAIN_FADE_SECONDS, STAIN_SECONDS } from '../presentation/presentation.ts';
 import { WARDEN_SHIELD } from '../enemyBehaviors.ts';
 import { AnimationBook, SPAWN_SECONDS, enemyPoses, heroPoses, poseFrame, stepBossAnim, stepEnemyAnim, stepPlayerAnim, type AnimState, type EnemyAnim } from './animation.ts';
 import { phaseFor, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
-import { BOSS_SLOTS, CHAPTER_PACKS, HERO_SLOT, bossState, enemyDrawScale, enemySlot, frameKey, slotEnabled } from './assets/slots.ts';
+import { BOSS_SLOTS, CHAPTER_PACKS, COMMON_PACK, FX_SLOT, HERO_SLOT, bossState, enemyDrawScale, enemySlot, frameKey, slotEnabled } from './assets/slots.ts';
 import { GameRenderer } from './GameRenderer.ts';
 import { NEUTRAL, SIGNAL, rgba } from './palette.ts';
 import { createRenderFrameSnapshot } from './renderSnapshot.ts';
@@ -45,6 +46,9 @@ import {
 const TARGET_COLOR = SIGNAL.allyDeep;
 /** Enemy ids start at 1, so the hero's animation state never collides with one. */
 const HERO_ANIM_ID = -1;
+
+/** Decal stage ages in seconds, as baked (art/atlas-spec.mjs DECAL_AGES). */
+const DECAL_STAGE_AGES = Object.freeze([0, 1, 1.5, 3, 15]);
 
 /** The hit flash fades in three steps over its 0.08 s (FX-03): bright, half, faint. */
 function hitFlashAlpha(hitFlash: number) {
@@ -141,6 +145,8 @@ export type RenderEffects = {
   readonly impactRings: readonly Readonly<ImpactRing>[];
   /** Fallen enemies (FX-03): falling bodies and their fading ink stains. */
   readonly corpses: readonly Readonly<Corpse>[];
+  /** Hit stars at impacts (FX-03). */
+  readonly hitStamps: readonly Readonly<HitStamp>[];
   readonly shake: number;
   /** Seconds left on the hero's hurt, burst, and cast poses. */
   readonly playerHurt: number;
@@ -322,6 +328,7 @@ export class WorldRenderer {
         return;
       case 'effects':
         this.drawImpactRings(ctx, 'player');
+        this.drawHitStamps(ctx);
         this.drawParticles(ctx);
         this.drawDamageNumbers(ctx);
         return;
@@ -1167,22 +1174,70 @@ export class WorldRenderer {
   /** Ink stains of fallen enemies, part of the floor under hazards; none at minimal detail (style bible P6). */
   private drawCorpseStains(ctx: CanvasRenderingContext2D) {
     if (this.stats.detail === 'minimal') return;
+    const sprites = this.sprites;
+    const pack = CHAPTER_PACKS[this.world.chapter];
+    const baked = sprites !== null && pack !== undefined && sprites.status(pack) === 'ready';
     for (const corpse of this.world.effects.corpses) {
       const radius = corpse.radius * (corpse.isBoss ? 1.4 : 1.1);
-      if (!circleVisible(this.viewport, corpse.x, corpse.y, radius * 1.6)) continue;
+      if (!circleVisible(this.viewport, corpse.x, corpse.y, radius * 3)) continue;
       const age = corpse.maxLife - corpse.life;
-      // The stain soaks out while the body falls, then dries away.
+      const stainAge = Math.max(0, age - CORPSE_FALL_SECONDS);
+      const fade = clamp((STAIN_SECONDS - stainAge) / (STAIN_SECONDS - STAIN_FADE_SECONDS), 0, 1);
+      if (baked && !corpse.isBoss && this.drawBakedStain(ctx, sprites, corpse, age, stainAge, fade)) continue;
+      // The stain soaks out while the body falls, dries lighter for 3 s, then fades out (vector chapters, bosses).
       const spread = 0.55 + 0.45 * clamp(age / CORPSE_FALL_SECONDS, 0, 1);
-      const fade = clamp(corpse.life / (corpse.maxLife - CORPSE_FALL_SECONDS), 0, 1);
+      const dry = clamp(stainAge / STAIN_DRY_SECONDS, 0, 1);
       const r = radius * spread;
       ctx.save();
-      ctx.fillStyle = rgba(NEUTRAL.ink, 0.3 * fade);
+      ctx.fillStyle = rgba(NEUTRAL.ink, 0.3 * (1 - 0.35 * dry) * fade);
       ctx.beginPath();
       ctx.ellipse(corpse.x + corpse.fall * r * 0.35, corpse.y, r, r * 0.45, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.beginPath();
       ctx.ellipse(corpse.x - corpse.fall * r * 0.3, corpse.y + r * 0.08, r * 0.55, r * 0.26, 0, 0, Math.PI * 2);
       ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  /**
+   * The kit's dried decal for a Ch1 body (PN.vfx.decal): the stage for its age, facing like the body did. During the
+   * burst the death pose's last frame already shows the fresh puddle, so nothing draws yet.
+   */
+  private drawBakedStain(ctx: CanvasRenderingContext2D, sprites: SpriteAtlas, corpse: Readonly<Corpse>, age: number, stainAge: number, fade: number) {
+    const slot = enemySlot(this.world.chapter, corpse.tier, corpse.attackStyle);
+    const spec = slotEnabled(slot) ? sprites.animation(slot, 'decal') : undefined;
+    if (!spec) return false;
+    if (age < CORPSE_FALL_SECONDS || fade <= 0) return true;
+    let stage = 0;
+    while (stage + 1 < Math.min(spec.frames, DECAL_STAGE_AGES.length) && DECAL_STAGE_AGES[stage + 1] <= stainAge) stage += 1;
+    const frame = sprites.frame(frameKey(slot, 'decal', stage));
+    if (!frame) return false;
+    this.blit(ctx, frame, corpse.x, corpse.y, corpse.fall > 0 ? -1 : 1, enemyDrawScale(enemyRoleFor(corpse.tier, corpse.attackStyle), corpse.tier), fade);
+    return true;
+  }
+
+  /**
+   * The kit's hit star (PN.vfx.hit), turned to the direction of the blow. On sprite chapters the bodies stand on
+   * their hit circles, so the star rises by the radius to land on the body.
+   */
+  private drawHitStamps(ctx: CanvasRenderingContext2D) {
+    const sprites = this.sprites;
+    if (!sprites || sprites.status(COMMON_PACK) !== 'ready' || !slotEnabled(FX_SLOT) || this.stats.detail === 'minimal') return;
+    const pack = CHAPTER_PACKS[this.world.chapter];
+    const onBodies = pack !== undefined && sprites.status(pack) === 'ready';
+    for (const stamp of this.world.effects.hitStamps) {
+      const pose = stamp.crit ? 'hit-crit' : 'hit';
+      const spec = sprites.animation(FX_SLOT, pose);
+      if (!spec) return;
+      const y = onBodies ? stamp.y - stamp.radius : stamp.y;
+      if (!circleVisible(this.viewport, stamp.x, y, 48)) continue;
+      const frame = sprites.frame(frameKey(FX_SLOT, pose, Math.min(spec.frames - 1, Math.floor((stamp.maxLife - stamp.life) * spec.fps))));
+      if (!frame) continue;
+      ctx.save();
+      ctx.translate(stamp.x, y);
+      ctx.rotate(stamp.angle);
+      this.blit(ctx, frame, 0, 0, 1, 1);
       ctx.restore();
     }
   }
@@ -1209,7 +1264,8 @@ export class WorldRenderer {
       ctx.save();
       ctx.translate(corpse.x, corpse.y);
       if (pose === 'hit') ctx.rotate(corpse.fall * progress * progress * Math.PI * 0.45);
-      this.blit(ctx, frame, 0, 0, corpse.fall > 0 ? -1 : 1, enemyDrawScale(enemyRoleFor(corpse.tier, corpse.attackStyle), corpse.tier), 1 - 0.7 * progress);
+      // The kit's burst ends on the fresh puddle and hands over to the decal; a borrowed hit pose fades instead.
+      this.blit(ctx, frame, 0, 0, corpse.fall > 0 ? -1 : 1, enemyDrawScale(enemyRoleFor(corpse.tier, corpse.attackStyle), corpse.tier), pose === 'hit' ? 1 - 0.7 * progress : 1);
       ctx.restore();
     }
   }

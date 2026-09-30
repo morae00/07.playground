@@ -1,6 +1,6 @@
 // Presentation layer (TEC-02): turns game events into particles, damage numbers, impact rings, screen shake,
 // and sound cues for the app's mixer (AUD-01). It owns only cosmetic state; the simulation never reads it back.
-import type { Corpse, DamageNumber, EffectOwner, ImpactRing, Particle, SkillId } from '../engine/worldTypes.ts';
+import type { Corpse, DamageNumber, EffectOwner, HitStamp, ImpactRing, Particle, SkillId } from '../engine/worldTypes.ts';
 import type { GameOptions } from '../../platform/save.ts';
 import { CUES, HIT_CUES, type CueId, type SoundOutput } from '../audioPolicy.ts';
 import type { GameEvent } from '../engine/events.ts';
@@ -26,9 +26,18 @@ const IMPACT_RING_CAP = 32;
 /** Ink stains on the floor (style bible P6): 48 at full effects, 24 at reduced; the renderer drops them at minimal detail. */
 const CORPSE_CAP_FULL = 48;
 const CORPSE_CAP_REDUCED = 24;
-/** A body falls over 6 frames at 24 fps, then its stain fades for 1.5 s (FX-03). */
+/**
+ * A body bursts or falls over 6 frames at 24 fps, then its stain dries for 3 s and fades out between 25 and 30 s
+ * (FX-03, kit PN.vfx.decal).
+ */
 export const CORPSE_FALL_SECONDS = 0.25;
-export const CORPSE_SECONDS = CORPSE_FALL_SECONDS + 1.5;
+export const STAIN_DRY_SECONDS = 3;
+export const STAIN_FADE_SECONDS = 25;
+export const STAIN_SECONDS = 30;
+export const CORPSE_SECONDS = CORPSE_FALL_SECONDS + STAIN_SECONDS;
+/** The hit star plays 4 frames at 25 fps (kit PN.vfx.hit); at most this many show at once. */
+export const HIT_STAMP_SECONDS = 0.16;
+const HIT_STAMP_CAP = 32;
 /** Hit ink sprays out of the far side of a hit, inside this cone. */
 const SPLASH_CONE = Math.PI * 0.6;
 /** Player feedback (FX-03): the coral vignette after a hit, the heartbeat interval at low health, and the death moment. */
@@ -62,6 +71,7 @@ export class Presentation {
   readonly damageNumbers: DamageNumber[] = [];
   readonly impactRings: ImpactRing[] = [];
   readonly corpses: Corpse[] = [];
+  readonly hitStamps: HitStamp[] = [];
   shake = 0;
   /** Seconds left on the player's hurt, burst, and cast poses (FX-01); they count down in simulated time. */
   playerHurt = 0;
@@ -80,6 +90,11 @@ export class Presentation {
     () => ({ id: 0, x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 0, size: 0, color: '#000000' }),
     (particle) => { particle.life = 0; },
     PARTICLE_CAP_FULL,
+  );
+  readonly hitStampPool = new ObjectPool<HitStamp>(
+    () => ({ x: 0, y: 0, radius: 0, angle: 0, crit: false, life: 0, maxLife: 0 }),
+    (stamp) => { stamp.life = 0; },
+    HIT_STAMP_CAP,
   );
   readonly corpsePool = new ObjectPool<Corpse>(
     () => ({ x: 0, y: 0, radius: 0, tier: 'small', attackStyle: 'contact', isBoss: false, fall: 1, life: 0, maxLife: 0 }),
@@ -122,9 +137,11 @@ export class Presentation {
     for (const particle of this.particles) this.particlePool.release(particle);
     for (const number of this.damageNumbers) this.damageNumberPool.release(number);
     for (const corpse of this.corpses) this.corpsePool.release(corpse);
+    for (const stamp of this.hitStamps) this.hitStampPool.release(stamp);
     this.particles.length = 0;
     this.damageNumbers.length = 0;
     this.corpses.length = 0;
+    this.hitStamps.length = 0;
     this.impactRings.length = 0;
     this.playerHurt = 0;
     this.playerBurst = 0;
@@ -171,6 +188,8 @@ export class Presentation {
         // Ink sprays out of the far side of the hit (FX-03).
         this.burst(event.x, event.y, Math.round(count * effects), event.tier === 'critical' ? '#000000' : '#222222', event.tier === 'critical' ? 240 : event.tier === 'heavy' ? 175 : 130, Math.atan2(event.dy, event.dx), SPLASH_CONE);
         if (event.tier !== 'light') this.addImpactRing(event.x, event.y, event.radius * (event.tier === 'critical' ? 1.8 : 1.35), event.tier);
+        // Light hits skip the star at reduced effect density.
+        if (event.tier !== 'light' || effects > 0.65) this.addHitStamp(event.x, event.y, event.radius, Math.atan2(event.dy, event.dx), event.tier === 'critical');
         if (event.tier === 'critical') this.addShake(4);
         if (this.legacyHitDraws && this.legacyHitWait <= 0) {
           this.random();
@@ -299,6 +318,8 @@ export class Presentation {
     }
     for (const corpse of this.corpses) corpse.life -= dt;
     recycleWhere(this.corpses, (corpse) => corpse.life > 0, this.corpsePool);
+    for (const stamp of this.hitStamps) stamp.life -= dt;
+    recycleWhere(this.hitStamps, (stamp) => stamp.life > 0, this.hitStampPool);
     this.playerHurt = Math.max(0, this.playerHurt - dt);
     this.playerBurst = Math.max(0, this.playerBurst - dt);
     this.playerCast = Math.max(0, this.playerCast - dt);
@@ -347,6 +368,14 @@ export class Presentation {
     number ??= this.damageNumberPool.acquire();
     Object.assign(number, { id: this.host.nextId(), x, y, value, crit, life, maxLife: life, owner });
     this.damageNumbers.push(number);
+  }
+
+  /** A hit star; the oldest goes when the cap is reached. */
+  addHitStamp(x: number, y: number, radius: number, angle: number, crit: boolean) {
+    if (this.hitStamps.length >= HIT_STAMP_CAP) this.hitStampPool.release(this.hitStamps.shift()!);
+    const stamp = this.hitStampPool.acquire();
+    Object.assign(stamp, { x, y, radius, angle, crit, life: HIT_STAMP_SECONDS, maxLife: HIT_STAMP_SECONDS });
+    this.hitStamps.push(stamp);
   }
 
   /** A fallen body; the oldest stain goes when the cap for the effect density is reached. */

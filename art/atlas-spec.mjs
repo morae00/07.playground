@@ -98,6 +98,61 @@ function bossAnimations() {
   return Object.fromEntries(Object.keys(BOSS_SPRITES).map((slot) => [slot, Object.fromEntries(bossStates().map((state) => [state.key, { frames: 1, fps: 1 }]))]));
 }
 
+/**
+ * Kit VFX (PN.vfx, API-icons): the hit star, and for each Ch1 role the six-frame kill burst and its dried decal.
+ * VFX are drawn in world units. The hit star is baked facing +x and turned to the blow at runtime. Kill bursts
+ * are the enemy slot's `death` pose and decals its `decal` stages, baked at the role's sprite fit and anchored on
+ * the feet like the sprites, so they land on the body (FX-03).
+ */
+export const HIT_FRAMES = 4;
+export const KILL_FRAMES = 6;
+/** Decal ages baked, in seconds: wet with glint and eyes, glint dry, eyes gone, dry, scrap gone. */
+export const DECAL_AGES = Object.freeze([0, 1, 1.5, 3, 15]);
+/** Hit radius of each Ch1 role in the kit, in world units (PN._ki.SIL r). */
+const ROLE_RADIUS = Object.freeze({ stalker: 12, charger: 19, shooter: 12, warden: 28 });
+
+function hitFrames() {
+  const frames = [];
+  for (const crit of [false, true]) {
+    for (let frame = 0; frame < HIT_FRAMES; frame += 1) {
+      frames.push({
+        key: `fx/hit${crit ? '-crit' : ''}/${frame}`,
+        call: ['PN.vfx.hit', frame, { angle: 0, crit, seed: 0 }],
+        box: [48, 48],
+        anchor: [0, 0],
+        scale: 1,
+        extraPad: [48, 0, 0, 48],
+      });
+    }
+  }
+  return frames;
+}
+
+function killFrames(chapter) {
+  const frames = [];
+  for (const [role, { fit }] of Object.entries(ENEMY_ROLES)) {
+    const r = ROLE_RADIUS[role];
+    for (let frame = 0; frame < KILL_FRAMES; frame += 1) {
+      // Kill frames are drawn around the pivot (the hit circle's centre); the feet are r below it.
+      frames.push({ key: `enemy/${chapter}/${role}/death/${frame}`, call: ['PN.vfx.kill', frame, { role, seed: 0 }], box: [120, 120], anchor: [0, r], scale: fit, extraPad: [120, 0, 0, 120] });
+    }
+    DECAL_AGES.forEach((age, stage) => {
+      // Decals are drawn around the ground point, 0.55 r below the pivot, so the feet are 0.45 r below it.
+      frames.push({ key: `enemy/${chapter}/${role}/decal/${stage}`, call: ['PN.vfx.decal', age, { role, seed: 0 }], box: [120, 120], anchor: [0, r * 0.45], scale: fit, extraPad: [120, 0, 0, 120] });
+    });
+  }
+  return frames;
+}
+
+/** Animation specs: the hit star (4 frames in 0.16 s), and per Ch1 role the death burst and decal stages. */
+function fxAnimations(chapter) {
+  if (chapter === undefined) return { fx: { hit: { frames: HIT_FRAMES, fps: 25 }, 'hit-crit': { frames: HIT_FRAMES, fps: 25 } } };
+  return Object.fromEntries(Object.keys(ENEMY_ROLES).map((role) => [
+    `enemy/${chapter}/${role}`,
+    { death: { frames: KILL_FRAMES, fps: 24 }, decal: { frames: DECAL_AGES.length, fps: 0 } },
+  ]));
+}
+
 /** Filled from the kit's own metadata at bake time (box, pivot, feet, displayScale, walk frame count). */
 function enemyFrames(chapter) {
   return Object.entries(ENEMY_ROLES).map(([role, { fit }]) => ({
@@ -107,6 +162,6 @@ function enemyFrames(chapter) {
 }
 
 export const PACKS = Object.freeze({
-  common: { page: 'assets/atlas/common', frames: heroFrames() },
-  'chapter-01': { page: 'assets/packs/chapter-01/atlas', frames: [...enemyFrames(1), ...bossFrames()], animations: bossAnimations() },
+  common: { page: 'assets/atlas/common', frames: [...heroFrames(), ...hitFrames()], animations: fxAnimations() },
+  'chapter-01': { page: 'assets/packs/chapter-01/atlas', frames: [...enemyFrames(1), ...bossFrames(), ...killFrames(1)], animations: { ...bossAnimations(), ...fxAnimations(1) } },
 });
