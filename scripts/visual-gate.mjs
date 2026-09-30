@@ -291,7 +291,14 @@ async function captureEvidence(page, viewport, dpr, motion, state) {
   if (layout.reducedMotion !== (motion === 'reduce')) failures.push(`reduced-motion media mismatch: ${layout.reducedMotion}`);
 
   let canvas = null;
+  let render = null;
   if (state !== 'menu' && state !== 'infinite-menu') {
+    // Layer contract (TEC-12): a covered player must get the x-ray pass. The threshold mirrors XRAY_COVERAGE in
+    // src/game/render/worldRenderer.ts.
+    render = await page.evaluate(() => window.__blacklineDiagnostics?.()?.render ?? null);
+    if (render && render.playerCoverage >= 0.05 && !render.xray) {
+      failures.push(`player ${(render.playerCoverage * 100).toFixed(0)}% covered without the x-ray pass`);
+    }
     canvas = await inspectCanvas(page);
     if (!canvas || canvas.colorBuckets < 3 || canvas.luminanceRange < 20 || canvas.inkRatio < 0.002) {
       failures.push(`canvas nonblank gate failed: ${JSON.stringify(canvas)}`);
@@ -329,6 +336,7 @@ async function captureEvidence(page, viewport, dpr, motion, state) {
     mismatchRatio: comparison?.mismatchRatio ?? null,
     image,
     canvas,
+    render,
     layout,
     failures,
     passed: failures.length === 0,

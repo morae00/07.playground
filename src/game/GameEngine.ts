@@ -1456,6 +1456,7 @@ export class GameEngine {
       particles: this.presentation.particles.length,
       damageNumbers: this.presentation.damageNumbers.length,
       gridCacheBuilds: this.worldRenderer.gridCacheBuilds,
+      render: { ...this.worldRenderer.stats },
       pooled: {
         projectiles: this.projectilePool.retained,
         bossProjectiles: this.bossProjectilePool.retained,

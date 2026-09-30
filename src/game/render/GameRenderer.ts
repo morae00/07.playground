@@ -162,9 +162,22 @@ export class GameRenderer {
   }
 
   drawPlayer(ctx: CanvasRenderingContext2D, input: PlayerVisualInput) {
+    this.drawPlayerGround(ctx, input);
+    this.drawPlayerBody(ctx, input);
+  }
+
+  /** The cyan foot signal, drawn on the ground layer under every body (TEC-12). */
+  drawPlayerGround(ctx: CanvasRenderingContext2D, input: PlayerVisualInput) {
     ctx.save();
     ctx.translate(input.x, input.y);
     this.drawPlayerSignal(ctx, input);
+    ctx.restore();
+  }
+
+  /** The figure, drawn in the depth-sorted body layer (TEC-12). */
+  drawPlayerBody(ctx: CanvasRenderingContext2D, input: PlayerVisualInput) {
+    ctx.save();
+    ctx.translate(input.x, input.y);
     this.drawPlayerFigure(ctx, input, 1, false);
     ctx.restore();
   }
@@ -1118,6 +1131,21 @@ export class GameRenderer {
   }
 
   drawObstacle(ctx: CanvasRenderingContext2D, obstacle: Obstacle) {
+    this.drawObstacleShadow(ctx, obstacle);
+    this.drawObstacleBlock(ctx, obstacle);
+  }
+
+  /** The cast shadow on the floor, drawn under every body (TEC-12). */
+  drawObstacleShadow(ctx: CanvasRenderingContext2D, obstacle: Obstacle) {
+    ctx.save();
+    ctx.globalAlpha = 0.24;
+    ctx.fillStyle = VISUAL_PALETTE.ink;
+    ctx.fillRect(obstacle.x + 9, obstacle.y + 12, obstacle.w, obstacle.h);
+    ctx.restore();
+  }
+
+  /** The block itself, depth-sorted with characters by its bottom edge (TEC-12). */
+  drawObstacleBlock(ctx: CanvasRenderingContext2D, obstacle: Obstacle) {
     const art = CHAPTER_ART[this.frame.chapter];
     const inset = clamp(Math.min(obstacle.w, obstacle.h) * 0.11, 6, 14);
     const centerX = obstacle.x + obstacle.w / 2;
@@ -1128,11 +1156,6 @@ export class GameRenderer {
     const height = Math.max(1, obstacle.h - inset * 2);
 
     ctx.save();
-    ctx.globalAlpha = 0.24;
-    ctx.fillStyle = VISUAL_PALETTE.ink;
-    ctx.fillRect(obstacle.x + 9, obstacle.y + 12, obstacle.w, obstacle.h);
-    ctx.globalAlpha = 1;
-
     ctx.fillStyle = art.accent;
     pathPolygon(ctx, [
       [obstacle.x, obstacle.y],

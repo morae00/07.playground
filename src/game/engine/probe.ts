@@ -3,7 +3,7 @@
 // engine fields, so a refactor of the simulation only has to keep the probe working. The app never imports
 // this module; only the test bundle (src/testing/engine.ts) ships it.
 import { FIXED_TIMESTEP } from '../p0Core';
-import type { RenderEffects, RenderWorld } from '../render/worldRenderer';
+import type { RenderEffects, RenderFrameStats, RenderWorld, WorldLayer } from '../render/worldRenderer';
 import {
   GameEngine,
   type BeamEffect,
@@ -147,6 +147,10 @@ export interface EngineProbe {
   /** Adds cosmetic particles and damage numbers through the presentation layer (render benchmarks, TEC-04). */
   burst(x: number, y: number, count: number): void;
   damageNumber(x: number, y: number, value: number, crit?: boolean): void;
+  /** Called as each world layer starts drawing (TEC-12 layer contract tests); null removes it. */
+  onRenderLayer(listener: ((layer: WorldLayer) => void) | null): void;
+  /** Statistics of the last drawn frame: sorted bodies, player coverage, x-ray. */
+  renderStats(): RenderFrameStats;
   /** Live entity and effect counts without copying the world (cheap enough to call every step). */
   counts(): { enemies: number; projectiles: number; hostileShots: number; particles: number; damageNumbers: number };
   addObstacle(spec: Omit<Obstacle, 'id'> & { id?: number }): number;
@@ -368,6 +372,10 @@ export class ProbedGameEngine extends GameEngine {
         this.spawnBossProjectile(x, y, vx, vy, radius, damage, life, kind);
       },
       burst: (x, y, count) => this.presentation.burst(x, y, count, '#111111', 180),
+      onRenderLayer: (listener) => {
+        this.worldRenderer.onLayer = listener;
+      },
+      renderStats: () => ({ ...this.worldRenderer.stats }),
       counts: () => ({
         enemies: this.enemies.length,
         projectiles: this.projectiles.length,

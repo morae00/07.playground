@@ -41,6 +41,63 @@ import {
 
 const TARGET_COLOR = SIGNAL.allyDeep;
 
+/**
+ * World layer contract (TEC-12), bottom to top. Bodies (enemies, bosses, the player, mirror clones, obstacle
+ * blocks) are sorted by the y of their feet, obstacles by their bottom edge, so nearer bodies overlap farther
+ * ones. Enemy shots and telegraphs sit above every body, so no sprite hides a threat (V3). Particles and damage
+ * numbers sit above bodies so hits read on enemies. The player x-ray pass comes last: whenever a nearer body or
+ * an effect covers the player, it redraws the hero and its hit ring on top (V4, BUG-12).
+ */
+export const WORLD_LAYERS = [
+  'ground', // floor grid and chapter motif
+  'hazards',
+  'groundMarks', // foot shadows, the player's foot ring, ranged-enemy rings
+  'pickups',
+  'targetGuide',
+  'obstacleShadows',
+  'bodies', // depth-sorted
+  'overheads', // health bars and ranged markers, in one batch above every body
+  'allyAttacks', // beams, chains, orbit blades, friendly projectiles, the aim reticle
+  'hostileShots',
+  'telegraphs', // lane telegraphs, ranged windups, boss ring warnings
+  'effects', // player impact rings, particles, damage numbers
+  'playerXray',
+] as const;
+export type WorldLayer = (typeof WORLD_LAYERS)[number];
+
+/** Share of the player's body box that must be covered before the x-ray pass draws. */
+export const XRAY_COVERAGE = 0.05;
+
+type EnemySprite = { frame: SpriteFrame; facing: 1 | -1; scale: number };
+
+/** One depth-sorted body for this frame. Pooled: fields are overwritten every frame. */
+type BodyDraw = {
+  /** Draw order at equal depth: obstacle blocks, then enemies, then clones, then the player. */
+  rank: 0 | 1 | 2 | 3;
+  depth: number;
+  id: number;
+  x: number;
+  y: number;
+  /** Axis-aligned box of what is drawn, in world units (overheads and occlusion use it). */
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+  enemy: Readonly<Entity> | null;
+  obstacle: Readonly<Obstacle> | null;
+  sprite: EnemySprite | null;
+  cloneSide: -1 | 1;
+};
+
+/** What the last frame drew, for diagnostics and the visual gate (TEC-12). */
+export type RenderFrameStats = {
+  bodies: number;
+  /** Share (0..1) of the player's body box covered by nearer bodies or effects. */
+  playerCoverage: number;
+  /** Whether the player x-ray pass drew this frame. */
+  xray: boolean;
+};
+
 export type RenderPlayer = Readonly<{
   x: number;
   y: number;
@@ -107,6 +164,16 @@ export class WorldRenderer {
   private sprites: SpriteAtlas | null = null;
   private heroFacing: 1 | -1 = 1;
   private readonly enemyFacing = new Map<number, 1 | -1>();
+  private readonly bodyPool: BodyDraw[] = [];
+  private readonly sortedBodies: BodyDraw[] = [];
+  private bodyCount = 0;
+  private hero: SpriteFrame | undefined;
+  private heroMoving = false;
+  private playerBody: BodyDraw | null = null;
+  /** Statistics of the last drawn frame. */
+  readonly stats: RenderFrameStats = { bodies: 0, playerCoverage: 0, xray: false };
+  /** Called as each world layer starts drawing; tests use it to check the layer contract. */
+  onLayer: ((layer: WorldLayer) => void) | null = null;
 
   setSprites(atlas: SpriteAtlas | null) {
     this.sprites = atlas;
@@ -158,26 +225,11 @@ export class WorldRenderer {
     ctx.save();
     ctx.setTransform(this.world.view.dpr * frame.zoom, 0, 0, this.world.view.dpr * frame.zoom, this.world.view.dpr * frame.offsetX, 0);
     ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
-    // Layer order (BUG-12 / TEC-12): effects never cover the player body, enemy shots stay above every
-    // body so an incoming hit is always visible, and the player keyline sits on top of everything.
-    this.drawWorld(ctx);
-    this.drawHazards(ctx);
-    this.drawObstacles(ctx);
-    this.drawLaneTelegraphs(ctx);
-    this.drawTargetGuide(ctx);
-    this.drawPickups(ctx);
-    this.drawBeams(ctx);
-    this.drawEnemies(ctx);
-    this.drawTargetReticle(ctx);
-    this.drawImpactRings(ctx);
-    this.drawParticles(ctx);
-    this.drawDamageNumbers(ctx);
-    this.drawOrbitScythes(ctx);
-    this.drawMirrorClone(ctx);
-    this.drawPlayer(ctx);
-    this.drawFriendlyProjectiles(ctx);
-    this.drawHostileProjectiles(ctx);
-    this.drawPlayerXray(ctx);
+    this.collectBodies();
+    for (const layer of WORLD_LAYERS) {
+      this.onLayer?.(layer);
+      this.drawLayer(ctx, layer);
+    }
     ctx.restore();
     if (frame.offsetX > 0) {
       // Pillarbox bars keep windows wider than 16:9 from seeing past the logical frame (and its spawns).
@@ -185,6 +237,169 @@ export class WorldRenderer {
       ctx.fillRect(0, 0, frame.offsetX, this.world.view.height);
       ctx.fillRect(this.world.view.width - frame.offsetX, 0, frame.offsetX, this.world.view.height);
     }
+  }
+
+  private drawLayer(ctx: CanvasRenderingContext2D, layer: WorldLayer) {
+    switch (layer) {
+      case 'ground':
+        this.drawWorld(ctx);
+        return;
+      case 'hazards':
+        this.drawHazards(ctx);
+        return;
+      case 'groundMarks':
+        this.drawGroundMarks(ctx);
+        return;
+      case 'pickups':
+        this.drawPickups(ctx);
+        return;
+      case 'targetGuide':
+        this.drawTargetGuide(ctx);
+        return;
+      case 'obstacleShadows':
+        for (const body of this.sortedBodies) if (body.obstacle) this.visual.drawObstacleShadow(ctx, body.obstacle);
+        return;
+      case 'bodies':
+        for (const body of this.sortedBodies) this.drawBody(ctx, body);
+        return;
+      case 'overheads':
+        this.drawOverheads(ctx);
+        return;
+      case 'allyAttacks':
+        this.drawBeams(ctx);
+        this.drawOrbitScythes(ctx);
+        this.drawFriendlyProjectiles(ctx);
+        this.drawTargetReticle(ctx);
+        return;
+      case 'hostileShots':
+        this.drawHostileProjectiles(ctx);
+        return;
+      case 'telegraphs':
+        this.drawTelegraphs(ctx);
+        return;
+      case 'effects':
+        this.drawImpactRings(ctx, 'player');
+        this.drawParticles(ctx);
+        this.drawDamageNumbers(ctx);
+        return;
+      case 'playerXray':
+        this.measurePlayerCoverage();
+        if (this.stats.xray) this.drawPlayerXray(ctx);
+        return;
+    }
+  }
+
+  private acquireBody(): BodyDraw {
+    let body = this.bodyPool[this.bodyCount];
+    if (!body) {
+      body = { rank: 1, depth: 0, id: 0, x: 0, y: 0, left: 0, right: 0, top: 0, bottom: 0, enemy: null, obstacle: null, sprite: null, cloneSide: 1 };
+      this.bodyPool.push(body);
+    }
+    this.bodyCount += 1;
+    body.enemy = null;
+    body.obstacle = null;
+    body.sprite = null;
+    return body;
+  }
+
+  /** Gathers this frame's visible bodies and sorts them by depth (TEC-12). */
+  private collectBodies() {
+    this.bodyCount = 0;
+    this.playerBody = null;
+    for (const obstacle of this.world.obstacles) {
+      if (!rectVisible(this.viewport, obstacle.x - 12, obstacle.y - 12, obstacle.w + 28, obstacle.h + 30)) continue;
+      const body = this.acquireBody();
+      body.rank = 0;
+      body.depth = obstacle.y + obstacle.h;
+      body.id = obstacle.id;
+      body.x = obstacle.x + obstacle.w / 2;
+      body.y = obstacle.y + obstacle.h;
+      body.left = obstacle.x;
+      body.right = obstacle.x + obstacle.w + 10;
+      body.top = obstacle.y - 8;
+      body.bottom = obstacle.y + obstacle.h;
+      body.obstacle = obstacle;
+    }
+    for (const enemy of this.world.enemies) {
+      const point = this.interpolated(enemy);
+      const sprite = this.enemySprite(enemy);
+      // Sprites stand on the hit circle's centre and rise above it; vectors are centred on it.
+      const top = sprite ? point.y - (sprite.frame.ay / sprite.frame.scale) * sprite.scale : point.y - enemy.radius;
+      const reach = sprite ? Math.max(enemy.radius + 24, point.y - top + 8) : enemy.radius + 24;
+      if (!circleVisible(this.viewport, point.x, point.y, reach)) continue;
+      const body = this.acquireBody();
+      const halfWidth = sprite ? Math.max(enemy.radius, ((sprite.frame.sw / sprite.frame.scale) * sprite.scale) / 2) : enemy.radius;
+      body.rank = 1;
+      body.depth = point.y;
+      body.id = enemy.id;
+      body.x = point.x;
+      body.y = point.y;
+      body.left = point.x - halfWidth;
+      body.right = point.x + halfWidth;
+      body.top = top;
+      body.bottom = sprite ? point.y + enemy.radius * 0.42 : point.y + enemy.radius;
+      body.enemy = enemy;
+      body.sprite = sprite ?? null;
+    }
+    this.heroMoving = this.playerMoved();
+    this.hero = this.heroFrame(this.heroMoving);
+    const player = this.interpolated(this.world.player);
+    const heroTop = this.hero ? player.y - this.hero.ay / this.hero.scale : player.y - 36;
+    const clone = this.world.skills.mirrorClone;
+    if (clone) {
+      const sideAngle = this.world.aim.angle + Math.PI / 2;
+      const policy = motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion);
+      // Both clones fire every volley, so both are drawn, at the offset the shots start from (BUG-16).
+      for (const side of [-1, 1] as const) {
+        const drift = policy.reduced ? 0 : Math.sin(this.world.elapsed * 4.2 + side) * 3;
+        const x = player.x + Math.cos(sideAngle) * SKILL_NUMBERS.mirrorClone.cloneOffset * side + Math.cos(this.world.aim.angle) * drift;
+        const y = player.y + Math.sin(sideAngle) * SKILL_NUMBERS.mirrorClone.cloneOffset * side + Math.sin(this.world.aim.angle) * drift;
+        const body = this.acquireBody();
+        body.rank = 2;
+        body.depth = y;
+        body.id = side;
+        body.x = x;
+        body.y = y;
+        body.left = x - 18;
+        body.right = x + 18;
+        body.top = y - (player.y - heroTop);
+        body.bottom = y + 6;
+        body.cloneSide = side;
+      }
+    }
+    const body = this.acquireBody();
+    body.rank = 3;
+    body.depth = player.y;
+    body.id = 0;
+    body.x = player.x;
+    body.y = player.y;
+    body.left = player.x - 18;
+    body.right = player.x + 18;
+    body.top = heroTop;
+    body.bottom = player.y + 6;
+    this.playerBody = body;
+
+    const sorted = this.sortedBodies;
+    sorted.length = this.bodyCount;
+    for (let index = 0; index < this.bodyCount; index += 1) sorted[index] = this.bodyPool[index];
+    sorted.sort((a, b) => a.depth - b.depth || a.rank - b.rank || a.id - b.id);
+    this.stats.bodies = this.bodyCount;
+  }
+
+  private drawBody(ctx: CanvasRenderingContext2D, body: BodyDraw) {
+    if (body.obstacle) {
+      this.visual.drawObstacleBlock(ctx, body.obstacle);
+      return;
+    }
+    if (body.enemy) {
+      this.drawEnemyBody(ctx, body.enemy, body);
+      return;
+    }
+    if (body.rank === 2) {
+      this.drawMirrorClone(ctx, body.x, body.y);
+      return;
+    }
+    this.drawPlayerBody(ctx, body);
   }
 
   private drawWorld(ctx: CanvasRenderingContext2D) {
@@ -306,17 +521,82 @@ export class WorldRenderer {
     }
   }
 
-  private drawLaneTelegraphs(ctx: CanvasRenderingContext2D) {
+  /** Threat warnings above every body (V3): lane telegraphs, ranged windups, and boss ring warnings. */
+  private drawTelegraphs(ctx: CanvasRenderingContext2D) {
     for (const lane of this.world.laneTelegraphs) {
       if (!segmentVisible(this.viewport, lane.x1, lane.y1, lane.x2, lane.y2, lane.width + 40)) continue;
       this.visual.drawLaneTelegraph(ctx, lane);
     }
+    for (const body of this.sortedBodies) {
+      const enemy = body.enemy;
+      if (!enemy || enemy.isBoss || enemy.attackStyle !== 'ranged' || enemy.rangedTelegraph <= 0) continue;
+      ctx.save();
+      ctx.strokeStyle = SIGNAL.hostile;
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = 0.78;
+      ctx.setLineDash([8, 7]);
+      ctx.beginPath();
+      ctx.moveTo(body.x, body.y);
+      ctx.lineTo(enemy.patternX, enemy.patternY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.arc(body.x, body.y, enemy.radius + 6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+    this.drawImpactRings(ctx, 'hostile');
   }
 
-  private drawObstacles(ctx: CanvasRenderingContext2D) {
-    for (const obstacle of this.world.obstacles) {
-      if (!rectVisible(this.viewport, obstacle.x - 12, obstacle.y - 12, obstacle.w + 28, obstacle.h + 30)) continue;
-      this.visual.drawObstacle(ctx, obstacle);
+  /** Marks on the floor under every body: foot shadows, the player's foot ring, and ranged-enemy rings. */
+  private drawGroundMarks(ctx: CanvasRenderingContext2D) {
+    for (const body of this.sortedBodies) {
+      const enemy = body.enemy;
+      if (!enemy) continue;
+      if (body.sprite) {
+        ctx.save();
+        ctx.fillStyle = rgba(NEUTRAL.ink, 0.3);
+        ctx.beginPath();
+        ctx.ellipse(body.x, body.y, enemy.radius, enemy.radius * 0.42, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      if (enemy.isBoss || enemy.attackStyle !== 'ranged' || enemy.rangedTelegraph > 0) continue;
+      ctx.save();
+      ctx.strokeStyle = SIGNAL.hostile;
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 0.62;
+      ctx.beginPath();
+      ctx.arc(body.x, body.y, enemy.radius + 6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+    const player = this.playerBody;
+    if (!player) return;
+    if (this.hero) this.drawHeroGround(ctx, player.x, player.y);
+    else this.visual.drawPlayerGround(ctx, this.playerInput(player));
+  }
+
+  /** Health bars and ranged markers for every body in one pass, so no body covers another's bar (TEC-12). */
+  private drawOverheads(ctx: CanvasRenderingContext2D) {
+    const bars = this.world.options.healthBars;
+    for (const body of this.sortedBodies) {
+      const enemy = body.enemy;
+      if (!enemy) continue;
+      if (!enemy.isBoss && enemy.attackStyle === 'ranged') {
+        ctx.save();
+        ctx.fillStyle = SIGNAL.hostile;
+        ctx.globalAlpha = enemy.rangedTelegraph > 0 ? 0.78 : 0.62;
+        ctx.beginPath();
+        ctx.moveTo(body.x, body.top - 12);
+        ctx.lineTo(body.x + 5, body.top - 4);
+        ctx.lineTo(body.x - 5, body.top - 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+      const showHealth = bars === 'all' || (bars === 'elite' && (enemy.isBoss || enemy.tier === 'large'));
+      if (showHealth) this.drawHealthBar(ctx, body.x, body.top - 14, enemy.radius * 2.1, 6, enemy.hp / enemy.maxHp);
     }
   }
 
@@ -465,76 +745,35 @@ export class WorldRenderer {
     }
   }
 
-  private drawEnemies(ctx: CanvasRenderingContext2D) {
-    for (const enemy of this.world.enemies) {
-      const point = this.interpolated(enemy);
-      const sprite = this.enemySprite(enemy);
-      // Sprites stand on the hit circle's centre and rise above it; vectors are centred on it.
-      const headY = sprite ? point.y - (sprite.frame.ay / sprite.frame.scale) * sprite.scale : point.y - enemy.radius;
-      const reach = sprite ? Math.max(enemy.radius + 24, point.y - headY + 8) : enemy.radius + 24;
-      if (!circleVisible(this.viewport, point.x, point.y, reach)) continue;
-      if (sprite) {
-        ctx.save();
-        ctx.fillStyle = rgba(NEUTRAL.ink, 0.3);
-        ctx.beginPath();
-        ctx.ellipse(point.x, point.y, enemy.radius, enemy.radius * 0.42, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-        this.blit(ctx, sprite.frame, point.x, point.y, sprite.facing, sprite.scale);
-      } else this.visual.drawEnemy(ctx, {
-        id: enemy.id,
-        x: point.x,
-        y: point.y,
-        vx: enemy.vx,
-        vy: enemy.vy,
-        radius: enemy.radius,
-        tier: enemy.tier,
-        variant: enemy.variant,
-        isBoss: enemy.isBoss,
-        attackStyle: enemy.attackStyle,
-        hitFlash: enemy.hitFlash,
-        bossId: enemy.boss?.id,
-        bossPattern: enemy.boss?.pattern,
-        bossPhase: enemy.bossPhase,
-        legacyBoss: enemy.legacyBoss === true,
-        patternPhase: enemy.patternPhase,
-      });
-
-      if (!enemy.isBoss && enemy.attackStyle === 'ranged') {
-        ctx.save();
-        ctx.strokeStyle = SIGNAL.hostile;
-        ctx.lineWidth = enemy.rangedTelegraph > 0 ? 3 : 2;
-        ctx.globalAlpha = enemy.rangedTelegraph > 0 ? 0.78 : 0.62;
-        if (enemy.rangedTelegraph > 0) {
-          ctx.setLineDash([8, 7]);
-          ctx.beginPath();
-          ctx.moveTo(point.x, point.y);
-          ctx.lineTo(enemy.patternX, enemy.patternY);
-          ctx.stroke();
-          ctx.setLineDash([]);
-        }
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, enemy.radius + 6, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.fillStyle = SIGNAL.hostile;
-        ctx.beginPath();
-        ctx.moveTo(point.x, headY - 12);
-        ctx.lineTo(point.x + 5, headY - 4);
-        ctx.lineTo(point.x - 5, headY - 4);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-      }
-
-      const showHealth =
-        this.world.options.healthBars === 'all' ||
-        (this.world.options.healthBars === 'elite' && (enemy.isBoss || enemy.tier === 'large'));
-      if (showHealth) this.drawHealthBar(ctx, point.x, headY - 14, enemy.radius * 2.1, 6, enemy.hp / enemy.maxHp);
+  private drawEnemyBody(ctx: CanvasRenderingContext2D, enemy: Readonly<Entity>, body: BodyDraw) {
+    if (body.sprite) {
+      this.blit(ctx, body.sprite.frame, body.x, body.y, body.sprite.facing, body.sprite.scale);
+      return;
     }
+    this.visual.drawEnemy(ctx, {
+      id: enemy.id,
+      x: body.x,
+      y: body.y,
+      vx: enemy.vx,
+      vy: enemy.vy,
+      radius: enemy.radius,
+      tier: enemy.tier,
+      variant: enemy.variant,
+      isBoss: enemy.isBoss,
+      attackStyle: enemy.attackStyle,
+      hitFlash: enemy.hitFlash,
+      bossId: enemy.boss?.id,
+      bossPattern: enemy.boss?.pattern,
+      bossPhase: enemy.bossPhase,
+      legacyBoss: enemy.legacyBoss === true,
+      patternPhase: enemy.patternPhase,
+    });
   }
 
-  private drawImpactRings(ctx: CanvasRenderingContext2D) {
+  /** Hostile rings are boss attack warnings (telegraph layer); the player's are hit feedback (effects layer). */
+  private drawImpactRings(ctx: CanvasRenderingContext2D, owner: 'player' | 'hostile') {
     for (const ring of this.world.effects.impactRings) {
+      if ((ring.owner === 'hostile') !== (owner === 'hostile')) continue;
       if (!circleVisible(this.viewport, ring.x, ring.y, ring.radius * 1.5)) continue;
       this.visual.drawImpactRing(ctx, ring);
     }
@@ -559,34 +798,22 @@ export class WorldRenderer {
     }
   }
 
-  private drawMirrorClone(ctx: CanvasRenderingContext2D) {
+  private drawMirrorClone(ctx: CanvasRenderingContext2D, x: number, y: number) {
     const skill = this.world.skills.mirrorClone;
     if (!skill) return;
-    const player = this.interpolated(this.world.player);
-    const sideAngle = this.world.aim.angle + Math.PI / 2;
-    const policy = motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion);
-
-    // Both clones fire every volley, so both are drawn, at the offset the shots start from (BUG-16).
-    for (const side of [-1, 1]) {
-      const distanceFromPlayer = SKILL_NUMBERS.mirrorClone.cloneOffset;
-      const drift = policy.reduced ? 0 : Math.sin(this.world.elapsed * 4.2 + side) * 3;
-      const x = player.x + Math.cos(sideAngle) * distanceFromPlayer * side + Math.cos(this.world.aim.angle) * drift;
-      const y = player.y + Math.sin(sideAngle) * distanceFromPlayer * side + Math.sin(this.world.aim.angle) * drift;
-      const sprite = this.heroFrame(this.playerMoved());
-      if (sprite) {
-        this.blit(ctx, sprite, x, y, this.heroFacing, 0.94, skill.awakened ? 0.3 : 0.38);
-        continue;
-      }
-      this.visual.drawMirrorClone(ctx, {
-        x,
-        y,
-        aimAngle: this.world.aim.angle,
-        moving: this.playerMoved(),
-        shield: 0,
-        silence: 0,
-        alpha: skill.awakened ? 0.28 : 0.36,
-      });
+    if (this.hero) {
+      this.blit(ctx, this.hero, x, y, this.heroFacing, 0.94, skill.awakened ? 0.3 : 0.38);
+      return;
     }
+    this.visual.drawMirrorClone(ctx, {
+      x,
+      y,
+      aimAngle: this.world.aim.angle,
+      moving: this.heroMoving,
+      shield: 0,
+      silence: 0,
+      alpha: skill.awakened ? 0.28 : 0.36,
+    });
   }
 
   /** Walk cycles follow actual movement (keys held while rooted or paused must not animate) (BUG-15). */
@@ -594,27 +821,76 @@ export class WorldRenderer {
     return !this.world.paused && Math.hypot(this.world.player.x - this.world.player.prevX, this.world.player.y - this.world.player.prevY) > 0.01;
   }
 
-  private drawPlayer(ctx: CanvasRenderingContext2D) {
-    const moving = this.playerMoved();
-    const player = this.interpolated(this.world.player);
-    const sprite = this.heroFrame(moving);
-    if (sprite) {
-      this.drawHeroGround(ctx, player.x, player.y);
-      this.blit(ctx, sprite, player.x, player.y, this.heroFacing, 1);
-      this.drawHeroMarks(ctx, player.x, player.y, sprite);
-      return;
-    }
-    this.visual.drawPlayer(ctx, {
-      x: player.x,
-      y: player.y,
+  private playerInput(body: BodyDraw) {
+    return {
+      x: body.x,
+      y: body.y,
       aimAngle: this.world.aim.angle,
-      moving,
+      moving: this.heroMoving,
       shield: this.world.player.shield,
       silence: this.world.player.silence,
-    });
+    };
   }
 
-  private playerCovered() {
+  private drawPlayerBody(ctx: CanvasRenderingContext2D, body: BodyDraw) {
+    if (this.hero) {
+      this.blit(ctx, this.hero, body.x, body.y, this.heroFacing, 1);
+      this.drawHeroMarks(ctx, body.x, body.y, this.hero);
+      return;
+    }
+    this.visual.drawPlayerBody(ctx, this.playerInput(body));
+  }
+
+  /**
+   * How much of the player's body box is covered by anything drawn after it: nearer bodies, obstacle blocks
+   * in front, particles, and damage numbers. Sampled on a 5 x 7 grid. The x-ray pass draws when that share
+   * reaches XRAY_COVERAGE (TEC-12) or when the player stands on a boss or large body (BUG-12).
+   */
+  private measurePlayerCoverage() {
+    const player = this.playerBody;
+    this.stats.playerCoverage = 0;
+    this.stats.xray = this.playerOnDarkBody();
+    if (!player) return;
+    const covers: Array<readonly [number, number, number, number]> = [];
+    const overlaps = (left: number, top: number, right: number, bottom: number) =>
+      right > player.left && left < player.right && bottom > player.top && top < player.bottom;
+    let behind = true;
+    for (const body of this.sortedBodies) {
+      if (body === player) {
+        behind = false;
+        continue;
+      }
+      if (behind || body.rank === 2) continue;
+      if (overlaps(body.left, body.top, body.right, body.bottom)) covers.push([body.left, body.top, body.right, body.bottom]);
+    }
+    for (const particle of this.world.effects.particles) {
+      const size = particle.size;
+      if (overlaps(particle.x - size, particle.y - size, particle.x + size, particle.y + size)) {
+        covers.push([particle.x - size, particle.y - size, particle.x + size, particle.y + size]);
+      }
+    }
+    if (this.world.options.damageNumbers) {
+      for (const number of this.world.effects.damageNumbers) {
+        if (overlaps(number.x - 18, number.y - 18, number.x + 18, number.y + 2)) covers.push([number.x - 18, number.y - 18, number.x + 18, number.y + 2]);
+      }
+    }
+    if (covers.length === 0) return;
+    let covered = 0;
+    const columns = 5;
+    const rows = 7;
+    for (let column = 0; column < columns; column += 1) {
+      const x = player.left + ((column + 0.5) / columns) * (player.right - player.left);
+      for (let row = 0; row < rows; row += 1) {
+        const y = player.top + ((row + 0.5) / rows) * (player.bottom - player.top);
+        if (covers.some(([left, top, right, bottom]) => x >= left && x <= right && y >= top && y <= bottom)) covered += 1;
+      }
+    }
+    this.stats.playerCoverage = covered / (columns * rows);
+    this.stats.xray = this.stats.xray || this.stats.playerCoverage >= XRAY_COVERAGE;
+  }
+
+  /** A boss or large body under or over the player: same-ink bodies swallow the hero's silhouette (BUG-12). */
+  private playerOnDarkBody() {
     for (const enemy of this.world.enemies) {
       if (enemy.hp <= 0 || !(enemy.isBoss || enemy.tier === 'large')) continue;
       if (distance(enemy, this.world.player) < enemy.radius + 34) return true;
@@ -623,12 +899,11 @@ export class WorldRenderer {
   }
 
   private drawPlayerXray(ctx: CanvasRenderingContext2D) {
-    if (!this.playerCovered()) return;
-    const player = this.interpolated(this.world.player);
-    const sprite = this.heroFrame(this.playerMoved());
-    if (sprite) {
-      // The hero is redrawn half-transparent over the covering body, with the hit circle (BUG-12).
-      this.blit(ctx, sprite, player.x, player.y, this.heroFacing, 1, 0.6);
+    const player = this.playerBody;
+    if (!player) return;
+    if (this.hero) {
+      // The hero is redrawn half-transparent over whatever covers it, with the hit circle (BUG-12).
+      this.blit(ctx, this.hero, player.x, player.y, this.heroFacing, 1, 0.6);
       ctx.save();
       ctx.setLineDash([4, 4]);
       ctx.strokeStyle = SIGNAL.ally;

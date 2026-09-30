@@ -9,3 +9,4 @@ export { InputAdapter, KEYBOARD_ACTIONS } from '../ui/inputAdapter';
 export { SpriteAtlas } from '../game/render/assets/spriteAtlas';
 export { ATLAS_MANIFEST } from '../game/render/assets/atlasManifest.generated';
 export { DISABLED_SLOTS } from '../game/render/assets/slots';
+export { WORLD_LAYERS, XRAY_COVERAGE } from '../game/render/worldRenderer';

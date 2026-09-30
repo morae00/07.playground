@@ -162,8 +162,9 @@ function killAt(probe, points) {
   probe.step(1);
 }
 
-// Draws one frame at a fixed clock and returns the draw calls after the last translate (the player's, when no shots or
-// keyline follow it), so two frames compare by pose alone wherever the player stands.
+// Draws one frame at a fixed clock and returns the draw calls after the last translate (the player's, when no shots,
+// keyline, or nearer body follow it: bodies are depth-sorted since TEC-12, so callers clear obstacles), so two frames
+// compare by pose alone wherever the player stands.
 function playerPose(probe, recorder) {
   probe.setClock({ elapsed: 1.3 });
   recorder.reset();
@@ -366,7 +367,7 @@ test('reduced motion draws orbit blades where they hit, and the walk cycle follo
   const { engine, probe, recorder } = createEngine();
   try {
     engine.setSystemReducedMotion(true);
-    probe.clear('enemies');
+    probe.clear('enemies', 'obstacles');
     probe.setSkills({ orbitScythes: { level: 1 } });
     probe.setClock({ elapsed: 1.3 });
     recorder.reset();
@@ -381,7 +382,9 @@ test('reduced motion draws orbit blades where they hit, and the walk cycle follo
       assert.ok(recorder.translations.some(([tx, ty]) => Math.abs(tx - x) < 1e-6 && Math.abs(ty - y) < 1e-6), `blade drawn at simulated position ${x},${y}`);
     }
 
-    // Reduced motion never animates the walk, so the walk cycle is read from full-motion poses.
+    // Reduced motion never animates the walk, so the walk cycle is read from full-motion poses. Orbit blades
+    // draw above bodies (TEC-12), so they are removed to keep the player's pose the last translated drawing.
+    probe.setSkills({});
     engine.setSystemReducedMotion(false);
     const standing = playerPose(probe, recorder);
     probe.setPlayer({ root: 5 });
