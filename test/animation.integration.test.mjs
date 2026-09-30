@@ -177,3 +177,27 @@ test('a hit flashes a white cut-out over the sprite in three steps', async () =>
     engine.dispose();
   }
 });
+
+test('the player hears where hits come from and when health runs low (FX-03)', () => {
+  const { engine, probe } = arena(1, 2);
+  const events = [];
+  engine.subscribe((event) => events.push(event));
+  try {
+    probe.setGodMode(false);
+    const { player } = probe.read();
+    const maxHp = player.stats.maxHp;
+    probe.setPlayer({ hp: maxHp, stats: { defense: 0 } });
+    probe.spawnEnemy({ tier: 'large', x: player.x - 20, y: player.y, speed: 0, damage: maxHp * 0.8, hp: 1e6 });
+    for (let step = 0; step < 30 && !events.some((event) => event.type === 'player/hurt'); step += 1) probe.step(1);
+    const hurt = events.find((event) => event.type === 'player/hurt');
+    assert.ok(hurt && hurt.fromX < hurt.x, 'the hit came from the enemy on the left');
+    probe.step(1);
+    assert.deepEqual(events.filter((event) => event.type === 'player/lowHealth').map((event) => event.low), [true]);
+    probe.clear('enemies');
+    probe.setPlayer({ hp: maxHp });
+    probe.step(1);
+    assert.deepEqual(events.filter((event) => event.type === 'player/lowHealth').map((event) => event.low), [true, false]);
+  } finally {
+    engine.dispose();
+  }
+});

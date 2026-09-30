@@ -365,6 +365,8 @@ const BOSS_MIN_SPAWN_DISTANCE = 420;
 /** SYS-04: the speed a boss recoils at after a contact hit. */
 const BOSS_CONTACT_RECOIL = 260;
 /** SYS-04: enrage climbs one of four steps every 30 s of stage clock; its silence zone warns for 0.8 s. */
+/** At or under this share of health the player gets the low-health heartbeat and vignette (FX-03). */
+export const LOW_HEALTH_RATIO = 0.3;
 const ENRAGE_STEPS = 4;
 const ENRAGE_STEP_SECONDS = 30;
 const ENRAGE_ZONE_WARNING_SECONDS = 0.8;
@@ -929,6 +931,8 @@ export class GameEngine {
   protected bossEnraged = false;
   /** SYS-04: enrage step (1-4) and seconds since the boss stage clock ran out. */
   protected enrageStep = 0;
+  /** Whether the last step reported low health; a new round reports it again (FX-03). */
+  protected lowHealth = false;
   protected enrageSeconds = 0;
   /** SYS-04: a silence zone waiting behind its warning during enrage. */
   protected pendingEnrageZone: { x: number; y: number; at: number } | null = null;
@@ -1170,6 +1174,7 @@ export class GameEngine {
     this.enrageStep = 0;
     this.enrageSeconds = 0;
     this.pendingEnrageZone = null;
+    this.lowHealth = false;
     this.cheatGodMode = false;
     this.lastDamageSource = 'unknown';
     this.releaseStagger = false;
@@ -1252,7 +1257,7 @@ export class GameEngine {
       this.faultInjection = true;
       return 'LOOP FAULT ARMED';
     }
-    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR'].includes(code)) {
+    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO'].includes(code)) {
       this.invalidateInfiniteScore();
     }
     if (code === 'GOD') {
@@ -1287,6 +1292,14 @@ export class GameEngine {
     if (code === 'DRAFT') {
       this.openDraft('level', 'resume');
       return 'DRAFT OPEN';
+    }
+
+    // FX-03: ends the run as a defeat on the next step, to check the death moment.
+    if (code === 'KO') {
+      this.cheatGodMode = false;
+      this.player.shield = 0;
+      this.player.hp = 0;
+      return 'PLAYER DOWN';
     }
 
     if (code === 'CLEAR') {
@@ -1577,6 +1590,7 @@ export class GameEngine {
     this.enrageStep = 0;
     this.enrageSeconds = 0;
     this.pendingEnrageZone = null;
+    this.lowHealth = false;
     this.stageKills = 0;
     this.stageCoinsEarned = 0;
     this.draftQueue = [];
@@ -1756,7 +1770,16 @@ export class GameEngine {
     this.flushDeadEnemies();
     if (this.endStepIfInterrupted()) return;
     this.updateEffects(dt);
+    this.trackLowHealth();
     this.resolveRoundState();
+  }
+
+  /** Reports the player crossing LOW_HEALTH_RATIO either way (FX-03); presentation only, nothing reads it back. */
+  protected trackLowHealth() {
+    const low = this.player.hp > 0 && this.player.hp <= this.player.stats.maxHp * LOW_HEALTH_RATIO;
+    if (low === this.lowHealth) return;
+    this.lowHealth = low;
+    this.emit({ type: 'player/lowHealth', low });
   }
 
   protected capturePreviousPositions() {
@@ -2888,7 +2911,7 @@ export class GameEngine {
       const touching = distance(enemy, this.player) < enemy.radius + HIT_RADIUS.playerContact;
       if (touching && enemy.contactTimer <= 0) {
         enemy.contactTimer = enemy.isBoss ? 0.78 : 1;
-        this.damagePlayer(enemy.damage, true, enemy.isBoss ? 'bossContact' : 'contact');
+        this.damagePlayer(enemy.damage, true, enemy.isBoss ? 'bossContact' : 'contact', enemy);
         this.emit({ type: 'enemy/contact', isBoss: enemy.isBoss });
         if (enemy.isBoss && this.rules.bossSpacing && enemy.patternPhase !== 'dash' && enemy.patternPhase !== 'warn') {
           // SYS-04: the hit knocks the boss back so it does not stay on top of the player.
@@ -3602,7 +3625,7 @@ export class GameEngine {
       projectile.y += projectile.vy * dt;
       if (!projectile.fading && segmentCircleHitTime(start, projectile, this.player, projectile.radius + HIT_RADIUS.playerVsHostileShot) !== null) {
         projectile.life = 0;
-        this.damagePlayer(projectile.damage, true, projectile.kind === 'enemy' ? 'shot' : 'bossShot');
+        this.damagePlayer(projectile.damage, true, projectile.kind === 'enemy' ? 'shot' : 'bossShot', projectile);
       }
     }
     recycleWhere(
@@ -3658,7 +3681,7 @@ export class GameEngine {
       if (Number.isFinite(hazard.life)) hazard.life -= dt;
       if (hazard.kind === 'shock' && !hazard.triggered && expiredThisStep(previousLife, hazard.life)) {
         hazard.triggered = true;
-        if (shockHitsPlayer(hazard, hazard.radius, this.player, HIT_RADIUS.playerVsHostileShot)) this.damagePlayer(hazard.damage, false, 'shock');
+        if (shockHitsPlayer(hazard, hazard.radius, this.player, HIT_RADIUS.playerVsHostileShot)) this.damagePlayer(hazard.damage, false, 'shock', hazard);
         this.emit({ type: 'shock/burst', x: hazard.x, y: hazard.y });
       }
       if (hazard.kind === 'warning' && !hazard.triggered && expiredThisStep(previousLife, hazard.life)) {
@@ -3990,7 +4013,7 @@ export class GameEngine {
     this.emit({ type: 'area/damage', x, y });
   }
 
-  protected damagePlayer(rawDamage: number, physical: boolean, source: PlayerDamageSource) {
+  protected damagePlayer(rawDamage: number, physical: boolean, source: PlayerDamageSource, from: Readonly<{ x: number; y: number }>) {
     if (this.cheatGodMode) {
       this.player.hp = this.player.stats.maxHp;
       return;
@@ -4003,7 +4026,7 @@ export class GameEngine {
     if (this.skills.ironFrame?.awakened) this.player.shield = SKILL_NUMBERS.ironFrame.shieldSeconds;
     if (paperWard?.awakened) this.pushEnemiesFromPlayer(SKILL_NUMBERS.paperWard.pushRadius);
     this.lastDamageSource = source;
-    this.emit({ type: 'player/hurt', x: this.player.x, y: this.player.y, damage: reduced, source });
+    this.emit({ type: 'player/hurt', x: this.player.x, y: this.player.y, damage: reduced, source, fromX: from.x, fromY: from.y });
   }
 
   protected damagePlayerOverTime(damagePerSecond: number, dt: number, source: PlayerDamageSource) {

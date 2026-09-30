@@ -44,6 +44,9 @@ export const CUES = {
   'boss.kill': cue('sfx', 5, 1, 0, [80, 0.09, 'sawtooth']),
   'boss.enraged': cue('sfx', 5, 1, 0, [65, 0.12, 'sawtooth']),
   'player.hurt': cue('sfx', 4, 1, 0.05, [140, 0.025, 'triangle']),
+  // FX-03: the low-health heartbeat and the fall. Placeholders until the SFX library (AUD-02).
+  'player.heartbeat': cue('sfx', 4, 1, 0.3, [58, 0.11, 'sine', 1.6]),
+  'player.down': cue('sfx', 5, 1, 0, [62, 0.36, 'sawtooth', 1.3]),
   'cast.fanKnives': cue('sfx', 1, 2, 0.03, [390, 0.025, 'triangle']),
   'cast.chainSpark': cue('sfx', 1, 2, 0.03, [660, 0.025, 'square']),
   'cast.frostLine': cue('sfx', 1, 2, 0.03, [510, 0.04, 'sine']),

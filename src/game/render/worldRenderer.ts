@@ -23,7 +23,7 @@ import { SKILL_NUMBERS, scaleAt } from '../skillNumbers.ts';
 import type { ViewFrame } from '../viewPolicy.ts';
 import { motionPolicy } from '../visualContracts.ts';
 import { clamp, distance } from '../worldMath.ts';
-import { CORPSE_FALL_SECONDS } from '../presentation/presentation.ts';
+import { CORPSE_FALL_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HURT_VIGNETTE_SECONDS } from '../presentation/presentation.ts';
 import { WARDEN_SHIELD } from '../enemyBehaviors.ts';
 import { AnimationBook, SPAWN_SECONDS, enemyPoses, heroPoses, poseFrame, stepBossAnim, stepEnemyAnim, stepPlayerAnim, type AnimState, type EnemyAnim } from './animation.ts';
 import { phaseFor, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
@@ -146,6 +146,11 @@ export type RenderEffects = {
   readonly playerHurt: number;
   readonly playerBurst: number;
   readonly playerCast: number;
+  /** Player feedback (FX-03): the hurt vignette and the hit's angle, low health, and the death moment. */
+  readonly hurtVignette: number;
+  readonly hurtAngle: number;
+  readonly lowHealth: boolean;
+  readonly deathMoment: number;
   random(): number;
 };
 
@@ -267,6 +272,7 @@ export class WorldRenderer {
       this.drawLayer(ctx, layer);
     }
     ctx.restore();
+    this.drawPlayerFeedback(ctx, policy.pulse);
     if (frame.offsetX > 0) {
       // Pillarbox bars keep windows wider than 16:9 from seeing past the logical frame (and its spawns).
       ctx.fillStyle = NEUTRAL.ink;
@@ -933,11 +939,67 @@ export class WorldRenderer {
 
   private drawPlayerBody(ctx: CanvasRenderingContext2D, body: BodyDraw) {
     if (this.hero) {
-      this.blit(ctx, this.hero, body.x, body.y, (this.heroAnim?.facing ?? 1), 1);
+      const tilt = this.heroTilt();
+      if (tilt !== 0) {
+        this.blitTilted(ctx, this.hero, body.x, body.y, tilt, 1);
+        return;
+      }
+      this.blit(ctx, this.hero, body.x, body.y, this.heroAnim?.facing ?? 1, 1);
       this.drawHeroMarks(ctx, body.x, body.y, this.hero);
       return;
     }
     this.visual.drawPlayerBody(ctx, this.playerInput(body));
+  }
+
+  /** The hero falls back over the death moment (FX-03) and lies still until the settlement; upright otherwise. */
+  private heroTilt() {
+    if (this.heroAnim?.state !== 'death' || motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion).reduced) return 0;
+    const progress = 1 - this.world.effects.deathMoment / DEATH_MOMENT_SECONDS;
+    return -(this.heroAnim.facing) * progress * progress * Math.PI * 0.44;
+  }
+
+  private blitTilted(ctx: CanvasRenderingContext2D, frame: SpriteFrame, x: number, y: number, tilt: number, alpha: number) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(tilt);
+    this.blit(ctx, frame, 0, 0, this.heroAnim?.facing ?? 1, 1, alpha);
+    ctx.restore();
+  }
+
+  /**
+   * Player feedback in screen space, over the world (FX-03): a coral glow on the side a hit came from, fading over
+   * HURT_VIGNETTE_SECONDS, and a coral edge while health is low that beats with the heartbeat unless motion is
+   * reduced. Reduced flash halves both.
+   */
+  private drawPlayerFeedback(ctx: CanvasRenderingContext2D, pulse: boolean) {
+    const { effects, view, options } = this.world;
+    if (effects.hurtVignette <= 0 && !effects.lowHealth) return;
+    const left = view.frame.offsetX;
+    const width = view.width - left * 2;
+    const height = view.height;
+    const cx = left + width / 2;
+    const cy = height / 2;
+    const reach = Math.hypot(width, height) / 2;
+    const strength = options.reducedFlash ? 0.5 : 1;
+    const glow = (x: number, y: number, inner: number, outer: number, innerAlpha: number, outerAlpha: number) => {
+      const gradient = ctx.createRadialGradient?.(x, y, inner, x, y, outer);
+      if (!gradient || typeof gradient.addColorStop !== 'function') return;
+      gradient.addColorStop(0, rgba(SIGNAL.hostile, innerAlpha));
+      gradient.addColorStop(1, rgba(SIGNAL.hostile, outerAlpha));
+      ctx.fillStyle = gradient;
+      ctx.fillRect(left, 0, width, height);
+    };
+    ctx.save();
+    if (effects.lowHealth) {
+      const beat = pulse ? 0.07 * Math.max(0, Math.sin((this.world.elapsed / HEARTBEAT_SECONDS) * Math.PI * 2)) : 0;
+      glow(cx, cy, reach * 0.55, reach, 0, (0.2 + beat) * strength);
+    }
+    if (effects.hurtVignette > 0) {
+      const x = cx + Math.cos(effects.hurtAngle) * width * 0.62;
+      const y = cy + Math.sin(effects.hurtAngle) * height * 0.62;
+      glow(x, y, 0, reach * 0.9, 0.42 * (effects.hurtVignette / HURT_VIGNETTE_SECONDS) * strength, 0);
+    }
+    ctx.restore();
   }
 
   /**
@@ -1002,7 +1064,9 @@ export class WorldRenderer {
     if (!player) return;
     if (this.hero) {
       // The hero is redrawn half-transparent over whatever covers it, with the hit circle (BUG-12).
-      this.blit(ctx, this.hero, player.x, player.y, (this.heroAnim?.facing ?? 1), 1, 0.6);
+      const tilt = this.heroTilt();
+      if (tilt !== 0) this.blitTilted(ctx, this.hero, player.x, player.y, tilt, 0.6);
+      else this.blit(ctx, this.hero, player.x, player.y, this.heroAnim?.facing ?? 1, 1, 0.6);
       ctx.save();
       ctx.setLineDash([4, 4]);
       ctx.strokeStyle = SIGNAL.ally;

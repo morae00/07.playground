@@ -31,6 +31,12 @@ export const CORPSE_FALL_SECONDS = 0.25;
 export const CORPSE_SECONDS = CORPSE_FALL_SECONDS + 1.5;
 /** Hit ink sprays out of the far side of a hit, inside this cone. */
 const SPLASH_CONE = Math.PI * 0.6;
+/** Player feedback (FX-03): the coral vignette after a hit, the heartbeat interval at low health, and the death moment. */
+export const HURT_VIGNETTE_SECONDS = 0.35;
+export const HEARTBEAT_SECONDS = 0.85;
+/** Wall-clock length of the death moment; particles drift at DEATH_SLOWMO_RATE meanwhile. */
+export const DEATH_MOMENT_SECONDS = 0.4;
+const DEATH_SLOWMO_RATE = 0.25;
 /**
  * Pose lengths for the hero (FX-01): the hurt flash (3 frames at 12 fps), the throw (4 frames at 16 fps), and the
  * longer burst for the big actives and awakenings.
@@ -61,6 +67,13 @@ export class Presentation {
   playerHurt = 0;
   playerBurst = 0;
   playerCast = 0;
+  /** Seconds left on the hurt vignette, and the angle from the player toward the hit (FX-03). */
+  hurtVignette = 0;
+  hurtAngle = 0;
+  lowHealth = false;
+  /** Wall-clock seconds left of the death moment (FX-03). */
+  deathMoment = 0;
+  private heartbeatIn = 0;
   /** Cosmetic random stream (particle spread, hit pitch, shake jitter); reseeded per run. */
   random = createSeededRandom(2);
   readonly particlePool = new ObjectPool<Particle>(
@@ -116,6 +129,9 @@ export class Presentation {
     this.playerHurt = 0;
     this.playerBurst = 0;
     this.playerCast = 0;
+    this.hurtVignette = 0;
+    this.lowHealth = false;
+    this.deathMoment = 0;
   }
 
   handle(event: GameEvent) {
@@ -174,9 +190,20 @@ export class Presentation {
         return;
       case 'player/hurt':
         this.playerHurt = PLAYER_HURT_POSE_SECONDS;
+        this.hurtVignette = HURT_VIGNETTE_SECONDS;
+        this.hurtAngle = Math.atan2(event.fromY - event.y, event.fromX - event.x);
         if (this.host.options().damageNumbers) this.addDamageNumber(event.x, event.y - 38, event.damage, false, 0.72, 'hostile');
         this.burst(event.x, event.y, 12, '#000000', 160);
         this.play('player.hurt', event.x);
+        return;
+      case 'player/lowHealth':
+        this.lowHealth = event.low;
+        this.heartbeatIn = 0;
+        return;
+      case 'player/died':
+        this.lowHealth = false;
+        this.deathMoment = DEATH_MOMENT_SECONDS;
+        this.play('player.down');
         return;
       case 'area/damage':
         this.burst(event.x, event.y, Math.round(22 * effects), '#050505', 230);
@@ -241,9 +268,10 @@ export class Presentation {
     }
   }
 
-  /** Start of an animation frame: shake decays in wall time unless paused. */
+  /** Start of an animation frame: shake decays in wall time unless paused; the death moment runs regardless. */
   beginFrame(frameDt: number, paused: boolean) {
     this.legacyHitWait = Math.max(0, this.legacyHitWait - frameDt);
+    this.deathMoment = Math.max(0, this.deathMoment - frameDt);
     if (paused) return;
     this.shake = Math.max(0, this.shake - frameDt * 12);
   }
@@ -255,10 +283,20 @@ export class Presentation {
   endFrame(frameDt: number, paused: boolean, decayWhilePaused: boolean) {
     if (paused) this.shake = 0;
     if (!paused || decayWhilePaused) this.updateParticles(frameDt);
+    // The run has ended: the last hit's ink drifts on in slow motion before the settlement (FX-03).
+    else if (this.deathMoment > 0) this.updateParticles(frameDt * DEATH_SLOWMO_RATE);
   }
 
   /** Per fixed simulation step: rings, damage numbers, corpses, and the hero's poses age with simulated time. */
   step(dt: number) {
+    this.hurtVignette = Math.max(0, this.hurtVignette - dt);
+    if (this.lowHealth) {
+      this.heartbeatIn -= dt;
+      if (this.heartbeatIn <= 0) {
+        this.heartbeatIn = HEARTBEAT_SECONDS;
+        this.play('player.heartbeat');
+      }
+    }
     for (const corpse of this.corpses) corpse.life -= dt;
     recycleWhere(this.corpses, (corpse) => corpse.life > 0, this.corpsePool);
     this.playerHurt = Math.max(0, this.playerHurt - dt);

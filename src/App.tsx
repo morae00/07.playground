@@ -36,6 +36,7 @@ import { installUiSounds } from './ui/uiSounds';
 import {
   CHAPTERS,
   GameEngine,
+  LOW_HEALTH_RATIO,
   META_PASSIVES,
   META_UPGRADES,
   RARITY,
@@ -104,6 +105,8 @@ function InjectedRenderFault(): never {
 const standaloneErrorLog = new ErrorLog();
 // One mixer and audio context for the whole session (AUD-01); it outlives every run and every app remount.
 const appMixer = new AudioMixer();
+/** The death moment (FX-03): the canvas shows the fall this long before the settlement opens. */
+const DEATH_MOMENT_MS = 700;
 
 function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -116,6 +119,12 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const pauseIntentRef = useRef<() => void>(() => undefined);
   const drawerToggleRef = useRef<HTMLButtonElement | null>(null);
   const runPausedRef = useRef(false);
+  // While the death moment plays, the run is over but the settlement is not up yet: nothing can pause it.
+  const deathMomentRef = useRef<number | null>(null);
+  const endDeathMoment = () => {
+    if (deathMomentRef.current !== null) window.clearTimeout(deathMomentRef.current);
+    deathMomentRef.current = null;
+  };
   const phaseRef = useRef<'menu' | 'playing' | 'draft' | 'roundClear' | 'gameOver'>('menu');
   const [initialSave] = useState(() => loadGameSave(window.localStorage));
   const [initialInfiniteLeaderboard] = useState(() => loadInfiniteLeaderboard(window.localStorage));
@@ -194,6 +203,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
 
   useEffect(() => {
     return () => {
+      endDeathMoment();
       inputRef.current?.dispose();
       releaseReducedMotionRef.current?.();
       engineRef.current?.dispose();
@@ -223,7 +233,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
 
   const setManualPause = useCallback((paused: boolean) => {
     const engine = engineRef.current;
-    if (!engine || phaseRef.current !== 'playing') return;
+    if (!engine || phaseRef.current !== 'playing' || deathMomentRef.current !== null) return;
     runPausedRef.current = paused;
     setRunPaused(paused);
     setAbandonConfirmOpen(false);
@@ -357,7 +367,11 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         if (result.runMode === 'infinite') setInfiniteSeed(String(result.seed));
         grantSettlement(result, false);
         recordInfiniteSettlement(result);
-        setPhase('gameOver');
+        // The results are kept at once; the dialog waits for the death moment on the canvas (FX-03).
+        deathMomentRef.current = window.setTimeout(() => {
+          deathMomentRef.current = null;
+          setPhase('gameOver');
+        }, DEATH_MOMENT_MS);
       },
       onFrameStart: () => inputRef.current?.poll(),
       onFault: (error: unknown) => {
@@ -387,6 +401,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const beginRun = useCallback((launch: (engine: GameEngine) => void) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    endDeathMoment();
     inputRef.current?.dispose();
     releaseReducedMotionRef.current?.();
     engineRef.current?.dispose();
@@ -512,6 +527,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   }, [draft, phase]);
 
   const toMenu = () => {
+    endDeathMoment();
     inputRef.current?.dispose();
     inputRef.current = null;
     releaseReducedMotionRef.current?.();
@@ -668,7 +684,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   };
 
   return (
-    <div className="appShell">
+    <div className="appShell" data-reduced-flash={options.reducedFlash ? 'on' : undefined}>
       <canvas
         ref={canvasRef}
         className="gameCanvas"
@@ -709,7 +725,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
                 <span>HP</span>
                 <b>{Math.ceil(snapshot.hp)} / {Math.ceil(snapshot.maxHp)}</b>
               </div>
-              <ProgressBar label="플레이어 체력" value={snapshot.hp} max={snapshot.maxHp} className="hpBar" valueText={`${Math.ceil(snapshot.hp)} / ${Math.ceil(snapshot.maxHp)}`} />
+              <ProgressBar label="플레이어 체력" value={snapshot.hp} max={snapshot.maxHp} className={snapshot.hp > 0 && snapshot.hp <= snapshot.maxHp * LOW_HEALTH_RATIO ? 'hpBar low' : 'hpBar'} valueText={`${Math.ceil(snapshot.hp)} / ${Math.ceil(snapshot.maxHp)}`} />
             </div>
             <div className="barGroup narrow">
               <div className="barLabel">

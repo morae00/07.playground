@@ -224,6 +224,21 @@ button:disabled {
   height: 8px;
 }
 
+/* Low health (FX-03): the health bar turns coral and beats; still under reduced motion or reduced flash. */
+.hpBar.low i {
+  background: var(--alert);
+  animation: lowHealthBeat 0.85s ease-in-out infinite;
+}
+
+.appShell[data-reduced-flash="on"] .hpBar.low i {
+  animation: none;
+}
+
+@keyframes lowHealthBeat {
+  0%, 100% { opacity: 1; }
+  40% { opacity: 0.55; }
+}
+
 .subXp {
   margin-top: 5px;
 }

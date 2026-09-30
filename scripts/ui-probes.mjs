@@ -1,4 +1,4 @@
-// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, CON-02, AUD-01) against the developer build.
+// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, CON-02, AUD-01, FX-03) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -264,6 +264,22 @@ try {
     record('TEC-14 missing art falls back to vectors with a notice, and the run plays', sprites === 'fallback' && running && !running.paused && running.elapsed > 0.2, `sprites ${sprites}`);
     await banner.getByRole('button', { name: '닫기' }).click();
     record('TEC-14 the notice can be dismissed', (await banner.count()) === 0);
+    await page.close();
+  });
+
+  await probe('FX-03', async () => {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await openStage(page);
+    await cheat(page, 'KO');
+    await page.getByRole('button', { name: '런 패널 닫기' }).click();
+    const settlement = page.getByRole('dialog').filter({ hasText: 'STAGE MATCH END' });
+    // The run ends on the next step; 300 ms in, the 700 ms death moment is still on the canvas.
+    await page.waitForTimeout(300);
+    const earlyDialogs = await settlement.count();
+    await page.getByRole('button', { name: '게임 일시정지' }).click();
+    const pausedDuringMoment = await page.getByRole('dialog', { name: '일시정지' }).count();
+    await settlement.waitFor({ timeout: 3000 });
+    record('FX-03 the death moment plays before the settlement, and cannot be paused', earlyDialogs === 0 && pausedDuringMoment === 0, `${earlyDialogs} settlement and ${pausedDuringMoment} pause dialogs during the moment`);
     await page.close();
   });
 

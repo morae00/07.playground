@@ -443,6 +443,10 @@ export class ProbedGameEngine extends GameEngine {
             playerHurt: effects.playerHurt,
             playerBurst: effects.playerBurst,
             playerCast: effects.playerCast,
+            hurtVignette: effects.hurtVignette,
+            hurtAngle: effects.hurtAngle,
+            lowHealth: effects.lowHealth,
+            deathMoment: effects.deathMoment,
           },
         });
       },

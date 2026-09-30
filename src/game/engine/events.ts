@@ -17,7 +17,10 @@ export type GameEvent =
   /** dx/dy point from the player to the body (FX-03 corpses fall away from the player). */
   | { type: 'enemy/killed'; x: number; y: number; isBoss: boolean; radius: number; tier: EnemyTier; attackStyle: 'contact' | 'ranged'; dx: number; dy: number }
   | { type: 'enemy/contact'; isBoss: boolean }
-  | { type: 'player/hurt'; x: number; y: number; damage: number; source: PlayerDamageSource }
+  /** fromX/fromY: where the hit came from (the enemy, shot, or shock zone), for the directional vignette (FX-03). */
+  | { type: 'player/hurt'; x: number; y: number; damage: number; source: PlayerDamageSource; fromX: number; fromY: number }
+  /** The player's health crossed LOW_HEALTH_RATIO, either way (FX-03 heartbeat and vignette). */
+  | { type: 'player/lowHealth'; low: boolean }
   /** The run ended in defeat; source is the last thing that hurt the player (CON-09 telemetry). */
   | { type: 'player/died'; source: PlayerDamageSource | 'unknown'; bossEnraged: boolean }
   /** Area damage landed at a point (mortar shockwave, vortex collapse, rail fissure). */

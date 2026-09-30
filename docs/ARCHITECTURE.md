@@ -76,6 +76,12 @@ Enemy feedback (FX-03):
 - Stains are capped at 48, or 24 at reduced effect density, and skipped at minimal detail (style bible P6).
 - A new enemy rises out of an ink bloom during its 0.25 s spawn state. Hit and contact rules do not change meanwhile.
 
+Player feedback (FX-03):
+
+- `player/hurt` carries where the hit came from, and a coral glow rises on that side of the screen for 0.35 s.
+- The engine reports `player/lowHealth` when health crosses 30% either way. While it is low, the heartbeat sounds every 0.85 s, the screen edge glows coral, and the health bar turns coral and beats. The glow and the bar hold still under reduced motion or reduced flash, and reduced flash halves both glows.
+- On `player/died` the simulation stops as before, and the app holds the settlement for 0.7 s. Meanwhile the hero falls back, the last hit's ink drifts at quarter speed for 0.4 s, and nothing can pause the run.
+
 ## Test access (TEC-07)
 
 Tests, balance runners, and soak tools use `ProbedGameEngine` (`src/game/engine/probe.ts`), a test-only subclass whose `probe` API sets up worlds (spawn, place, patch, clear, halt spawns, set skills, cast), steps fixed ticks, observes every step (`onStep`), and reads a plain-data copy of the world (`read`). `createEngineHarness` (`src/game/engine/harness.ts`) implements the replay contract on the real engine: a seed plus a command log reproduces the same snapshot and fingerprint. The test bundle entry is `src/testing/engine.ts` (`npm run build:test-bundles`); the app entry never imports it, so production bundles do not ship the probe. Engine members are `protected` only so the probe subclass can reach them; nothing else subclasses the engine.

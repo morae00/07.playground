@@ -18,6 +18,7 @@ const REQUIRED_DEVELOPER_MARKERS = Object.freeze([
   'PRACTICE / NO RECORD',
   'LOOP FAULT ARMED',
   'UI FAULT ARMED',
+  'PLAYER DOWN',
 ]);
 
 async function collectText(root) {
