@@ -29,7 +29,7 @@ import {
 } from './p1Core';
 import { SpatialIndex } from './spatialIndex';
 import { REMASTER_RULES, ruleSetFor, type RuleSet, type RuleSetId } from './rules';
-import { SPAWN_MARGIN, classicViewFrame, logicalViewFrame, spawnFrameOrigin, type ViewFrame } from './viewPolicy';
+import { LOGICAL_VIEW, SPAWN_MARGIN, classicViewFrame, logicalViewFrame, spawnFrameOrigin, type ViewFrame } from './viewPolicy';
 import {
   DRAFT_SIZE,
   ENEMY_RADIUS,
@@ -491,6 +491,22 @@ const BOSS_PROJECTILE_HARD_CAP = 320;
 const DASH_WINDUP_SECONDS = 0.62;
 const DASH_TRAVEL_SECONDS = 0.55;
 const DASH_SPEED_MULTIPLE = 4.2;
+/** Eclipse wall (BUG-11): lead time between the edge telegraph and the shots, shot speed, and lane spacing. */
+const ECLIPSE_WALL_LEAD_SECONDS = 0.6;
+const ECLIPSE_WALL_SPEED = 260;
+const ECLIPSE_WALL_LANE_GAP = 115;
+
+type PendingHostileShot = {
+  at: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  radius: number;
+  damage: number;
+  life: number;
+  kind: BossProjectile['kind'];
+};
 const TARGET_COLOR = SIGNAL.allyDeep;
 
 export const RARITY: Record<Rarity, { label: string; weight: number; className: string }> = {
@@ -1064,6 +1080,7 @@ export class GameEngine {
   private obstacles: Obstacle[] = [];
   private beams: BeamEffect[] = [];
   private laneTelegraphs: LaneTelegraph[] = [];
+  private pendingHostileShots: PendingHostileShot[] = [];
   private chains: ChainEffect[] = [];
   private impactRings: ImpactRing[] = [];
   private enemyIndex = new SpatialIndex<Entity>(96);
@@ -1602,6 +1619,7 @@ export class GameEngine {
     this.enemyIndex.clear();
     this.beams = [];
     this.laneTelegraphs = [];
+    this.pendingHostileShots = [];
     this.chains = [];
     this.impactRings = [];
     this.player.x = WORLD_W / 2;
@@ -2815,7 +2833,40 @@ export class GameEngine {
       }
     }
 
-    if (boss.pattern === 'eclipse' && enemy.patternTimer <= 0) {
+    if (boss.pattern === 'eclipse' && enemy.patternTimer <= 0 && this.rules.eclipseWallFromView) {
+      enemy.patternTimer = 4.4;
+      // The wall enters from the edge of the player's logical view, so it reaches the player wherever
+      // they stand, and one lane is left open (BUG-11). Edge lanes flash for 0.6 s before the shots fly.
+      const roll = this.gameplayRandom();
+      const vertical = roll < 0.5;
+      const forward = roll < 0.25 || (roll >= 0.5 && roll < 0.75) ? 1 : -1;
+      const safeLane = Math.floor(this.gameplayRandom() * 7) - 3;
+      const halfSpan = (vertical ? LOGICAL_VIEW.height : LOGICAL_VIEW.width) / 2 + 60;
+      const origin = vertical
+        ? clamp(this.player.y - forward * halfSpan, -120, WORLD_H + 120)
+        : clamp(this.player.x - forward * halfSpan, -120, WORLD_W + 120);
+      const travel = Math.abs((vertical ? this.player.y : this.player.x) - origin) + halfSpan + 60;
+      const life = travel / ECLIPSE_WALL_SPEED;
+      for (let lane = -3; lane <= 3; lane += 1) {
+        if (lane === safeLane) continue;
+        const offset = lane * ECLIPSE_WALL_LANE_GAP;
+        const x = vertical ? this.player.x + offset : origin;
+        const y = vertical ? origin : this.player.y + offset;
+        const vx = vertical ? 0 : ECLIPSE_WALL_SPEED * forward;
+        const vy = vertical ? ECLIPSE_WALL_SPEED * forward : 0;
+        this.pendingHostileShots.push({ at: this.elapsed + ECLIPSE_WALL_LEAD_SECONDS, x, y, vx, vy, radius: 10, damage: enemy.damage * 0.5, life, kind: 'eclipse' });
+        this.laneTelegraphs.push({
+          id: this.nextId(),
+          x1: x,
+          y1: y,
+          x2: x + (vx / ECLIPSE_WALL_SPEED) * 260,
+          y2: y + (vy / ECLIPSE_WALL_SPEED) * 260,
+          width: 24,
+          life: ECLIPSE_WALL_LEAD_SECONDS,
+          maxLife: ECLIPSE_WALL_LEAD_SECONDS,
+        });
+      }
+    } else if (boss.pattern === 'eclipse' && enemy.patternTimer <= 0) {
       enemy.patternTimer = 4.4;
       const vertical = this.gameplayRandom() < 0.5;
       for (let i = -3; i <= 3; i += 1) {
@@ -2941,6 +2992,13 @@ export class GameEngine {
   }
 
   private updateBossProjectiles(dt: number) {
+    if (this.pendingHostileShots.length > 0) {
+      const due = this.pendingHostileShots.filter((shot) => shot.at <= this.elapsed);
+      if (due.length > 0) {
+        this.pendingHostileShots = this.pendingHostileShots.filter((shot) => shot.at > this.elapsed);
+        for (const shot of due) this.spawnBossProjectile(shot.x, shot.y, shot.vx, shot.vy, shot.radius, shot.damage, shot.life, shot.kind);
+      }
+    }
     for (const projectile of this.bossProjectiles) {
       const start = { x: projectile.x, y: projectile.y };
       projectile.life -= dt;

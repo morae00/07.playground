@@ -227,3 +227,39 @@ test('BUG-10: the Ink Butcher winds up in place behind a lane telegraph, then da
     engine.dispose();
   }
 });
+
+test('BUG-11: the eclipse wall enters from the view edge, reaches the player anywhere, and leaves one lane open', () => {
+  const engine = createEngine();
+  try {
+    engine.startRun(5, 5, 707);
+    const boss = engine.enemies.find((enemy) => enemy.isBoss);
+    assert.equal(boss.boss.pattern, 'eclipse');
+    engine.enemies = [boss];
+    for (const [px, py] of [[3600, 1500], [2100, 2600], [600, 400]]) {
+      engine.player.x = px;
+      engine.player.y = py;
+      engine.bossProjectiles = [];
+      engine.pendingHostileShots = [];
+      engine.laneTelegraphs = [];
+      boss.x = px - 200;
+      boss.y = py;
+      boss.patternTimer = 0;
+      boss.bossPhaseFlash = 0;
+      engine.updateBossPattern(boss, 1 / 60);
+      assert.equal(engine.pendingHostileShots.length, 6, 'seven lanes minus one safe lane');
+      assert.equal(engine.laneTelegraphs.length, 6, 'each lane is telegraphed before the shots fly');
+      assert.equal(engine.bossProjectiles.length, 0, 'no shot flies during the 0.6 s lead');
+      engine.elapsed += 0.61;
+      engine.updateBossProjectiles(0);
+      const shots = engine.bossProjectiles.filter((shot) => shot.kind === 'eclipse');
+      assert.equal(shots.length, 6);
+      for (const shot of shots) {
+        const vertical = shot.vx === 0;
+        const toPlayer = vertical ? (py - shot.y) / shot.vy : (px - shot.x) / shot.vx;
+        assert.ok(toPlayer > 0 && toPlayer < shot.life, `shot from ${shot.x},${shot.y} reaches the player's line within its life at ${px},${py}`);
+      }
+    }
+  } finally {
+    engine.dispose();
+  }
+});
