@@ -4,7 +4,7 @@ export const MAX_SKILL_LEVEL = 5;
 export const FIRE_DOT_DEFENSE_FACTOR = 0.42;
 export const COIN_FEVER_FRENZY_DURATION = 2.4;
 export const COIN_FEVER_FRENZY_ATTACK_SPEED_MULTIPLIER = 1.3;
-import { CAMPAIGN_CHAPTER_COUNT, STAGES_PER_CHAPTER } from '../content/campaign.ts';
+import { CAMPAIGN_CHAPTER_COUNT, STAGES_PER_CHAPTER, stageKind, type StageKind } from '../content/campaign.ts';
 
 export { CAMPAIGN_CHAPTER_COUNT, STAGES_PER_CHAPTER };
 
@@ -13,7 +13,7 @@ export type TimedSlow = {
   remaining: number;
 };
 
-export type StageKind = 'normal' | 'midBoss' | 'finalBoss';
+export type { StageKind };
 export type BossRole = 'field' | 'mid' | 'final';
 
 export type BossSelectionContext = {
@@ -164,12 +164,6 @@ export function selectRequiredBoss<T>(
   return candidates[Math.floor(roll * candidates.length)];
 }
 
-function expectedStageKind(stage: number): StageKind {
-  if (stage === 5) return 'midBoss';
-  if (stage === 10) return 'finalBoss';
-  return 'normal';
-}
-
 function duplicateIds(ids: readonly (string | number)[]) {
   const seen = new Set<string | number>();
   const duplicates = new Set<string | number>();
@@ -208,7 +202,7 @@ export function validateCampaignContent(content: CampaignContentContract) {
         issues.push(`chapter ${chapterId} missing stage ${stageId}`);
         continue;
       }
-      const expectedKind = expectedStageKind(stageId);
+      const expectedKind = stageKind(stageId);
       if (stage.kind !== expectedKind) {
         issues.push(`chapter ${chapterId} stage ${stageId} expected ${expectedKind}, received ${stage.kind}`);
       }

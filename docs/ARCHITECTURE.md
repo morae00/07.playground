@@ -267,6 +267,17 @@ Every character and prop has kit art, so the vector drawings that stood in durin
 
 Copied reports replace the home folder in paths. Nothing is sent anywhere. In the desktop app, `electron/crashLog.cjs` appends the renderer's `[blackline:error]` console lines and renderer or child process exits to `logs/errors.log` in the app's data folder, rotating at 512 KiB. `crashReporter` keeps native crash dumps there with uploads off. A crashed renderer reloads to the menu, at most three times in five minutes. Developer builds add the cheats `FAULT` (the next frame throws) and `UIFAULT` (the next render throws) to exercise these paths.
 
+## Save versions and the campaign shape (TEC-08)
+
+`src/platform/save.ts` keeps one versioned envelope under one localStorage key, with the previous write as its backup:
+- Version 3 adds the profile: stage records, and room for characters, codex, achievements, and a suspended run, so R3 systems need no further migration.
+- A version 2 save migrates on load with its meta and options; the profile starts empty. New options take their defaults (G17).
+- The key keeps its v2 name, so an older build reads version 3 as a future version, starts fresh, and never writes over it.
+
+`src/platform/saveMigration.test.ts` checks both against ten saves that the 0.1.0 build wrote itself (`src/platform/fixtures/`): player journeys replayed through that build's save, settlement, and purchase code, and then that build's own loader after the move.
+
+`src/content/campaign.ts` is the one place that says how many chapters and stages there are and which stages hold the bosses (`stageKind`). Content checks, the engine, save clamps, the replay contract, and the art registries derive from it.
+
 ## Desktop origin and saves (TEC-15)
 
 The desktop app loads the game from `app://game/`, a custom scheme with a real, secure origin (`electron/appProtocol.cjs`), instead of `file://`. localStorage belongs to an origin, so the first app:// launch moves what a file:// build stored:

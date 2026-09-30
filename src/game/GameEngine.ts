@@ -28,7 +28,7 @@ import {
   selectRequiredBoss,
 } from './p1Core';
 import { SpatialIndex } from './spatialIndex';
-import { CAMPAIGN_CHAPTER_COUNT, FINAL_CHAPTER, FINAL_STAGE, STAGES_PER_CHAPTER } from '../content/campaign';
+import { CAMPAIGN_CHAPTER_COUNT, FINAL_CHAPTER, FINAL_STAGE, STAGES_PER_CHAPTER, stageKind, type StageKind } from '../content/campaign';
 import {
   CLASSIC_AWAKENING_TEXT,
   SKILL_AWAKENING_TEXT,
@@ -160,7 +160,7 @@ export type {
 } from './engine/worldTypes';
 
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
-export type StageKind = 'normal' | 'midBoss' | 'finalBoss';
+export type { StageKind };
 export type RunMode = 'campaign' | 'infinite';
 export type DraftReason = 'level' | 'boss';
 
@@ -543,11 +543,7 @@ export const TOTAL_STAGE_COUNT = CHAPTER_COUNT * STAGES_PER_CHAPTER;
 /** Survival stage goals, in rotation; each shows as the string objective.<id>. */
 export const OBJECTIVE_POOL = ['swarm', 'holdLine', 'traps', 'elites', 'salvage', 'giants', 'crossfire', 'vanguard'] as const;
 
-export function stageKind(stageNo: number): StageKind {
-  if (stageNo === 5) return 'midBoss';
-  if (stageNo === 10) return 'finalBoss';
-  return 'normal';
-}
+export { stageKind };
 
 export function objectiveFor(chapter: number, stageNo: number): Text {
   const kind = stageKind(stageNo);

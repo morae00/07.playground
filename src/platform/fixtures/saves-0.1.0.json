@@ -1,0 +1,86 @@
+{
+  "note": "TEC-08: ten localStorage snapshots written by the 0.1.0 build itself (174eb99). Each replays a player journey through that build's save module (src/platform/save.ts) and its settlement, level, unlock, and purchase rules (GameEngine.ts, App.tsx), which save on start and on every change, so the backup is always the previous write. Values are the exact strings localStorage held.",
+  "samples": [
+    {
+      "name": "first-launch",
+      "journey": "Opened the game once and closed it at the menu.",
+      "entries": {
+        "blackline-survivor-save-v2": "{\"version\":2,\"savedAt\":1785758400000,\"meta\":{\"gold\":120,\"xp\":0,\"level\":1,\"passivePoints\":0,\"progress\":{\"chapter\":1,\"stage\":1},\"upgrades\":{\"attack\":0,\"defense\":0,\"maxHp\":0,\"moveSpeed\":0,\"crit\":0,\"regen\":0,\"magnet\":0},\"passives\":{\"rareLuck\":0,\"bossHunter\":0,\"coinMagnet\":0}},\"options\":{\"healthBars\":\"elite\",\"volume\":0.32,\"effects\":0.9,\"damageNumbers\":true,\"screenShake\":true,\"reducedFlash\":false,\"paceMode\":\"standard\"}}"
+      }
+    },
+    {
+      "name": "first-defeat",
+      "journey": "First run: fell in 1-1 at seven minutes, then quit.",
+      "entries": {
+        "blackline-survivor-save-v2": "{\"version\":2,\"savedAt\":1785841620000,\"meta\":{\"gold\":764,\"xp\":253,\"level\":3,\"passivePoints\":2,\"progress\":{\"chapter\":1,\"stage\":1},\"upgrades\":{\"attack\":0,\"defense\":0,\"maxHp\":0,\"moveSpeed\":0,\"crit\":0,\"regen\":0,\"magnet\":0},\"passives\":{\"rareLuck\":0,\"bossHunter\":0,\"coinMagnet\":0}},\"options\":{\"healthBars\":\"elite\",\"volume\":0.32,\"effects\":0.9,\"damageNumbers\":true,\"screenShake\":true,\"reducedFlash\":false,\"paceMode\":\"standard\"}}",
+        "blackline-survivor-save-v2.backup": "{\"version\":2,\"savedAt\":1785841200000,\"meta\":{\"gold\":120,\"xp\":0,\"level\":1,\"passivePoints\":0,\"progress\":{\"chapter\":1,\"stage\":1},\"upgrades\":{\"attack\":0,\"defense\":0,\"maxHp\":0,\"moveSpeed\":0,\"crit\":0,\"regen\":0,\"magnet\":0},\"passives\":{\"rareLuck\":0,\"bossHunter\":0,\"coinMagnet\":0}},\"options\":{\"healthBars\":\"elite\",\"volume\":0.32,\"effects\":0.9,\"damageNumbers\":true,\"screenShake\":true,\"reducedFlash\":false,\"paceMode\":\"standard\"}}"
+      }
+    },
+    {
+      "name": "first-clear",
+      "journey": "Cleared 1-1 on the second try and bought the first attack and health levels.",
+      "entries": {
+        "blackline-survivor-save-v2": "{\"version\":2,\"savedAt\":1785928752000,\"meta\":{\"gold\":2154,\"xp\":411,\"level\":6,\"passivePoints\":5,\"progress\":{\"chapter\":1,\"stage\":2},\"upgrades\":{\"attack\":1,\"defense\":0,\"maxHp\":1,\"moveSpeed\":0,\"crit\":0,\"regen\":0,\"magnet\":0},\"passives\":{\"rareLuck\":0,\"bossHunter\":0,\"coinMagnet\":0}},\"options\":{\"healthBars\":\"elite\",\"volume\":0.32,\"effects\":0.9,\"damageNumbers\":true,\"screenShake\":true,\"reducedFlash\":false,\"paceMode\":\"standard\"}}",
+        "blackline-survivor-save-v2.backup": "{\"version\":2,\"savedAt\":1785928746000,\"meta\":{\"gold\":2186,\"xp\":411,\"level\":6,\"passivePoints\":5,\"progress\":{\"chapter\":1,\"stage\":2},\"upgrades\":{\"attack\":1,\"defense\":0,\"maxHp\":0,\"moveSpeed\":0,\"crit\":0,\"regen\":0,\"magnet\":0},\"passives\":{\"rareLuck\":0,\"bossHunter\":0,\"coinMagnet\":0}},\"options\":{\"healthBars\":\"elite\",\"volume\":0.32,\"effects\":0.9,\"damageNumbers\":true,\"screenShake\":true,\"reducedFlash\":false,\"paceMode\":\"standard\"}}"
+      }
+    },
+    {
+      "name": "tuned-settings",
+      "journey": "Played up to 1-4 over two evenings; turned health bars to all, the volume up, and damage numbers off.",
+      "entries": {
+        "blackline-survivor-save-v2": "{\"version\":2,\"savedAt\":1786088844000,\"meta\":{\"gold\":21,\"xp\":27,\"level\":11,\"passivePoints\":10,\"progress\":{\"chapter\":1,\"stage\":4},\"upgrades\":{\"attack\":13,\"defense\":15,\"maxHp\":14,\"moveSpeed\":0,\"crit\":0,\"regen\":0,\"magnet\":0},\"passives\":{\"rareLuck\":0,\"bossHunter\":0,\"coinMagnet\":0}},\"options\":{\"healthBars\":\"all\",\"volume\":0.6,\"effects\":0.9,\"damageNumbers\":false,\"screenShake\":true,\"reducedFlash\":false,\"paceMode\":\"standard\"}}",
+        "blackline-survivor-save-v2.backup": "{\"version\":2,\"savedAt\":1786088838000,\"meta\":{\"gold\":406,\"xp\":27,\"level\":11,\"passivePoints\":10,\"progress\":{\"chapter\":1,\"stage\":4},\"upgrades\":{\"attack\":13,\"defense\":14,\"maxHp\":14,\"moveSpeed\":0,\"crit\":0,\"regen\":0,\"magnet\":0},\"passives\":{\"rareLuck\":0,\"bossHunter\":0,\"coinMagnet\":0}},\"options\":{\"healthBars\":\"all\",\"volume\":0.6,\"effects\":0.9,\"damageNumbers\":false,\"screenShake\":true,\"reducedFlash\":false,\"paceMode\":\"standard\"}}"
+      }
+    },
+    {
+      "name": "chapter-one-boss",
+      "journey": "Beat the Ch1 mid boss after a defeat, levelled up twice, and spent the passive points.",
+      "entries": {
+        "blackline-survivor-save-v2": "{\"version\":2,\"savedAt\":1786191600000,\"meta\":{\"gold\":353,\"xp\":1570,\"level\":13,\"passivePoints\":10,\"progress\":{\"chapter\":1,\"stage\":6},\"upgrades\":{\"attack\":13,\"defense\":12,\"maxHp\":14,\"moveSpeed\":9,\"crit\":10,\"regen\":9,\"magnet\":11},\"passives\":{\"rareLuck\":1,\"bossHunter\":1,\"coinMagnet\":0}},\"options\":{\"healthBars\":\"elite\",\"volume\":0.32,\"effects\":0.9,\"damageNumbers\":true,\"screenShake\":true,\"reducedFlash\":false,\"paceMode\":\"standard\"}}",
+        "blackline-survivor-save-v2.backup": "{\"version\":2,\"savedAt\":1786191594000,\"meta\":{\"gold\":737,\"xp\":1570,\"level\":13,\"passivePoints\":10,\"progress\":{\"chapter\":1,\"stage\":6},\"upgrades\":{\"attack\":13,\"defense\":12,\"maxHp\":14,\"moveSpeed\":9,\"crit\":9,\"regen\":9,\"magnet\":11},\"passives\":{\"rareLuck\":1,\"bossHunter\":1,\"coinMagnet\":0}},\"options\":{\"healthBars\":\"elite\",\"volume\":0.32,\"effects\":0.9,\"damageNumbers\":true,\"screenShake\":true,\"reducedFlash\":false,\"paceMode\":\"standard\"}}"
+      }
+    },
+    {
+      "name": "chapter-two-grind",
+      "journey": "A week into Ch2: every Ch1 stage cleared, retries at 2-3 and 2-4, upgrades bought as gold allowed.",
+      "entries": {
+        "blackline-survivor-save-v2": "{\"version\":2,\"savedAt\":1786443072000,\"meta\":{\"gold\":833,\"xp\":1107,\"level\":22,\"passivePoints\":21,\"progress\":{\"chapter\":2,\"stage\":4},\"upgrades\":{\"attack\":16,\"defense\":19,\"maxHp\":17,\"moveSpeed\":14,\"crit\":13,\"regen\":15,\"magnet\":18},\"passives\":{\"rareLuck\":0,\"bossHunter\":0,\"coinMagnet\":0}},\"options\":{\"healthBars\":\"elite\",\"volume\":0.32,\"effects\":0.9,\"damageNumbers\":true,\"screenShake\":true,\"reducedFlash\":false,\"paceMode\":\"standard\"}}",
+        "blackline-survivor-save-v2.backup": "{\"version\":2,\"savedAt\":1786443066000,\"meta\":{\"gold\":1631,\"xp\":1107,\"level\":22,\"passivePoints\":21,\"progress\":{\"chapter\":2,\"stage\":4},\"upgrades\":{\"attack\":16,\"defense\":18,\"maxHp\":17,\"moveSpeed\":14,\"crit\":13,\"regen\":15,\"magnet\":18},\"passives\":{\"rareLuck\":0,\"bossHunter\":0,\"coinMagnet\":0}},\"options\":{\"healthBars\":\"elite\",\"volume\":0.32,\"effects\":0.9,\"damageNumbers\":true,\"screenShake\":true,\"reducedFlash\":false,\"paceMode\":\"standard\"}}"
+      }
+    },
+    {
+      "name": "showcase-pacing",
+      "journey": "Switched to the shipped showcase pacing for short stages and pushed into Ch3 with luck passives.",
+      "entries": {
+        "blackline-survivor-save-v2": "{\"version\":2,\"savedAt\":1786621632000,\"meta\":{\"gold\":42,\"xp\":399,\"level\":16,\"passivePoints\":13,\"progress\":{\"chapter\":3,\"stage\":4},\"upgrades\":{\"attack\":13,\"defense\":15,\"maxHp\":14,\"moveSpeed\":12,\"crit\":10,\"regen\":13,\"magnet\":14},\"passives\":{\"rareLuck\":2,\"bossHunter\":0,\"coinMagnet\":0}},\"options\":{\"healthBars\":\"elite\",\"volume\":0.32,\"effects\":0.9,\"damageNumbers\":true,\"screenShake\":true,\"reducedFlash\":false,\"paceMode\":\"showcase\"}}",
+        "blackline-survivor-save-v2.backup": "{\"version\":2,\"savedAt\":1786621626000,\"meta\":{\"gold\":42,\"xp\":399,\"level\":16,\"passivePoints\":14,\"progress\":{\"chapter\":3,\"stage\":4},\"upgrades\":{\"attack\":13,\"defense\":15,\"maxHp\":14,\"moveSpeed\":12,\"crit\":10,\"regen\":13,\"magnet\":14},\"passives\":{\"rareLuck\":1,\"bossHunter\":0,\"coinMagnet\":0}},\"options\":{\"healthBars\":\"elite\",\"volume\":0.32,\"effects\":0.9,\"damageNumbers\":true,\"screenShake\":true,\"reducedFlash\":false,\"paceMode\":\"showcase\"}}"
+      }
+    },
+    {
+      "name": "quiet-and-still",
+      "journey": "Ch4 with the sound off, effects at the minimum, no shake, reduced flash, and no health bars.",
+      "entries": {
+        "blackline-survivor-save-v2": "{\"version\":2,\"savedAt\":1786906626000,\"meta\":{\"gold\":1474,\"xp\":2579,\"level\":36,\"passivePoints\":35,\"progress\":{\"chapter\":4,\"stage\":6},\"upgrades\":{\"attack\":22,\"defense\":24,\"maxHp\":23,\"moveSpeed\":19,\"crit\":17,\"regen\":20,\"magnet\":24},\"passives\":{\"rareLuck\":0,\"bossHunter\":0,\"coinMagnet\":0}},\"options\":{\"healthBars\":\"off\",\"volume\":0,\"effects\":0.25,\"damageNumbers\":true,\"screenShake\":false,\"reducedFlash\":true,\"paceMode\":\"standard\"}}",
+        "blackline-survivor-save-v2.backup": "{\"version\":2,\"savedAt\":1786906620000,\"meta\":{\"gold\":3752,\"xp\":2579,\"level\":36,\"passivePoints\":35,\"progress\":{\"chapter\":4,\"stage\":6},\"upgrades\":{\"attack\":21,\"defense\":24,\"maxHp\":23,\"moveSpeed\":19,\"crit\":17,\"regen\":20,\"magnet\":24},\"passives\":{\"rareLuck\":0,\"bossHunter\":0,\"coinMagnet\":0}},\"options\":{\"healthBars\":\"off\",\"volume\":0,\"effects\":0.25,\"damageNumbers\":true,\"screenShake\":false,\"reducedFlash\":true,\"paceMode\":\"standard\"}}"
+      }
+    },
+    {
+      "name": "campaign-complete",
+      "journey": "Cleared 5-10, the end of the campaign, then kept replaying Ch5 for gold; most upgrades near their caps.",
+      "entries": {
+        "blackline-survivor-save-v2": "{\"version\":2,\"savedAt\":1787387310000,\"meta\":{\"gold\":137262,\"xp\":5284,\"level\":67,\"passivePoints\":51,\"progress\":{\"chapter\":5,\"stage\":10},\"upgrades\":{\"attack\":30,\"defense\":25,\"maxHp\":30,\"moveSpeed\":20,\"crit\":20,\"regen\":20,\"magnet\":25},\"passives\":{\"rareLuck\":5,\"bossHunter\":5,\"coinMagnet\":5}},\"options\":{\"healthBars\":\"elite\",\"volume\":0.32,\"effects\":0.9,\"damageNumbers\":true,\"screenShake\":true,\"reducedFlash\":false,\"paceMode\":\"standard\"}}",
+        "blackline-survivor-save-v2.backup": "{\"version\":2,\"savedAt\":1787387304000,\"meta\":{\"gold\":137262,\"xp\":5284,\"level\":67,\"passivePoints\":52,\"progress\":{\"chapter\":5,\"stage\":10},\"upgrades\":{\"attack\":30,\"defense\":25,\"maxHp\":30,\"moveSpeed\":20,\"crit\":20,\"regen\":20,\"magnet\":25},\"passives\":{\"rareLuck\":4,\"bossHunter\":5,\"coinMagnet\":5}},\"options\":{\"healthBars\":\"elite\",\"volume\":0.32,\"effects\":0.9,\"damageNumbers\":true,\"screenShake\":true,\"reducedFlash\":false,\"paceMode\":\"standard\"}}"
+      }
+    },
+    {
+      "name": "endless-regular",
+      "journey": "Came from a pre-v2 build (the legacy meta key is still there), stopped at 2-1, and plays the infinite mode under a name.",
+      "entries": {
+        "blackline-survivor-infinite-leaderboard-v1": "{\"playerName\":\"INKWELL\",\"entries\":[{\"id\":\"2026-08-24T12:19:51.000Z-88120451-337150\",\"player\":\"INKWELL\",\"score\":337150,\"survivedSeconds\":1335,\"kills\":7400,\"bosses\":5,\"seed\":88120451,\"endedAt\":\"2026-08-24T12:19:51.000Z\"},{\"score\":218880,\"survivedSeconds\":948,\"kills\":4800,\"bosses\":3,\"seed\":3901,\"id\":\"2026-08-25T08:35:39.000Z-3901-218880\",\"player\":\"INKWELL\",\"endedAt\":\"2026-08-25T08:35:39.000Z\"},{\"id\":\"2026-08-24T11:57:36.000Z-4127730319-133120\",\"player\":\"INKWELL\",\"score\":133120,\"survivedSeconds\":612,\"kills\":2900,\"bosses\":2,\"seed\":4127730319,\"endedAt\":\"2026-08-24T11:57:36.000Z\"}]}",
+        "blackline-survivor-meta-v1": "{\"gold\":540,\"xp\":60,\"level\":3,\"passivePoints\":1,\"progress\":{\"chapter\":1,\"stage\":8},\"upgrades\":{\"attack\":2,\"maxHp\":2},\"passives\":{}}",
+        "blackline-survivor-save-v2": "{\"version\":2,\"savedAt\":1787647167000,\"meta\":{\"gold\":84,\"xp\":611,\"level\":20,\"passivePoints\":18,\"progress\":{\"chapter\":2,\"stage\":1},\"upgrades\":{\"attack\":15,\"defense\":17,\"maxHp\":16,\"moveSpeed\":14,\"crit\":12,\"regen\":15,\"magnet\":17},\"passives\":{\"rareLuck\":0,\"bossHunter\":0,\"coinMagnet\":0}},\"options\":{\"healthBars\":\"elite\",\"volume\":0.32,\"effects\":0.9,\"damageNumbers\":true,\"screenShake\":true,\"reducedFlash\":false,\"paceMode\":\"standard\"}}",
+        "blackline-survivor-save-v2.backup": "{\"version\":2,\"savedAt\":1787647161000,\"meta\":{\"gold\":739,\"xp\":611,\"level\":20,\"passivePoints\":18,\"progress\":{\"chapter\":2,\"stage\":1},\"upgrades\":{\"attack\":15,\"defense\":17,\"maxHp\":16,\"moveSpeed\":13,\"crit\":12,\"regen\":15,\"magnet\":17},\"passives\":{\"rareLuck\":0,\"bossHunter\":0,\"coinMagnet\":0}},\"options\":{\"healthBars\":\"elite\",\"volume\":0.32,\"effects\":0.9,\"damageNumbers\":true,\"screenShake\":true,\"reducedFlash\":false,\"paceMode\":\"standard\"}}"
+      }
+    }
+  ]
+}

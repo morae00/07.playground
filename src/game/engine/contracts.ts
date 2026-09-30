@@ -1,3 +1,4 @@
+import { CAMPAIGN_CHAPTER_COUNT, STAGES_PER_CHAPTER } from '../../content/campaign.ts';
 import type { ChapterId, StageId } from '../../content/schema.ts';
 
 export const ENGINE_CONTRACT_VERSION = 1 as const;
@@ -69,10 +70,10 @@ export type HarnessReplayResult<Snapshot, Event> = {
 export function isEngineAddress(value: { chapter: number; stage: number }) {
   return Number.isInteger(value.chapter)
     && value.chapter >= 1
-    && value.chapter <= 5
+    && value.chapter <= CAMPAIGN_CHAPTER_COUNT
     && Number.isInteger(value.stage)
     && value.stage >= 1
-    && value.stage <= 10;
+    && value.stage <= STAGES_PER_CHAPTER;
 }
 
 export function assertEngineStartRequest(request: EngineStartRequest) {

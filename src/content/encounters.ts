@@ -1,3 +1,4 @@
+import { stageKind } from './campaign.ts';
 import { CHECK_CONTENT_AT_LOAD } from './checks.ts';
 import {
   CAMPAIGN_CHAPTER_IDS,
@@ -196,7 +197,7 @@ export function validateEncounterGrammars(grammars: readonly ChapterEncounterGra
     for (const landmark of grammar.landmarks) {
       if (landmarkIds.has(landmark.id)) issues.push(`duplicate landmark id ${landmark.id}`);
       landmarkIds.add(landmark.id);
-      if (!CAMPAIGN_STAGE_IDS.includes(landmark.stage) || landmark.stage === 5 || landmark.stage === 10) {
+      if (!CAMPAIGN_STAGE_IDS.includes(landmark.stage) || stageKind(landmark.stage) !== 'normal') {
         issues.push(`landmark ${landmark.id} must target a normal stage`);
       }
       if (!LANDMARK_SHAPES.has(landmark.shape)) issues.push(`landmark ${landmark.id} shape is invalid`);
