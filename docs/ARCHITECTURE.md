@@ -57,6 +57,18 @@ Pitch variation comes from the mixer, not the cosmetic stream, so sounds never m
 
 No body sprite can hide a threat, because shots and telegraphs draw above every body (V3). Particles and damage numbers draw above bodies so hits read on enemies. The x-ray pass redraws the hero half-transparent with its hit ring whenever at least 5% of the player's body box is covered by something drawn after it, or the player stands on a boss or large body (V4, BUG-12). The renderer exposes the last frame's `stats` (sorted bodies, player coverage, x-ray), which the diagnostics and the visual gate record. `test/layers.integration.test.mjs` checks the contract through a layer hook (`onLayer`).
 
+## Animation states and motion (FX-01)
+
+`src/game/render/animation.ts` gives every character one animation state in the renderer: what it is doing, when that began, which way it faces, and, for vector bodies, its heading. The renderer steps every character each frame from the render world. Off-screen characters step too, so one that walks into view is not taken for a new spawn.
+
+- Hero: idle, run, cast, skillBurst (big actives and awakenings), hurt, rooted, silenced, death.
+- Enemies: spawn (the first 0.25 s), idle, move, windup, attack (a dash, or 0.2 s after a shot), hurt, stunned, death (the FX-03 corpse effects).
+- Bosses: intro (the first second), idle, move, windup, attack, phase (0.45 s), enrage (0.6 s), death.
+
+Threats come first (V3): a windup or a dash keeps its pose through hits, phase changes, and entrances. Each state lists the atlas poses it may use, best first (`heroPoses`, `enemyPoses`). A state with its own baked animation plays it; until then it borrows the nearest pose (skillBurst uses the throw, stunned the hit, spawn the idle or walk cycle), so new art needs no code change. One-shot poses run in simulation time from the start of their state and hold their last frame. Loops cycle on simulation time with a per-id phase. Enemy sprites face their shield, their locked dash, or the way they walk. Vector bodies turn to their heading and never spin.
+
+Detail follows the enemies on screen: full below 80, reduced from 80 (crowd animation at half rate), and minimal from 160 (a still frame). Reduced motion, from the option or the system setting, never lowers detail and keeps frame animation; it only drops shake, pulses, and spinning decorations (style bible §13). `stats.detail` reports the level of the last frame.
+
 ## Test access (TEC-07)
 
 Tests, balance runners, and soak tools use `ProbedGameEngine` (`src/game/engine/probe.ts`), a test-only subclass whose `probe` API sets up worlds (spawn, place, patch, clear, halt spawns, set skills, cast), steps fixed ticks, observes every step (`onStep`), and reads a plain-data copy of the world (`read`). `createEngineHarness` (`src/game/engine/harness.ts`) implements the replay contract on the real engine: a seed plus a command log reproduces the same snapshot and fingerprint. The test bundle entry is `src/testing/engine.ts` (`npm run build:test-bundles`); the app entry never imports it, so production bundles do not ship the probe. Engine members are `protected` only so the probe subclass can reach them; nothing else subclasses the engine.

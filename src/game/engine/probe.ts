@@ -437,6 +437,7 @@ export class ProbedGameEngine extends GameEngine {
             impactRings: effects.impactRings,
             shake: effects.shake,
             playerHurt: effects.playerHurt,
+            playerBurst: effects.playerBurst,
             playerCast: effects.playerCast,
           },
         });

@@ -23,11 +23,15 @@ const PARTICLE_CAP_FULL = 520;
 const PARTICLE_CAP_REDUCED = 260;
 const DAMAGE_NUMBER_CAP = 160;
 const IMPACT_RING_CAP = 32;
-/** Pose lengths for the hero sprite: the hurt flash (3 frames at 12 fps) and the throw (4 frames at 16 fps). */
+/**
+ * Pose lengths for the hero (FX-01): the hurt flash (3 frames at 12 fps), the throw (4 frames at 16 fps), and the
+ * longer burst for the big actives and awakenings.
+ */
 export const PLAYER_HURT_POSE_SECONDS = 0.25;
 export const PLAYER_CAST_POSE_SECONDS = 0.25;
+export const PLAYER_BURST_POSE_SECONDS = 0.4;
 
-const CAST_EFFECTS: Partial<Record<SkillId, { shake?: number; sound?: CueId }>> = {
+const CAST_EFFECTS: Partial<Record<SkillId, { shake?: number; sound?: CueId; burst?: boolean }>> = {
   fanKnives: { sound: 'cast.fanKnives' },
   chainSpark: { sound: 'cast.chainSpark' },
   frostLine: { sound: 'cast.frostLine' },
@@ -35,8 +39,8 @@ const CAST_EFFECTS: Partial<Record<SkillId, { shake?: number; sound?: CueId }>> 
   boneMortar: { sound: 'cast.boneMortar' },
   mirrorClone: { sound: 'cast.mirrorClone' },
   voidMine: { sound: 'cast.voidMine' },
-  blackSun: { shake: 5, sound: 'cast.blackSun' },
-  eclipseStep: { shake: 12 },
+  blackSun: { shake: 5, sound: 'cast.blackSun', burst: true },
+  eclipseStep: { shake: 12, burst: true },
 };
 
 export class Presentation {
@@ -44,8 +48,9 @@ export class Presentation {
   readonly damageNumbers: DamageNumber[] = [];
   readonly impactRings: ImpactRing[] = [];
   shake = 0;
-  /** Seconds left on the player's hurt and cast poses (FX-01); they count down in wall time. */
+  /** Seconds left on the player's hurt, burst, and cast poses (FX-01); they count down in simulated time. */
   playerHurt = 0;
+  playerBurst = 0;
   playerCast = 0;
   /** Cosmetic random stream (particle spread, hit pitch, shake jitter); reseeded per run. */
   random = createSeededRandom(2);
@@ -93,6 +98,7 @@ export class Presentation {
     this.damageNumbers.length = 0;
     this.impactRings.length = 0;
     this.playerHurt = 0;
+    this.playerBurst = 0;
     this.playerCast = 0;
   }
 
@@ -106,6 +112,7 @@ export class Presentation {
         if (event.kind === 'awakening') {
           this.burst(event.x, event.y, 36, '#050505', 260);
           this.addShake(14);
+          this.playerBurst = PLAYER_BURST_POSE_SECONDS;
         } else if (event.kind === 'heal') {
           this.burst(event.x, event.y, 28, '#111111', 180);
         } else if (event.kind === 'coins') {
@@ -119,6 +126,7 @@ export class Presentation {
       case 'skill/cast': {
         this.playerCast = PLAYER_CAST_POSE_SECONDS;
         const cast = CAST_EFFECTS[event.skillId];
+        if (cast?.burst) this.playerBurst = PLAYER_BURST_POSE_SECONDS;
         if (cast?.shake !== undefined) this.addShake(cast.shake);
         if (cast?.sound) this.play(cast.sound, event.x);
         return;
@@ -215,13 +223,11 @@ export class Presentation {
     }
   }
 
-  /** Start of an animation frame: shake and poses decay in wall time unless paused. */
+  /** Start of an animation frame: shake decays in wall time unless paused. */
   beginFrame(frameDt: number, paused: boolean) {
     this.legacyHitWait = Math.max(0, this.legacyHitWait - frameDt);
     if (paused) return;
     this.shake = Math.max(0, this.shake - frameDt * 12);
-    this.playerHurt = Math.max(0, this.playerHurt - frameDt);
-    this.playerCast = Math.max(0, this.playerCast - frameDt);
   }
 
   /**
@@ -233,8 +239,11 @@ export class Presentation {
     if (!paused || decayWhilePaused) this.updateParticles(frameDt);
   }
 
-  /** Per fixed simulation step: rings and damage numbers age with simulated time. */
+  /** Per fixed simulation step: rings, damage numbers, and the hero's poses age with simulated time. */
   step(dt: number) {
+    this.playerHurt = Math.max(0, this.playerHurt - dt);
+    this.playerBurst = Math.max(0, this.playerBurst - dt);
+    this.playerCast = Math.max(0, this.playerCast - dt);
     for (const ring of this.impactRings) ring.life -= dt;
     for (const number of this.damageNumbers) {
       number.life -= dt;

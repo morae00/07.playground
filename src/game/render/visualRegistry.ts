@@ -98,7 +98,6 @@ export type EnemyArtProfile = Readonly<{
   fill: string;
   accent: string;
   core: string;
-  rotationRate: number;
 }>;
 
 export const ENEMY_VISUAL_ROLES = Object.freeze([
@@ -115,13 +114,6 @@ const roleFill: Record<EnemyVisualRole, string> = {
   warden: '#484f4a',
 };
 
-const roleRotation: Record<EnemyVisualRole, number> = {
-  stalker: 0.9,
-  charger: 0.16,
-  shooter: 0,
-  warden: 0.08,
-};
-
 const enemyProfiles = Object.fromEntries(
   CAMPAIGN_CHAPTER_IDS.flatMap((chapter) => (
     ENEMY_VISUAL_ROLES.map((role) => {
@@ -134,7 +126,6 @@ const enemyProfiles = Object.fromEntries(
         fill: roleFill[role],
         accent: chapterArt.accent,
         core: chapterArt.secondary,
-        rotationRate: roleRotation[role],
       } satisfies EnemyArtProfile)];
     })
   )),

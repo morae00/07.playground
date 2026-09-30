@@ -56,6 +56,8 @@ export type EnemyVisualInput = {
   legacyBoss: boolean;
   /** Boss attack state; 'warn' is a windup that must be visible before the attack lands (BUG-10). */
   patternPhase?: string;
+  /** Where the body points, in radians (FX-01: its shield, dash, aim, or walk; no spinning). */
+  heading: number;
 };
 
 export type FriendlyProjectileVisualInput = {
@@ -453,11 +455,6 @@ export class GameRenderer {
 
   private drawMob(ctx: CanvasRenderingContext2D, input: EnemyVisualInput) {
     const profile = enemyArtFor(this.frame.chapter, input.tier, input.attackStyle);
-    const direction = input.attackStyle === 'ranged' || profile.role === 'charger'
-      ? Math.atan2(input.vy, input.vx)
-      : input.variant * 0.45 + (
-        this.frame.reducedMotion ? 0 : this.frame.elapsed * profile.rotationRate
-      );
     const hit = input.hitFlash > 0;
 
     if (this.frame.detail === 'full') {
@@ -470,7 +467,7 @@ export class GameRenderer {
       ctx.restore();
     }
 
-    ctx.rotate(direction);
+    ctx.rotate(input.heading);
     ctx.lineJoin = 'round';
     ctx.fillStyle = hit ? VISUAL_PALETTE.paperBright : profile.fill;
     ctx.strokeStyle = VISUAL_PALETTE.ink;
@@ -635,9 +632,6 @@ export class GameRenderer {
     const profile = bossArtFor(input.bossId, this.frame.chapter);
     const radius = input.radius;
     const hit = input.hitFlash > 0;
-    const rotation = this.frame.reducedMotion
-      ? 0
-      : this.frame.elapsed * (profile.body === 'herald' ? 0.5 : 0.08);
 
     if (this.frame.detail !== 'minimal') {
       ctx.save();
@@ -649,7 +643,7 @@ export class GameRenderer {
       ctx.restore();
     }
 
-    ctx.rotate(rotation);
+    // Bosses stand upright (FX-01: no spinning bodies).
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     ctx.fillStyle = hit ? VISUAL_PALETTE.paperBright : profile.fill;
@@ -692,7 +686,7 @@ export class GameRenderer {
     } else if (profile.body === 'tyrant') {
       pathStar(ctx, 12, radius * 1.08, radius * 0.82, -Math.PI / 2);
     } else if (profile.body === 'herald') {
-      pathStar(ctx, 10, radius * 1.14, radius * 0.66, rotationOffset(this.frame.elapsed, this.frame.reducedMotion));
+      pathStar(ctx, 10, radius * 1.14, radius * 0.66, -Math.PI / 2);
     } else if (profile.body === 'director') {
       pathPolygon(ctx, [[0, -radius * 1.25], [radius * 0.58, -radius * 0.72], [radius * 0.86, radius * 0.82], [0, radius], [-radius * 0.86, radius * 0.82], [-radius * 0.58, -radius * 0.72]]);
     } else {
@@ -1479,8 +1473,4 @@ export class GameRenderer {
     ctx.fillRect(x - width / 2, y, width * safeRatio, height);
     ctx.restore();
   }
-}
-
-function rotationOffset(elapsed: number, reducedMotion: boolean) {
-  return reducedMotion ? -Math.PI / 2 : elapsed * 0.7 - Math.PI / 2;
 }

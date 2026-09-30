@@ -17,9 +17,13 @@ function finiteOr(value: number, fallback: number) {
   return Number.isFinite(value) ? value : fallback;
 }
 
-export function visualDetailFor(enemyCount: number, reducedMotion: boolean): VisualDetail {
-  if (reducedMotion || enemyCount >= 160) return 'minimal';
-  if (enemyCount >= 80) return 'reduced';
+/**
+ * Level of detail from the enemies on screen (FX-01). Reduced motion never lowers it: that option only drops
+ * shake, pulses, and spinning decorations.
+ */
+export function visualDetailFor(visibleEnemies: number): VisualDetail {
+  if (visibleEnemies >= 160) return 'minimal';
+  if (visibleEnemies >= 80) return 'reduced';
   return 'full';
 }
 
@@ -40,7 +44,7 @@ export function createRenderFrameSnapshot(input: {
     elapsed: Math.max(0, finiteOr(input.elapsed, 0)),
     alpha: clamp(finiteOr(input.alpha, 1), 0, 1),
     reducedMotion: Boolean(input.reducedMotion),
-    detail: visualDetailFor(enemyCount, input.reducedMotion),
+    detail: visualDetailFor(enemyCount),
     aimAngle: finiteOr(input.aimAngle, 0),
     moving: Boolean(input.moving),
     bossEnraged: Boolean(input.bossEnraged),

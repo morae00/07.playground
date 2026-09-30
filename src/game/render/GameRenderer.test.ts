@@ -69,6 +69,7 @@ test('all fifteen boss profiles produce distinct code-rendered silhouettes', () 
       bossPattern: 'dash',
       bossPhase: 1,
       legacyBoss: false,
+      heading: 0,
     });
     assert.ok(recorder.calls.length > 20, `${id} should emit a complete silhouette`);
     fingerprints.add(recorder.calls.join('|'));
@@ -96,6 +97,7 @@ test('renderer preserves core signals while reducing decorative density', () => 
     hitFlash: 0,
     bossPhase: 1,
     legacyBoss: false,
+    heading: 0,
   });
   const fullCommands = recorder.calls.length;
 
@@ -115,6 +117,7 @@ test('renderer preserves core signals while reducing decorative density', () => 
     hitFlash: 0,
     bossPhase: 1,
     legacyBoss: false,
+    heading: 0,
   });
   const minimalCommands = recorder.calls.length;
 

@@ -27,9 +27,10 @@ test('render snapshot normalizes transient visual state without gameplay mutatio
   assert.ok(Object.isFrozen(snapshot));
 });
 
-test('visual detail scales down at existing enemy pressure thresholds', () => {
-  assert.equal(visualDetailFor(79, false), 'full');
-  assert.equal(visualDetailFor(80, false), 'reduced');
-  assert.equal(visualDetailFor(160, false), 'minimal');
-  assert.equal(visualDetailFor(1, true), 'minimal');
+test('visual detail scales down with the enemies on screen, and reduced motion never lowers it', () => {
+  assert.equal(visualDetailFor(79), 'full');
+  assert.equal(visualDetailFor(80), 'reduced');
+  assert.equal(visualDetailFor(160), 'minimal');
+  const calm = createRenderFrameSnapshot({ chapter: 1, elapsed: 1, alpha: 1, reducedMotion: true, aimAngle: 0, moving: false, bossEnraged: false, enemyCount: 3 });
+  assert.equal(calm.detail, 'full');
 });

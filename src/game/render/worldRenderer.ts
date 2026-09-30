@@ -22,14 +22,14 @@ import { SKILL_NUMBERS, scaleAt } from '../skillNumbers.ts';
 import type { ViewFrame } from '../viewPolicy.ts';
 import { motionPolicy } from '../visualContracts.ts';
 import { distance } from '../worldMath.ts';
-import { PLAYER_CAST_POSE_SECONDS, PLAYER_HURT_POSE_SECONDS } from '../presentation/presentation.ts';
 import { WARDEN_SHIELD } from '../enemyBehaviors.ts';
-import { loopFrame, phaseFor, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
-import { BOSS_SLOTS, CHAPTER_PACKS, HERO_SLOT, bossState, enemyDrawScale, enemySlot, frameKey, slotEnabled, type HeroState } from './assets/slots.ts';
+import { AnimationBook, enemyPoses, heroPoses, poseFrame, stepBossAnim, stepEnemyAnim, stepPlayerAnim, type AnimState, type EnemyAnim } from './animation.ts';
+import { phaseFor, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
+import { BOSS_SLOTS, CHAPTER_PACKS, HERO_SLOT, bossState, enemyDrawScale, enemySlot, frameKey, slotEnabled } from './assets/slots.ts';
 import { GameRenderer } from './GameRenderer.ts';
 import { NEUTRAL, SIGNAL, rgba } from './palette.ts';
 import { createRenderFrameSnapshot } from './renderSnapshot.ts';
-import { CHAPTER_VISUALS, enemyRoleFor } from './visualRegistry.ts';
+import { CHAPTER_VISUALS, enemyRoleFor, type VisualDetail } from './visualRegistry.ts';
 import {
   circleVisible,
   interpolatePosition,
@@ -41,6 +41,17 @@ import {
 } from './viewport.ts';
 
 const TARGET_COLOR = SIGNAL.allyDeep;
+/** Enemy ids start at 1, so the hero's animation state never collides with one. */
+const HERO_ANIM_ID = -1;
+
+/** Where a vector body points: its shield, its dash, its aim, or the way it walks; null keeps the last heading. */
+function enemyHeading(enemy: Readonly<Entity>): number | null {
+  if (enemy.shieldAngle !== undefined) return enemy.shieldAngle;
+  if (enemy.patternPhase === 'warn' || enemy.patternPhase === 'dash') return Math.atan2(enemy.patternY, enemy.patternX);
+  if (enemy.attackStyle === 'ranged' && enemy.rangedTelegraph > 0) return Math.atan2(enemy.patternY - enemy.y, enemy.patternX - enemy.x);
+  if (Math.hypot(enemy.vx, enemy.vy) > 5) return Math.atan2(enemy.vy, enemy.vx);
+  return null;
+}
 
 /**
  * World layer contract (TEC-12), bottom to top. Bodies (enemies, bosses, the player, mirror clones, obstacle
@@ -85,6 +96,8 @@ type BodyDraw = {
   top: number;
   bottom: number;
   enemy: Readonly<Entity> | null;
+  /** The enemy's animation state (FX-01): its pose, facing, and heading. */
+  anim: AnimState | null;
   obstacle: Readonly<Obstacle> | null;
   sprite: EnemySprite | null;
   cloneSide: -1 | 1;
@@ -97,6 +110,8 @@ export type RenderFrameStats = {
   playerCoverage: number;
   /** Whether the player x-ray pass drew this frame. */
   xray: boolean;
+  /** Level of detail, from the enemies on screen (FX-01). */
+  detail: VisualDetail;
 };
 
 export type RenderPlayer = Readonly<{
@@ -104,8 +119,10 @@ export type RenderPlayer = Readonly<{
   y: number;
   prevX: number;
   prevY: number;
+  hp: number;
   shield: number;
   silence: number;
+  root: number;
   rootImmunity: number;
 }>;
 
@@ -115,8 +132,9 @@ export type RenderEffects = {
   readonly damageNumbers: readonly Readonly<DamageNumber>[];
   readonly impactRings: readonly Readonly<ImpactRing>[];
   readonly shake: number;
-  /** Seconds left on the hero's hurt and cast poses. */
+  /** Seconds left on the hero's hurt, burst, and cast poses. */
   readonly playerHurt: number;
+  readonly playerBurst: number;
   readonly playerCast: number;
   random(): number;
 };
@@ -163,8 +181,9 @@ export class WorldRenderer {
   private world!: RenderWorld;
   /** Baked character art (TEC-03); null or not yet loaded means every slot draws with vectors. */
   private sprites: SpriteAtlas | null = null;
-  private heroFacing: 1 | -1 = 1;
-  private readonly enemyFacing = new Map<number, 1 | -1>();
+  /** Animation states by character id (FX-01); the hero is kept under HERO_ANIM_ID. */
+  private readonly anims = new AnimationBook();
+  private heroAnim: AnimState | null = null;
   private readonly bodyPool: BodyDraw[] = [];
   private readonly sortedBodies: BodyDraw[] = [];
   private bodyCount = 0;
@@ -172,13 +191,13 @@ export class WorldRenderer {
   private heroMoving = false;
   private playerBody: BodyDraw | null = null;
   /** Statistics of the last drawn frame. */
-  readonly stats: RenderFrameStats = { bodies: 0, playerCoverage: 0, xray: false };
+  readonly stats: RenderFrameStats = { bodies: 0, playerCoverage: 0, xray: false, detail: 'full' };
   /** Called as each world layer starts drawing; tests use it to check the layer contract. */
   onLayer: ((layer: WorldLayer) => void) | null = null;
 
   setSprites(atlas: SpriteAtlas | null) {
     this.sprites = atlas;
-    this.enemyFacing.clear();
+    this.anims.clear();
   }
 
   /** Forget cached patterns (the canvas was resized or its context reset). */
@@ -202,7 +221,7 @@ export class WorldRenderer {
     const frame = this.world.view.frame;
     this.viewport = makeViewport(camera.x, camera.y, frame.width, frame.height, 160);
     const policy = motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion);
-    this.visual.beginFrame(createRenderFrameSnapshot({
+    const snapshot = createRenderFrameSnapshot({
       chapter: this.world.chapter,
       elapsed: this.world.elapsed,
       alpha,
@@ -210,8 +229,11 @@ export class WorldRenderer {
       aimAngle: this.world.aim.angle,
       moving: this.playerMoved(),
       bossEnraged: this.world.bossEnraged,
-      enemyCount: this.world.enemies.length,
-    }));
+      // Detail follows what is on screen (FX-01): a crowd off screen costs nothing to draw.
+      enemyCount: this.visibleEnemies(),
+    });
+    this.visual.beginFrame(snapshot);
+    this.stats.detail = snapshot.detail;
     const shakeEnabled = this.world.options.screenShake && !policy.reduced;
     // Classic rules draw the shake jitter every frame like 0.1.0 did, because under them cosmetic random draws
     // still reach gameplay through particle ids; remaster rules draw only while actually shaking.
@@ -293,20 +315,30 @@ export class WorldRenderer {
   private acquireBody(): BodyDraw {
     let body = this.bodyPool[this.bodyCount];
     if (!body) {
-      body = { rank: 1, depth: 0, id: 0, x: 0, y: 0, left: 0, right: 0, top: 0, bottom: 0, enemy: null, obstacle: null, sprite: null, cloneSide: 1 };
+      body = { rank: 1, depth: 0, id: 0, x: 0, y: 0, left: 0, right: 0, top: 0, bottom: 0, enemy: null, anim: null, obstacle: null, sprite: null, cloneSide: 1 };
       this.bodyPool.push(body);
     }
     this.bodyCount += 1;
     body.enemy = null;
+    body.anim = null;
     body.obstacle = null;
     body.sprite = null;
     return body;
   }
 
-  /** Gathers this frame's visible bodies and sorts them by depth (TEC-12). */
+  private visibleEnemies() {
+    let count = 0;
+    for (const enemy of this.world.enemies) {
+      if (circleVisible(this.viewport, enemy.x, enemy.y, enemy.radius)) count += 1;
+    }
+    return count;
+  }
+
+  /** Gathers this frame's visible bodies and sorts them by depth (TEC-12); every character's animation steps. */
   private collectBodies() {
     this.bodyCount = 0;
     this.playerBody = null;
+    this.anims.beginFrame(this.world.elapsed);
     for (const obstacle of this.world.obstacles) {
       if (!rectVisible(this.viewport, obstacle.x - 12, obstacle.y - 12, obstacle.w + 28, obstacle.h + 30)) continue;
       const body = this.acquireBody();
@@ -323,7 +355,9 @@ export class WorldRenderer {
     }
     for (const enemy of this.world.enemies) {
       const point = this.interpolated(enemy);
-      const sprite = this.enemySprite(enemy);
+      // Off-screen characters step too, so one walking into view is not mistaken for a new spawn.
+      const anim = this.animate(enemy);
+      const sprite = this.enemySprite(enemy, anim);
       // Sprites stand on the hit circle's centre and rise above it; vectors are centred on it.
       const top = sprite ? point.y - (sprite.frame.ay / sprite.frame.scale) * sprite.scale : point.y - enemy.radius;
       const reach = sprite ? Math.max(enemy.radius + 24, point.y - top + 8) : enemy.radius + 24;
@@ -340,6 +374,7 @@ export class WorldRenderer {
       body.top = top;
       body.bottom = sprite ? point.y + enemy.radius * 0.42 : point.y + enemy.radius;
       body.enemy = enemy;
+      body.anim = anim;
       body.sprite = sprite ?? null;
     }
     this.heroMoving = this.playerMoved();
@@ -380,6 +415,7 @@ export class WorldRenderer {
     body.bottom = player.y + 6;
     this.playerBody = body;
 
+    this.anims.endFrame();
     const sorted = this.sortedBodies;
     sorted.length = this.bodyCount;
     for (let index = 0; index < this.bodyCount; index += 1) sorted[index] = this.bodyPool[index];
@@ -798,6 +834,7 @@ export class WorldRenderer {
       bossPhase: enemy.bossPhase,
       legacyBoss: enemy.legacyBoss === true,
       patternPhase: enemy.patternPhase,
+      heading: body.anim?.heading ?? 0,
     });
   }
 
@@ -833,7 +870,7 @@ export class WorldRenderer {
     const skill = this.world.skills.mirrorClone;
     if (!skill) return;
     if (this.hero) {
-      this.blit(ctx, this.hero, x, y, this.heroFacing, 0.94, skill.awakened ? 0.3 : 0.38);
+      this.blit(ctx, this.hero, x, y, (this.heroAnim?.facing ?? 1), 0.94, skill.awakened ? 0.3 : 0.38);
       return;
     }
     this.visual.drawMirrorClone(ctx, {
@@ -865,7 +902,7 @@ export class WorldRenderer {
 
   private drawPlayerBody(ctx: CanvasRenderingContext2D, body: BodyDraw) {
     if (this.hero) {
-      this.blit(ctx, this.hero, body.x, body.y, this.heroFacing, 1);
+      this.blit(ctx, this.hero, body.x, body.y, (this.heroAnim?.facing ?? 1), 1);
       this.drawHeroMarks(ctx, body.x, body.y, this.hero);
       return;
     }
@@ -934,7 +971,7 @@ export class WorldRenderer {
     if (!player) return;
     if (this.hero) {
       // The hero is redrawn half-transparent over whatever covers it, with the hit circle (BUG-12).
-      this.blit(ctx, this.hero, player.x, player.y, this.heroFacing, 1, 0.6);
+      this.blit(ctx, this.hero, player.x, player.y, (this.heroAnim?.facing ?? 1), 1, 0.6);
       ctx.save();
       ctx.setLineDash([4, 4]);
       ctx.strokeStyle = SIGNAL.ally;
@@ -948,22 +985,25 @@ export class WorldRenderer {
     this.visual.drawPlayerXray(ctx, { x: player.x, y: player.y, hitRadius: HIT_RADIUS.playerContact });
   }
 
-  /** The hero's atlas frame for this moment, or undefined to draw with vectors (FX-01 states, TEC-03). */
+  /**
+   * The hero's state (FX-01) and atlas frame for this moment, or undefined to draw with vectors. The hero faces its
+   * target, or the way it walks without one.
+   */
   private heroFrame(moving: boolean): SpriteFrame | undefined {
+    const { effects, aim, player } = this.world;
+    const now = this.world.elapsed;
+    const anim = this.anims.touch(HERO_ANIM_ID, now, 1, 0);
+    this.heroAnim = anim;
+    const lateral = aim.targetId !== null ? Math.cos(aim.angle) : player.x - player.prevX;
+    if (Math.abs(lateral) > 0.01) anim.facing = lateral < 0 ? -1 : 1;
+    const state = stepPlayerAnim(anim, player, effects, moving, now);
     const sprites = this.sprites;
     if (!sprites || !slotEnabled(HERO_SLOT)) return undefined;
-    const { effects, aim, player } = this.world;
-    const lateral = aim.targetId !== null ? Math.cos(aim.angle) : player.x - player.prevX;
-    if (Math.abs(lateral) > 0.01) this.heroFacing = lateral < 0 ? -1 : 1;
-    const state: HeroState = effects.playerHurt > 0 ? 'hurt' : effects.playerCast > 0 ? 'throw' : moving ? 'run' : 'idle';
-    const spec = sprites.animation(HERO_SLOT, state);
-    if (!spec) return undefined;
-    let index: number;
-    if (state === 'hurt') index = Math.floor((PLAYER_HURT_POSE_SECONDS - effects.playerHurt) * spec.fps);
-    else if (state === 'throw') index = Math.floor((PLAYER_CAST_POSE_SECONDS - effects.playerCast) * spec.fps);
-    else index = loopFrame(spec, this.world.elapsed);
-    index = Math.max(0, Math.min(spec.frames - 1, index));
-    return sprites.frame(frameKey(HERO_SLOT, state, index)) ?? sprites.frame(frameKey(HERO_SLOT, 'idle', 0));
+    for (const pose of heroPoses(state)) {
+      const spec = sprites.animation(HERO_SLOT, pose);
+      if (spec) return sprites.frame(frameKey(HERO_SLOT, pose, poseFrame(spec, pose, anim.startedAt, now, 0))) ?? sprites.frame(frameKey(HERO_SLOT, 'idle', 0));
+    }
+    return undefined;
   }
 
   /** Foot shadow (the hit circle, style bible §2.3) and the cyan four-part foot ring turned toward the aim. */
@@ -1026,48 +1066,61 @@ export class WorldRenderer {
     ctx.restore();
   }
 
-  /** An enemy's atlas frame, facing, and scale, or undefined to draw it with vectors. */
-  private enemySprite(enemy: Readonly<Entity>) {
+  /**
+   * Steps a character's animation state (FX-01) and where it faces: sprites turn left or right, vector bodies turn
+   * to their heading. Bosses face their dash, or the player; enemies face their shield (wardens), their locked
+   * dash (chargers), or the way they walk, and keep facing that way when they stop.
+   */
+  private animate(enemy: Readonly<Entity>): AnimState {
+    const now = this.world.elapsed;
+    const { player } = this.world;
+    const anim = this.anims.touch(enemy.id, now, player.x < enemy.x ? -1 : 1, Math.atan2(player.y - enemy.y, player.x - enemy.x));
+    let lateral: number;
+    if (enemy.isBoss) {
+      stepBossAnim(anim, enemy, now, this.world.bossEnraged);
+      // Classic rules keep a target point in patternX during the windup, so only the dash itself reads velocity.
+      lateral = enemy.patternPhase === 'dash' ? enemy.vx : player.x - enemy.x;
+    } else {
+      stepEnemyAnim(anim, enemy, now);
+      const heading = enemyHeading(enemy);
+      if (heading !== null) anim.heading = heading;
+      lateral = enemy.shieldAngle !== undefined
+        ? Math.cos(enemy.shieldAngle) * 100
+        : enemy.patternPhase === 'warn' || enemy.patternPhase === 'dash' ? enemy.patternX : enemy.vx;
+    }
+    if (Math.abs(lateral) > 5) anim.facing = lateral < 0 ? -1 : 1;
+    return anim;
+  }
+
+  /** An enemy's atlas frame, facing, and scale for its animation state, or undefined to draw it with vectors. */
+  private enemySprite(enemy: Readonly<Entity>, anim: AnimState) {
     const sprites = this.sprites;
     if (!sprites) return undefined;
-    if (enemy.isBoss) return this.bossSprite(enemy, sprites);
+    if (enemy.isBoss) return this.bossSprite(enemy, anim, sprites);
     const pack = CHAPTER_PACKS[this.world.chapter];
     if (!pack || sprites.status(pack) !== 'ready') return undefined;
     const slot = enemySlot(this.world.chapter, enemy.tier, enemy.attackStyle);
     if (!slotEnabled(slot)) return undefined;
-    const moving = Math.hypot(enemy.vx, enemy.vy) > 5;
-    // Shooters aiming and chargers bracing for a dash (SYS-02) both show the windup pose.
-    const windingUp = (enemy.attackStyle === 'ranged' && enemy.rangedTelegraph > 0) || enemy.patternPhase === 'warn';
-    const state = enemy.hitFlash > 0 ? 'hit' : windingUp ? 'windup' : moving ? 'walk' : 'idle';
-    const spec = sprites.animation(slot, state);
-    if (!spec) return undefined;
-    const frame = sprites.frame(frameKey(slot, state, state === 'walk' ? loopFrame(spec, this.world.elapsed, phaseFor(enemy.id)) : 0));
-    if (!frame) return undefined;
-    // Face the shield (wardens) or the locked dash (chargers) when there is one, else the way it walks.
-    const heading = enemy.shieldAngle !== undefined
-      ? Math.cos(enemy.shieldAngle) * 100
-      : enemy.patternPhase === 'warn' || enemy.patternPhase === 'dash' ? enemy.patternX : enemy.vx;
-    const lateral = Math.abs(heading) > 5 ? heading : 0;
-    const facing: 1 | -1 = lateral !== 0 ? (lateral < 0 ? -1 : 1) : this.enemyFacing.get(enemy.id) ?? (this.world.player.x < enemy.x ? -1 : 1);
-    this.enemyFacing.set(enemy.id, facing);
-    return { frame, facing, scale: enemyDrawScale(enemyRoleFor(enemy.tier, enemy.attackStyle), enemy.tier) };
+    for (const pose of enemyPoses(anim.state as EnemyAnim, Math.hypot(enemy.vx, enemy.vy) > 5)) {
+      const spec = sprites.animation(slot, pose);
+      if (!spec) continue;
+      const frame = sprites.frame(frameKey(slot, pose, poseFrame(spec, pose, anim.startedAt, this.world.elapsed, phaseFor(enemy.id), this.stats.detail)));
+      if (!frame) return undefined;
+      return { frame, facing: anim.facing, scale: enemyDrawScale(enemyRoleFor(enemy.tier, enemy.attackStyle), enemy.tier) };
+    }
+    return undefined;
   }
 
   /**
    * A round boss's frame (TEC-03b): its phase art, the windup pose while a dash winds up or a volley is armed,
-   * and the enraged variant. The kit draws bosses facing right; they turn toward the dash or the player.
+   * and the enraged variant. The kit draws bosses facing right.
    */
-  private bossSprite(enemy: Readonly<Entity>, sprites: SpriteAtlas) {
+  private bossSprite(enemy: Readonly<Entity>, anim: AnimState, sprites: SpriteAtlas) {
     const entry = enemy.boss ? BOSS_SLOTS[enemy.boss.id] : undefined;
     if (!entry || !slotEnabled(entry.slot) || sprites.status(entry.pack) !== 'ready') return undefined;
-    const windup = enemy.patternPhase === 'warn' || enemy.armedPattern !== undefined;
-    const frame = sprites.frame(frameKey(entry.slot, bossState(enemy.bossPhase ?? 1, windup, this.world.bossEnraged), 0));
+    const frame = sprites.frame(frameKey(entry.slot, bossState(enemy.bossPhase ?? 1, anim.state === 'windup', this.world.bossEnraged), 0));
     if (!frame) return undefined;
-    // Classic rules keep a target point in patternX during the windup, so only the dash itself reads velocity.
-    const heading = enemy.patternPhase === 'dash' ? enemy.vx : this.world.player.x - enemy.x;
-    const facing: 1 | -1 = Math.abs(heading) > 5 ? (heading < 0 ? -1 : 1) : this.enemyFacing.get(enemy.id) ?? 1;
-    this.enemyFacing.set(enemy.id, facing);
-    return { frame, facing, scale: 1 };
+    return { frame, facing: anim.facing, scale: 1 };
   }
 
   private drawParticles(ctx: CanvasRenderingContext2D) {
