@@ -164,3 +164,11 @@ test('player x-ray keyline redraws the silhouette and hit circle above covering 
   assert.match(log, /arc:0\.00,0\.00,15\.00/, 'the hit circle is drawn at the true contact radius');
   assert.equal(recorder.calls.filter((call) => call.startsWith('fill:') || call === 'fill:').length, 0, 'the keyline never fills over the scene');
 });
+
+test('damage numbers start fully opaque whatever their lifetime (BUG-15)', () => {
+  const recorder = createRecordingContext();
+  const renderer = new GameRenderer();
+  renderer.beginFrame(frame(1));
+  renderer.drawDamageNumber(recorder.context, { x: 0, y: 0, value: 12, crit: false, life: 0.62, maxLife: 0.62, owner: 'player' });
+  assert.ok(recorder.calls.includes('set:globalAlpha:1'), recorder.calls.filter((call) => call.includes('globalAlpha')).join(','));
+});

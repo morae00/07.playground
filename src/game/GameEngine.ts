@@ -407,6 +407,7 @@ export type DamageNumber = {
   value: number;
   crit: boolean;
   life: number;
+  maxLife: number;
   owner: EffectOwner;
 };
 
@@ -1061,7 +1062,7 @@ export class GameEngine {
     520,
   );
   private damageNumberPool = new ObjectPool<DamageNumber>(
-    () => ({ id: 0, x: 0, y: 0, value: 0, crit: false, life: 0, owner: 'player' as EffectOwner }),
+    () => ({ id: 0, x: 0, y: 0, value: 0, crit: false, life: 0, maxLife: 0, owner: 'player' as EffectOwner }),
     (number) => { number.life = 0; },
     160,
   );
@@ -2080,7 +2081,6 @@ export class GameEngine {
       skillDamage: damage,
       collapseDamage: skill.awakened ? damage * 0.65 : 0,
     });
-    this.shake = Math.max(this.shake, 8);
     this.playTone(120, 0.055, 'sawtooth');
   }
 
@@ -2913,6 +2913,7 @@ export class GameEngine {
           this.areaDamage(hazard.x, hazard.y, hazard.radius * 0.55, hazard.collapseDamage!, sourceSkillId, 260, true);
         }
         this.addImpactRing(hazard.x, hazard.y, hazard.radius, 'critical');
+        if (sourceSkillId === 'boneMortar') this.shake = Math.max(this.shake, 8);
       }
       if (hazard.kind === 'vortex') {
         const sourceSkillId = hazard.sourceSkillId ?? 'voidMine';
@@ -3282,7 +3283,7 @@ export class GameEngine {
       number = this.damageNumbers.splice(replaceIndex, 1)[0];
     }
     number ??= this.damageNumberPool.acquire();
-    Object.assign(number, { id: this.nextId(), x, y, value, crit, life, owner });
+    Object.assign(number, { id: this.nextId(), x, y, value, crit, life, maxLife: life, owner });
     this.damageNumbers.push(number);
   }
 
@@ -3587,7 +3588,7 @@ export class GameEngine {
       alpha,
       reducedMotion: policy.reduced,
       aimAngle: this.playerAimAngle,
-      moving: this.keys.size > 0 || this.pointer.active,
+      moving: this.playerMoved(),
       bossEnraged: this.bossEnraged,
       enemyCount: this.enemies.length,
     }));
@@ -3960,12 +3961,12 @@ export class GameEngine {
     const blades = skill.level + 1 + (skill.awakened ? 3 : 0);
     const baseRadius = 72 + skill.level * 10;
     const player = this.interpolated(this.player);
-    const policy = motionPolicy(this.options.reducedFlash, this.systemReducedMotion);
     for (let i = 0; i < blades; i += 1) {
       const reverse = skill.awakened && i >= skill.level + 1;
       const speed = reverse ? -2.6 : 3.2;
       const bladeRadius = reverse ? baseRadius + 52 : baseRadius;
-      const angle = (policy.rotateDanger ? this.elapsed * speed : 0) + (Math.PI * 2 * i) / blades;
+      // Blades hit where the simulation puts them, so reduced motion must not freeze their drawn position (BUG-15).
+      const angle = this.elapsed * speed + (Math.PI * 2 * i) / blades;
       const x = player.x + Math.cos(angle) * bladeRadius;
       const y = player.y + Math.sin(angle) * bladeRadius;
       this.visualRenderer.drawOrbitBlade(ctx, x, y, angle, reverse);
@@ -3989,7 +3990,7 @@ export class GameEngine {
         x,
         y,
         aimAngle: this.playerAimAngle,
-        moving: this.keys.size > 0 || this.pointer.active,
+        moving: this.playerMoved(),
         shield: 0,
         silence: 0,
         alpha: skill.awakened ? 0.28 : 0.36,
@@ -3997,8 +3998,13 @@ export class GameEngine {
     }
   }
 
+  /** Walk cycles follow actual movement (keys held while rooted or paused must not animate) (BUG-15). */
+  private playerMoved() {
+    return !this.paused && Math.hypot(this.player.x - this.player.prevX, this.player.y - this.player.prevY) > 0.01;
+  }
+
   private drawPlayer(ctx: CanvasRenderingContext2D) {
-    const moving = this.keys.size > 0 || this.pointer.active;
+    const moving = this.playerMoved();
     const player = this.interpolated(this.player);
     this.visualRenderer.drawPlayer(ctx, {
       x: player.x,

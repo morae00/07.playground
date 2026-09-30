@@ -364,3 +364,33 @@ test('bosses standing on the player trigger the top-layer player keyline (BUG-12
     engine.dispose();
   }
 });
+
+test('reduced motion draws orbit blades where they hit, and the walk cycle follows real movement (BUG-15)', () => {
+  const { engine, recorder } = createEngine();
+  try {
+    engine.systemReducedMotion = true;
+    engine.enemies = [];
+    engine.skills = { orbitScythes: { level: 1, awakened: false } };
+    engine.elapsed = 1.3;
+    recorder.reset();
+    engine.render(1);
+    const blades = 2;
+    const expected = Array.from({ length: blades }, (_, index) => {
+      const angle = engine.elapsed * 3.2 + (Math.PI * 2 * index) / blades;
+      return [engine.player.x + Math.cos(angle) * 82, engine.player.y + Math.sin(angle) * 82];
+    });
+    for (const [x, y] of expected) {
+      assert.ok(recorder.translations.some(([tx, ty]) => Math.abs(tx - x) < 1e-6 && Math.abs(ty - y) < 1e-6), `blade drawn at simulated position ${x},${y}`);
+    }
+
+    engine.player.root = 5;
+    engine.keys.add('d');
+    engine.update(1 / 60);
+    assert.equal(engine.playerMoved(), false, 'a rooted player holding a key does not walk');
+    engine.player.root = 0;
+    engine.update(1 / 60);
+    assert.equal(engine.playerMoved(), true, 'moving once free');
+  } finally {
+    engine.dispose();
+  }
+});

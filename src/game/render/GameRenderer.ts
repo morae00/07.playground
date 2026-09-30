@@ -1340,10 +1340,12 @@ export class GameRenderer {
       value: number;
       crit: boolean;
       life: number;
+      maxLife?: number;
       owner?: EffectOwner;
     },
   ) {
-    const alpha = clamp(input.life / (input.crit ? 0.9 : 0.72), 0, 1);
+    // Fade relative to each number's own lifetime so every number starts fully opaque (BUG-15).
+    const alpha = clamp(input.life / Math.max(0.001, input.maxLife ?? (input.crit ? 0.9 : 0.72)), 0, 1);
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.font = `${input.crit ? 900 : 800} ${input.crit ? 17 : 14}px Inter, system-ui, sans-serif`;
