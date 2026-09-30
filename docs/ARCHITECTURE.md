@@ -103,6 +103,16 @@ Each screen is a component in `src/ui/screens`, and `src/App.tsx` owns the state
 
 The level copy on cards is generated from the same stat lines, so the rows and the copy cannot disagree.
 
+The HUD (UI-02) reads only the HUD snapshot, which the engine emits every 0.12 s:
+- `bossId` picks the boss portrait; `bossPhase` and `bossEnrage` / `bossEnrageSteps` fill the phase diamonds and the enrage state.
+- `cooldowns` gives each active skill's remaining cooldown share. The engine infers a cooldown's length when it sees one start, so gameplay code needs no HUD bookkeeping.
+- The portrait's expression comes from the snapshot too. The HUD picks, in this order:
+  1. a wince for half a second after health drops;
+  2. low health;
+  3. focus while a boss is up;
+  4. awakened once a skill has awakened;
+  5. calm.
+
 ## Test access (TEC-07)
 
 Tests, balance runners, and soak tools use `ProbedGameEngine` (`src/game/engine/probe.ts`), a test-only subclass whose `probe` API sets up worlds (spawn, place, patch, clear, halt spawns, set skills, cast), steps fixed ticks, observes every step (`onStep`), and reads a plain-data copy of the world (`read`). `createEngineHarness` (`src/game/engine/harness.ts`) implements the replay contract on the real engine: a seed plus a command log reproduces the same snapshot and fingerprint. The test bundle entry is `src/testing/engine.ts` (`npm run build:test-bundles`); the app entry never imports it, so production bundles do not ship the probe. Engine members are `protected` only so the probe subclass can reach them; nothing else subclasses the engine.

@@ -1,4 +1,4 @@
-// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, CON-02, AUD-01, FX-03, UI-03) against the developer build.
+// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, CON-02, AUD-01, FX-03, UI-02, UI-03) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -153,8 +153,8 @@ try {
     const offered = (await next.count()) === 1;
     if (offered) await next.click();
     await page.waitForTimeout(300);
-    const badge = await page.locator('.roundBadge strong').textContent().catch(() => '');
-    record('CON-02 the settlement offers the next stage and starts it', offered && badge?.trim() === 'Ch.1 / St.2', `badge ${badge?.trim() ?? 'none'}`);
+    const badge = await page.locator('.heroLine strong').textContent().catch(() => '');
+    record('CON-02 the settlement offers the next stage and starts it', offered && Boolean(badge?.startsWith('Ch.1 / St.2 ')), `badge ${badge?.trim() ?? 'none'}`);
     await page.close();
   });
 
@@ -337,6 +337,62 @@ try {
     const constructed = await page.evaluate(() => window.__audioContexts);
     record('AUD-01 the next run reuses the same audio context', constructed === 1 && second.audio.contexts === 1 && second.audio.state === 'running', `${constructed} contexts constructed`);
     await page.close();
+  });
+
+  await probe('UI-02', async () => {
+    // Share of the viewport the HUD covers, on a 4 px grid: element boxes for bars, art, chips, and buttons, and the
+    // glyph boxes of text; and how many covered cells fall in the centre 40% of the screen.
+    const coverage = () => {
+      const cell = 4;
+      const cols = Math.ceil(innerWidth / cell);
+      const rows = Math.ceil(innerHeight / cell);
+      const grid = new Uint8Array(cols * rows);
+      const mark = (rect) => {
+        if (rect.width <= 1 || rect.height <= 1) return;
+        for (let y = Math.max(0, Math.floor(rect.top / cell)); y < Math.min(rows, Math.ceil(rect.bottom / cell)); y += 1) {
+          for (let x = Math.max(0, Math.floor(rect.left / cell)); x < Math.min(cols, Math.ceil(rect.right / cell)); x += 1) grid[y * cols + x] = 1;
+        }
+      };
+      const boxes = '.xpStrip, .artPortrait, .levelSeal, .hpBar, .skillSlot, .objectiveChip, .hudChip, button, .bossHp, .effectItem, .recordState';
+      for (const root of document.querySelectorAll('.gameHud, .xpStrip, .bossBar, .effectRack')) {
+        for (const element of [root, ...root.querySelectorAll('*')]) if (element.matches(boxes)) mark(element.getBoundingClientRect());
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        const range = document.createRange();
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          if (!node.textContent.trim() || node.parentElement.closest('.srOnly')) continue;
+          range.selectNodeContents(node);
+          for (const rect of range.getClientRects()) mark(rect);
+        }
+      }
+      let covered = 0;
+      let centre = 0;
+      for (let y = 0; y < rows; y += 1) {
+        for (let x = 0; x < cols; x += 1) {
+          if (!grid[y * cols + x]) continue;
+          covered += 1;
+          if (x * cell >= innerWidth * 0.3 && x * cell < innerWidth * 0.7 && y * cell >= innerHeight * 0.3 && y * cell < innerHeight * 0.7) centre += 1;
+        }
+      }
+      return { share: covered / grid.length, centre };
+    };
+    for (const [width, height, limit] of [[1440, 900, 0.07], [1024, 720, 0.12]]) {
+      const page = await browser.newPage({ viewport: { width, height } });
+      await openStage(page);
+      await cheat(page, 'GOD');
+      for (let round = 0; round < 6; round += 1) {
+        await cheat(page, 'DRAFT');
+        await page.waitForTimeout(450);
+        await page.keyboard.press('1');
+        await page.waitForTimeout(150);
+      }
+      const closer = page.getByRole('button', { name: '런 패널 닫기' });
+      if (await closer.count()) await closer.click();
+      await page.waitForTimeout(300);
+      const hud = await page.evaluate(coverage);
+      const slots = await page.locator('.skillSlot .artSlot').count();
+      record(`UI-02 ${width}x${height} the HUD covers at most ${Math.round(limit * 100)}% of the screen and leaves the centre clear`, hud.share <= limit && hud.centre === 0, `${(hud.share * 100).toFixed(2)}% covered, ${hud.centre} centre cells, ${slots} skill slots`);
+      await page.close();
+    }
   });
 
   await probe('UI-03', async () => {

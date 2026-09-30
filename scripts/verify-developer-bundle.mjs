@@ -15,7 +15,7 @@ const REQUIRED_DEVELOPER_MARKERS = Object.freeze([
   'OBJECTIVE CLEARED',
   'ENDLESS SCORE ATTACK',
   '무한 모드 시작',
-  'PRACTICE / NO RECORD',
+  '연습 · 기록 제외',
   'LOOP FAULT ARMED',
   'UI FAULT ARMED',
   'PLAYER DOWN',

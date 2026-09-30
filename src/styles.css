@@ -94,29 +94,20 @@ button:disabled {
 .gameHud {
   position: absolute;
   z-index: 4;
-  top: 10px;
-  left: 10px;
-  right: 372px;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(340px, 520px) 190px 270px;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
   justify-content: space-between;
-  align-items: start;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 12px;
   pointer-events: none;
-}
-
-.gameHud.panelClosed {
-  right: 10px;
 }
 
 .gameHud.panelOpen {
   right: 372px;
 }
 
-.hudLeft,
-.hudCenter,
-.hudRight,
 .sidePanel,
 .menuLayer,
 .draftBox,
@@ -127,67 +118,6 @@ button:disabled {
   box-shadow: 4px 4px 0 #111;
 }
 
-.hudLeft,
-.hudCenter,
-.hudRight {
-  min-width: 0;
-  padding: 8px;
-  pointer-events: auto;
-}
-
-.hudLeft {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 10px;
-  align-items: center;
-}
-
-.roundBadge {
-  width: 104px;
-  min-height: 52px;
-  border: 2px solid #111;
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  background: #fff;
-}
-
-.roundBadge strong,
-.roundBadge span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.roundBadge strong {
-  font-size: 15px;
-}
-
-.roundBadge span {
-  font-size: 12px;
-  color: #555;
-}
-
-.barGroup {
-  min-width: 0;
-}
-
-.barGroup.narrow {
-  grid-column: 2;
-}
-
-.barLabel {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 12px;
-  line-height: 1.3;
-}
-
-.barLabel b {
-  white-space: nowrap;
-}
 
 .bar {
   position: relative;
@@ -216,10 +146,6 @@ button:disabled {
     );
 }
 
-.objectiveBar i {
-  background: #111;
-}
-
 .bar.mini {
   height: 8px;
 }
@@ -239,38 +165,7 @@ button:disabled {
   40% { opacity: 0.55; }
 }
 
-.subXp {
-  margin-top: 5px;
-}
 
-.bossBar {
-  height: 14px;
-  margin-top: 7px;
-}
-
-.bossBar i {
-  background: #111;
-}
-
-.hudCenter {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 5px;
-}
-
-.timer {
-  font-size: clamp(30px, 3vw, 40px);
-  line-height: 0.95;
-  font-weight: 900;
-  font-variant-numeric: tabular-nums;
-}
-
-.timerSub,
-.bossStrip span,
-.metricLine,
-.ccLine,
 .emptyText {
   font-size: 12px;
   color: #4a4a47;
@@ -283,7 +178,7 @@ button:disabled {
   padding: 2px 6px;
   background: var(--paper-raised);
   color: var(--ink);
-  font-size: 9px;
+  font-size: 13px;
   font-weight: 900;
 }
 
@@ -292,66 +187,367 @@ button:disabled {
   color: #9d1f14;
 }
 
-.bossStrip {
-  width: min(420px, 100%);
-  margin: 2px auto 0;
-  text-align: left;
+
+/* In-run HUD (UI-02), concept A: the elements float over the field without panels. Text keeps a paper halo so it
+   reads over ink bodies. Only the chips and buttons take pointer events; drags elsewhere reach the canvas. */
+.gameHud,
+.bossBar {
+  color: var(--ink);
+  text-shadow: 0 0 2px var(--paper), 0 0 3px var(--paper), 0 0 5px var(--paper);
 }
 
-/* SYS-04: the boss's current phase move, the HUD pattern preview. */
-.bossStrip .bossMoveName {
+.xpStrip {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 7px;
+  margin: 0;
+  border: 0;
+  border-bottom: 2px solid var(--ink);
+  background: rgba(247, 247, 242, 0.72);
+}
+
+.xpStrip i {
+  background: var(--ink);
+}
+
+.hudHero {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.heroFace {
+  position: relative;
+  flex: none;
+  width: 84px;
+}
+
+.heroFace .artPortrait,
+.bossBar .artPortrait {
   display: block;
-  margin-top: 3px;
-  color: var(--ink);
+  width: 100%;
+  border-radius: 50%;
+  background-color: var(--ink);
+}
+
+.levelSeal {
+  position: absolute;
+  right: -6px;
+  bottom: 0;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--paper);
+  color: var(--paper);
+  background: var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  font-size: 16px;
+  font-weight: 900;
+  text-shadow: none;
+  transform: rotate(-6deg);
+}
+
+.heroBody {
+  width: 320px;
+  display: grid;
+  gap: 4px;
+}
+
+.heroLine,
+.bossLine {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
   font-size: 13px;
   font-weight: 800;
 }
 
-.hudRight {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-  align-content: center;
+.heroLine strong {
+  font-size: 14px;
 }
 
-.metricLine {
-  min-height: 24px;
+.hpLine {
+  position: relative;
+}
+
+.hpBar {
+  height: 22px;
+  margin: 0;
+  border-width: 2.5px;
+  background: var(--paper);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.hpLine b {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  color: var(--paper);
+  font-size: 14px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 2px var(--ink), 0 0 3px var(--ink), 0 0 4px var(--ink);
+  transform: translateY(-50%);
+}
+
+/* Skill slots and the draft build strip: the kit slot art, with its level pips drawn in the slot's own column and
+   the cooldown wedge over the icon window. Sizes follow --slot, the width of the 56-unit slot cell. */
+.skillSlots {
+  display: grid;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.skillSlots ul {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  list-style: none;
+}
+
+.skillSlot {
+  --slot: 45px;
+}
+
+.buildSlot {
+  --slot: 56px;
+}
+
+.skillSlot,
+.buildSlot {
+  position: relative;
+  width: var(--slot);
+  text-shadow: none;
+}
+
+.skillSlot .artSlot,
+.buildSlot .artSlot {
+  display: block;
+  width: 100%;
+}
+
+.skillSlot .levelPips,
+.buildSlot .levelPips {
+  position: absolute;
+  top: calc(var(--slot) * 0.15);
+  left: calc(var(--slot) * 0.864);
+  flex-direction: column-reverse;
+  gap: calc(var(--slot) * 0.057);
+}
+
+.skillSlot .levelPips i,
+.buildSlot .levelPips i {
+  width: calc(var(--slot) * 0.075);
+  height: calc(var(--slot) * 0.075);
+  border-width: 1px;
+  background: var(--paper);
+}
+
+.skillSlot .levelPips i.on,
+.buildSlot .levelPips i.on {
+  background: var(--ink);
+}
+
+@property --cooldown {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+/* The remaining share of the cooldown as an ink wedge that clears clockwise from 12 o'clock (kit hudSlot). */
+.slotCooldown {
+  --cooldown: 0;
+  position: absolute;
+  top: calc(var(--slot) * 0.0714);
+  left: calc(var(--slot) * 0.0714);
+  width: calc(var(--slot) * 0.714);
+  height: calc(var(--slot) * 0.714);
+  background: conic-gradient(transparent calc((1 - var(--cooldown)) * 360deg), rgba(16, 19, 18, 0.64) 0);
+  transition: --cooldown 0.12s linear;
+}
+
+/* Lv.5 and not yet awakened: the kit's paper ensō badge at the slot's top-right corner. */
+.slotAwaken {
+  position: absolute;
+  top: calc(var(--slot) * -0.02);
+  left: calc(var(--slot) * 0.66);
+  width: calc(var(--slot) * 0.21);
+  height: calc(var(--slot) * 0.21);
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 2px var(--paper), inset 0 0 0 3.5px var(--ink);
+}
+
+.hudClock {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+.timer {
+  font-size: clamp(32px, 3.2vw, 44px);
+  line-height: 1;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.timerSub {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.objectiveChip {
+  max-width: 34vw;
+  margin-top: 4px;
+  overflow: hidden;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 3px 12px;
+  background: var(--paper);
+  font-size: 13px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  text-shadow: none;
+  white-space: nowrap;
+}
+
+.hudChips {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 6px;
-  border: 1px solid #111;
-  padding: 2px 6px;
-  background: #fff;
+  pointer-events: auto;
 }
 
-.hudRight .metricLine {
-  grid-column: span 1;
+.hudChip {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 0 10px 0 5px;
+  background: var(--paper);
+  font-size: 15px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  text-shadow: none;
 }
 
-.metricLine b {
-  color: #111;
+.hudChip.devOnly {
+  padding-left: 10px;
+  font-size: 13px;
 }
 
-.ccLine {
-  grid-column: 1 / -1;
-  min-height: 25px;
-  border: 2px solid #111;
-  padding: 3px 7px;
-  color: #111;
-  background: #efefeb;
-  font-weight: 800;
+.hudChip .artPickup {
+  width: 22px;
+}
+
+/* The kill chip's mark: the ✕ eyes of the kit's settled ink puddle, on an ink disc. */
+.killMark {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+.killMark::before {
+  content: "✕";
+  color: var(--paper);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.bossBar {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: 14px;
+  width: min(640px, calc(100% - 340px));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.bossBar .artPortrait {
+  flex: none;
+  width: 64px;
+}
+
+.bossBody {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 3px;
+}
+
+.bossLine strong {
+  overflow: hidden;
+  font-size: 17px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bossLine i {
+  font-style: normal;
+  letter-spacing: 1px;
+}
+
+.bossHp {
+  height: 16px;
+  margin: 0;
+  border-width: 2.5px;
+  background: var(--paper);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.bossHp i {
+  background: var(--ink);
+}
+
+/* Phase marks at two thirds and one third of the boss's health (SYS-04 phase triggers). */
+.bossHp::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent calc(33.3% - 1px), var(--line) 0 calc(33.3% + 1px), transparent 0 calc(66.6% - 1px), var(--line) 0 calc(66.6% + 1px), transparent 0);
+}
+
+.bossBar.enraged .bossHp i {
+  background: repeating-linear-gradient(135deg, var(--ink) 0 8px, var(--alert) 8px 12px);
+}
+
+.bossRage.on {
+  color: var(--alert-deep);
+  font-weight: 900;
 }
 
 .effectRack {
   position: absolute;
   z-index: 4;
-  left: 12px;
+  left: 14px;
   bottom: 14px;
-  width: min(520px, calc(100vw - 24px));
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 6px;
   pointer-events: none;
 }
@@ -405,7 +601,7 @@ button:disabled {
 .effectCopy b {
   overflow: hidden;
   color: #111;
-  font-size: 11px;
+  font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -413,7 +609,7 @@ button:disabled {
 .effectCopy small {
   margin-top: 3px;
   color: #555550;
-  font-size: 10px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
   font-weight: 800;
 }
@@ -1378,6 +1574,14 @@ h2 {
   line-height: 1;
 }
 
+/* Baked UI art (ART-09): an element whose data-art has no cell shows nothing rather than the sheet's first cell. */
+.artTile,
+.artSlot,
+.artPortrait,
+.artPickup {
+  background-position: -9999px -9999px;
+}
+
 /* Draft cards (UI-03): centred for three or four. The kit tile carries the rarity by shape; the card border echoes
    it (single, double, double with a stitched inner line, inverted for mythic). */
 .draftGrid {
@@ -1565,34 +1769,6 @@ h2 {
   font-size: 13px;
 }
 
-.buildSlot {
-  position: relative;
-  width: 56px;
-}
-
-.buildSlot .artSlot {
-  display: block;
-  width: 56px;
-}
-
-.buildSlot .levelPips {
-  position: absolute;
-  top: 8.4px;
-  left: 48.4px;
-  flex-direction: column-reverse;
-  gap: 3.2px;
-}
-
-.buildSlot .levelPips i {
-  width: 4.2px;
-  height: 4.2px;
-  border-width: 1px;
-  background: var(--paper);
-}
-
-.buildSlot .levelPips i.on {
-  background: var(--ink);
-}
 
 .cardShortcut {
   position: absolute;
@@ -1683,18 +1859,12 @@ h2 {
 }
 
 @media (max-width: 1180px) {
-  .gameHud.panelOpen,
-  .gameHud.panelClosed {
-    right: 12px;
-  }
-  .gameHud {
-    right: 12px;
-    width: auto;
-    grid-template-columns: minmax(0, 1fr) 180px 150px;
+  .gameHud.panelOpen {
+    right: 14px;
   }
 
-  .hudLeft {
-    grid-template-columns: auto 1fr;
+  .heroBody {
+    width: 280px;
   }
 
   .sidePanel {
@@ -1750,62 +1920,60 @@ h2 {
 
 @media (max-width: 760px) {
   .gameHud {
-    top: max(8px, env(safe-area-inset-top));
+    top: max(12px, env(safe-area-inset-top));
     left: max(8px, env(safe-area-inset-left));
     right: max(8px, env(safe-area-inset-right));
-    grid-template-columns: minmax(0, 1fr) 48px;
-    max-width: none;
+    flex-wrap: wrap;
     gap: 6px;
   }
 
-  .hudLeft {
-    grid-template-columns: 72px minmax(0, 1fr);
-    gap: 6px;
-    padding: 6px;
+  .heroFace {
+    width: 52px;
   }
 
-  .roundBadge {
-    width: 72px;
-    min-height: 46px;
+  .levelSeal {
+    min-width: 24px;
+    height: 24px;
+    font-size: 13px;
   }
 
-  .barGroup.narrow {
+  .heroBody {
+    width: min(200px, calc(100vw - 190px));
+  }
+
+  .heroLine span,
+  .timerSub,
+  .objectiveChip,
+  .hudChip.devOnly {
     display: none;
   }
 
-  .hudCenter {
-    grid-column: 1 / -1;
-    min-height: 40px;
-    padding: 5px 8px;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+  .skillSlot {
+    --slot: 34px;
+  }
+
+  .hudClock {
+    top: 100%;
+    margin-top: 4px;
   }
 
   .timer {
     font-size: 24px;
   }
 
-  .timerSub {
-    display: none;
+  .hudChips {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: 120px;
   }
 
-  .bossStrip {
-    margin: 0;
-    max-width: 60%;
+  .bossBar {
+    width: calc(100% - 16px);
+    bottom: max(8px, env(safe-area-inset-bottom));
   }
 
-  .hudRight {
-    grid-column: 2;
-    grid-row: 1;
-    grid-template-columns: 1fr;
-    gap: 4px;
-    padding: 4px;
-  }
-
-  .hudRight .metricLine,
-  .hudRight .ccLine {
-    display: none;
+  .bossBar .artPortrait {
+    width: 44px;
   }
 
   .sidePanel {
@@ -1867,7 +2035,7 @@ h2 {
   }
 
   button.small,
-  .hudRight button,
+  .hudChips button,
   .cheatRow button {
     min-width: 44px;
     min-height: 44px;
@@ -1953,6 +2121,18 @@ h2 {
 @media (max-height: 760px) and (min-width: 761px) {
   .draftCard .artTile {
     width: 132px;
+  }
+
+  .heroFace {
+    width: 66px;
+  }
+
+  .skillSlot {
+    --slot: 40px;
+  }
+
+  .bossBar .artPortrait {
+    width: 54px;
   }
 }
 

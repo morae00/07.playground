@@ -70,7 +70,8 @@ test('stepped enrage climbs every 30 s and caps at double damage', () => {
     probe.step(60 * 40);
     assert.equal(probe.read().enrageStep, 4, 'it stops at step 4');
     assert.ok(Math.abs(read().damage / base.damage - 2) < 1e-9);
-    assert.match(probe.hud().bossName, /광폭화 4/);
+    assert.equal(probe.hud().bossEnrage, 4, 'the HUD shows the fourth step');
+    assert.equal(probe.hud().bossEnrageSteps, 4);
   } finally {
     engine.dispose();
   }

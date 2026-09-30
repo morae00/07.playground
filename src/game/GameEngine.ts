@@ -262,13 +262,24 @@ export type HudSnapshot = {
   scoreEligible: boolean;
   rulesVersion: number;
   practice: boolean;
+  /** The boss the HUD shows (UI-02): its name, id (the portrait key), phase, and enrage steps taken (0 while calm). */
   bossName?: string;
+  bossId?: string;
+  bossPhase?: number;
+  bossEnrage?: number;
+  /** Enrage steps in all: 4 under stepped enrage (SYS-04), 1 under classic rules. */
+  bossEnrageSteps?: number;
   bossMove?: string;
   /** SYS-04: the name of the boss's current phase move, shown under the boss bar. */
   bossMoveName?: string;
   bossHp?: number;
   bossMaxHp?: number;
   skills: Partial<Record<SkillId, SkillState>>;
+  /**
+   * The share (0-1) of each active skill's current cooldown still to run, for the HUD slots (UI-02). Cooldowns
+   * under half a second read 0: at the HUD's 8 Hz they would only flicker.
+   */
+  cooldowns: Partial<Record<SkillId, number>>;
   runUpgrades: Record<RunUpgradeId, number>;
   stats: StatBlock;
   activeEffects: ActiveStatusEffect[];
@@ -995,6 +1006,9 @@ export class GameEngine {
   /** Set only by probes: stops the stage director from adding enemies so a test controls the whole world. */
   protected spawnsHalted = false;
   protected snapshotTimer = 0;
+  /** HUD only (UI-02): each cooldown's length, taken when a cooldown is seen to start, and its last reading. */
+  protected hudCooldownSpans: Partial<Record<SkillId, number>> = {};
+  protected hudCooldownLast: Partial<Record<SkillId, number>> = {};
   protected hitStop = 0;
   protected hitStopBudget = createHitStopBudget();
   protected elapsed = 0;
@@ -4464,19 +4478,36 @@ export class GameEngine {
       scoreEligible: this.runMode === 'infinite' && this.scoreEligible,
       rulesVersion: this.rules.version,
       practice: this.practiceRun,
-      bossName: boss?.boss?.name
-        ? `${boss.boss.name} · PHASE ${boss.bossPhase ?? 1}${this.bossEnraged ? (this.rules.steppedEnrage ? ` [광폭화 ${this.enrageStep}]` : ' [광폭화]') : ''}`
-        : undefined,
+      bossName: boss?.boss?.name,
+      bossId: boss?.boss?.id,
+      bossPhase: boss ? boss.bossPhase ?? 1 : undefined,
+      bossEnrage: boss ? (this.bossEnraged ? (this.rules.steppedEnrage ? this.enrageStep : 1) : 0) : undefined,
+      bossEnrageSteps: boss ? (this.rules.steppedEnrage ? ENRAGE_STEPS : 1) : undefined,
       bossMove: bossMove?.attackGrammar,
       bossMoveName: this.rules.bossMoves && bossMove && IMPLEMENTED_GRAMMARS.has(bossMove.attackGrammar) ? bossMove.name : undefined,
       bossHp: boss?.hp,
       bossMaxHp: boss?.maxHp,
       skills: { ...this.skills },
+      cooldowns: this.hudCooldowns(),
       runUpgrades: { ...this.runUpgrades },
       stats: { ...this.player.stats, attackSpeed: this.effectiveAttackSpeed() },
       activeEffects,
       cc,
     };
+  }
+
+  protected hudCooldowns() {
+    const shares: Partial<Record<SkillId, number>> = {};
+    for (const id of SKILL_IDS) {
+      if (!this.skills[id] || !SKILLS[id].active) continue;
+      const remaining = this.skillCooldowns[id] ?? 0;
+      // A reading above the last one means a new cooldown started since the last snapshot.
+      if (remaining > (this.hudCooldownLast[id] ?? 0) + 1e-6) this.hudCooldownSpans[id] = remaining;
+      this.hudCooldownLast[id] = remaining;
+      const span = this.hudCooldownSpans[id] ?? 0;
+      shares[id] = span >= 0.5 ? clamp(remaining / span, 0, 1) : 0;
+    }
+    return shares;
   }
 
   protected render(alpha = 1) {

@@ -71,7 +71,7 @@ try {
   record('TEC-03 sprite packs load under file://', sprites === 'ready', String(sprites));
 
   await page.getByRole('button', { name: 'Ch.1 / St.1 시작' }).click();
-  const timer = page.locator('.hudCenter .timer');
+  const timer = page.locator('.hudClock .timer');
   await timer.waitFor({ timeout: 5_000 });
   const startClock = await timer.innerText();
   await page.waitForTimeout(2_200);
