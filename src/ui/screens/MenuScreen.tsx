@@ -18,6 +18,7 @@ import {
   type StatBlock,
 } from '../../game/GameEngine';
 import { ProgressBar } from '../ProgressBar';
+import { SaveTransfer } from './SaveTransfer';
 import { SettingsPanel } from './SettingsPanel';
 import { StatGrid } from './StatGrid';
 
@@ -319,7 +320,9 @@ export function MenuScreen({ meta, inlineNotice, menuView, setMenuView, handleMe
 
         <div className="settingsColumn" id="menu-panel-settings" role="tabpanel" aria-labelledby="menu-tab-settings" hidden={menuView !== 'settings'}>
           <h2>설정</h2>
-          <SettingsPanel options={options} setOptions={setOptions} />
+          <SettingsPanel options={options} setOptions={setOptions}>
+            <SaveTransfer />
+          </SettingsPanel>
         </div>
       </section>
     </main>

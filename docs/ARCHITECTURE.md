@@ -186,6 +186,20 @@ Tests, balance runners, and soak tools use `ProbedGameEngine` (`src/game/engine/
 
 Copied reports replace the home folder in paths. Nothing is sent anywhere. In the desktop app, `electron/crashLog.cjs` appends the renderer's `[blackline:error]` console lines and renderer or child process exits to `logs/errors.log` in the app's data folder, rotating at 512 KiB. `crashReporter` keeps native crash dumps there with uploads off. A crashed renderer reloads to the menu, at most three times in five minutes. Developer builds add the cheats `FAULT` (the next frame throws) and `UIFAULT` (the next render throws) to exercise these paths.
 
+## Desktop origin and saves (TEC-15)
+
+The desktop app loads the game from `app://game/`, a custom scheme with a real, secure origin (`electron/appProtocol.cjs`), instead of `file://`. localStorage belongs to an origin, so the first app:// launch moves what a file:// build stored:
+- `electron/saveMigration.cjs` reads every game entry (`blackline-survivor-*`: the save, its backup, the infinite boards) from the file:// origin.
+- It writes them to a backup file in the app's data folder, copies each one the app:// origin lacks, and reads them back to check that every entry arrived intact (G17).
+- A marker file then makes later launches skip the move. The game window loads only after this.
+
+`src/platform/saveTransfer.ts` is the manual path, on the menu's 설정 > 세이브:
+- 내보내기 copies every game entry as one text.
+- 가져오기 checks a text first: it must be an export, hold a save that loads in this build, and not come from a newer build. It then replaces the game's entries and reloads.
+- The migration's backup file is in the same format, so it can be pasted in too.
+
+Details are in `docs/ELECTRON_HARDENING.md`.
+
 ## Migration strategy
 
 The current `GameEngine` remains the behavior reference. Extraction proceeds in small, test-backed moves:

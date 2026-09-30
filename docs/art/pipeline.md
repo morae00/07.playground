@@ -10,7 +10,7 @@
 | 사양 | `art/atlas-spec.mjs` | 어떤 그림을 어느 팩에 굽는지, 앵커, 크기 맞춤(`fit`), 키트 색 → 구현 토큰 대응표 |
 | 굽기 | `npm run build:atlas` | Chromium에서 @2x(월드 1단위 = 2px)로 렌더 → 투명 여백 트림 → 페이지(최대 2048²) 배치 |
 | 산출물 | `public/assets/atlas/common-*.png`, `public/assets/packs/chapter-NN/atlas-*.png`, `src/game/render/assets/atlasManifest.generated.ts` | 공통 팩은 초기 에셋, 챕터 팩은 설치 에셋 예산(TEC-05)으로 잡힌다. 매니페스트는 동적 import라 앱 번들에 들어가지 않는다. |
-| 런타임 | `src/game/render/assets/spriteAtlas.ts`, `slots.ts` | `<img>` + `createImageBitmap`으로 페이지를 미리 디코딩한다(Electron `file://`에서도 동작). 팩이 없거나 실패하면 벡터 렌더러로 그린다. |
+| 런타임 | `src/game/render/assets/spriteAtlas.ts`, `slots.ts` | `<img>` + `createImageBitmap`으로 페이지를 미리 디코딩한다(Electron `app://`에서도 동작). 팩이 없거나 실패하면 벡터 렌더러로 그린다. |
 
 같은 킷·사양·Chromium이면 굽기 결과는 바이트 단위로 같다. 굽기 결과는 커밋한다.
 

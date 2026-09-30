@@ -2,14 +2,15 @@
   "version": 1,
   "root": "/Users/kyuukkang/CT_AX/07.playground/dist",
   "files": [
-    "assets/App-B7MNLRaa.js",
+    "assets/App-BKFJtXxU.js",
     "assets/atlas/manifest.json",
     "assets/content/boss-titles.json",
-    "assets/index-MeMO5Rvz.js",
-    "assets/index-jYJF9MoJ.css",
+    "assets/index-Bn3AKsvC.css",
+    "assets/index-Db2GhMwB.js",
     "assets/packs/sfx-common/pack.json",
     "assets/vendor-sXpfDjey.js",
-    "index.html"
+    "index.html",
+    "storage-bridge.html"
   ],
   "markersChecked": 23,
   "findings": [],

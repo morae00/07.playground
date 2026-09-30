@@ -1,5 +1,5 @@
 // Sprite atlas runtime (TEC-03): loads baked atlas pages per pack and hands out frames by key.
-// Pages load through <img> + createImageBitmap (works under Electron's file:// as well as http). The manifest is
+// Pages load through <img> + createImageBitmap (works under Electron's app:// as well as http). The manifest is
 // data, fetched as JSON beside the pages, so it adds nothing to the app JS budget (TEC-05); the generated
 // TypeScript copy serves tests and types.
 

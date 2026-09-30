@@ -1,5 +1,3 @@
-const { pathToFileURL } = require('node:url');
-
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self'",
@@ -31,12 +29,12 @@ function isAllowedExternalUrl(value) {
   );
 }
 
-function isAllowedAppNavigation(value, entryFile) {
+/** The game only navigates to its own entry page (TEC-15: app://game/index.html), ignoring the fragment. */
+function isAllowedAppNavigation(value, entryUrl) {
   const url = parseUrl(value);
-  if (!url || url.protocol !== 'file:' || url.search) return false;
-  const expected = new URL(pathToFileURL(entryFile).href);
+  if (!url || url.search) return false;
   url.hash = '';
-  return url.href === expected.href;
+  return url.href === new URL(entryUrl).href;
 }
 
 function withContentSecurityPolicy(responseHeaders = {}) {

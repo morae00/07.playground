@@ -1,4 +1,4 @@
-// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, CON-02, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-09) against the developer build.
+// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, TEC-15, CON-02, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-09) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -172,6 +172,40 @@ try {
     const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('blackline-survivor-save-v2') ?? '{}'));
     const shownGold = await page.getByText('4,321').count() + await page.getByText('4321').count();
     record('TEC-08 a v2 save keeps its progress and is rewritten as v3', stored.version === 3 && stored.meta?.gold === 4321 && stored.meta?.progress?.chapter === 2 && typeof stored.profile === 'object' && shownGold > 0, `version ${stored.version}, gold ${stored.meta?.gold}`);
+    await context.close();
+  });
+
+  await probe('TEC-15', async () => {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] });
+    const page = await context.newPage();
+    await page.goto('http://127.0.0.1:5177/');
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    await page.getByRole('tab', { name: '설정' }).click();
+    const box = page.getByRole('textbox', { name: /세이브 글/ });
+    const note = page.locator('.saveTransfer [role="status"]');
+    await page.getByRole('button', { name: '내보내기', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('.saveTransfer [role="status"]')?.textContent);
+    const text = await box.inputValue();
+    const exported = JSON.parse(text);
+    const copied = await page.evaluate(() => navigator.clipboard.readText()).catch(() => '');
+    record('TEC-15 export writes the game\'s entries as one text and copies it', exported.format === 'blackline-survivor-export' && 'blackline-survivor-save-v2' in exported.entries && copied === text, `${Object.keys(exported.entries).length} entries`);
+
+    // A text that is not an export is refused; a changed export asks once more, imports, and reloads.
+    const load = page.getByRole('button', { name: /가져오기$/ });
+    await box.fill('not an export');
+    await load.click();
+    await load.click();
+    const refused = await note.textContent();
+    const save = JSON.parse(exported.entries['blackline-survivor-save-v2']);
+    save.meta.gold = 7777;
+    exported.entries['blackline-survivor-save-v2'] = JSON.stringify(save);
+    await box.fill(JSON.stringify(exported));
+    await load.click();
+    const asked = await note.textContent();
+    await Promise.all([page.waitForEvent('load'), load.click()]);
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    const gold = await page.locator('.wallet strong').first().innerText();
+    record('TEC-15 an import is checked, asks once more, then reloads on the imported save', Boolean(refused?.includes('내보낸 세이브 글이 아닙니다') && asked?.includes('한 번 더')) && gold === '7777', `gold ${gold}; ${refused?.slice(0, 16)}`);
     await context.close();
   });
 

@@ -1,5 +1,4 @@
 const assert = require('node:assert/strict');
-const path = require('node:path');
 const test = require('node:test');
 const packageJson = require('../package.json');
 const developerBuild = require('../electron-builder.developer.cjs');
@@ -20,12 +19,14 @@ test('external navigation permits credential-free HTTPS only', () => {
   assert.equal(isAllowedExternalUrl('not a url'), false);
 });
 
-test('app navigation is constrained to the packaged entry file', () => {
-  const entry = path.resolve('/tmp/blackline/dist/index.html');
-  assert.equal(isAllowedAppNavigation('file:///tmp/blackline/dist/index.html', entry), true);
-  assert.equal(isAllowedAppNavigation('file:///tmp/blackline/dist/index.html#settings', entry), true);
-  assert.equal(isAllowedAppNavigation('file:///tmp/blackline/dist/index.html?next=1', entry), false);
-  assert.equal(isAllowedAppNavigation('file:///tmp/blackline/dist/other.html', entry), false);
+test('app navigation is constrained to the app:// entry page (TEC-15)', () => {
+  const entry = 'app://game/index.html';
+  assert.equal(isAllowedAppNavigation('app://game/index.html', entry), true);
+  assert.equal(isAllowedAppNavigation('app://game/index.html#settings', entry), true);
+  assert.equal(isAllowedAppNavigation('app://game/index.html?next=1', entry), false);
+  assert.equal(isAllowedAppNavigation('app://game/storage-bridge.html', entry), false);
+  assert.equal(isAllowedAppNavigation('app://other/index.html', entry), false);
+  assert.equal(isAllowedAppNavigation('file:///tmp/blackline/dist/index.html', entry), false);
   assert.equal(isAllowedAppNavigation('https://example.com', entry), false);
 });
 

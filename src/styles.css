@@ -841,6 +841,24 @@ h2 {
   max-width: 640px;
 }
 
+/* Save export and import (TEC-15). */
+.saveTransfer textarea {
+  width: 100%;
+  min-height: 60px;
+  resize: vertical;
+  border: 2px solid var(--ink);
+  padding: 6px 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 13px/1.4 ui-monospace, "SFMono-Regular", Menlo, monospace;
+  word-break: break-all;
+}
+
+.saveTransferActions {
+  display: flex;
+  gap: 8px;
+}
+
 /* Pause hub (UI-04): tabs over one scrolling panel, the actions below. */
 .hubTabs {
   display: grid;

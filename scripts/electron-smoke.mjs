@@ -1,8 +1,9 @@
-// Desktop smoke check (TEC-01, TEC-03, TEC-14): launches the built app in Electron with a throwaway data folder,
-// so the player's own save is never touched, and checks the window's content size, sprite loading under
-// file://, a short run, the local error log, and recovery after a renderer crash.
+// Desktop smoke check (TEC-01, TEC-03, TEC-14, TEC-15): launches the built app in Electron with a throwaway data
+// folder, so the player's own save is never touched. It checks the window's content size, the app:// origin, the
+// first-launch move of file:// saves (seeded into that folder first), sprite loading, a short run, the local error
+// log, recovery after a renderer crash, and a second launch that keeps the moved saves.
 // Usage: npm run build && npm run test:electron-smoke
-import { mkdir, mkdtemp, readFile, realpath, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, realpath, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { _electron as electron } from 'playwright';
@@ -46,15 +47,70 @@ async function until(check, timeoutMs = 10_000, intervalMs = 100) {
 
 const readErrorLog = () => readFile(errorLogFile, 'utf8').catch(() => '');
 
+/** The game's window: the migration opens hidden windows of its own first, so it is not always the first one. */
+async function gameWindow(electronApp) {
+  const page = await until(async () => electronApp.windows().find((candidate) => candidate.url().startsWith('app://game/index.html')) ?? null, 20_000);
+  if (!page) throw new Error('the game window did not open');
+  return page;
+}
+
+// TEC-15: what a player of a file:// build has in localStorage: a played save with its backup, a board, and a key
+// that is not the game's. The first app:// launch must move every game entry (G17).
+const SAVE_KEY = 'blackline-survivor-save-v2';
+const BOARD_KEY = 'blackline-survivor-infinite-leaderboard-r2';
+const playedSave = (gold) => JSON.stringify({
+  version: 3,
+  savedAt: Date.UTC(2026, 8, 30),
+  meta: { gold, xp: 40, level: 6, passivePoints: 1, progress: { chapter: 1, stage: 3 }, upgrades: { attack: 5, maxHp: 2 }, passives: { bossHunter: 2 } },
+  options: { volume: 0.5, uiScale: 1.2, reducedMotion: true },
+  profile: { stageRecords: { '1-1': { attempts: 3, clears: 2, bestKills: 210, bestClearSeconds: 301 } }, hintsSeen: ['move'] },
+});
+const fileOriginStorage = {
+  [SAVE_KEY]: playedSave(4321),
+  [`${SAVE_KEY}.backup`]: playedSave(4000),
+  [BOARD_KEY]: JSON.stringify({ rulesVersion: 2, playerName: 'KANG', entries: [{ id: 'smoke-1', player: 'KANG', score: 991, survivedSeconds: 412, kills: 830, bosses: 1, seed: 7, endedAt: '2026-09-30T00:00:00.000Z', rulesVersion: 2 }] }),
+  'another-app-key': 'not ours',
+};
+const readStorage = (page) => page.evaluate(() => Object.fromEntries(Object.keys(localStorage).map((key) => [key, localStorage.getItem(key)])));
+const savedMeta = (storage) => JSON.parse(storage[SAVE_KEY] ?? '{}').meta ?? {};
+
 await mkdir(outputDir, { recursive: true });
-const app = await electron.launch({ args: [root, `--user-data-dir=${userDataDir}`], cwd: root });
+const app = await electron.launch({
+  args: [root, `--user-data-dir=${userDataDir}`],
+  cwd: root,
+  env: { ...process.env, BLACKLINE_SEED_FILE_STORAGE: JSON.stringify(fileOriginStorage) },
+});
 try {
-  const page = await app.firstWindow();
+  const page = await gameWindow(app);
   const consoleErrors = [];
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
   });
   await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor({ timeout: 20_000 });
+
+  const origin = await page.evaluate(() => ({ origin: location.origin, secure: window.isSecureContext }));
+  record('TEC-15 the game loads from app://game, a secure origin', origin.origin === 'app://game' && origin.secure, `${origin.origin} secure ${origin.secure}`);
+
+  // The game saves once on start, so the moved save becomes its backup and the save a fresh write of it.
+  const settled = (storage) => (storage[`${SAVE_KEY}.backup`] === fileOriginStorage[SAVE_KEY] ? storage : null);
+  const moved = (await until(async () => settled(await readStorage(page)), 5_000)) ?? (await readStorage(page));
+  const meta = savedMeta(moved);
+  const wallet = await page.locator('.wallet strong').first().innerText();
+  const intact = moved[`${SAVE_KEY}.backup`] === fileOriginStorage[SAVE_KEY]
+    && moved[BOARD_KEY] === fileOriginStorage[BOARD_KEY]
+    && meta.gold === 4321 && meta.upgrades?.attack === 5 && meta.passives?.bossHunter === 2 && meta.progress?.stage === 3
+    && JSON.parse(moved[SAVE_KEY]).options?.uiScale === 1.2
+    && JSON.parse(moved[SAVE_KEY]).profile?.stageRecords?.['1-1']?.clears === 2
+    && !('another-app-key' in moved) && wallet === '4321';
+  record('TEC-15 the first launch moves every file:// save entry to app:// (G17)', intact, `gold ${meta.gold}, wallet ${wallet}, board ${moved[BOARD_KEY] === fileOriginStorage[BOARD_KEY]}`);
+  const dataFiles = await readdir(userDataDir);
+  const backupFile = dataFiles.find((name) => name.startsWith('save-backup-file-origin-'));
+  const backup = backupFile ? JSON.parse(await readFile(path.join(userDataDir, backupFile), 'utf8')).entries ?? {} : {};
+  record(
+    'TEC-15 the move leaves a backup file (a save export) and a marker',
+    dataFiles.includes('storage-migrated.json') && backup[SAVE_KEY] === fileOriginStorage[SAVE_KEY] && Object.keys(backup).length === 3,
+    backupFile ?? 'no backup file',
+  );
 
   const paths = await app.evaluate(({ app: electronApp, crashReporter }) => ({
     userData: electronApp.getPath('userData'),
@@ -68,7 +124,7 @@ try {
   record('TEC-01 the page is 1440x900 inside the window frame', size.width === 1440 && size.height === 900, `${size.width}x${size.height}`);
 
   const sprites = await until(() => page.evaluate(() => document.documentElement.dataset.sprites));
-  record('TEC-03 sprite packs load under file://', sprites === 'ready', String(sprites));
+  record('TEC-03 sprite packs load under app://', sprites === 'ready', String(sprites));
 
   await page.getByRole('button', { name: 'Ch.1 / St.1 시작' }).click();
   const timer = page.locator('.hudClock .timer');
@@ -101,6 +157,20 @@ try {
   record('electron smoke (error)', false, error instanceof Error ? error.message.split('\n')[0] : String(error));
 } finally {
   await app.close().catch(() => undefined);
+}
+
+// TEC-15: a second launch skips the move (the marker is there) and keeps what the app:// origin holds.
+const again = await electron.launch({ args: [root, `--user-data-dir=${userDataDir}`], cwd: root });
+try {
+  const page = await gameWindow(again);
+  await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor({ timeout: 20_000 });
+  const gold = savedMeta(await readStorage(page)).gold;
+  const windows = await again.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length);
+  record('TEC-15 a second launch keeps the moved saves without moving again', gold === 4321 && windows === 1, `gold ${gold}, windows ${windows}`);
+} catch (error) {
+  record('electron smoke, second launch (error)', false, error instanceof Error ? error.message.split('\n')[0] : String(error));
+} finally {
+  await again.close().catch(() => undefined);
   await rm(userDataDir, { recursive: true, force: true });
 }
 
