@@ -2,11 +2,12 @@
   "version": 1,
   "root": "/Users/kyuukkang/CT_AX/07.playground/dist",
   "files": [
-    "assets/index-3qed598a.js",
-    "assets/index-Df9yCSvW.css",
+    "assets/index-BHwDi26b.js",
+    "assets/index-DyPeWnVm.css",
+    "assets/vendor-sXpfDjey.js",
     "index.html"
   ],
-  "markersChecked": 17,
+  "markersChecked": 18,
   "findings": [],
   "passed": true
 }

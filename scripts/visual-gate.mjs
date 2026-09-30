@@ -349,6 +349,8 @@ async function runScenario(page, viewport, dpr, motion) {
   await page.keyboard.press('p');
   await settle(page, 40);
   await (await unique(page.getByRole('button', { name: 'Stage 메뉴' }), 'return to Stage menu')).click();
+  await settle(page, 40);
+  await (await unique(page.getByRole('button', { name: '포기하고 메뉴로' }), 'confirm abandoning the run')).click();
   await settle(page, 80);
   await (await unique(page.getByRole('tab', { name: 'Stage 선택' }), 'Stage menu tab')).click();
   await settle(page, 40);

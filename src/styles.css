@@ -1443,6 +1443,13 @@ h2 {
   font-size: 24px;
 }
 
+.settlementGrid span small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: #666;
+}
+
 .infiniteResultGrid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }

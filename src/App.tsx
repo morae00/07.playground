@@ -109,6 +109,7 @@ function App() {
   const [draft, setDraft] = useState<DraftState | null>(null);
   const [settlement, setSettlement] = useState<Settlement | null>(null);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [abandonConfirmOpen, setAbandonConfirmOpen] = useState(false);
   const [runPaused, setRunPaused] = useState(false);
   const [seedCopyStatus, setSeedCopyStatus] = useState('');
   const [infiniteEntries, setInfiniteEntries] = useState<InfiniteScoreEntry[]>(() => initialInfiniteLeaderboard.entries);
@@ -161,6 +162,7 @@ function App() {
     if (!engine || phaseRef.current !== 'playing') return;
     runPausedRef.current = paused;
     setRunPaused(paused);
+    setAbandonConfirmOpen(false);
     if (paused) {
       engine.pause();
       setSidePanelOpen(false);
@@ -415,6 +417,7 @@ function App() {
     setSettlement(null);
     runPausedRef.current = false;
     setRunPaused(false);
+    setAbandonConfirmOpen(false);
     setSidePanelOpen(false);
   };
 
@@ -548,10 +551,10 @@ function App() {
               <span>{snapshot.runMode === 'infinite'
                 ? `DANGER ${snapshot.dangerRank}`
                 : snapshot.stageKind === 'normal'
-                  ? 'Objective'
+                  ? '생존'
                   : snapshot.stageKind === 'midBoss'
-                    ? 'Mid Boss'
-                    : 'Boss'}</span>
+                    ? '중간보스'
+                    : '챕터보스'}</span>
             </div>
             <div className="barGroup">
               <div className="barLabel">
@@ -732,13 +735,13 @@ function App() {
               <input type="checkbox" checked={options.autoPause} onChange={(event) => setOptions({ ...options, autoPause: event.target.checked })} />
               <span>창을 벗어나면 자동 일시정지</span>
             </label>
-            <label>
+            {DEVELOPER_UI_AVAILABLE && <label>
               <span>라운드 길이</span>
               <select value={options.paceMode} onChange={(event) => setOptions({ ...options, paceMode: event.target.value as PaceMode })}>
                 <option value="standard">표준</option>
                 <option value="showcase">쇼케이스</option>
               </select>
-            </label>
+            </label>}
           </section>}
 
           {drawerTab === 'cheats' && developerAccess && <section className="panelBlock cheatBlock drawerPanel" id="drawer-panel-cheats" role="tabpanel" aria-labelledby="drawer-tab-cheats" tabIndex={0}>
@@ -1011,12 +1014,28 @@ function App() {
             <p>RUN PAUSED</p>
             <h2 id="pause-dialog-title">일시정지</h2>
           </div>
-          <p id="pause-dialog-description">현재 Run은 멈춰 있습니다. P, Escape 또는 게임패드 Start로 계속할 수 있습니다.</p>
-          <div className="pauseSeed"><span>RUN SEED</span><code>{snapshot?.seed}</code></div>
-          <div className="modalActions">
-            <button className="primary" onClick={() => setManualPause(false)}>계속하기</button>
-            <button className="ghost" onClick={toMenu}>Stage 메뉴</button>
-          </div>
+          {abandonConfirmOpen ? (
+            <>
+              <p id="pause-dialog-description">
+                {snapshot?.runMode === 'infinite'
+                  ? '지금 포기하면 이번 무한 경쟁 기록과 보상이 남지 않습니다. 정말 메뉴로 돌아갈까요?'
+                  : '지금 포기하면 이번 Stage의 골드와 경험치를 받지 못합니다. 정말 메뉴로 돌아갈까요?'}
+              </p>
+              <div className="modalActions">
+                <button className="primary" onClick={() => setAbandonConfirmOpen(false)}>계속 플레이</button>
+                <button className="danger" onClick={toMenu}>포기하고 메뉴로</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p id="pause-dialog-description">현재 Run은 멈춰 있습니다. P, Escape 또는 게임패드 Start로 계속할 수 있습니다.</p>
+              <div className="pauseSeed"><span>RUN SEED</span><code>{snapshot?.seed}</code></div>
+              <div className="modalActions">
+                <button className="primary" onClick={() => setManualPause(false)}>계속하기</button>
+                <button className="ghost" onClick={() => setAbandonConfirmOpen(true)}>Stage 메뉴</button>
+              </div>
+            </>
+          )}
         </ModalDialog>
       )}
 
@@ -1068,7 +1087,7 @@ function App() {
             ) : (
               <div className="settlementGrid">
                 <div><span>처치</span><b>{settlement.kills}</b></div>
-                <div><span>보유 코인</span><b>{settlement.coins}</b></div>
+                <div><span>획득 코인 <small>골드 환산 ×0.28</small></span><b>{settlement.coinsEarned}</b></div>
                 <div><span>획득 골드</span><b>{settlement.gold}</b></div>
                 <div><span>외부 XP</span><b>{settlement.xp}</b></div>
               </div>
@@ -1076,7 +1095,7 @@ function App() {
             {settlement.runMode === 'infinite' && <div className={settlement.scoreEligible ? 'soonStrip recordSaved' : 'soonStrip recordRejected'}>{leaderboardStatus || (settlement.scoreEligible ? '경쟁 기록 판정 완료' : 'PRACTICE / 기록 제외')}</div>}
             {settlement.runMode === 'infinite' && seedCopyStatus && <p className="seedStatus" role="status" aria-live="polite">{seedCopyStatus}</p>}
             {settlement.gameComplete && <div className="soonStrip">Chapter 6 Coming Soon</div>}
-            {settlement.cleared && !settlement.gameComplete && <div className="soonStrip">Stage match complete. 다음 Stage는 메뉴에서 선택하세요.</div>}
+            {settlement.cleared && !settlement.gameComplete && <div className="soonStrip">Stage 클리어. 다음 Stage는 Stage 선택에서 시작할 수 있습니다.</div>}
             <div className="modalActions">
               <button className="primary" onClick={toMenu}>{settlement.runMode === 'infinite' ? '무한 경쟁' : 'Stage 선택'}</button>
               <button className="ghost" onClick={settlement.runMode === 'infinite' ? startInfiniteRun : startRun}>{settlement.runMode === 'infinite' ? '다시 도전' : phase === 'gameOver' ? '재시작' : '같은 Stage 재시작'}</button>

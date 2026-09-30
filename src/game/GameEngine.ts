@@ -244,6 +244,8 @@ export type Settlement = {
   title: string;
   kills: number;
   coins: number;
+  /** Coins earned during the stage; settlement gold converts these at ×0.28. */
+  coinsEarned: number;
   gold: number;
   xp: number;
   cleared: boolean;
@@ -744,9 +746,9 @@ export function stageKind(stageNo: number): StageKind {
 
 export function objectiveFor(chapter: number, stageNo: number) {
   const kind = stageKind(stageNo);
-  if (kind === 'midBoss') return `Objective: ${chapter}챕터 중간보스 처치 · 시간 종료 시 광폭화`;
-  if (kind === 'finalBoss') return `Objective: ${chapter}챕터 보스 처치 · 시간 종료 시 광폭화`;
-  return `Objective: 제한시간 생존 · ${OBJECTIVE_POOL[(stageNo + chapter - 2) % OBJECTIVE_POOL.length]}`;
+  if (kind === 'midBoss') return `${chapter}챕터 중간보스 처치 · 시간 종료 시 광폭화`;
+  if (kind === 'finalBoss') return `${chapter}챕터 보스 처치 · 시간 종료 시 광폭화`;
+  return `제한시간 생존 · ${OBJECTIVE_POOL[(stageNo + chapter - 2) % OBJECTIVE_POOL.length]}`;
 }
 
 export function stageIndex(chapter: number, stageNo: number) {
@@ -776,7 +778,7 @@ export const CHAPTERS: StageDef[] = CHAPTER_THEME.map((theme, index) => {
   return {
     id: chapter,
     name: `Chapter ${chapter}: ${theme}`,
-    subtitle: '10 Stages / 5 중간보스 / 10 챕터보스',
+    subtitle: '10개 Stage · St5 중간보스 · St10 챕터보스',
     difficulty: labels[index],
     encounterGrammarId: grammar.id,
     stages: Array.from({ length: 10 }, (_, stageIndex) => {
@@ -872,7 +874,8 @@ export function runUpgradeCost(id: RunUpgradeId, level: number) {
 }
 
 export function stageDuration(kind: StageKind, paceMode: PaceMode) {
-  if (paceMode === 'showcase') return kind === 'normal' ? 90 : 135;
+  // Showcase pacing is a developer tool; shipped builds always use standard stage lengths (BUG-17).
+  if (paceMode === 'showcase' && DEVELOPER_UI_AVAILABLE) return kind === 'normal' ? 90 : 135;
   return kind === 'normal' ? 720 : 1020;
 }
 
@@ -1544,7 +1547,7 @@ export class GameEngine {
     this.releaseTransientObjects();
     this.kind = this.runMode === 'infinite' ? 'midBoss' : stageKind(this.stage);
     this.duration = this.runMode === 'infinite' ? 0 : stageDuration(this.kind, this.options.paceMode);
-    this.objective = this.runMode === 'infinite' ? 'Objective: 랜덤 보스 연속 처치' : objectiveFor(this.chapter, this.stage);
+    this.objective = this.runMode === 'infinite' ? '랜덤 보스 연속 처치' : objectiveFor(this.chapter, this.stage);
     this.objectiveTarget = this.runMode === 'infinite'
       ? 1
       : this.kind === 'normal'
@@ -3442,6 +3445,7 @@ export class GameEngine {
       title: infinite ? '무한 기록 정산' : title,
       kills: this.stageKills,
       coins: this.player.coins,
+      coinsEarned: this.stageCoinsEarned,
       gold,
       xp,
       cleared,

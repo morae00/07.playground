@@ -19,6 +19,7 @@ export const PRODUCTION_BANNED_MARKERS = Object.freeze([
   'ENEMIES CLEARED',
   'OBJECTIVE CLEARED',
   'UNKNOWN CODE',
+  '쇼케이스',
 ]);
 
 async function collectTextFiles(root) {

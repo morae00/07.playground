@@ -1,3 +1,5 @@
+import { DEVELOPER_UI_AVAILABLE } from './developerAccess.ts';
+
 export type MetaUpgradeId = 'attack' | 'defense' | 'maxHp' | 'moveSpeed' | 'crit' | 'regen' | 'magnet';
 export type PassiveId = 'rareLuck' | 'bossHunter' | 'coinMagnet';
 export type PaceMode = 'standard' | 'showcase';
@@ -117,7 +119,7 @@ export function sanitizeMeta(value: unknown): MetaState {
   };
 }
 
-export function sanitizeOptions(value: unknown): GameOptions {
+export function sanitizeOptions(value: unknown, allowShowcase = DEVELOPER_UI_AVAILABLE): GameOptions {
   const fallback = createDefaultOptions();
   if (!isRecord(value)) return fallback;
   return {
@@ -127,7 +129,8 @@ export function sanitizeOptions(value: unknown): GameOptions {
     damageNumbers: booleanValue(value.damageNumbers, fallback.damageNumbers),
     screenShake: booleanValue(value.screenShake, fallback.screenShake),
     reducedFlash: booleanValue(value.reducedFlash, fallback.reducedFlash),
-    paceMode: value.paceMode === 'standard' || value.paceMode === 'showcase' ? value.paceMode : fallback.paceMode,
+    // Saves made while showcase pacing was selectable keep working but fall back to standard outside developer builds (G17).
+    paceMode: value.paceMode === 'showcase' && allowShowcase ? 'showcase' : 'standard',
     autoPause: booleanValue(value.autoPause, fallback.autoPause),
   };
 }

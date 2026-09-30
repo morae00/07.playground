@@ -13,6 +13,17 @@ const entryFile = path.join(__dirname, '..', entryDirectory, 'index.html');
 const windowTitle = developerBuild ? 'Blackline Survivor Dev' : 'Blackline Survivor';
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
+// macOS needs role-based app and edit menus for Cmd+Q, Cmd+H, and Cmd+C/V (e.g. pasting a Challenge Seed).
+// No custom items or navigation live here; other platforms keep the menu bar hidden (BUG-17).
+function applicationMenu() {
+  if (process.platform !== 'darwin') return null;
+  return Menu.buildFromTemplate([
+    { role: 'appMenu' },
+    { role: 'editMenu' },
+    { role: 'windowMenu' },
+  ]);
+}
+
 function openExternal(url) {
   if (!isAllowedExternalUrl(url)) return;
   void shell.openExternal(url).catch(() => undefined);
@@ -65,7 +76,7 @@ if (!hasSingleInstanceLock) {
   });
 
   app.whenReady().then(() => {
-    Menu.setApplicationMenu(null);
+    Menu.setApplicationMenu(applicationMenu());
     createWindow();
 
     app.on('activate', () => {

@@ -93,3 +93,10 @@ test('options saved before auto-pause existed load with auto-pause on', () => {
   assert.equal(sanitizeOptions(legacy).autoPause, true);
   assert.equal(sanitizeOptions({ ...legacy, autoPause: false }).autoPause, false);
 });
+
+test('showcase pacing from older saves maps to standard outside developer builds', () => {
+  const options = { ...createDefaultOptions(), paceMode: 'showcase' };
+  assert.equal(sanitizeOptions(options, false).paceMode, 'standard');
+  assert.equal(sanitizeOptions(options, true).paceMode, 'showcase');
+  assert.equal(sanitizeOptions({ ...options, paceMode: 'turbo' }, true).paceMode, 'standard');
+});
