@@ -162,6 +162,18 @@ export class Presentation {
       case 'shot/blocked':
         this.burst(event.x, event.y, 4, '#111111', 90);
         return;
+      case 'enemy/blocked':
+        // A glancing clink off the warden's shield (SYS-02).
+        this.burst(event.x, event.y, 5, '#343936', 150);
+        if (this.soundCooldown <= 0) {
+          this.soundCooldown = 0.05;
+          this.tone(1480, 0.025, 'square');
+        }
+        return;
+      case 'enemy/stunned':
+        this.burst(event.x, event.y, 12, '#111111', 150);
+        this.tone(120, 0.06, 'triangle');
+        return;
       case 'magnet/pulse':
         this.burst(event.x, event.y, 16, '#111111', 130);
         return;

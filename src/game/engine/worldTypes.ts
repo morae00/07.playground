@@ -93,6 +93,10 @@ export type Entity = {
   /** SYS-01: consecutive aimed shots that missed this enemy, and when the last one missed. */
   aimMisses?: number;
   aimMissedAt?: number;
+  /** SYS-02: seconds until a charger may wind up again. */
+  dashCooldown?: number;
+  /** SYS-02: the direction a warden's front shield faces, in radians. */
+  shieldAngle?: number;
 };
 
 export type Projectile = {

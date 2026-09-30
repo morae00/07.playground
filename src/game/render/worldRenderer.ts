@@ -23,6 +23,7 @@ import type { ViewFrame } from '../viewPolicy.ts';
 import { motionPolicy } from '../visualContracts.ts';
 import { distance } from '../worldMath.ts';
 import { PLAYER_CAST_POSE_SECONDS, PLAYER_HURT_POSE_SECONDS } from '../presentation/presentation.ts';
+import { WARDEN_SHIELD } from '../enemyBehaviors.ts';
 import { loopFrame, phaseFor, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
 import { CHAPTER_PACKS, HERO_SLOT, enemyDrawScale, enemySlot, frameKey, slotEnabled, type HeroState } from './assets/slots.ts';
 import { GameRenderer } from './GameRenderer.ts';
@@ -561,6 +562,19 @@ export class WorldRenderer {
         ctx.fill();
         ctx.restore();
       }
+      if (enemy.shieldAngle !== undefined && !enemy.isBoss) {
+        // The warden's shield front (SYS-02): an ink arc on the floor, so a flank is readable at a glance.
+        ctx.save();
+        ctx.lineCap = 'round';
+        for (const [color, width] of [[rgba(NEUTRAL.paperBright, 0.9), 7], [rgba(NEUTRAL.ink, 0.78), 4]] as const) {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = width;
+          ctx.beginPath();
+          ctx.arc(body.x, body.y, enemy.radius + 9, enemy.shieldAngle - WARDEN_SHIELD.halfArcRadians, enemy.shieldAngle + WARDEN_SHIELD.halfArcRadians);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
       if (enemy.isBoss || enemy.attackStyle !== 'ranged' || enemy.rangedTelegraph > 0) continue;
       ctx.save();
       ctx.strokeStyle = SIGNAL.hostile;
@@ -597,7 +611,23 @@ export class WorldRenderer {
       }
       const showHealth = bars === 'all' || (bars === 'elite' && (enemy.isBoss || enemy.tier === 'large'));
       if (showHealth) this.drawHealthBar(ctx, body.x, body.top - 14, enemy.radius * 2.1, 6, enemy.hp / enemy.maxHp);
+      if (enemy.stun > 0 && !enemy.isBoss) this.drawStunMark(ctx, body.x, body.top - (showHealth ? 26 : 12), enemy.id);
     }
+  }
+
+  /** Three ink dots circling over a stunned enemy's head (SYS-02 wall stun, chain spark stun). */
+  private drawStunMark(ctx: CanvasRenderingContext2D, x: number, y: number, id: number) {
+    const policy = motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion);
+    const spin = policy.reduced ? 0 : this.world.elapsed * 5 + phaseFor(id) * Math.PI * 2;
+    ctx.save();
+    ctx.fillStyle = NEUTRAL.ink;
+    for (let index = 0; index < 3; index += 1) {
+      const angle = spin + (index * Math.PI * 2) / 3;
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(angle) * 9, y + Math.sin(angle) * 3.5, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   private drawPickups(ctx: CanvasRenderingContext2D) {
@@ -1004,12 +1034,18 @@ export class WorldRenderer {
     const slot = enemySlot(this.world.chapter, enemy.tier, enemy.attackStyle);
     if (!slotEnabled(slot)) return undefined;
     const moving = Math.hypot(enemy.vx, enemy.vy) > 5;
-    const state = enemy.hitFlash > 0 ? 'hit' : enemy.attackStyle === 'ranged' && enemy.rangedTelegraph > 0 ? 'windup' : moving ? 'walk' : 'idle';
+    // Shooters aiming and chargers bracing for a dash (SYS-02) both show the windup pose.
+    const windingUp = (enemy.attackStyle === 'ranged' && enemy.rangedTelegraph > 0) || enemy.patternPhase === 'warn';
+    const state = enemy.hitFlash > 0 ? 'hit' : windingUp ? 'windup' : moving ? 'walk' : 'idle';
     const spec = sprites.animation(slot, state);
     if (!spec) return undefined;
     const frame = sprites.frame(frameKey(slot, state, state === 'walk' ? loopFrame(spec, this.world.elapsed, phaseFor(enemy.id)) : 0));
     if (!frame) return undefined;
-    const lateral = Math.abs(enemy.vx) > 5 ? enemy.vx : 0;
+    // Face the shield (wardens) or the locked dash (chargers) when there is one, else the way it walks.
+    const heading = enemy.shieldAngle !== undefined
+      ? Math.cos(enemy.shieldAngle) * 100
+      : enemy.patternPhase === 'warn' || enemy.patternPhase === 'dash' ? enemy.patternX : enemy.vx;
+    const lateral = Math.abs(heading) > 5 ? heading : 0;
     const facing: 1 | -1 = lateral !== 0 ? (lateral < 0 ? -1 : 1) : this.enemyFacing.get(enemy.id) ?? (this.world.player.x < enemy.x ? -1 : 1);
     this.enemyFacing.set(enemy.id, facing);
     return { frame, facing, scale: enemyDrawScale(enemyRoleFor(enemy.tier, enemy.attackStyle), enemy.tier) };

@@ -41,6 +41,19 @@ export type RuleSet = Readonly<{
    * boss-made terrain count, and breather rewards. Tier mix and field boss marks are unchanged.
    */
   encounterDirector: boolean;
+  /** SYS-02: overlapping enemies push apart by hit radius (heavier bodies give way less). */
+  enemySeparation: boolean;
+  /** SYS-02: stalkers (small contact) chase in packs: alignment and cohesion with nearby stalkers. */
+  stalkerFlocking: boolean;
+  /**
+   * SYS-02: chargers (medium contact) wind up for 0.62 s behind a lane telegraph, then dash straight; a wall
+   * stuns them for 0.8 s. Only within 320 of the player, 4-6 s apart, at most three windups at once.
+   */
+  chargerDash: boolean;
+  /** SYS-02: shooters aim where a moving player will be when the shot arrives (windup plus travel time). */
+  shooterLeadAim: boolean;
+  /** SYS-02 (team decision: shield): wardens (large contact) carry a front shield that turns at 90 degrees/s. */
+  wardenShield: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -57,6 +70,11 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   pacing: false,
   skillLoopRework: false,
   encounterDirector: false,
+  enemySeparation: false,
+  stalkerFlocking: false,
+  chargerDash: false,
+  shooterLeadAim: false,
+  wardenShield: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -73,6 +91,11 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   pacing: true,
   skillLoopRework: true,
   encounterDirector: true,
+  enemySeparation: true,
+  stalkerFlocking: true,
+  chargerDash: true,
+  shooterLeadAim: true,
+  wardenShield: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

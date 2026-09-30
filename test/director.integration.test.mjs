@@ -65,29 +65,31 @@ test('the opening ramp spawns about half as many enemies in the first ten second
 });
 
 test('the tier mix stays 58/30/12 under the director (G9)', () => {
-  const engine = stage('remaster', 2, 4, 777);
-  try {
-    const counts = { small: 0, medium: 0, large: 0 };
-    let seen = new Set();
-    for (let step = 0; step < 60 * 240; step += 1) {
-      engine.probe.step(1);
-      const { enemies } = engine.probe.read();
-      for (const enemy of enemies) {
-        if (enemy.isBoss || seen.has(enemy.id)) continue;
-        seen.add(enemy.id);
-        counts[enemy.tier] += 1;
+  // Three seeds, about 2,800 enemies: one seed alone (about 930) swings by a few points.
+  const counts = { small: 0, medium: 0, large: 0 };
+  for (const seed of [777, 778, 779]) {
+    const engine = stage('remaster', 2, 4, seed);
+    try {
+      const seen = new Set();
+      for (let step = 0; step < 60 * 240; step += 1) {
+        engine.probe.step(1);
+        const { enemies } = engine.probe.read();
+        for (const enemy of enemies) {
+          if (enemy.isBoss || seen.has(enemy.id)) continue;
+          seen.add(enemy.id);
+          counts[enemy.tier] += 1;
+        }
+        if (enemies.length > 120) engine.probe.removeEnemies(enemies.filter((enemy) => !enemy.isBoss).map((enemy) => enemy.id));
       }
-      if (enemies.length > 120) engine.probe.removeEnemies(enemies.filter((enemy) => !enemy.isBoss).map((enemy) => enemy.id));
-      if (seen.size > 1400) break;
+    } finally {
+      engine.dispose();
     }
-    const total = counts.small + counts.medium + counts.large;
-    assert.ok(total > 800, `sampled ${total}`);
-    assert.ok(Math.abs(counts.small / total - 0.58) < 0.04, `small ${counts.small / total}`);
-    assert.ok(Math.abs(counts.medium / total - 0.3) < 0.04, `medium ${counts.medium / total}`);
-    assert.ok(Math.abs(counts.large / total - 0.12) < 0.03, `large ${counts.large / total}`);
-  } finally {
-    engine.dispose();
   }
+  const total = counts.small + counts.medium + counts.large;
+  assert.ok(total > 2400, `sampled ${total}`);
+  assert.ok(Math.abs(counts.small / total - 0.58) < 0.03, `small ${counts.small / total}`);
+  assert.ok(Math.abs(counts.medium / total - 0.3) < 0.03, `medium ${counts.medium / total}`);
+  assert.ok(Math.abs(counts.large / total - 0.12) < 0.025, `large ${counts.large / total}`);
 });
 
 test('enemies spawned during a breather drop 1.5x XP and coin', () => {

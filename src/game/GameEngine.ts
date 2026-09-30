@@ -42,6 +42,7 @@ import {
 import { REMASTER_RULES, ruleSetFor, type RuleSet, type RuleSetId } from './rules';
 import { EncounterDirector, type SpawnEdge } from './encounterDirector';
 import { CHECK_CONTENT_AT_LOAD } from '../content/checks';
+import { CHARGER, STALKER_FLOCK, SeparationGrid, WARDEN_SHIELD, enemyRole, flockSteer, leadAim, shieldCovers, turnToward } from './enemyBehaviors';
 import { LOGICAL_VIEW, SPAWN_MARGIN, classicViewFrame, logicalViewFrame, spawnFrameOrigin, type ViewFrame } from './viewPolicy';
 import {
   DRAFT_SIZE,
@@ -896,6 +897,9 @@ export class GameEngine {
   protected castGap = 0;
   /** The last thing that hurt the player, reported when the run is lost (CON-09). */
   protected lastDamageSource: PlayerDamageSource | 'unknown' = 'unknown';
+  /** SYS-02 scratch space, reused every step. */
+  protected readonly flockScratch: Entity[] = [];
+  protected readonly separationGrid = new SeparationGrid({ minX: -120, minY: -120, maxX: WORLD_W + 120, maxY: WORLD_H + 120 });
   /** SYS-03: the encounter director of the current normal stage, or null (classic rules, boss stages, infinite). */
   protected director: EncounterDirector | null = null;
   /** The player's last movement direction; front and flank formations spawn relative to it (SYS-03). */
@@ -1991,7 +1995,7 @@ export class GameEngine {
     for (let i = 0; i < jumps && current; i += 1) {
       hit.add(current.id);
       points.push({ x: current.x, y: current.y });
-      this.dealDamage(current, damage * (1 - i * 0.08), 'chainSpark', 80, skill.awakened && i === jumps - 1);
+      this.dealDamage(current, damage * (1 - i * 0.08), 'chainSpark', 80, skill.awakened && i === jumps - 1, points[points.length - 2]);
       if (skill.awakened && i === jumps - 1) {
         current.stun = Math.max(current.stun, SKILL_NUMBERS.chainSpark.stunSeconds);
         this.areaDamage(current.x, current.y, 78, damage * 0.7, 'chainSpark', 90);
@@ -2260,7 +2264,7 @@ export class GameEngine {
         const key = `orbit-${i}`;
         if ((enemy.damageCooldowns[key] ?? 0) <= this.elapsed) {
           enemy.damageCooldowns[key] = this.elapsed + 0.22;
-          this.dealDamage(enemy, this.player.stats.attack * (0.42 + skill.level * 0.075), 'orbitScythes', 55, false);
+          this.dealDamage(enemy, this.player.stats.attack * (0.42 + skill.level * 0.075), 'orbitScythes', 55, false, { x: bx, y: by });
         }
       }
     }
@@ -2573,6 +2577,17 @@ export class GameEngine {
   }
 
   protected updateEnemies(dt: number) {
+    const { chargerDash, stalkerFlocking, shooterLeadAim, wardenShield, enemySeparation } = this.rules;
+    // SYS-02: at most three chargers wind up at once.
+    let windups = 0;
+    if (chargerDash) {
+      for (const enemy of this.enemies) {
+        if (enemy.hp > 0 && !enemy.isBoss && enemy.patternPhase === 'warn' && enemyRole(enemy.tier, enemy.attackStyle) === 'charger') windups += 1;
+      }
+    }
+    const playerVelocity = dt > 0
+      ? { x: (this.player.x - this.player.prevX) / dt, y: (this.player.y - this.player.prevY) / dt }
+      : { x: 0, y: 0 };
     for (const enemy of this.enemies) {
       if (enemy.hp <= 0) continue;
       enemy.hitFlash = Math.max(0, enemy.hitFlash - dt);
@@ -2584,9 +2599,15 @@ export class GameEngine {
       enemy.slowTimer = slow.remaining;
       if (enemy.isBoss && enemy.boss) this.updateBossPattern(enemy, dt);
       if (enemy.stun > 0 || enemy.root > 0) continue;
+      const role = enemy.isBoss ? null : enemyRole(enemy.tier, enemy.attackStyle);
 
       const dir = normalize(this.player.x - enemy.x, this.player.y - enemy.y);
       const playerDistance = distance(enemy, this.player);
+      if (wardenShield && role === 'warden') {
+        // The shield turns toward the player no faster than 90 degrees a second, so circling gets past it.
+        const toward = Math.atan2(dir.y, dir.x);
+        enemy.shieldAngle = enemy.shieldAngle === undefined ? toward : turnToward(enemy.shieldAngle, toward, WARDEN_SHIELD.turnRadiansPerSecond * dt);
+      }
       const phaseMove = enemy.isBoss ? this.activeBossPhaseMove(enemy) : undefined;
       const phaseSpeed = enemy.isBoss ? phaseMove?.movement.speedScale ?? 1 + ((enemy.bossPhase ?? 1) - 1) * 0.1 : 1;
       const speed = enemy.speed * phaseSpeed * (enemy.slowMultiplier ?? 1) * (enemy.patternPhase === 'dash' ? 3.8 : 1);
@@ -2595,14 +2616,14 @@ export class GameEngine {
 
       if (!enemy.isBoss && enemy.attackStyle === 'ranged') {
         enemy.rangedCooldown = Math.max(0, enemy.rangedCooldown - dt);
+        const projectileSpeed = Math.min(360, 220 * (this.runMode === 'infinite'
+          ? infiniteDifficultyAt(this.elapsed, this.infiniteBossKills).enemySpeedScale
+          : 1));
         if (enemy.rangedTelegraph > 0) {
           const previousTelegraph = enemy.rangedTelegraph;
           enemy.rangedTelegraph = Math.max(0, enemy.rangedTelegraph - dt);
           if (previousTelegraph > 0 && enemy.rangedTelegraph <= 0) {
             const shotDirection = normalize(enemy.patternX - enemy.x, enemy.patternY - enemy.y);
-            const projectileSpeed = Math.min(360, 220 * (this.runMode === 'infinite'
-              ? infiniteDifficultyAt(this.elapsed, this.infiniteBossKills).enemySpeedScale
-              : 1));
             this.spawnBossProjectile(
               enemy.x,
               enemy.y,
@@ -2615,8 +2636,10 @@ export class GameEngine {
             );
           }
         } else if (enemy.rangedCooldown <= 0 && playerDistance <= 760) {
-          enemy.patternX = this.player.x;
-          enemy.patternY = this.player.y;
+          // SYS-02: the telegraph line points where a moving player will be when the shot arrives.
+          const aim = shooterLeadAim ? leadAim(enemy, this.player, playerVelocity, RANGED_ENEMY.telegraphSeconds, projectileSpeed) : this.player;
+          enemy.patternX = aim.x;
+          enemy.patternY = aim.y;
           enemy.rangedTelegraph = RANGED_ENEMY.telegraphSeconds;
           const cadenceScale = this.runMode === 'infinite'
             ? Math.min(1.55, 1 + infiniteDifficultyAt(this.elapsed, this.infiniteBossKills).minute * 0.012)
@@ -2636,8 +2659,69 @@ export class GameEngine {
         }
       }
 
+      if (stalkerFlocking && role === 'stalker') {
+        const neighbours = this.flockScratch;
+        neighbours.length = 0;
+        for (const other of this.enemyIndex.queryCircle(enemy.x, enemy.y, STALKER_FLOCK.radius)) {
+          if (other !== enemy && other.hp > 0 && !other.isBoss && other.tier === 'small' && other.attackStyle === 'contact') neighbours.push(other);
+        }
+        const steer = flockSteer(enemy, dir, neighbours);
+        moveX = steer.x;
+        moveY = steer.y;
+        neighbours.length = 0;
+      }
+
+      // SYS-02 chargers: stand and telegraph, then dash straight along the locked lane.
+      let charging = false;
+      let dashEnded = false;
+      if (chargerDash && role === 'charger') {
+        enemy.dashCooldown ??= CHARGER.firstCooldownSeconds[0] + this.gameplayRandom() * (CHARGER.firstCooldownSeconds[1] - CHARGER.firstCooldownSeconds[0]);
+        if (enemy.patternPhase === 'warn') {
+          charging = true;
+          enemy.vx = 0;
+          enemy.vy = 0;
+          enemy.patternTimer -= dt;
+          if (enemy.patternTimer <= 0) {
+            enemy.patternPhase = 'dash';
+            enemy.patternTimer = CHARGER.dashSeconds;
+          }
+        } else if (enemy.patternPhase === 'dash') {
+          charging = true;
+          enemy.vx = enemy.patternX;
+          enemy.vy = enemy.patternY;
+          enemy.patternTimer -= dt;
+          if (enemy.patternTimer <= 0) dashEnded = true;
+        } else {
+          enemy.dashCooldown = Math.max(0, enemy.dashCooldown - dt);
+          if (enemy.dashCooldown <= 0 && playerDistance <= CHARGER.range && windups < CHARGER.maxWindups) {
+            const dashSpeed = enemy.speed * (enemy.slowMultiplier ?? 1) * CHARGER.speedMultiple;
+            const reach = dashSpeed * CHARGER.dashSeconds;
+            enemy.patternPhase = 'warn';
+            enemy.patternTimer = CHARGER.windupSeconds;
+            enemy.patternX = dir.x * dashSpeed;
+            enemy.patternY = dir.y * dashSpeed;
+            this.laneTelegraphs.push({
+              id: this.nextId(),
+              x1: enemy.x,
+              y1: enemy.y,
+              x2: enemy.x + dir.x * reach,
+              y2: enemy.y + dir.y * reach,
+              width: enemy.radius * 2 + 8,
+              life: CHARGER.windupSeconds,
+              maxLife: CHARGER.windupSeconds,
+            });
+            windups += 1;
+            charging = true;
+            enemy.vx = 0;
+            enemy.vy = 0;
+          }
+        }
+      }
+
       const telegraphedDash = this.rules.telegraphedDash && enemy.isBoss && enemy.boss?.pattern === 'dash';
-      if (telegraphedDash && enemy.patternPhase === 'warn') {
+      if (charging) {
+        // Velocity was set by the charger state above.
+      } else if (telegraphedDash && enemy.patternPhase === 'warn') {
         enemy.vx = 0;
         enemy.vy = 0;
       } else if (telegraphedDash && enemy.patternPhase === 'dash') {
@@ -2651,7 +2735,22 @@ export class GameEngine {
       enemy.y += enemy.vy * dt;
       enemy.x = clamp(enemy.x, -90, WORLD_W + 90);
       enemy.y = clamp(enemy.y, -90, WORLD_H + 90);
+      const unresolvedX = enemy.x;
+      const unresolvedY = enemy.y;
       this.resolveEntityVsObstacles(enemy, enemy.radius);
+      if (charging && enemy.patternPhase === 'dash') {
+        const hitWall = Math.hypot(enemy.x - unresolvedX, enemy.y - unresolvedY) > 0.5;
+        if (hitWall || dashEnded) {
+          enemy.patternPhase = 'idle';
+          enemy.dashCooldown = CHARGER.cooldownSeconds[0] + this.gameplayRandom() * (CHARGER.cooldownSeconds[1] - CHARGER.cooldownSeconds[0]);
+          enemy.vx *= hitWall ? 0 : 0.2;
+          enemy.vy *= hitWall ? 0 : 0.2;
+          if (hitWall) {
+            enemy.stun = Math.max(enemy.stun, CHARGER.wallStunSeconds);
+            this.emit({ type: 'enemy/stunned', x: enemy.x, y: enemy.y });
+          }
+        }
+      }
 
       if (distance(enemy, this.player) < enemy.radius + HIT_RADIUS.playerContact && enemy.contactTimer <= 0) {
         enemy.contactTimer = enemy.isBoss ? 0.78 : 1;
@@ -2659,7 +2758,22 @@ export class GameEngine {
         this.emit({ type: 'enemy/contact', isBoss: enemy.isBoss });
       }
     }
+    if (enemySeparation) this.separateEnemies();
+  }
 
+  /** SYS-02: overlapping enemies push apart by hit radius, heavier bodies giving way less (see SeparationGrid). */
+  protected separateEnemies() {
+    const grid = this.separationGrid;
+    grid.compute(this.enemies);
+    for (let index = 0; index < this.enemies.length; index += 1) {
+      const pushX = grid.pushX[index];
+      const pushY = grid.pushY[index];
+      if (pushX === 0 && pushY === 0) continue;
+      const enemy = this.enemies[index];
+      enemy.x += pushX;
+      enemy.y += pushY;
+      this.resolveEntityVsObstacles(enemy, enemy.radius);
+    }
   }
 
   protected flushDeadEnemies(suppressBossDraft = false) {
@@ -2969,11 +3083,15 @@ export class GameEngine {
       for (const { target: enemy, time } of hits) {
         if (obstacleHitTime !== null && obstacleHitTime <= time) break;
         projectile.hitEnemyIds.add(enemy.id);
-        this.dealDamage(enemy, projectile.damage, projectile.skillId, projectile.knockback, false);
+        // The shot's own path, a tenth of a second back, tells a shield which way it came from (SYS-02).
+        this.dealDamage(enemy, projectile.damage, projectile.skillId, projectile.knockback, false, {
+          x: projectile.x - projectile.vx * 0.1,
+          y: projectile.y - projectile.vy * 0.1,
+        });
         projectile.pierce -= 1;
         if (projectile.skillId === 'needleStorm' && this.skills.needleStorm?.awakened) {
           const extra = this.findNearestEnemyFrom(enemy.x, enemy.y, SKILL_NUMBERS.needleStorm.shardRange, new Set([enemy.id]));
-          if (extra) this.dealDamage(extra, projectile.damage * SKILL_NUMBERS.needleStorm.shardDamage, projectile.skillId, 40, false);
+          if (extra) this.dealDamage(extra, projectile.damage * SKILL_NUMBERS.needleStorm.shardDamage, projectile.skillId, 40, false, enemy);
         }
         if (projectile.pierce < 0) {
           projectile.life = 0;
@@ -3089,7 +3207,7 @@ export class GameEngine {
           }
           if ((enemy.damageCooldowns[cooldownKey] ?? 0) <= this.elapsed) {
             enemy.damageCooldowns[cooldownKey] = this.elapsed + 0.35;
-            this.dealDamage(enemy, hazard.skillDamage ?? this.player.stats.attack * 0.55, sourceSkillId, 40, false);
+            this.dealDamage(enemy, hazard.skillDamage ?? this.player.stats.attack * 0.55, sourceSkillId, 40, false, hazard);
           }
         }
         if (!hazard.triggered && expiredThisStep(previousLife, hazard.life)) {
@@ -3098,7 +3216,7 @@ export class GameEngine {
             if (sourceSkillId === 'blackSun' && this.skills.blackSun?.awakened) {
               for (const enemy of this.enemyIndex.queryCircle(hazard.x, hazard.y, hazard.radius + 30)) {
                 if (enemy.hp <= 0 || distance(enemy, hazard) > hazard.radius + 30 + enemy.radius) continue;
-                this.dealDamage(enemy, hazard.collapseDamage! + enemy.maxHp * 0.045, 'blackSun', 220, true);
+                this.dealDamage(enemy, hazard.collapseDamage! + enemy.maxHp * 0.045, 'blackSun', 220, true, hazard);
                 const slow = applyTimedSlow({ multiplier: enemy.slowMultiplier, remaining: enemy.slowTimer }, 0.52, 3.5);
                 enemy.slowMultiplier = slow.multiplier;
                 enemy.slowTimer = slow.remaining;
@@ -3323,14 +3441,31 @@ export class GameEngine {
     return selected;
   }
 
-  protected dealDamage(enemy: Entity, rawDamage: number, skillId: SkillId, knockback: number, forceCrit: boolean) {
+  /** `source` is where the hit comes from (the player unless a projectile, blast, or chain carries it), for shields. */
+  protected dealDamage(
+    enemy: Entity,
+    rawDamage: number,
+    skillId: SkillId,
+    knockback: number,
+    forceCrit: boolean,
+    source: Readonly<{ x: number; y: number }> = this.player,
+  ) {
     if (enemy.hp <= 0) return;
     const hpRatio = enemy.hp / enemy.maxHp;
     const execution = this.skills.executionMark?.awakened && enemy.isBoss ? 1 + (1 - hpRatio) * SKILL_NUMBERS.executionMark.lowHpBossBonus : 1;
     const targetMultiplier = enemy.isBoss ? this.player.stats.bossDamage : 1;
     const crit = forceCrit || this.gameplayRandom() < this.player.stats.critChance;
     const critMultiplier = crit ? this.player.stats.critDamage : 1;
-    const damage = Math.max(1, rawDamage * targetMultiplier * critMultiplier * execution);
+    let damage = Math.max(1, rawDamage * targetMultiplier * critMultiplier * execution);
+    // SYS-02: a warden's front shield takes most of a hit that lands inside its arc.
+    if (this.rules.wardenShield && enemy.shieldAngle !== undefined && !enemy.isBoss && shieldCovers(enemy.shieldAngle, enemy, source)) {
+      damage = Math.max(1, damage * WARDEN_SHIELD.damageScale);
+      this.emit({
+        type: 'enemy/blocked',
+        x: enemy.x + Math.cos(enemy.shieldAngle) * enemy.radius,
+        y: enemy.y + Math.sin(enemy.shieldAngle) * enemy.radius,
+      });
+    }
     enemy.hp -= damage;
     const impactTier = classifyImpact(damage, enemy.maxHp, crit, enemy.hp <= 0, {
       classification: this.rules.hitStopBudget ? 'budgeted' : 'classic',
@@ -3360,7 +3495,7 @@ export class GameEngine {
     for (const enemy of this.enemyIndex.queryCircle(x, y, radius)) {
       if (enemy.hp <= 0) continue;
       if (distance(enemy, { x, y }) <= radius + enemy.radius) {
-        this.dealDamage(enemy, damage, skillId, knockback, forceCrit);
+        this.dealDamage(enemy, damage, skillId, knockback, forceCrit, { x, y });
       }
     }
     this.emit({ type: 'area/damage', x, y });

@@ -27,6 +27,9 @@ export type GameEvent =
   | { type: 'shock/burst'; x: number; y: number }
   | { type: 'trap/sprung'; x: number; y: number }
   | { type: 'shot/blocked'; x: number; y: number }
+  /** SYS-02: a warden's shield took a hit, and a charger ran into a wall. */
+  | { type: 'enemy/blocked'; x: number; y: number }
+  | { type: 'enemy/stunned'; x: number; y: number }
   | { type: 'magnet/pulse'; x: number; y: number }
   | { type: 'boss/spawned'; x: number; y: number; infinite: boolean }
   | { type: 'boss/phase'; x: number; y: number; phase: number; chapter: number }

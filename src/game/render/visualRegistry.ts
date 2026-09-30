@@ -5,6 +5,7 @@ import type {
   SkillId,
 } from '../engine/worldTypes.ts';
 import { CAMPAIGN_CHAPTER_IDS } from '../../content/campaign.ts';
+import { enemyRole } from '../enemyBehaviors.ts';
 import { NEUTRAL, SIGNAL } from './palette.ts';
 
 export type VisualChapter = 1 | 2 | 3 | 4 | 5;
@@ -141,14 +142,12 @@ const enemyProfiles = Object.fromEntries(
 
 export const ENEMY_ART = Object.freeze(enemyProfiles);
 
+/** The same mapping the simulation uses for role behaviour (SYS-02), so art and behaviour never disagree. */
 export function enemyRoleFor(
   tier: EnemyTier,
   attackStyle: 'contact' | 'ranged',
 ): EnemyVisualRole {
-  if (attackStyle === 'ranged') return 'shooter';
-  if (tier === 'large') return 'warden';
-  if (tier === 'medium') return 'charger';
-  return 'stalker';
+  return enemyRole(tier, attackStyle);
 }
 
 export function enemyArtFor(
