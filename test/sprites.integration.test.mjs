@@ -113,7 +113,7 @@ test('Ch1 enemies and round bosses draw from the chapter pack; field bosses and 
     boss.engine.probe.spawnBoss('field');
     boss.images.length = 0;
     boss.engine.probe.render(1);
-    assert.equal(boss.images.filter((draw) => draw.image.url?.includes('chapter-01')).length, 0, 'the field boss has no kit art yet');
+    assert.equal(boss.images.filter((draw) => draw.image.url?.includes('chapter-01/atlas')).length, 0, 'the field boss has no kit art yet');
   } finally {
     boss.engine.dispose();
   }

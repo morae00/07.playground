@@ -150,7 +150,7 @@ Under the `kitProps` rule, a chapter with an obstacle catalogue (`src/game/obsta
 - pillar props in three;
 - the landmark corridor post.
 
-The same two random draws that sized a block now pick its module, so hazards and positions do not move; only the footprints differ. An obstacle records its module in `art`. The renderer draws that module from the chapter pack on the footprint's centre, mirrored by id, and the module carries its own cast shadow. The ground is the pack's tile as a world-space pattern, and the kit's edge strip replaces the ink border. `obstacleCatalogue.test.ts` keeps the engine footprints equal to the baked ones. Classic rules and chapters without a catalogue keep random blocks on the grid.
+The same two random draws that sized a block now pick its module, so hazards and positions do not move; only the footprints differ. An obstacle records its module in `art`. The renderer draws that module from the chapter pack on the footprint's centre, mirrored by id, and the module carries its own cast shadow. The ground is the pack's tile, stamped tile by tile over the visible world (a repeating pattern fill of it stalled Chromium's canvas in frames with many small stamps; TEC-04), and the kit's edge strip replaces the ink border. `obstacleCatalogue.test.ts` keeps the engine footprints equal to the baked ones. Classic rules and chapters without a catalogue keep random blocks on the grid.
 
 ## Camera (FX-04)
 

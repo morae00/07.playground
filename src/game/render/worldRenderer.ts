@@ -28,7 +28,7 @@ import { clamp, distance } from '../worldMath.ts';
 import { CORPSE_FALL_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HURT_VIGNETTE_SECONDS, STAIN_DRY_SECONDS, STAIN_FADE_SECONDS, STAIN_SECONDS } from '../presentation/presentation.ts';
 import { WARDEN_SHIELD } from '../enemyBehaviors.ts';
 import { AnimationBook, SPAWN_SECONDS, enemyPoses, heroPoses, poseFrame, stepBossAnim, stepEnemyAnim, stepPlayerAnim, type AnimState, type EnemyAnim } from './animation.ts';
-import { phaseFor, type SpriteAtlas, type SpriteFrame, type SpriteImage } from './assets/spriteAtlas.ts';
+import { phaseFor, type GroundTile, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
 import { BOSS_SLOTS, CHAPTER_PACKS, COMMON_PACK, FX_SLOT, HERO_SLOT, PICKUP_SLOT, bossState, enemyDrawScale, enemySlot, frameKey, pickupState, slotEnabled } from './assets/slots.ts';
 import { GameRenderer } from './GameRenderer.ts';
 import { NumberGlyphs, type NumberStyle } from './numberGlyphs.ts';
@@ -53,6 +53,8 @@ const HERO_ANIM_ID = -1;
 /** Damage numbers pop over this long when they appear or take a merged hit, and spread this far sideways (FX-07). */
 const NUMBER_POP_SECONDS = 0.12;
 const NUMBER_SPREAD = 24;
+/** How far each ground tile reaches past its neighbours, in world units, to cover the seam between stamps (ART-05). */
+const GROUND_SEAM = 0.5;
 
 /** Decal stage ages in seconds, as baked (art/atlas-spec.mjs DECAL_AGES). */
 const DECAL_STAGE_AGES = Object.freeze([0, 1, 1.5, 3, 15]);
@@ -216,7 +218,6 @@ export class WorldRenderer {
   /** How many times the grid tile was built; stays at one until the canvas is resized. */
   gridCacheBuilds = 0;
   private gridPattern?: CanvasPattern;
-  private ground?: { image: SpriteImage; pattern: CanvasPattern };
   private viewport: Viewport = makeViewport(0, 0, 1280, 720, 160);
   private world!: RenderWorld;
   /** Baked character art (TEC-03); null or not yet loaded means every slot draws with vectors. */
@@ -511,19 +512,36 @@ export class WorldRenderer {
     return this.sprites.frame(frameKey(slot, obstacle.art, 0));
   }
 
-  /** The chapter's kit ground as a world-space pattern (ART-05); undefined until its pack is ready. */
-  private groundPattern(ctx: CanvasRenderingContext2D) {
+  /** The chapter's kit ground tile (ART-05); undefined until its pack is ready. */
+  private groundTile() {
     const pack = CHAPTER_PACKS[this.world.chapter];
-    const tile = pack && this.sprites?.status(pack) === 'ready' && slotEnabled(`env/${this.world.chapter}`) ? this.sprites.ground(pack) : undefined;
-    if (!tile) return undefined;
-    if (this.ground?.image !== tile.image) {
-      const pattern = ctx.createPattern(tile.image, 'repeat');
-      if (!pattern) return undefined;
-      // The tile is baked at the atlas scale; the pattern repeats every `size` world units.
-      if (typeof DOMMatrix === 'function') pattern.setTransform(new DOMMatrix().scale(tile.size / tile.image.width));
-      this.ground = { image: tile.image, pattern };
+    return pack && this.sprites?.status(pack) === 'ready' && slotEnabled(`env/${this.world.chapter}`) ? this.sprites.ground(pack) : undefined;
+  }
+
+  /**
+   * Stamps the ground tile over the visible part of the world, in world space. A repeating pattern fill of the same
+   * tile made Chromium's canvas fall far behind once the frame also stamped many small images, such as a crowd's
+   * damage numbers: 180 ms frames in the TEC-04 bench. Neighbouring tiles overlap by GROUND_SEAM so their edges
+   * leave no hairline.
+   */
+  private drawGround(ctx: CanvasRenderingContext2D, tile: GroundTile) {
+    const { viewport } = this;
+    const left = Math.max(0, viewport.left);
+    const top = Math.max(0, viewport.top);
+    const right = Math.min(this.world.worldSize.width, viewport.right);
+    const bottom = Math.min(this.world.worldSize.height, viewport.bottom);
+    if (right <= left || bottom <= top) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(left, top, right - left, bottom - top);
+    ctx.clip();
+    const { size } = tile;
+    for (let y = Math.floor(top / size) * size; y < bottom; y += size) {
+      for (let x = Math.floor(left / size) * size; x < right; x += size) {
+        ctx.drawImage(tile.image, x - GROUND_SEAM, y - GROUND_SEAM, size + GROUND_SEAM * 2, size + GROUND_SEAM * 2);
+      }
     }
-    return this.ground.pattern;
+    ctx.restore();
   }
 
   /** The kit's edge strip along all four world edges, turned to face out on each (ART-05). */
@@ -550,10 +568,9 @@ export class WorldRenderer {
 
   private drawWorld(ctx: CanvasRenderingContext2D) {
     const viewport = this.viewport;
-    const ground = this.groundPattern(ctx);
+    const ground = this.groundTile();
     if (ground) {
-      ctx.fillStyle = ground;
-      ctx.fillRect(Math.max(0, viewport.left), Math.max(0, viewport.top), Math.min(this.world.worldSize.width, viewport.right) - Math.max(0, viewport.left), Math.min(this.world.worldSize.height, viewport.bottom) - Math.max(0, viewport.top));
+      this.drawGround(ctx, ground);
       // The kit ground carries its own motif; the edge strip replaces the old ink line when it is baked.
       if (!this.drawBoundary(ctx)) this.drawWorldEdge(ctx);
       return;

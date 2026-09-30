@@ -64,6 +64,9 @@ test('ART-05: catalogue obstacles and the ground draw from the chapter pack', as
     engine.probe.render(1);
     const [, sx, sy] = ATLAS_MANIFEST.packs['chapter-01'].frames['env/1/solid1/0'];
     assert.ok(images.some((draw) => draw.sx === sx && draw.sy === sy), 'the wall module is drawn from its frame');
+    // The ground is stamped tile by tile, not filled with a pattern (TEC-04: pattern fills stalled Chromium).
+    const tiles = images.filter((draw) => draw.url === 'assets/packs/chapter-01/ground-0.webp');
+    assert.ok(tiles.length >= 4 && tiles.length <= 16, `${tiles.length} ground stamps cover the view`);
   } finally {
     engine.dispose();
   }
