@@ -142,6 +142,13 @@ export interface EngineProbe {
   removeHazards(kinds: readonly Hazard['kind'][]): void;
   /** Drops a pickup through the regular spawner (merging, caps, and lifetimes apply). */
   spawnPickup(spec: { kind: Pickup['kind']; x: number; y: number; value: number; vx?: number; vy?: number; radius?: number }): void;
+  /** Adds a hostile shot directly (render benchmarks, TEC-04). */
+  spawnHostileShot(spec: { x: number; y: number; vx?: number; vy?: number; radius?: number; damage?: number; life?: number; kind?: BossProjectile['kind'] }): void;
+  /** Adds cosmetic particles and damage numbers through the presentation layer (render benchmarks, TEC-04). */
+  burst(x: number, y: number, count: number): void;
+  damageNumber(x: number, y: number, value: number, crit?: boolean): void;
+  /** Live entity and effect counts without copying the world (cheap enough to call every step). */
+  counts(): { enemies: number; projectiles: number; hostileShots: number; particles: number; damageNumbers: number };
   addObstacle(spec: Omit<Obstacle, 'id'> & { id?: number }): number;
   setClock(patch: { timeLeft?: number; elapsed?: number }): void;
   setStageKills(count: number): void;
@@ -357,6 +364,18 @@ export class ProbedGameEngine extends GameEngine {
       spawnPickup: ({ kind, x, y, value, vx = 0, vy = 0, radius = kind === 'xp' ? 5 : 6 }) => {
         this.spawnPickup(kind, x, y, vx, vy, radius, value);
       },
+      spawnHostileShot: ({ x, y, vx = 0, vy = 0, radius = 7, damage = 0, life = 4, kind = 'enemy' }) => {
+        this.spawnBossProjectile(x, y, vx, vy, radius, damage, life, kind);
+      },
+      burst: (x, y, count) => this.presentation.burst(x, y, count, '#111111', 180),
+      counts: () => ({
+        enemies: this.enemies.length,
+        projectiles: this.projectiles.length,
+        hostileShots: this.bossProjectiles.length,
+        particles: this.presentation.particles.length,
+        damageNumbers: this.presentation.damageNumbers.length,
+      }),
+      damageNumber: (x, y, value, crit = false) => this.presentation.addDamageNumber(x, y, value, crit, 0.8, 'player'),
       removeHazards: (kinds) => {
         const drop = new Set(kinds);
         this.hazards = this.hazards.filter((hazard) => !drop.has(hazard.kind));

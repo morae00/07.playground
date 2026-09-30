@@ -2,6 +2,7 @@
 node_modules/
 dist/
 dist-developer/
+dist-bench/
 release/
 release-developer/
 coverage/

@@ -890,6 +890,8 @@ export class GameEngine {
   protected castGap = 0;
   /** The last thing that hurt the player, reported when the run is lost (CON-09). */
   protected lastDamageSource: PlayerDamageSource | 'unknown' = 'unknown';
+  /** Backing-store scale cap (TEC-04); 2 keeps the full device resolution up to DPR 2. */
+  protected renderScale = 2;
   /** A frame threw and the loop stopped (TEC-14). */
   protected faulted = false;
   /** Developer cheat FAULT: the next frame throws, to exercise the fault path. */
@@ -1298,9 +1300,20 @@ export class GameEngine {
     this.emit({ type: 'draft/applied', kind: 'overdrive', x: this.player.x, y: this.player.y });
   }
 
+  /**
+   * Caps the canvas resolution (TEC-04): the backing store uses min(devicePixelRatio, renderScale, 2) pixels per
+   * CSS pixel. Game logic and layout work in CSS pixels, so only sharpness and fill cost change.
+   */
+  setRenderScale(scale: number) {
+    const next = clamp(Number.isFinite(scale) ? scale : 2, 1, 2);
+    if (next === this.renderScale) return;
+    this.renderScale = next;
+    this.onResize();
+  }
+
   protected onResize() {
     const rect = this.canvas.getBoundingClientRect();
-    this.dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    this.dpr = Math.max(1, Math.min(2, this.renderScale, window.devicePixelRatio || 1));
     this.viewW = Math.max(1, Math.floor(rect.width));
     this.viewH = Math.max(1, Math.floor(rect.height));
     this.canvas.width = Math.round(this.viewW * this.dpr);
