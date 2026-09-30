@@ -94,6 +94,15 @@ Player feedback (FX-03):
 - The engine reports `player/lowHealth` when health crosses 30% either way. While it is low, the heartbeat sounds every 0.85 s, the screen edge glows coral, and the health bar turns coral and beats. The glow and the bar hold still under reduced motion or reduced flash, and reduced flash halves both glows.
 - On `player/died` the simulation stops as before, and the app holds the settlement for 0.7 s. Meanwhile the hero falls back, the last hit's ink drifts at quarter speed for 0.4 s, and nothing can pause the run.
 
+## UI screens and art (UI-01, UI-03, ART-09)
+
+Each screen is a component in `src/ui/screens`, and `src/App.tsx` owns the state they share. Screens show kit art through the baked stylesheet `src/ui/art/uiArt.generated.css`: an element with class `artTile`, `artSlot`, `artPortrait`, or `artPickup` and a `data-art` key shows that cell, at any size (docs/art/pipeline.md). Draft cards read everything they print from the offer and the skill tables:
+- the offer's `level` (the level before the pick) sets the level pips;
+- `SKILL_LEVEL_STATS` gives the change rows, before and after the pick;
+- the skill's `tags` give the chips.
+
+The level copy on cards is generated from the same stat lines, so the rows and the copy cannot disagree.
+
 ## Test access (TEC-07)
 
 Tests, balance runners, and soak tools use `ProbedGameEngine` (`src/game/engine/probe.ts`), a test-only subclass whose `probe` API sets up worlds (spawn, place, patch, clear, halt spawns, set skills, cast), steps fixed ticks, observes every step (`onStep`), and reads a plain-data copy of the world (`read`). `createEngineHarness` (`src/game/engine/harness.ts`) implements the replay contract on the real engine: a seed plus a command log reproduces the same snapshot and fingerprint. The test bundle entry is `src/testing/engine.ts` (`npm run build:test-bundles`); the app entry never imports it, so production bundles do not ship the probe. Engine members are `protected` only so the probe subclass can reach them; nothing else subclasses the engine.

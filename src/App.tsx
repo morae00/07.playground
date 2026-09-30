@@ -752,7 +752,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         />
       )}
 
-      {!loopFault && phase === 'draft' && draft && <DraftModal key={draft.id} draft={draft} onPick={handleOffer} />}
+      {!loopFault && phase === 'draft' && draft && <DraftModal key={draft.id} draft={draft} skills={snapshot?.skills ?? {}} onPick={handleOffer} />}
 
       {!loopFault && (phase === 'roundClear' || phase === 'gameOver') && settlement && (
         <SettlementModal

@@ -1289,6 +1289,15 @@ h2 {
   overflow: auto;
 }
 
+/* Sized to the cards: three or four 264 px cards with 16 px gaps, inside 20 px padding and a 2 px border. */
+.draftBox {
+  width: min(872px, 100%);
+}
+
+.draftBox:has(.draftCard:nth-child(4)) {
+  width: min(1152px, 100%);
+}
+
 .draftBox,
 .settlementBox {
   position: relative;
@@ -1359,7 +1368,7 @@ h2 {
 
 .modalHead p {
   margin-bottom: 4px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 900;
 }
 
@@ -1369,19 +1378,220 @@ h2 {
   line-height: 1;
 }
 
+/* Draft cards (UI-03): centred for three or four. The kit tile carries the rarity by shape; the card border echoes
+   it (single, double, double with a stitched inner line, inverted for mythic). */
 .draftGrid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
 }
 
 .draftCard {
   position: relative;
-  min-height: 250px;
-  padding: 14px;
-  display: grid;
-  grid-template-rows: auto auto minmax(80px, 1fr) auto auto;
+  flex: 0 1 264px;
+  min-width: 216px;
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
+  background: var(--paper);
+}
+
+.draftCard[data-rarity="rare"],
+.draftCard[data-rarity="epic"],
+.draftCard[data-rarity="legendary"] {
+  border: 5px double var(--ink);
+}
+
+.draftCard[data-rarity="legendary"]::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1.5px dashed var(--ink);
+  pointer-events: none;
+}
+
+.draftCard[data-rarity="mythic"] {
+  color: var(--paper);
+  background: var(--ink);
+  border: 5px double var(--paper);
+}
+
+.draftCard[data-kind="awakening"] {
+  border-width: 7px;
+  box-shadow: 6px 6px 0 var(--ink);
+}
+
+.draftCard .artTile {
+  display: block;
+  width: min(166px, 100%);
+  margin: -6px auto -2px;
+}
+
+.cardRank {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  border: 2px solid currentColor;
+  padding: 2px 8px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.cardRank i,
+.cardTags i {
+  font-style: normal;
+}
+
+.cardName {
+  font-size: 21px;
+  line-height: 1.1;
+}
+
+.cardTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.cardTags i {
+  border: 1.5px solid currentColor;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cardLevel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* Level pips: filled = current level, ringed with a dot = the level the pick adds. */
+.levelPips {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.levelPips i {
+  width: 11px;
+  height: 11px;
+  border: 1.5px solid currentColor;
+}
+
+.levelPips i.on {
+  background: currentColor;
+}
+
+.levelPips i.next {
+  border-width: 2px;
+  background: radial-gradient(currentColor 0 35%, transparent 40%);
+}
+
+.cardDelta {
+  display: grid;
+}
+
+.cardDelta > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px dashed var(--line);
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.cardDelta b {
+  font-weight: 700;
+}
+
+.cardDelta em {
+  font-style: normal;
+  font-weight: 900;
+}
+
+.cardBody {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.cardHint {
+  margin-top: auto;
+  padding-top: 4px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.modalHead .modalLead {
+  margin: -8px 0 12px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Current build strip under the draft cards: the HUD slot art with its level pips in the slot's own column. */
+.buildStrip {
+  margin-top: 16px;
+  border: 2px solid var(--ink);
+  padding: 10px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  background: var(--paper);
+}
+
+.buildLabel,
+.buildKeys {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.buildSlots {
+  flex: 1 1 280px;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  list-style: none;
+}
+
+.buildSlots .emptyText {
+  font-size: 13px;
+}
+
+.buildSlot {
+  position: relative;
+  width: 56px;
+}
+
+.buildSlot .artSlot {
+  display: block;
+  width: 56px;
+}
+
+.buildSlot .levelPips {
+  position: absolute;
+  top: 8.4px;
+  left: 48.4px;
+  flex-direction: column-reverse;
+  gap: 3.2px;
+}
+
+.buildSlot .levelPips i {
+  width: 4.2px;
+  height: 4.2px;
+  border-width: 1px;
+  background: var(--paper);
+}
+
+.buildSlot .levelPips i.on {
+  background: var(--ink);
 }
 
 .cardShortcut {
@@ -1394,7 +1604,7 @@ h2 {
   place-items: center;
   border: 2px solid currentColor;
   background: inherit;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .danger {
@@ -1407,41 +1617,6 @@ h2 {
   font-weight: 900;
 }
 
-.draftCard.awakening {
-  border-width: 4px;
-  box-shadow: 6px 6px 0 #111;
-}
-
-.draftCard span {
-  width: fit-content;
-  border: 2px solid currentColor;
-  padding: 2px 6px;
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.draftCard h3 {
-  margin-bottom: 0;
-  font-size: 20px;
-  line-height: 1.05;
-}
-
-.draftCard p {
-  margin-bottom: 0;
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-.draftCard em {
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 800;
-}
-
-.draftCard strong {
-  font-size: 11px;
-  letter-spacing: 0;
-}
 
 .settlementGrid {
   display: grid;
@@ -1736,9 +1911,13 @@ h2 {
   .statGrid,
   .upgradeGrid,
   .runShop,
-  .settlementGrid,
-  .draftGrid {
+  .settlementGrid {
     grid-template-columns: 1fr;
+  }
+
+  .draftGrid {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .infiniteResultGrid .scoreResult {
@@ -1751,7 +1930,29 @@ h2 {
   }
 
   .draftCard {
-    min-height: 190px;
+    flex-basis: auto;
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr);
+    align-content: start;
+    gap: 6px 12px;
+  }
+
+  .draftCard .artTile {
+    grid-row: 1 / span 7;
+    width: 88px;
+    margin: 0;
+  }
+}
+
+@media (pointer: coarse) {
+  .cardShortcut {
+    display: none;
+  }
+}
+
+@media (max-height: 760px) and (min-width: 761px) {
+  .draftCard .artTile {
+    width: 132px;
   }
 }
 

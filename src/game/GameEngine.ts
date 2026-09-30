@@ -185,6 +185,8 @@ export type SkillDef = {
   active: boolean;
   chapterMin: number;
   summary: string;
+  /** Draft card chips after 액티브/패시브 (UI-03). */
+  tags: readonly string[];
   levelText: (level: number) => string;
   awakeningText: string;
 };
@@ -197,6 +199,8 @@ export type SkillOffer =
       title: string;
       body: string;
       levelLine: string;
+      /** The skill's level before the pick: 0 for a new skill. */
+      level: number;
     }
   | {
       kind: 'bonus';
@@ -431,6 +435,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 1,
     summary: '가장 가까운 적에게 벽에 막히는 고속 투사체를 발사합니다.',
+    tags: ['투사체', '단일'],
     levelText: SKILL_LEVEL_TEXT.needleStorm,
     awakeningText: SKILL_AWAKENING_TEXT.needleStorm,
   },
@@ -442,6 +447,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 1,
     summary: '전방 부채꼴로 얇은 단검을 흩뿌립니다.',
+    tags: ['투사체', '부채꼴'],
     levelText: SKILL_LEVEL_TEXT.fanKnives,
     awakeningText: SKILL_AWAKENING_TEXT.fanKnives,
   },
@@ -453,6 +459,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 1,
     summary: '적 사이를 튀는 번개선을 즉시 꽂습니다.',
+    tags: ['연쇄', '즉발'],
     levelText: SKILL_LEVEL_TEXT.chainSpark,
     awakeningText: SKILL_AWAKENING_TEXT.chainSpark,
   },
@@ -464,6 +471,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 1,
     summary: '가장 가까운 적 방향으로 감속 절단선을 긋습니다.',
+    tags: ['직선', '감속'],
     levelText: SKILL_LEVEL_TEXT.frostLine,
     awakeningText: SKILL_AWAKENING_TEXT.frostLine,
   },
@@ -475,6 +483,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 2,
     summary: '몸 주위를 도는 날이 근접한 적을 계속 갈아냅니다.',
+    tags: ['근접', '지속'],
     levelText: SKILL_LEVEL_TEXT.orbitScythes,
     awakeningText: SKILL_AWAKENING_TEXT.orbitScythes,
   },
@@ -486,6 +495,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 2,
     summary: '적이 가장 많이 몰린 지점에 묵직한 낙하 폭발을 일으킵니다.',
+    tags: ['광역', '폭발'],
     levelText: SKILL_LEVEL_TEXT.boneMortar,
     awakeningText: SKILL_AWAKENING_TEXT.boneMortar,
   },
@@ -497,6 +507,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 3,
     summary: '화면을 가르는 관통 직선을 즉시 발사합니다.',
+    tags: ['직선', '관통'],
     levelText: SKILL_LEVEL_TEXT.railSpear,
     awakeningText: SKILL_AWAKENING_TEXT.railSpear,
   },
@@ -508,6 +519,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 3,
     summary: '좌우 잔상이 보조 사격을 합니다.',
+    tags: ['분신', '투사체'],
     levelText: SKILL_LEVEL_TEXT.mirrorClone,
     awakeningText: SKILL_AWAKENING_TEXT.mirrorClone,
   },
@@ -519,6 +531,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 3,
     summary: '발밑에 끌어당기는 지뢰장을 남깁니다.',
+    tags: ['장판', '흡입'],
     levelText: SKILL_LEVEL_TEXT.voidMine,
     awakeningText: SKILL_AWAKENING_TEXT.voidMine,
   },
@@ -530,6 +543,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 4,
     summary: '적 밀집 지점에 끌어당기는 중력장을 엽니다.',
+    tags: ['중력장', '군중 제어'],
     levelText: SKILL_LEVEL_TEXT.blackSun,
     awakeningText: SKILL_AWAKENING_TEXT.blackSun,
   },
@@ -541,6 +555,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: false,
     chapterMin: 1,
     summary: '방어력과 최대 체력을 올립니다.',
+    tags: ['방어', '체력'],
     levelText: SKILL_LEVEL_TEXT.ironFrame,
     awakeningText: SKILL_AWAKENING_TEXT.ironFrame,
   },
@@ -552,6 +567,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: false,
     chapterMin: 1,
     summary: '경험치와 코인을 더 먼 거리에서 끌어옵니다.',
+    tags: ['획득', '코인'],
     levelText: SKILL_LEVEL_TEXT.magnetSigil,
     awakeningText: SKILL_AWAKENING_TEXT.magnetSigil,
   },
@@ -563,6 +579,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: false,
     chapterMin: 2,
     summary: '방어력과 피격 후 무적 시간을 올립니다.',
+    tags: ['방어', '무적'],
     levelText: SKILL_LEVEL_TEXT.paperWard,
     awakeningText: SKILL_AWAKENING_TEXT.paperWard,
   },
@@ -574,6 +591,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: false,
     chapterMin: 1,
     summary: '체력 회복과 획득 반경을 올립니다.',
+    tags: ['회복', '자석'],
     levelText: SKILL_LEVEL_TEXT.recoveryThread,
     awakeningText: SKILL_AWAKENING_TEXT.recoveryThread,
   },
@@ -585,6 +603,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: false,
     chapterMin: 4,
     summary: '코인 획득량과 공격속도를 함께 올립니다.',
+    tags: ['코인', '공격속도'],
     levelText: SKILL_LEVEL_TEXT.coinFever,
     awakeningText: SKILL_AWAKENING_TEXT.coinFever,
   },
@@ -596,6 +615,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 5,
     summary: '위협이 몰릴 때 순간적으로 그림자 베기를 펼칩니다.',
+    tags: ['광역', '무적'],
     levelText: SKILL_LEVEL_TEXT.eclipseStep,
     awakeningText: SKILL_AWAKENING_TEXT.eclipseStep,
   },
@@ -607,6 +627,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: false,
     chapterMin: 2,
     summary: '치명타와 보스 피해량을 올립니다.',
+    tags: ['치명타', '보스'],
     levelText: SKILL_LEVEL_TEXT.executionMark,
     awakeningText: SKILL_AWAKENING_TEXT.executionMark,
   },
@@ -4239,6 +4260,7 @@ export class GameEngine {
         title: `${def.name} 각성`,
         body: this.awakeningText(skillId),
         levelLine: 'Lv.5 이후 확정 등장',
+        level: state?.level ?? 0,
       };
     }
     const nextLevel = (state?.level ?? 0) + 1;
@@ -4248,7 +4270,8 @@ export class GameEngine {
       rarity: def.rarity,
       title: state ? `${def.name} Lv.${nextLevel}` : def.name,
       body: state ? def.levelText(nextLevel) : def.summary,
-      levelLine: state ? `현재 Lv.${state.level} -> Lv.${nextLevel}` : `${RARITY[def.rarity].label} 신규 스킬`,
+      levelLine: state ? `Lv.${state.level} → ${nextLevel}` : '신규 · Lv.1',
+      level: state?.level ?? 0,
     };
   }
 

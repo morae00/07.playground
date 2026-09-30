@@ -147,25 +147,33 @@ const gain = (scaling: Scaling, level: number) => level * scaling.perLevel;
 /** Growth relative to the level-0 value, for stats that have no natural unit on screen (pull strength). */
 const relative = (scaling: Scaling, level: number) => gain(scaling, level) / scaling.base;
 
-export const SKILL_LEVEL_TEXT: Record<SkillId, (level: number) => string> = {
-  needleStorm: (level) => `피해 +${pct(gain(N.needleStorm.damage, level))}%, 투사체 ${needleCount(level, false)}개`,
-  fanKnives: (level) => `단검 ${num(scaleAt(N.fanKnives.knives, level))}개, 재사용 대기 -${num(level * N.fanKnives.cooldownPerLevel)}s`,
-  chainSpark: (level) => `연쇄 ${num(scaleAt(N.chainSpark.jumps, level))}회, 피해 +${pct(gain(N.chainSpark.damage, level))}%`,
-  frostLine: (level) => `폭 +${num(gain(N.frostLine.width, level))}, 감속 ${pct(frostLineSlow(level))}%`,
-  orbitScythes: (level) => `날 ${num(scaleAt(N.orbitScythes.blades, level))}개, 궤도 반경 +${num(gain(N.orbitScythes.radius, level))}`,
-  boneMortar: (level) => `폭발 반경 +${num(gain(N.boneMortar.radius, level))}, 피해 +${pct(gain(N.boneMortar.damage, level))}%`,
-  railSpear: (level) => `폭 +${num(gain(N.railSpear.width, level))}, 피해 +${pct(gain(N.railSpear.damage, level))}%`,
-  mirrorClone: (level) => `분신 사격 피해 +${pct(gain(N.mirrorClone.damage, level))}%, 관통 +${Math.floor(level / 2)}`,
-  voidMine: (level) => `지속 +${num(gain(N.voidMine.duration, level))}s, 흡입력 +${pct(relative(N.voidMine.pull, level))}%`,
-  blackSun: (level) => `지속 +${num(gain(N.blackSun.duration, level))}s, 흡입력 +${pct(relative(N.blackSun.pull, level))}%`,
-  ironFrame: (level) => `방어 +${num(scaleAt(N.ironFrame.defense, level))}, 최대 체력 +${num(scaleAt(N.ironFrame.maxHp, level))}`,
-  magnetSigil: (level) => `획득 반경 +${num(scaleAt(N.magnetSigil.magnet, level))}, 코인 획득 +${pct(scaleAt(N.magnetSigil.coinGain, level))}%`,
-  paperWard: (level) => `방어 +${num(scaleAt(N.paperWard.defense, level))}, 피격 무적 +${num(level * PAPER_WARD_INVULNERABILITY_PER_LEVEL)}s`,
-  recoveryThread: (level) => `초당 회복 +${num(scaleAt(N.recoveryThread.regen, level))}, 자석 +${num(scaleAt(N.recoveryThread.magnet, level))}`,
-  coinFever: (level) => `코인 +${pct(scaleAt(N.coinFever.coinGain, level))}%, 공격속도 +${pct(scaleAt(N.coinFever.attackSpeed, level))}%`,
-  eclipseStep: (level) => `베기 반경 +${num(gain(N.eclipseStep.radius, level))}, 무적 +${num(gain(N.eclipseStep.invulnerability, level))}s`,
-  executionMark: (level) => `치명타 +${pct(scaleAt(N.executionMark.critChance, level))}%, 보스 피해 +${pct(scaleAt(N.executionMark.bossDamage, level))}%`,
+/** One of a skill's numbers at a level, as a card prints it: the label and the value. */
+export type StatLine = readonly [label: string, value: string];
+
+/** A skill's numbers at a level. The level copy and the draft card's change rows (UI-03) both read these. */
+export const SKILL_LEVEL_STATS: Record<SkillId, (level: number) => StatLine[]> = {
+  needleStorm: (level) => [['피해', `+${pct(gain(N.needleStorm.damage, level))}%`], ['투사체', `${needleCount(level, false)}개`]],
+  fanKnives: (level) => [['단검', `${num(scaleAt(N.fanKnives.knives, level))}개`], ['재사용 대기', `-${num(level * N.fanKnives.cooldownPerLevel)}s`]],
+  chainSpark: (level) => [['연쇄', `${num(scaleAt(N.chainSpark.jumps, level))}회`], ['피해', `+${pct(gain(N.chainSpark.damage, level))}%`]],
+  frostLine: (level) => [['폭', `+${num(gain(N.frostLine.width, level))}`], ['감속', `${pct(frostLineSlow(level))}%`]],
+  orbitScythes: (level) => [['날', `${num(scaleAt(N.orbitScythes.blades, level))}개`], ['궤도 반경', `+${num(gain(N.orbitScythes.radius, level))}`]],
+  boneMortar: (level) => [['폭발 반경', `+${num(gain(N.boneMortar.radius, level))}`], ['피해', `+${pct(gain(N.boneMortar.damage, level))}%`]],
+  railSpear: (level) => [['폭', `+${num(gain(N.railSpear.width, level))}`], ['피해', `+${pct(gain(N.railSpear.damage, level))}%`]],
+  mirrorClone: (level) => [['분신 사격 피해', `+${pct(gain(N.mirrorClone.damage, level))}%`], ['관통', `+${Math.floor(level / 2)}`]],
+  voidMine: (level) => [['지속', `+${num(gain(N.voidMine.duration, level))}s`], ['흡입력', `+${pct(relative(N.voidMine.pull, level))}%`]],
+  blackSun: (level) => [['지속', `+${num(gain(N.blackSun.duration, level))}s`], ['흡입력', `+${pct(relative(N.blackSun.pull, level))}%`]],
+  ironFrame: (level) => [['방어', `+${num(scaleAt(N.ironFrame.defense, level))}`], ['최대 체력', `+${num(scaleAt(N.ironFrame.maxHp, level))}`]],
+  magnetSigil: (level) => [['획득 반경', `+${num(scaleAt(N.magnetSigil.magnet, level))}`], ['코인 획득', `+${pct(scaleAt(N.magnetSigil.coinGain, level))}%`]],
+  paperWard: (level) => [['방어', `+${num(scaleAt(N.paperWard.defense, level))}`], ['피격 무적', `+${num(level * PAPER_WARD_INVULNERABILITY_PER_LEVEL)}s`]],
+  recoveryThread: (level) => [['초당 회복', `+${num(scaleAt(N.recoveryThread.regen, level))}`], ['자석', `+${num(scaleAt(N.recoveryThread.magnet, level))}`]],
+  coinFever: (level) => [['코인', `+${pct(scaleAt(N.coinFever.coinGain, level))}%`], ['공격속도', `+${pct(scaleAt(N.coinFever.attackSpeed, level))}%`]],
+  eclipseStep: (level) => [['베기 반경', `+${num(gain(N.eclipseStep.radius, level))}`], ['무적', `+${num(gain(N.eclipseStep.invulnerability, level))}s`]],
+  executionMark: (level) => [['치명타', `+${pct(scaleAt(N.executionMark.critChance, level))}%`], ['보스 피해', `+${pct(scaleAt(N.executionMark.bossDamage, level))}%`]],
 };
+
+export const SKILL_LEVEL_TEXT = Object.fromEntries(
+  Object.entries(SKILL_LEVEL_STATS).map(([id, stats]) => [id, (level: number) => stats(level).map((line) => line.join(' ')).join(', ')]),
+) as Record<SkillId, (level: number) => string>;
 
 const bonus = (scaling: Scaling) => scaling.awakened ?? 0;
 

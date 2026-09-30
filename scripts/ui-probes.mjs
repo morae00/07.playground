@@ -1,4 +1,4 @@
-// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, CON-02, AUD-01, FX-03) against the developer build.
+// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, CON-02, AUD-01, FX-03, UI-03) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -337,6 +337,40 @@ try {
     const constructed = await page.evaluate(() => window.__audioContexts);
     record('AUD-01 the next run reuses the same audio context', constructed === 1 && second.audio.contexts === 1 && second.audio.state === 'running', `${constructed} contexts constructed`);
     await page.close();
+  });
+
+  await probe('UI-03', async () => {
+    for (const [width, height] of [[1440, 900], [1024, 720]]) {
+      const page = await browser.newPage({ viewport: { width, height } });
+      await openStage(page);
+      await cheat(page, 'DRAFT');
+      await page.waitForTimeout(450);
+      const draft = await page.evaluate(async () => {
+        const dialog = document.querySelector('.draftBox');
+        const cards = [...dialog.querySelectorAll('.draftCard')];
+        const box = dialog.getBoundingClientRect();
+        const left = Math.min(...cards.map((card) => card.getBoundingClientRect().left)) - box.left;
+        const right = box.right - Math.max(...cards.map((card) => card.getBoundingClientRect().right));
+        const sheets = [...new Set(cards.map((card) => getComputedStyle(card.querySelector('.artTile')).backgroundImage))];
+        const widths = await Promise.all(sheets.map((value) => {
+          const image = new Image();
+          image.src = value.replace(/^url\("?|"?\)$/g, '');
+          return image.decode().then(() => image.naturalWidth, () => 0);
+        }));
+        // UI-01 baseline (UI-08): no text under 13 px.
+        const small = [...dialog.querySelectorAll('*')]
+          .filter((node) => [...node.childNodes].some((child) => child.nodeType === Node.TEXT_NODE && child.textContent.trim()))
+          .filter((node) => parseFloat(getComputedStyle(node).fontSize) < 13)
+          .map((node) => `${node.className || node.tagName} ${getComputedStyle(node).fontSize}`);
+        return { cards: cards.length, left, right, widths, small, scrolls: dialog.scrollHeight > dialog.clientHeight + 1 };
+      });
+      const size = `${width}x${height}`;
+      record(`UI-03 ${size} three draft cards sit centred`, draft.cards === 3 && Math.abs(draft.left - draft.right) <= 2, `margins ${draft.left.toFixed(1)} / ${draft.right.toFixed(1)}`);
+      record(`UI-03 ${size} every card shows its baked tile`, draft.widths.length > 0 && draft.widths.every((sheetWidth) => sheetWidth > 0), `${draft.widths.length} sheet(s)`);
+      record(`UI-03 ${size} no draft text under 13 px`, draft.small.length === 0, draft.small.slice(0, 3).join(', '));
+      record(`UI-03 ${size} the draft fits without scrolling`, !draft.scrolls);
+      await page.close();
+    }
   });
 } finally {
   await browser.close();

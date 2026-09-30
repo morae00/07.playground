@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ErrorLog, crashLogLine, installGlobalErrorHandlers } from './platform/errorReport';
 import { ErrorBoundary, RecoveryScreen } from './ui/ErrorBoundary';
+import './ui/art/uiArt.generated.css';
 import './styles.css';
 
 // Error resilience (TEC-14): the log and the global handlers exist before the app module loads, so even a

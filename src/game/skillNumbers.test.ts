@@ -5,6 +5,7 @@ import { createVortexProfile } from './p0Core.ts';
 import {
   CLASSIC_AWAKENING_TEXT,
   SKILL_AWAKENING_TEXT,
+  SKILL_LEVEL_STATS,
   SKILL_LEVEL_TEXT,
   SKILL_NUMBERS,
   formatNumber,
@@ -56,6 +57,15 @@ test('copy states the numbers the skills use', () => {
   assert.equal(createVortexProfile('blackSun', 5, true).pull, 74 + 5 * 16 + 55);
   assert.equal(needleCount(5, true), 5);
   assert.equal(frostLineSlow(9), 0.7);
+});
+
+test('a skill prints the same stat rows at every level, so a draft card can show each change (UI-03)', () => {
+  for (const [id, stats] of Object.entries(SKILL_LEVEL_STATS)) {
+    const labels = stats(1).map(([label]) => label);
+    for (const level of [0, 2, 3, 4, 5]) assert.deepEqual(stats(level).map(([label]) => label), labels, `${id} Lv.${level}`);
+  }
+  assert.deepEqual(SKILL_LEVEL_STATS.needleStorm(3), [['피해', '+54%'], ['투사체', '2개']]);
+  assert.equal(SKILL_LEVEL_TEXT.needleStorm(3), '피해 +54%, 투사체 2개');
 });
 
 test('the reworked mirror clone awakening always adds shots and pierce', () => {
