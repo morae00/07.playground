@@ -29,23 +29,29 @@ Chapter packs (`assets/packs/<chapter>/`) have a 12 MiB per-pack target and resi
 
 `npm run test:balance:smoke` is a deterministic pressure smoke test, not a difficulty verdict. `npm run test:balance:pilot` checks representative chapter boundaries and boss stages. A release candidate uses `npm run test:balance:full` across all 50 stages, four build policies, and ten fixed seeds. Three policies are representative builds whose permanent upgrades grow by chapter. The fourth, `fresh`, is a new player with no upgrades or passives (CON-09). Seed shards run through a bounded worker pool, then merge in canonical stage/persona/seed order. The JSON report records clear/death/timeout rates, simulated and wall-clock time percentiles, death causes (contact, shot, boss contact, boss shot, shock, fire, each marked when the boss was enraged), economy percentiles, build growth, scenario details, and a deterministic fingerprint.
 
-The remaster baseline is `artifacts/balance-remaster-baseline.json` (CON-09): 2,000 scenarios under the remaster rules on commit bf4d474, after SYS-02, SYS-03, SYS-04, and two boss-fight fixes. Earlier full runs used the same seeds and personas:
+The remaster baseline is `artifacts/balance-remaster-baseline.json`: 2,000 scenarios under the remaster rules on commit f05b83e, the end of R1 (fingerprint 64444bdb1ab34b81). Earlier full runs used the same seeds and personas:
 
-| | bf13b46 (CON-09) | 565e8b2 (SYS-03) | 73d367c (SYS-02, SYS-04) | bf4d474 (boss fixes) |
-|---|---:|---:|---:|---:|
-| clear, all 2,000 | 52.0% | 51.2% | 39.6% | 40.0% |
-| clears: striker / survivor / collector / fresh (of 500) | 299 / 456 / 284 / 0 | 294 / 466 / 264 / 0 | 220 / 410 / 162 / 0 | 224 / 416 / 159 / 0 |
-| clear by chapter without fresh, Ch1 / 2 / 3 / 4 / 5 (%) | 23.3 / 59.0 / 72.3 / 91.7 / 100.0 | 27.3 / 54.3 / 69.3 / 90.7 / 99.7 | 23.7 / 41.7 / 43.3 / 70.3 / 85.0 | 24.0 / 46.0 / 42.7 / 70.3 / 83.3 |
-| timeouts (20 min of play) | 0 | 0 | 2 | 1 |
-| deaths: contact / shots / boss | 923 / 9 / 29 | 934 / 7 / 33 | 1120 / 57 / 21 | 1118 / 50 / 25 |
-| boss stages without fresh, clear time p50 / max (s) | 199 / 1155 | 184 / 755 | 249 / 751 | 252 / 927 |
-| fresh in 1-1, death p50 (s) | 45 | 67 | 72 | 72 |
+| | bf13b46 (CON-09) | 565e8b2 (SYS-03) | 73d367c (SYS-02, SYS-04) | bf4d474 (boss fixes) | f05b83e (R1 end) |
+|---|---:|---:|---:|---:|---:|
+| clear, all 2,000 | 52.0% | 51.2% | 39.6% | 40.0% | 41.1% |
+| clears: striker / survivor / collector / fresh (of 500) | 299 / 456 / 284 / 0 | 294 / 466 / 264 / 0 | 220 / 410 / 162 / 0 | 224 / 416 / 159 / 0 | 221 / 444 / 157 / 0 |
+| clear by chapter without fresh, Ch1 / 2 / 3 / 4 / 5 (%) | 23.3 / 59.0 / 72.3 / 91.7 / 100.0 | 27.3 / 54.3 / 69.3 / 90.7 / 99.7 | 23.7 / 41.7 / 43.3 / 70.3 / 85.0 | 24.0 / 46.0 / 42.7 / 70.3 / 83.3 | 28.0 / 49.0 / 47.7 / 66.7 / 82.7 |
+| timeouts (20 min of play) | 0 | 0 | 2 | 1 | 2 |
+| deaths: contact / shots / boss | 923 / 9 / 29 | 934 / 7 / 33 | 1120 / 57 / 21 | 1118 / 50 / 25 | 1085 / 59 / 27 |
+| boss stages without fresh, clear time p50 / max (s) | 199 / 1155 | 184 / 755 | 249 / 751 | 252 / 927 | 222 / 1001 |
+| fresh in 1-1, death p50 (s) | 45 | 67 | 72 | 72 | 65 |
 
 Findings:
 
 - Without `fresh`, clear rates rise with the chapter. The chapter growth modelled for upgrades outpaces the difficulty growth. SYS-02 (enemy roles) and SYS-04 (boss moves, stepped enrage) made Ch2 to Ch5 harder and flattened that curve; Ch1 stayed near 24%. Shot deaths rose from 7 to 50, because shooters lead their aim now. This is input for SYS-07.
 - Boss fights got longer, and at 73d367c two never ended. A crowd at the enemy cap shoved the boss away from the player (fixed in 83c3294), and Ch3 and Ch5 bosses anchored in place although their phase grammars are not built yet (fixed in bf4d474).
 - One fight still times out: 2-10 survivor, seed 211531, boss at 13% health after 20 minutes. The stepped enrage (SYS-04) stops at damage x2.0, so a tank build that keeps moving is never forced to end the fight. The 0.1.0 enrage (x4.5 and a silence field) was a hard stop. **[Team decision]** an overtime rule after the last enrage step, or accept the risk; either way this is why `noTimeouts` fails. `personaClearsObserved` fails because `fresh` clears 0 of 500.
+- R1 end (f05b83e): clears 41.1%. Ch1 to Ch3 rose 3 to 5 points. The only rule changes since bf4d474 are FX-02 and ART-05, and the pilots below put the gain on FX-02: per-hit hit-stop had taken players' acting time. Ch4 and Ch5 moved within noise. The chapter curve is still inverted (Ch1 28% to Ch5 83%), which SYS-07 owns. `fresh` still clears 0 of 500.
+- Two fights time out, both `survivor` in a final boss stage, and the boss keeps almost all its health: 2-10 seed 211531 at 99% (13% at bf4d474) and 5-10 seed 1510177 at 97%.
+  - The persona's fixed square walk gets pinned against the arena's top edge.
+  - The crowd sits at its 150 cap, so a mob is always nearer than the boss, and auto-aim, which takes the nearest target, never picks the boss.
+  - Without per-hit hit-stop (FX-02), the walk and the boss's following repeat exactly every 70 s, so nothing breaks the loop. The uneven slow-downs of per-hit hit-stop likely broke it at bf4d474.
+  - A player walks to the boss, so this is a persona artifact. It still shows that a boss can go unhurt for a whole fight, which adds weight to the overtime decision above; a boss-priority rule for auto-aim is another option. **[Team decision]**
 - `fresh` walks a fixed square and runs into enemies, so it says little about a new player. The opt-in `novice` persona (`BALANCE_FULL_PERSONAS=novice`) has the same fresh meta but steers away from nearby threats with the analog stick every 0.1 s, circling instead of backing into walls. On bf4d474:
   - 1-1, 20 seeds: 50% clear (fresh 0 of 10) and 70% survive 3 minutes.
   - Ch1, 10 seeds each: 1-1 4/10, 1-2 3/10, 1-3 4/10, 1-4 4/10, 1-5 4/10, 1-6 2/10, 1-7 1/10, 1-8 1/10, 1-9 4/10, 1-10 1/10. Later stages are harder because the novice keeps the fresh meta throughout.
@@ -63,7 +69,7 @@ FX-02 (two-layer hit-stop, `rareHitStop` rule) changes seeded outcomes, so it wa
 | deaths: contact / shots / boss | 224 / 7 / 6 | 201 / 6 / 9 |
 | fresh in 1-1, death p50 (s) | 68 | 73 |
 
-Per-hit global hit-stop slowed the simulation while the budgeted stage and enrage clocks kept running (BUG-07). Players lost up to 8% of their acting time, and boss stages lost the most (1-10, 2-5, 3-10). FX-02 gives that time back. **[Team check]** either accept the easier boss stages, or fold the change into the CON-02 and SYS-07 tuning, for example with enrage timers. A full rebaseline (2,000 scenarios) is due at the end of R1, together with ART-05's obstacle catalogue.
+Per-hit global hit-stop slowed the simulation while the budgeted stage and enrage clocks kept running (BUG-07). Players lost up to 8% of their acting time, and boss stages lost the most (1-10, 2-5, 3-10). FX-02 gives that time back. **[Team check]** either accept the easier boss stages, or fold the change into the CON-02 and SYS-07 tuning, for example with enrage timers. The R1-end full run above (f05b83e) includes it and ART-05's obstacle catalogue.
 
 ART-05 (Ch1 environment kit, `kitProps` rule) takes obstacle footprints from the kit's prop catalogue instead of random ranges. Positions stay where they were, but every footprint changes. It was piloted against its parent (FX-02) on six Ch1 stages × 10 seeds × 4 personas:
 
