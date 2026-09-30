@@ -179,11 +179,11 @@ test('an anchoring boss holds its spot while the player walks away', () => {
   }
 });
 
-test('a boss whose phase grammar is not built yet keeps chasing instead of anchoring', () => {
-  // Ch5's final boss authors an anchoring phase 2 (silence-balance), but only Ch1 grammars run so far.
+test('a boss whose phase grammar is not built yet keeps chasing instead of anchoring or sweeping', () => {
+  // Ch4's mid boss authors a sweeping phase 2 (second-hand-sweep); its grammar waits for the boss's kit art (SYS-05).
   const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), meta(), standardOptions(), { onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver() {} });
   engine.setRuleSet('remaster');
-  engine.startRun(5, 10, 7373);
+  engine.startRun(4, 5, 7373);
   const { probe } = engine;
   try {
     probe.haltSpawns();

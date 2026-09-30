@@ -205,6 +205,20 @@ Under the `obstacleCover` rule, obstacles are cover for both sides:
 
 Classic rules keep 0.1.0's behaviour: every hostile shot passes through obstacles and shooters fire regardless of walls.
 
+## Boss phase moves (SYS-04, SYS-05)
+
+A campaign boss enters phase 2 at 66% health and phase 3 at 33%. Under the `bossMoves` rule each phase runs its move from `src/content/bossPhases.ts`. A move has an attack grammar, a movement mode, a cadence, and a telegraph. The telegraph's preview and imminent times are the warning, kept in real time whatever the cadence (V3). A move runs only once its grammar is built (`IMPLEMENTED_GRAMMARS`). Until then the boss keeps its base pattern and chases, and the HUD names only the moves that run.
+
+- Ch1 (SYS-04). 잉크 도살자 has a tracked dash pair and a crossing dash triple. 종탑 간수 has an alternating ring gap and contracting ring walls.
+- Ch2-5 final bosses (SYS-05), the ones with kit art:
+  - 용광의 입. Furnace aisles: three fire lanes across the player light 0.3 s apart, and the aisles between them stay open. Ash vault collapse: a ring of fire with one gap falls around the player, the boss lands across from the gap, and the centre caves in 0.9 s later.
+  - 걸쇠 여제. Chain lattice: a 3×3 lattice of bindings in two checkerboard waves. Execution cell: a square of bindings, then a smaller one 0.9 s later, both open on the same side. This is the Empress's own variant of the trap pattern she shares with 덫 설계자.
+  - 톱니 전령. Gear orbit: two rings of saws orbit the boss in opposite directions while it circles the player. Guillotine gear: saws drop down the view in four of five lanes.
+  - 공백 천칭. Balance of silence: two silence zones mirrored across the player. Blank collapse: a wall of shots closes on a blank void near the player and stops at its edge, while the boss waits outside. This is the Balance's own variant of the null pattern she shares with 무음 심판관.
+- Movement: anchor holds near where the phase began. Orbit and sweep circle the player at 300 and 380. Lattice walks one axis at a time. Warp moves land the boss where its warning ring stood.
+- Every move leaves a way out (an aisle, a gap, a gate, an open lane, or the void itself) and warns for its whole preview. Scheduled terrain goes through `pendingHazards`, as delayed shots go through `pendingHostileShots`. Orbiting saws follow their boss and fall away when it dies.
+- Still waiting for their kit art: the Ch2-5 mid bosses (유리 주교, 무채 조수왕, 시계 폭군, 일식 원장), whose moves are authored in data but not built, and the field bosses' light phase-2 moves.
+
 ## Camera (FX-04)
 
 The simulation camera stays hard-locked on the player, clamped to the world. Spawns, aim, and off-screen checks use it together with the logical frame (G14). Under the `smoothCamera` rule, the screen shows a separate view camera instead (`src/game/presentation/viewCamera.ts`):

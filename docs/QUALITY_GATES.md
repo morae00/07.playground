@@ -145,6 +145,20 @@ The terrain A/B (SYS-06, `terrainOnEnemies`, off in both rule sets) was piloted 
 - The largest single change is 3-3 (27 to 20 clears of 40), where water covers the most ground.
 - The personas never lure enemies into terrain on purpose, so this measures the side effects only. **[Team decision]** Whether luring is worth having is a playtest question; the flag stays off until then.
 
+SYS-05 (the Ch2-5 final bosses' phase moves) was piloted on those bosses' stages (2-10, 3-10, 4-10, 5-10) × 10 seeds × 4 personas, against the SYS-06 run:
+
+| | before | after (SYS-05) |
+|---|---:|---:|
+| clear, all 160 | 42.5% | 43.8% |
+| clears: striker / survivor / collector / fresh | 17 / 34 / 17 / 0 | 18 / 36 / 16 / 0 |
+| clear by chapter without fresh, Ch2 / 3 / 4 / 5 (%) | 40.0 / 26.7 / 76.7 / 83.3 | 40.0 / 30.0 / 73.3 / 90.0 |
+| deaths: contact / shots / boss | 84 / 3 / 3 | 81 / 3 / 5 |
+| clear time p50 / max (s) | 262 / 874 | 278 / 862 |
+
+- Only 4 runs flipped (3 to a clear): the moves change what a fight looks like, not how hard it is for the personas.
+- Boss deaths rose from 3 to 5 and the median clear took 16 s longer.
+- The gameplay fingerprints did not change, because their scenarios never bring these bosses to phase 2. `test/bossMovesFinal.integration.test.mjs` covers every move instead.
+
 ## Game rules and grammar
 
 Gameplay changes ship behind the rule set in `src/game/rules.ts`. `classic` reproduces 0.1.0 exactly and `remaster` is the default. Infinite-mode records and replay fixtures are kept per rules version: the remaster rules (v2) may change freely until a build ships them, and after that the first change to seeded outcomes must raise `RULES_VERSION`. `test/grammarContracts.integration.test.mjs` pins the preserved game grammar (stage structure, draft sizes, radii, tier mix, deterministic replay) and one regression test per R0 gameplay fix.

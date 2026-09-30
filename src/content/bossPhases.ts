@@ -56,8 +56,8 @@ export const BOSS_PHASE_MOVE_SETS = [
   },
   {
     bossId: 's2-final-flame', chapter: 2, role: 'final', moves: [
-      { id: 'furnace-aisles', phase: 2, triggerHealthRatio: 0.66, cadenceScale: 0.8, movement: { mode: 'anchor', speedScale: 0.96 }, attackGrammar: 'sequenced-fire-lanes', telegraph: { shape: 'lane', previewSeconds: 0.86, imminentSeconds: 0.26, activeSeconds: 0.72, reducedMotionCue: 'striped-aisle-fill' } },
-      { id: 'ash-vault-collapse', phase: 3, triggerHealthRatio: 0.33, cadenceScale: 0.63, movement: { mode: 'warp', speedScale: 1.12 }, attackGrammar: 'radial-flame-collapse', telegraph: { shape: 'circle', previewSeconds: 0.92, imminentSeconds: 0.3, activeSeconds: 0.78, reducedMotionCue: 'dense-ash-disc' } },
+      { id: 'furnace-aisles', name: 'bossMove.furnace-aisles', phase: 2, triggerHealthRatio: 0.66, cadenceScale: 0.8, movement: { mode: 'anchor', speedScale: 0.96 }, attackGrammar: 'sequenced-fire-lanes', telegraph: { shape: 'lane', previewSeconds: 0.86, imminentSeconds: 0.26, activeSeconds: 0.72, reducedMotionCue: 'striped-aisle-fill' } },
+      { id: 'ash-vault-collapse', name: 'bossMove.ash-vault-collapse', phase: 3, triggerHealthRatio: 0.33, cadenceScale: 0.63, movement: { mode: 'warp', speedScale: 1.12 }, attackGrammar: 'radial-flame-collapse', telegraph: { shape: 'circle', previewSeconds: 0.92, imminentSeconds: 0.3, activeSeconds: 0.78, reducedMotionCue: 'dense-ash-disc' } },
     ],
   },
   {
@@ -68,8 +68,8 @@ export const BOSS_PHASE_MOVE_SETS = [
   },
   {
     bossId: 's3-final-traps', chapter: 3, role: 'final', moves: [
-      { id: 'chain-lattice', phase: 2, triggerHealthRatio: 0.66, cadenceScale: 0.8, movement: { mode: 'lattice', speedScale: 1.05 }, attackGrammar: 'staggered-root-grid', telegraph: { shape: 'grid', previewSeconds: 0.9, imminentSeconds: 0.28, activeSeconds: 0.72, reducedMotionCue: 'open-grid-to-crosshatch' } },
-      { id: 'execution-cell', phase: 3, triggerHealthRatio: 0.33, cadenceScale: 0.62, movement: { mode: 'lattice', speedScale: 1.18 }, attackGrammar: 'closing-trap-cell', telegraph: { shape: 'grid', previewSeconds: 1, imminentSeconds: 0.32, activeSeconds: 0.84, reducedMotionCue: 'boxed-safe-cell' } },
+      { id: 'chain-lattice', name: 'bossMove.chain-lattice', phase: 2, triggerHealthRatio: 0.66, cadenceScale: 0.8, movement: { mode: 'lattice', speedScale: 1.05 }, attackGrammar: 'staggered-root-grid', telegraph: { shape: 'grid', previewSeconds: 0.9, imminentSeconds: 0.28, activeSeconds: 0.72, reducedMotionCue: 'open-grid-to-crosshatch' } },
+      { id: 'execution-cell', name: 'bossMove.execution-cell', phase: 3, triggerHealthRatio: 0.33, cadenceScale: 0.62, movement: { mode: 'lattice', speedScale: 1.18 }, attackGrammar: 'closing-trap-cell', telegraph: { shape: 'grid', previewSeconds: 1, imminentSeconds: 0.32, activeSeconds: 0.84, reducedMotionCue: 'boxed-safe-cell' } },
     ],
   },
   {
@@ -80,8 +80,8 @@ export const BOSS_PHASE_MOVE_SETS = [
   },
   {
     bossId: 's4-final-saw', chapter: 4, role: 'final', moves: [
-      { id: 'gear-orbit', phase: 2, triggerHealthRatio: 0.66, cadenceScale: 0.76, movement: { mode: 'orbit', speedScale: 1.16 }, attackGrammar: 'counter-rotating-saws', telegraph: { shape: 'ring', previewSeconds: 0.86, imminentSeconds: 0.26, activeSeconds: 0.7, reducedMotionCue: 'toothed-orbit-outline' } },
-      { id: 'guillotine-gear', phase: 3, triggerHealthRatio: 0.33, cadenceScale: 0.58, movement: { mode: 'sweep', speedScale: 1.3 }, attackGrammar: 'cross-screen-saw-drop', telegraph: { shape: 'lane', previewSeconds: 0.98, imminentSeconds: 0.3, activeSeconds: 0.82, reducedMotionCue: 'toothed-drop-lanes' } },
+      { id: 'gear-orbit', name: 'bossMove.gear-orbit', phase: 2, triggerHealthRatio: 0.66, cadenceScale: 0.76, movement: { mode: 'orbit', speedScale: 1.16 }, attackGrammar: 'counter-rotating-saws', telegraph: { shape: 'ring', previewSeconds: 0.86, imminentSeconds: 0.26, activeSeconds: 0.7, reducedMotionCue: 'toothed-orbit-outline' } },
+      { id: 'guillotine-gear', name: 'bossMove.guillotine-gear', phase: 3, triggerHealthRatio: 0.33, cadenceScale: 0.58, movement: { mode: 'sweep', speedScale: 1.3 }, attackGrammar: 'cross-screen-saw-drop', telegraph: { shape: 'lane', previewSeconds: 0.98, imminentSeconds: 0.3, activeSeconds: 0.82, reducedMotionCue: 'toothed-drop-lanes' } },
     ],
   },
   {
@@ -92,8 +92,8 @@ export const BOSS_PHASE_MOVE_SETS = [
   },
   {
     bossId: 's5-final-null', chapter: 5, role: 'final', moves: [
-      { id: 'silence-balance', phase: 2, triggerHealthRatio: 0.66, cadenceScale: 0.72, movement: { mode: 'anchor', speedScale: 1.08 }, attackGrammar: 'paired-null-zones', telegraph: { shape: 'circle', previewSeconds: 0.96, imminentSeconds: 0.3, activeSeconds: 0.8, reducedMotionCue: 'paired-empty-discs' } },
-      { id: 'blank-collapse', phase: 3, triggerHealthRatio: 0.33, cadenceScale: 0.54, movement: { mode: 'warp', speedScale: 1.22 }, attackGrammar: 'contracting-safe-void', telegraph: { shape: 'ring', previewSeconds: 1.08, imminentSeconds: 0.34, activeSeconds: 0.9, reducedMotionCue: 'inverse-safe-ring' } },
+      { id: 'silence-balance', name: 'bossMove.silence-balance', phase: 2, triggerHealthRatio: 0.66, cadenceScale: 0.72, movement: { mode: 'anchor', speedScale: 1.08 }, attackGrammar: 'paired-null-zones', telegraph: { shape: 'circle', previewSeconds: 0.96, imminentSeconds: 0.3, activeSeconds: 0.8, reducedMotionCue: 'paired-empty-discs' } },
+      { id: 'blank-collapse', name: 'bossMove.blank-collapse', phase: 3, triggerHealthRatio: 0.33, cadenceScale: 0.54, movement: { mode: 'warp', speedScale: 1.22 }, attackGrammar: 'contracting-safe-void', telegraph: { shape: 'ring', previewSeconds: 1.08, imminentSeconds: 0.34, activeSeconds: 0.9, reducedMotionCue: 'inverse-safe-ring' } },
     ],
   },
 ] as const satisfies readonly BossPhaseMoveSet[];

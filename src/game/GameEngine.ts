@@ -363,7 +363,22 @@ const ECLIPSE_WALL_LANE_GAP = 115;
 const ROOT_BIND_SECONDS = 0.65;
 const ROOT_IMMUNITY_SECONDS = ROOT_BIND_SECONDS + 1.5;
 /** SYS-04: the phase-move attack grammars the engine runs (the others only speed the base pattern up). */
-const IMPLEMENTED_GRAMMARS: ReadonlySet<string> = new Set(['tracked-dash-pair', 'crossing-dash-triple', 'alternating-ring-gap', 'contracting-ring-walls']);
+const IMPLEMENTED_GRAMMARS: ReadonlySet<string> = new Set([
+  'tracked-dash-pair', 'crossing-dash-triple', 'alternating-ring-gap', 'contracting-ring-walls',
+  // SYS-05: the Ch2-5 final bosses (the ones with kit art); the Ch2-5 mid bosses wait for theirs.
+  'sequenced-fire-lanes', 'radial-flame-collapse', 'staggered-root-grid', 'closing-trap-cell',
+  'counter-rotating-saws', 'cross-screen-saw-drop', 'paired-null-zones', 'contracting-safe-void',
+]);
+/** SYS-05 grammar geometry, in world units and seconds. */
+const FIRE_LANES = Object.freeze({ gap: 220, length: 600, patches: 7, radius: 50, step: 0.3, life: 2.6 });
+const FLAME_COLLAPSE = Object.freeze({ radius: 230, spots: 8, patch: 68, life: 3, warp: 430, core: 150, coreDelay: 0.9 });
+const ROOT_GRID = Object.freeze({ spacing: 170, radius: 52, stagger: 0.6, life: 5 });
+const TRAP_CELL = Object.freeze({ outer: 220, inner: 120, spacing: 110, radius: 50, close: 0.9, life: 5.5 });
+const SAW_ORBITS = Object.freeze([{ radius: 130, saws: 3, spin: 1.7 }, { radius: 230, saws: 4, spin: -1.3 }]);
+const SAW_ORBIT_LIFE = 3.4;
+const SAW_DROP = Object.freeze({ lanes: 5, gap: 150, speed: 300 });
+const NULL_PAIR = Object.freeze({ offset: 190, radius: 120, life: 5 });
+const SAFE_VOID = Object.freeze({ wall: 470, void: 140, shots: 28, speed: 170, warp: 560 });
 /** SYS-04 crossing-dash-triple: the cross lanes aim this far beside the player, with this pause between dashes. */
 const CROSSCUT = Object.freeze({ offset: 110, pauseSeconds: 0.24 });
 /** SYS-04 ring grammars: shots left out of a gapped ring, and the contracting wall. */
@@ -380,6 +395,25 @@ function inGap(index: number, count: number, gap: number, offset: number, width:
   const relative = ((((index - center) % count) + count) % count);
   const signed = relative > count / 2 ? relative - count : relative;
   return signed >= from && signed < from + width;
+}
+/** SYS-05 closing-trap-cell: the four sides of a cell as outward directions (east, south, west, north). */
+const CELL_SIDES: readonly (readonly [number, number])[] = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+/**
+ * The binding spots on a square of half-size `half` around (x, y), about `spacing` apart, with the side `gap` left
+ * open. Spots sit half a step in from the corners: neighbouring circles still close the corners, and the open side
+ * stays open end to end.
+ */
+function trapCell(x: number, y: number, half: number, spacing: number, gap: number) {
+  const points: Array<{ x: number; y: number }> = [];
+  const steps = Math.max(1, Math.round((half * 2) / spacing));
+  CELL_SIDES.forEach(([sx, sy], side) => {
+    if (side === gap) return;
+    for (let step = 0; step < steps; step += 1) {
+      const along = -half + ((step + 0.5) * half * 2) / steps;
+      points.push({ x: x + sx * half - sy * along, y: y + sy * half + sx * along });
+    }
+  });
+  return points;
 }
 /** SYS-04 anchor movement: how far an anchoring boss strays from its spot. */
 const ANCHOR_RADIUS = 60;
@@ -861,6 +895,8 @@ export class GameEngine {
   protected beams: BeamEffect[] = [];
   protected laneTelegraphs: LaneTelegraph[] = [];
   protected pendingHostileShots: PendingHostileShot[] = [];
+  /** SYS-05: boss-made terrain that appears on a schedule (sequenced lanes, closing cells). */
+  protected pendingHazards: Array<{ at: number; hazard: Omit<Hazard, 'id'> }> = [];
   protected chains: ChainEffect[] = [];
   protected enemyIndex = new SpatialIndex<Entity>(96);
   protected deadEnemyScratch: Entity[] = [];
@@ -1464,6 +1500,7 @@ export class GameEngine {
     this.beams = [];
     this.laneTelegraphs = [];
     this.pendingHostileShots = [];
+    this.pendingHazards = [];
     this.chains = [];
     this.presentation.clearRound();
     this.player.x = WORLD_W / 2;
@@ -2660,6 +2697,19 @@ export class GameEngine {
         const away = Math.hypot(homeX, homeY);
         moveX = away > ANCHOR_RADIUS ? homeX / away : 0;
         moveY = away > ANCHOR_RADIUS ? homeY / away : 0;
+      } else if (enemy.isBoss) {
+        // SYS-05 movement: orbit and sweep circle the player at a distance, lattice walks one axis at a time.
+        const mode = this.bossGrammar(enemy)?.movement.mode;
+        if (mode === 'orbit' || mode === 'sweep') {
+          const keep = mode === 'orbit' ? 300 : 380;
+          const radial = clamp((playerDistance - keep) / keep, -1, 1);
+          moveX = -dir.y + dir.x * radial;
+          moveY = dir.x + dir.y * radial;
+        } else if (mode === 'lattice') {
+          const horizontal = Math.abs(dir.x) >= Math.abs(dir.y);
+          moveX = horizontal ? Math.sign(dir.x) : 0;
+          moveY = horizontal ? 0 : Math.sign(dir.y);
+        }
       }
 
       if (!enemy.isBoss && enemy.attackStyle === 'ranged') {
@@ -3133,7 +3183,7 @@ export class GameEngine {
     const lead = PATTERN_LEAD_SECONDS[pattern] ?? 0;
     // bossMoves keeps every warning at its real-time length whatever the phase cadence (V3), and a ring grammar
     // warns for its move's preview plus imminent time.
-    const move = pattern === 'rings' ? this.bossGrammar(enemy) : undefined;
+    const move = this.bossGrammar(enemy);
     const warnSeconds = !this.rules.bossMoves
       ? lead / cadence
       : move ? move.telegraph.previewSeconds + move.telegraph.imminentSeconds : lead;
@@ -3183,6 +3233,25 @@ export class GameEngine {
         armed.points.push({ x: this.player.x, y: this.player.y });
         break;
       case 'saw': {
+        if (move?.attackGrammar === 'counter-rotating-saws') {
+          // Two rings of saws orbit the boss in opposite directions; the rings are marked where they will run.
+          armed.offset = fireAt;
+          for (const orbit of SAW_ORBITS) ring(enemy.x, enemy.y, orbit.radius);
+          break;
+        }
+        if (move?.attackGrammar === 'cross-screen-saw-drop') {
+          // Saws drop down the player's view in five lanes, one left open.
+          armed.gap = Math.floor(this.gameplayRandom() * SAW_DROP.lanes);
+          const top = this.player.y - LOGICAL_VIEW.height / 2 - 60;
+          const length = LOGICAL_VIEW.height + 120;
+          for (let lane = 0; lane < SAW_DROP.lanes; lane += 1) {
+            if (lane === armed.gap) continue;
+            const x = this.player.x + (lane - (SAW_DROP.lanes - 1) / 2) * SAW_DROP.gap;
+            armed.points.push({ x, y: top });
+            this.laneTelegraphs.push({ id: this.nextId(), x1: x, y1: top, x2: x, y2: top + length, width: 36, life: warnSeconds, maxLife: warnSeconds });
+          }
+          break;
+        }
         armed.offset = fireAt;
         const reach = SAW_SPEED * SAW_LIFE;
         for (let index = 0; index < 4; index += 1) {
@@ -3209,14 +3278,61 @@ export class GameEngine {
         }
         break;
       case 'flame':
-        armed.burst = this.gameplayRandom() < 0.35;
-        if (armed.burst) ring(enemy.x, enemy.y, enemy.radius * 1.7);
+        if (move?.attackGrammar === 'sequenced-fire-lanes') {
+          // Three fire lanes across the player light one after another; the aisles between them stay open.
+          armed.offset = (enemy.volleyIndex ?? 0) % 2;
+          for (let index = 0; index < 3; index += 1) {
+            const point = this.fireLaneCentre(index, armed.offset);
+            armed.points.push(point);
+            const [dx, dy] = armed.offset ? [0, FIRE_LANES.length / 2] : [FIRE_LANES.length / 2, 0];
+            this.laneTelegraphs.push({ id: this.nextId(), x1: point.x - dx, y1: point.y - dy, x2: point.x + dx, y2: point.y + dy, width: FIRE_LANES.radius * 2, life: warnSeconds + index * FIRE_LANES.step, maxLife: warnSeconds + index * FIRE_LANES.step });
+          }
+        } else if (move?.attackGrammar === 'radial-flame-collapse') {
+          // A ring of fire falls around the player with one spot left out, and the boss lands across from that gap.
+          const gap = Math.floor(this.gameplayRandom() * FLAME_COLLAPSE.spots);
+          armed.gap = (Math.PI * 2 * gap) / FLAME_COLLAPSE.spots;
+          for (let index = 0; index < FLAME_COLLAPSE.spots; index += 1) {
+            if (index === gap) continue;
+            const angle = (Math.PI * 2 * index) / FLAME_COLLAPSE.spots;
+            const point = { x: this.player.x + Math.cos(angle) * FLAME_COLLAPSE.radius, y: this.player.y + Math.sin(angle) * FLAME_COLLAPSE.radius };
+            armed.points.push(point);
+            ring(point.x, point.y, FLAME_COLLAPSE.patch);
+          }
+          armed.wall = { x: this.player.x - Math.cos(armed.gap) * FLAME_COLLAPSE.warp, y: this.player.y - Math.sin(armed.gap) * FLAME_COLLAPSE.warp, radius: 0 };
+          ring(armed.wall.x, armed.wall.y, enemy.radius * 1.4);
+          // Then the vault's centre caves in too, so the gap is the only way out.
+          armed.points.push({ x: this.player.x, y: this.player.y });
+          this.emit({ type: 'telegraph/ring', x: this.player.x, y: this.player.y, radius: FLAME_COLLAPSE.core, life: warnSeconds + FLAME_COLLAPSE.coreDelay });
+        } else {
+          armed.burst = this.gameplayRandom() < 0.35;
+          if (armed.burst) ring(enemy.x, enemy.y, enemy.radius * 1.7);
+        }
         break;
       case 'null': {
-        const point = { x: this.player.x + (this.gameplayRandom() - 0.5) * 160, y: this.player.y + (this.gameplayRandom() - 0.5) * 160 };
-        armed.points.push(point);
+        if (move?.attackGrammar === 'contracting-safe-void') {
+          // A wall of shots closes on a blank circle near the player and stops at its edge: the void is the way out.
+          const centre = { x: this.player.x + (this.gameplayRandom() - 0.5) * 160, y: this.player.y + (this.gameplayRandom() - 0.5) * 160 };
+          const angle = this.gameplayRandom() * Math.PI * 2;
+          armed.wall = { x: centre.x, y: centre.y, radius: SAFE_VOID.wall };
+          armed.points.push({ x: centre.x + Math.cos(angle) * SAFE_VOID.warp, y: centre.y + Math.sin(angle) * SAFE_VOID.warp });
+          ring(centre.x, centre.y, SAFE_VOID.void);
+          ring(centre.x, centre.y, SAFE_VOID.wall);
+          break;
+        }
+        const axis = move?.attackGrammar === 'paired-null-zones' ? this.gameplayRandom() * Math.PI : undefined;
+        if (axis !== undefined) {
+          // Two silence zones balance each other across the player.
+          for (const side of [1, -1]) {
+            const point = { x: this.player.x + Math.cos(axis) * NULL_PAIR.offset * side, y: this.player.y + Math.sin(axis) * NULL_PAIR.offset * side };
+            armed.points.push(point);
+            ring(point.x, point.y, NULL_PAIR.radius);
+          }
+        } else {
+          const point = { x: this.player.x + (this.gameplayRandom() - 0.5) * 160, y: this.player.y + (this.gameplayRandom() - 0.5) * 160 };
+          armed.points.push(point);
+          ring(point.x, point.y, 130);
+        }
         armed.offset = fireAt * 0.2;
-        ring(point.x, point.y, 130);
         ring(enemy.x, enemy.y, enemy.radius * 1.9);
         break;
       }
@@ -3229,12 +3345,35 @@ export class GameEngine {
         }
         break;
       case 'traps':
-        for (let index = 0; index < 3; index += 1) {
-          const angle = this.gameplayRandom() * Math.PI * 2;
-          const dist = 80 + this.gameplayRandom() * 220;
-          const point = { x: this.player.x + Math.cos(angle) * dist, y: this.player.y + Math.sin(angle) * dist };
-          armed.points.push(point);
-          ring(point.x, point.y, 52);
+        if (move?.attackGrammar === 'staggered-root-grid') {
+          // A 3x3 lattice of bindings around the player in two checkerboard waves; each wave leaves the other's cells.
+          for (let row = -1; row <= 1; row += 1) {
+            for (let column = -1; column <= 1; column += 1) {
+              const point = { x: this.player.x + column * ROOT_GRID.spacing, y: this.player.y + row * ROOT_GRID.spacing };
+              armed.points.push(point);
+              this.emit({ type: 'telegraph/ring', x: point.x, y: point.y, radius: ROOT_GRID.radius, life: warnSeconds + ((row + column) & 1 ? ROOT_GRID.stagger : 0) });
+            }
+          }
+        } else if (move?.attackGrammar === 'closing-trap-cell') {
+          // The execution cell: a square of bindings around the player, then a smaller one inside; both open on
+          // the same side, so the gate stays a straight corridor out (the Latch Empress's own variant).
+          armed.gap = Math.floor(this.gameplayRandom() * 4);
+          for (const [half, late] of [[TRAP_CELL.outer, 0], [TRAP_CELL.inner, TRAP_CELL.close]] as const) {
+            for (const point of trapCell(this.player.x, this.player.y, half, TRAP_CELL.spacing, armed.gap)) {
+              armed.points.push(point);
+              this.emit({ type: 'telegraph/ring', x: point.x, y: point.y, radius: TRAP_CELL.radius, life: warnSeconds + late });
+            }
+          }
+          const [gx, gy] = CELL_SIDES[armed.gap];
+          this.laneTelegraphs.push({ id: this.nextId(), x1: this.player.x, y1: this.player.y, x2: this.player.x + gx * (TRAP_CELL.outer + 90), y2: this.player.y + gy * (TRAP_CELL.outer + 90), width: 90, life: warnSeconds + TRAP_CELL.close, maxLife: warnSeconds + TRAP_CELL.close });
+        } else {
+          for (let index = 0; index < 3; index += 1) {
+            const angle = this.gameplayRandom() * Math.PI * 2;
+            const dist = 80 + this.gameplayRandom() * 220;
+            const point = { x: this.player.x + Math.cos(angle) * dist, y: this.player.y + Math.sin(angle) * dist };
+            armed.points.push(point);
+            ring(point.x, point.y, 52);
+          }
         }
         break;
       default:
@@ -3287,6 +3426,27 @@ export class GameEngine {
         return true;
       }
       case 'saw': {
+        const grammar = this.bossGrammar(enemy)?.attackGrammar;
+        if (grammar === 'counter-rotating-saws') {
+          const saws = SAW_ORBITS.reduce((sum, orbit) => sum + orbit.saws, 0);
+          if (!volley(saws)) return false;
+          enemy.patternTimer = SAW_ORBIT_LIFE + 0.6;
+          for (const orbit of SAW_ORBITS) {
+            for (let index = 0; index < orbit.saws; index += 1) {
+              const angle = (Math.PI * 2 * index) / orbit.saws + armed.offset;
+              this.spawnBossProjectile(enemy.x + Math.cos(angle) * orbit.radius, enemy.y + Math.sin(angle) * orbit.radius, 0, 0, 14, enemy.damage * 0.58, SAW_ORBIT_LIFE, 'saw');
+              this.bossProjectiles[this.bossProjectiles.length - 1].orbit = { bossId: enemy.id, radius: orbit.radius, angle, spin: orbit.spin };
+            }
+          }
+          return true;
+        }
+        if (grammar === 'cross-screen-saw-drop') {
+          if (!volley(armed.points.length)) return false;
+          enemy.patternTimer = 2.6;
+          const life = (LOGICAL_VIEW.height + 120) / SAW_DROP.speed;
+          for (const point of armed.points) this.spawnBossProjectile(point.x, point.y, 0, SAW_DROP.speed, 14, enemy.damage * 0.58, life, 'saw');
+          return true;
+        }
         if (!volley(4)) return false;
         enemy.patternTimer = 1.8;
         for (let index = 0; index < 4; index += 1) {
@@ -3309,7 +3469,33 @@ export class GameEngine {
         }
         this.emit({ type: 'boss/cloned', x: enemy.x, y: enemy.y });
         return true;
-      case 'flame':
+      case 'flame': {
+        const grammar = this.bossGrammar(enemy)?.attackGrammar;
+        if (grammar === 'sequenced-fire-lanes') {
+          enemy.patternTimer = 2.8;
+          enemy.volleyIndex = (enemy.volleyIndex ?? 0) + 1;
+          armed.points.forEach((centre, lane) => {
+            for (let index = 0; index < FIRE_LANES.patches; index += 1) {
+              const along = (index - (FIRE_LANES.patches - 1) / 2) * (FIRE_LANES.length / (FIRE_LANES.patches - 1));
+              this.pendingHazards.push({
+                at: this.elapsed + lane * FIRE_LANES.step,
+                hazard: { kind: 'fire', x: centre.x + (armed.offset ? 0 : along), y: centre.y + (armed.offset ? along : 0), radius: FIRE_LANES.radius, life: FIRE_LANES.life, maxLife: FIRE_LANES.life, damage: enemy.damage * 0.26, slow: 1, triggered: false },
+              });
+            }
+          });
+          return true;
+        }
+        if (grammar === 'radial-flame-collapse') {
+          enemy.patternTimer = 3.2;
+          const core = armed.points[armed.points.length - 1];
+          for (const point of armed.points) {
+            if (point === core) continue;
+            this.hazards.push({ id: this.nextId(), kind: 'fire', x: point.x, y: point.y, radius: FLAME_COLLAPSE.patch, life: FLAME_COLLAPSE.life, maxLife: FLAME_COLLAPSE.life, damage: enemy.damage * 0.26, slow: 1, triggered: false });
+          }
+          this.pendingHazards.push({ at: this.elapsed + FLAME_COLLAPSE.coreDelay, hazard: { kind: 'fire', x: core.x, y: core.y, radius: FLAME_COLLAPSE.core, life: FLAME_COLLAPSE.life, maxLife: FLAME_COLLAPSE.life, damage: enemy.damage * 0.26, slow: 1, triggered: false } });
+          if (armed.wall) this.warpBoss(enemy, armed.wall.x, armed.wall.y);
+          return true;
+        }
         if (armed.burst && !volley(9)) return false;
         enemy.patternTimer = 1.05;
         if (this.terrainAllowed()) this.hazards.push({ id: this.nextId(), kind: 'fire', x: enemy.x, y: enemy.y, radius: 74, life: 5.8, maxLife: 5.8, damage: enemy.damage * 0.26, slow: 1, triggered: false });
@@ -3320,11 +3506,28 @@ export class GameEngine {
           }
         }
         return true;
+      }
       case 'null': {
+        const wall = armed.wall;
+        if (wall) {
+          // contracting-safe-void: the wall stops SAFE_VOID.void short of the centre; then the boss steps outside it.
+          if (!volley(SAFE_VOID.shots)) return false;
+          enemy.patternTimer = 4.6;
+          for (let index = 0; index < SAFE_VOID.shots; index += 1) {
+            const angle = (Math.PI * 2 * index) / SAFE_VOID.shots;
+            this.spawnBossProjectile(wall.x + Math.cos(angle) * wall.radius, wall.y + Math.sin(angle) * wall.radius, -Math.cos(angle) * SAFE_VOID.speed, -Math.sin(angle) * SAFE_VOID.speed, 8, enemy.damage * 0.5, (wall.radius - SAFE_VOID.void) / SAFE_VOID.speed, 'eclipse');
+          }
+          const [landing] = armed.points;
+          if (landing) this.warpBoss(enemy, landing.x, landing.y);
+          return true;
+        }
         if (!volley(16)) return false;
         enemy.patternTimer = 4.8;
-        const [zone] = armed.points;
-        if (zone && this.terrainAllowed()) this.hazards.push({ id: this.nextId(), kind: 'null', x: zone.x, y: zone.y, radius: 130, life: 5.4, maxLife: 5.4, damage: 0, slow: 1, triggered: false });
+        const paired = armed.points.length > 1;
+        for (const zone of armed.points) {
+          // The paired zones are the attack, so they skip the terrain budget that caps the plain drop.
+          if (paired || this.terrainAllowed()) this.hazards.push({ id: this.nextId(), kind: 'null', x: zone.x, y: zone.y, radius: paired ? NULL_PAIR.radius : 130, life: paired ? NULL_PAIR.life : 5.4, maxLife: paired ? NULL_PAIR.life : 5.4, damage: 0, slow: 1, triggered: false });
+        }
         for (let index = 0; index < 16; index += 1) {
           const angle = (Math.PI * 2 * index) / 16 + armed.offset;
           this.spawnBossProjectile(armed.x, armed.y, Math.cos(angle) * 190, Math.sin(angle) * 190, 8, enemy.damage * 0.5, 4.8, 'eclipse');
@@ -3337,15 +3540,43 @@ export class GameEngine {
           if (this.terrainAllowed()) this.hazards.push({ id: this.nextId(), kind: 'slow', x: point.x, y: point.y, radius: 86, life: 5.5, maxLife: 5.5, damage: 0, slow: 0.34, triggered: false });
         }
         return true;
-      case 'traps':
+      case 'traps': {
+        const grammar = this.bossGrammar(enemy)?.attackGrammar;
+        if (grammar === 'staggered-root-grid' || grammar === 'closing-trap-cell') {
+          const grid = grammar === 'staggered-root-grid';
+          const spec = grid ? ROOT_GRID : TRAP_CELL;
+          enemy.patternTimer = grid ? 3.4 : 4.2;
+          const outer = grid ? 0 : trapCell(0, 0, TRAP_CELL.outer, TRAP_CELL.spacing, armed.gap ?? 0).length;
+          armed.points.forEach((point, index) => {
+            // The lattice's second wave takes the other checkerboard cells; the cell's inner square closes later.
+            const late = grid ? (Math.round((point.x - armed.points[4].x) / ROOT_GRID.spacing + (point.y - armed.points[4].y) / ROOT_GRID.spacing) & 1 ? ROOT_GRID.stagger : 0) : index >= outer ? TRAP_CELL.close : 0;
+            this.pendingHazards.push({ at: this.elapsed + late, hazard: { kind: 'root', x: point.x, y: point.y, radius: spec.radius, life: spec.life, maxLife: spec.life, damage: 0, slow: 1, triggered: false } });
+          });
+          return true;
+        }
         enemy.patternTimer = 2.6;
         for (const point of armed.points) {
           if (this.terrainAllowed()) this.hazards.push({ id: this.nextId(), kind: 'root', x: point.x, y: point.y, radius: 52, life: 7, maxLife: 7, damage: 0, slow: 1, triggered: false });
         }
         return true;
+      }
       default:
         return true;
     }
+  }
+
+  /** SYS-05 sequenced-fire-lanes: the centre of lane `index` (0-2) across the player, horizontal or vertical. */
+  protected fireLaneCentre(index: number, vertical: number) {
+    const offset = (index - 1) * FIRE_LANES.gap;
+    return vertical ? { x: this.player.x + offset, y: this.player.y } : { x: this.player.x, y: this.player.y + offset };
+  }
+
+  /** SYS-05 warp moves: the boss vanishes and lands where its warning ring stood. */
+  protected warpBoss(enemy: Entity, x: number, y: number) {
+    enemy.x = enemy.prevX = clamp(x, enemy.radius, WORLD_W - enemy.radius);
+    enemy.y = enemy.prevY = clamp(y, enemy.radius, WORLD_H - enemy.radius);
+    this.resolveEntityVsObstacles(enemy, enemy.radius);
+    this.emit({ type: 'boss/cloned', x: enemy.x, y: enemy.y });
   }
 
   /** The phase move whose attack grammar runs under bossMoves (SYS-04), when that grammar is implemented. */
@@ -3541,11 +3772,28 @@ export class GameEngine {
         for (const shot of due) this.spawnBossProjectile(shot.x, shot.y, shot.vx, shot.vy, shot.radius, shot.damage, shot.life, shot.kind);
       }
     }
+    if (this.pendingHazards.length > 0) {
+      const due = this.pendingHazards.filter((entry) => entry.at <= this.elapsed);
+      if (due.length > 0) {
+        this.pendingHazards = this.pendingHazards.filter((entry) => entry.at > this.elapsed);
+        for (const { hazard } of due) this.hazards.push({ ...hazard, id: this.nextId() });
+      }
+    }
     for (const projectile of this.bossProjectiles) {
       const start = { x: projectile.x, y: projectile.y };
       projectile.life -= dt;
-      projectile.x += projectile.vx * dt;
-      projectile.y += projectile.vy * dt;
+      const orbit = projectile.orbit;
+      if (orbit) {
+        // SYS-05 orbiting saws circle their boss wherever it goes; they fall away when it dies.
+        const boss = this.enemies.find((enemy) => enemy.id === orbit.bossId && enemy.hp > 0);
+        if (!boss) projectile.life = 0;
+        orbit.angle += orbit.spin * dt;
+        projectile.x = (boss?.x ?? projectile.x) + Math.cos(orbit.angle) * orbit.radius;
+        projectile.y = (boss?.y ?? projectile.y) + Math.sin(orbit.angle) * orbit.radius;
+      } else {
+        projectile.x += projectile.vx * dt;
+        projectile.y += projectile.vy * dt;
+      }
       if (projectile.fading) continue;
       const hitsPlayer = segmentCircleHitTime(start, projectile, this.player, projectile.radius + HIT_RADIUS.playerVsHostileShot);
       // SYS-06: an ordinary enemy shot stops at the first obstacle it reaches before the player; boss shots fly over.
@@ -3768,7 +4016,7 @@ export class GameEngine {
       if (oldest) this.bossProjectilePool.release(oldest);
     }
     const projectile = this.bossProjectilePool.acquire();
-    Object.assign(projectile, { id: this.nextId(), x, y, prevX: x, prevY: y, vx, vy, radius, damage, life, kind, fading: false });
+    Object.assign(projectile, { id: this.nextId(), x, y, prevX: x, prevY: y, vx, vy, radius, damage, life, kind, fading: false, orbit: undefined });
     this.bossProjectiles.push(projectile);
   }
 

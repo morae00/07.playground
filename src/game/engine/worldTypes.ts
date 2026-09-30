@@ -165,6 +165,8 @@ export type BossProjectile = {
   kind: 'dot' | 'ring' | 'saw' | 'eclipse' | 'enemy';
   /** SYS-04: pushed over the shot cap; fading out and harmless. */
   fading?: boolean;
+  /** SYS-05 orbiting saws: they circle their boss at `radius`, `spin` radians a second, instead of flying straight. */
+  orbit?: { bossId: number; radius: number; angle: number; spin: number };
 };
 
 export type PendingHostileShot = {
