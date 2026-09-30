@@ -1508,6 +1508,8 @@ export class GameEngine {
     return {
       runMode: this.runMode,
       elapsed: this.elapsed,
+      paused: this.paused,
+      player: { x: this.player.x, y: this.player.y, hp: this.player.hp },
       score: this.runMode === 'infinite' ? infiniteScoreWithSurvival(this.infiniteEventScore, this.elapsed) : 0,
       bossKills: this.infiniteBossKills,
       scoreEligible: this.runMode === 'infinite' && this.scoreEligible,

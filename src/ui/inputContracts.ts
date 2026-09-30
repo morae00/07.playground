@@ -71,6 +71,63 @@ export function readGamepadIntent(
   };
 }
 
+export type GamepadNavAction = 'previous' | 'next' | 'confirm' | 'back';
+
+export type GamepadNavState = {
+  confirmHeld: boolean;
+  backHeld: boolean;
+  direction: -1 | 0 | 1;
+  nextRepeatAt: number;
+};
+
+export const INITIAL_GAMEPAD_NAV_STATE: GamepadNavState = Object.freeze({
+  confirmHeld: false,
+  backHeld: false,
+  direction: 0,
+  nextRepeatAt: 0,
+});
+
+const NAV_AXIS_THRESHOLD = 0.6;
+const NAV_REPEAT_DELAY_MS = 380;
+const NAV_REPEAT_INTERVAL_MS = 160;
+
+/**
+ * Reads UI navigation from a gamepad (BUG-06): D-pad or left stick moves focus (up/left = previous,
+ * down/right = next, with hold-to-repeat), A (button 0) confirms, B (button 1) goes back. Start stays with
+ * the engine's pause handling, and none of these buttons are ever mapped to attacks (G1).
+ */
+export function readGamepadNavigation(
+  gamepads: readonly (GamepadLike | null | undefined)[],
+  previous: GamepadNavState,
+  now: number,
+): { actions: GamepadNavAction[]; state: GamepadNavState } {
+  const pad = gamepads.find((candidate) => candidate && candidate.connected !== false);
+  if (!pad) return { actions: [], state: { ...INITIAL_GAMEPAD_NAV_STATE } };
+  const actions: GamepadNavAction[] = [];
+
+  const axisX = pad.axes[0] ?? 0;
+  const axisY = pad.axes[1] ?? 0;
+  let direction: -1 | 0 | 1 = 0;
+  if (buttonPressed(pad.buttons[12]) || buttonPressed(pad.buttons[14]) || axisY <= -NAV_AXIS_THRESHOLD || axisX <= -NAV_AXIS_THRESHOLD) direction = -1;
+  if (buttonPressed(pad.buttons[13]) || buttonPressed(pad.buttons[15]) || axisY >= NAV_AXIS_THRESHOLD || axisX >= NAV_AXIS_THRESHOLD) direction = 1;
+
+  let nextRepeatAt = previous.nextRepeatAt;
+  if (direction !== 0 && direction !== previous.direction) {
+    actions.push(direction < 0 ? 'previous' : 'next');
+    nextRepeatAt = now + NAV_REPEAT_DELAY_MS;
+  } else if (direction !== 0 && now >= previous.nextRepeatAt) {
+    actions.push(direction < 0 ? 'previous' : 'next');
+    nextRepeatAt = now + NAV_REPEAT_INTERVAL_MS;
+  }
+
+  const confirmHeld = buttonPressed(pad.buttons[0]);
+  const backHeld = buttonPressed(pad.buttons[1]);
+  if (confirmHeld && !previous.confirmHeld) actions.push('confirm');
+  if (backHeld && !previous.backHeld) actions.push('back');
+
+  return { actions, state: { confirmHeld, backHeld, direction, nextRepeatAt } };
+}
+
 export function nextRovingId<T extends string>(ids: readonly T[], current: T, key: RovingKey) {
   if (ids.length === 0) return current;
   if (key === 'Home') return ids[0];

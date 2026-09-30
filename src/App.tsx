@@ -21,6 +21,7 @@ import {
 import { ModalDialog } from './ui/ModalDialog';
 import { ProgressBar } from './ui/ProgressBar';
 import { nextRovingId, type RovingKey } from './ui/inputContracts';
+import { useGamepadNavigation } from './ui/useGamepadNavigation';
 import {
   CHAPTERS,
   GameEngine,
@@ -51,6 +52,8 @@ import {
 export { GameEngine } from './game/GameEngine';
 
 const APP_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev';
+/** Reward and result dialogs ignore activation input this long after opening (BUG-05). */
+const DIALOG_INPUT_GUARD_MS = 350;
 
 function StatGrid({ stats }: { stats: StatBlock }) {
   const rows = [
@@ -115,6 +118,8 @@ function App() {
   const infiniteEntriesRef = useRef(infiniteEntries);
   const developerAccess = DEVELOPER_UI_AVAILABLE && developerMode;
   phaseRef.current = phase;
+  // During active play the gamepad only moves the player; menus and dialogs take it over otherwise.
+  useGamepadNavigation(phase !== 'playing' || runPaused);
   infiniteEntriesRef.current = infiniteEntries;
 
   useEffect(() => {
@@ -131,6 +136,14 @@ function App() {
 
   useEffect(() => {
     return () => engineRef.current?.dispose();
+  }, []);
+
+  useEffect(() => {
+    // Read-only diagnostics for browser regression probes; developer builds only.
+    if (!DEVELOPER_UI_AVAILABLE) return undefined;
+    const target = window as typeof window & { __blacklineDiagnostics?: () => unknown };
+    target.__blacklineDiagnostics = () => engineRef.current?.getDiagnostics() ?? null;
+    return () => { delete target.__blacklineDiagnostics; };
   }, []);
 
   useEffect(() => {
@@ -353,6 +366,17 @@ function App() {
     const onDraftShortcut = (event: KeyboardEvent) => {
       const target = event.target;
       if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName))) return;
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+        const cards = Array.from(document.querySelectorAll<HTMLButtonElement>('.draftCard'));
+        if (cards.length === 0) return;
+        event.preventDefault();
+        const current = cards.findIndex((card) => card === document.activeElement);
+        const step = event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 1;
+        const next = current < 0 ? (step > 0 ? 0 : cards.length - 1) : (current + step + cards.length) % cards.length;
+        cards[next].focus();
+        return;
+      }
+      if (event.repeat) return;
       const index = Number(event.key) - 1;
       const offer = draft.cards[index];
       if (!offer) return;
@@ -974,8 +998,8 @@ function App() {
       )}
 
       {phase === 'draft' && draft && (
-        <ModalDialog className="draftBox" labelledBy="draft-dialog-title" describedBy="draft-dialog-description">
-            <p className="srOnly" id="draft-dialog-description">계속하려면 보상 하나를 반드시 선택해야 합니다.</p>
+        <ModalDialog key={draft.id} className="draftBox" labelledBy="draft-dialog-title" describedBy="draft-dialog-description" inputGuardMs={DIALOG_INPUT_GUARD_MS}>
+            <p className="srOnly" id="draft-dialog-description">계속하려면 보상 하나를 반드시 선택해야 합니다. 숫자키, 방향키와 Enter, 또는 게임패드 A로 고릅니다.</p>
             <div className="modalHead">
               <p>{draft.reason === 'boss' ? '확정 보상' : '랜덤 스킬'}</p>
               <h2 id="draft-dialog-title">{draft.title}</h2>
@@ -1004,7 +1028,7 @@ function App() {
       )}
 
       {(phase === 'roundClear' || phase === 'gameOver') && settlement && (
-        <ModalDialog className="settlementBox" labelledBy="settlement-dialog-title" onEscape={toMenu}>
+        <ModalDialog key={`${settlement.runMode}-${settlement.seed}-${phase}`} className="settlementBox" labelledBy="settlement-dialog-title" onEscape={toMenu} inputGuardMs={DIALOG_INPUT_GUARD_MS}>
             <div className="modalHead">
               <p>{settlement.runMode === 'infinite' ? 'INFINITE RUN END' : phase === 'gameOver' ? 'STAGE MATCH END' : settlement.gameComplete ? 'CHAPTER 5 CLEAR' : `CH.${settlement.chapter} / ST.${settlement.stage}`}</p>
               <h2 id="settlement-dialog-title">{settlement.gameComplete ? '5챕터 돌파' : settlement.title}</h2>

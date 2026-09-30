@@ -32,6 +32,7 @@
     "test:soak:smoke": "P2_SOAK_FRAMES=600 npm run test:soak",
     "test:visual": "node scripts/visual-gate.mjs",
     "test:dev-smoke": "node scripts/dev-smoke.mjs",
+    "test:ui-probes": "node scripts/ui-probes.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "electron": "npm run build && electron .",
     "electron:developer": "npm run build:developer && BLACKLINE_DEVELOPER_BUILD=1 electron .",
