@@ -1021,7 +1021,8 @@ export class GameRenderer {
     ctx.stroke();
   }
 
-  drawHazard(ctx: CanvasRenderingContext2D, hazard: Hazard) {
+  /** @param opacity extra fade, e.g. a root zone the player is currently immune to (BUG-13). */
+  drawHazard(ctx: CanvasRenderingContext2D, hazard: Hazard, opacity = 1) {
     const profile = HAZARD_ART[hazard.kind];
     const alpha = Number.isFinite(hazard.life)
       ? normalizedLifetime(hazard.life, hazard.maxLife)
@@ -1033,7 +1034,7 @@ export class GameRenderer {
     ctx.strokeStyle = profile.color;
     ctx.fillStyle = profile.fill;
     ctx.lineWidth = phase === 'imminent' ? 5 : 3;
-    ctx.globalAlpha = hazard.kind === 'warning' ? 0.34 : 0.22 + alpha * 0.42;
+    ctx.globalAlpha = (hazard.kind === 'warning' ? 0.34 : 0.22 + alpha * 0.42) * clamp(opacity, 0, 1);
 
     if (hazard.kind === 'warning' || hazard.kind === 'shock') {
       if (phase === 'preview') ctx.setLineDash([12, 9]);

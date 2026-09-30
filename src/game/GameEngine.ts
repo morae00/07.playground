@@ -495,6 +495,11 @@ const DASH_SPEED_MULTIPLE = 4.2;
 const ECLIPSE_WALL_LEAD_SECONDS = 0.6;
 const ECLIPSE_WALL_SPEED = 260;
 const ECLIPSE_WALL_LANE_GAP = 115;
+/** Fair terrain (BUG-13): a root zone binds once on entry, then cannot bind again for a while. */
+const ROOT_BIND_SECONDS = 0.65;
+const ROOT_IMMUNITY_SECONDS = ROOT_BIND_SECONDS + 1.5;
+/** Nothing harmful is generated within this distance of the stage start (the world centre). */
+const START_SAFE_RADIUS = 420;
 
 type PendingHostileShot = {
   at: number;
@@ -1064,6 +1069,7 @@ export class GameEngine {
     invuln: 0,
     silence: 0,
     shield: 0,
+    rootImmunity: 0,
     stats: { ...BASE_STATS },
   };
 
@@ -1280,6 +1286,7 @@ export class GameEngine {
       invuln: 0,
       silence: 0,
       shield: 0,
+      rootImmunity: 0,
       stats: { ...BASE_STATS },
     };
     this.recalculateStats(true);
@@ -1630,6 +1637,7 @@ export class GameEngine {
     this.camera.prevX = this.camera.x;
     this.camera.prevY = this.camera.y;
     this.player.root = 0;
+    this.player.rootImmunity = 0;
     this.player.slow = 1;
     this.player.silence = 0;
     this.aimTargetId = null;
@@ -1682,12 +1690,17 @@ export class GameEngine {
           ? 'trap'
           : authoredKind;
       const broad = kind === 'water' || kind === 'slow';
-      this.addStaticHazard(
-        kind,
-        220 + this.gameplayRandom() * (WORLD_W - 440),
-        220 + this.gameplayRandom() * (WORLD_H - 440),
-        broad ? 145 + this.gameplayRandom() * 125 : 60 + this.gameplayRandom() * 38,
-      );
+      let x = 220 + this.gameplayRandom() * (WORLD_W - 440);
+      let y = 220 + this.gameplayRandom() * (WORLD_H - 440);
+      const radius = broad ? 145 + this.gameplayRandom() * 125 : 60 + this.gameplayRandom() * 38;
+      if (this.rules.fairTerrain) {
+        // Hazards (fire, traps, slows) must not touch the start area either, like obstacles (BUG-13).
+        for (let tries = 0; tries < 20 && Math.hypot(x - WORLD_W / 2, y - WORLD_H / 2) < START_SAFE_RADIUS + radius; tries += 1) {
+          x = 220 + this.gameplayRandom() * (WORLD_W - 440);
+          y = 220 + this.gameplayRandom() * (WORLD_H - 440);
+        }
+      }
+      this.addStaticHazard(kind, x, y, radius);
     }
     if (landmark) this.addChapterLandmark(landmark.shape, landmark.obstacleDensity);
   }
@@ -1859,6 +1872,7 @@ export class GameEngine {
 
   private updatePlayer(dt: number) {
     this.player.root = Math.max(0, this.player.root - dt);
+    this.player.rootImmunity = Math.max(0, this.player.rootImmunity - dt);
     this.player.invuln = Math.max(0, this.player.invuln - dt);
     this.player.shield = Math.max(0, this.player.shield - dt);
     this.player.silence = Math.max(0, this.player.silence - dt);
@@ -1875,7 +1889,15 @@ export class GameEngine {
         this.player.root = Math.max(this.player.root, 0.65);
         this.burst(hazard.x, hazard.y, 12, '#111111', 120);
       }
-      if (hazard.kind === 'root') this.player.root = Math.max(this.player.root, 0.35);
+      if (hazard.kind === 'root') {
+        if (!this.rules.fairTerrain) {
+          this.player.root = Math.max(this.player.root, 0.35);
+        } else if (this.player.rootImmunity <= 0) {
+          // Bind once, then grant immunity so the player can always walk out (BUG-13).
+          this.player.root = Math.max(this.player.root, ROOT_BIND_SECONDS);
+          this.player.rootImmunity = ROOT_IMMUNITY_SECONDS;
+        }
+      }
       if (hazard.kind === 'fire') this.damagePlayerOverTime(hazard.damage, dt);
       if (hazard.kind === 'null') this.player.silence = Math.max(this.player.silence, 0.4);
     }
@@ -3926,7 +3948,8 @@ export class GameEngine {
   private drawHazards(ctx: CanvasRenderingContext2D) {
     for (const hazard of this.hazards) {
       if (!circleVisible(this.renderViewport, hazard.x, hazard.y, hazard.radius * 1.25 + 8)) continue;
-      this.visualRenderer.drawHazard(ctx, hazard);
+      const fadedRoot = hazard.kind === 'root' && this.player.rootImmunity > 0;
+      this.visualRenderer.drawHazard(ctx, hazard, fadedRoot ? 0.35 : 1);
     }
   }
 

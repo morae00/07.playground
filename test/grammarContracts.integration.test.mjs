@@ -263,3 +263,36 @@ test('BUG-11: the eclipse wall enters from the view edge, reaches the player any
     engine.dispose();
   }
 });
+
+test('BUG-13: a root zone binds once and then lets the player walk out; hazards spawn clear of the start', () => {
+  const engine = createEngine();
+  try {
+    engine.startRun(3, 10, 808);
+    engine.enemies = [];
+    engine.obstacles = [];
+    engine.hazards = [{ id: 1, kind: 'root', x: engine.player.x, y: engine.player.y, radius: 52, life: 7, maxLife: 7, damage: 0, slow: 1, triggered: false }];
+    const startX = engine.player.x;
+    engine.keys.add('d');
+    let rootedSteps = 0;
+    for (let step = 0; step < 7 * 60 && engine.player.x - startX < 60; step += 1) {
+      engine.updatePlayer(1 / 60);
+      if (engine.player.root > 0) rootedSteps += 1;
+    }
+    assert.ok(engine.player.x - startX >= 60, 'the player leaves the zone before it expires');
+    assert.ok(rootedSteps <= Math.ceil(0.65 * 60) + 1, `bound for one short window only (${rootedSteps} steps)`);
+
+    for (let seed = 1; seed <= 25; seed += 1) {
+      for (const chapter of [1, 3, 5]) {
+        engine.startRun(chapter, 2, seed * 17 + chapter);
+        for (const hazard of engine.hazards) {
+          if (!Number.isFinite(hazard.life)) {
+            const gap = Math.hypot(hazard.x - 2100, hazard.y - 1500) - hazard.radius;
+            assert.ok(gap >= 420 - 1e-6, `static ${hazard.kind} hazard reaches ${gap.toFixed(0)} px from the start (Ch${chapter} seed ${seed})`);
+          }
+        }
+      }
+    }
+  } finally {
+    engine.dispose();
+  }
+});
