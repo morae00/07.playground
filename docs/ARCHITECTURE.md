@@ -131,6 +131,18 @@ Two HUD marks live on the canvas, because they need the camera (UI-02):
 - Bosses and elites outside the view get a coral arrow on the screen edge. The arrow sits on the line from the screen centre toward the enemy and keeps clear of the HUD rows. Bosses come first; at most four arrows show.
 - Silence and root show as round timers over the hero's head. The renderer infers each debuff's length when it sees one start, and the ring empties as the debuff runs out. The DOM effect rack still announces both to screen readers but no longer shows them.
 
+## Camera (FX-04)
+
+The simulation camera stays hard-locked on the player, clamped to the world. Spawns, aim, and off-screen checks use it together with the logical frame (G14). Under the `smoothCamera` rule, the screen shows a separate view camera instead (`src/game/presentation/viewCamera.ts`):
+- It follows the simulation camera on a critically damped spring (about 0.4 s to settle, no overshoot).
+- It leans up to 70 units ahead of the player's movement. The spring's lag takes most of that back while the player moves at full speed.
+- A hit kicks it along the blow, and it stays inside the world.
+- It steps with the simulation, so a paused run holds still and replays draw the same frames.
+- Pointer targets map through it, since that is what the player sees.
+- Shake is a trauma² offset from smooth noise, so it draws nothing from a random stream.
+
+Classic rules keep 0.1.0's hard lock and per-frame random jitter. Boss midpoint framing and the kill zoom punch are on the cut line.
+
 ## Event staging (FX-05)
 
 - **Level-up:** the engine stops at the step the XP fills and opens the draft, so no simulated time passes (G15). The draft modal then plays a 0.6 s sequence: an ink ring bursts, the "레벨 업!" banner lands, and the cards turn in 80 ms apart. Reduced motion cuts every animation to nothing.

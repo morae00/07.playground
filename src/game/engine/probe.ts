@@ -324,6 +324,10 @@ export class ProbedGameEngine extends GameEngine {
       },
       setCamera: ({ x, y, prevX = x, prevY = y }) => {
         this.camera = { x, y, prevX, prevY };
+        // What the screen shows moves with it (FX-04 view camera), so a placed camera is also the drawn one.
+        this.viewCamera.snap(x, y);
+        this.viewCamera.prevX = prevX;
+        this.viewCamera.prevY = prevY;
       },
       setSkills: (loadout) => {
         this.skills = Object.fromEntries(

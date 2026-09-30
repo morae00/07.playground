@@ -88,6 +88,7 @@ import { DEVELOPER_UI_AVAILABLE } from '../platform/developerAccess';
 import type { EngineAction, EngineCommand } from './engine/contracts';
 import type { GameEvent, GameEventListener, PlayerDamageSource } from './engine/events';
 import { Presentation } from './presentation/presentation';
+import { ViewCamera } from './presentation/viewCamera';
 import type { SoundOutput } from './audioPolicy';
 import {
   INFINITE_BASELINE,
@@ -1017,6 +1018,8 @@ export class GameEngine {
   protected coinFeverRushTimer = 0;
 
   protected camera = { x: 0, y: 0, prevX: 0, prevY: 0 };
+  /** What the screen shows under smoothCamera rules (FX-04); the simulation keeps `camera` for its own checks. */
+  protected viewCamera = new ViewCamera();
   // Input arrives only as engine commands (TEC-07); adapters own keyboard, pointer, and gamepad devices.
   protected heldActions = new Set<EngineAction>();
   protected pointer = { active: false, x: 0, y: 0 };
@@ -1508,8 +1511,8 @@ export class GameEngine {
     const scaleY = this.viewH / rect.height;
     const frame = this.viewFrame();
     return {
-      x: ((clientX - rect.left) * scaleX - frame.offsetX) / frame.zoom + this.camera.x,
-      y: ((clientY - rect.top) * scaleY) / frame.zoom + this.camera.y,
+      x: ((clientX - rect.left) * scaleX - frame.offsetX) / frame.zoom + this.shownCamera().x,
+      y: ((clientY - rect.top) * scaleY) / frame.zoom + this.shownCamera().y,
     };
   }
 
@@ -1662,6 +1665,7 @@ export class GameEngine {
     this.placeCamera();
     this.camera.prevX = this.camera.x;
     this.camera.prevY = this.camera.y;
+    this.viewCamera.snap(this.camera.x, this.camera.y);
     this.player.root = 0;
     this.player.rootImmunity = 0;
     this.player.slow = 1;
@@ -1990,8 +1994,10 @@ export class GameEngine {
       }
     }
 
+    let moving = { x: 0, y: 0 };
     if (this.player.root <= 0 && (mx !== 0 || my !== 0)) {
       const dir = normalize(mx, my);
+      moving = dir;
       const speed = this.player.stats.moveSpeed * this.player.slow;
       this.player.x += dir.x * speed * dt;
       this.player.y += dir.y * speed * dt;
@@ -2018,6 +2024,15 @@ export class GameEngine {
     }
 
     this.placeCamera();
+    if (this.rules.smoothCamera) {
+      const frame = this.viewFrame();
+      this.viewCamera.step(dt, this.camera.x, this.camera.y, moving.x, moving.y, Math.max(0, WORLD_W - frame.width), Math.max(0, WORLD_H - frame.height));
+    }
+  }
+
+  /** The camera the screen shows: the view camera under smoothCamera rules (FX-04), the simulation's otherwise. */
+  protected shownCamera() {
+    return this.rules.smoothCamera ? this.viewCamera : this.camera;
   }
 
   /** Visible world frame: fixed 900-unit height with pillarboxing (remaster) or 1:1 canvas pixels (classic). */
@@ -4087,6 +4102,10 @@ export class GameEngine {
     if (paperWard?.awakened) this.pushEnemiesFromPlayer(SKILL_NUMBERS.paperWard.pushRadius);
     this.lastDamageSource = source;
     this.emit({ type: 'player/hurt', x: this.player.x, y: this.player.y, damage: reduced, source, fromX: from.x, fromY: from.y });
+    if (this.rules.smoothCamera) {
+      const blow = normalize(this.player.x - from.x, this.player.y - from.y);
+      this.viewCamera.kick(blow.x, blow.y);
+    }
   }
 
   protected damagePlayerOverTime(damagePerSecond: number, dt: number, source: PlayerDamageSource) {
@@ -4553,7 +4572,7 @@ export class GameEngine {
       jitterEveryFrame: !this.rules.isolatedCosmeticIds,
       reducedMotion: this.systemReducedMotion || this.options.reducedMotion,
       options: this.options,
-      camera: this.camera,
+      camera: this.shownCamera(),
       player: this.player,
       aim: { angle: this.playerAimAngle, targetId: this.aimTargetId },
       skills: this.skills,

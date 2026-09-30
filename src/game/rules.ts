@@ -76,6 +76,13 @@ export type RuleSet = Readonly<{
    * Warnings keep their real-time length at every phase (V3).
    */
   bossMoves: boolean;
+  /**
+   * FX-04: the screen follows a view camera: a critically damped spring toward a point ahead of the player's
+   * movement, kicked along hits, and shaken by a trauma² offset from smooth noise instead of random jitter.
+   * Pointer targets map through what is on screen. Spawns, aim, and off-screen checks keep the player-centred
+   * simulation camera (G14), so seeded outcomes do not change.
+   */
+  smoothCamera: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -101,6 +108,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   steppedEnrage: false,
   bossSpacing: false,
   bossMoves: false,
+  smoothCamera: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -126,6 +134,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   steppedEnrage: true,
   bossSpacing: true,
   bossMoves: true,
+  smoothCamera: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

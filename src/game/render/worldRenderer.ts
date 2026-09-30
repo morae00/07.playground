@@ -31,6 +31,7 @@ import { phaseFor, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtl
 import { BOSS_SLOTS, CHAPTER_PACKS, COMMON_PACK, FX_SLOT, HERO_SLOT, PICKUP_SLOT, bossState, enemyDrawScale, enemySlot, frameKey, pickupState, slotEnabled } from './assets/slots.ts';
 import { GameRenderer } from './GameRenderer.ts';
 import { NumberGlyphs, type NumberStyle } from './numberGlyphs.ts';
+import { shakeOffset } from '../presentation/viewCamera.ts';
 import { NEUTRAL, SIGNAL, rgba } from './palette.ts';
 import { createRenderFrameSnapshot } from './renderSnapshot.ts';
 import { CHAPTER_VISUALS, enemyRoleFor, type VisualDetail } from './visualRegistry.ts';
@@ -286,9 +287,11 @@ export class WorldRenderer {
     // Classic rules draw the shake jitter every frame like 0.1.0 did, because under them cosmetic random draws
     // still reach gameplay through particle ids; remaster rules draw only while actually shaking.
     const { shake } = this.world.effects;
-    const drawJitter = !this.world.jitterEveryFrame ? shakeEnabled && !this.world.paused && shake > 0.01 : shakeEnabled;
-    const shakeX = drawJitter ? (this.world.effects.random() - 0.5) * shake : 0;
-    const shakeY = drawJitter ? (this.world.effects.random() - 0.5) * shake : 0;
+    // Remaster rules shake by a trauma² offset from smooth noise (FX-04): no random draws, small shakes stay small.
+    const drawJitter = this.world.jitterEveryFrame && shakeEnabled;
+    const smooth = !this.world.jitterEveryFrame && shakeEnabled && !this.world.paused && shake > 0.01 ? shakeOffset(shake, this.world.elapsed) : undefined;
+    const shakeX = drawJitter ? (this.world.effects.random() - 0.5) * shake : smooth?.x ?? 0;
+    const shakeY = drawJitter ? (this.world.effects.random() - 0.5) * shake : smooth?.y ?? 0;
     ctx.setTransform(this.world.view.dpr, 0, 0, this.world.view.dpr, 0, 0);
     ctx.clearRect(0, 0, this.world.view.width, this.world.view.height);
     ctx.fillStyle = NEUTRAL.paper;
