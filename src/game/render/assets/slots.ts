@@ -12,6 +12,15 @@ export const DISABLED_SLOTS: ReadonlySet<string> = new Set<string>([
 export const HERO_SLOT = 'hero';
 /** Shared effects in the common pack: the hit star (FX-03). */
 export const FX_SLOT = 'fx';
+/** Pickups in the common pack (ART-06): the XP jade in three sizes and the coin. */
+export const PICKUP_SLOT = 'pickup';
+/** XP values from which a pickup (merged drops add up) shows the middle and the large jade. */
+export const XP_JADE_STEPS = Object.freeze([8, 24]);
+
+export function pickupState(kind: 'xp' | 'coin', value: number) {
+  if (kind === 'coin') return 'coin';
+  return value >= XP_JADE_STEPS[1] ? 'xp3' : value >= XP_JADE_STEPS[0] ? 'xp2' : 'xp1';
+}
 export type HeroState = 'idle' | 'run' | 'throw' | 'hurt';
 
 export const slotEnabled = (slot: string) => !DISABLED_SLOTS.has(slot);

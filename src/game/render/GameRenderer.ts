@@ -10,7 +10,7 @@ import type {
 import { clamp } from '../worldMath.ts';
 import { telegraphPhase } from '../visualContracts.ts';
 import { motionWave, normalizedLifetime } from './animationClock.ts';
-import { NEUTRAL, SIGNAL } from './palette.ts';
+import { NEUTRAL, SIGNAL, rgba } from './palette.ts';
 import type { RenderFrameSnapshot } from './renderSnapshot.ts';
 import {
   CHAPTER_ART,
@@ -22,6 +22,8 @@ import {
   enemyArtFor,
   type BossArtProfile,
   type EnemyArtProfile,
+  type HazardArtProfile,
+  type HazardGlyph,
   type ProjectileArtProfile,
 } from './visualRegistry.ts';
 
@@ -159,6 +161,8 @@ function drawPaperCut(
 
 export class GameRenderer {
   private frame = DEFAULT_FRAME;
+  /** Hazard ground textures by owner and colour; undefined where no pattern canvas can be made (headless). */
+  private readonly hazardTextures = new Map<string, CanvasPattern | undefined>();
 
   beginFrame(frame: RenderFrameSnapshot) {
     this.frame = frame;
@@ -1024,96 +1028,166 @@ export class GameRenderer {
   }
 
   /** @param opacity extra fade, e.g. a root zone the player is currently immune to (BUG-13). */
+  /**
+   * Hazards in the kit's ownership language (ART-06, PN.env.hazard), always the circle they hit with. Hostile ground
+   * is hatched in its signal colour inside an ink ring with an amber rim; ally ground is dotted inside a cyan running
+   * stitch; neutral ground is an ink wash. A glyph at the centre names the effect. Timed hazards (shock, and the
+   * ally landing warning) draw their outline as it fills: a dashed arc during preview, a heavy ring with ticks once
+   * imminent, and a coral (or ally) fill when active.
+   */
   drawHazard(ctx: CanvasRenderingContext2D, hazard: Hazard, opacity = 1) {
     const profile = HAZARD_ART[hazard.kind];
-    const alpha = Number.isFinite(hazard.life)
-      ? normalizedLifetime(hazard.life, hazard.maxLife)
-      : 1;
-    const phase = telegraphPhase(hazard.life, hazard.maxLife, hazard.triggered);
-    const pulse = this.frame.reducedMotion ? 0 : motionWave(this.frame.elapsed, 14, 4);
-
+    const timed = Number.isFinite(hazard.maxLife) && (hazard.kind === 'shock' || hazard.kind === 'warning');
+    const phase = timed ? telegraphPhase(hazard.life, hazard.maxLife, hazard.triggered) : 'active';
+    const progress = timed ? clamp(1 - hazard.life / hazard.maxLife, 0, 1) : 1;
+    const { x, y, radius } = hazard;
+    const ally = profile.owner === 'ally';
     ctx.save();
-    ctx.strokeStyle = profile.color;
-    ctx.fillStyle = profile.fill;
-    ctx.lineWidth = phase === 'imminent' ? 5 : 3;
-    ctx.globalAlpha = (hazard.kind === 'warning' ? 0.34 : 0.22 + alpha * 0.42) * clamp(opacity, 0, 1);
-
-    if (hazard.kind === 'warning' || hazard.kind === 'shock') {
-      if (phase === 'preview') ctx.setLineDash([12, 9]);
-      ctx.beginPath();
-      ctx.arc(hazard.x, hazard.y, hazard.radius, 0, Math.PI * 2);
-      if (phase === 'active') ctx.fill();
-      ctx.stroke();
-      ctx.setLineDash([]);
-      const ticks = hazard.kind === 'shock' ? 12 : 8;
-      for (let index = 0; index < ticks; index += 1) {
-        const angle = (Math.PI * 2 * index) / ticks;
-        const inner = hazard.radius - (phase === 'imminent' ? 10 + pulse : 5);
-        ctx.beginPath();
-        ctx.moveTo(hazard.x + Math.cos(angle) * inner, hazard.y + Math.sin(angle) * inner);
-        ctx.lineTo(hazard.x + Math.cos(angle) * hazard.radius, hazard.y + Math.sin(angle) * hazard.radius);
-        ctx.stroke();
-      }
-    } else if (profile.edge === 'flow') {
-      ctx.beginPath();
-      ctx.ellipse(hazard.x, hazard.y, hazard.radius * 1.18, hazard.radius * 0.82, this.frame.chapter * 0.11, 0, Math.PI * 2);
+    ctx.globalAlpha = clamp(opacity, 0, 1) * (Number.isFinite(hazard.life) && !timed ? 0.4 + 0.6 * normalizedLifetime(hazard.life, hazard.maxLife) : 1);
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    if (phase === 'active') {
+      ctx.fillStyle = timed && !ally ? rgba(SIGNAL.hostile, 0.5) : profile.fill;
       ctx.fill();
-      ctx.stroke();
-      for (let index = -2; index <= 2; index += 1) {
-        const y = hazard.y + index * hazard.radius * 0.22;
-        ctx.beginPath();
-        ctx.moveTo(hazard.x - hazard.radius * 0.78, y);
-        ctx.quadraticCurveTo(hazard.x, y - hazard.radius * 0.26, hazard.x + hazard.radius * 0.78, y);
-        ctx.stroke();
+      // A null zone is an erased plane (kit): no texture inside, only its dotted rim and mark.
+      const texture = hazard.kind === 'null' ? undefined : this.hazardTexture(ctx, profile);
+      if (texture) {
+        ctx.fillStyle = texture;
+        ctx.fill();
       }
-    } else if (profile.edge === 'square') {
-      ctx.fillRect(
-        hazard.x - hazard.radius,
-        hazard.y - hazard.radius,
-        hazard.radius * 2,
-        hazard.radius * 2,
-      );
-      ctx.strokeRect(
-        hazard.x - hazard.radius,
-        hazard.y - hazard.radius,
-        hazard.radius * 2,
-        hazard.radius * 2,
-      );
+    }
+    // The rim: ink under the owner's colour, a running stitch for the player's own ground.
+    const drawn = phase === 'preview' ? progress / 0.65 : 1;
+    const start = -Math.PI / 2;
+    ctx.lineWidth = phase === 'imminent' ? 7 : 5;
+    ctx.strokeStyle = NEUTRAL.ink;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, start, start + drawn * Math.PI * 2);
+    ctx.stroke();
+    if (phase === 'preview') {
+      // The part the brush has not reached yet: a dotted guide.
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([2, 6]);
       ctx.beginPath();
-      ctx.moveTo(hazard.x - hazard.radius, hazard.y - hazard.radius);
-      ctx.lineTo(hazard.x + hazard.radius, hazard.y + hazard.radius);
-      ctx.moveTo(hazard.x + hazard.radius, hazard.y - hazard.radius);
-      ctx.lineTo(hazard.x - hazard.radius, hazard.y + hazard.radius);
+      ctx.arc(x, y, radius, start + drawn * Math.PI * 2, start + Math.PI * 2);
       ctx.stroke();
-    } else if (profile.edge === 'spiral') {
+    }
+    if (profile.owner !== 'neutral') {
+      ctx.strokeStyle = profile.color;
+      ctx.lineWidth = phase === 'imminent' ? 3.5 : 2.6;
+      ctx.setLineDash(ally ? [8, 5] : hazard.kind === 'null' ? [3, 5] : phase === 'imminent' ? [10, 5] : []);
       ctx.beginPath();
-      ctx.arc(hazard.x, hazard.y, hazard.radius, 0, Math.PI * 2);
-      ctx.fill();
-      for (let ring = 20; ring < hazard.radius; ring += 22) {
-        const rotation = this.frame.reducedMotion ? 0 : this.frame.elapsed * 1.6;
-        ctx.beginPath();
-        ctx.arc(hazard.x, hazard.y, ring, rotation, rotation + Math.PI * 1.5);
-        ctx.stroke();
-      }
-    } else if (profile.edge === 'burst') {
-      ctx.beginPath();
-      ctx.arc(hazard.x, hazard.y, hazard.radius, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.arc(x, y, radius - (ally ? 0 : 3.5), start, start + drawn * Math.PI * 2);
       ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    if (phase === 'imminent') {
+      const pulse = this.frame.reducedMotion ? 0 : motionWave(this.frame.elapsed, 14, 3);
+      ctx.strokeStyle = NEUTRAL.ink;
+      ctx.lineWidth = 3;
       for (let index = 0; index < 8; index += 1) {
         const angle = (Math.PI * 2 * index) / 8;
         ctx.beginPath();
-        ctx.moveTo(hazard.x + Math.cos(angle) * hazard.radius * 0.2, hazard.y + Math.sin(angle) * hazard.radius * 0.2);
-        ctx.lineTo(hazard.x + Math.cos(angle) * hazard.radius, hazard.y + Math.sin(angle) * hazard.radius);
+        ctx.moveTo(x + Math.cos(angle) * (radius - 12 - pulse), y + Math.sin(angle) * (radius - 12 - pulse));
+        ctx.lineTo(x + Math.cos(angle) * (radius + 6), y + Math.sin(angle) * (radius + 6));
         ctx.stroke();
       }
-    } else {
-      ctx.setLineDash(hazard.kind === 'null' ? [10, 10] : []);
-      ctx.beginPath();
-      ctx.arc(hazard.x, hazard.y, hazard.radius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
     }
+    this.drawHazardGlyph(ctx, profile.glyph, x, y, Math.min(18, radius * 0.32), phase === 'active' ? 1 : 0.55);
+    ctx.restore();
+  }
+
+  /** The hatch (hostile) or dot (ally) texture for a hazard's ground, made once per owner and colour. */
+  private hazardTexture(ctx: CanvasRenderingContext2D, profile: HazardArtProfile) {
+    if (profile.owner === 'neutral') return undefined;
+    const key = `${profile.owner}:${profile.color}`;
+    if (this.hazardTextures.has(key)) return this.hazardTextures.get(key);
+    let pattern: CanvasPattern | undefined;
+    const tile = typeof document !== 'undefined' && typeof document.createElement === 'function' ? document.createElement('canvas') : null;
+    const tileCtx = tile?.getContext('2d');
+    if (tile && tileCtx) {
+      tile.width = 12;
+      tile.height = 12;
+      if (profile.owner === 'hostile') {
+        // Diagonal hatch, each colour line over an ink hairline so it still prints on light ground.
+        for (const [color, width, offset] of [[NEUTRAL.ink, 0.8, 1], [profile.color, 2, 0]] as const) {
+          tileCtx.strokeStyle = color;
+          tileCtx.lineWidth = width;
+          tileCtx.globalAlpha = 0.6;
+          tileCtx.beginPath();
+          for (const shift of [-12, 0, 12]) {
+            tileCtx.moveTo(shift + offset, 12);
+            tileCtx.lineTo(shift + 12 + offset, 0);
+          }
+          tileCtx.stroke();
+        }
+      } else {
+        tileCtx.fillStyle = profile.color;
+        tileCtx.globalAlpha = 0.35;
+        tileCtx.beginPath();
+        tileCtx.arc(3, 3, 1.6, 0, Math.PI * 2);
+        tileCtx.arc(9, 9, 1.6, 0, Math.PI * 2);
+        tileCtx.fill();
+      }
+      pattern = ctx.createPattern(tile, 'repeat') ?? undefined;
+    }
+    this.hazardTextures.set(key, pattern);
+    return pattern;
+  }
+
+  /** The effect's mark at the centre, ink on a paper disc so it reads over any texture. */
+  private drawHazardGlyph(ctx: CanvasRenderingContext2D, glyph: HazardGlyph, x: number, y: number, size: number, alpha: number) {
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.fillStyle = NEUTRAL.paperBright;
+    ctx.strokeStyle = NEUTRAL.ink;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    const k = size / 10;
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    if (glyph === 'wave') {
+      for (const row of [-3, 3]) {
+        ctx.moveTo(x - 6 * k, y + row * k);
+        ctx.quadraticCurveTo(x - 3 * k, y + (row - 3) * k, x, y + row * k);
+        ctx.quadraticCurveTo(x + 3 * k, y + (row + 3) * k, x + 6 * k, y + row * k);
+      }
+    } else if (glyph === 'chain') {
+      ctx.ellipse(x - 2.6 * k, y, 4 * k, 2.6 * k, -0.5, 0, Math.PI * 2);
+      ctx.moveTo(x + 7 * k, y);
+      ctx.ellipse(x + 2.6 * k, y, 4 * k, 2.6 * k, -0.5, 0, Math.PI * 2);
+    } else if (glyph === 'null') {
+      ctx.arc(x, y, 5.5 * k, 0, Math.PI * 2);
+      ctx.moveTo(x - 4 * k, y - 4 * k);
+      ctx.lineTo(x + 4 * k, y + 4 * k);
+    } else if (glyph === 'flame') {
+      ctx.moveTo(x, y + 6 * k);
+      ctx.quadraticCurveTo(x - 6 * k, y + 2 * k, x - 1 * k, y - 6 * k);
+      ctx.quadraticCurveTo(x + 1 * k, y - 1 * k, x + 3 * k, y - 3 * k);
+      ctx.quadraticCurveTo(x + 6 * k, y + 3 * k, x, y + 6 * k);
+    } else if (glyph === 'shatter') {
+      for (let spike = 0; spike < 5; spike += 1) {
+        const angle = -Math.PI / 2 + (spike * Math.PI * 2) / 5;
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + Math.cos(angle) * 6.5 * k, y + Math.sin(angle) * 6.5 * k);
+      }
+    } else if (glyph === 'spiral') {
+      ctx.arc(x, y, 5.5 * k, 0, Math.PI * 1.5);
+      ctx.moveTo(x + 2.5 * k, y);
+      ctx.arc(x, y, 2.5 * k, 0, Math.PI * 1.5);
+    } else {
+      for (let spike = 0; spike < 4; spike += 1) {
+        const angle = (spike * Math.PI) / 2;
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + Math.cos(angle) * 6 * k, y + Math.sin(angle) * 6 * k);
+      }
+    }
+    ctx.stroke();
     ctx.restore();
   }
 

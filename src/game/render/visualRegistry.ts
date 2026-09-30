@@ -272,24 +272,31 @@ export const HOSTILE_PROJECTILE_ART: Readonly<Record<BossProjectile['kind'], Pro
   enemy: projectile('needle', SIGNAL.hostile, '#fff4f1', '#ff8b82'),
 });
 
+export type HazardGlyph = 'wave' | 'chain' | 'null' | 'flame' | 'shatter' | 'spiral' | 'star';
+
 export type HazardArtProfile = Readonly<{
+  /** Ownership sets the look (ART-06, kit PN.env.hazard): hostile ground is hatched amber inside an ink ring,
+   * ally ground is a cyan stitch with light dots, neutral ground an ink wash. */
+  owner: 'hostile' | 'ally' | 'neutral';
+  /** Rim colour inside the ink ring, and the hatch or dot colour. */
   color: string;
   fill: string;
-  edge: 'circle' | 'square' | 'flow' | 'spiral' | 'burst';
+  glyph: HazardGlyph;
 }>;
 
-// Hazard ownership: water and trap are neutral terrain; slow, root, and null are enemy control zones (amber rim);
-// fire deals enemy damage (coral); shock is an enemy telegraph (amber); warning and vortex belong to player skills (cyan).
+// Every hazard is a circle, like its hit test (ART-06): the old square trap no longer shows corners it does not hit.
+// Water and trap are neutral terrain; slow, root, and null are enemy control zones (amber); fire deals enemy damage
+// (coral); shock is an enemy telegraph (amber, coral once active); warning and vortex belong to player skills (cyan).
 export const HAZARD_ART: Readonly<Record<Hazard['kind'], HazardArtProfile>> = Object.freeze({
-  water: Object.freeze({ color: '#5e7c82', fill: '#d3dfe0', edge: 'flow' }),
-  trap: Object.freeze({ color: '#343936', fill: '#d8dad3', edge: 'square' }),
-  fire: Object.freeze({ color: SIGNAL.hostile, fill: SIGNAL.hostileGlow, edge: 'burst' }),
-  slow: Object.freeze({ color: SIGNAL.warn, fill: '#f3ead7', edge: 'flow' }),
-  root: Object.freeze({ color: SIGNAL.warn, fill: '#efe6d3', edge: 'square' }),
-  null: Object.freeze({ color: SIGNAL.warn, fill: '#e9e4d8', edge: 'circle' }),
-  warning: Object.freeze({ color: SIGNAL.ally, fill: SIGNAL.allyGlow, edge: 'circle' }),
-  vortex: Object.freeze({ color: SIGNAL.allyDeep, fill: '#e3ecee', edge: 'spiral' }),
-  shock: Object.freeze({ color: SIGNAL.warn, fill: SIGNAL.warnGlow, edge: 'burst' }),
+  water: Object.freeze({ owner: 'neutral', color: '#5e7c82', fill: '#c9d5d6', glyph: 'wave' }),
+  trap: Object.freeze({ owner: 'neutral', color: '#343936', fill: '#cfd1ca', glyph: 'chain' }),
+  fire: Object.freeze({ owner: 'hostile', color: SIGNAL.hostile, fill: SIGNAL.hostileGlow, glyph: 'flame' }),
+  slow: Object.freeze({ owner: 'hostile', color: SIGNAL.warn, fill: '#f3ead7', glyph: 'wave' }),
+  root: Object.freeze({ owner: 'hostile', color: SIGNAL.warn, fill: '#efe6d3', glyph: 'chain' }),
+  null: Object.freeze({ owner: 'hostile', color: SIGNAL.warn, fill: '#fbfaf5', glyph: 'null' }),
+  warning: Object.freeze({ owner: 'ally', color: SIGNAL.ally, fill: SIGNAL.allyGlow, glyph: 'star' }),
+  vortex: Object.freeze({ owner: 'ally', color: SIGNAL.allyDeep, fill: '#e3ecee', glyph: 'spiral' }),
+  shock: Object.freeze({ owner: 'hostile', color: SIGNAL.warn, fill: SIGNAL.warnGlow, glyph: 'shatter' }),
 });
 
 export type ChapterMotif = 'orthogonal' | 'radial' | 'flow' | 'clock' | 'eclipse';

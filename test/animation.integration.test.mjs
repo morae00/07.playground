@@ -251,3 +251,26 @@ test('damage numbers stamp cached glyphs, one sheet per style, and hits on one e
     engine.dispose();
   }
 });
+
+test('ART-06: pickups draw the kit jade by value and the coin from the common pack', async () => {
+  const atlas = new SpriteAtlas({ loadManifest: async () => ATLAS_MANIFEST, loadImage: async (url) => ({ url, width: 2048, height: 2048 }) });
+  assert.equal(await atlas.load('common'), true);
+  const { engine, probe, images } = arena(1, 2);
+  try {
+    engine.setSprites(atlas);
+    const { player } = probe.read();
+    const frames = ATLAS_MANIFEST.packs.common.frames;
+    const spots = [[1, 'xp1'], [8, 'xp2'], [30, 'xp3']];
+    spots.forEach(([value], index) => probe.spawnPickup({ kind: 'xp', x: player.x + 300 + index * 60, y: player.y - 200, value }));
+    probe.spawnPickup({ kind: 'coin', x: player.x - 300, y: player.y - 200, value: 1 });
+    images.length = 0;
+    probe.render(1);
+    const drawn = new Set(images.filter((draw) => draw.url === 'assets/atlas/common-0.png').map((draw) => `${draw.sx},${draw.sy}`));
+    for (const state of ['xp1', 'xp2', 'xp3', 'coin']) {
+      const [, sx, sy] = frames[`pickup/${state}/0`];
+      assert.ok(drawn.has(`${sx},${sy}`), `${state} is drawn from its baked frame`);
+    }
+  } finally {
+    engine.dispose();
+  }
+});

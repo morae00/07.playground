@@ -144,9 +144,31 @@ function killFrames(chapter) {
   return frames;
 }
 
+/**
+ * Pickups (ART-06): the kit's XP jade in three sizes and the 엽전 coin (API-icons pickup). The kit's 48 box is twice
+ * the in-game size, so it is baked at half scale; the anchor is the pickup's centre. The game picks the XP size from
+ * the pickup's value (slots.ts pickupState).
+ */
+export const PICKUP_STATES = Object.freeze([['xp1', 'xp', 1], ['xp2', 'xp', 2], ['xp3', 'xp', 3], ['coin', 'coin', 1]]);
+
+function pickupFrames() {
+  return PICKUP_STATES.map(([state, kind, tier]) => ({
+    key: `pickup/${state}/0`,
+    call: ['PN.icons.pickup', kind, { tier }],
+    box: [48, 48],
+    anchor: [24, 24],
+    scale: 0.5,
+  }));
+}
+
 /** Animation specs: the hit star (4 frames in 0.16 s), and per Ch1 role the death burst and decal stages. */
 function fxAnimations(chapter) {
-  if (chapter === undefined) return { fx: { hit: { frames: HIT_FRAMES, fps: 25 }, 'hit-crit': { frames: HIT_FRAMES, fps: 25 } } };
+  if (chapter === undefined) {
+    return {
+      fx: { hit: { frames: HIT_FRAMES, fps: 25 }, 'hit-crit': { frames: HIT_FRAMES, fps: 25 } },
+      pickup: Object.fromEntries(PICKUP_STATES.map(([state]) => [state, { frames: 1, fps: 1 }])),
+    };
+  }
   return Object.fromEntries(Object.keys(ENEMY_ROLES).map((role) => [
     `enemy/${chapter}/${role}`,
     { death: { frames: KILL_FRAMES, fps: 24 }, decal: { frames: DECAL_AGES.length, fps: 0 } },
@@ -162,6 +184,6 @@ function enemyFrames(chapter) {
 }
 
 export const PACKS = Object.freeze({
-  common: { page: 'assets/atlas/common', frames: [...heroFrames(), ...hitFrames()], animations: fxAnimations() },
+  common: { page: 'assets/atlas/common', frames: [...heroFrames(), ...hitFrames(), ...pickupFrames()], animations: fxAnimations() },
   'chapter-01': { page: 'assets/packs/chapter-01/atlas', frames: [...enemyFrames(1), ...bossFrames(), ...killFrames(1)], animations: { ...bossAnimations(), ...fxAnimations(1) } },
 });

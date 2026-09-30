@@ -28,7 +28,7 @@ import { CORPSE_FALL_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HURT_VIGN
 import { WARDEN_SHIELD } from '../enemyBehaviors.ts';
 import { AnimationBook, SPAWN_SECONDS, enemyPoses, heroPoses, poseFrame, stepBossAnim, stepEnemyAnim, stepPlayerAnim, type AnimState, type EnemyAnim } from './animation.ts';
 import { phaseFor, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
-import { BOSS_SLOTS, CHAPTER_PACKS, COMMON_PACK, FX_SLOT, HERO_SLOT, bossState, enemyDrawScale, enemySlot, frameKey, slotEnabled } from './assets/slots.ts';
+import { BOSS_SLOTS, CHAPTER_PACKS, COMMON_PACK, FX_SLOT, HERO_SLOT, PICKUP_SLOT, bossState, enemyDrawScale, enemySlot, frameKey, pickupState, slotEnabled } from './assets/slots.ts';
 import { GameRenderer } from './GameRenderer.ts';
 import { NumberGlyphs, type NumberStyle } from './numberGlyphs.ts';
 import { NEUTRAL, SIGNAL, rgba } from './palette.ts';
@@ -720,11 +720,21 @@ export class WorldRenderer {
     ctx.restore();
   }
 
+  /** Pickups from the kit's baked art (ART-06), bobbing unless motion is reduced; vectors until the pack loads. */
   private drawPickups(ctx: CanvasRenderingContext2D) {
+    const sprites = this.sprites;
+    const baked = sprites?.status(COMMON_PACK) === 'ready' && slotEnabled(PICKUP_SLOT) ? sprites : undefined;
+    const still = motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion).reduced;
     for (const pickup of this.world.pickups) {
       const point = this.interpolated(pickup);
       if (!circleVisible(this.viewport, point.x, point.y, pickup.radius + 10)) continue;
-      this.visual.drawPickup(ctx, pickup, point.x, point.y);
+      const frame = baked?.frame(frameKey(PICKUP_SLOT, pickupState(pickup.kind, pickup.value), 0));
+      if (!frame) {
+        this.visual.drawPickup(ctx, pickup, point.x, point.y);
+        continue;
+      }
+      const bob = still ? 0 : Math.sin(this.world.elapsed * 4 + phaseFor(pickup.id) * Math.PI * 2) * 1.5;
+      this.blit(ctx, frame, point.x, point.y + bob, 1, 1);
     }
   }
 
