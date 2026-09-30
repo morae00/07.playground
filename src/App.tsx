@@ -26,6 +26,7 @@ import { FaultDialog, ResetDialog } from './ui/screens/RunDialogs';
 import { HudLayer } from './ui/screens/HudLayer';
 import { DevPanel } from './ui/screens/DevPanel';
 import { PauseHub, type PauseTab } from './ui/screens/PauseHub';
+import { HintLayer, type HintId } from './ui/screens/HintLayer';
 import { MenuScreen, type MenuView } from './ui/screens/MenuScreen';
 import { nextRovingId, watchReducedMotion, type RovingKey } from './ui/inputContracts';
 import { InputAdapter } from './ui/inputAdapter';
@@ -181,6 +182,10 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
       return diagnostics ? { ...diagnostics, audio: appMixer.stats() } : null;
     };
     return () => { delete target.__blacklineDiagnostics; };
+  }, []);
+
+  const markHintSeen = useCallback((id: HintId) => {
+    setProfile((previous) => (previous.hintsSeen.includes(id) ? previous : { ...previous, hintsSeen: [...previous.hintsSeen, id] }));
   }, []);
 
   const closeDevPanel = useCallback((restoreFocus = true) => {
@@ -663,6 +668,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
           onTogglePause={toggleManualPause}
         />
       )}
+
+      {phase === 'playing' && !runPaused && snapshot && <HintLayer snapshot={snapshot} seen={profile.hintsSeen} onSeen={markHintSeen} />}
 
       {DEVELOPER_UI_AVAILABLE && developerAccess && phase !== 'menu' && devPanelOpen && (
         <DevPanel cheatCode={cheatCode} setCheatCode={setCheatCode} cheatMessage={cheatMessage} onApplyCheat={applyCheat} />

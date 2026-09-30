@@ -113,6 +113,13 @@ The HUD (UI-02) reads only the HUD snapshot, which the engine emits every 0.12 s
   4. awakened once a skill has awakened;
   5. calm.
 
+Onboarding hints (UI-09, `HintLayer.tsx`) never stop play. Each shows once per save, recorded in `profile.hintsSeen`, for six seconds above the boss bar. In 1-1 they show in this order:
+- moving is all it takes, since attacks are automatic;
+- after 8 s, ink shards level you up;
+- once coins cover the cheapest upgrade, the pause hub sells upgrades.
+
+At the first boss fight, a hint says to read the orange telegraph and step out.
+
 Pausing opens the pause hub (UI-04, `PauseHub.tsx`), and the run stays stopped while it is open.
 - Its tabs are the build, the run shop, the settings, and the controls; its actions are resume and abandon (with a confirmation).
 - The run drawer is gone. Players buy upgrades and change settings in the hub, paused.

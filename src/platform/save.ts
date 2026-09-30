@@ -59,6 +59,8 @@ export type ProfileData = {
   codex: { enemies: string[]; bosses: string[]; skills: string[] };
   achievements: Record<string, { unlockedAt: number }>;
   runSuspend: null | { savedAt: number; rulesVersion: number; state: unknown };
+  /** Onboarding hints already shown (UI-09); each shows once per save. */
+  hintsSeen: string[];
 };
 
 export type SaveData = {
@@ -126,6 +128,7 @@ export const createDefaultProfile = (): ProfileData => ({
   codex: { enemies: [], bosses: [], skills: [] },
   achievements: {},
   runSuspend: null,
+  hintsSeen: [],
 });
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -237,6 +240,7 @@ export function sanitizeProfile(value: unknown): ProfileData {
     codex: { enemies: stringList(codex.enemies), bosses: stringList(codex.bosses), skills: stringList(codex.skills) },
     achievements,
     runSuspend,
+    hintsSeen: stringList(value.hintsSeen, 64),
   };
 }
 

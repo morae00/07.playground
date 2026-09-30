@@ -70,7 +70,7 @@ Captures are deterministic: seeded `Math.random` and `crypto`, and a paused Play
 - A health upgrade bought in the hub adds no health until the run resumes, then about +7 after one second and the full +20 after four (G6).
 - The menu's settings tab can set reduced flash before any run.
 
-The draft probe (UI-03) opens a draft at 1440×900 and 1024×720. It checks that the three cards sit centred and show their baked tiles, that no text is under 13 px, and that the dialog fits without scrolling. `npm run test:dev-smoke` checks that `npm run dev` serves a styled page under the development CSP.
+The hint probe (UI-09) checks that a first 1-1 run opens with the movement hint without pausing, below the centre band, and that a second run on the same save does not repeat it. The draft probe (UI-03) opens a draft at 1440×900 and 1024×720. It checks that the three cards sit centred and show their baked tiles, that no text is under 13 px, and that the dialog fits without scrolling. `npm run test:dev-smoke` checks that `npm run dev` serves a styled page under the development CSP.
 
 `npm run test:electron-smoke` (after `npm run build`, on a desktop session) launches the real Electron app with a throwaway data folder, so a player's save is never touched. It checks the 1440x900 content size (TEC-01), sprite loading under `file://` (TEC-03), a short run without console errors, the local error log, and reload after a forced renderer crash (TEC-14). CI runs on Linux without a display, so this check is part of the local and release gate.
 

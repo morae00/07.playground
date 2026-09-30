@@ -108,6 +108,13 @@ test('options saved before the settings screen load with the new settings at the
   assert.equal(sanitizeOptions({ ...legacy, reducedMotion: true }).reducedMotion, true);
 });
 
+test('profiles saved before onboarding hints load with none seen (UI-09, G17)', () => {
+  const legacy = { ...createDefaultProfile() } as Partial<ReturnType<typeof createDefaultProfile>>;
+  delete legacy.hintsSeen;
+  assert.deepEqual(sanitizeProfile(legacy).hintsSeen, []);
+  assert.deepEqual(sanitizeProfile({ ...legacy, hintsSeen: ['move', 'move', 7, 'xp'] }).hintsSeen, ['move', 'xp']);
+});
+
 test('showcase pacing from older saves maps to standard outside developer builds', () => {
   const options = { ...createDefaultOptions(), paceMode: 'showcase' };
   assert.equal(sanitizeOptions(options, false).paceMode, 'standard');

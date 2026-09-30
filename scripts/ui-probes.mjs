@@ -1,4 +1,4 @@
-// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, CON-02, AUD-01, FX-03, UI-02, UI-03, UI-04) against the developer build.
+// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, CON-02, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-09) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -430,6 +430,25 @@ try {
     await page.waitForTimeout(3000);
     const late = (await diagnostics(page)).player.hp - before;
     record('UI-04 the bought health comes back over about three seconds after resuming (G6)', early > 2 && early < 15 && late >= 19.9, `+${early.toFixed(1)} after 1 s, +${late.toFixed(1)} after 4 s`);
+    await page.close();
+  });
+
+  await probe('UI-09', async () => {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await openStage(page);
+    const hint = page.locator('.hintToast');
+    await page.waitForTimeout(400);
+    const first = (await hint.count()) ? await hint.textContent() : '';
+    record('UI-09 a first 1-1 run opens with the movement hint, without pausing', Boolean(first?.includes('공격은 자동')) && !(await diagnostics(page)).paused, first ?? 'no hint');
+    const box = (await hint.count()) ? await hint.boundingBox() : null;
+    record('UI-09 the hint stays out of the centre 40% of the screen', Boolean(box) && box.y >= 900 * 0.7, box ? `top ${box.y.toFixed(0)} px` : 'no hint');
+    await page.keyboard.press('p');
+    await page.getByRole('dialog', { name: '일시정지' }).getByRole('button', { name: 'Stage 메뉴' }).click();
+    await page.getByRole('button', { name: '포기하고 메뉴로' }).click();
+    await page.getByRole('button', { name: 'Ch.1 / St.1 시작' }).click();
+    await page.waitForTimeout(700);
+    const again = (await hint.count()) ? await hint.textContent() : '';
+    record('UI-09 a hint shows once per save', !again?.includes('공격은 자동'), again || 'no hint');
     await page.close();
   });
 
