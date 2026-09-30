@@ -564,7 +564,7 @@ function App() {
             <button ref={drawerToggleRef} className="ghost small iconButton" onClick={() => { if (sidePanelOpen) closeRunDrawer(false); else setSidePanelOpen(true); }} aria-expanded={sidePanelOpen} aria-controls="run-drawer" aria-label={sidePanelOpen ? '런 패널 닫기' : '런 패널 열기'} title="런 패널">
               <span aria-hidden="true">{sidePanelOpen ? '×' : '☰'}</span>
             </button>
-            <button className="ghost small iconButton" onClick={toggleManualPause} aria-pressed={runPaused} aria-label={runPaused ? '게임 계속하기' : '게임 일시정지'} title="일시정지 (P / Esc)"><span aria-hidden="true">{runPaused ? '▶' : 'Ⅱ'}</span></button>
+            <button className="ghost small iconButton" onClick={toggleManualPause} aria-pressed={runPaused} aria-label={runPaused ? '일시정지 해제' : '게임 일시정지'} title="일시정지 (P / Esc)"><span aria-hidden="true">{runPaused ? '▶' : 'Ⅱ'}</span></button>
             <div className="metricLine"><span>코인</span><b>{snapshot.coins}</b></div>
             <div className="metricLine"><span>{snapshot.runMode === 'infinite' ? '보스' : '킬'}</span><b>{snapshot.runMode === 'infinite' ? snapshot.bossKills : snapshot.kills}</b></div>
             <div className="metricLine"><span>적</span><b>{snapshot.enemyCount}</b></div>

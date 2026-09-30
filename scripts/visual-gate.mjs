@@ -1,7 +1,7 @@
 import { access, copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { createServer } from 'vite';
+import { build, preview } from 'vite';
 import { comparePngBuffers, inspectPng } from './lib/visual-evidence.mjs';
 
 const outputRoot = path.resolve(process.env.VISUAL_ARTIFACTS ?? 'artifacts/visual');
@@ -10,11 +10,16 @@ const updateGoldens = process.env.VISUAL_UPDATE_GOLDENS === '1';
 const requireGoldens = process.env.VISUAL_REQUIRE_GOLDENS !== '0';
 const maxDiffRatio = Number.parseFloat(process.env.VISUAL_MAX_DIFF_RATIO ?? '0.005');
 const pixelTolerance = Number.parseInt(process.env.VISUAL_PIXEL_TOLERANCE ?? '24', 10);
+// Desktop sizes follow the platform policy (TEC-01: minimum 1024x720, reference 1280x720 and 1440x900,
+// largest verified 1920x1080); the small sizes keep the responsive layout covered.
 const viewportCatalog = [
   { name: '320x568', width: 320, height: 568 },
   { name: '375x812', width: 375, height: 812 },
   { name: '768x1024', width: 768, height: 1024 },
+  { name: '1024x720', width: 1024, height: 720 },
+  { name: '1280x720', width: 1280, height: 720 },
   { name: '1440x900', width: 1440, height: 900 },
+  { name: '1920x1080', width: 1920, height: 1080 },
 ];
 const stateNames = ['menu', 'infinite-menu', 'infinite-playing', 'playing', 'paused', 'draft', 'settlement', 'boss'];
 
@@ -70,9 +75,16 @@ async function settle(page, milliseconds = 160) {
 }
 
 async function openDeveloperMode(page) {
-  const toggle = await unique(page.getByText('개발자 모드: 모든 Stage 접근', { exact: true }), 'developer mode label');
-  await toggle.click();
-  await settle(page, 40);
+  const toggle = await unique(page.getByRole('checkbox', { name: '개발자 모드: 모든 Stage 접근' }), 'developer mode checkbox');
+  if (!(await toggle.isChecked())) {
+    await toggle.check();
+    await settle(page, 40);
+  }
+}
+
+// Dialogs ignore input for a short guard window after opening (BUG-05); wait it out before choosing.
+async function passInputGuard(page) {
+  await settle(page, 420);
 }
 
 async function openCheatDrawer(page) {
@@ -100,11 +112,23 @@ async function inspectLayout(page) {
     const dialog = document.querySelector('[role="dialog"]');
     const root = dialog ?? document;
     const elements = Array.from(root.querySelectorAll('button, input, select, summary, [role="tab"]'));
+    // Controls whose centre is clipped by a scrolling ancestor are scrolled out of view, not occluded.
+    const centreVisibleInScrollers = (element, rect) => {
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      for (let current = element.parentElement; current; current = current.parentElement) {
+        const style = getComputedStyle(current);
+        if (style.overflowX === 'visible' && style.overflowY === 'visible') continue;
+        const clip = current.getBoundingClientRect();
+        if (x < clip.left || x > clip.right || y < clip.top || y > clip.bottom) return false;
+      }
+      return true;
+    };
     const candidates = elements.map((element, index) => {
       const rect = element.getBoundingClientRect();
       const style = getComputedStyle(element);
       return { element, index, rect, style };
-    }).filter(({ rect, style }) => (
+    }).filter(({ element, rect, style }) => (
       style.visibility !== 'hidden'
       && style.display !== 'none'
       && rect.width >= 8
@@ -113,14 +137,36 @@ async function inspectLayout(page) {
       && rect.bottom > 0
       && rect.left < innerWidth
       && rect.top < innerHeight
+      && centreVisibleInScrollers(element, rect)
     ));
     const label = ({ element, index }) => element.getAttribute('aria-label') || element.textContent?.trim().slice(0, 60) || `${element.tagName.toLowerCase()}-${index}`;
+    const stickyAncestor = (element) => {
+      for (let current = element; current; current = current.parentElement) {
+        if (getComputedStyle(current).position === 'sticky') return current;
+      }
+      return null;
+    };
+    const scrollParent = (element) => {
+      for (let current = element.parentElement; current; current = current.parentElement) {
+        const style = getComputedStyle(current);
+        if (/(auto|scroll)/.test(style.overflowY) && current.scrollHeight > current.clientHeight) return current;
+      }
+      return null;
+    };
+    // A sticky footer may cover content that its own scroll container can still scroll into view; that is
+    // intentional layout, not an overlap. Anything else covering a control counts as occlusion.
+    const scrollsUnderSticky = (element, sticky) => {
+      if (!sticky || sticky.contains(element)) return false;
+      const container = scrollParent(element);
+      return Boolean(container && container.contains(sticky) && container.scrollTop + container.clientHeight < container.scrollHeight);
+    };
     const overlaps = [];
     for (let leftIndex = 0; leftIndex < candidates.length; leftIndex += 1) {
       for (let rightIndex = leftIndex + 1; rightIndex < candidates.length; rightIndex += 1) {
         const left = candidates[leftIndex];
         const right = candidates[rightIndex];
         if (left.element.contains(right.element) || right.element.contains(left.element)) continue;
+        if (scrollsUnderSticky(left.element, stickyAncestor(right.element)) || scrollsUnderSticky(right.element, stickyAncestor(left.element))) continue;
         const width = Math.max(0, Math.min(left.rect.right, right.rect.right) - Math.max(left.rect.left, right.rect.left));
         const height = Math.max(0, Math.min(left.rect.bottom, right.rect.bottom) - Math.max(left.rect.top, right.rect.top));
         const intersection = width * height;
@@ -128,11 +174,12 @@ async function inspectLayout(page) {
         if (intersection > 16 && intersection / smaller > 0.05) overlaps.push(`${label(left)} <> ${label(right)}`);
       }
     }
+    const reachableUnderSticky = (candidate, top) => scrollsUnderSticky(candidate.element, stickyAncestor(top));
     const occluded = candidates.filter((candidate) => {
       const x = Math.max(viewport.left, Math.min(viewport.right - 1, candidate.rect.left + candidate.rect.width / 2));
       const y = Math.max(viewport.top, Math.min(viewport.bottom - 1, candidate.rect.top + candidate.rect.height / 2));
       const top = document.elementFromPoint(x, y);
-      return top && !candidate.element.contains(top) && !top.contains(candidate.element);
+      return top && !candidate.element.contains(top) && !top.contains(candidate.element) && !reachableUnderSticky(candidate, top);
     }).map(label);
     const accessibilityIssues = [];
     const ids = new Map();
@@ -316,13 +363,14 @@ async function runScenario(page, viewport, dpr, motion) {
   await settle(page, 40);
   await unique(page.getByRole('dialog', { name: '일시정지' }), 'pause dialog');
   await captureEvidence(page, viewport, dpr, motion, 'paused');
-  await (await unique(page.getByRole('button', { name: '계속하기' }), 'resume button')).click();
+  await (await unique(page.getByRole('dialog', { name: '일시정지' }).getByRole('button', { name: '계속하기', exact: true }), 'resume button')).click();
   await settle(page, 40);
 
   await openCheatDrawer(page);
   await enterCheat(page, 'DRAFT');
   await unique(page.getByRole('dialog'), 'draft dialog');
   await captureEvidence(page, viewport, dpr, motion, 'draft');
+  await passInputGuard(page);
   await (await unique(page.locator('[aria-keyshortcuts="1"]'), 'first draft card')).click();
   await settle(page, 80);
 
@@ -330,7 +378,8 @@ async function runScenario(page, viewport, dpr, motion) {
   await enterCheat(page, 'CLEAR');
   await unique(page.getByRole('dialog'), 'settlement dialog');
   await captureEvidence(page, viewport, dpr, motion, 'settlement');
-  await (await unique(page.getByRole('button', { name: 'Stage 선택', exact: true }), 'settlement Stage selection')).click();
+  await passInputGuard(page);
+  await (await unique(page.getByRole('dialog').getByRole('button', { name: 'Stage 선택', exact: true }), 'settlement Stage selection')).click();
   await settle(page, 80);
 
   const stageFive = await unique(page.locator('.stageNode').filter({ hasText: /^Stage 5(?:\D|$)/ }), 'Stage 5 node');
@@ -361,11 +410,19 @@ async function writeReports() {
 
 if (!Number.isFinite(maxDiffRatio) || maxDiffRatio < 0 || maxDiffRatio > 1) throw new Error('VISUAL_MAX_DIFF_RATIO must be between 0 and 1');
 if (!Number.isInteger(pixelTolerance) || pixelTolerance < 0 || pixelTolerance > 255) throw new Error('VISUAL_PIXEL_TOLERANCE must be an integer between 0 and 255');
+// The gate captures the packaged developer build (production bundling and CSP, developer cheats enabled)
+// instead of the dev server, so what it records matches what ships (BUG-02).
 const externalBaseUrl = process.env.VISUAL_BASE_URL;
-const server = externalBaseUrl ? undefined : await createServer({
+const developerOutDir = path.resolve(process.env.VISUAL_BUILD_DIR ?? 'dist-developer');
+if (!externalBaseUrl && process.env.VISUAL_SKIP_BUILD !== '1') {
+  await build({ configFile: path.resolve('vite.config.ts'), mode: 'developer', logLevel: 'error', build: { outDir: developerOutDir, emptyOutDir: true } });
+}
+const server = externalBaseUrl ? undefined : await preview({
   configFile: path.resolve('vite.config.ts'),
+  mode: 'developer',
   logLevel: 'error',
-  server: { host: '127.0.0.1', port: 5174, strictPort: true },
+  build: { outDir: developerOutDir },
+  preview: { host: '127.0.0.1', port: 5174, strictPort: true },
 });
 const baseUrl = externalBaseUrl ?? 'http://127.0.0.1:5174/';
 let browser;
@@ -375,7 +432,6 @@ try {
   await mkdir(path.join(outputRoot, 'actual'), { recursive: true });
   await mkdir(path.join(outputRoot, 'diff'), { recursive: true });
   if (updateGoldens) await mkdir(goldenRoot, { recursive: true });
-  if (server) await server.listen();
   browser = await chromium.launch({ headless: true });
 
   for (const viewport of viewports) {
@@ -422,7 +478,7 @@ try {
   }
 } finally {
   await browser?.close();
-  await server?.close();
+  await server?.close?.();
   if (report.captures.length !== report.configuration.combinations) {
     report.runtimeFailures.push(`capture count ${report.captures.length}, expected ${report.configuration.combinations}`);
   }
