@@ -1,6 +1,7 @@
 // Sprite atlas runtime (TEC-03): loads baked atlas pages per pack and hands out frames by key.
-// Pages load through <img> + createImageBitmap (works under Electron's file:// as well as http), and the
-// generated manifest is imported on demand so it stays out of the main bundle.
+// Pages load through <img> + createImageBitmap (works under Electron's file:// as well as http). The manifest is
+// data, fetched as JSON beside the pages, so it adds nothing to the app JS budget (TEC-05); the generated
+// TypeScript copy serves tests and types.
 
 /** [page, x, y, w, h, anchorX, anchorY] in atlas pixels. */
 export type AtlasFrame = readonly [number, number, number, number, number, number, number];
@@ -54,7 +55,14 @@ async function defaultLoadImage(url: string): Promise<SpriteImage> {
   return typeof createImageBitmap === 'function' ? createImageBitmap(image) : image;
 }
 
-const defaultLoadManifest = () => import('./atlasManifest.generated').then((module) => module.ATLAS_MANIFEST as AtlasManifest);
+/** Written by scripts/build-atlas.mjs next to the pages. */
+export const ATLAS_MANIFEST_URL = 'assets/atlas/manifest.json';
+
+async function defaultLoadManifest(): Promise<AtlasManifest> {
+  const response = await fetch(ATLAS_MANIFEST_URL);
+  if (!response.ok) throw new Error(`atlas manifest ${ATLAS_MANIFEST_URL} did not load (${response.status})`);
+  return (await response.json()) as AtlasManifest;
+}
 
 export class SpriteAtlas {
   private manifest: AtlasManifest | null = null;

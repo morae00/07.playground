@@ -49,6 +49,8 @@ try {
 export const ATLAS_MANIFEST = ${body} as const;
 `;
   writeFileSync(path.join(root, 'src/game/render/assets/atlasManifest.generated.ts'), source);
+  // The runtime fetches the same manifest as data (TEC-05: data stays out of the app JS budget).
+  writeFileSync(path.join(root, 'public/assets/atlas/manifest.json'), `${JSON.stringify(manifest)}\n`);
   console.log(`enemy role fits: ${Object.entries(ENEMY_ROLES).map(([role, { fit }]) => `${role} ${fit.toFixed(3)}`).join(', ')}`);
 } finally {
   await browser.close();

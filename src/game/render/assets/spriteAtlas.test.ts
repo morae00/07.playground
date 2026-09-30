@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ATLAS_MANIFEST } from './atlasManifest.generated.ts';
-import { SpriteAtlas, loopFrame, phaseFor, type AtlasManifest } from './spriteAtlas.ts';
+import { ATLAS_MANIFEST_URL, SpriteAtlas, loopFrame, phaseFor, type AtlasManifest } from './spriteAtlas.ts';
 import { CHAPTER_PACKS, COMMON_PACK, HERO_SLOT, enemyDrawScale, enemySlot, frameKey } from './slots.ts';
 
 const manifest = ATLAS_MANIFEST as AtlasManifest;
@@ -91,4 +91,11 @@ test('loops pick frames by time with a stable per-id phase, and slots map enemie
   assert.equal(enemySlot(1, 'large', 'contact'), 'enemy/1/warden');
   assert.equal(enemyDrawScale('shooter', 'medium'), 1.26);
   assert.equal(enemyDrawScale('charger', 'medium'), 1);
+});
+
+test('the runtime JSON manifest holds the same content as the generated one', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const json = JSON.parse(await readFile(new URL('../../../../public/assets/atlas/manifest.json', import.meta.url), 'utf8'));
+  assert.deepEqual(json, JSON.parse(JSON.stringify(ATLAS_MANIFEST)));
+  assert.equal(ATLAS_MANIFEST_URL, 'assets/atlas/manifest.json');
 });
