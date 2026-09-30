@@ -151,6 +151,8 @@ export interface EngineProbe {
   onRenderLayer(listener: ((layer: WorldLayer) => void) | null): void;
   /** Statistics of the last drawn frame: sorted bodies, player coverage, x-ray. */
   renderStats(): RenderFrameStats;
+  /** The encounter director's view of the current stage time (SYS-03), or null when no director runs. */
+  director(): { beat: string; formation: string; rateFactor: number; terrainCap: number; rewardScale: number; segments: number; stageTime: number } | null;
   /** Live entity and effect counts without copying the world (cheap enough to call every step). */
   counts(): { enemies: number; projectiles: number; hostileShots: number; particles: number; damageNumbers: number };
   addObstacle(spec: Omit<Obstacle, 'id'> & { id?: number }): number;
@@ -372,6 +374,21 @@ export class ProbedGameEngine extends GameEngine {
         this.spawnBossProjectile(x, y, vx, vy, radius, damage, life, kind);
       },
       burst: (x, y, count) => this.presentation.burst(x, y, count, '#111111', 180),
+      director: () => {
+        const director = this.director;
+        if (!director) return null;
+        const stageTime = this.duration - this.timeLeft;
+        const beat = director.beatAt(stageTime);
+        return {
+          beat: beat.kind,
+          formation: beat.formation,
+          rateFactor: director.rateFactor(stageTime),
+          terrainCap: director.terrainCap(stageTime),
+          rewardScale: director.rewardScale(stageTime),
+          segments: director.schedule.length,
+          stageTime,
+        };
+      },
       onRenderLayer: (listener) => {
         this.worldRenderer.onLayer = listener;
       },

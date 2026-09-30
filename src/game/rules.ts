@@ -35,6 +35,12 @@ export type RuleSet = Readonly<{
    * skills ready at release fire one by one 0.1 s apart. Also stops the recovery-thread timer counting twice.
    */
   skillLoopRework: boolean;
+  /**
+   * SYS-03: normal stages follow the chapter's encounter grammar: a 45-second opening ramp (0.4x to 1.0x spawn
+   * rate), then pressure, breather, and elite beats that set the spawn rhythm, direction, formation bursts, the
+   * boss-made terrain count, and breather rewards. Tier mix and field boss marks are unchanged.
+   */
+  encounterDirector: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -50,6 +56,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   reliableAim: false,
   pacing: false,
   skillLoopRework: false,
+  encounterDirector: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -65,6 +72,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   reliableAim: true,
   pacing: true,
   skillLoopRework: true,
+  encounterDirector: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

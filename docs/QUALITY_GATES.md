@@ -35,6 +35,11 @@ The remaster baseline is `artifacts/balance-remaster-baseline.json` (CON-09). It
 - Without `fresh`, clear rates fall as chapters rise: Ch1 23%, Ch2 59%, Ch3 72%, Ch4 92%, Ch5 100%. The chapter growth modelled for upgrades outpaces the difficulty growth. This is input for CON-02's Ch1 tuning and SYS-07.
 - Contact causes 96% of deaths (923 of 961). Shots, boss shots, and boss contact cause the rest.
 
+SYS-03 (encounter director) was compared on Ch1: 10 stages x 4 personas x 10 seeds, remaster rules, before and after.
+- fresh: dies later in 1-1 (median about 68 s instead of 49 s) and kills twice as many, but still clears 0/100.
+- striker clears 4/100 instead of 1/100; survivor 78/100 instead of 69/100.
+Reaching the R1 playtest goals (1-1: 80% survive 3 minutes, 40-70% clear) is left to CON-02's Ch1 tuning of the base spawn rate and ramp.
+
 ## Game rules and grammar
 
 Gameplay changes ship behind the rule set in `src/game/rules.ts`. `classic` reproduces 0.1.0 exactly and `remaster` is the default. Infinite-mode records and replay fixtures are kept per rules version: the remaster rules (v2) may change freely until a build ships them, and after that the first change to seeded outcomes must raise `RULES_VERSION`. `test/grammarContracts.integration.test.mjs` pins the preserved game grammar (stage structure, draft sizes, radii, tier mix, deterministic replay) and one regression test per R0 gameplay fix.

@@ -40,6 +40,7 @@ import {
   scaleAt,
 } from './skillNumbers';
 import { REMASTER_RULES, ruleSetFor, type RuleSet, type RuleSetId } from './rules';
+import { EncounterDirector, type SpawnEdge } from './encounterDirector';
 import { LOGICAL_VIEW, SPAWN_MARGIN, classicViewFrame, logicalViewFrame, spawnFrameOrigin, type ViewFrame } from './viewPolicy';
 import {
   DRAFT_SIZE,
@@ -330,6 +331,8 @@ const ECLIPSE_WALL_LANE_GAP = 115;
 /** Fair terrain (BUG-13): a root zone binds once on entry, then cannot bind again for a while. */
 const ROOT_BIND_SECONDS = 0.65;
 const ROOT_IMMUNITY_SECONDS = ROOT_BIND_SECONDS + 1.5;
+/** Boss-made terrain kinds the encounter director budgets (SYS-03). */
+const DYNAMIC_TERRAIN: ReadonlySet<Hazard['kind']> = new Set(['fire', 'slow', 'root', 'null']);
 /** SYS-11: after silence ends, ready skills fire one at a time this far apart instead of all at once. */
 const SILENCE_RELEASE_STAGGER_SECONDS = 0.1;
 
@@ -890,6 +893,10 @@ export class GameEngine {
   protected castGap = 0;
   /** The last thing that hurt the player, reported when the run is lost (CON-09). */
   protected lastDamageSource: PlayerDamageSource | 'unknown' = 'unknown';
+  /** SYS-03: the encounter director of the current normal stage, or null (classic rules, boss stages, infinite). */
+  protected director: EncounterDirector | null = null;
+  /** The player's last movement direction; front and flank formations spawn relative to it (SYS-03). */
+  protected playerHeading = { x: 1, y: 0 };
   /** Backing-store scale cap (TEC-04); 2 keeps the full device resolution up to DPR 2. */
   protected renderScale = 2;
   /** A frame threw and the loop stopped (TEC-14). */
@@ -1483,6 +1490,11 @@ export class GameEngine {
     this.timeLeft = this.duration;
     this.spawnBudget = 0;
     this.fieldBossMarks.clear();
+    // The director draws from its own stream so beat lengths never shift the gameplay rolls (SYS-03).
+    this.director = this.rules.encounterDirector && this.runMode === 'campaign' && this.kind === 'normal'
+      ? new EncounterDirector(encounterGrammarForChapter(this.chapter as ChapterId), this.duration, createSeededRandom(((this.runSeed ^ 0x5e03d1ec) >>> 0) || 1))
+      : null;
+    this.playerHeading = { x: 1, y: 0 };
     this.stageFinished = false;
     this.rewardLock = false;
     this.activeDraftId = null;
@@ -2287,7 +2299,21 @@ export class GameEngine {
     const stagePressure = this.kind === 'normal' ? (this.stage - 1) * 0.2 : this.kind === 'finalBoss' ? 0.35 : 0.15;
     const difficulty = 1 + (this.chapter - 1) * 0.45 + stagePressure + progress * 0.85 + (this.bossEnraged ? 0.85 : 0);
     const cap = this.enemyCap();
-    if (this.enemies.length < cap) {
+    const director = this.director;
+    if (director) {
+      // SYS-03: the opening ramp and the beat rhythm scale the rate; surround beats spawn one group per edge.
+      const moved = Math.hypot(this.player.x - this.player.prevX, this.player.y - this.player.prevY);
+      if (moved > 0.2) this.playerHeading = { x: (this.player.x - this.player.prevX) / moved, y: (this.player.y - this.player.prevY) / moved };
+      const stageTime = this.duration - this.timeLeft;
+      if (this.enemies.length < cap) {
+        this.spawnBudget += dt * 1.8 * difficulty * director.rateFactor(stageTime);
+        const burst = director.burstSize(stageTime);
+        while (this.spawnBudget >= burst) {
+          this.spawnBudget -= burst;
+          for (let index = 0; index < burst; index += 1) this.spawnEnemy(difficulty, undefined, burst > 1 ? (index % 4) as SpawnEdge : undefined);
+        }
+      }
+    } else if (this.enemies.length < cap) {
       const rate = (this.kind === 'normal' ? 1.8 : 2.25) * difficulty;
       this.spawnBudget += dt * rate;
       while (this.spawnBudget >= 1) {
@@ -2314,13 +2340,28 @@ export class GameEngine {
     }
   }
 
+  /** SYS-03: boss-made terrain (fire, slow, root, null) stays within the beat's hazard budget on normal stages. */
+  protected terrainAllowed() {
+    const director = this.director;
+    if (!director) return true;
+    let alive = 0;
+    for (const hazard of this.hazards) {
+      if (Number.isFinite(hazard.life) && DYNAMIC_TERRAIN.has(hazard.kind)) alive += 1;
+    }
+    return alive < director.terrainCap(this.duration - this.timeLeft);
+  }
+
   protected enemyCap() {
     if (this.runMode === 'infinite') return infiniteDifficultyAt(this.elapsed, this.infiniteBossKills).enemyCap;
     return 90 + this.chapter * 18 + (this.kind === 'normal' ? 0 : 24);
   }
 
-  protected spawnEnemy(difficulty: number, forcedTier?: EnemyTier) {
-    const edge = Math.floor(this.gameplayRandom() * 4);
+  protected spawnEnemy(difficulty: number, forcedTier?: EnemyTier, forcedEdge?: SpawnEdge) {
+    const director = this.director;
+    const stageTime = this.duration - this.timeLeft;
+    // Under the director the edge and the point along it come from its stream and follow the beat's formation.
+    const edge = director ? forcedEdge ?? director.pickEdge(stageTime, this.playerHeading) : Math.floor(this.gameplayRandom() * 4);
+    const along = () => (director ? director.pickAlongEdge() : this.gameplayRandom());
     // Remaster rules spawn from the fixed logical frame so window size never changes a seeded run (BUG-09).
     const spawnFrame = this.rules.logicalSpawnFrame
       ? spawnFrameOrigin(this.player.x, this.player.y, WORLD_W, WORLD_H)
@@ -2336,15 +2377,15 @@ export class GameEngine {
     const margin = SPAWN_MARGIN;
     if (edge === 0) {
       x = left - margin;
-      y = top + this.gameplayRandom() * spawnHeight;
+      y = top + along() * spawnHeight;
     } else if (edge === 1) {
       x = left + spawnWidth + margin;
-      y = top + this.gameplayRandom() * spawnHeight;
+      y = top + along() * spawnHeight;
     } else if (edge === 2) {
-      x = left + this.gameplayRandom() * spawnWidth;
+      x = left + along() * spawnWidth;
       y = top - margin;
     } else {
-      x = left + this.gameplayRandom() * spawnWidth;
+      x = left + along() * spawnWidth;
       y = top + spawnHeight + margin;
     }
     x = clamp(x, -80, WORLD_W + 80);
@@ -2368,6 +2409,8 @@ export class GameEngine {
     const attackStyle = tier !== 'large' && rangedCount < rangedCap && this.gameplayRandom() < rangedChance
       ? 'ranged'
       : 'contact';
+    // Breathers pay more for each kill (SYS-03).
+    const rewardScale = director ? director.rewardScale(stageTime) : 1;
     const baseDamage = (tier === 'small' ? 8 : tier === 'medium' ? 14 : 22)
       * (0.8 + (infiniteDifficulty ? INFINITE_BASELINE.mobDifficulty : difficulty) * 0.14);
     const enemy: Entity = {
@@ -2383,8 +2426,8 @@ export class GameEngine {
       maxHp: hpBase * effectiveDifficulty,
       speed,
       damage: baseDamage * (infiniteDifficulty?.enemyDamageScale ?? 1),
-      xp: tier === 'small' ? 4 : tier === 'medium' ? 10 : 22,
-      coin: tier === 'small' ? 1 : tier === 'medium' ? 3 : 7,
+      xp: Math.round((tier === 'small' ? 4 : tier === 'medium' ? 10 : 22) * rewardScale),
+      coin: Math.round((tier === 'small' ? 1 : tier === 'medium' ? 3 : 7) * rewardScale),
       tier,
       variant: Math.floor(this.gameplayRandom() * 5),
       isBoss: false,
@@ -2752,7 +2795,7 @@ export class GameEngine {
 
     if (boss.pattern === 'flame' && enemy.patternTimer <= 0) {
       enemy.patternTimer = 1.05;
-      this.hazards.push({ id: this.nextId(), kind: 'fire', x: enemy.x, y: enemy.y, radius: 74, life: 5.8, maxLife: 5.8, damage: enemy.damage * 0.26, slow: 1, triggered: false });
+      if (this.terrainAllowed()) this.hazards.push({ id: this.nextId(), kind: 'fire', x: enemy.x, y: enemy.y, radius: 74, life: 5.8, maxLife: 5.8, damage: enemy.damage * 0.26, slow: 1, triggered: false });
       if (this.gameplayRandom() < 0.35) {
         for (let i = 0; i < 9; i += 1) {
           const angle = (Math.PI * 2 * i) / 9;
@@ -2765,7 +2808,7 @@ export class GameEngine {
       enemy.patternTimer = 4;
       for (let i = 0; i < 5; i += 1) {
         const angle = (Math.PI * 2 * i) / 5 + this.elapsed;
-        this.hazards.push({ id: this.nextId(), kind: 'slow', x: this.player.x + Math.cos(angle) * (120 + i * 42), y: this.player.y + Math.sin(angle) * (120 + i * 42), radius: 86, life: 5.5, maxLife: 5.5, damage: 0, slow: 0.34, triggered: false });
+        if (this.terrainAllowed()) this.hazards.push({ id: this.nextId(), kind: 'slow', x: this.player.x + Math.cos(angle) * (120 + i * 42), y: this.player.y + Math.sin(angle) * (120 + i * 42), radius: 86, life: 5.5, maxLife: 5.5, damage: 0, slow: 0.34, triggered: false });
       }
     }
 
@@ -2774,13 +2817,13 @@ export class GameEngine {
       for (let i = 0; i < 3; i += 1) {
         const angle = this.gameplayRandom() * Math.PI * 2;
         const dist = 80 + this.gameplayRandom() * 220;
-        this.hazards.push({ id: this.nextId(), kind: 'root', x: this.player.x + Math.cos(angle) * dist, y: this.player.y + Math.sin(angle) * dist, radius: 52, life: 7, maxLife: 7, damage: 0, slow: 1, triggered: false });
+        if (this.terrainAllowed()) this.hazards.push({ id: this.nextId(), kind: 'root', x: this.player.x + Math.cos(angle) * dist, y: this.player.y + Math.sin(angle) * dist, radius: 52, life: 7, maxLife: 7, damage: 0, slow: 1, triggered: false });
       }
     }
 
     if (boss.pattern === 'clock' && enemy.patternTimer <= 0) {
       enemy.patternTimer = 3.2;
-      this.hazards.push({ id: this.nextId(), kind: 'slow', x: this.player.x, y: this.player.y, radius: 150, life: 4.6, maxLife: 4.6, damage: 0, slow: 0.28, triggered: false });
+      if (this.terrainAllowed()) this.hazards.push({ id: this.nextId(), kind: 'slow', x: this.player.x, y: this.player.y, radius: 150, life: 4.6, maxLife: 4.6, damage: 0, slow: 0.28, triggered: false });
       for (let i = 0; i < 12; i += 1) {
         const angle = (Math.PI * 2 * i) / 12 + Math.PI / 12;
         this.spawnBossProjectile(enemy.x, enemy.y, Math.cos(angle) * 150, Math.sin(angle) * 150, 6, enemy.damage * 0.45, 4.5, 'ring');
@@ -2843,7 +2886,10 @@ export class GameEngine {
 
     if (boss.pattern === 'null' && enemy.patternTimer <= 0) {
       enemy.patternTimer = 4.8;
-      this.hazards.push({ id: this.nextId(), kind: 'null', x: this.player.x + (this.gameplayRandom() - 0.5) * 160, y: this.player.y + (this.gameplayRandom() - 0.5) * 160, radius: 130, life: 5.4, maxLife: 5.4, damage: 0, slow: 1, triggered: false });
+      // The position rolls happen either way, so the cap never shifts the gameplay stream.
+      const nullX = this.player.x + (this.gameplayRandom() - 0.5) * 160;
+      const nullY = this.player.y + (this.gameplayRandom() - 0.5) * 160;
+      if (this.terrainAllowed()) this.hazards.push({ id: this.nextId(), kind: 'null', x: nullX, y: nullY, radius: 130, life: 5.4, maxLife: 5.4, damage: 0, slow: 1, triggered: false });
       for (let i = 0; i < 16; i += 1) {
         const angle = (Math.PI * 2 * i) / 16 + this.elapsed * 0.2;
         this.spawnBossProjectile(enemy.x, enemy.y, Math.cos(angle) * 190, Math.sin(angle) * 190, 8, enemy.damage * 0.5, 4.8, 'eclipse');
