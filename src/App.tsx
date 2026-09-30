@@ -288,7 +288,8 @@ function App() {
         runPausedRef.current = false;
         setRunPaused(false);
         setSettlement(result);
-        grantSettlement(result, !developerAccess);
+        // Practice pace never unlocks stages (CON-02).
+        grantSettlement(result, !developerAccess && !result.practice);
         setPhase('roundClear');
       },
       onGameOver: (result: Settlement) => {
@@ -312,6 +313,10 @@ function App() {
     [selectedChapter, selectedStageNo],
   );
   const selectedStageLocked = !developerAccess && !isStageUnlocked(meta, selectedChapter.id, selectedStage.id);
+  const nextStage = settlement && settlement.runMode === 'campaign' && settlement.cleared && !settlement.gameComplete
+    ? nextStageProgress(settlement.chapter, settlement.stage)
+    : null;
+  const nextStageOpen = nextStage !== null && (developerAccess || isStageUnlocked(meta, nextStage.chapter, nextStage.stage));
 
   const beginRun = useCallback((launch: (engine: GameEngine) => void) => {
     const canvas = canvasRef.current;
@@ -349,6 +354,13 @@ function App() {
     if (selectedStageLocked) return;
     beginRun((engine) => engine.startRun(selectedChapter.id, selectedStage.id));
   }, [beginRun, selectedChapter.id, selectedStage.id, selectedStageLocked]);
+
+  /** Settlement's primary action: go straight on to the next stage (CON-02). */
+  const startStage = useCallback((address: { chapter: number; stage: number }) => {
+    setSelectedChapterId(address.chapter as typeof selectedChapterId);
+    setSelectedStageNo(address.stage);
+    beginRun((engine) => engine.startRun(address.chapter, address.stage));
+  }, [beginRun]);
 
   const startInfiniteRun = useCallback(() => {
     const normalizedName = normalizeInfinitePlayerName(infinitePlayerName);
@@ -576,11 +588,11 @@ function App() {
               <strong>{snapshot.runMode === 'infinite' ? 'INFINITE' : `Ch.${snapshot.chapter} / St.${snapshot.stage}`}</strong>
               <span>{snapshot.runMode === 'infinite'
                 ? `DANGER ${snapshot.dangerRank}`
-                : snapshot.stageKind === 'normal'
+                : `${snapshot.stageKind === 'normal'
                   ? '생존'
                   : snapshot.stageKind === 'midBoss'
                     ? '중간보스'
-                    : '챕터보스'}</span>
+                    : '챕터보스'}${snapshot.practice ? ' · 연습' : ''}`}</span>
             </div>
             <div className="barGroup">
               <div className="barLabel">
@@ -761,13 +773,14 @@ function App() {
               <input type="checkbox" checked={options.autoPause} onChange={(event) => setOptions({ ...options, autoPause: event.target.checked })} />
               <span>창을 벗어나면 자동 일시정지</span>
             </label>
-            {DEVELOPER_UI_AVAILABLE && <label>
+            <label>
               <span>라운드 길이</span>
               <select value={options.paceMode} onChange={(event) => setOptions({ ...options, paceMode: event.target.value as PaceMode })}>
                 <option value="standard">표준</option>
-                <option value="showcase">쇼케이스</option>
+                <option value="practice">연습 (짧은 Stage · 해금 없음 · 보상 30%)</option>
+                {DEVELOPER_UI_AVAILABLE && <option value="showcase">쇼케이스</option>}
               </select>
-            </label>}
+            </label>
           </section>}
 
           {drawerTab === 'cheats' && developerAccess && <section className="panelBlock cheatBlock drawerPanel" id="drawer-panel-cheats" role="tabpanel" aria-labelledby="drawer-tab-cheats" tabIndex={0}>
@@ -1121,9 +1134,11 @@ function App() {
             {settlement.runMode === 'infinite' && <div className={settlement.scoreEligible ? 'soonStrip recordSaved' : 'soonStrip recordRejected'}>{leaderboardStatus || (settlement.scoreEligible ? '경쟁 기록 판정 완료' : 'PRACTICE / 기록 제외')}</div>}
             {settlement.runMode === 'infinite' && seedCopyStatus && <p className="seedStatus" role="status" aria-live="polite">{seedCopyStatus}</p>}
             {settlement.gameComplete && <div className="soonStrip">Chapter 6 Coming Soon</div>}
-            {settlement.cleared && !settlement.gameComplete && <div className="soonStrip">Stage 클리어. 다음 Stage는 Stage 선택에서 시작할 수 있습니다.</div>}
+            {settlement.practice && <div className="soonStrip">연습 Stage는 해금에 반영되지 않고 보상은 30%입니다.</div>}
+            {!settlement.practice && settlement.cleared && !settlement.gameComplete && <div className="soonStrip">{nextStageOpen ? 'Stage 클리어. 다음 Stage로 바로 이어갈 수 있습니다.' : 'Stage 클리어. 다음 Stage는 Stage 선택에서 시작할 수 있습니다.'}</div>}
             <div className="modalActions">
-              <button className="primary" onClick={toMenu}>{settlement.runMode === 'infinite' ? '무한 경쟁' : 'Stage 선택'}</button>
+              {nextStage && nextStageOpen && <button className="primary" onClick={() => startStage(nextStage)}>다음 Stage (Ch.{nextStage.chapter} / St.{nextStage.stage})</button>}
+              <button className={nextStageOpen ? 'ghost' : 'primary'} onClick={toMenu}>{settlement.runMode === 'infinite' ? '무한 경쟁' : 'Stage 선택'}</button>
               <button className="ghost" onClick={settlement.runMode === 'infinite' ? startInfiniteRun : startRun}>{settlement.runMode === 'infinite' ? '다시 도전' : phase === 'gameOver' ? '재시작' : '같은 Stage 재시작'}</button>
               {settlement.runMode === 'infinite' && <button className="ghost" type="button" onClick={() => void copyInfiniteResult()}>결과 복사</button>}
             </div>

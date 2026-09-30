@@ -1,4 +1,4 @@
-// Browser regression probes for input (BUG-04, BUG-05, BUG-06, TEC-07) against the developer build.
+// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, CON-02) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -132,6 +132,20 @@ try {
     await tap(0);
     const menuFocus = await page.evaluate(() => document.activeElement?.closest('.menuLayer') !== null);
     record('BUG-06 gamepad moves focus in the menu', menuFocus);
+    await page.close();
+  });
+
+  await probe('CON-02', async () => {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await openStage(page);
+    await cheat(page, 'CLEAR');
+    await page.waitForTimeout(420);
+    const next = page.getByRole('dialog').getByRole('button', { name: '다음 Stage (Ch.1 / St.2)' });
+    const offered = (await next.count()) === 1;
+    if (offered) await next.click();
+    await page.waitForTimeout(300);
+    const badge = await page.locator('.roundBadge strong').textContent().catch(() => '');
+    record('CON-02 the settlement offers the next stage and starts it', offered && badge?.trim() === 'Ch.1 / St.2', `badge ${badge?.trim() ?? 'none'}`);
     await page.close();
   });
 

@@ -100,3 +100,8 @@ test('showcase pacing from older saves maps to standard outside developer builds
   assert.equal(sanitizeOptions(options, true).paceMode, 'showcase');
   assert.equal(sanitizeOptions({ ...options, paceMode: 'turbo' }, true).paceMode, 'standard');
 });
+
+test('practice pace is a shipped option (CON-02)', () => {
+  const options = { ...createDefaultOptions(), paceMode: 'practice' };
+  assert.equal(sanitizeOptions(options, false).paceMode, 'practice');
+});

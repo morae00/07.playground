@@ -28,6 +28,8 @@ export type RuleSet = Readonly<{
   mirrorAwakeningRework: boolean;
   /** SYS-01: auto-aim leads moving targets, skips walled-off targets, retargets after 3 misses, stays in view. */
   reliableAim: boolean;
+  /** CON-02: 8-minute stages, 10-minute boss enrage timer, 5-minute Ch1-St1, and the practice pace. */
+  pacing: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -41,6 +43,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   fairTerrain: false,
   mirrorAwakeningRework: false,
   reliableAim: false,
+  pacing: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -54,6 +57,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   fairTerrain: true,
   mirrorAwakeningRework: true,
   reliableAim: true,
+  pacing: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

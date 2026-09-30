@@ -249,6 +249,7 @@ export type HudSnapshot = {
   dangerRank: number;
   scoreEligible: boolean;
   rulesVersion: number;
+  practice: boolean;
   bossName?: string;
   bossMove?: string;
   bossHp?: number;
@@ -279,6 +280,8 @@ export type Settlement = {
   bossKills: number;
   scoreEligible: boolean;
   rulesVersion: number;
+  /** A practice-pace run: no unlock, reduced rewards (CON-02). */
+  practice: boolean;
 };
 
 export type EngineCallbacks = {
@@ -725,10 +728,28 @@ export function runUpgradeCost(id: RunUpgradeId, level: number) {
   return Math.floor(RUN_UPGRADES[id].baseCost * 1.42 ** level);
 }
 
-export function stageDuration(kind: StageKind, paceMode: PaceMode) {
+/** Stage lengths in seconds. Boss stages end when the boss dies; their timer is the enrage timer (G7). */
+export const STAGE_PACING = Object.freeze({
+  classic: { normal: 720, boss: 1020 },
+  standard: { normal: 480, boss: 600, firstStage: 300 },
+  practice: { normal: 150 },
+  showcase: { normal: 90, boss: 135 },
+});
+/** Practice runs never unlock stages and pay this share of gold and XP, so short stages are not a farm. */
+export const PRACTICE_REWARD_SCALE = 0.3;
+
+export function stageDuration(
+  kind: StageKind,
+  paceMode: PaceMode,
+  { chapter = 1, stage = 1, pacing = true }: { chapter?: number; stage?: number; pacing?: boolean } = {},
+) {
   // Showcase pacing is a developer tool; shipped builds always use standard stage lengths (BUG-17).
-  if (paceMode === 'showcase' && DEVELOPER_UI_AVAILABLE) return kind === 'normal' ? 90 : 135;
-  return kind === 'normal' ? 720 : 1020;
+  if (paceMode === 'showcase' && DEVELOPER_UI_AVAILABLE) return kind === 'normal' ? STAGE_PACING.showcase.normal : STAGE_PACING.showcase.boss;
+  if (!pacing) return kind === 'normal' ? STAGE_PACING.classic.normal : STAGE_PACING.classic.boss;
+  if (kind !== 'normal') return STAGE_PACING.standard.boss;
+  if (paceMode === 'practice') return STAGE_PACING.practice.normal;
+  // Ch1-St1 is the tutorial length (CON-02).
+  return chapter === 1 && stage === 1 ? STAGE_PACING.standard.firstStage : STAGE_PACING.standard.normal;
 }
 
 export function formatClock(seconds: number) {
@@ -850,6 +871,8 @@ export class GameEngine {
   protected objective = '';
   protected objectiveTarget = 0;
   protected cheatGodMode = false;
+  /** This round runs at practice pace: no unlock and reduced rewards (CON-02). */
+  protected practiceRun = false;
   /** The last thing that hurt the player, reported when the run is lost (CON-09). */
   protected lastDamageSource: PlayerDamageSource | 'unknown' = 'unknown';
   /** Set only by probes: stops the stage director from adding enemies so a test controls the whole world. */
@@ -1363,7 +1386,10 @@ export class GameEngine {
   protected beginRound() {
     this.releaseTransientObjects();
     this.kind = this.runMode === 'infinite' ? 'midBoss' : stageKind(this.stage);
-    this.duration = this.runMode === 'infinite' ? 0 : stageDuration(this.kind, this.options.paceMode);
+    this.duration = this.runMode === 'infinite'
+      ? 0
+      : stageDuration(this.kind, this.options.paceMode, { chapter: this.chapter, stage: this.stage, pacing: this.rules.pacing });
+    this.practiceRun = this.runMode === 'campaign' && this.rules.pacing && this.options.paceMode === 'practice';
     this.objective = this.runMode === 'infinite' ? '랜덤 보스 연속 처치' : objectiveFor(this.chapter, this.stage);
     this.objectiveTarget = this.runMode === 'infinite'
       ? 1
@@ -3429,8 +3455,9 @@ export class GameEngine {
       : this.kind === 'normal'
         ? 0
         : 70 + this.chapter * 20;
-    const gold = Math.floor(base + bossBonus + this.stageKills * 0.9 + this.stageCoinsEarned * 0.28 + this.chapter * 18 + this.stage * 8);
-    const xp = Math.floor(70 + this.stageKills * 1.1 + this.chapter * 24 + (infinite ? this.infiniteBossKills * 18 : this.kind === 'normal' ? 0 : 80));
+    const rewardScale = this.practiceRun ? PRACTICE_REWARD_SCALE : 1;
+    const gold = Math.floor((base + bossBonus + this.stageKills * 0.9 + this.stageCoinsEarned * 0.28 + this.chapter * 18 + this.stage * 8) * rewardScale);
+    const xp = Math.floor((70 + this.stageKills * 1.1 + this.chapter * 24 + (infinite ? this.infiniteBossKills * 18 : this.kind === 'normal' ? 0 : 80)) * rewardScale);
     const gameComplete = !infinite && this.chapter === 5 && this.stage === 10 && cleared;
     return {
       runMode: this.runMode,
@@ -3450,6 +3477,7 @@ export class GameEngine {
       bossKills: infinite ? this.infiniteBossKills : 0,
       scoreEligible: infinite ? this.scoreEligible : false,
       rulesVersion: this.rules.version,
+      practice: this.practiceRun,
     };
   }
 
@@ -3557,6 +3585,7 @@ export class GameEngine {
       dangerRank: infiniteDifficulty?.rank ?? stageIndex(this.chapter, this.stage),
       scoreEligible: this.runMode === 'infinite' && this.scoreEligible,
       rulesVersion: this.rules.version,
+      practice: this.practiceRun,
       bossName: boss?.boss?.name ? `${boss.boss.name} · PHASE ${boss.bossPhase ?? 1}${this.bossEnraged ? ' [광폭화]' : ''}` : undefined,
       bossMove: bossMove?.attackGrammar,
       bossHp: boss?.hp,

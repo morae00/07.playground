@@ -2,7 +2,8 @@ import { DEVELOPER_UI_AVAILABLE } from './developerAccess.ts';
 
 export type MetaUpgradeId = 'attack' | 'defense' | 'maxHp' | 'moveSpeed' | 'crit' | 'regen' | 'magnet';
 export type PassiveId = 'rareLuck' | 'bossHunter' | 'coinMagnet';
-export type PaceMode = 'standard' | 'showcase';
+/** standard; practice = short stages without unlocks (CON-02); showcase = developer builds only. */
+export type PaceMode = 'standard' | 'practice' | 'showcase';
 
 export type StageProgress = {
   chapter: number;
@@ -130,7 +131,7 @@ export function sanitizeOptions(value: unknown, allowShowcase = DEVELOPER_UI_AVA
     screenShake: booleanValue(value.screenShake, fallback.screenShake),
     reducedFlash: booleanValue(value.reducedFlash, fallback.reducedFlash),
     // Saves made while showcase pacing was selectable keep working but fall back to standard outside developer builds (G17).
-    paceMode: value.paceMode === 'showcase' && allowShowcase ? 'showcase' : 'standard',
+    paceMode: value.paceMode === 'practice' ? 'practice' : value.paceMode === 'showcase' && allowShowcase ? 'showcase' : 'standard',
     autoPause: booleanValue(value.autoPause, fallback.autoPause),
   };
 }
