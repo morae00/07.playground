@@ -43,6 +43,15 @@ async function cheat(page, code) {
 
 const diagnostics = (page) => page.evaluate(() => window.__blacklineDiagnostics?.());
 
+/** Picks the first card of any draft that opened meanwhile (after its 350 ms input guard), so play can go on. */
+async function settleDrafts(page) {
+  for (let attempt = 0; attempt < 5 && (await page.getByRole('dialog').filter({ has: page.locator('.draftGrid') }).count()) > 0; attempt += 1) {
+    await page.waitForTimeout(450);
+    await page.keyboard.press('1');
+    await page.waitForTimeout(150);
+  }
+}
+
 const browser = await chromium.launch({ headless: true });
 async function probe(name, body) {
   try {
@@ -301,13 +310,20 @@ try {
     // Double speed until a crowd has gathered (about 20 s of play), then clear it in one frame.
     await page.getByRole('button', { name: /게임 속도/ }).click();
     await page.waitForFunction(() => window.__blacklineDiagnostics?.().enemies >= 8, undefined, { timeout: 15000 });
+    // A level-up draft may have opened while the crowd gathered; it would block the cheat panel.
+    await settleDrafts(page);
     const playing = await diagnostics(page);
     record('AUD-01 a run plays through one running context with a limiter', playing.audio.contexts === 1 && playing.audio.state === 'running' && playing.audio.limiter && playing.audio.started > 0, `state ${playing.audio.state}, ${playing.audio.started} voices started`);
     await cheat(page, 'NUKE');
     const cleared = await diagnostics(page);
     const spaced = cleared.audio.spaced - playing.audio.spaced;
     record('AUD-01 clearing the screen at once stays under the voice cap', spaced >= 5 && cleared.audio.peak <= 16, `${playing.enemies} enemies before, ${spaced} cues spaced out, peak ${cleared.audio.peak} voices`);
-    await page.getByRole('button', { name: '런 패널 닫기' }).click();
+    // The cleared crowd's XP can open a draft, which also closes the drawer.
+    await settleDrafts(page);
+    const closer = page.getByRole('button', { name: '런 패널 닫기' });
+    if (await closer.count()) await closer.click();
+    // Past the 30 ms spacing of the drawer button's own click cue.
+    await page.waitForTimeout(120);
     const beforeClick = (await diagnostics(page)).audio.started;
     await page.getByRole('button', { name: '게임 일시정지' }).click();
     await page.waitForTimeout(100);
