@@ -101,11 +101,14 @@ test('options saved before the settings screen load with the new settings at the
   const legacy = { ...createDefaultOptions() } as Partial<ReturnType<typeof createDefaultOptions>>;
   delete legacy.uiScale;
   delete legacy.reducedMotion;
+  delete legacy.hitReaction;
   assert.equal(sanitizeOptions(legacy).uiScale, 1);
   assert.equal(sanitizeOptions(legacy).reducedMotion, false);
   assert.equal(sanitizeOptions({ ...legacy, uiScale: 2 }).uiScale, 1.3, 'the HUD scale stays within 80-130%');
   assert.equal(sanitizeOptions({ ...legacy, uiScale: 0.5 }).uiScale, 0.8);
   assert.equal(sanitizeOptions({ ...legacy, reducedMotion: true }).reducedMotion, true);
+  assert.equal(sanitizeOptions(legacy).hitReaction, 1, 'full hit reaction until set (FX-02)');
+  assert.equal(sanitizeOptions({ ...legacy, hitReaction: 3 }).hitReaction, 1);
 });
 
 test('profiles saved before onboarding hints load with none seen (UI-09, G17)', () => {

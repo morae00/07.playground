@@ -384,6 +384,8 @@ const BOSS_CONTACT_RECOIL = 260;
 /** At or under this share of health the player gets the low-health heartbeat and vignette (FX-03). */
 export const LOW_HEALTH_RATIO = 0.3;
 const ENRAGE_STEPS = 4;
+/** FX-02: global hit-stop lengths for the rare events that keep it under rareHitStop rules (rail: 0.045 s). */
+const RARE_HIT_STOP = Object.freeze({ bossKill: 0.09, awakening: 0.06 });
 /** A max-health upgrade bought while paused heals over this long after the run resumes (UI-04, G6). */
 export const PAUSED_HEAL_SECONDS = 3;
 const ENRAGE_STEP_SECONDS = 30;
@@ -1412,6 +1414,7 @@ export class GameEngine {
       this.skills[offer.skillId] = { level: Math.max(5, state.level), awakened: true };
       this.pendingAwakenings = this.pendingAwakenings.filter((id) => id !== offer.skillId);
       this.emit({ type: 'draft/applied', kind: 'awakening', x: this.player.x, y: this.player.y });
+      if (this.rules.rareHitStop) this.requestHitStop(RARE_HIT_STOP.awakening);
     } else {
       const nextLevel = clamp(state.level + 1, 1, MAX_SKILL_LEVEL);
       this.skills[offer.skillId] = { level: nextLevel, awakened: state.awakened };
@@ -4065,7 +4068,7 @@ export class GameEngine {
     }
     const travel = normalize(enemy.x - source.x, enemy.y - source.y);
     this.emit({ type: 'enemy/hit', id: enemy.id, x: enemy.x, y: enemy.y, radius: enemy.radius, damage, crit, tier: impactTier, dx: travel.x, dy: travel.y });
-    if (impactTier !== 'light') this.requestHitStop(impactTier === 'critical' ? 0.035 : 0.025);
+    if (impactTier !== 'light' && !this.rules.rareHitStop) this.requestHitStop(impactTier === 'critical' ? 0.035 : 0.025);
   }
 
   protected requestHitStop(seconds: number) {
@@ -4142,6 +4145,8 @@ export class GameEngine {
         this.objectiveTarget = this.infiniteBossKills + 1;
       }
     }
+    // FX-02: a boss kill is one of the rare events that still stop the whole simulation for a beat.
+    if (enemy.isBoss && this.rules.rareHitStop) this.requestHitStop(RARE_HIT_STOP.bossKill);
     const xpCount = enemy.isBoss ? 7 : enemy.tier === 'large' ? 4 : enemy.tier === 'medium' ? 2 : 1;
     for (let i = 0; i < xpCount; i += 1) {
       this.spawnPickup(

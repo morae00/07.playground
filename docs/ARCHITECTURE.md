@@ -137,6 +137,12 @@ Two HUD marks live on the canvas, because they need the camera (UI-02):
 - Bosses and elites outside the view get a coral arrow on the screen edge. The arrow sits on the line from the screen centre toward the enemy and keeps clear of the HUD rows. Bosses come first; at most four arrows show.
 - Silence and root show as round timers over the hero's head. The renderer infers each debuff's length when it sees one start, and the ring empties as the debuff runs out. The DOM effect rack still announces both to screen readers but no longer shows them.
 
+## Hit-stop in two layers (FX-02)
+
+- **Presentation layer:** a struck body recoils along the blow and eases back within 0.12 s: 2, 5, or 8 units for light, heavy, and critical hits. It holds its hit pose meanwhile (FX-01). Its simulated position does not move for it (G14). The `hitReaction` option (0-100%) scales the recoil. It is presentation only, so it cannot change a seeded outcome or an infinite record.
+- **Global layer (`rareHitStop` rule):** a hit-stop of the whole simulation is kept for rare events only: the rail spear (0.045 s), a boss kill (0.09 s), and an awakening (0.06 s). These still spend the BUG-07 budget, and ordinary heavy and critical hits no longer ask for one, so a strong build does not make the game sticky.
+- Classic rules keep 0.1.0's hit-stop on every heavy hit.
+
 ## Camera (FX-04)
 
 The simulation camera stays hard-locked on the player, clamped to the world. Spawns, aim, and off-screen checks use it together with the logical frame (G14). Under the `smoothCamera` rule, the screen shows a separate view camera instead (`src/game/presentation/viewCamera.ts`):

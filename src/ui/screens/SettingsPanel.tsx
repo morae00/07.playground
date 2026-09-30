@@ -4,7 +4,7 @@ import type { ChangeEvent } from 'react';
 import { DEVELOPER_UI_AVAILABLE } from '../../platform/developerAccess';
 import type { GameOptions, PaceMode } from '../../platform/save';
 
-type NumberOption = 'volume' | 'musicVolume' | 'sfxVolume' | 'effects' | 'uiScale';
+type NumberOption = 'volume' | 'musicVolume' | 'sfxVolume' | 'effects' | 'uiScale' | 'hitReaction';
 type SwitchOption = 'damageNumbers' | 'screenShake' | 'reducedFlash' | 'reducedMotion' | 'autoPause';
 
 export function SettingsPanel({ options, setOptions, inRun = false }: { options: GameOptions; setOptions: (options: GameOptions) => void; inRun?: boolean }) {
@@ -41,6 +41,7 @@ export function SettingsPanel({ options, setOptions, inRun = false }: { options:
         </label>
         {slider('effects', '이펙트', 0.25, 1, 0.05)}
         {slider('uiScale', 'HUD 크기', 0.8, 1.3, 0.05)}
+        {slider('hitReaction', '타격 반동', 0, 1, 0.05)}
         {toggle('damageNumbers', '데미지 숫자')}
         {toggle('screenShake', '화면 흔들림')}
       </fieldset>

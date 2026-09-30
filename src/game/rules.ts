@@ -83,6 +83,12 @@ export type RuleSet = Readonly<{
    * simulation camera (G14), so seeded outcomes do not change.
    */
   smoothCamera: boolean;
+  /**
+   * FX-02: ordinary heavy and critical hits no longer stop the whole simulation; the struck body recoils on its
+   * own in the presentation layer instead. Global hit-stop is kept for rare events (the rail spear, a boss kill,
+   * an awakening) and still spends the BUG-07 budget, so a strong build no longer makes the game sticky.
+   */
+  rareHitStop: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -109,6 +115,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   bossSpacing: false,
   bossMoves: false,
   smoothCamera: false,
+  rareHitStop: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -135,6 +142,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   bossSpacing: true,
   bossMoves: true,
   smoothCamera: true,
+  rareHitStop: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

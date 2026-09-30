@@ -53,6 +53,18 @@ Findings:
 
 CON-02 Ch1 tuning: by the novice proxy, 1-1 already clears within the R1 target band (40-70%), and 3-minute survival (70%) is near its 80% target. A longer opening ramp does not help (1-1, novice, 20 seeds): a 90 s ramp kept 50% clear but dropped 3-minute survival to 50%, and 120 s gave 45% and 65%. Fewer early enemies mean less XP and fewer drafts (median 14 drafts at 45 s, 5 at 90 s), so the player is weaker when the pressure arrives. The 45 s ramp stays. The R1 playtest (6 or more new players) decides the final Ch1 numbers.
 
+FX-02 (two-layer hit-stop, `rareHitStop` rule) changes seeded outcomes, so it was piloted against its parent (FX-04) on 8 stages × 10 seeds × 4 personas:
+
+| | before (FX-04) | after (FX-02) |
+|---|---:|---:|
+| clear, all 320 | 25.9% | 32.5% |
+| clears: striker / survivor / collector / fresh | 17 / 59 / 7 / 0 | 22 / 71 / 11 / 0 |
+| clear by stage: 1-1 / 1-3 / 1-5 / 1-8 / 1-10 / 2-5 / 3-10 / 5-5 | 25 / 15 / 23 / 20 / 8 / 38 / 15 / 65% | 28 / 18 / 25 / 25 / 18 / 53 / 28 / 68% |
+| deaths: contact / shots / boss | 224 / 7 / 6 | 201 / 6 / 9 |
+| fresh in 1-1, death p50 (s) | 68 | 73 |
+
+Per-hit global hit-stop slowed the simulation while the budgeted stage and enrage clocks kept running (BUG-07). Players lost up to 8% of their acting time, and boss stages lost the most (1-10, 2-5, 3-10). FX-02 gives that time back. **[Team check]** either accept the easier boss stages, or fold the change into the CON-02 and SYS-07 tuning, for example with enrage timers. A full rebaseline (2,000 scenarios) is due at the end of R1, together with ART-05's obstacle catalogue.
+
 ## Game rules and grammar
 
 Gameplay changes ship behind the rule set in `src/game/rules.ts`. `classic` reproduces 0.1.0 exactly and `remaster` is the default. Infinite-mode records and replay fixtures are kept per rules version: the remaster rules (v2) may change freely until a build ships them, and after that the first change to seeded outcomes must raise `RULES_VERSION`. `test/grammarContracts.integration.test.mjs` pins the preserved game grammar (stage structure, draft sizes, radii, tier mix, deterministic replay) and one regression test per R0 gameplay fix.

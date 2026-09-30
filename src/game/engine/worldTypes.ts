@@ -222,6 +222,17 @@ export type Corpse = {
 };
 
 /** The comic hit star at an impact (FX-03, kit PN.vfx.hit): presentation only. */
+/** FX-02: a struck body's recoil along the blow, drawn by the presentation layer only (G14). */
+export type Recoil = {
+  id: number;
+  dx: number;
+  dy: number;
+  /** Peak offset in world units. */
+  size: number;
+  life: number;
+  maxLife: number;
+};
+
 export type HitStamp = {
   x: number;
   y: number;

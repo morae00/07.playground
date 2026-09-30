@@ -38,6 +38,8 @@ export type GameOptions = {
   uiScale: number;
   /** Reduced motion even when the system does not ask for it (UI-04); the system setting always applies too. */
   reducedMotion: boolean;
+  /** How far a struck body recoils, 0-1 (FX-02). Presentation only: it never changes the simulation. */
+  hitReaction: number;
 };
 
 /** Per-stage record, keyed "<chapter>-<stage>". Practice runs are not recorded. */
@@ -120,6 +122,7 @@ export const createDefaultOptions = (): GameOptions => ({
   sfxVolume: 1,
   uiScale: 1,
   reducedMotion: false,
+  hitReaction: 1,
 });
 
 export const createDefaultProfile = (): ProfileData => ({
@@ -187,6 +190,7 @@ export function sanitizeOptions(value: unknown, allowShowcase = DEVELOPER_UI_AVA
     sfxVolume: finiteNumber(value.sfxVolume, fallback.sfxVolume, 0, 1),
     uiScale: finiteNumber(value.uiScale, fallback.uiScale, 0.8, 1.3),
     reducedMotion: booleanValue(value.reducedMotion, fallback.reducedMotion),
+    hitReaction: finiteNumber(value.hitReaction, fallback.hitReaction, 0, 1),
   };
 }
 

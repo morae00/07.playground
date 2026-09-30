@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { CueId, SoundOutput } from '../audioPolicy.ts';
 import { createDefaultOptions } from '../../platform/save.ts';
-import { CORPSE_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HIT_STAMP_SECONDS, HURT_VIGNETTE_SECONDS, NUMBER_MERGE_SECONDS, PICKUP_COMBO_MAX, PICKUP_COMBO_SECONDS, PICKUP_COMBO_STEP, Presentation } from './presentation.ts';
+import { CORPSE_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HIT_STAMP_SECONDS, HURT_VIGNETTE_SECONDS, NUMBER_MERGE_SECONDS, PICKUP_COMBO_MAX, PICKUP_COMBO_SECONDS, PICKUP_COMBO_STEP, Presentation, RECOIL_SECONDS, RECOIL_SIZE } from './presentation.ts';
 
 function setup(overrides: Partial<ReturnType<typeof createDefaultOptions>> = {}) {
   let id = 0;
@@ -299,4 +299,19 @@ test('a level-up draft plays its sound, and a draft with a legendary, mythic, or
   presentation.handle({ type: 'draft/opened', reason: 'level', highlight: false });
   presentation.handle({ type: 'draft/opened', reason: 'boss', highlight: true });
   assert.deepEqual(played.map((call) => call.cue), ['run.levelUp', 'draft.sting']);
+});
+
+test('a struck body recoils along the blow, once per body, scaled by the hit reaction option (FX-02)', () => {
+  const { presentation } = setup();
+  presentation.handle({ type: 'enemy/hit', id: 7, x: 0, y: 0, radius: 12, damage: 30, crit: false, tier: 'heavy', dx: 1, dy: 0 });
+  assert.deepEqual(presentation.recoils, [{ id: 7, dx: 1, dy: 0, size: RECOIL_SIZE.heavy, life: RECOIL_SECONDS, maxLife: RECOIL_SECONDS }]);
+  presentation.handle({ type: 'enemy/hit', id: 7, x: 0, y: 0, radius: 12, damage: 60, crit: true, tier: 'critical', dx: 0, dy: 1 });
+  assert.equal(presentation.recoils.length, 1, 'a new hit restarts the body\'s recoil');
+  assert.deepEqual([presentation.recoils[0].dy, presentation.recoils[0].size], [1, RECOIL_SIZE.critical]);
+  presentation.step(RECOIL_SECONDS + 0.01);
+  assert.equal(presentation.recoils.length, 0, 'it settles back');
+
+  const calm = setup({ hitReaction: 0 });
+  calm.presentation.handle({ type: 'enemy/hit', id: 7, x: 0, y: 0, radius: 12, damage: 30, crit: false, tier: 'heavy', dx: 1, dy: 0 });
+  assert.equal(calm.presentation.recoils.length, 0, 'the option can turn it off');
 });

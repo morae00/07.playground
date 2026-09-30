@@ -1,6 +1,6 @@
 // Presentation layer (TEC-02): turns game events into particles, damage numbers, impact rings, screen shake,
 // and sound cues for the app's mixer (AUD-01). It owns only cosmetic state; the simulation never reads it back.
-import type { Corpse, DamageNumber, EffectOwner, HitStamp, ImpactRing, Particle, SkillId } from '../engine/worldTypes.ts';
+import type { Corpse, DamageNumber, EffectOwner, HitStamp, ImpactRing, Particle, Recoil, SkillId } from '../engine/worldTypes.ts';
 import type { GameOptions } from '../../platform/save.ts';
 import { CUES, HIT_CUES, type CueId, type SoundOutput } from '../audioPolicy.ts';
 import type { GameEvent } from '../engine/events.ts';
@@ -39,6 +39,10 @@ export const STAIN_SECONDS = 30;
 export const CORPSE_SECONDS = CORPSE_FALL_SECONDS + STAIN_SECONDS;
 /** The hit star plays 4 frames at 25 fps (kit PN.vfx.hit); at most this many show at once. */
 export const HIT_STAMP_SECONDS = 0.16;
+/** FX-02: a struck body recoils along the blow and settles back within this long; the peak offset by impact tier. */
+export const RECOIL_SECONDS = 0.12;
+export const RECOIL_SIZE = Object.freeze({ light: 2, heavy: 5, critical: 8 });
+const RECOIL_CAP = 64;
 const HIT_STAMP_CAP = 32;
 /** Hit ink sprays out of the far side of a hit, inside this cone. */
 const SPLASH_CONE = Math.PI * 0.6;
@@ -79,6 +83,7 @@ export class Presentation {
   readonly impactRings: ImpactRing[] = [];
   readonly corpses: Corpse[] = [];
   readonly hitStamps: HitStamp[] = [];
+  readonly recoils: Recoil[] = [];
   shake = 0;
   /** Seconds left on the player's hurt, burst, and cast poses (FX-01); they count down in simulated time. */
   playerHurt = 0;
@@ -150,6 +155,7 @@ export class Presentation {
     for (const number of this.damageNumbers) this.damageNumberPool.release(number);
     for (const corpse of this.corpses) this.corpsePool.release(corpse);
     for (const stamp of this.hitStamps) this.hitStampPool.release(stamp);
+    this.recoils.length = 0;
     this.particles.length = 0;
     this.damageNumbers.length = 0;
     this.corpses.length = 0;
@@ -214,6 +220,7 @@ export class Presentation {
         // Light hits skip the star at reduced effect density.
         if (event.tier !== 'light' || effects > 0.65) this.addHitStamp(event.x, event.y, event.radius, Math.atan2(event.dy, event.dx), event.tier === 'critical');
         if (event.tier === 'critical') this.addShake(4);
+        this.addRecoil(event.id, event.dx, event.dy, RECOIL_SIZE[event.tier] * (this.host.options().hitReaction ?? 1));
         if (this.legacyHitDraws && this.legacyHitWait <= 0) {
           this.random();
           this.legacyHitWait = CUES[HIT_CUES[event.tier]].spacing;
@@ -345,6 +352,8 @@ export class Presentation {
     recycleWhere(this.corpses, (corpse) => corpse.life > 0, this.corpsePool);
     for (const stamp of this.hitStamps) stamp.life -= dt;
     recycleWhere(this.hitStamps, (stamp) => stamp.life > 0, this.hitStampPool);
+    for (const recoil of this.recoils) recoil.life -= dt;
+    for (let index = this.recoils.length - 1; index >= 0; index -= 1) if (this.recoils[index].life <= 0) this.recoils.splice(index, 1);
     this.playerHurt = Math.max(0, this.playerHurt - dt);
     this.playerBurst = Math.max(0, this.playerBurst - dt);
     this.playerCast = Math.max(0, this.playerCast - dt);
@@ -478,6 +487,18 @@ export class Presentation {
    * Sends a cue to the mixer, panned by where x sits on screen. Pitch variation and voice limits live in the mixer,
    * so sound never draws from the cosmetic stream that places particles.
    */
+  /** One recoil per body: a new hit restarts it along the new blow (FX-02). */
+  addRecoil(id: number, dx: number, dy: number, size: number) {
+    if (size <= 0) return;
+    const current = this.recoils.find((recoil) => recoil.id === id);
+    if (current) {
+      Object.assign(current, { dx, dy, size, life: RECOIL_SECONDS });
+      return;
+    }
+    if (this.recoils.length >= RECOIL_CAP) this.recoils.shift();
+    this.recoils.push({ id, dx, dy, size, life: RECOIL_SECONDS, maxLife: RECOIL_SECONDS });
+  }
+
   private play(cue: CueId, x?: number, pitch = 1) {
     if (this.disposed || !this.sound) return;
     this.sound.play(cue, x === undefined ? 0 : this.host.pan(x), pitch);

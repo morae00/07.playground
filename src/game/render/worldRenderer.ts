@@ -15,6 +15,7 @@ import type {
   Particle,
   Pickup,
   Projectile,
+  Recoil,
   SkillId,
   SkillState,
 } from '../engine/worldTypes.ts';
@@ -162,6 +163,8 @@ export type RenderEffects = {
   readonly corpses: readonly Readonly<Corpse>[];
   /** Hit stars at impacts (FX-03). */
   readonly hitStamps: readonly Readonly<HitStamp>[];
+  /** Struck bodies recoiling along the blow (FX-02); drawing only. */
+  readonly recoils: readonly Readonly<Recoil>[];
   readonly shake: number;
   /** Seconds left on the hero's hurt, burst, and cast poses. */
   readonly playerHurt: number;
@@ -882,19 +885,24 @@ export class WorldRenderer {
   private drawEnemyBody(ctx: CanvasRenderingContext2D, enemy: Readonly<Entity>, body: BodyDraw) {
     // A new enemy rises out of its ink bloom (FX-03); hit and contact rules do not change meanwhile.
     const rise = body.anim?.state === 'spawn' ? 0.35 + 0.65 * this.spawnProgress(body.anim) : 1;
+    // FX-02: a struck body jolts along the blow and eases back; its simulated position never moves for it.
+    const recoil = this.world.effects.recoils.find((entry) => entry.id === enemy.id);
+    const push = recoil ? (recoil.life / recoil.maxLife) ** 2 * recoil.size : 0;
+    const x = body.x + (recoil ? recoil.dx * push : 0);
+    const y = body.y + (recoil ? recoil.dy * push : 0);
     if (body.sprite) {
       const { frame, facing, scale } = body.sprite;
-      this.blit(ctx, frame, body.x, body.y, facing, scale, rise);
+      this.blit(ctx, frame, x, y, facing, scale, rise);
       const flash = hitFlashAlpha(enemy.hitFlash);
       const silhouette = flash > 0 ? this.silhouette(frame) : null;
-      if (silhouette) this.blit(ctx, silhouette, body.x, body.y, facing, scale, flash * rise);
+      if (silhouette) this.blit(ctx, silhouette, x, y, facing, scale, flash * rise);
       return;
     }
     if (rise < 1) {
       ctx.save();
       ctx.globalAlpha *= rise;
     }
-    this.drawVectorEnemy(ctx, enemy, body);
+    this.drawVectorEnemy(ctx, enemy, { ...body, x, y });
     if (rise < 1) ctx.restore();
   }
 
