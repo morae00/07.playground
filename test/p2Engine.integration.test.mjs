@@ -318,3 +318,31 @@ test('runtime diagnostics enforce pickup TTL and hard effect caps', () => {
     engine.dispose();
   }
 });
+
+test('a paused run draws a still frame: no shake, no particle drift (BUG-03)', () => {
+  const canvasFixture = createCanvas();
+  const engine = new GameEngine(canvasFixture.canvas, defaultMeta(), { ...defaultOptions(), screenShake: true }, {
+    onSnapshot() {},
+    onDraft() {},
+    onRoundClear() {},
+    onGameOver() {},
+  });
+  try {
+    engine.startRun(1, 5, 2002);
+    const boss = engine.enemies.find((enemy) => enemy.isBoss);
+    boss.hp = 0;
+    engine.advanceFrame(1 / 60, false);
+    assert.equal(engine.paused, true, 'killing the mid boss opens the reward draft');
+    assert.equal(engine.shake, 0, 'opening a dialog clears the screen shake');
+    const particlesBefore = engine.particles.map((particle) => [particle.x, particle.y, particle.life]);
+    assert.ok(particlesBefore.length > 0, 'the kill burst leaves particles to freeze');
+    for (let frame = 0; frame < 120; frame += 1) {
+      canvasFixture.recorder.reset();
+      engine.advanceFrame(1 / 60, true);
+      assert.deepEqual(canvasFixture.recorder.translations[0], [-engine.camera.x, -engine.camera.y], 'the camera never jitters while paused');
+    }
+    assert.deepEqual(engine.particles.map((particle) => [particle.x, particle.y, particle.life]), particlesBefore, 'particles hold still while paused');
+  } finally {
+    engine.dispose();
+  }
+});

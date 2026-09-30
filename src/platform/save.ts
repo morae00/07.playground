@@ -25,6 +25,8 @@ export type GameOptions = {
   screenShake: boolean;
   reducedFlash: boolean;
   paceMode: PaceMode;
+  /** Pause the run when the window loses focus, is hidden, or the gamepad disconnects (BUG-03). */
+  autoPause: boolean;
 };
 
 export type SaveData = {
@@ -73,6 +75,7 @@ export const createDefaultOptions = (): GameOptions => ({
   screenShake: true,
   reducedFlash: false,
   paceMode: 'standard',
+  autoPause: true,
 });
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -125,6 +128,7 @@ export function sanitizeOptions(value: unknown): GameOptions {
     screenShake: booleanValue(value.screenShake, fallback.screenShake),
     reducedFlash: booleanValue(value.reducedFlash, fallback.reducedFlash),
     paceMode: value.paceMode === 'standard' || value.paceMode === 'showcase' ? value.paceMode : fallback.paceMode,
+    autoPause: booleanValue(value.autoPause, fallback.autoPause),
   };
 }
 

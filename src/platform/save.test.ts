@@ -8,6 +8,7 @@ import {
   createDefaultMeta,
   createDefaultOptions,
   loadGameSave,
+  sanitizeOptions,
   saveGameSave,
 } from './save.ts';
 
@@ -84,4 +85,11 @@ test('storage failures are contained', () => {
   };
   assert.equal(loadGameSave(failing).status, 'defaulted');
   assert.equal(saveGameSave(failing, { meta: createDefaultMeta(), options: createDefaultOptions() }).ok, false);
+});
+
+test('options saved before auto-pause existed load with auto-pause on', () => {
+  const legacy = { ...createDefaultOptions() } as Partial<ReturnType<typeof createDefaultOptions>>;
+  delete legacy.autoPause;
+  assert.equal(sanitizeOptions(legacy).autoPause, true);
+  assert.equal(sanitizeOptions({ ...legacy, autoPause: false }).autoPause, false);
 });

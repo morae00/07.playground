@@ -1485,6 +1485,8 @@ export class GameEngine {
     this.snapshotTimer -= safeFrameDt;
 
     if (!this.paused) {
+      // Shake is presentation-only, so it decays in wall-clock time rather than with hit-stop-scaled sim time.
+      this.shake = Math.max(0, this.shake - safeFrameDt * 12);
       const plan = planFixedSteps(this.accumulator, safeFrameDt, this.timeScale);
       this.accumulator = plan.remainder;
       for (let step = 0; step < plan.steps; step += 1) {
@@ -1499,7 +1501,9 @@ export class GameEngine {
     } else {
       this.accumulator = 0;
     }
-    this.updateParticles(safeFrameDt);
+    // A paused run draws a still frame: no particle drift, no shake, no cosmetic random draws (BUG-03).
+    if (this.paused) this.shake = 0;
+    else this.updateParticles(safeFrameDt);
     if (this.snapshotTimer <= 0) this.emitSnapshot(false);
     if (renderFrame) this.render(this.paused ? 1 : clamp(this.accumulator / FIXED_TIMESTEP, 0, 1));
   }
@@ -1685,7 +1689,6 @@ export class GameEngine {
   private update(dt: number) {
     this.capturePreviousPositions();
     this.elapsed += dt;
-    this.shake = Math.max(0, this.shake - dt * 12);
     if (this.runMode === 'campaign') this.timeLeft = Math.max(0, this.timeLeft - dt);
 
     if (this.player.hp <= 0) {
@@ -3580,8 +3583,9 @@ export class GameEngine {
       bossEnraged: this.bossEnraged,
       enemyCount: this.enemies.length,
     }));
-    const shakeX = this.options.screenShake && !policy.reduced ? (this.effectRandom() - 0.5) * this.shake : 0;
-    const shakeY = this.options.screenShake && !policy.reduced ? (this.effectRandom() - 0.5) * this.shake : 0;
+    const shaking = !this.paused && this.options.screenShake && !policy.reduced && this.shake > 0.01;
+    const shakeX = shaking ? (this.effectRandom() - 0.5) * this.shake : 0;
+    const shakeY = shaking ? (this.effectRandom() - 0.5) * this.shake : 0;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     ctx.clearRect(0, 0, this.viewW, this.viewH);
     ctx.fillStyle = '#f4f4f1';

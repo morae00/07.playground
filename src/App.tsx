@@ -174,6 +174,25 @@ function App() {
   }, [setManualPause]);
 
   useEffect(() => {
+    // Losing the window should never leave enemies attacking an idle player (BUG-03).
+    if (phase !== 'playing' || !options.autoPause) return undefined;
+    const pauseForFocusLoss = () => {
+      if (!runPausedRef.current) setManualPause(true);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') pauseForFocusLoss();
+    };
+    window.addEventListener('blur', pauseForFocusLoss);
+    window.addEventListener('gamepaddisconnected', pauseForFocusLoss);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('blur', pauseForFocusLoss);
+      window.removeEventListener('gamepaddisconnected', pauseForFocusLoss);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [options.autoPause, phase, setManualPause]);
+
+  useEffect(() => {
     if (phase !== 'playing') return;
     const onPauseShortcut = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
@@ -708,6 +727,10 @@ function App() {
             <label className="checkLine">
               <input type="checkbox" checked={options.reducedFlash} onChange={(event) => setOptions({ ...options, reducedFlash: event.target.checked })} />
               <span>섬광 감소</span>
+            </label>
+            <label className="checkLine">
+              <input type="checkbox" checked={options.autoPause} onChange={(event) => setOptions({ ...options, autoPause: event.target.checked })} />
+              <span>창을 벗어나면 자동 일시정지</span>
             </label>
             <label>
               <span>라운드 길이</span>
