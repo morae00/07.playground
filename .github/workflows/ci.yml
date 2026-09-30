@@ -65,7 +65,7 @@ jobs:
       - name: Console, pixel, overlap, DPR, and reduced-motion gates
         env:
           VISUAL_REQUIRE_GOLDENS: "0"
-          VISUAL_VIEWPORTS: 375x812,1440x900
+          VISUAL_VIEWPORTS: 1024x720,1440x900
           VISUAL_DPRS: 1,2
           VISUAL_MOTIONS: full,reduce
         run: npm run test:visual

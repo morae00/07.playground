@@ -37,11 +37,13 @@ Skill numbers live in `src/game/skillNumbers.ts`; the engine and the draft-card 
 
 ## Visual and accessibility
 
-`npm run test:visual` builds the developer bundle and covers menu, playing, boss, draft, paused, and settlement states at 320x568, 375x812, 768x1024, 1024x720, 1280x720, 1440x900, and 1920x1080. It runs at DPR 1 and 2 with normal and reduced motion. It fails on console errors, blank Canvas output, viewport overflow, incoherent control overlap, missing images, and contract-level accessibility violations.
+`npm run test:visual` builds the developer bundle and captures the menu, infinite menu, infinite play, playing, paused, draft, settlement, and boss states at the TEC-01 viewports (1024x720, 1280x720, 1440x900, 1920x1080), at DPR 1 and 2, with normal and reduced motion: 128 captures. Phone and tablet sizes (320x568, 375x812, 768x1024) remain selectable with `VISUAL_VIEWPORTS`. It fails on console errors, blank Canvas output, viewport overflow, incoherent control overlap, missing images, and contract-level accessibility violations.
+
+Captures are deterministic: seeded `Math.random` and `crypto`, and a paused Playwright clock that only moves when a step settles, so the game loop, timers, and the dialog input guard advance by exact amounts (TEC-06). Two runs of the same build produce identical images.
 
 `npm run test:ui-probes` drives the developer build with keyboard and a virtual gamepad (HUD focus, draft and settlement input guards, gamepad menu navigation). `npm run test:dev-smoke` checks that `npm run dev` serves a styled page under the development CSP.
 
-Golden screenshot updates require explicit review. A capture-only run is not a regression pass. The CI visual job runs a reduced viewport matrix without mandatory goldens; the full local/release matrix remains the acceptance gate.
+Golden screenshot updates require explicit review. A capture-only run is not a regression pass. Goldens are made on macOS, the shipping platform, with `VISUAL_UPDATE_GOLDENS=1`; Linux CI renders fonts differently, so the CI visual job (1024x720 and 1440x900) runs without mandatory goldens and the full local/release matrix remains the acceptance gate. The first committed golden set is taken when the R1 character art lands, because R1 replaces nearly every pixel; until then renderer refactors are checked with the headless Canvas draw-call fingerprint: run `npm run fingerprint:draw > before.json` on the base commit and again after the change, then `node scripts/draw-fingerprint.mjs --compare before.json after.json` must report SAME for every scenario.
 
 ## Performance
 

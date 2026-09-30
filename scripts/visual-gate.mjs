@@ -10,8 +10,9 @@ const updateGoldens = process.env.VISUAL_UPDATE_GOLDENS === '1';
 const requireGoldens = process.env.VISUAL_REQUIRE_GOLDENS !== '0';
 const maxDiffRatio = Number.parseFloat(process.env.VISUAL_MAX_DIFF_RATIO ?? '0.005');
 const pixelTolerance = Number.parseInt(process.env.VISUAL_PIXEL_TOLERANCE ?? '24', 10);
-// Desktop sizes follow the platform policy (TEC-01: minimum 1024x720, reference 1280x720 and 1440x900,
-// largest verified 1920x1080); the small sizes keep the responsive layout covered.
+// The default matrix is the platform decision (TEC-01: minimum 1024x720, reference 1280x720 and 1440x900,
+// largest verified 1920x1080): 4 viewports x DPR 1/2 x 2 motion modes x 8 states = 128 captures. The small
+// sizes stay selectable by name (VISUAL_VIEWPORTS) to check the responsive layout.
 const viewportCatalog = [
   { name: '320x568', width: 320, height: 568 },
   { name: '375x812', width: 375, height: 812 },
@@ -23,15 +24,17 @@ const viewportCatalog = [
 ];
 const stateNames = ['menu', 'infinite-menu', 'infinite-playing', 'playing', 'paused', 'draft', 'settlement', 'boss'];
 
-function selectValues(value, catalog, label) {
-  if (!value) return catalog;
+const defaultViewports = ['1024x720', '1280x720', '1440x900', '1920x1080'];
+
+function selectValues(value, catalog, label, defaults) {
+  if (!value) return defaults ? catalog.filter((item) => defaults.includes(item.name)) : catalog;
   const requested = value.split(',').map((item) => item.trim()).filter(Boolean);
   const selected = requested.map((name) => catalog.find((item) => (typeof item === 'string' ? item : item.name) === name));
   if (selected.some((item) => !item)) throw new Error(`Unknown ${label}: ${requested.join(', ')}`);
   return selected;
 }
 
-const viewports = selectValues(process.env.VISUAL_VIEWPORTS, viewportCatalog, 'viewport');
+const viewports = selectValues(process.env.VISUAL_VIEWPORTS, viewportCatalog, 'viewport', defaultViewports);
 const dprs = selectValues(process.env.VISUAL_DPRS, ['1', '2'], 'DPR').map(Number);
 const motions = selectValues(process.env.VISUAL_MOTIONS, ['full', 'reduce'], 'motion mode');
 const report = {
@@ -468,7 +471,10 @@ try {
         page.on('pageerror', (error) => runtimeErrors.push(`pageerror: ${error.message}`));
         page.on('requestfailed', (request) => runtimeErrors.push(`requestfailed: ${request.method()} ${request.url()} ${request.failure()?.errorText ?? ''}`));
         try {
+          // Time only moves when a step calls settle(): the game loop, timers, and the input guard all run on
+          // this paused clock, so two runs of the gate capture identical frames (TEC-06).
           await page.clock.install({ time: new Date('2026-07-14T00:00:00.000Z') });
+          await page.clock.pauseAt(new Date('2026-07-14T00:00:01.000Z'));
           await runScenario(page, viewport, dpr, motion);
         } catch (error) {
           report.runtimeFailures.push(`${viewport.name}/dpr${dpr}/${motion}: ${error.stack ?? error.message}`);
