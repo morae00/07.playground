@@ -2696,6 +2696,8 @@ export class GameEngine {
     const playerVelocity = dt > 0
       ? { x: (this.player.x - this.player.prevX) / dt, y: (this.player.y - this.player.prevY) / dt }
       : { x: 0, y: 0 };
+    // Stalker packs look up neighbours in the flat grid, built once per step from positions before moving.
+    if (stalkerFlocking) this.separationGrid.build(this.enemies);
     for (const enemy of this.enemies) {
       if (enemy.hp <= 0) continue;
       enemy.hitFlash = Math.max(0, enemy.hitFlash - dt);
@@ -2778,9 +2780,11 @@ export class GameEngine {
       if (stalkerFlocking && role === 'stalker') {
         const neighbours = this.flockScratch;
         neighbours.length = 0;
-        for (const other of this.enemyIndex.queryCircle(enemy.x, enemy.y, STALKER_FLOCK.radius)) {
-          if (other !== enemy && other.hp > 0 && !other.isBoss && other.tier === 'small' && other.attackStyle === 'contact') neighbours.push(other);
-        }
+        this.separationGrid.forEachNear(this.enemies, enemy.x, enemy.y, STALKER_FLOCK.radius, (index) => {
+          const other = this.enemies[index];
+          if (other !== enemy && other.tier === 'small' && other.attackStyle === 'contact') neighbours.push(other);
+          return neighbours.length >= STALKER_FLOCK.maxNeighbours;
+        });
         const steer = flockSteer(enemy, dir, neighbours);
         moveX = steer.x;
         moveY = steer.y;

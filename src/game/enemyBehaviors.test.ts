@@ -86,3 +86,27 @@ test('the separation grid finds every overlapping pair and matches the brute-for
   grid.compute(bodies);
   near(fromReversed, grid.pushX[10], 1e-9);
 });
+
+test('neighbour lookups visit every nearby body once, nearest cells first, and can stop early', () => {
+  let seed = 5;
+  const random = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 32);
+  const bodies = Array.from({ length: 300 }, () => ({ x: 800 + random() * 500, y: 600 + random() * 400, radius: 12, hp: 10, isBoss: false }));
+  const grid = new SeparationGrid({ minX: -120, minY: -120, maxX: 4320, maxY: 3120 });
+  grid.build(bodies);
+  const centre = { x: 1050, y: 800 };
+  const seen: number[] = [];
+  grid.forEachNear(bodies, centre.x, centre.y, 110, (index) => {
+    seen.push(index);
+  });
+  const expected = bodies.map((body, index) => ({ body, index })).filter(({ body }) => Math.hypot(body.x - centre.x, body.y - centre.y) < 110 + body.radius).map(({ index }) => index);
+  assert.deepEqual([...seen].sort((a, b) => a - b), expected, 'the same set as a brute-force scan');
+  assert.equal(new Set(seen).size, seen.length, 'each once');
+  const first = bodies[seen[0]];
+  assert.ok(Math.hypot(first.x - centre.x, first.y - centre.y) < 56 * Math.SQRT2 + 12, 'the first visit comes from the home cell');
+  let visits = 0;
+  grid.forEachNear(bodies, centre.x, centre.y, 110, () => {
+    visits += 1;
+    return visits >= 10;
+  });
+  assert.equal(visits, 10, 'returning true stops the walk');
+});

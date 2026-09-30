@@ -30,8 +30,8 @@ export const WARDEN_SHIELD = Object.freeze({
 /** Shooter (ranged): the aim leads a moving player by the windup plus the shot's travel time. */
 export const SHOOTER_LEAD = Object.freeze({ maxLeadSeconds: 1.4 });
 
-/** Stalker (small contact): chases in packs. */
-export const STALKER_FLOCK = Object.freeze({ radius: 110, alignment: 0.35, cohesion: 0.2, minNeighbours: 2 });
+/** Stalker (small contact): chases in packs, steering by its nearest few pack mates. */
+export const STALKER_FLOCK = Object.freeze({ radius: 110, alignment: 0.35, cohesion: 0.2, minNeighbours: 2, maxNeighbours: 10 });
 
 /** Separation: overlapping enemies move apart by this share of the overlap each step, lighter ones more. */
 export const SEPARATION = Object.freeze({ strength: 0.25 });
@@ -176,8 +176,8 @@ export class SeparationGrid {
     return Math.min(this.rows - 1, Math.max(0, Math.floor((y - this.originY) / this.cellSize)));
   }
 
-  /** Fills pushX/pushY (indexed like `bodies`) with each body's total separation push. */
-  compute(bodies: readonly SeparationBody[], strength = SEPARATION.strength) {
+  /** Buckets the live, non-boss bodies by cell. `compute` and `forEachNear` read the buckets. */
+  build(bodies: readonly SeparationBody[]) {
     const count = bodies.length;
     if (this.next.length < count) {
       const size = Math.max(count, this.next.length * 2);
@@ -187,8 +187,6 @@ export class SeparationGrid {
       this.pushY = new Float64Array(size);
     }
     this.heads.fill(-1);
-    this.pushX.fill(0, 0, count);
-    this.pushY.fill(0, 0, count);
     for (let index = 0; index < count; index += 1) {
       const body = bodies[index];
       this.cellOf[index] = -1;
@@ -198,6 +196,38 @@ export class SeparationGrid {
       this.next[index] = this.heads[cell];
       this.heads[cell] = index;
     }
+  }
+
+  /**
+   * Calls `visit` with the index of bucketed bodies within `radius` (plus their own radius) of (x, y), nearest
+   * cells first (the home cell, then ring by ring), until `visit` returns true. Uses the buckets from the last
+   * `build`.
+   */
+  forEachNear(bodies: readonly SeparationBody[], x: number, y: number, radius: number, visit: (index: number) => boolean | void) {
+    const reach = Math.ceil(radius / this.cellSize);
+    const column = this.column(x);
+    const row = this.row(y);
+    for (let ring = 0; ring <= reach; ring += 1) {
+      for (let cy = row - ring; cy <= row + ring; cy += 1) {
+        if (cy < 0 || cy >= this.rows) continue;
+        const edgeRow = cy === row - ring || cy === row + ring;
+        for (let cx = column - ring; cx <= column + ring; cx += edgeRow ? 1 : ring * 2 || 1) {
+          if (cx < 0 || cx >= this.columns) continue;
+          for (let other = this.heads[cy * this.columns + cx]; other >= 0; other = this.next[other]) {
+            const body = bodies[other];
+            if (Math.hypot(body.x - x, body.y - y) < radius + body.radius && visit(other) === true) return;
+          }
+        }
+      }
+    }
+  }
+
+  /** Fills pushX/pushY (indexed like `bodies`) with each body's total separation push. */
+  compute(bodies: readonly SeparationBody[], strength = SEPARATION.strength) {
+    const count = bodies.length;
+    this.build(bodies);
+    this.pushX.fill(0, 0, count);
+    this.pushY.fill(0, 0, count);
     for (let index = 0; index < count; index += 1) {
       const cell = this.cellOf[index];
       if (cell < 0) continue;
