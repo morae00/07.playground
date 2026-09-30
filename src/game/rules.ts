@@ -107,6 +107,11 @@ export type RuleSet = Readonly<{
    * Bosses are immune. Tools switch it on with the probe's patchRules.
    */
   terrainOnEnemies: boolean;
+  /**
+   * SYS-09: a pickup waits 60 s instead of 30 before it flies to the player on its own, and is banked at 75 s
+   * instead of 45. Nothing is ever lost, but a route past the drops pays sooner than waiting for them.
+   */
+  patientPickups: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -137,6 +142,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   kitProps: false,
   obstacleCover: false,
   terrainOnEnemies: false,
+  patientPickups: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -167,6 +173,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   kitProps: true,
   obstacleCover: true,
   terrainOnEnemies: false,
+  patientPickups: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

@@ -116,6 +116,7 @@ export function PauseHub({ snapshot, tab, setTab, confirmingAbandon, onResume, o
                     );
                   })}
                 </div>
+                <p className="settingsNote">{t('pause.coinNote')}</p>
                 <p className="settingsNote">{t('pause.healNote', { seconds: PAUSED_HEAL_SECONDS })}</p>
               </>
             )}

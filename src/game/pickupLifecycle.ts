@@ -3,6 +3,9 @@ export const PICKUP_HARD_CAP = 240;
 export const PICKUP_MERGE_RADIUS = 54;
 export const PICKUP_SOFT_TTL = 30;
 export const PICKUP_HARD_TTL = 45;
+/** SYS-09 (patientPickups): pickups fly home after 60 s and are banked at 75 s. */
+export const PATIENT_PICKUP_SOFT_TTL = 60;
+export const PATIENT_PICKUP_HARD_TTL = 75;
 
 export type PickupLifecycleItem = {
   id: number;
@@ -13,9 +16,14 @@ export type PickupLifecycleItem = {
   life: number;
 };
 
-export function pickupTtl(kind: PickupLifecycleItem['kind']) {
+export function pickupTtl(kind: PickupLifecycleItem['kind'], patient = false) {
   void kind;
-  return PICKUP_HARD_TTL;
+  return patient ? PATIENT_PICKUP_HARD_TTL : PICKUP_HARD_TTL;
+}
+
+/** Age after which a pickup flies to the player by itself. */
+export function pickupSoftTtl(patient = false) {
+  return patient ? PATIENT_PICKUP_SOFT_TTL : PICKUP_SOFT_TTL;
 }
 
 export function selectPickupMergeTarget<T extends PickupLifecycleItem>(
@@ -40,8 +48,8 @@ export function selectPickupMergeTarget<T extends PickupLifecycleItem>(
   return nearest;
 }
 
-export function mergePickupValue<T extends PickupLifecycleItem>(target: T, value: number) {
+export function mergePickupValue<T extends PickupLifecycleItem>(target: T, value: number, patient = false) {
   target.value += Math.max(0, Number.isFinite(value) ? value : 0);
-  target.life = Math.min(target.life, pickupTtl(target.kind));
+  target.life = Math.min(target.life, pickupTtl(target.kind, patient));
   return target;
 }

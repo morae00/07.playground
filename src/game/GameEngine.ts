@@ -61,8 +61,8 @@ import {
 import { ObjectPool, compactWhere, recycleWhere } from './objectPool';
 import {
   PICKUP_HARD_CAP,
-  PICKUP_SOFT_TTL,
   mergePickupValue,
+  pickupSoftTtl,
   pickupTtl,
   selectPickupMergeTarget,
 } from './pickupLifecycle';
@@ -3765,7 +3765,7 @@ export class GameEngine {
     for (const pickup of this.pickups) {
       pickup.life -= dt;
       const d = distance(pickup, this.player);
-      const aged = pickup.maxLife - pickup.life >= PICKUP_SOFT_TTL;
+      const aged = pickup.maxLife - pickup.life >= pickupSoftTtl(this.rules.patientPickups);
       if (aged || d < this.player.stats.magnet) {
         const dir = normalize(this.player.x - pickup.x, this.player.y - pickup.y);
         const pull = aged ? 1_650 : 280 + (1 - d / this.player.stats.magnet) * 720;
@@ -4268,12 +4268,12 @@ export class GameEngine {
   protected spawnPickup(kind: Pickup['kind'], x: number, y: number, vx: number, vy: number, radius: number, value: number) {
     const target = selectPickupMergeTarget(this.pickups, { x, y, kind });
     if (target) {
-      mergePickupValue(target, value);
+      mergePickupValue(target, value, this.rules.patientPickups);
       return;
     }
 
     const pickup = this.pickupPool.acquire();
-    const maxLife = pickupTtl(kind);
+    const maxLife = pickupTtl(kind, this.rules.patientPickups);
     Object.assign(pickup, { id: this.nextId(), x, y, prevX: x, prevY: y, vx, vy, radius, kind, value, life: maxLife, maxLife });
     if (this.pickups.length >= PICKUP_HARD_CAP) {
       this.collectPickup(pickup);

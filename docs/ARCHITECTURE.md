@@ -151,6 +151,8 @@ Pausing opens the pause hub (UI-04, `PauseHub.tsx`), and the run stays stopped w
 - Its tabs are the build, the run shop, the settings, and the controls; its actions are resume and abandon (with a confirmation).
 - The run drawer is gone. Players buy upgrades and change settings in the hub, paused.
 - A max-health upgrade bought there heals over `PAUSED_HEAL_SECONDS` after the run resumes, so pausing is not an instant heal (G6).
+- The shop says that settlement gold counts the coins earned, not the coins left, so spending costs nothing at the settlement (SYS-09). The settlement labels that part 얻은 엽전 환산.
+- Under the remaster rules (`patientPickups`, SYS-09), a pickup waits 60 s instead of 30 before it flies to the player by itself, and is banked at 75 s. Nothing is lost, but walking past the drops pays sooner than waiting.
 - `SettingsPanel.tsx` is shared by the hub and the menu's settings tab.
 - In developer builds, the cheat input lives in a small developer panel (`DevPanel.tsx`) that leaves the run going.
 

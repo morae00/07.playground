@@ -273,9 +273,11 @@ test('runtime diagnostics enforce pickup TTL and hard effect caps', () => {
 
     probe.clear('pickups');
     probe.spawnPickup({ kind: 'coin', x: 0, y: 0, radius: 5, value: 7 });
-    assert.equal(probe.read().pickups[0].maxLife, 45);
-    probe.step(45 * 60);
-    assert.equal(engine.getDiagnostics().pickups, 0, 'pickup must be collected no later than 45 seconds');
+    // The remaster rules bank a pickup at 75 s instead of 45 (SYS-09, patientPickups).
+    const bankedAt = engine.ruleSet.patientPickups ? 75 : 45;
+    assert.equal(probe.read().pickups[0].maxLife, bankedAt);
+    probe.step(bankedAt * 60);
+    assert.equal(engine.getDiagnostics().pickups, 0, `pickup must be collected no later than ${bankedAt} seconds`);
 
     // Particles and damage numbers are presentation state now (the caps themselves are unit-tested in
     // presentation.test.ts): after every step of a fight that overruns both caps, the diagnostics stay within them.

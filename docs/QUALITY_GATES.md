@@ -166,6 +166,19 @@ SYS-05 (the Ch2-5 final bosses' phase moves) was piloted on those bosses' stages
 - Boss deaths rose from 3 to 5 and the median clear took 16 s longer.
 - The gameplay fingerprints did not change, because their scenarios never bring these bosses to phase 2. `test/bossMovesFinal.integration.test.mjs` covers every move instead.
 
+SYS-09 (pickups wait 60 s before flying home, `patientPickups` rule) was piloted with the flag on and off (`BALANCE_RULE_PATCH`) on 1-2, 1-5, 1-6, 2-4, 3-7, 4-3, and 5-2 × the pilot seeds (11, 23, 37, 41, 59, 67, 71, 83, 97, 101) × 4 personas:
+
+| | off (30 s) | on (60 s) |
+|---|---:|---:|
+| clear, all 280 | 35.0% | 34.6% |
+| clears: striker / survivor / collector (%) | 28.6 / 87.1 / 24.3 | 31.4 / 84.3 / 22.9 |
+| drafts per run, p50 | 4 | 4 |
+| timeouts | 0 | 0 |
+
+- 7 of 280 runs flipped (3 to a clear, 4 to a death), so the longer wait barely moves power. It changes when the drops come home, and so how much a route past them pays.
+- The pause-hub guardrail is covered by `test/economy.integration.test.mjs`: a max-health upgrade bought paused heals nothing while paused, then fills in over 3 s after resuming, never faster than its share.
+- The R3 exit's coin target (median balance at most 30% of the coins earned) is a player measure: the personas never shop, so it needs playtest telemetry.
+
 ## Game rules and grammar
 
 Gameplay changes ship behind the rule set in `src/game/rules.ts`. `classic` reproduces 0.1.0 exactly and `remaster` is the default. Infinite-mode records and replay fixtures are kept per rules version: the remaster rules (v2) may change freely until a build ships them, and after that the first change to seeded outcomes must raise `RULES_VERSION`. `test/grammarContracts.integration.test.mjs` pins the preserved game grammar (stage structure, draft sizes, radii, tier mix, deterministic replay) and one regression test per R0 gameplay fix.

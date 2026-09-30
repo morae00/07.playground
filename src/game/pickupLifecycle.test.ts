@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  PATIENT_PICKUP_HARD_TTL,
+  PATIENT_PICKUP_SOFT_TTL,
   PICKUP_HARD_CAP,
   PICKUP_HARD_TTL,
   PICKUP_MERGE_THRESHOLD,
   PICKUP_SOFT_TTL,
   mergePickupValue,
+  pickupSoftTtl,
   pickupTtl,
   selectPickupMergeTarget,
   type PickupLifecycleItem,
@@ -50,5 +53,17 @@ test('hard cap collapses a distant incoming pickup without losing value', () => 
 test('pickup lifetime has a soft magnet window before hard collection', () => {
   assert.equal(pickupTtl('coin'), PICKUP_HARD_TTL);
   assert.equal(pickupTtl('xp'), PICKUP_HARD_TTL);
+  assert.equal(pickupSoftTtl(), PICKUP_SOFT_TTL);
   assert.ok(PICKUP_SOFT_TTL < PICKUP_HARD_TTL);
+});
+
+test('patient pickups (SYS-09) fly home at 60 s and are banked at 75 s, keeping the same 15 s window', () => {
+  assert.deepEqual([pickupSoftTtl(true), pickupTtl('coin', true), pickupTtl('xp', true)], [60, 75, 75]);
+  assert.equal(PATIENT_PICKUP_HARD_TTL - PATIENT_PICKUP_SOFT_TTL, PICKUP_HARD_TTL - PICKUP_SOFT_TTL);
+  const [target] = pickups(1);
+  target.life = PATIENT_PICKUP_HARD_TTL;
+  mergePickupValue(target, 3, true);
+  assert.equal(target.life, PATIENT_PICKUP_HARD_TTL, 'a merge never adds life beyond the patient limit');
+  mergePickupValue(target, 3);
+  assert.equal(target.life, PICKUP_HARD_TTL, 'nor beyond the classic one');
 });
