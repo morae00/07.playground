@@ -1,9 +1,9 @@
 {
   "version": 2,
-  "release": "remaster R0 milestone (pending review)",
+  "release": "remaster R1 interim (pending review)",
   "recordedAt": "2026-09-30",
-  "reason": "Moved from the pre-R0 baseline (53,565 B on 174eb99) to the R0 milestone: 60,407 B measured on 0e53a01 (remaster/r0-fixes: BUG-01..17, TEC-05, TEC-11; report in that commit's artifacts/release-evidence/bundle-budget.json). R1 adds planned systems on top; this baseline needs team review at the R0 merge.",
-  "appJsGzip": 60407,
+  "reason": "Moved from the R0 milestone (60,407 B on 0e53a01) to an R1 interim point: 75,381 B measured on b762892 (after SYS-04c). Per-commit costs and the review items are in docs/decisions/TEC-05-app-js-baseline.md. History: 53,565 B pre-R0 (174eb99), 60,407 B R0 milestone. Needs team review at the R1 merge; setting appJsGzip back to 60407 restores the R0 baseline.",
+  "appJsGzip": 75381,
   "vendorJsGzip": 60279,
   "policy": {
     "appJs": { "warningGrowth": 0.15, "failGrowth": 0.25 },
