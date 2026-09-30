@@ -5,11 +5,25 @@
 - `npm test`
 - `npm run test:coverage:core` (90% line and branch minimum)
 - `npm run build`
-- production bundle gzip at or below the 120 KiB hard limit; review at 105 KiB; fail above 10% growth from `config/bundle-baseline.json`
+- three-way bundle budget from `config/bundle-baseline.json` (policy version 2, see below)
 - no production developer controls or forbidden debug markers
 - no new TypeScript errors
 
 Update `config/bundle-baseline.json` only when promoting a reviewed release, and keep its byte count equal to the attached bundle budget report. Updating the baseline merely to make a pull request pass is not allowed.
+
+### Bundle budget policy (version 2, 2026-09-30)
+
+`npm run verify:bundle` measures `dist/` in three groups:
+
+| Group | Measure | Warning | Fail |
+|---|---|---|---|
+| App JS (`assets/index-*.js`) | gzip, against the recorded app baseline | +15% | +25% |
+| Vendor JS (`assets/vendor-*.js`, split by `vite.config.ts`) | gzip, against the recorded vendor baseline | +15% | +60% or 96 KiB, whichever is lower |
+| CSS | gzip | 32 KiB | 48 KiB |
+| Initial assets (images, audio, fonts, data outside `assets/packs/`) | raw bytes | 3 MiB | 4 MiB |
+| Installed assets (everything outside JS/CSS, including chapter packs) | raw bytes | 200 MiB | 250 MiB |
+
+Chapter packs (`assets/packs/<chapter>/`) have a 12 MiB per-pack target and resident textures a 96 MiB target; both are checked at runtime by the renderer spike, not by this script. The v2 baseline was recorded before R0 fixes on commit 174eb99 (app 53,565 B, vendor 60,279 B). A baseline change needs the budget report, the reason, and review in the same change.
 
 ## Balance
 

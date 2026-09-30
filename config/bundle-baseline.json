@@ -1,6 +1,19 @@
 {
-  "version": 1,
+  "version": 2,
   "release": "0.1.0",
-  "gzipBytes": 103547,
-  "recordedAt": "2026-07-14"
+  "recordedAt": "2026-09-30",
+  "reason": "Remaster budget policy (TEC-05): React/vendor split out of the app bundle; baseline measured on commit 174eb99 before R0 fixes.",
+  "appJsGzip": 53565,
+  "vendorJsGzip": 60279,
+  "policy": {
+    "appJs": { "warningGrowth": 0.15, "failGrowth": 0.25 },
+    "vendorJs": { "warningGrowth": 0.15, "failGrowth": 0.6, "hardLimitBytes": 98304 },
+    "css": { "warningBytes": 32768, "hardLimitBytes": 49152 },
+    "assets": {
+      "initialWarningBytes": 3145728,
+      "initialLimitBytes": 4194304,
+      "installWarningBytes": 209715200,
+      "installLimitBytes": 262144000
+    }
+  }
 }

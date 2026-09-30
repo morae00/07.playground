@@ -16,5 +16,16 @@ export default defineConfig(({ command, mode }) => {
       __DEVELOPER_UI_DEFAULT_ENABLED__: JSON.stringify(packagedDeveloperBuild),
     },
     plugins: [react()],
+    build: {
+      rollupOptions: {
+        output: {
+          // Split third-party runtime code so the bundle budget can track app and vendor growth separately.
+          manualChunks(id) {
+            if (id.includes('/node_modules/')) return 'vendor';
+            return undefined;
+          },
+        },
+      },
+    },
   };
 });

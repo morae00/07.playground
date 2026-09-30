@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { evaluateBundleBudget } from '../scripts/lib/bundle-budget.mjs';
+import { DEFAULT_BUDGET_POLICY, classifyBundleFile, evaluateBudgetPolicy, evaluateBundleBudget } from '../scripts/lib/bundle-budget.mjs';
 import { auditProductionBundle, PRODUCTION_BANNED_MARKERS } from '../scripts/lib/production-integrity.mjs';
 
 test('production bundle audit accepts ordinary game assets', async (context) => {
@@ -54,4 +54,42 @@ test('bundle budget blocks growth above the release baseline', () => {
   assert.equal(passed.passed, true);
   assert.equal(failed.growthPassed, false);
   assert.equal(failed.passed, false);
+});
+
+test('bundle files are classified into app, vendor, style, and asset budgets', () => {
+  assert.equal(classifyBundleFile('assets/index-DjfSWYE6.js'), 'appJs');
+  assert.equal(classifyBundleFile('assets/vendor-sXpfDjey.js'), 'vendorJs');
+  assert.equal(classifyBundleFile('assets/index-Df9yCSvW.css'), 'css');
+  assert.equal(classifyBundleFile('assets/packs/ch1/atlas-hero.webp'), 'image');
+  assert.equal(classifyBundleFile('assets/sfx/hit.ogg'), 'audio');
+  assert.equal(classifyBundleFile('assets/fonts/body.woff2'), 'font');
+  assert.equal(classifyBundleFile('assets/packs/ch1/atlas-hero.json'), 'data');
+});
+
+test('three-way budget warns at 15% app growth and fails at 25%', () => {
+  const baseline = { appJsGzip: 100_000, vendorJsGzip: 60_000 };
+  const measured = { appJsGzip: 100_000, vendorJsGzip: 60_000, cssGzip: 5_000, initialAssetBytes: 0, installAssetBytes: 0 };
+  assert.equal(evaluateBudgetPolicy(measured, baseline, DEFAULT_BUDGET_POLICY).status, 'passed');
+  assert.equal(evaluateBudgetPolicy({ ...measured, appJsGzip: 116_000 }, baseline, DEFAULT_BUDGET_POLICY).status, 'warning');
+  const failed = evaluateBudgetPolicy({ ...measured, appJsGzip: 126_000 }, baseline, DEFAULT_BUDGET_POLICY);
+  assert.equal(failed.passed, false);
+  assert.equal(failed.budgets.appJs.status, 'failed');
+});
+
+test('three-way budget caps vendor JavaScript and initial asset bytes absolutely', () => {
+  const baseline = { appJsGzip: 100_000, vendorJsGzip: 60_000 };
+  const measured = { appJsGzip: 100_000, vendorJsGzip: 60_000, cssGzip: 5_000, initialAssetBytes: 0, installAssetBytes: 0 };
+  assert.equal(evaluateBudgetPolicy({ ...measured, vendorJsGzip: 99 * 1024 }, baseline, DEFAULT_BUDGET_POLICY).budgets.vendorJs.status, 'failed');
+  const heavy = evaluateBudgetPolicy({ ...measured, initialAssetBytes: 5 * 1024 * 1024, installAssetBytes: 5 * 1024 * 1024 }, baseline, DEFAULT_BUDGET_POLICY);
+  assert.equal(heavy.budgets.initialAssets.status, 'failed');
+  assert.equal(heavy.budgets.installAssets.status, 'passed');
+});
+
+test('production bundle audit also scans JSON data files for leaked markers', async (context) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'blackline-production-json-'));
+  context.after(() => rm(root, { recursive: true, force: true }));
+  await writeFile(path.join(root, 'index.html'), '<main>Blackline Survivor</main>');
+  await writeFile(path.join(root, 'manifest.json'), '{"label":"DEV MODE ON"}');
+  const report = await auditProductionBundle(root);
+  assert.deepEqual(report.findings, [{ file: 'manifest.json', marker: 'DEV MODE ON' }]);
 });

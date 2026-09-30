@@ -27,7 +27,7 @@ async function collectTextFiles(root) {
     for (const entry of await readdir(current, { withFileTypes: true })) {
       const target = path.join(current, entry.name);
       if (entry.isDirectory()) await visit(target);
-      if (entry.isFile() && /\.(?:css|html|js|mjs)$/.test(entry.name)) files.push(target);
+      if (entry.isFile() && /\.(?:css|html|js|mjs|json)$/.test(entry.name)) files.push(target);
     }
   }
   await visit(root);

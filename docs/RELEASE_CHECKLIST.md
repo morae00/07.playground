@@ -24,8 +24,8 @@ npm run build
 - [ ] Visual golden diff, console/page errors, nonblank output, overlap/occlusion, DPR 1/2, and reduced-motion gates pass at every target viewport.
 - [ ] `artifacts/release-evidence/production-bundle-audit.json` reports no production debug or cheat marker.
 - [ ] The 50 Stage x 3 build policy x 10 seed balance report fingerprint and outlier scenarios are attached to the release record.
-- [ ] Production JavaScript gzip stays below the 105 KB warning budget and never exceeds the 120 KB hard limit.
-- [ ] Bundle growth is at or below 10% of `config/bundle-baseline.json`; any baseline update matches the promoted release evidence.
+- [ ] `artifacts/release-evidence/bundle-budget.json` passes all five budgets (app JS, vendor JS, CSS, initial assets, installed assets) defined in `docs/QUALITY_GATES.md`.
+- [ ] Any `config/bundle-baseline.json` update matches the promoted release evidence and states its reason.
 - [ ] No CSP violations appear during the menu, gameplay, draft, and settlement flow.
 
 To retain the deterministic balance evidence:
