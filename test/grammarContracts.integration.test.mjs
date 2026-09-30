@@ -121,3 +121,71 @@ test('G14: the same seed gives the same run under both rule sets when replayed',
     assert.equal(snapshots[0], snapshots[1], `${ruleSet} rules must replay identically`);
   }
 });
+
+function runSteps({ ruleSet, options: overrides = {}, viewport = [1440, 900], hz = 60, chapter = 1, stage = 5, seed = 99, steps = 1800 }) {
+  let pendingDraft = null;
+  let executed = 0;
+  let captured = null;
+  const engine = new GameEngine(createHeadlessCanvas(viewport[0], viewport[1]), meta(), { ...options(), screenShake: true, ...overrides }, {
+    onSnapshot() {},
+    onDraft(draft) { pendingDraft = draft; },
+    onRoundClear() {},
+    onGameOver() {},
+  });
+  const directions = ['d', 's', 'a', 'w'];
+  const update = engine.update.bind(engine);
+  engine.update = (dt) => {
+    engine.keys.clear();
+    engine.keys.add(directions[Math.floor(executed / 180) % directions.length]);
+    update(dt);
+    executed += 1;
+    if (executed === steps) captured = JSON.stringify({ player: engine.player, enemies: engine.enemies.map((enemy) => [enemy.tier, enemy.x, enemy.y, enemy.hp]), kills: engine.stageKills });
+  };
+  try {
+    engine.setRuleSet(ruleSet);
+    engine.startRun(chapter, stage, seed);
+    for (let frame = 0; frame < steps * 4 && !captured && !engine.stageFinished; frame += 1) {
+      if (pendingDraft) {
+        const draft = pendingDraft;
+        pendingDraft = null;
+        engine.completeDraft(draft.cards[0], draft.id);
+      }
+      engine.advanceFrame(1 / hz, true);
+    }
+    return captured ?? `ended:${executed}:${JSON.stringify(engine.player)}`;
+  } finally {
+    engine.dispose();
+  }
+}
+
+test('G14/BUG-08: cosmetic options and frame rate never change a seeded run under remaster rules', () => {
+  const reference = runSteps({ ruleSet: 'remaster', stage: 1, seed: 17, steps: 2400 });
+  assert.equal(runSteps({ ruleSet: 'remaster', stage: 1, seed: 17, steps: 2400, options: { damageNumbers: false } }), reference, 'damage numbers');
+  assert.equal(runSteps({ ruleSet: 'remaster', stage: 1, seed: 17, steps: 2400, options: { effects: 0.3 } }), reference, 'effects density');
+  assert.equal(runSteps({ ruleSet: 'remaster', stage: 1, seed: 17, steps: 2400, options: { screenShake: false, reducedFlash: true } }), reference, 'shake and reduced motion');
+  assert.equal(runSteps({ ruleSet: 'remaster', stage: 1, seed: 17, steps: 2400, hz: 30 }), reference, '30 Hz frames');
+});
+
+test('BUG-08: the gameplay id stream ignores damage numbers and effect density (classic rules still leak)', () => {
+  const idsAfter = (ruleSet, overrides) => {
+    const engine = new GameEngine(createHeadlessCanvas(1440, 900), meta(), { ...options(), ...overrides }, {
+      onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver() {},
+    });
+    try {
+      engine.setRuleSet(ruleSet);
+      engine.startRun(2, 4, 31337);
+      engine.cheatGodMode = true;
+      for (let frame = 0; frame < 900; frame += 1) {
+        if (engine.activeDraftId !== null) engine.completeDraft({ kind: 'bonus', bonus: 'heal', rarity: 'common', title: '', body: '', levelLine: '' }, engine.activeDraftId);
+        engine.advanceFrame(1 / 60, false);
+      }
+      return engine.idSeed;
+    } finally {
+      engine.dispose();
+    }
+  };
+  const remaster = idsAfter('remaster', { damageNumbers: true, effects: 1 });
+  assert.equal(idsAfter('remaster', { damageNumbers: false, effects: 1 }), remaster);
+  assert.equal(idsAfter('remaster', { damageNumbers: true, effects: 0.25 }), remaster);
+  assert.notEqual(idsAfter('classic', { damageNumbers: false, effects: 1 }), idsAfter('classic', { damageNumbers: true, effects: 1 }), 'classic rules keep the 0.1.0 coupling for A/B runs');
+});

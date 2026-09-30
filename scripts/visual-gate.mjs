@@ -384,7 +384,7 @@ async function runScenario(page, viewport, dpr, motion) {
   await (await unique(page.getByRole('dialog').getByRole('button', { name: 'Stage 선택', exact: true }), 'settlement Stage selection')).click();
   await settle(page, 80);
 
-  const stageFive = await unique(page.locator('.stageNode').filter({ hasText: /^Stage 5(?:\D|$)/ }), 'Stage 5 node');
+  const stageFive = await unique(page.locator('.stageNode').filter({ has: page.locator('span', { hasText: /^Stage 5$/ }) }), 'Stage 5 node');
   await stageFive.click();
   await settle(page, 30);
   await (await unique(page.getByRole('button', { name: 'Ch.1 / St.5 시작' }), 'Stage 5 start')).click();

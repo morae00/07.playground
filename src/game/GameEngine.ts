@@ -963,6 +963,8 @@ export class GameEngine {
   private viewW = 1280;
   private viewH = 720;
   private idSeed = 1;
+  /** Ids for particles and damage numbers; kept apart from gameplay ids so cosmetics never shift outcomes (BUG-08). */
+  private cosmeticIdSeed = 1;
   private runSeed = 1;
   private gameplayRandom = createSeededRandom(1);
   private effectRandom = createSeededRandom(2);
@@ -1193,6 +1195,10 @@ export class GameEngine {
     this.ensureAudio();
     const randomSeed = seed ?? globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
     this.runSeed = randomSeed || 1;
+    if (this.rules.isolatedCosmeticIds) {
+      this.idSeed = 1;
+      this.cosmeticIdSeed = 1;
+    }
     this.gameplayRandom = createSeededRandom(this.runSeed);
     this.effectRandom = createSeededRandom(this.runSeed ^ 0x9e3779b9);
     this.chapter = chapter;
@@ -1510,8 +1516,9 @@ export class GameEngine {
       this.accumulator = 0;
     }
     // A paused run draws a still frame: no particle drift, no shake, no cosmetic random draws (BUG-03).
+    // Classic rules keep 0.1.0's paused particle decay because their particle ids feed the gameplay id stream.
     if (this.paused) this.shake = 0;
-    else this.updateParticles(safeFrameDt);
+    if (!this.paused || !this.rules.isolatedCosmeticIds) this.updateParticles(safeFrameDt);
     if (this.snapshotTimer <= 0) this.emitSnapshot(false);
     if (renderFrame) this.render(this.paused ? 1 : clamp(this.accumulator / FIXED_TIMESTEP, 0, 1));
   }
@@ -2548,7 +2555,9 @@ export class GameEngine {
           moveX = -dir.x;
           moveY = -dir.y;
         } else if (playerDistance <= 410) {
-          const strafe = enemy.id % 2 === 0 ? 1 : -1;
+          const strafe = this.rules.isolatedCosmeticIds
+            ? (enemy.variant % 2 === 0 ? 1 : -1)
+            : (enemy.id % 2 === 0 ? 1 : -1);
           moveX = -dir.y * strafe;
           moveY = dir.x * strafe;
         }
@@ -3286,7 +3295,7 @@ export class GameEngine {
       number = this.damageNumbers.splice(replaceIndex, 1)[0];
     }
     number ??= this.damageNumberPool.acquire();
-    Object.assign(number, { id: this.nextId(), x, y, value, crit, life, maxLife: life, owner });
+    Object.assign(number, { id: this.nextCosmeticId(), x, y, value, crit, life, maxLife: life, owner });
     this.damageNumbers.push(number);
   }
 
@@ -3596,9 +3605,12 @@ export class GameEngine {
       bossEnraged: this.bossEnraged,
       enemyCount: this.enemies.length,
     }));
-    const shaking = !this.paused && this.options.screenShake && !policy.reduced && this.shake > 0.01;
-    const shakeX = shaking ? (this.effectRandom() - 0.5) * this.shake : 0;
-    const shakeY = shaking ? (this.effectRandom() - 0.5) * this.shake : 0;
+    const shakeEnabled = this.options.screenShake && !policy.reduced;
+    // Classic rules draw the shake jitter every frame like 0.1.0 did, because under them cosmetic random draws
+    // still reach gameplay through particle ids; remaster rules draw only while actually shaking.
+    const drawJitter = this.rules.isolatedCosmeticIds ? shakeEnabled && !this.paused && this.shake > 0.01 : shakeEnabled;
+    const shakeX = drawJitter ? (this.effectRandom() - 0.5) * this.shake : 0;
+    const shakeY = drawJitter ? (this.effectRandom() - 0.5) * this.shake : 0;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     ctx.clearRect(0, 0, this.viewW, this.viewH);
     ctx.fillStyle = NEUTRAL.paper;
@@ -4062,7 +4074,7 @@ export class GameEngine {
       const life = 0.25 + this.effectRandom() * 0.45;
       const particle = this.particlePool.acquire();
       Object.assign(particle, {
-        id: this.nextId(),
+        id: this.nextCosmeticId(),
         x,
         y,
         vx: Math.cos(angle) * velocity,
@@ -4119,5 +4131,11 @@ export class GameEngine {
   private nextId() {
     this.idSeed += 1;
     return this.idSeed;
+  }
+
+  private nextCosmeticId() {
+    if (!this.rules.isolatedCosmeticIds) return this.nextId();
+    this.cosmeticIdSeed += 1;
+    return this.cosmeticIdSeed;
   }
 }
