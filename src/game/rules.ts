@@ -65,6 +65,11 @@ export type RuleSet = Readonly<{
    * then damage x1.5 and x2.0) instead of x4.5 damage at once, and the silence zone lands after a warning.
    */
   steppedEnrage: boolean;
+  /**
+   * SYS-04: bosses appear at least 420 away even next to a world edge, and a boss that touches the player is
+   * pushed back out instead of sitting on top of them (the root of BUG-12).
+   */
+  bossSpacing: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -88,6 +93,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   wardenShield: false,
   bossTelegraphs: false,
   steppedEnrage: false,
+  bossSpacing: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -111,6 +117,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   wardenShield: true,
   bossTelegraphs: true,
   steppedEnrage: true,
+  bossSpacing: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

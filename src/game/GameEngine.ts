@@ -334,6 +334,11 @@ const ECLIPSE_WALL_LANE_GAP = 115;
 /** Fair terrain (BUG-13): a root zone binds once on entry, then cannot bind again for a while. */
 const ROOT_BIND_SECONDS = 0.65;
 const ROOT_IMMUNITY_SECONDS = ROOT_BIND_SECONDS + 1.5;
+/** Bosses enter this far from the player; under bossSpacing never closer than the minimum (SYS-04). */
+const BOSS_SPAWN_DISTANCE = 620;
+const BOSS_MIN_SPAWN_DISTANCE = 420;
+/** SYS-04: the speed a boss recoils at after a contact hit. */
+const BOSS_CONTACT_RECOIL = 260;
 /** SYS-04: enrage climbs one of four steps every 30 s of stage clock; its silence zone warns for 0.8 s. */
 const ENRAGE_STEPS = 4;
 const ENRAGE_STEP_SECONDS = 30;
@@ -2525,6 +2530,24 @@ export class GameEngine {
     this.enemies.push(enemy);
   }
 
+  /**
+   * Where a boss enters: 620 from the player at the rolled angle, kept inside the arena. Under bossSpacing
+   * (SYS-04), a spot the edge clamps closer than 420 tries the opposite side, then the two sides across.
+   */
+  protected bossSpawnPoint(angle: number) {
+    const place = (turn: number) => ({
+      x: clamp(this.player.x + Math.cos(angle + turn) * BOSS_SPAWN_DISTANCE, 120, WORLD_W - 120),
+      y: clamp(this.player.y + Math.sin(angle + turn) * BOSS_SPAWN_DISTANCE, 120, WORLD_H - 120),
+    });
+    const first = place(0);
+    if (!this.rules.bossSpacing) return first;
+    for (const turn of [0, Math.PI, Math.PI / 2, -Math.PI / 2]) {
+      const spot = place(turn);
+      if (Math.hypot(spot.x - this.player.x, spot.y - this.player.y) >= BOSS_MIN_SPAWN_DISTANCE) return spot;
+    }
+    return first;
+  }
+
   protected spawnBoss(kind: StageKind | 'normal', legacy: boolean) {
     let def: BossDef;
     if (kind === 'normal') {
@@ -2541,10 +2564,7 @@ export class GameEngine {
       def = selectRequiredBoss(candidates, { chapter: this.chapter, role }, this.gameplayRandom);
     }
 
-    const angle = this.gameplayRandom() * Math.PI * 2;
-    const distanceFromPlayer = 620;
-    const x = clamp(this.player.x + Math.cos(angle) * distanceFromPlayer, 120, WORLD_W - 120);
-    const y = clamp(this.player.y + Math.sin(angle) * distanceFromPlayer, 120, WORLD_H - 120);
+    const { x, y } = this.bossSpawnPoint(this.gameplayRandom() * Math.PI * 2);
     const scale = kind === 'normal' ? (legacy ? 0.42 : 0.34) : 0.72;
     const stageScale = kind === 'normal' ? 1 + (this.chapter - 1) * 0.18 + (this.stage - 1) * 0.08 : 1;
     const boss: Entity = {
@@ -2593,10 +2613,7 @@ export class GameEngine {
     const candidates = pool.length > 0 ? pool : BOSS_ROUND_BOSSES;
     const def = candidates[Math.floor(this.gameplayRandom() * candidates.length)];
     const difficulty = infiniteDifficultyAt(this.elapsed, this.infiniteBossKills);
-    const angle = this.gameplayRandom() * Math.PI * 2;
-    const distanceFromPlayer = 620;
-    const x = clamp(this.player.x + Math.cos(angle) * distanceFromPlayer, 120, WORLD_W - 120);
-    const y = clamp(this.player.y + Math.sin(angle) * distanceFromPlayer, 120, WORLD_H - 120);
+    const { x, y } = this.bossSpawnPoint(this.gameplayRandom() * Math.PI * 2);
     const patternHealth = 1 + (def.role === 'final' ? 0.12 : 0) + (def.chapter - 1) * 0.025;
     const patternDamage = 1 + (def.role === 'final' ? 0.08 : 0) + (def.chapter - 1) * 0.015;
     const hp = INFINITE_BASELINE.bossHp * difficulty.bossHealthScale * patternHealth;
@@ -2819,10 +2836,26 @@ export class GameEngine {
         }
       }
 
-      if (distance(enemy, this.player) < enemy.radius + HIT_RADIUS.playerContact && enemy.contactTimer <= 0) {
+      const touching = distance(enemy, this.player) < enemy.radius + HIT_RADIUS.playerContact;
+      if (touching && enemy.contactTimer <= 0) {
         enemy.contactTimer = enemy.isBoss ? 0.78 : 1;
         this.damagePlayer(enemy.damage, true, enemy.isBoss ? 'bossContact' : 'contact');
         this.emit({ type: 'enemy/contact', isBoss: enemy.isBoss });
+        if (enemy.isBoss && this.rules.bossSpacing && enemy.patternPhase !== 'dash' && enemy.patternPhase !== 'warn') {
+          // SYS-04: the hit knocks the boss back so it does not stay on top of the player.
+          const away = normalize(enemy.x - this.player.x, enemy.y - this.player.y);
+          enemy.vx = away.x * BOSS_CONTACT_RECOIL;
+          enemy.vy = away.y * BOSS_CONTACT_RECOIL;
+        }
+      }
+      if (touching && enemy.isBoss && this.rules.bossSpacing) {
+        // SYS-04: a boss never overlaps the player; it is pushed back out to touching distance.
+        const gap = distance(enemy, this.player);
+        const away = gap > 1e-6 ? { x: (enemy.x - this.player.x) / gap, y: (enemy.y - this.player.y) / gap } : { x: 1, y: 0 };
+        const reach = enemy.radius + HIT_RADIUS.playerContact;
+        enemy.x = this.player.x + away.x * reach;
+        enemy.y = this.player.y + away.y * reach;
+        this.resolveEntityVsObstacles(enemy, enemy.radius);
       }
     }
     if (enemySeparation) this.separateEnemies();
