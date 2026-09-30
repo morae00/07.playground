@@ -357,10 +357,21 @@ async function waitForApp(page, timeoutMs = 15_000) {
   }
 }
 
+/**
+ * Runs the paused page clock to an exact tick count. Playwright replays install() and pauseAt() when the page
+ * loads and adds the real time between the two calls (0-2 ms) to performance.now(). That offset shifts every
+ * frame against the 16 ms animation-frame grid and moved sprites by a sub-pixel between runs.
+ */
+async function settleTo(page, ticks) {
+  const now = await page.evaluate(() => performance.now());
+  if (now > ticks) throw new Error(`the page clock is already at ${now} ms, past ${ticks} ms`);
+  await page.clock.runFor(ticks - now);
+}
+
 async function runScenario(page, viewport, dpr, motion) {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
   await waitForApp(page);
-  await settle(page, 120);
+  await settleTo(page, 120);
   await unique(page.getByRole('heading', { name: '흑백 타격 생존전' }), 'menu heading');
   const sprites = await waitForSprites(page);
   if (sprites !== 'ready') throw new Error(`character atlas failed to load (${sprites})`);
