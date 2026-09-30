@@ -44,7 +44,13 @@ Each frame the engine builds a read-only `RenderWorld` (`src/game/render/worldRe
 - A voice limit per cue; one more voice replaces the oldest.
 - At most 16 voices in all. A new cue takes the oldest voice of the lowest priority, or stays silent if every voice outranks it.
 
-Pitch variation comes from the mixer, not the cosmetic stream, so sounds never move particles. Classic rules keep 0.1.0's per-hit draw on the cosmetic stream, because classic particle ids feed gameplay ids. `src/ui/uiSounds.ts` plays button clicks on the ui bus; a button can choose `data-sound="cancel"`, or `"none"` when its action already makes a game sound. A sound pack (`AudioMixer.loadPack`, Opus files per cue) replaces a cue's synth tone once it is decoded. Until the SFX library (AUD-02) delivers packs, every cue plays its synth tone.
+Pitch variation comes from the mixer, not the cosmetic stream, so sounds never move particles. Classic rules keep 0.1.0's per-hit draw on the cosmetic stream, because classic particle ids feed gameplay ids. `src/ui/uiSounds.ts` plays button clicks on the ui bus; a button can choose `data-sound="cancel"`, or `"none"` when its action already makes a game sound. A sound pack (`AudioMixer.loadPack`, audio files per cue with variants) replaces a cue's synth tone once it is decoded.
+
+The v0 pack (AUD-02) covers all 33 cues, with three to four variants for hits and pickups:
+- It is placeholder sound design in the paper-and-ink tone. `art/sfx-spec.mjs` holds a recipe per cue, and `npm run build:sfx` renders them in plain JavaScript into 16-bit mono WAV under `public/assets/packs/sfx-common`, so a rebake is byte-identical.
+- Files are normalized to `SAMPLE_PEAK`, and the mixer plays them back at the level the synth tone had.
+- Recorded sounds from the SFX library order replace files by name, with no code change.
+- A cue whose file fails to load keeps its synth tone.
 
 ## Render layers (TEC-12)
 

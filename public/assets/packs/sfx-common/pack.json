@@ -1,0 +1,143 @@
+{
+ "id": "sfx-common",
+ "base": "assets/packs/sfx-common/",
+ "cues": {
+  "hit.light": [
+   "hit.light-0.wav",
+   "hit.light-1.wav",
+   "hit.light-2.wav",
+   "hit.light-3.wav"
+  ],
+  "hit.heavy": [
+   "hit.heavy-0.wav",
+   "hit.heavy-1.wav",
+   "hit.heavy-2.wav",
+   "hit.heavy-3.wav"
+  ],
+  "hit.critical": [
+   "hit.critical-0.wav",
+   "hit.critical-1.wav",
+   "hit.critical-2.wav",
+   "hit.critical-3.wav"
+  ],
+  "shield.block": [
+   "shield.block-0.wav",
+   "shield.block-1.wav",
+   "shield.block-2.wav"
+  ],
+  "enemy.kill": [
+   "enemy.kill-0.wav",
+   "enemy.kill-1.wav",
+   "enemy.kill-2.wav",
+   "enemy.kill-3.wav"
+  ],
+  "enemy.stunned": [
+   "enemy.stunned-0.wav",
+   "enemy.stunned-1.wav",
+   "enemy.stunned-2.wav"
+  ],
+  "boss.kill": [
+   "boss.kill-0.wav",
+   "boss.kill-1.wav"
+  ],
+  "boss.enraged": [
+   "boss.enraged-0.wav",
+   "boss.enraged-1.wav"
+  ],
+  "boss.intro": [
+   "boss.intro-0.wav"
+  ],
+  "player.hurt": [
+   "player.hurt-0.wav",
+   "player.hurt-1.wav",
+   "player.hurt-2.wav"
+  ],
+  "player.heartbeat": [
+   "player.heartbeat-0.wav"
+  ],
+  "player.down": [
+   "player.down-0.wav"
+  ],
+  "cast.fanKnives": [
+   "cast.fanKnives-0.wav",
+   "cast.fanKnives-1.wav",
+   "cast.fanKnives-2.wav"
+  ],
+  "cast.chainSpark": [
+   "cast.chainSpark-0.wav",
+   "cast.chainSpark-1.wav",
+   "cast.chainSpark-2.wav"
+  ],
+  "cast.frostLine": [
+   "cast.frostLine-0.wav",
+   "cast.frostLine-1.wav",
+   "cast.frostLine-2.wav"
+  ],
+  "cast.railSpear": [
+   "cast.railSpear-0.wav",
+   "cast.railSpear-1.wav"
+  ],
+  "cast.boneMortar": [
+   "cast.boneMortar-0.wav",
+   "cast.boneMortar-1.wav"
+  ],
+  "cast.mirrorClone": [
+   "cast.mirrorClone-0.wav",
+   "cast.mirrorClone-1.wav",
+   "cast.mirrorClone-2.wav"
+  ],
+  "cast.voidMine": [
+   "cast.voidMine-0.wav",
+   "cast.voidMine-1.wav"
+  ],
+  "cast.blackSun": [
+   "cast.blackSun-0.wav",
+   "cast.blackSun-1.wav"
+  ],
+  "draft.skill": [
+   "draft.skill-0.wav"
+  ],
+  "draft.awakening": [
+   "draft.awakening-0.wav"
+  ],
+  "draft.heal": [
+   "draft.heal-0.wav"
+  ],
+  "draft.coins": [
+   "draft.coins-0.wav"
+  ],
+  "draft.overdrive": [
+   "draft.overdrive-0.wav"
+  ],
+  "run.upgrade": [
+   "run.upgrade-0.wav"
+  ],
+  "run.levelUp": [
+   "run.levelUp-0.wav"
+  ],
+  "draft.sting": [
+   "draft.sting-0.wav"
+  ],
+  "pickup.xp": [
+   "pickup.xp-0.wav",
+   "pickup.xp-1.wav",
+   "pickup.xp-2.wav"
+  ],
+  "pickup.coin": [
+   "pickup.coin-0.wav",
+   "pickup.coin-1.wav",
+   "pickup.coin-2.wav"
+  ],
+  "ui.confirm": [
+   "ui.confirm-0.wav",
+   "ui.confirm-1.wav"
+  ],
+  "ui.cancel": [
+   "ui.cancel-0.wav",
+   "ui.cancel-1.wav"
+  ],
+  "ui.deny": [
+   "ui.deny-0.wav"
+  ]
+ }
+}

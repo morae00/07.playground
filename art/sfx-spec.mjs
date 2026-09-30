@@ -1,0 +1,62 @@
+// SFX spec (AUD-02 v0): every cue in src/game/audioPolicy.ts as a small synthesis recipe. scripts/build-sfx.mjs
+// renders the recipes offline in Chromium (OfflineAudioContext) into WAV variants of one sound pack. This is
+// placeholder sound design in the paper-and-ink tone of the style bible until the SFX library order arrives:
+// recorded files replace these by name, with no code change. Each variant nudges pitch and length a little, so
+// the mixer's random variant pick keeps repeats from sounding mechanical.
+//
+// A layer is noise or a tone:
+//   { noise: 'white' | 'crackle', filter: 'lowpass' | 'bandpass' | 'highpass', hz, to?, q?, attack, decay, gain, at? }
+//   { tone: 'sine' | 'triangle' | 'square' | 'sawtooth', hz, to?, attack, decay, gain, at? }
+// `to` sweeps the frequency exponentially over the decay; `at` delays the layer (seconds). Crackle is noise gated
+// by short random pulses: the tear of paper.
+
+export const SFX_RATE = 22050;
+/** Every file is normalized to this peak; the mixer brings it back to the synth level (audioPolicy SAMPLE_PEAK). */
+export const SFX_PEAK = 0.9;
+export const SFX_PACK = Object.freeze({ id: 'sfx-common', dir: 'assets/packs/sfx-common' });
+
+const tap = (hz, decay, gain = 1) => ({ noise: 'white', filter: 'bandpass', hz, q: 1.4, attack: 0.001, decay, gain });
+const thud = (hz, to, decay, gain = 1, at = 0) => ({ tone: 'sine', hz, to, attack: 0.002, decay, gain, at });
+
+export const RECIPES = Object.freeze({
+  // Hits: a paper tap that gets lower, longer, and wetter with the tier (G13).
+  'hit.light': { variants: 4, layers: [tap(2600, 0.03), { tone: 'square', hz: 900, to: 520, attack: 0.001, decay: 0.012, gain: 0.18 }] },
+  'hit.heavy': { variants: 4, layers: [tap(1500, 0.05), thud(170, 90, 0.07, 0.8), { noise: 'crackle', filter: 'highpass', hz: 3000, attack: 0.001, decay: 0.04, gain: 0.3 }] },
+  'hit.critical': { variants: 4, layers: [tap(1100, 0.08, 1.1), thud(120, 55, 0.12, 1), { noise: 'white', filter: 'lowpass', hz: 5200, to: 900, attack: 0.002, decay: 0.16, gain: 0.5, at: 0.01 }] },
+  'shield.block': { variants: 3, layers: [{ tone: 'triangle', hz: 1480, to: 1320, attack: 0.001, decay: 0.09, gain: 0.7 }, { tone: 'sine', hz: 2210, attack: 0.001, decay: 0.07, gain: 0.35 }, tap(3200, 0.02, 0.5)] },
+  // Kills: a torn scrap of paper; bosses burst like a thrown ink pot.
+  'enemy.kill': { variants: 4, layers: [{ noise: 'crackle', filter: 'bandpass', hz: 1900, q: 0.8, attack: 0.002, decay: 0.11, gain: 1 }, thud(210, 120, 0.05, 0.4)] },
+  'enemy.stunned': { variants: 3, layers: [{ tone: 'triangle', hz: 620, to: 880, attack: 0.002, decay: 0.08, gain: 0.5 }, { tone: 'triangle', hz: 930, to: 1320, attack: 0.002, decay: 0.08, gain: 0.35, at: 0.05 }] },
+  'boss.kill': { variants: 2, layers: [thud(90, 32, 0.7, 1), { noise: 'white', filter: 'lowpass', hz: 3400, to: 260, attack: 0.004, decay: 0.8, gain: 0.8 }, { noise: 'crackle', filter: 'highpass', hz: 2200, attack: 0.01, decay: 0.5, gain: 0.4, at: 0.05 }] },
+  'boss.enraged': { variants: 2, layers: [{ tone: 'sawtooth', hz: 62, to: 88, attack: 0.08, decay: 0.7, gain: 0.8 }, { noise: 'white', filter: 'bandpass', hz: 420, q: 2, attack: 0.1, decay: 0.6, gain: 0.5 }] },
+  'boss.intro': { variants: 1, layers: [{ tone: 'sawtooth', hz: 55, to: 49, attack: 0.12, decay: 0.9, gain: 0.8 }, { tone: 'sine', hz: 110, attack: 0.05, decay: 0.8, gain: 0.5 }, { noise: 'white', filter: 'lowpass', hz: 700, attack: 0.2, decay: 0.7, gain: 0.35 }] },
+  // The player: a dull thump with a crumple; the heartbeat is a double low beat.
+  'player.hurt': { variants: 3, layers: [thud(150, 70, 0.1, 1), { noise: 'crackle', filter: 'bandpass', hz: 900, q: 0.9, attack: 0.002, decay: 0.09, gain: 0.6 }] },
+  'player.heartbeat': { variants: 1, layers: [thud(62, 44, 0.09, 1), thud(58, 42, 0.1, 0.8, 0.16)] },
+  'player.down': { variants: 1, layers: [{ tone: 'sawtooth', hz: 180, to: 45, attack: 0.01, decay: 0.6, gain: 0.7 }, { noise: 'white', filter: 'lowpass', hz: 1800, to: 200, attack: 0.01, decay: 0.7, gain: 0.5 }] },
+  // Casts: each skill's own gesture.
+  'cast.fanKnives': { variants: 3, layers: [{ noise: 'white', filter: 'highpass', hz: 4200, to: 2400, attack: 0.004, decay: 0.07, gain: 0.8 }, { tone: 'triangle', hz: 1300, to: 1700, attack: 0.001, decay: 0.03, gain: 0.25 }] },
+  'cast.chainSpark': { variants: 3, layers: [{ noise: 'crackle', filter: 'highpass', hz: 2600, attack: 0.001, decay: 0.12, gain: 0.9 }, { tone: 'square', hz: 1760, to: 880, attack: 0.001, decay: 0.05, gain: 0.25 }] },
+  'cast.frostLine': { variants: 3, layers: [{ noise: 'white', filter: 'bandpass', hz: 5200, to: 2600, q: 3, attack: 0.002, decay: 0.12, gain: 0.8 }, { tone: 'sine', hz: 2400, to: 1800, attack: 0.002, decay: 0.09, gain: 0.3 }] },
+  'cast.railSpear': { variants: 2, layers: [{ tone: 'sawtooth', hz: 140, to: 70, attack: 0.002, decay: 0.16, gain: 0.7 }, { noise: 'white', filter: 'lowpass', hz: 6000, to: 800, attack: 0.001, decay: 0.2, gain: 0.7 }] },
+  'cast.boneMortar': { variants: 2, layers: [thud(120, 60, 0.16, 1), { noise: 'white', filter: 'lowpass', hz: 1200, to: 300, attack: 0.004, decay: 0.2, gain: 0.6 }] },
+  'cast.mirrorClone': { variants: 3, layers: [{ tone: 'triangle', hz: 470, to: 940, attack: 0.004, decay: 0.08, gain: 0.5 }, { tone: 'triangle', hz: 705, to: 1410, attack: 0.004, decay: 0.08, gain: 0.35 }] },
+  'cast.voidMine': { variants: 2, layers: [{ tone: 'sine', hz: 180, to: 60, attack: 0.01, decay: 0.2, gain: 0.8 }, { noise: 'white', filter: 'lowpass', hz: 600, to: 120, attack: 0.02, decay: 0.2, gain: 0.4 }] },
+  'cast.blackSun': { variants: 2, layers: [{ tone: 'sine', hz: 150, to: 40, attack: 0.02, decay: 0.4, gain: 0.9 }, { noise: 'white', filter: 'bandpass', hz: 300, to: 80, q: 1.5, attack: 0.05, decay: 0.35, gain: 0.5 }] },
+  // Draft and run rewards.
+  'draft.skill': { variants: 1, layers: [{ tone: 'triangle', hz: 523, attack: 0.004, decay: 0.12, gain: 0.6 }, { tone: 'triangle', hz: 784, attack: 0.004, decay: 0.14, gain: 0.45, at: 0.05 }] },
+  'draft.awakening': { variants: 1, layers: [{ tone: 'sawtooth', hz: 110, to: 220, attack: 0.02, decay: 0.4, gain: 0.5 }, { tone: 'triangle', hz: 659, attack: 0.01, decay: 0.5, gain: 0.4, at: 0.1 }, { noise: 'white', filter: 'highpass', hz: 3000, attack: 0.05, decay: 0.3, gain: 0.25 }] },
+  'draft.heal': { variants: 1, layers: [{ tone: 'sine', hz: 523, to: 660, attack: 0.01, decay: 0.2, gain: 0.6 }, { tone: 'sine', hz: 784, attack: 0.01, decay: 0.2, gain: 0.3, at: 0.06 }] },
+  'draft.coins': { variants: 1, layers: [{ tone: 'triangle', hz: 1568, attack: 0.001, decay: 0.08, gain: 0.5 }, { tone: 'triangle', hz: 2093, attack: 0.001, decay: 0.08, gain: 0.4, at: 0.05 }, { tone: 'triangle', hz: 2637, attack: 0.001, decay: 0.1, gain: 0.35, at: 0.1 }] },
+  'draft.overdrive': { variants: 1, layers: [{ tone: 'sawtooth', hz: 130, to: 260, attack: 0.01, decay: 0.25, gain: 0.6 }, { noise: 'white', filter: 'bandpass', hz: 800, to: 2400, q: 1.2, attack: 0.02, decay: 0.2, gain: 0.4 }] },
+  'run.upgrade': { variants: 1, layers: [{ tone: 'triangle', hz: 392, attack: 0.002, decay: 0.07, gain: 0.5 }, { tone: 'triangle', hz: 587, attack: 0.002, decay: 0.08, gain: 0.4, at: 0.04 }] },
+  'run.levelUp': { variants: 1, layers: [{ noise: 'white', filter: 'bandpass', hz: 600, to: 4200, q: 1.1, attack: 0.03, decay: 0.3, gain: 0.5 }, { tone: 'triangle', hz: 523, attack: 0.01, decay: 0.3, gain: 0.4, at: 0.08 }, { tone: 'triangle', hz: 659, attack: 0.01, decay: 0.3, gain: 0.35, at: 0.14 }, { tone: 'triangle', hz: 784, attack: 0.01, decay: 0.4, gain: 0.35, at: 0.2 }] },
+  'draft.sting': { variants: 1, layers: [{ tone: 'sawtooth', hz: 196, attack: 0.01, decay: 0.45, gain: 0.45 }, { tone: 'sawtooth', hz: 294, attack: 0.01, decay: 0.45, gain: 0.35 }, { noise: 'crackle', filter: 'highpass', hz: 2600, attack: 0.02, decay: 0.3, gain: 0.3 }] },
+  // Pickups: a small glass tick; the coin rings like a 엽전 on stone.
+  'pickup.xp': { variants: 3, layers: [{ tone: 'sine', hz: 1760, attack: 0.001, decay: 0.035, gain: 0.7 }, { tone: 'sine', hz: 2640, attack: 0.001, decay: 0.025, gain: 0.35 }] },
+  'pickup.coin': { variants: 3, layers: [{ tone: 'triangle', hz: 2349, attack: 0.001, decay: 0.05, gain: 0.6 }, { tone: 'sine', hz: 3520, attack: 0.001, decay: 0.04, gain: 0.3 }, tap(4000, 0.01, 0.4)] },
+  // UI: brush flicks on paper.
+  'ui.confirm': { variants: 2, layers: [tap(3000, 0.018, 0.8), { tone: 'triangle', hz: 740, attack: 0.001, decay: 0.03, gain: 0.3 }] },
+  'ui.cancel': { variants: 2, layers: [tap(1800, 0.022, 0.8), { tone: 'triangle', hz: 440, attack: 0.001, decay: 0.035, gain: 0.3 }] },
+  'ui.deny': { variants: 1, layers: [{ tone: 'square', hz: 150, attack: 0.002, decay: 0.06, gain: 0.35 }, tap(700, 0.04, 0.5)] },
+});

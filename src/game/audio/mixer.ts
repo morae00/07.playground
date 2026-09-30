@@ -1,7 +1,7 @@
 // Audio mixer (AUD-01): one AudioContext for the whole app session, created on the first user gesture. Every
 // sound goes through its bus (music, sfx, ui, ambience) into the master gain and a limiter, under the voice
 // rules in audioPolicy. A cue plays a sample once a sound pack supplies one and its synth tone until then.
-import { CUES, LIMITER, LIMITER_MAKEUP, MAX_VOICES, PAN_SPREAD, SYNTH_PEAK, VoiceLedger, mixLevels, type CueId, type SoundBus, type SoundLevels, type SoundOutput, type VoiceSlot } from '../audioPolicy.ts';
+import { CUES, LIMITER, LIMITER_MAKEUP, MAX_VOICES, PAN_SPREAD, SAMPLE_PEAK, SYNTH_PEAK, VoiceLedger, mixLevels, type CueId, type SoundBus, type SoundLevels, type SoundOutput, type VoiceSlot } from '../audioPolicy.ts';
 
 /** Sample files per cue (AUD-02 fills these), relative to the pack's base path; Opus in WebM or Ogg. */
 export type SoundPack = { id: string; base: string; cues: Partial<Record<CueId, readonly string[]>> };
@@ -86,7 +86,8 @@ export class AudioMixer implements SoundOutput {
       const sample = context.createBufferSource();
       sample.buffer = buffer;
       sample.playbackRate.value = rate;
-      gain.gain.value = spec.synth.gain;
+      // Pack files are normalized to SAMPLE_PEAK; this brings a sample to the level its synth tone had.
+      gain.gain.value = spec.synth.gain * (SYNTH_PEAK / SAMPLE_PEAK);
       source = sample;
     } else {
       const { frequency, spread, oscillator, duration: length, gain: level } = spec.synth;

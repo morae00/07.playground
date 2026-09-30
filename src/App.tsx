@@ -35,7 +35,7 @@ import { ErrorLog, describeError } from './platform/errorReport';
 import { copyErrorReport } from './ui/ErrorBoundary';
 import { CHAPTER_PACKS, COMMON_PACK } from './game/render/assets/slots';
 import { useGamepadNavigation } from './ui/useGamepadNavigation';
-import { AudioMixer } from './game/audio/mixer';
+import { AudioMixer, type SoundPack } from './game/audio/mixer';
 import { installUiSounds } from './ui/uiSounds';
 import {
   CHAPTERS,
@@ -67,6 +67,10 @@ function InjectedRenderFault(): never {
 const standaloneErrorLog = new ErrorLog();
 // One mixer and audio context for the whole session (AUD-01); it outlives every run and every app remount.
 const appMixer = new AudioMixer();
+// The SFX pack (AUD-02) decodes once audio unlocks; until then, and for any file that fails, cues play their synth.
+void fetch('assets/packs/sfx-common/pack.json')
+  .then((response) => (response.ok ? response.json() : null))
+  .then((pack: SoundPack | null) => pack && appMixer.loadPack(pack), () => undefined);
 /** The death moment (FX-03): the canvas shows the fall this long before the settlement opens. */
 const DEATH_MOMENT_MS = 700;
 

@@ -81,6 +81,8 @@ export const HIT_CUES: Readonly<Record<ImpactTier, CueId>> = { light: 'hit.light
 export const MAX_VOICES = 16;
 /** Peak level of one synth voice before the bus and master gains (0.1.0's tone level). */
 export const SYNTH_PEAK = 0.055;
+/** Peak the sound pack files are normalized to (art/sfx-spec.mjs SFX_PEAK); samples play back at the synth level. */
+export const SAMPLE_PEAK = 0.9;
 /** How far a sound at the screen edge sits toward that speaker (1 would be hard left or right). */
 export const PAN_SPREAD = 0.6;
 /** Limiter on the master bus: catches pile-ups without touching a single voice. */

@@ -39,6 +39,7 @@
     "fingerprint:draw": "npm run build:test-bundles && node scripts/draw-fingerprint.mjs",
     "build:atlas": "node scripts/build-atlas.mjs",
     "build:ui-art": "node scripts/build-ui-art.mjs",
+    "build:sfx": "node scripts/build-sfx.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "electron": "npm run build && electron .",
     "electron:developer": "npm run build:developer && BLACKLINE_DEVELOPER_BUILD=1 electron .",
