@@ -58,10 +58,20 @@ function unit(x: number, y: number): { x: number; y: number } {
 }
 
 /**
- * How far body a moves when it overlaps body b: along b->a, by the overlap times strength, split by mass (r^2).
+ * The share of an overlap that body a takes when it separates from body b: split by mass (r^2), except that a boss
+ * never gives way to an ordinary body, which takes the whole push. Crowds make room for a boss instead of
+ * holding it off the player (a crowd of 150 used to shove bosses back faster than they walk).
+ */
+export function separationShare(ar: number, aBoss: boolean, br: number, bBoss: boolean) {
+  if (aBoss !== bBoss) return aBoss ? 0 : 1;
+  return (br * br) / (ar * ar + br * br);
+}
+
+/**
+ * How far body a moves when it overlaps body b: along b->a, by the overlap times strength times a's share.
  * Writes into `out` when given, so the engine's per-step loop allocates nothing.
  */
-export function separationPush(a: Point, ar: number, b: Point, br: number, strength = SEPARATION.strength, out = { x: 0, y: 0 }) {
+export function separationPush(a: Point & { isBoss?: boolean }, ar: number, b: Point & { isBoss?: boolean }, br: number, strength = SEPARATION.strength, out = { x: 0, y: 0 }) {
   const dx = a.x - b.x;
   const dy = a.y - b.y;
   const d = Math.hypot(dx, dy);
@@ -69,7 +79,7 @@ export function separationPush(a: Point, ar: number, b: Point, br: number, stren
   out.x = 0;
   out.y = 0;
   if (overlap <= 0) return out;
-  const share = (br * br) / (ar * ar + br * br);
+  const share = separationShare(ar, a.isBoss === true, br, b.isBoss === true);
   const amount = overlap * strength * share;
   // Exactly stacked bodies part along a fixed axis so the result stays deterministic.
   if (d > 1e-6) {
@@ -267,10 +277,9 @@ export class SeparationGrid {
     if (overlap <= 0) return;
     const ux = d > 1e-6 ? dx / d : 1;
     const uy = d > 1e-6 ? dy / d : 0;
-    const massA = first.radius * first.radius;
-    const massB = second.radius * second.radius;
-    const toA = overlap * strength * (massB / (massA + massB));
-    const toB = overlap * strength * (massA / (massA + massB));
+    const shareA = separationShare(first.radius, first.isBoss, second.radius, second.isBoss);
+    const toA = overlap * strength * shareA;
+    const toB = overlap * strength * (1 - shareA);
     this.pushX[a] += ux * toA;
     this.pushY[a] += uy * toA;
     this.pushX[b] -= ux * toB;

@@ -47,6 +47,25 @@ test('overlapping enemies push apart under remaster rules and stay stacked under
   }
 });
 
+test('a boss shoulders through a ring of enemies to reach the player; the crowd gives way', () => {
+  const { engine, probe, player, enemy } = arena();
+  try {
+    const boss = probe.spawnBoss('field', { x: player.x + 360, y: player.y });
+    // Wardens (radius 28) pressing in on the player, as in a long boss fight at the enemy cap.
+    for (let index = 0; index < 40; index += 1) {
+      const angle = (index / 40) * Math.PI * 2;
+      for (const ring of [70, 125, 180]) {
+        probe.spawnEnemy({ tier: 'large', x: player.x + Math.cos(angle) * ring, y: player.y + Math.sin(angle) * ring, damage: 0, hp: 1e6 });
+      }
+    }
+    probe.step(60 * 5);
+    const reached = Math.hypot(enemy(boss).x - player.x, enemy(boss).y - player.y);
+    assert.ok(reached < 100, `the boss got through the crowd (${reached.toFixed(0)} from the player)`);
+  } finally {
+    engine.dispose();
+  }
+});
+
 test('a charger winds up in place behind a lane telegraph, then dashes straight along it', () => {
   const { engine, probe, player, enemy } = arena();
   try {

@@ -16,6 +16,27 @@ test('separation parts overlapping bodies, the lighter one more, and leaves apar
   assert.ok(stacked.x > 0 && stacked.y === 0, 'stacked bodies part along a fixed axis');
 });
 
+test('a boss shoulders through a crowd: ordinary bodies give way and never push it', () => {
+  const boss = { x: 0, y: 0, isBoss: true };
+  const mob = { x: 30, y: 0, isBoss: false };
+  const onBoss = separationPush(boss, 52, mob, 16);
+  near(onBoss.x, 0);
+  near(onBoss.y, 0);
+  near(separationPush(mob, 16, boss, 52).x, (52 + 16 - 30) * SEPARATION.strength);
+  const grid = new SeparationGrid({ minX: -120, minY: -120, maxX: 4320, maxY: 3120 });
+  const bodies = [{ x: 500, y: 500, radius: 52, hp: 10, isBoss: true }];
+  for (let index = 0; index < 40; index += 1) {
+    const angle = (index / 40) * Math.PI * 2;
+    bodies.push({ x: 500 + Math.cos(angle) * 50, y: 500 + Math.sin(angle) * 50, radius: 16, hp: 10, isBoss: false });
+  }
+  bodies.push({ x: 540, y: 500, radius: 52, hp: 10, isBoss: true });
+  grid.compute(bodies);
+  const lone = new SeparationGrid({ minX: -120, minY: -120, maxX: 4320, maxY: 3120 });
+  lone.compute([bodies[0], bodies.at(-1)!]);
+  near(grid.pushX[0], lone.pushX[0], 1e-9);
+  assert.ok(grid.pushX[1] > 0, 'a mob on the ring is pushed out');
+});
+
 test('stalkers bend their chase toward the pack only with enough neighbours', () => {
   const chase = { x: 1, y: 0 };
   assert.deepEqual(flockSteer({ x: 0, y: 0 }, chase, [{ x: 0, y: 50, vx: 0, vy: 1 }]), { x: 1, y: 0 });
