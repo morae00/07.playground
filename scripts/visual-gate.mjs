@@ -396,11 +396,11 @@ async function runScenario(page, viewport, dpr, motion) {
   await settle(page, 40);
   await (await unique(page.getByRole('button', { name: '포기하고 메뉴로' }), 'confirm abandoning the run')).click();
   await settle(page, 80);
-  await (await unique(page.getByRole('tab', { name: 'Stage 선택' }), 'Stage menu tab')).click();
+  await (await unique(page.getByRole('tab', { name: '출정' }), 'campaign menu tab')).click();
   await settle(page, 40);
 
   await openDeveloperMode(page);
-  await (await unique(page.getByRole('button', { name: 'Ch.1 / St.1 시작' }), 'Stage 1 start')).click();
+  await (await unique(page.getByRole('button', { name: 'Ch.1 / St.1 출정' }), 'Stage 1 start')).click();
   await settle(page, 180);
   await unique(page.getByRole('img', { name: '흑백 타격 생존전 플레이 영역' }), 'game canvas');
   await captureEvidence(page, viewport, dpr, motion, 'playing');
@@ -432,7 +432,7 @@ async function runScenario(page, viewport, dpr, motion) {
   const stageFive = await unique(page.locator('.stageNode').filter({ has: page.locator('span', { hasText: /^Stage 5$/ }) }), 'Stage 5 node');
   await stageFive.click();
   await settle(page, 30);
-  await (await unique(page.getByRole('button', { name: 'Ch.1 / St.5 시작' }), 'Stage 5 start')).click();
+  await (await unique(page.getByRole('button', { name: 'Ch.1 / St.5 출정' }), 'Stage 5 start')).click();
   await settle(page, 180);
   await captureEvidence(page, viewport, dpr, motion, 'boss');
 }

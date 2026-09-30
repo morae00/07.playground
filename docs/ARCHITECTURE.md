@@ -133,6 +133,14 @@ Onboarding hints (UI-09, `HintLayer.tsx`) never stop play. Each shows once per s
 
 At the first boss fight, a hint says to read the orange telegraph and step out.
 
+The menu (UI-06, concept C) has the title, a vertical nav, and the hero's key art on the left. The nav holds 출정 (campaign), 무한 경쟁 (endless), 수련 (growth), 설정 (settings), and 도감 (the codex, not yet available). The wallet and the account level sit on the right, above the view the nav picks. The campaign view reads top to bottom:
+- the chapter, with a landmark thumbnail and its progress per chapter, and chapter 6 to come;
+- a path map of its ten stages: cleared stages carry the ink seal, the one to play next glows teal, and the boss stops show the boss's portrait;
+- the selected stage: its goal and time, the chapter's four enemy roles, the least a clear pays, the best record, and the start button (Enter also starts it);
+- the current stats.
+
+`src/ui/menuStage.ts` works these out from the game's rules: the boss of a stage, the reward floor (`makeSettlement`'s terms with no kills or coins; `test/menu.integration.test.mjs` checks it against real settlements), the stage status from the unlocked frontier, and what the next level of each upgrade changes (`buildStats` before and after). The growth view shows that change and any lock reason on each upgrade.
+
 Pausing opens the pause hub (UI-04, `PauseHub.tsx`), and the run stays stopped while it is open.
 - Its tabs are the build, the run shop, the settings, and the controls; its actions are resume and abandon (with a confirmation).
 - The run drawer is gone. Players buy upgrades and change settings in the hub, paused.

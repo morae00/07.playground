@@ -95,7 +95,7 @@ try {
   const settled = (storage) => (storage[`${SAVE_KEY}.backup`] === fileOriginStorage[SAVE_KEY] ? storage : null);
   const moved = (await until(async () => settled(await readStorage(page)), 5_000)) ?? (await readStorage(page));
   const meta = savedMeta(moved);
-  const wallet = await page.locator('.wallet strong').first().innerText();
+  const wallet = (await page.locator('.wallet strong').first().innerText()).replace(/,/g, '');
   const intact = moved[`${SAVE_KEY}.backup`] === fileOriginStorage[SAVE_KEY]
     && moved[BOARD_KEY] === fileOriginStorage[BOARD_KEY]
     && meta.gold === 4321 && meta.upgrades?.attack === 5 && meta.passives?.bossHunter === 2 && meta.progress?.stage === 3
@@ -126,7 +126,7 @@ try {
   const sprites = await until(() => page.evaluate(() => document.documentElement.dataset.sprites));
   record('TEC-03 sprite packs load under app://', sprites === 'ready', String(sprites));
 
-  await page.getByRole('button', { name: 'Ch.1 / St.1 시작' }).click();
+  await page.getByRole('button', { name: 'Ch.1 / St.1 출정' }).click();
   const timer = page.locator('.hudClock .timer');
   await timer.waitFor({ timeout: 5_000 });
   const startClock = await timer.innerText();

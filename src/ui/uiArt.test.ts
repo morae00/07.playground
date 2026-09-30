@@ -38,7 +38,7 @@ const skills = Object.keys(SKILL_NUMBERS);
 const withAwakened = skills.flatMap((id) => [id, `${id}-awakened`]);
 
 test('every sheet is a grid of equal @2x cells, and each key shows its own cell', () => {
-  for (const className of ['artTile', 'artSlot', 'artPortrait', 'artPickup']) {
+  for (const className of ['artTile', 'artSlot', 'artPortrait', 'artPickup', 'artKeyart', 'artChapter', 'artEnemy']) {
     const { file, cell, size: [columns, rows], keys, positions } = sheet(className);
     const [width, height] = webpSize(file);
     assert.equal(width, cell[0] * 2 * columns, `${className}: ${columns} columns of ${cell[0]} CSS px at @2x`);
@@ -63,4 +63,10 @@ test('portraits cover the hero expressions and every boss the kit draws; pickups
     ...bosses.flatMap((id) => [id, `${id}-enraged`]),
   ]);
   assert.deepEqual(sheet('artPickup').keys, ['xp', 'coin', 'magnet', 'heal']);
+});
+
+test('the menu sheets (UI-06) cover the key art, the five chapters, and every chapter role', () => {
+  assert.deepEqual(sheet('artKeyart').keys, ['hero']);
+  assert.deepEqual(sheet('artChapter').keys, [1, 2, 3, 4, 5].map((chapter) => `chapter-${chapter}`));
+  assert.deepEqual(sheet('artEnemy').keys, [1, 2, 3, 4, 5].flatMap((chapter) => ['stalker', 'charger', 'shooter', 'warden'].map((role) => `${chapter}-${role}`)));
 });

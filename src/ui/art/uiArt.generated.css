@@ -124,3 +124,50 @@
 .artPickup[data-art="coin"] { background-position: 33.3333% 0%; }
 .artPickup[data-art="magnet"] { background-position: 66.6667% 0%; }
 .artPickup[data-art="heal"] { background-position: 100% 0%; }
+
+.artKeyart {
+  aspect-ratio: 360 / 576;
+  background-image: url("./keyart.webp");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+.artKeyart[data-art="hero"] { background-position: 0% 0%; }
+
+.artChapter {
+  aspect-ratio: 168 / 90;
+  background-image: url("./chapter-thumbs.webp");
+  background-repeat: no-repeat;
+  background-size: 500% 100%;
+}
+.artChapter[data-art="chapter-1"] { background-position: 0% 0%; }
+.artChapter[data-art="chapter-2"] { background-position: 25% 0%; }
+.artChapter[data-art="chapter-3"] { background-position: 50% 0%; }
+.artChapter[data-art="chapter-4"] { background-position: 75% 0%; }
+.artChapter[data-art="chapter-5"] { background-position: 100% 0%; }
+
+.artEnemy {
+  aspect-ratio: 48 / 48;
+  background-image: url("./enemy-icons.webp");
+  background-repeat: no-repeat;
+  background-size: 1000% 200%;
+}
+.artEnemy[data-art="1-stalker"] { background-position: 0% 0%; }
+.artEnemy[data-art="1-charger"] { background-position: 11.1111% 0%; }
+.artEnemy[data-art="1-shooter"] { background-position: 22.2222% 0%; }
+.artEnemy[data-art="1-warden"] { background-position: 33.3333% 0%; }
+.artEnemy[data-art="2-stalker"] { background-position: 44.4444% 0%; }
+.artEnemy[data-art="2-charger"] { background-position: 55.5556% 0%; }
+.artEnemy[data-art="2-shooter"] { background-position: 66.6667% 0%; }
+.artEnemy[data-art="2-warden"] { background-position: 77.7778% 0%; }
+.artEnemy[data-art="3-stalker"] { background-position: 88.8889% 0%; }
+.artEnemy[data-art="3-charger"] { background-position: 100% 0%; }
+.artEnemy[data-art="3-shooter"] { background-position: 0% 100%; }
+.artEnemy[data-art="3-warden"] { background-position: 11.1111% 100%; }
+.artEnemy[data-art="4-stalker"] { background-position: 22.2222% 100%; }
+.artEnemy[data-art="4-charger"] { background-position: 33.3333% 100%; }
+.artEnemy[data-art="4-shooter"] { background-position: 44.4444% 100%; }
+.artEnemy[data-art="4-warden"] { background-position: 55.5556% 100%; }
+.artEnemy[data-art="5-stalker"] { background-position: 66.6667% 100%; }
+.artEnemy[data-art="5-charger"] { background-position: 77.7778% 100%; }
+.artEnemy[data-art="5-shooter"] { background-position: 88.8889% 100%; }
+.artEnemy[data-art="5-warden"] { background-position: 100% 100%; }

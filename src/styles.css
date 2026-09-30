@@ -732,7 +732,6 @@ h2 {
 
 .shopButton,
 .upgradeButton,
-.stageCard,
 .draftCard {
   border: 2px solid #111;
   color: #111;
@@ -765,7 +764,6 @@ h2 {
 
 .shopButton:disabled,
 .upgradeButton:disabled,
-.stageCard.locked,
 .draftCard:disabled,
 [aria-disabled="true"] {
   opacity: 0.48;
@@ -1059,25 +1057,6 @@ h2 {
   font-size: 18px;
 }
 
-.menuGrid {
-  display: grid;
-  grid-template-columns: minmax(310px, 0.86fr) minmax(420px, 1.4fr);
-  gap: 18px;
-  margin-top: 18px;
-}
-
-.menuGrid.single {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.menuTabs {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(120px, 220px));
-  gap: 6px;
-  margin-top: 16px;
-  border-bottom: 2px solid var(--ink);
-}
-
 .menuTab {
   min-height: 42px;
   border: 2px solid var(--ink);
@@ -1101,7 +1080,6 @@ h2 {
   margin-bottom: 0;
 }
 
-.stageColumn,
 .infiniteColumn,
 .upgradeColumn,
 .menuSection {
@@ -1300,24 +1278,6 @@ h2 {
   line-height: 1.5;
 }
 
-.stageList {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.stageCard {
-  min-height: 76px;
-  padding: 9px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 6px 10px;
-  transition:
-    transform 120ms ease,
-    box-shadow 120ms ease;
-}
-
-.stageCard:hover:not(:disabled),
 .draftCard:hover,
 .upgradeButton:hover:not(:disabled),
 .shopButton:hover:not(:disabled) {
@@ -1325,62 +1285,11 @@ h2 {
   box-shadow: 4px 4px 0 #111;
 }
 
-.stageCard.selected {
-  color: #fff;
-  background: #111;
-}
-
-.stageCard span,
-.stageCard strong,
-.stageCard em {
-  min-width: 0;
-}
-
-.stageCard span {
-  font-weight: 900;
-  font-size: 13px;
-}
-
-.stageCard strong {
-  justify-self: end;
-  font-size: 13px;
-}
-
-.stageCard em {
-  grid-column: 1 / -1;
-  color: inherit;
-  opacity: 0.74;
-  font-size: 13px;
-  font-style: normal;
-}
-
-.stageCard small {
-  grid-column: 1 / -1;
-  display: block;
-  overflow: hidden;
-  color: inherit;
-  opacity: 0.68;
-  font-size: 13px;
-  font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.startRow,
 .modalActions {
   display: flex;
   gap: 10px;
   margin-top: 12px;
   flex-wrap: wrap;
-}
-
-.startRow {
-  position: sticky;
-  z-index: 3;
-  bottom: -22px;
-  padding: 12px 0 22px;
-  border-top: 2px solid var(--ink);
-  background: rgba(247, 247, 242, 0.98);
 }
 
 .devToggle {
@@ -1397,77 +1306,544 @@ h2 {
   font-weight: 900;
 }
 
-.chapterTree {
-  margin-top: 12px;
-  border: 2px solid #111;
-  padding: 10px;
-  background: #fff;
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 5px;
-}
-
-.chapterTree > strong {
-  grid-column: 1 / -1;
-  display: block;
-  margin-bottom: 8px;
-}
-
-.treeRow {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  min-height: 25px;
-  align-items: center;
-  border: 1px solid #d7d7d2;
-  padding: 7px;
-  font-size: 13px;
-}
-
-.stageNode {
-  width: 100%;
-  color: #111;
-  background: transparent;
-  border-right: 0;
-  border-bottom: 0;
-  border-left: 0;
-  text-align: left;
-}
-
-.stageNode:hover:not(:disabled) {
-  background: #f1f1ed;
-}
-
-.stageNode.selected {
-  color: #fff;
-  background: #111;
-}
-
-.stageNode.locked {
-  opacity: 0.44;
-}
-
-.treeRow span {
-  font-weight: 900;
-}
-
-.treeRow em {
-  grid-column: 1 / -1;
-  overflow: hidden;
-  color: #555;
-  font-style: normal;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.treeRow b {
-  justify-self: end;
-  font-size: 13px;
-}
-
 .launch {
   flex: 1;
   min-width: 190px;
+}
+
+/* Menu, concept C (UI-06): the side with the title, the nav and the key art; the main column with the wallet and
+   the view. The campaign view stacks the chapter strip, the stage path map, and the selected stage. */
+.menuLayer {
+  display: grid;
+  grid-template-columns: minmax(250px, 29%) minmax(0, 1fr);
+  gap: 22px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.menuSide {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 0;
+  padding: 22px 0 0 22px;
+  overflow: hidden;
+}
+
+.menuSide .titleBlock {
+  display: block;
+  position: relative;
+  z-index: 1;
+  padding-bottom: 12px;
+}
+
+.menuSide .titleBlock h1 {
+  font-size: clamp(30px, 3.8vw, 60px);
+  word-break: keep-all;
+}
+
+.menuNav {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+
+.menuNavItem {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-height: 44px;
+  border: 2px solid transparent;
+  padding: 3px 12px;
+  color: var(--ink);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menuNavItem b {
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.menuNavItem small {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.menuNavItem.active {
+  color: var(--paper);
+  background: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+.menuNavItem.active small {
+  color: var(--graphite);
+}
+
+.menuNavItem.soon {
+  cursor: default;
+}
+
+/* The key art stands at the foot of the side, over an ink circle, behind nothing it could cover. */
+.menuKeyart {
+  position: absolute;
+  right: -6%;
+  bottom: -9%;
+  width: min(86%, 380px);
+  pointer-events: none;
+}
+
+.menuKeyart::before {
+  content: "";
+  position: absolute;
+  left: 4%;
+  top: 6%;
+  width: 92%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(17, 17, 15, 0.1) 0 58%, rgba(17, 17, 15, 0.22) 60% 62%, rgba(17, 17, 15, 0) 63%);
+}
+
+.menuKeyart .artKeyart {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.menuMain {
+  min-width: 0;
+  min-height: 0;
+  padding: 18px 22px 22px 0;
+  overflow: auto;
+}
+
+.menuTopbar {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.menuTopbar .wallet {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 5px 16px;
+}
+
+.accountChip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 5px 14px;
+  background: var(--paper-raised);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.accountChip .xpBar {
+  width: 110px;
+  margin-top: 0;
+}
+
+.pointBadge {
+  border-radius: 999px;
+  padding: 1px 8px;
+  color: var(--paper);
+  background: var(--player-keyline);
+  font-size: 13px;
+}
+
+.chapterHead {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.chapterHead .eyebrow {
+  margin: 0;
+  color: var(--muted);
+}
+
+.chapterHead h2 {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 900;
+}
+
+.chapterMeta {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.chapterProgress {
+  margin-left: auto;
+  font-size: 15px;
+}
+
+.chapterStrip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(56px, 0.5fr);
+  gap: 8px;
+  margin: 10px 0 12px;
+}
+
+.chapterCard {
+  display: grid;
+  gap: 2px;
+  border: 2px solid var(--ink);
+  padding: 0 0 6px;
+  color: var(--ink);
+  background: var(--paper-raised);
+  text-align: left;
+  overflow: hidden;
+}
+
+.chapterCard .artChapter {
+  display: block;
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.chapterCardName,
+.chapterCard small {
+  padding: 0 8px;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chapterCard small {
+  color: var(--muted);
+}
+
+.chapterCard.selected {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+  box-shadow: var(--shadow);
+}
+
+.chapterSoon {
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--line);
+  padding: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+  white-space: pre-line;
+  word-break: keep-all;
+}
+
+.stageMap {
+  position: relative;
+  height: 236px;
+  margin-bottom: 12px;
+  border: 2px solid var(--ink);
+  background: var(--paper-raised);
+}
+
+.stageMapInner {
+  position: absolute;
+  inset: 26px 44px 34px;
+}
+
+.stageMapPath {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.stageMapPath path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.pathAhead {
+  stroke: var(--line);
+  stroke-width: 4;
+  stroke-dasharray: 1 9;
+}
+
+.pathDone {
+  stroke: var(--ink);
+  stroke-width: 7;
+}
+
+.stageNode {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  padding: 0;
+  color: var(--ink);
+  background: var(--paper-raised);
+  transform: translate(-50%, -50%);
+}
+
+.stageNode .nodeNumber {
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.stageNode.bossNode {
+  width: 70px;
+  height: 70px;
+}
+
+.stageNode.bossNode .artPortrait {
+  width: 100%;
+  border-radius: 50%;
+}
+
+.stageNode.current {
+  border-color: var(--player-keyline);
+  box-shadow: 0 0 0 5px rgba(0, 168, 198, 0.3), 0 0 18px 4px rgba(0, 168, 198, 0.45);
+}
+
+.stageNode.locked {
+  border-style: dashed;
+  color: var(--line);
+  background: var(--paper);
+}
+
+.stageNode.selected {
+  color: var(--paper);
+  background: var(--ink);
+}
+
+.stageNode.selected.bossNode {
+  outline: 4px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* A cleared stage carries the ink seal. */
+.nodeSeal {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  color: var(--paper);
+  background: var(--ink);
+  font-style: normal;
+  transform: rotate(-8deg);
+}
+
+.nodeSeal::after {
+  content: "✓";
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.nodeCaption {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 800;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.nowCaption {
+  color: var(--player-keyline);
+}
+
+.stageDetail {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.stageBrief,
+.playPanel .loadoutSummary {
+  margin: 0;
+  border: 2px solid var(--ink);
+  padding: 14px;
+  background: var(--paper-raised);
+}
+
+.stageBrief .eyebrow {
+  margin: 0;
+  color: var(--muted);
+}
+
+.stageBrief h3 {
+  margin: 2px 0 4px;
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.stageLine {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+
+.stageFacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  margin: 0 0 14px;
+}
+
+.stageFacts dt {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.stageFacts dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.enemyIcons {
+  display: flex;
+  gap: 4px;
+}
+
+.enemyIcons .artEnemy {
+  display: block;
+  width: 40px;
+  border: 1px solid var(--graphite);
+  background-color: var(--paper);
+}
+
+.stageActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.stageActions .launch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 56px;
+}
+
+.launchStage {
+  font-size: 13px;
+}
+
+.launchLabel {
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.playPanel .loadoutSummary h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.playPanel .loadoutSummary .coreStats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.linkButton {
+  margin-top: 8px;
+  border: 0;
+  padding: 0;
+  color: var(--ink);
+  background: none;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.upgradeNext,
+.upgradeReason {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.upgradeReason {
+  color: var(--alert-deep);
+}
+
+@media (max-width: 1180px) {
+  .menuLayer {
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .menuNavItem b {
+    font-size: 21px;
+  }
+
+  .menuNavItem small {
+    display: none;
+  }
+
+  .stageDetail {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .menuLayer {
+    grid-template-columns: 1fr;
+    overflow: auto;
+  }
+
+  .menuSide {
+    padding: 0;
+    overflow: visible;
+  }
+
+  .menuNav {
+    grid-auto-flow: column;
+    overflow-x: auto;
+  }
+
+  .menuKeyart {
+    display: none;
+  }
+
+  .menuMain {
+    padding: 0;
+    overflow: visible;
+  }
+
+  .chapterStrip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .stageMap {
+    height: 300px;
+  }
 }
 
 .menuSection {
@@ -2271,14 +2647,6 @@ h2 {
   }
 
 
-  .menuGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .stageList {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
   .statGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -2382,17 +2750,6 @@ h2 {
     font-size: 13px;
   }
 
-  .stageList {
-    grid-template-columns: none;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(180px, 76vw);
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    padding-bottom: 6px;
-  }
-
-  .stageCard { scroll-snap-align: start; }
-
   .menuLayer {
     top: max(10px, env(safe-area-inset-top));
     right: max(10px, env(safe-area-inset-right));
@@ -2411,10 +2768,6 @@ h2 {
 
   .titleBlock {
     flex-direction: column;
-  }
-
-  .menuTabs {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .menuTab {
@@ -2460,8 +2813,7 @@ h2 {
     grid-column: auto;
   }
 
-  .coreStats,
-  .chapterTree {
+  .coreStats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -2509,7 +2861,6 @@ h2 {
   select,
   input[type="checkbox"],
   summary,
-  .treeRow,
   .devToggle {
     min-height: 44px;
   }

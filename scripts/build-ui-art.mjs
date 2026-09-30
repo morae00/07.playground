@@ -10,7 +10,7 @@ import { UI_ART_DENSITY, UI_ART_QUALITY, UI_SHEETS } from '../art/ui-art-spec.mj
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const kitDir = path.join(root, 'art/concept-kit');
 const outDir = path.join(root, 'src/ui/art');
-const KIT_FILES = ['lib.js', 'k-hero.js', 'k-bosses1.js', 'k-bosses2.js', 'k-icons.js'];
+const KIT_FILES = ['lib.js', 'k-hero.js', 'k-bosses1.js', 'k-bosses2.js', 'k-icons.js', 'k-enemies.js', 'k-env.js'];
 
 const browser = await chromium.launch();
 try {
@@ -61,6 +61,34 @@ async function renderSheet({ sheet, density, quality, colorMap }) {
     overdrive: () => `<g transform="scale(3.1)">${PN.vfx.hit(1, { angle: -35, crit: true, seed: 3 })}</g>`,
   };
 
+  /**
+   * Keeps the first of an attribute a tag repeats. The kit's Ch4 enemies repeat stroke-linejoin, which browsers
+   * render in the DOM but refuse in an SVG image (the atlas bake does the same, build-atlas.mjs).
+   */
+  const firstAttributes = (markup) => markup.replace(/<([a-zA-Z][\w:-]*)((?:\s+[\w:-]+="[^"]*")+)(\s*\/?)>/g, (tag, name, attributes, end) => {
+    const seen = new Set();
+    let repeated = false;
+    const kept = attributes.replace(/\s+([\w:-]+)="[^"]*"/g, (attribute, key) => {
+      if (!seen.has(key)) {
+        seen.add(key);
+        return attribute;
+      }
+      repeated = true;
+      return '';
+    });
+    return repeated ? `<${name}${kept}${end}>` : tag;
+  });
+
+  /** The drawn bounds of some markup, in its own units (defs excluded). */
+  const bounds = (markup) => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.innerHTML = markup;
+    document.body.appendChild(svg);
+    const box = svg.getBBox();
+    svg.remove();
+    return box;
+  };
+
   const recipes = {
     tile: (id, awakened) => PN.icons.tile(id, { awakened, metal: true, size: 150 }),
     // The frame's window centre is (80, 80) of 160, which is 75 at 150.
@@ -90,6 +118,16 @@ async function renderSheet({ sheet, density, quality, colorMap }) {
       return `<g transform="scale(0.6)"><defs><clipPath id="disc"><circle cx="80" cy="80" r="74"/></clipPath></defs><g clip-path="url(#disc)"><rect width="160" height="160" fill="${K.paper}"/>${vignette}<g transform="translate(${f(80 - center[0] * k)} ${f(80 - center[1] * k)}) scale(${f(k)})">${body}</g></g>${ring}${rage}</g>`;
     },
     pickup: (kind) => PN.icons.pickup(kind, { tier: 1, size: 24 }),
+    keyart: (pose) => `<g transform="scale(0.9)">${PN.heroKit.full(pose, { scaleHint: 0.9, ground: false })}</g>`,
+    landmark: (ch) => `<g transform="scale(0.6)">${PN.env.landmark(ch)}</g>`,
+    // Enemies draw in role boxes whose horns and tails reach past the box, so they are fitted by their drawn bounds.
+    enemyIcon: (ch, role) => {
+      const markup = PN.enemies.draw(ch, role, { lod: 'game', halo: false, shadow: false });
+      const box = bounds(markup);
+      const [width, height] = sheet.cell;
+      const scale = Math.min((width - 6) / box.width, (height - 6) / box.height);
+      return `<g transform="translate(${f(width / 2 - (box.x + box.width / 2) * scale)} ${f(height / 2 - (box.y + box.height / 2) * scale)}) scale(${f(scale)})">${markup}</g>`;
+    },
   };
 
   const [cellWidth, cellHeight] = sheet.cell;
@@ -110,11 +148,14 @@ async function renderSheet({ sheet, density, quality, colorMap }) {
     const item = sheet.items[index];
     let markup = recipes[item.recipe](...item.args);
     if (!markup) throw new Error(`${sheet.file}/${item.key} has no drawing`);
+    markup = firstAttributes(markup);
     for (const [from, to] of colorMap) markup = markup.replace(new RegExp(from, 'gi'), to);
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${originX} ${originY} ${cellWidth} ${cellHeight}">${markup}</svg>`;
     const image = new Image();
     image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-    await image.decode();
+    await image.decode().catch((error) => {
+      throw new Error(`${sheet.file}/${item.key} did not decode as SVG (${error.message})`);
+    });
     probeCtx.clearRect(0, 0, w, h);
     probeCtx.drawImage(image, 0, 0);
     // A drawing that reaches the cell edge would be cut off, and at small sizes it would bleed into its neighbours.
@@ -124,7 +165,7 @@ async function renderSheet({ sheet, density, quality, colorMap }) {
       for (let x = 0; x < w; x += 1) {
         if (data[(y * w + x) * 4 + 3] === 0) continue;
         painted = true;
-        if (x === 0 || y === 0 || x === w - 1 || y === h - 1) throw new Error(`${sheet.file}/${item.key} touches the cell edge at ${x},${y}`);
+        if (!sheet.bleed && (x === 0 || y === 0 || x === w - 1 || y === h - 1)) throw new Error(`${sheet.file}/${item.key} touches the cell edge at ${x},${y}`);
       }
     }
     if (!painted) throw new Error(`${sheet.file}/${item.key} rendered empty`);

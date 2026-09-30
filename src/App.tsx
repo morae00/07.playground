@@ -608,9 +608,11 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   };
 
   const handleMenuTabKey = (event: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    // The menu nav is vertical (UI-06): up and down move along it, as left and right still do.
+    const key = event.key === 'ArrowUp' ? 'ArrowLeft' : event.key === 'ArrowDown' ? 'ArrowRight' : event.key;
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(key)) return;
     event.preventDefault();
-    const next = nextRovingId(['play', 'infinite', 'growth', 'settings'] as const, menuView, event.key as RovingKey);
+    const next = nextRovingId(['play', 'infinite', 'growth', 'settings'] as const, menuView, key as RovingKey);
     setMenuView(next);
     requestAnimationFrame(() => document.getElementById(`menu-tab-${next}`)?.focus());
   };
@@ -705,6 +707,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
       {phase === 'menu' && (
         <MenuScreen
           meta={meta}
+          records={profile.stageRecords}
           inlineNotice={noticeBanner('inline')}
           menuView={menuView}
           setMenuView={setMenuView}

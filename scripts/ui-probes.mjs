@@ -27,7 +27,7 @@ async function openStage(page) {
   await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
   const devToggle = page.getByRole('checkbox', { name: '개발자 모드: 모든 Stage 접근' });
   if (!(await devToggle.isChecked())) await devToggle.check();
-  await page.getByRole('button', { name: 'Ch.1 / St.1 시작' }).click();
+  await page.getByRole('button', { name: 'Ch.1 / St.1 출정' }).click();
   await page.waitForTimeout(300);
 }
 
@@ -205,7 +205,8 @@ try {
     const asked = await note.textContent();
     await Promise.all([page.waitForEvent('load'), load.click()]);
     await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
-    const gold = await page.locator('.wallet strong').first().innerText();
+    // The wallet groups thousands (4,321); the check reads the number.
+    const gold = (await page.locator('.wallet strong').first().innerText()).replace(/,/g, '');
     record('TEC-15 an import is checked, asks once more, then reloads on the imported save', Boolean(refused?.includes('내보낸 세이브 글이 아닙니다') && asked?.includes('한 번 더')) && gold === '7777', `gold ${gold}; ${refused?.slice(0, 16)}`);
     await context.close();
   });
@@ -287,7 +288,7 @@ try {
     record('TEC-14 a render error shows the recovery screen with its log', /render: Error: Injected render fault/.test(report));
     await recovery.getByRole('button', { name: '메뉴로 돌아가기' }).click();
     await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor({ timeout: 3000 });
-    await page.getByRole('button', { name: 'Ch.1 / St.1 시작' }).click();
+    await page.getByRole('button', { name: 'Ch.1 / St.1 출정' }).click();
     await page.waitForTimeout(500);
     const running = await diagnostics(page);
     record('TEC-14 returning to the menu remounts the app and a new run plays', running && !running.paused && running.elapsed > 0.2, running ? `clock ${running.elapsed.toFixed(2)}` : 'no engine');
@@ -365,7 +366,7 @@ try {
     const pauseDialog = page.getByRole('dialog', { name: '일시정지' });
     await pauseDialog.getByRole('button', { name: 'Stage 메뉴' }).click();
     await page.getByRole('button', { name: '포기하고 메뉴로' }).click();
-    await page.getByRole('button', { name: 'Ch.1 / St.1 시작' }).click();
+    await page.getByRole('button', { name: 'Ch.1 / St.1 출정' }).click();
     await page.waitForTimeout(500);
     const second = await diagnostics(page);
     const constructed = await page.evaluate(() => window.__audioContexts);
@@ -480,7 +481,7 @@ try {
     await page.keyboard.press('p');
     await page.getByRole('dialog', { name: '일시정지' }).getByRole('button', { name: 'Stage 메뉴' }).click();
     await page.getByRole('button', { name: '포기하고 메뉴로' }).click();
-    await page.getByRole('button', { name: 'Ch.1 / St.1 시작' }).click();
+    await page.getByRole('button', { name: 'Ch.1 / St.1 출정' }).click();
     await page.waitForTimeout(700);
     const again = (await hint.count()) ? await hint.textContent() : '';
     record('UI-09 a hint shows once per save', !again?.includes('공격은 자동'), again || 'no hint');

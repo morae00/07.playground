@@ -43,6 +43,10 @@ export const BOSS_PORTRAITS = Object.freeze({
 
 export const PICKUP_ART = Object.freeze(['xp', 'coin', 'magnet', 'heal']);
 
+/** Menu art (UI-06): chapter thumbnails from each chapter's landmark vignette, and each chapter's four enemy roles. */
+export const MENU_CHAPTERS = Object.freeze([1, 2, 3, 4, 5]);
+export const ENEMY_ROLES = Object.freeze(['stalker', 'charger', 'shooter', 'warden']);
+
 function skillTiles() {
   const items = [];
   for (const id of SKILL_ART) {
@@ -78,10 +82,24 @@ function portraits() {
  *   cell serves every level. The slot sits 2 px inside the cell.
  * - portraits: the 160 kit portrait drawn at 96 (HUD portrait 84, boss bar smaller), 1 px inside the cell.
  * - pickups: the 48 kit box drawn at 24 (HUD chips), 2 px inside the cell for the magnet's pull dashes.
+ * - keyart: the hero's full-body three-quarter view (API-hero §1, 400×640) at 0.9 for the menu (UI-06).
+ * - chapters: the kit landmark vignette (API-env, 280×150, full bleed with its own floor) at 0.6, for chapter cards.
+ * - enemies: each chapter's four roles in the game LOD, fitted to the cell by their drawn bounds, 3 px inside.
+ * `bleed` sheets fill their cells edge to edge, so the bake skips its edge check for them.
  */
 export const UI_SHEETS = Object.freeze({
   tiles: { file: 'skill-tiles', className: 'artTile', columns: 8, cell: [166, 166], origin: [-8, -8], items: skillTiles() },
   slots: { file: 'hud-slots', className: 'artSlot', columns: 9, cell: [56, 60], origin: [-2, -2], items: hudSlots() },
   portraits: { file: 'portraits', className: 'artPortrait', columns: 5, cell: [98, 98], origin: [-1, -1], items: portraits() },
   pickups: { file: 'pickups', className: 'artPickup', columns: 4, cell: [28, 28], origin: [-2, -2], items: PICKUP_ART.map((kind) => ({ key: kind, recipe: 'pickup', args: [kind] })) },
+  keyart: { file: 'keyart', className: 'artKeyart', columns: 1, cell: [360, 576], origin: [0, 0], items: [{ key: 'hero', recipe: 'keyart', args: ['threeQuarter'] }] },
+  chapters: { file: 'chapter-thumbs', className: 'artChapter', columns: 5, cell: [168, 90], origin: [0, 0], bleed: true, items: MENU_CHAPTERS.map((ch) => ({ key: `chapter-${ch}`, recipe: 'landmark', args: [ch] })) },
+  enemies: {
+    file: 'enemy-icons',
+    className: 'artEnemy',
+    columns: 10,
+    cell: [48, 48],
+    origin: [0, 0],
+    items: MENU_CHAPTERS.flatMap((ch) => ENEMY_ROLES.map((role) => ({ key: `${ch}-${role}`, recipe: 'enemyIcon', args: [ch, role] }))),
+  },
 });
