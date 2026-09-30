@@ -1410,12 +1410,17 @@ export class GameEngine {
 
   private onKeyDown(event: KeyboardEvent) {
     const target = event.target;
-    if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(target.tagName))) {
+    // Only text-entry controls own the keyboard. A focused HUD button must not freeze movement (BUG-04).
+    if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName))) {
       return;
     }
     const key = event.key.toLowerCase();
+    const arrow = key === 'arrowup' || key === 'arrowdown' || key === 'arrowleft' || key === 'arrowright';
+    // Roving tab lists use arrow keys to change tabs; letting them also steer the player would do both at once.
+    if (arrow && target instanceof HTMLElement && target.getAttribute('role') === 'tab') return;
     this.keys.add(key);
-    if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(key)) {
+    const onButton = target instanceof HTMLElement && target.tagName === 'BUTTON';
+    if (arrow || (key === ' ' && !onButton)) {
       event.preventDefault();
     }
   }
