@@ -771,6 +771,7 @@ export class WorldRenderer {
         radius: projectile.radius,
         life: projectile.life,
         kind: projectile.kind,
+        alpha: projectile.fading ? Math.max(0, Math.min(1, projectile.life / 0.3)) : 1,
       });
     }
   }

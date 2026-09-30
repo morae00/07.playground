@@ -83,6 +83,8 @@ export type HostileProjectileVisualInput = {
   radius: number;
   life: number;
   kind: BossProjectile['kind'];
+  /** 0..1; shots pushed over the cap fade out (SYS-04). */
+  alpha?: number;
 };
 
 const DEFAULT_FRAME: RenderFrameSnapshot = Object.freeze({
@@ -968,17 +970,18 @@ export class GameRenderer {
   ) {
     const profile = HOSTILE_PROJECTILE_ART[input.kind];
     const angle = Math.atan2(input.vy, input.vx);
+    const alpha = input.alpha ?? 1;
     ctx.save();
     ctx.translate(input.x, input.y);
     ctx.rotate(angle);
     if (this.frame.detail === 'full') {
-      ctx.globalAlpha = 0.2;
+      ctx.globalAlpha = 0.2 * alpha;
       ctx.fillStyle = profile.trail;
       ctx.beginPath();
       ctx.arc(0, 0, input.radius * 1.72, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = alpha;
     const rotation = input.kind === 'saw' && !this.frame.reducedMotion
       ? this.frame.elapsed * 5
       : 0;

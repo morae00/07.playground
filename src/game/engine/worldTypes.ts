@@ -97,6 +97,20 @@ export type Entity = {
   dashCooldown?: number;
   /** SYS-02: the direction a warden's front shield faces, in radians. */
   shieldAngle?: number;
+  /** SYS-04: a telegraphed boss pattern, fixed when its warning appeared and fired as shown. */
+  armedPattern?: ArmedPattern;
+};
+
+/** SYS-04: what a boss pattern will do when its telegraph runs out. */
+export type ArmedPattern = {
+  x: number;
+  y: number;
+  /** Angle offset of a volley, in radians. */
+  offset: number;
+  /** Clone spots or zone centres. */
+  points: Array<{ x: number; y: number }>;
+  /** Flame: whether the fire drop also bursts. */
+  burst: boolean;
 };
 
 export type Projectile = {
@@ -133,6 +147,8 @@ export type BossProjectile = {
   damage: number;
   life: number;
   kind: 'dot' | 'ring' | 'saw' | 'eclipse' | 'enemy';
+  /** SYS-04: pushed over the shot cap; fading out and harmless. */
+  fading?: boolean;
 };
 
 export type PendingHostileShot = {

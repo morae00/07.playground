@@ -54,6 +54,12 @@ export type RuleSet = Readonly<{
   shooterLeadAim: boolean;
   /** SYS-02 (team decision: shield): wardens (large contact) carry a front shield that turns at 90 degrees/s. */
   wardenShield: boolean;
+  /**
+   * SYS-04: every boss volley and zone is armed first and telegraphed (rings and bursts: a ring at the muzzle;
+   * saws: their paths; clones: summoning circles; zones: their footprints), then fires exactly as shown. Volleys
+   * wait for room under the shot cap, and shots pushed over it fade out harmlessly instead of vanishing.
+   */
+  bossTelegraphs: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -75,6 +81,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   chargerDash: false,
   shooterLeadAim: false,
   wardenShield: false,
+  bossTelegraphs: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -96,6 +103,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   chargerDash: true,
   shooterLeadAim: true,
   wardenShield: true,
+  bossTelegraphs: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

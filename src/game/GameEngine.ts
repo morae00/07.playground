@@ -109,6 +109,7 @@ import {
 } from '../content';
 
 import type {
+  ArmedPattern,
   BeamEffect,
   BossDef,
   BossPattern,
@@ -333,6 +334,23 @@ const ECLIPSE_WALL_LANE_GAP = 115;
 /** Fair terrain (BUG-13): a root zone binds once on entry, then cannot bind again for a while. */
 const ROOT_BIND_SECONDS = 0.65;
 const ROOT_IMMUNITY_SECONDS = ROOT_BIND_SECONDS + 1.5;
+/** SYS-04: how long each boss pattern is telegraphed before it fires (V3 timings: shots 0.44 s, shock 0.52 s). */
+const PATTERN_LEAD_SECONDS: Partial<Record<BossPattern, number>> = {
+  rings: 0.44,
+  clock: 0.44,
+  saw: 0.44,
+  clones: 0.5,
+  flame: 0.44,
+  null: 0.44,
+  tide: 0.5,
+  traps: 0.5,
+};
+/** SYS-04: a boss volley waits while it would push the shot count over this. */
+const VOLLEY_SOFT_CAP = 300;
+/** SYS-04: shots pushed over the hard cap fade out over this long, harmless. */
+const SHOT_FADE_SECONDS = 0.3;
+const SAW_SPEED = 250;
+const SAW_LIFE = 3.6;
 /** Boss-made terrain kinds the encounter director budgets (SYS-03). */
 const DYNAMIC_TERRAIN: ReadonlySet<Hazard['kind']> = new Set(['fire', 'slow', 'root', 'null']);
 /** SYS-11: after silence ends, ready skills fire one at a time this far apart instead of all at once. */
@@ -2814,6 +2832,10 @@ export class GameEngine {
     const phaseMove = this.activeBossPhaseMove(enemy);
     const cadenceMultiplier = phaseMove ? 1 / phaseMove.cadenceScale : 1 + ((enemy.bossPhase ?? 1) - 1) * 0.22;
     enemy.patternTimer -= dt * cadenceMultiplier;
+    if (this.rules.bossTelegraphs && PATTERN_LEAD_SECONDS[boss.pattern] !== undefined) {
+      this.updateTelegraphedPattern(enemy, boss.pattern, cadenceMultiplier);
+      return;
+    }
     if (boss.pattern === 'dash' && this.rules.telegraphedDash) {
       if (enemy.patternPhase === 'warn' && enemy.patternTimer <= 0) {
         // Launch along the direction locked when the windup began; no homing, so the lane shows the real path.
@@ -3014,6 +3036,186 @@ export class GameEngine {
     }
   }
 
+  /**
+   * SYS-04: telegraphed boss patterns. When the pattern timer drops under the pattern's lead time the pattern is
+   * armed (angles, spots, and rolls fixed) and its warning appears; at zero it fires exactly as warned.
+   */
+  protected updateTelegraphedPattern(enemy: Entity, pattern: BossPattern, cadence: number) {
+    const lead = PATTERN_LEAD_SECONDS[pattern] ?? 0;
+    if (!enemy.armedPattern && enemy.patternTimer <= lead) this.armPattern(enemy, pattern, lead / cadence);
+    if (enemy.patternTimer > 0 || !enemy.armedPattern) return;
+    const armed = enemy.armedPattern;
+    enemy.armedPattern = undefined;
+    if (!this.fireArmedPattern(enemy, pattern, armed)) {
+      // No room under the shot cap: try again shortly, with a fresh warning.
+      enemy.patternTimer = lead + 0.3;
+    }
+  }
+
+  protected armPattern(enemy: Entity, pattern: BossPattern, warnSeconds: number) {
+    const fireAt = this.elapsed + warnSeconds;
+    const armed: ArmedPattern = { x: enemy.x, y: enemy.y, offset: 0, points: [], burst: false };
+    const ring = (x: number, y: number, radius: number) => this.emit({ type: 'telegraph/ring', x, y, radius, life: warnSeconds });
+    switch (pattern) {
+      case 'rings':
+        armed.offset = fireAt * 0.35;
+        ring(enemy.x, enemy.y, enemy.radius * 1.9);
+        break;
+      case 'clock':
+        armed.offset = Math.PI / 12;
+        ring(enemy.x, enemy.y, enemy.radius * 1.9);
+        ring(this.player.x, this.player.y, 150);
+        armed.points.push({ x: this.player.x, y: this.player.y });
+        break;
+      case 'saw': {
+        armed.offset = fireAt;
+        const reach = SAW_SPEED * SAW_LIFE;
+        for (let index = 0; index < 4; index += 1) {
+          const angle = (Math.PI * 2 * index) / 4 + armed.offset;
+          this.laneTelegraphs.push({
+            id: this.nextId(),
+            x1: enemy.x,
+            y1: enemy.y,
+            x2: enemy.x + Math.cos(angle) * reach,
+            y2: enemy.y + Math.sin(angle) * reach,
+            width: 36,
+            life: warnSeconds,
+            maxLife: warnSeconds,
+          });
+        }
+        break;
+      }
+      case 'clones':
+        for (let index = 0; index < 4; index += 1) {
+          const angle = (Math.PI * 2 * index) / 4 + this.gameplayRandom() * 0.4;
+          const point = { x: enemy.x + Math.cos(angle) * 95, y: enemy.y + Math.sin(angle) * 95 };
+          armed.points.push(point);
+          ring(point.x, point.y, 30);
+        }
+        break;
+      case 'flame':
+        armed.burst = this.gameplayRandom() < 0.35;
+        if (armed.burst) ring(enemy.x, enemy.y, enemy.radius * 1.7);
+        break;
+      case 'null': {
+        const point = { x: this.player.x + (this.gameplayRandom() - 0.5) * 160, y: this.player.y + (this.gameplayRandom() - 0.5) * 160 };
+        armed.points.push(point);
+        armed.offset = fireAt * 0.2;
+        ring(point.x, point.y, 130);
+        ring(enemy.x, enemy.y, enemy.radius * 1.9);
+        break;
+      }
+      case 'tide':
+        for (let index = 0; index < 5; index += 1) {
+          const angle = (Math.PI * 2 * index) / 5 + fireAt;
+          const point = { x: this.player.x + Math.cos(angle) * (120 + index * 42), y: this.player.y + Math.sin(angle) * (120 + index * 42) };
+          armed.points.push(point);
+          ring(point.x, point.y, 86);
+        }
+        break;
+      case 'traps':
+        for (let index = 0; index < 3; index += 1) {
+          const angle = this.gameplayRandom() * Math.PI * 2;
+          const dist = 80 + this.gameplayRandom() * 220;
+          const point = { x: this.player.x + Math.cos(angle) * dist, y: this.player.y + Math.sin(angle) * dist };
+          armed.points.push(point);
+          ring(point.x, point.y, 52);
+        }
+        break;
+      default:
+        break;
+    }
+    enemy.armedPattern = armed;
+  }
+
+  /** Fires an armed pattern; returns false when a volley has no room under the shot cap. */
+  protected fireArmedPattern(enemy: Entity, pattern: BossPattern, armed: ArmedPattern) {
+    const volley = (count: number) => this.bossProjectiles.length + count <= VOLLEY_SOFT_CAP;
+    switch (pattern) {
+      case 'rings': {
+        const count = enemy.legacyBoss ? 14 : 22;
+        if (!volley(count)) return false;
+        enemy.patternTimer = enemy.legacyBoss ? 3.2 : 2.35;
+        for (let index = 0; index < count; index += 1) {
+          const angle = (Math.PI * 2 * index) / count + armed.offset;
+          this.spawnBossProjectile(armed.x, armed.y, Math.cos(angle) * 215, Math.sin(angle) * 215, 7, enemy.damage * 0.62, 5, 'ring');
+        }
+        this.emit({ type: 'boss/ringFired', x: armed.x, y: armed.y });
+        return true;
+      }
+      case 'clock': {
+        if (!volley(12)) return false;
+        enemy.patternTimer = 3.2;
+        const [zone] = armed.points;
+        if (zone && this.terrainAllowed()) this.hazards.push({ id: this.nextId(), kind: 'slow', x: zone.x, y: zone.y, radius: 150, life: 4.6, maxLife: 4.6, damage: 0, slow: 0.28, triggered: false });
+        for (let index = 0; index < 12; index += 1) {
+          const angle = (Math.PI * 2 * index) / 12 + armed.offset;
+          this.spawnBossProjectile(armed.x, armed.y, Math.cos(angle) * 150, Math.sin(angle) * 150, 6, enemy.damage * 0.45, 4.5, 'ring');
+        }
+        return true;
+      }
+      case 'saw': {
+        if (!volley(4)) return false;
+        enemy.patternTimer = 1.8;
+        for (let index = 0; index < 4; index += 1) {
+          const angle = (Math.PI * 2 * index) / 4 + armed.offset;
+          this.spawnBossProjectile(armed.x, armed.y, Math.cos(angle) * SAW_SPEED, Math.sin(angle) * SAW_SPEED, 14, enemy.damage * 0.58, SAW_LIFE, 'saw');
+        }
+        return true;
+      }
+      case 'clones':
+        enemy.patternTimer = 5.6;
+        for (const point of armed.points) {
+          this.spawnEnemy(1 + this.chapter * 0.5, 'medium');
+          const clone = this.enemies[this.enemies.length - 1];
+          clone.x = clone.prevX = point.x;
+          clone.y = clone.prevY = point.y;
+          this.resolveEntityVsObstacles(clone, clone.radius);
+          clone.hp *= 1.35;
+          clone.maxHp = clone.hp;
+          clone.variant = 4;
+        }
+        this.emit({ type: 'boss/cloned', x: enemy.x, y: enemy.y });
+        return true;
+      case 'flame':
+        if (armed.burst && !volley(9)) return false;
+        enemy.patternTimer = 1.05;
+        if (this.terrainAllowed()) this.hazards.push({ id: this.nextId(), kind: 'fire', x: enemy.x, y: enemy.y, radius: 74, life: 5.8, maxLife: 5.8, damage: enemy.damage * 0.26, slow: 1, triggered: false });
+        if (armed.burst) {
+          for (let index = 0; index < 9; index += 1) {
+            const angle = (Math.PI * 2 * index) / 9;
+            this.spawnBossProjectile(armed.x, armed.y, Math.cos(angle) * 180, Math.sin(angle) * 180, 8, enemy.damage * 0.5, 3.8, 'dot');
+          }
+        }
+        return true;
+      case 'null': {
+        if (!volley(16)) return false;
+        enemy.patternTimer = 4.8;
+        const [zone] = armed.points;
+        if (zone && this.terrainAllowed()) this.hazards.push({ id: this.nextId(), kind: 'null', x: zone.x, y: zone.y, radius: 130, life: 5.4, maxLife: 5.4, damage: 0, slow: 1, triggered: false });
+        for (let index = 0; index < 16; index += 1) {
+          const angle = (Math.PI * 2 * index) / 16 + armed.offset;
+          this.spawnBossProjectile(armed.x, armed.y, Math.cos(angle) * 190, Math.sin(angle) * 190, 8, enemy.damage * 0.5, 4.8, 'eclipse');
+        }
+        return true;
+      }
+      case 'tide':
+        enemy.patternTimer = 4;
+        for (const point of armed.points) {
+          if (this.terrainAllowed()) this.hazards.push({ id: this.nextId(), kind: 'slow', x: point.x, y: point.y, radius: 86, life: 5.5, maxLife: 5.5, damage: 0, slow: 0.34, triggered: false });
+        }
+        return true;
+      case 'traps':
+        enemy.patternTimer = 2.6;
+        for (const point of armed.points) {
+          if (this.terrainAllowed()) this.hazards.push({ id: this.nextId(), kind: 'root', x: point.x, y: point.y, radius: 52, life: 7, maxLife: 7, damage: 0, slow: 1, triggered: false });
+        }
+        return true;
+      default:
+        return true;
+    }
+  }
+
   protected activeBossPhaseMove(enemy: Entity) {
     if (!enemy.boss || (enemy.bossPhase ?? 1) === 1) return undefined;
     const set = BOSS_PHASE_MOVE_SETS.find((candidate) => candidate.bossId === enemy.boss?.id);
@@ -3123,7 +3325,7 @@ export class GameEngine {
       projectile.life -= dt;
       projectile.x += projectile.vx * dt;
       projectile.y += projectile.vy * dt;
-      if (segmentCircleHitTime(start, projectile, this.player, projectile.radius + HIT_RADIUS.playerVsHostileShot) !== null) {
+      if (!projectile.fading && segmentCircleHitTime(start, projectile, this.player, projectile.radius + HIT_RADIUS.playerVsHostileShot) !== null) {
         projectile.life = 0;
         this.damagePlayer(projectile.damage, true, projectile.kind === 'enemy' ? 'shot' : 'bossShot');
       }
@@ -3310,12 +3512,23 @@ export class GameEngine {
     life: number,
     kind: BossProjectile['kind'],
   ) {
-    if (this.bossProjectiles.length >= BOSS_PROJECTILE_HARD_CAP) {
+    if (this.rules.bossTelegraphs && this.bossProjectiles.length >= BOSS_PROJECTILE_HARD_CAP) {
+      // SYS-04: over the cap the oldest live shot fades out harmlessly instead of vanishing mid-flight.
+      const oldest = this.bossProjectiles.find((shot) => !shot.fading);
+      if (oldest) {
+        oldest.fading = true;
+        oldest.life = Math.min(oldest.life, SHOT_FADE_SECONDS);
+      }
+      if (this.bossProjectiles.length >= BOSS_PROJECTILE_HARD_CAP + 64) {
+        const dropped = this.bossProjectiles.shift();
+        if (dropped) this.bossProjectilePool.release(dropped);
+      }
+    } else if (this.bossProjectiles.length >= BOSS_PROJECTILE_HARD_CAP) {
       const oldest = this.bossProjectiles.shift();
       if (oldest) this.bossProjectilePool.release(oldest);
     }
     const projectile = this.bossProjectilePool.acquire();
-    Object.assign(projectile, { id: this.nextId(), x, y, prevX: x, prevY: y, vx, vy, radius, damage, life, kind });
+    Object.assign(projectile, { id: this.nextId(), x, y, prevX: x, prevY: y, vx, vy, radius, damage, life, kind, fading: false });
     this.bossProjectiles.push(projectile);
   }
 
