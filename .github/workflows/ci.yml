@@ -69,6 +69,12 @@ jobs:
           VISUAL_DPRS: 1,2
           VISUAL_MOTIONS: full,reduce
         run: npm run test:visual
+      - name: Input probes (HUD focus, draft and settlement guards, gamepad navigation)
+        env:
+          UI_PROBE_SKIP_BUILD: "1"
+        run: npm run test:ui-probes
+      - name: Dev server smoke (development CSP serves styles)
+        run: npm run test:dev-smoke
       - uses: actions/upload-artifact@v4
         if: always()
         with:
