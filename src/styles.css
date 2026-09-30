@@ -104,11 +104,6 @@ button:disabled {
   pointer-events: none;
 }
 
-.gameHud.panelOpen {
-  right: 372px;
-}
-
-.sidePanel,
 .menuLayer,
 .draftBox,
 .settlementBox {
@@ -390,12 +385,43 @@ button:disabled {
 .hudClock {
   position: absolute;
   top: 0;
-  left: 50%;
+  left: 0;
+  right: 0;
+  width: max-content;
+  margin: 0 auto;
   display: grid;
   justify-items: center;
   gap: 2px;
   text-align: center;
-  transform: translateX(-50%);
+}
+
+/* HUD size (UI-04): each cluster scales from its own corner, so the centre stays clear at any size. */
+.hudHero,
+.hudChips,
+.hudClock,
+.bossBar,
+.effectRack {
+  scale: var(--ui-scale, 1);
+}
+
+.hudHero {
+  transform-origin: 0 0;
+}
+
+.hudChips {
+  transform-origin: 100% 0;
+}
+
+.hudClock {
+  transform-origin: 50% 0;
+}
+
+.bossBar {
+  transform-origin: 50% 100%;
+}
+
+.effectRack {
+  transform-origin: 0 100%;
 }
 
 .timer {
@@ -477,14 +503,15 @@ button:disabled {
 .bossBar {
   position: absolute;
   z-index: 4;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: 14px;
   width: min(640px, calc(100% - 340px));
+  margin: 0 auto;
   display: flex;
   align-items: center;
   gap: 10px;
   pointer-events: none;
-  transform: translateX(-50%);
 }
 
 .bossBar .artPortrait {
@@ -654,53 +681,8 @@ button:disabled {
   outline-offset: -6px;
 }
 
-.sidePanel {
-  position: absolute;
-  z-index: 5;
-  top: 12px;
-  right: 12px;
-  width: 340px;
-  max-height: calc(100dvh - 24px);
-  padding: 12px;
-  overflow: auto;
-}
 
-.drawerTabs {
-  position: sticky;
-  z-index: 2;
-  top: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
-  gap: 4px;
-  margin: -12px -12px 12px;
-  padding: 10px 10px 8px;
-  border-bottom: 2px solid var(--ink);
-  background: rgba(251, 250, 245, 0.98);
-}
-
-.drawerTab {
-  min-height: 36px;
-  border: 2px solid var(--ink);
-  background: var(--paper-raised);
-  color: var(--ink);
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.drawerTab.active {
-  color: var(--paper);
-  background: var(--ink);
-}
-
-.drawerPanel {
-  min-height: 190px;
-  border: 0;
-  margin: 0;
-  padding: 0;
-}
-
-.seedLine,
-.pauseSeed {
+.seedLine {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 8px;
@@ -709,12 +691,11 @@ button:disabled {
   border: 2px solid var(--ink);
   padding: 7px;
   background: var(--paper-raised);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 900;
 }
 
-.seedLine code,
-.pauseSeed code {
+.seedLine code {
   overflow: hidden;
   font-size: 13px;
   text-overflow: ellipsis;
@@ -724,20 +705,9 @@ button:disabled {
 .seedStatus {
   margin: -3px 0 10px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
 }
 
-.panelBlock {
-  border-bottom: 2px solid #111;
-  padding-bottom: 12px;
-  margin-bottom: 12px;
-}
-
-.panelBlock:last-child {
-  margin-bottom: 0;
-  border-bottom: 0;
-  padding-bottom: 0;
-}
 
 h1,
 h2,
@@ -752,56 +722,6 @@ h2 {
   letter-spacing: 0;
 }
 
-.skillList {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
-}
-
-.skillPill {
-  min-height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  border: 2px solid #111;
-  padding: 6px 8px;
-  background: #fff;
-  font-size: 12px;
-}
-
-.skillPill span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rarityCommon {
-  background: #fff;
-}
-
-.rarityRare {
-  background:
-    repeating-linear-gradient(135deg, #fff, #fff 8px, #eeeeea 8px, #eeeeea 14px);
-}
-
-.rarityEpic {
-  background:
-    repeating-linear-gradient(90deg, #fff, #fff 5px, #dededa 5px, #dededa 10px);
-}
-
-.rarityLegendary {
-  background:
-    radial-gradient(circle at 18px 18px, #111 0 2px, transparent 2px 100%),
-    #f6f6f1;
-  background-size: 22px 22px;
-}
-
-.rarityMythic {
-  color: #fff;
-  background:
-    repeating-linear-gradient(135deg, #111, #111 10px, #2c2c2c 10px, #2c2c2c 18px);
-}
 
 .runShop,
 .upgradeGrid {
@@ -857,23 +777,164 @@ h2 {
   box-shadow: none !important;
 }
 
-.compactOptions {
+/* Settings (UI-04): the panel the menu and the pause hub share. */
+.settingsPanel {
   display: grid;
-  gap: 8px;
+  gap: 12px;
 }
 
-.compactOptions label {
+.settingsPanel fieldset {
+  margin: 0;
+  border: 2px solid var(--ink);
+  padding: 8px 12px 12px;
+  display: grid;
+  gap: 8px;
+  background: var(--paper-raised);
+}
+
+.settingsPanel legend {
+  padding: 0 6px;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.settingsPanel label {
   min-height: 32px;
   display: grid;
-  grid-template-columns: 82px minmax(0, 1fr);
+  grid-template-columns: 110px minmax(0, 1fr) 48px;
   gap: 8px;
   align-items: center;
-  font-size: 12px;
+  font-size: 13px;
 }
 
-.compactOptions select,
-.compactOptions input[type="range"] {
+.settingsPanel label.checkLine {
+  grid-template-columns: 20px minmax(0, 1fr) !important;
+}
+
+.settingsPanel select {
+  grid-column: 2 / -1;
+}
+
+.settingsPanel select,
+.settingsPanel input[type="range"] {
   width: 100%;
+}
+
+.settingsPanel input {
+  accent-color: var(--ink);
+}
+
+.settingsPanel output {
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.settingsNote {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.settingsColumn {
+  max-width: 640px;
+}
+
+/* Pause hub (UI-04): tabs over one scrolling panel, the actions below. */
+.hubTabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.hubPanel {
+  max-height: min(52dvh, 460px);
+  overflow: auto;
+  margin-bottom: 14px;
+  padding-right: 4px;
+}
+
+.hubSkills {
+  margin: 0 0 12px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 6px;
+  list-style: none;
+}
+
+.hubSkills li {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  border: 2px solid var(--ink);
+  padding: 4px 8px 4px 4px;
+  background: var(--paper-raised);
+  font-size: 13px;
+}
+
+.hubSkills .artSlot {
+  display: block;
+  width: 40px;
+}
+
+.hubStats,
+.hubControls {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.hubStats {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+.hubStats div,
+.hubControls div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px dashed var(--line);
+  padding: 5px 0;
+  font-size: 13px;
+}
+
+.hubStats dt,
+.hubControls dt {
+  font-weight: 800;
+}
+
+.hubStats dd,
+.hubControls dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.hubCoins {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.hubPanel .runShop {
+  margin-bottom: 10px;
+}
+
+/* Developer panel (UI-04): the cheats float under the HUD chips in developer builds. */
+.devPanel {
+  position: absolute;
+  z-index: 5;
+  top: 64px;
+  right: 14px;
+  width: 300px;
+  border: 2px solid var(--ink);
+  padding: 10px 12px;
+  color: var(--ink);
+  background: rgba(247, 247, 242, 0.96);
+  box-shadow: 4px 4px 0 var(--ink);
 }
 
 .checkLine {
@@ -977,7 +1038,7 @@ h2 {
 
 .menuTabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(140px, 220px));
+  grid-template-columns: repeat(4, minmax(120px, 220px));
   gap: 6px;
   margin-top: 16px;
   border-bottom: 2px solid var(--ink);
@@ -1550,11 +1611,7 @@ h2 {
 }
 
 .pauseBox {
-  width: min(440px, 100%);
-}
-
-.pauseSeed {
-  grid-template-columns: auto minmax(0, 1fr);
+  width: min(720px, 100%);
 }
 
 .modalHead {
@@ -1859,34 +1916,10 @@ h2 {
 }
 
 @media (max-width: 1180px) {
-  .gameHud.panelOpen {
-    right: 14px;
-  }
-
   .heroBody {
     width: 280px;
   }
 
-  .sidePanel {
-    top: 84px;
-    left: auto;
-    right: 12px;
-    bottom: 12px;
-    width: min(360px, calc(100vw - 24px));
-    max-height: calc(100dvh - 96px);
-    display: block;
-  }
-
-  .panelBlock {
-    margin: 0;
-    padding: 0;
-    border: 0;
-  }
-
-  .panelBlock:last-child {
-    border-right: 0;
-    padding-right: 0;
-  }
 
   .menuGrid {
     grid-template-columns: 1fr;
@@ -1976,14 +2009,6 @@ h2 {
     width: 44px;
   }
 
-  .sidePanel {
-    top: auto;
-    left: max(8px, env(safe-area-inset-left));
-    right: max(8px, env(safe-area-inset-right));
-    bottom: max(8px, env(safe-area-inset-bottom));
-    width: auto;
-    max-height: min(48dvh, 360px);
-  }
 
   .effectRack {
     left: max(8px, env(safe-area-inset-left));
@@ -2018,13 +2043,6 @@ h2 {
 
   .stageCard { scroll-snap-align: start; }
 
-  .panelBlock {
-    border-right: 0;
-    border-bottom: 2px solid #111;
-    padding-right: 0;
-    padding-bottom: 10px;
-  }
-
   .menuLayer {
     top: max(10px, env(safe-area-inset-top));
     right: max(10px, env(safe-area-inset-right));
@@ -2046,12 +2064,12 @@ h2 {
   }
 
   .menuTabs {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .menuTab {
     padding: 6px 4px;
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .infiniteModeFacts,
@@ -2156,6 +2174,16 @@ h2 {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+/* The settings can ask for reduced motion without the system setting (UI-04). */
+.appShell[data-reduced-motion="on"] *,
+.appShell[data-reduced-motion="on"] *::before,
+.appShell[data-reduced-motion="on"] *::after {
+  scroll-behavior: auto !important;
+  transition-duration: 0.001ms !important;
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
 }
 
 /* Error resilience (TEC-14): loop fault dialog, recovery screen, and the non-blocking notice. */

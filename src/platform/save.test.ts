@@ -97,6 +97,17 @@ test('options saved before auto-pause existed load with auto-pause on', () => {
   assert.equal(sanitizeOptions({ ...legacy, autoPause: false }).autoPause, false);
 });
 
+test('options saved before the settings screen load with the new settings at their defaults (UI-04, G17)', () => {
+  const legacy = { ...createDefaultOptions() } as Partial<ReturnType<typeof createDefaultOptions>>;
+  delete legacy.uiScale;
+  delete legacy.reducedMotion;
+  assert.equal(sanitizeOptions(legacy).uiScale, 1);
+  assert.equal(sanitizeOptions(legacy).reducedMotion, false);
+  assert.equal(sanitizeOptions({ ...legacy, uiScale: 2 }).uiScale, 1.3, 'the HUD scale stays within 80-130%');
+  assert.equal(sanitizeOptions({ ...legacy, uiScale: 0.5 }).uiScale, 0.8);
+  assert.equal(sanitizeOptions({ ...legacy, reducedMotion: true }).reducedMotion, true);
+});
+
 test('showcase pacing from older saves maps to standard outside developer builds', () => {
   const options = { ...createDefaultOptions(), paceMode: 'showcase' };
   assert.equal(sanitizeOptions(options, false).paceMode, 'standard');

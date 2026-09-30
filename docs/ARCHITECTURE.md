@@ -113,6 +113,13 @@ The HUD (UI-02) reads only the HUD snapshot, which the engine emits every 0.12 s
   4. awakened once a skill has awakened;
   5. calm.
 
+Pausing opens the pause hub (UI-04, `PauseHub.tsx`), and the run stays stopped while it is open.
+- Its tabs are the build, the run shop, the settings, and the controls; its actions are resume and abandon (with a confirmation).
+- The run drawer is gone. Players buy upgrades and change settings in the hub, paused.
+- A max-health upgrade bought there heals over `PAUSED_HEAL_SECONDS` after the run resumes, so pausing is not an instant heal (G6).
+- `SettingsPanel.tsx` is shared by the hub and the menu's settings tab.
+- In developer builds, the cheat input lives in a small developer panel (`DevPanel.tsx`) that leaves the run going.
+
 Two HUD marks live on the canvas, because they need the camera (UI-02):
 - Bosses and elites outside the view get a coral arrow on the screen edge. The arrow sits on the line from the screen centre toward the enemy and keeps clear of the HUD rows. Bosses come first; at most four arrows show.
 - Silence and root show as round timers over the hero's head. The renderer infers each debuff's length when it sees one start, and the ring empties as the debuff runs out. The DOM effect rack still announces both to screen readers but no longer shows them.

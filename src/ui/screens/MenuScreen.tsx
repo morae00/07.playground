@@ -1,11 +1,12 @@
-// Menu screen (UI-01): the title and wallet, then three tabs: stage selection, the infinite score attack with its
-// local leaderboard, and permanent growth. Developer-only parts test DEVELOPER_UI_AVAILABLE themselves, so shipped
+// Menu screen (UI-01, UI-04): the title and wallet, then four tabs: stage selection, the infinite score attack with
+// its local leaderboard, permanent growth, and the settings the pause hub shares, so options such as reduced flash
+// can be set before the first run. Developer-only parts test DEVELOPER_UI_AVAILABLE themselves, so shipped
 // builds drop them.
 import type { KeyboardEvent, ReactNode } from 'react';
 import { DEVELOPER_UI_AVAILABLE, DEVELOPER_UI_DEFAULT_ENABLED } from '../../platform/developerAccess';
 import { RULES_VERSION } from '../../game/rules';
 import type { InfiniteScoreEntry } from '../../platform/infiniteLeaderboard';
-import type { MetaState, MetaUpgradeId, PassiveId } from '../../platform/save';
+import type { GameOptions, MetaState, MetaUpgradeId, PassiveId } from '../../platform/save';
 import {
   CHAPTERS,
   META_PASSIVES,
@@ -17,12 +18,12 @@ import {
   type StatBlock,
 } from '../../game/GameEngine';
 import { ProgressBar } from '../ProgressBar';
-import type { DrawerTab } from './RunDrawer';
+import { SettingsPanel } from './SettingsPanel';
 import { StatGrid } from './StatGrid';
 
 const APP_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev';
 
-export type MenuView = 'play' | 'infinite' | 'growth';
+export type MenuView = 'play' | 'infinite' | 'growth' | 'settings';
 
 export type MenuScreenProps = {
   meta: MetaState;
@@ -33,8 +34,8 @@ export type MenuScreenProps = {
   developerAccess: boolean;
   developerMode: boolean;
   setDeveloperMode: (enabled: boolean) => void;
-  drawerTab: DrawerTab;
-  setDrawerTab: (tab: DrawerTab) => void;
+  options: GameOptions;
+  setOptions: (options: GameOptions) => void;
   selectedChapterId: number;
   setSelectedChapterId: (id: number) => void;
   selectedStageNo: number;
@@ -62,7 +63,7 @@ export type MenuScreenProps = {
   buyPassive: (id: PassiveId) => void;
 };
 
-export function MenuScreen({ meta, inlineNotice, menuView, setMenuView, handleMenuTabKey, developerAccess, developerMode, setDeveloperMode, drawerTab, setDrawerTab, selectedChapterId, setSelectedChapterId, selectedStageNo, setSelectedStageNo, selectedChapter, selectedStage, selectedStageLocked, visibleStats, startRun, resetMeta, cheatCode, setCheatCode, cheatMessage, applyCheat, infinitePlayerName, setInfinitePlayerName, onPlayerNameBlur, infiniteSeed, setInfiniteSeed, startInfiniteRun, leaderboardStatus, infiniteEntries, legacyEntries, buyMetaUpgrade, buyPassive }: MenuScreenProps) {
+export function MenuScreen({ meta, inlineNotice, menuView, setMenuView, handleMenuTabKey, developerAccess, developerMode, setDeveloperMode, options, setOptions, selectedChapterId, setSelectedChapterId, selectedStageNo, setSelectedStageNo, selectedChapter, selectedStage, selectedStageLocked, visibleStats, startRun, resetMeta, cheatCode, setCheatCode, cheatMessage, applyCheat, infinitePlayerName, setInfinitePlayerName, onPlayerNameBlur, infiniteSeed, setInfiniteSeed, startInfiniteRun, leaderboardStatus, infiniteEntries, legacyEntries, buyMetaUpgrade, buyPassive }: MenuScreenProps) {
   return (
     <main className="menuLayer">
       <section className="titleBlock">
@@ -91,6 +92,7 @@ export function MenuScreen({ meta, inlineNotice, menuView, setMenuView, handleMe
         <button id="menu-tab-play" className={menuView === 'play' ? 'menuTab active' : 'menuTab'} role="tab" aria-selected={menuView === 'play'} aria-controls="menu-panel-play" tabIndex={menuView === 'play' ? 0 : -1} onKeyDown={handleMenuTabKey} onClick={() => setMenuView('play')}>Stage 선택</button>
         <button id="menu-tab-infinite" className={menuView === 'infinite' ? 'menuTab active' : 'menuTab'} role="tab" aria-selected={menuView === 'infinite'} aria-controls="menu-panel-infinite" tabIndex={menuView === 'infinite' ? 0 : -1} onKeyDown={handleMenuTabKey} onClick={() => setMenuView('infinite')}>무한 경쟁</button>
         <button id="menu-tab-growth" className={menuView === 'growth' ? 'menuTab active' : 'menuTab'} role="tab" aria-selected={menuView === 'growth'} aria-controls="menu-panel-growth" tabIndex={menuView === 'growth' ? 0 : -1} onKeyDown={handleMenuTabKey} onClick={() => setMenuView('growth')}>영구 성장</button>
+        <button id="menu-tab-settings" className={menuView === 'settings' ? 'menuTab active' : 'menuTab'} role="tab" aria-selected={menuView === 'settings'} aria-controls="menu-panel-settings" tabIndex={menuView === 'settings' ? 0 : -1} onKeyDown={handleMenuTabKey} onClick={() => setMenuView('settings')}>설정</button>
       </nav>
 
       <section className="menuGrid single">
@@ -135,7 +137,7 @@ export function MenuScreen({ meta, inlineNotice, menuView, setMenuView, handleMe
             </button>
           </div>
           {DEVELOPER_UI_AVAILABLE && <label className="devToggle">
-            <input type="checkbox" checked={developerMode} onChange={(event) => { setDeveloperMode(event.target.checked); if (!event.target.checked && drawerTab === 'cheats') setDrawerTab('skills'); }} />
+            <input type="checkbox" checked={developerMode} onChange={(event) => setDeveloperMode(event.target.checked)} />
             <span>개발자 모드: 모든 Stage 접근</span>
           </label>}
           <div className="chapterTree">
@@ -313,6 +315,11 @@ export function MenuScreen({ meta, inlineNotice, menuView, setMenuView, handleMe
               <b>{meta.xp} / {xpForMetaLevel(meta.level)}</b>
             </div>
           </div>
+        </div>
+
+        <div className="settingsColumn" id="menu-panel-settings" role="tabpanel" aria-labelledby="menu-tab-settings" hidden={menuView !== 'settings'}>
+          <h2>설정</h2>
+          <SettingsPanel options={options} setOptions={setOptions} />
         </div>
       </section>
     </main>

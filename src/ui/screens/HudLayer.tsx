@@ -14,10 +14,12 @@ export type HudLayerProps = {
   /** The summary is read only while a run is actually playing. */
   playing: boolean;
   runPaused: boolean;
-  sidePanelOpen: boolean;
-  drawerToggleRef: RefObject<HTMLButtonElement | null>;
+  /** Developer builds with developer mode on: the cheat panel's toggle (UI-04). Players buy and change settings in the pause hub. */
+  devTools: boolean;
+  devPanelOpen: boolean;
+  devToggleRef: RefObject<HTMLButtonElement | null>;
   onToggleSpeed: () => void;
-  onToggleDrawer: () => void;
+  onToggleDevPanel: () => void;
   onTogglePause: () => void;
 };
 
@@ -76,7 +78,7 @@ function BossBar({ snapshot }: { snapshot: HudSnapshot }) {
   );
 }
 
-export function HudLayer({ snapshot, playing, runPaused, sidePanelOpen, drawerToggleRef, onToggleSpeed, onToggleDrawer, onTogglePause }: HudLayerProps) {
+export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen, devToggleRef, onToggleSpeed, onToggleDevPanel, onTogglePause }: HudLayerProps) {
   const infinite = snapshot.runMode === 'infinite';
   const lastHp = useRef(snapshot.hp);
   const [hurtAt, setHurtAt] = useState(-Infinity);
@@ -105,7 +107,7 @@ export function HudLayer({ snapshot, playing, runPaused, sidePanelOpen, drawerTo
         </p>
       )}
       <ProgressBar label="런 레벨 경험치" value={snapshot.xp} max={snapshot.nextXp} className="xpStrip" valueText={`Lv.${snapshot.level} ${Math.floor(snapshot.xp)} / ${snapshot.nextXp}`} />
-      <div className={sidePanelOpen ? 'gameHud panelOpen' : 'gameHud panelClosed'}>
+      <div className="gameHud">
         <section className="hudHero" aria-label="주인공">
           <div className="heroFace">
             <span className="artPortrait" data-art={`hero-${face}`} aria-hidden="true" />
@@ -142,9 +144,11 @@ export function HudLayer({ snapshot, playing, runPaused, sidePanelOpen, drawerTo
           <button className={snapshot.timeScale === 2 ? 'primary small iconButton active' : 'primary small iconButton'} onClick={onToggleSpeed} aria-pressed={snapshot.timeScale === 2} aria-label={`게임 속도 ${snapshot.timeScale === 2 ? '1배속' : '2배속'}으로 변경`} title="게임 속도">
             <span aria-hidden="true">{snapshot.timeScale === 2 ? '×2' : '×1'}</span>
           </button>
-          <button ref={drawerToggleRef} className="ghost small iconButton" onClick={onToggleDrawer} aria-expanded={sidePanelOpen} aria-controls="run-drawer" aria-label={sidePanelOpen ? '런 패널 닫기' : '런 패널 열기'} title="런 패널">
-            <span aria-hidden="true">{sidePanelOpen ? '×' : '☰'}</span>
-          </button>
+          {DEVELOPER_UI_AVAILABLE && devTools && (
+            <button ref={devToggleRef} className="ghost small iconButton" onClick={onToggleDevPanel} aria-expanded={devPanelOpen} aria-controls="dev-panel" aria-label={devPanelOpen ? '개발 패널 닫기' : '개발 패널 열기'} title="개발 패널">
+              <span aria-hidden="true">{devPanelOpen ? '×' : '⚙'}</span>
+            </button>
+          )}
           <button className="ghost small iconButton" onClick={onTogglePause} aria-pressed={runPaused} aria-label={runPaused ? '일시정지 해제' : '게임 일시정지'} title="일시정지 (P / Esc)"><span aria-hidden="true">{runPaused ? '▶' : 'Ⅱ'}</span></button>
         </section>
       </div>

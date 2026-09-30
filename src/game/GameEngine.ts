@@ -383,6 +383,8 @@ const BOSS_CONTACT_RECOIL = 260;
 /** At or under this share of health the player gets the low-health heartbeat and vignette (FX-03). */
 export const LOW_HEALTH_RATIO = 0.3;
 const ENRAGE_STEPS = 4;
+/** A max-health upgrade bought while paused heals over this long after the run resumes (UI-04, G6). */
+export const PAUSED_HEAL_SECONDS = 3;
 const ENRAGE_STEP_SECONDS = 30;
 const ENRAGE_ZONE_WARNING_SECONDS = 0.8;
 /** SYS-04: how long each boss pattern is telegraphed before it fires (V3 timings: shots 0.44 s, shock 0.52 s). */
@@ -1077,6 +1079,9 @@ export class GameEngine {
   protected playerAimAngle = -Math.PI / 2;
   protected aimTargetId: number | null = null;
   protected systemReducedMotion = false;
+  /** Health still owed by a max-health upgrade bought while paused, and the rate it comes back at (G6). */
+  protected pausedHeal = 0;
+  protected pausedHealRate = 0;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -1134,6 +1139,7 @@ export class GameEngine {
 
   setOptions(options: GameOptions) {
     this.options = options;
+    if (options.reducedMotion) this.presentation.shake = 0;
   }
 
   setMeta(meta: MetaState) {
@@ -1205,6 +1211,8 @@ export class GameEngine {
     this.previousInfiniteBossId = '';
     this.scoreEligible = scoreEligible;
     this.coinFeverRushTimer = 0;
+    this.pausedHeal = 0;
+    this.pausedHealRate = 0;
     this.bossEnraged = false;
     this.enrageStep = 0;
     this.enrageSeconds = 0;
@@ -1272,6 +1280,10 @@ export class GameEngine {
     this.accumulator = 0;
   }
 
+  /**
+   * A max-health upgrade adds its health at once in play. Bought in the pause hub, it adds it over
+   * PAUSED_HEAL_SECONDS once the run resumes, so pausing cannot be an instant heal in a tight spot (UI-04, G6).
+   */
   buyRunUpgrade(id: RunUpgradeId) {
     const level = this.runUpgrades[id];
     const cost = runUpgradeCost(id, level);
@@ -1280,7 +1292,13 @@ export class GameEngine {
     this.runUpgrades[id] += 1;
     const oldMax = this.player.stats.maxHp;
     this.recalculateStats(false);
-    if (this.player.stats.maxHp > oldMax) this.player.hp += this.player.stats.maxHp - oldMax;
+    const gain = this.player.stats.maxHp - oldMax;
+    if (gain > 0 && this.paused) {
+      this.pausedHeal += gain;
+      this.pausedHealRate = this.pausedHeal / PAUSED_HEAL_SECONDS;
+    } else if (gain > 0) {
+      this.player.hp += gain;
+    }
     this.emit({ type: 'run/upgradeBought' });
     this.emitSnapshot(true);
     return true;
@@ -1983,6 +2001,11 @@ export class GameEngine {
     }
 
     this.player.hp = Math.min(this.player.stats.maxHp, this.player.hp + this.player.stats.hpRegen * dt);
+    if (this.pausedHeal > 0) {
+      const heal = Math.min(this.pausedHeal, this.pausedHealRate * dt);
+      this.pausedHeal -= heal;
+      this.player.hp = Math.min(this.player.stats.maxHp, this.player.hp + heal);
+    }
     if (this.skills.recoveryThread?.awakened && this.player.hp >= this.player.stats.maxHp - 0.5) {
       this.skillCooldowns.recoveryThread = (this.skillCooldowns.recoveryThread ?? 0) - dt;
       if ((this.skillCooldowns.recoveryThread ?? 0) <= 0) {
@@ -4525,7 +4548,7 @@ export class GameEngine {
       paused: this.paused,
       bossEnraged: this.bossEnraged,
       jitterEveryFrame: !this.rules.isolatedCosmeticIds,
-      reducedMotion: this.systemReducedMotion,
+      reducedMotion: this.systemReducedMotion || this.options.reducedMotion,
       options: this.options,
       camera: this.camera,
       player: this.player,

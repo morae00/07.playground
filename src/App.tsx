@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { DEVELOPER_UI_AVAILABLE, DEVELOPER_UI_DEFAULT_ENABLED } from './platform/developerAccess';
 import { rulesLabel } from './game/rules';
 import {
@@ -22,10 +22,11 @@ import {
 } from './platform/save';
 import { DraftModal } from './ui/screens/DraftModal';
 import { SettlementModal } from './ui/screens/SettlementModal';
-import { FaultDialog, PauseDialog, ResetDialog } from './ui/screens/RunDialogs';
+import { FaultDialog, ResetDialog } from './ui/screens/RunDialogs';
 import { HudLayer } from './ui/screens/HudLayer';
-import { RunDrawer } from './ui/screens/RunDrawer';
-import { MenuScreen } from './ui/screens/MenuScreen';
+import { DevPanel } from './ui/screens/DevPanel';
+import { PauseHub, type PauseTab } from './ui/screens/PauseHub';
+import { MenuScreen, type MenuView } from './ui/screens/MenuScreen';
 import { nextRovingId, watchReducedMotion, type RovingKey } from './ui/inputContracts';
 import { InputAdapter } from './ui/inputAdapter';
 import { SpriteAtlas } from './game/render/assets/spriteAtlas';
@@ -77,7 +78,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   // Character art (TEC-03) loads once in the background; until it is ready, or if it fails, vectors draw.
   const [spriteAtlas] = useState(() => new SpriteAtlas());
   const pauseIntentRef = useRef<() => void>(() => undefined);
-  const drawerToggleRef = useRef<HTMLButtonElement | null>(null);
+  const devToggleRef = useRef<HTMLButtonElement | null>(null);
   const runPausedRef = useRef(false);
   // While the death moment plays, the run is over but the settlement is not up yet: nothing can pause it.
   const deathMomentRef = useRef<number | null>(null);
@@ -95,9 +96,10 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const [selectedChapterId, setSelectedChapterId] = useState(1);
   const [selectedStageNo, setSelectedStageNo] = useState(1);
   const [developerMode, setDeveloperMode] = useState(DEVELOPER_UI_DEFAULT_ENABLED);
-  const [menuView, setMenuView] = useState<'play' | 'infinite' | 'growth'>('play');
-  const [sidePanelOpen, setSidePanelOpen] = useState(false);
-  const [drawerTab, setDrawerTab] = useState<'skills' | 'upgrades' | 'options' | 'cheats'>('skills');
+  const [menuView, setMenuView] = useState<MenuView>('play');
+  // Developer builds only: the cheat panel (UI-04). The pause hub keeps its last tab between pauses.
+  const [devPanelOpen, setDevPanelOpen] = useState(false);
+  const [pauseTab, setPauseTab] = useState<PauseTab>('build');
   const [cheatCode, setCheatCode] = useState('');
   const [cheatMessage, setCheatMessage] = useState('');
   const [snapshot, setSnapshot] = useState<HudSnapshot | null>(null);
@@ -181,14 +183,9 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     return () => { delete target.__blacklineDiagnostics; };
   }, []);
 
-  useEffect(() => {
-    if (!sidePanelOpen) return;
-    requestAnimationFrame(() => document.getElementById(`drawer-tab-${drawerTab}`)?.focus());
-  }, [drawerTab, sidePanelOpen]);
-
-  const closeRunDrawer = useCallback((restoreFocus = true) => {
-    setSidePanelOpen(false);
-    if (restoreFocus) requestAnimationFrame(() => drawerToggleRef.current?.focus());
+  const closeDevPanel = useCallback((restoreFocus = true) => {
+    setDevPanelOpen(false);
+    if (restoreFocus) requestAnimationFrame(() => devToggleRef.current?.focus());
   }, []);
 
   const setManualPause = useCallback((paused: boolean) => {
@@ -199,7 +196,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     setAbandonConfirmOpen(false);
     if (paused) {
       engine.pause();
-      setSidePanelOpen(false);
+      setDevPanelOpen(false);
     } else {
       engine.resume();
     }
@@ -239,15 +236,15 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
       if (!isPauseKey && event.key !== 'Escape') return;
       if (event.key === 'Escape' && runPausedRef.current) return;
       event.preventDefault();
-      if (event.key === 'Escape' && sidePanelOpen) {
-        closeRunDrawer(true);
+      if (event.key === 'Escape' && devPanelOpen) {
+        closeDevPanel(true);
         return;
       }
       toggleManualPause();
     };
     window.addEventListener('keydown', onPauseShortcut);
     return () => window.removeEventListener('keydown', onPauseShortcut);
-  }, [closeRunDrawer, phase, sidePanelOpen, toggleManualPause]);
+  }, [closeDevPanel, devPanelOpen, phase, toggleManualPause]);
 
   const grantSettlement = useCallback((result: Settlement, unlockProgress: boolean) => {
     setMeta((prev) => {
@@ -306,7 +303,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
       onDraft: (nextDraft: DraftState) => {
         runPausedRef.current = false;
         setRunPaused(false);
-        setSidePanelOpen(false);
+        setDevPanelOpen(false);
         setDraft(nextDraft);
         setPhase('draft');
       },
@@ -338,7 +335,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         const entry = errorLog.record('loop', error);
         runPausedRef.current = false;
         setRunPaused(false);
-        setSidePanelOpen(false);
+        setDevPanelOpen(false);
         setErrorCopyStatus('');
         setLoopFault({ message: entry?.message ?? describeError(error).message, count: entry?.count ?? 1 });
       },
@@ -383,7 +380,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     setSettlement(null);
     setDraft(null);
     setSnapshot(null);
-    setSidePanelOpen(false);
+    setDevPanelOpen(false);
     runPausedRef.current = false;
     setRunPaused(false);
     setSeedCopyStatus('');
@@ -502,7 +499,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     runPausedRef.current = false;
     setRunPaused(false);
     setAbandonConfirmOpen(false);
-    setSidePanelOpen(false);
+    setDevPanelOpen(false);
   };
 
   const retryAfterFault = () => {
@@ -581,18 +578,9 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const handleMenuTabKey = (event: React.KeyboardEvent<HTMLButtonElement>) => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
-    const next = nextRovingId(['play', 'infinite', 'growth'] as const, menuView, event.key as RovingKey);
+    const next = nextRovingId(['play', 'infinite', 'growth', 'settings'] as const, menuView, event.key as RovingKey);
     setMenuView(next);
     requestAnimationFrame(() => document.getElementById(`menu-tab-${next}`)?.focus());
-  };
-
-  const handleDrawerTabKey = (event: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-    event.preventDefault();
-    const ids: Array<typeof drawerTab> = developerAccess ? ['skills', 'upgrades', 'options', 'cheats'] : ['skills', 'upgrades', 'options'];
-    const next = nextRovingId(ids, drawerTab, event.key as RovingKey);
-    setDrawerTab(next);
-    requestAnimationFrame(() => document.getElementById(`drawer-tab-${next}`)?.focus());
   };
 
   const resetMeta = () => {
@@ -644,7 +632,12 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   };
 
   return (
-    <div className="appShell" data-reduced-flash={options.reducedFlash ? 'on' : undefined}>
+    <div
+      className="appShell"
+      data-reduced-flash={options.reducedFlash ? 'on' : undefined}
+      data-reduced-motion={options.reducedMotion ? 'on' : undefined}
+      style={{ '--ui-scale': options.uiScale } as CSSProperties}
+    >
       <canvas
         ref={canvasRef}
         className="gameCanvas"
@@ -662,31 +655,17 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
           snapshot={snapshot}
           playing={phase === 'playing'}
           runPaused={runPaused}
-          sidePanelOpen={sidePanelOpen}
-          drawerToggleRef={drawerToggleRef}
+          devTools={developerAccess}
+          devPanelOpen={devPanelOpen}
+          devToggleRef={devToggleRef}
           onToggleSpeed={toggleSpeed}
-          onToggleDrawer={() => { if (sidePanelOpen) closeRunDrawer(false); else setSidePanelOpen(true); }}
+          onToggleDevPanel={() => { if (devPanelOpen) closeDevPanel(false); else setDevPanelOpen(true); }}
           onTogglePause={toggleManualPause}
         />
       )}
 
-      {phase !== 'menu' && snapshot && sidePanelOpen && (
-        <RunDrawer
-          snapshot={snapshot}
-          developerAccess={developerAccess}
-          drawerTab={drawerTab}
-          setDrawerTab={setDrawerTab}
-          onTabKey={handleDrawerTabKey}
-          seedCopyStatus={seedCopyStatus}
-          onCopySeed={() => void copyRunSeed()}
-          onBuyRunUpgrade={buyRunUpgrade}
-          options={options}
-          setOptions={setOptions}
-          cheatCode={cheatCode}
-          setCheatCode={setCheatCode}
-          cheatMessage={cheatMessage}
-          onApplyCheat={applyCheat}
-        />
+      {DEVELOPER_UI_AVAILABLE && developerAccess && phase !== 'menu' && devPanelOpen && (
+        <DevPanel cheatCode={cheatCode} setCheatCode={setCheatCode} cheatMessage={cheatMessage} onApplyCheat={applyCheat} />
       )}
 
       {phase === 'menu' && (
@@ -699,8 +678,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
           developerAccess={developerAccess}
           developerMode={developerMode}
           setDeveloperMode={setDeveloperMode}
-          drawerTab={drawerTab}
-          setDrawerTab={setDrawerTab}
+          options={options}
+          setOptions={setOptions}
           selectedChapterId={selectedChapterId}
           setSelectedChapterId={setSelectedChapterId}
           selectedStageNo={selectedStageNo}
@@ -740,15 +719,21 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         />
       )}
 
-      {!loopFault && phase === 'playing' && runPaused && (
-        <PauseDialog
-          infinite={snapshot?.runMode === 'infinite'}
-          seed={snapshot?.seed}
+      {!loopFault && phase === 'playing' && runPaused && snapshot && (
+        <PauseHub
+          snapshot={snapshot}
+          tab={pauseTab}
+          setTab={setPauseTab}
           confirmingAbandon={abandonConfirmOpen}
           onResume={() => setManualPause(false)}
           onAskAbandon={() => setAbandonConfirmOpen(true)}
           onCancelAbandon={() => setAbandonConfirmOpen(false)}
           onAbandon={toMenu}
+          onBuyRunUpgrade={buyRunUpgrade}
+          options={options}
+          setOptions={setOptions}
+          seedCopyStatus={seedCopyStatus}
+          onCopySeed={() => void copyRunSeed()}
         />
       )}
 

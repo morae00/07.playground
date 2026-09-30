@@ -1,4 +1,4 @@
-// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, CON-02, AUD-01, FX-03, UI-02, UI-03) against the developer build.
+// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, CON-02, AUD-01, FX-03, UI-02, UI-03, UI-04) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -32,9 +32,8 @@ async function openStage(page) {
 }
 
 async function cheat(page, code) {
-  const opener = page.getByRole('button', { name: '런 패널 열기' });
+  const opener = page.getByRole('button', { name: '개발 패널 열기' });
   if (await opener.count()) await opener.click();
-  await page.getByRole('tab', { name: '개발' }).click();
   const input = page.getByPlaceholder('CODE', { exact: true });
   await input.fill(code);
   await input.press('Enter');
@@ -65,7 +64,7 @@ try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     await openStage(page);
     await cheat(page, 'GOD');
-    await page.getByRole('button', { name: '런 패널 닫기' }).click();
+    await page.getByRole('button', { name: '개발 패널 닫기' }).click();
     await page.getByRole('button', { name: /게임 속도/ }).click();
     const before = await diagnostics(page);
     if (!before) throw new Error('diagnostics hook missing (not a developer build of this version)');
@@ -119,7 +118,7 @@ try {
     };
     await openStage(page);
     await cheat(page, 'DRAFT');
-    await page.getByRole('button', { name: '런 패널 닫기' }).count();
+    await page.getByRole('button', { name: '개발 패널 닫기' }).count();
     await page.waitForTimeout(420);
     await tap(15);
     const focused = await page.evaluate(() => document.activeElement?.classList.contains('draftCard'));
@@ -190,7 +189,7 @@ try {
     });
     await openStage(page);
     await cheat(page, 'GOD');
-    await page.getByRole('button', { name: '런 패널 닫기' }).click();
+    await page.getByRole('button', { name: '개발 패널 닫기' }).click();
     const before = await diagnostics(page);
     await page.evaluate(() => window.__probePad.stick(1, 0));
     await page.waitForTimeout(600);
@@ -212,7 +211,7 @@ try {
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await openStage(page);
     await cheat(page, 'GOD');
-    await page.getByRole('button', { name: '런 패널 닫기' }).click();
+    await page.getByRole('button', { name: '개발 패널 닫기' }).click();
     await page.waitForTimeout(300);
     await cheat(page, 'FAULT');
     const faultDialog = page.getByRole('dialog', { name: '오류로 Run을 멈췄습니다' });
@@ -280,7 +279,7 @@ try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     await openStage(page);
     await cheat(page, 'KO');
-    await page.getByRole('button', { name: '런 패널 닫기' }).click();
+    await page.getByRole('button', { name: '개발 패널 닫기' }).click();
     const settlement = page.getByRole('dialog').filter({ hasText: 'STAGE MATCH END' });
     // The run ends on the next step; 300 ms in, the 700 ms death moment is still on the canvas.
     await page.waitForTimeout(300);
@@ -306,7 +305,7 @@ try {
     });
     await openStage(page);
     await cheat(page, 'GOD');
-    await page.getByRole('button', { name: '런 패널 닫기' }).click();
+    await page.getByRole('button', { name: '개발 패널 닫기' }).click();
     // Double speed until a crowd has gathered (about 20 s of play), then clear it in one frame.
     await page.getByRole('button', { name: /게임 속도/ }).click();
     await page.waitForFunction(() => window.__blacklineDiagnostics?.().enemies >= 8, undefined, { timeout: 15000 });
@@ -318,11 +317,11 @@ try {
     const cleared = await diagnostics(page);
     const spaced = cleared.audio.spaced - playing.audio.spaced;
     record('AUD-01 clearing the screen at once stays under the voice cap', spaced >= 5 && cleared.audio.peak <= 16, `${playing.enemies} enemies before, ${spaced} cues spaced out, peak ${cleared.audio.peak} voices`);
-    // The cleared crowd's XP can open a draft, which also closes the drawer.
+    // The cleared crowd's XP can open a draft, which also closes the developer panel.
     await settleDrafts(page);
-    const closer = page.getByRole('button', { name: '런 패널 닫기' });
+    const closer = page.getByRole('button', { name: '개발 패널 닫기' });
     if (await closer.count()) await closer.click();
-    // Past the 30 ms spacing of the drawer button's own click cue.
+    // Past the 30 ms spacing of the panel button's own click cue.
     await page.waitForTimeout(120);
     const beforeClick = (await diagnostics(page)).audio.started;
     await page.getByRole('button', { name: '게임 일시정지' }).click();
@@ -385,7 +384,7 @@ try {
         await page.keyboard.press('1');
         await page.waitForTimeout(150);
       }
-      const closer = page.getByRole('button', { name: '런 패널 닫기' });
+      const closer = page.getByRole('button', { name: '개발 패널 닫기' });
       if (await closer.count()) await closer.click();
       await page.waitForTimeout(300);
       const hud = await page.evaluate(coverage);
@@ -393,6 +392,45 @@ try {
       record(`UI-02 ${width}x${height} the HUD covers at most ${Math.round(limit * 100)}% of the screen and leaves the centre clear`, hud.share <= limit && hud.centre === 0, `${(hud.share * 100).toFixed(2)}% covered, ${hud.centre} centre cells, ${slots} skill slots`);
       await page.close();
     }
+  });
+
+  await probe('UI-04', async () => {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await page.goto('http://127.0.0.1:5177/');
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    await page.getByRole('tab', { name: '설정' }).click();
+    const flash = page.getByRole('checkbox', { name: '섬광 감소' });
+    const flashBefore = await flash.isChecked();
+    await flash.click();
+    record('UI-04 the menu has the settings screen, so reduced flash can be set before any run', (await flash.isChecked()) !== flashBefore);
+    await flash.click();
+
+    await openStage(page);
+    await cheat(page, 'GOD');
+    await cheat(page, 'COIN');
+    const closer = page.getByRole('button', { name: '개발 패널 닫기' });
+    if (await closer.count()) await closer.click();
+    await page.waitForTimeout(400);
+    await page.keyboard.press('p');
+    const hub = page.getByRole('dialog', { name: '일시정지' });
+    await hub.waitFor();
+    const frozen = await diagnostics(page);
+    await page.waitForTimeout(600);
+    record('UI-04 the run stays stopped while the pause hub is open', (await diagnostics(page)).elapsed === frozen.elapsed, `elapsed ${frozen.elapsed.toFixed(2)} s`);
+    const tabs = await hub.getByRole('tab').allTextContents();
+    record('UI-04 the pause hub has the build, shop, settings, and controls tabs', tabs.join(',') === '빌드,강화,설정,조작', tabs.join(','));
+    await hub.getByRole('tab', { name: '강화' }).click();
+    const before = (await diagnostics(page)).player.hp;
+    await hub.getByRole('button', { name: /^체력 Lv\./ }).click();
+    const bought = (await diagnostics(page)).player.hp;
+    record('UI-04 a health upgrade bought while paused adds no health yet (G6)', bought === before, `${before.toFixed(1)} -> ${bought.toFixed(1)}`);
+    await hub.getByRole('button', { name: '계속하기', exact: true }).click();
+    await page.waitForTimeout(1000);
+    const early = (await diagnostics(page)).player.hp - before;
+    await page.waitForTimeout(3000);
+    const late = (await diagnostics(page)).player.hp - before;
+    record('UI-04 the bought health comes back over about three seconds after resuming (G6)', early > 2 && early < 15 && late >= 19.9, `+${early.toFixed(1)} after 1 s, +${late.toFixed(1)} after 4 s`);
+    await page.close();
   });
 
   await probe('UI-03', async () => {

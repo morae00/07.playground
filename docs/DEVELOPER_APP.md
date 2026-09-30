@@ -45,7 +45,7 @@ The regular `npm run build` pipeline still audits `dist` for forbidden developer
 
 - Developer mode starts enabled in the packaged developer app.
 - Chapter 1-5 stages are selectable immediately.
-- Menu and in-run cheat inputs are available.
+- Menu and in-run cheat inputs are available. In a run, the HUD's ⚙ button (developer mode on) opens the developer panel with the cheat input; the run keeps going while it is open.
 - Chapter 6 remains unavailable.
 - Developer-mode clears do not advance normal Stage unlock progress.
 - The checkbox can temporarily disable developer access for comparison testing.

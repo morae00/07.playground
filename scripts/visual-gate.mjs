@@ -90,15 +90,12 @@ async function passInputGuard(page) {
   await settle(page, 420);
 }
 
-async function openCheatDrawer(page) {
-  const closedDrawer = page.getByRole('button', { name: '런 패널 열기' });
-  if (await closedDrawer.count() === 1) {
-    await closedDrawer.click();
+async function openCheatPanel(page) {
+  const closedPanel = page.getByRole('button', { name: '개발 패널 열기' });
+  if (await closedPanel.count() === 1) {
+    await closedPanel.click();
     await settle(page, 40);
   }
-  const developerTab = await unique(page.getByRole('tab', { name: '개발' }), 'developer drawer tab');
-  await developerTab.click();
-  await settle(page, 20);
 }
 
 async function enterCheat(page, code) {
@@ -415,7 +412,7 @@ async function runScenario(page, viewport, dpr, motion) {
   await (await unique(page.getByRole('dialog', { name: '일시정지' }).getByRole('button', { name: '계속하기', exact: true }), 'resume button')).click();
   await settle(page, 40);
 
-  await openCheatDrawer(page);
+  await openCheatPanel(page);
   await enterCheat(page, 'DRAFT');
   await unique(page.getByRole('dialog'), 'draft dialog');
   await captureEvidence(page, viewport, dpr, motion, 'draft');
@@ -423,7 +420,7 @@ async function runScenario(page, viewport, dpr, motion) {
   await (await unique(page.locator('[aria-keyshortcuts="1"]'), 'first draft card')).click();
   await settle(page, 80);
 
-  await openCheatDrawer(page);
+  await openCheatPanel(page);
   await enterCheat(page, 'CLEAR');
   await unique(page.getByRole('dialog'), 'settlement dialog');
   await captureEvidence(page, viewport, dpr, motion, 'settlement');

@@ -1,49 +1,6 @@
-// Run dialogs (UI-01): the pause dialog with its abandon confirmation, the loop-fault dialog (TEC-14), and the
-// save reset confirmation on the menu.
+// Run dialogs (UI-01): the loop-fault dialog (TEC-14) and the save reset confirmation on the menu. The pause
+// dialog became the pause hub (UI-04, PauseHub.tsx).
 import { ModalDialog } from '../ModalDialog';
-
-export type PauseDialogProps = {
-  infinite: boolean;
-  seed: number | undefined;
-  confirmingAbandon: boolean;
-  onResume: () => void;
-  onAskAbandon: () => void;
-  onCancelAbandon: () => void;
-  onAbandon: () => void;
-};
-
-export function PauseDialog({ infinite, seed, confirmingAbandon, onResume, onAskAbandon, onCancelAbandon, onAbandon }: PauseDialogProps) {
-  return (
-    <ModalDialog className="settlementBox pauseBox" labelledBy="pause-dialog-title" describedBy="pause-dialog-description" onEscape={onResume}>
-      <div className="modalHead">
-        <p>RUN PAUSED</p>
-        <h2 id="pause-dialog-title">일시정지</h2>
-      </div>
-      {confirmingAbandon ? (
-        <>
-          <p id="pause-dialog-description">
-            {infinite
-              ? '지금 포기하면 이번 무한 경쟁 기록과 보상이 남지 않습니다. 정말 메뉴로 돌아갈까요?'
-              : '지금 포기하면 이번 Stage의 골드와 경험치를 받지 못합니다. 정말 메뉴로 돌아갈까요?'}
-          </p>
-          <div className="modalActions">
-            <button className="primary" data-sound="cancel" onClick={onCancelAbandon}>계속 플레이</button>
-            <button className="danger" onClick={onAbandon}>포기하고 메뉴로</button>
-          </div>
-        </>
-      ) : (
-        <>
-          <p id="pause-dialog-description">현재 Run은 멈춰 있습니다. P, Escape 또는 게임패드 Start로 계속할 수 있습니다.</p>
-          <div className="pauseSeed"><span>RUN SEED</span><code>{seed}</code></div>
-          <div className="modalActions">
-            <button className="primary" onClick={onResume}>계속하기</button>
-            <button className="ghost" onClick={onAskAbandon}>Stage 메뉴</button>
-          </div>
-        </>
-      )}
-    </ModalDialog>
-  );
-}
 
 export type FaultDialogProps = {
   message: string;

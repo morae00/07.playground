@@ -34,6 +34,10 @@ export type GameOptions = {
   /** Music and effects levels relative to the master volume (TEC-08); the mixer's buses apply them (AUD-01). */
   musicVolume: number;
   sfxVolume: number;
+  /** Size of the in-run HUD, 0.8-1.3 (UI-04); each HUD cluster scales from its own corner. */
+  uiScale: number;
+  /** Reduced motion even when the system does not ask for it (UI-04); the system setting always applies too. */
+  reducedMotion: boolean;
 };
 
 /** Per-stage record, keyed "<chapter>-<stage>". Practice runs are not recorded. */
@@ -112,6 +116,8 @@ export const createDefaultOptions = (): GameOptions => ({
   autoPause: true,
   musicVolume: 0.8,
   sfxVolume: 1,
+  uiScale: 1,
+  reducedMotion: false,
 });
 
 export const createDefaultProfile = (): ProfileData => ({
@@ -176,6 +182,8 @@ export function sanitizeOptions(value: unknown, allowShowcase = DEVELOPER_UI_AVA
     autoPause: booleanValue(value.autoPause, fallback.autoPause),
     musicVolume: finiteNumber(value.musicVolume, fallback.musicVolume, 0, 1),
     sfxVolume: finiteNumber(value.sfxVolume, fallback.sfxVolume, 0, 1),
+    uiScale: finiteNumber(value.uiScale, fallback.uiScale, 0.8, 1.3),
+    reducedMotion: booleanValue(value.reducedMotion, fallback.reducedMotion),
   };
 }
 
