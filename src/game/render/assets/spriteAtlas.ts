@@ -9,11 +9,11 @@ export type AtlasFrame = readonly [number, number, number, number, number, numbe
 export type AtlasPackManifest = Readonly<{
   pages: readonly string[];
   frames: Readonly<Record<string, AtlasFrame>>;
-  /** ART-05: a seamless ground tile for the chapter, `size` world units square. */
-  ground?: Readonly<{ file: string; size: number }>;
+  /** ART-05: a seamless ground tile for the chapter, `size` world units square, turned by `angle` radians (ART-08). */
+  ground?: Readonly<{ file: string; size: number; angle?: number }>;
 }>;
 
-export type GroundTile = Readonly<{ image: SpriteImage; size: number }>;
+export type GroundTile = Readonly<{ image: SpriteImage; size: number; angle: number }>;
 
 export type AnimationSpec = Readonly<{ frames: number; fps: number }>;
 
@@ -119,7 +119,7 @@ export class SpriteAtlas {
         return false;
       }
       this.pages.set(pack, images);
-      if (ground && entry.ground) this.grounds.set(pack, { image: ground, size: entry.ground.size });
+      if (ground && entry.ground) this.grounds.set(pack, { image: ground, size: entry.ground.size, angle: entry.ground.angle ?? 0 });
       this.statuses.set(pack, 'ready');
     } catch (error) {
       if ((this.generations.get(pack) ?? 0) !== generation) return false;

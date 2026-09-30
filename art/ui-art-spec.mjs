@@ -37,6 +37,8 @@ export const BOSS_PORTRAITS = Object.freeze({
   's1-final-rings': { kit: 'gaoler', center: [230, 128], scale: 0.54 },
   's2-final-flame': { kit: 'maw', center: [204, 236], scale: 0.5 },
   's3-final-traps': { kit: 'empress', module: 'bossesB', center: [196, 112], scale: 0.36 },
+  's4-final-saw': { kit: 'herald', module: 'bossesB', center: [306, 168], scale: 0.34 },
+  's5-final-null': { kit: 'balance', module: 'bossesB', center: [330, 158], scale: 0.34 },
 });
 
 export const PICKUP_ART = Object.freeze(['xp', 'coin', 'magnet', 'heal']);

@@ -366,6 +366,213 @@ export const ATLAS_MANIFEST = {
         "file": "assets/packs/chapter-03/ground-0.webp",
         "size": 512
       }
+    },
+    "chapter-04": {
+      "pages": [
+        "assets/packs/chapter-04/atlas-0.png"
+      ],
+      "frames": {
+        "boss/4/herald/phase1-enraged/0": [0, 698, 443, 354, 383, 178, 361],
+        "boss/4/herald/phase1-windup-enraged/0": [0, 585, 2, 351, 400, 178, 378],
+        "boss/4/herald/phase1-windup/0": [0, 1650, 2, 344, 386, 171, 371],
+        "boss/4/herald/phase1/0": [0, 2, 833, 340, 360, 171, 345],
+        "boss/4/herald/phase2-enraged/0": [0, 1056, 443, 354, 383, 178, 361],
+        "boss/4/herald/phase2-windup-enraged/0": [0, 940, 2, 351, 400, 178, 378],
+        "boss/4/herald/phase2-windup/0": [0, 2, 443, 344, 386, 171, 371],
+        "boss/4/herald/phase2/0": [0, 346, 833, 340, 360, 171, 345],
+        "boss/4/herald/phase3-enraged/0": [0, 1414, 443, 354, 383, 178, 361],
+        "boss/4/herald/phase3-windup-enraged/0": [0, 1295, 2, 351, 400, 178, 378],
+        "boss/4/herald/phase3-windup/0": [0, 350, 443, 344, 386, 171, 371],
+        "boss/4/herald/phase3/0": [0, 690, 833, 340, 360, 171, 345],
+        "enemy/4/charger/death/0": [0, 1140, 1386, 139, 108, 64.1, 98.7],
+        "enemy/4/charger/death/1": [0, 985, 1386, 151, 118, 71.1, 105.7],
+        "enemy/4/charger/death/2": [0, 606, 1386, 156, 128, 73.1, 110.7],
+        "enemy/4/charger/death/3": [0, 159, 1736, 135, 50, 62.1, 48.7],
+        "enemy/4/charger/death/4": [0, 390, 1736, 120, 40, 56.1, 35.7],
+        "enemy/4/charger/death/5": [0, 514, 1736, 120, 37, 56.1, 32.7],
+        "enemy/4/charger/decal/0": [0, 638, 1736, 124, 36, 61.1, 32.6],
+        "enemy/4/charger/decal/1": [0, 766, 1736, 124, 36, 61.1, 32.6],
+        "enemy/4/charger/decal/2": [0, 894, 1736, 124, 36, 61.1, 32.6],
+        "enemy/4/charger/decal/3": [0, 1022, 1736, 124, 36, 61.1, 32.6],
+        "enemy/4/charger/decal/4": [0, 1150, 1736, 124, 36, 61.1, 32.6],
+        "enemy/4/charger/hit/0": [0, 1438, 1386, 148, 102, 69, 93.1],
+        "enemy/4/charger/idle/0": [0, 1260, 1554, 138, 92, 64, 88.1],
+        "enemy/4/charger/walk/0": [0, 877, 1554, 138, 93, 64, 88.1],
+        "enemy/4/charger/walk/1": [0, 586, 1554, 143, 94, 67, 90.1],
+        "enemy/4/charger/walk/2": [0, 198, 1554, 145, 95, 69, 91.1],
+        "enemy/4/charger/walk/3": [0, 1019, 1554, 141, 93, 67, 89.1],
+        "enemy/4/charger/walk/4": [0, 733, 1554, 140, 94, 64, 90.1],
+        "enemy/4/charger/walk/5": [0, 347, 1554, 138, 95, 62, 91.1],
+        "enemy/4/charger/windup/0": [0, 1827, 1386, 140, 99, 73, 86.1],
+        "enemy/4/shooter/death/0": [0, 1164, 1554, 92, 93, 29.8, 86.6],
+        "enemy/4/shooter/death/1": [0, 1725, 1386, 98, 100, 34.8, 90.6],
+        "enemy/4/shooter/death/2": [0, 97, 1554, 97, 96, 31.8, 85.6],
+        "enemy/4/shooter/death/3": [0, 298, 1736, 88, 43, 26.8, 41.6],
+        "enemy/4/shooter/death/4": [0, 1278, 1736, 85, 34, 35.8, 30.6],
+        "enemy/4/shooter/death/5": [0, 1367, 1736, 83, 31, 34.8, 27.6],
+        "enemy/4/shooter/decal/0": [0, 1454, 1736, 87, 30, 38.8, 27.3],
+        "enemy/4/shooter/decal/1": [0, 1545, 1736, 87, 30, 38.8, 27.3],
+        "enemy/4/shooter/decal/2": [0, 1636, 1736, 87, 30, 38.8, 27.3],
+        "enemy/4/shooter/decal/3": [0, 1727, 1736, 87, 30, 38.8, 27.3],
+        "enemy/4/shooter/decal/4": [0, 1818, 1736, 87, 30, 38.8, 27.3],
+        "enemy/4/shooter/hit/0": [0, 2, 1554, 91, 99, 29.4, 91.4],
+        "enemy/4/shooter/idle/0": [0, 1505, 1554, 83, 91, 25.4, 87.4],
+        "enemy/4/shooter/walk/0": [0, 1592, 1554, 82, 91, 24.4, 87.4],
+        "enemy/4/shooter/walk/1": [0, 1678, 1554, 82, 91, 24.4, 87.4],
+        "enemy/4/shooter/windup/0": [0, 489, 1554, 93, 95, 27.4, 89.4],
+        "enemy/4/stalker/death/0": [0, 394, 1657, 101, 67, 48, 59.6],
+        "enemy/4/stalker/death/1": [0, 2, 1657, 111, 75, 55, 63.6],
+        "enemy/4/stalker/death/2": [0, 1941, 1554, 105, 76, 51, 64.6],
+        "enemy/4/stalker/death/3": [0, 1909, 1736, 95, 30, 46, 28.6],
+        "enemy/4/stalker/death/4": [0, 2, 1799, 83, 25, 39, 21.6],
+        "enemy/4/stalker/death/5": [0, 89, 1799, 83, 23, 39, 19.6],
+        "enemy/4/stalker/decal/0": [0, 176, 1799, 86, 23, 43, 19.7],
+        "enemy/4/stalker/decal/1": [0, 266, 1799, 86, 23, 43, 19.7],
+        "enemy/4/stalker/decal/2": [0, 356, 1799, 86, 23, 43, 19.7],
+        "enemy/4/stalker/decal/3": [0, 446, 1799, 86, 23, 43, 19.7],
+        "enemy/4/stalker/decal/4": [0, 536, 1799, 86, 23, 43, 19.7],
+        "enemy/4/stalker/hit/0": [0, 117, 1657, 116, 70, 59, 59.7],
+        "enemy/4/stalker/idle/0": [0, 1412, 1657, 108, 62, 55, 55.7],
+        "enemy/4/stalker/walk/0": [0, 880, 1657, 107, 63, 55, 57.7],
+        "enemy/4/stalker/walk/1": [0, 499, 1657, 108, 66, 56, 62.7],
+        "enemy/4/stalker/walk/2": [0, 991, 1657, 103, 63, 51, 57.7],
+        "enemy/4/stalker/walk/3": [0, 611, 1657, 108, 66, 56, 62.7],
+        "enemy/4/stalker/windup/0": [0, 1524, 1657, 108, 61, 55, 51.7],
+        "enemy/4/warden/death/0": [0, 540, 1197, 175, 179, 86, 169],
+        "enemy/4/warden/death/1": [0, 2, 1197, 181, 185, 89, 172],
+        "enemy/4/warden/death/2": [0, 1457, 833, 204, 199, 102, 176],
+        "enemy/4/warden/death/3": [0, 1764, 1554, 173, 85, 85, 83],
+        "enemy/4/warden/death/4": [0, 237, 1657, 153, 70, 75, 65],
+        "enemy/4/warden/death/5": [0, 723, 1657, 153, 65, 75, 60],
+        "enemy/4/warden/decal/0": [0, 1098, 1657, 153, 63, 75, 59.2],
+        "enemy/4/warden/decal/1": [0, 1255, 1657, 153, 63, 75, 59.2],
+        "enemy/4/warden/decal/2": [0, 1636, 1657, 153, 59, 75, 55.2],
+        "enemy/4/warden/decal/3": [0, 1793, 1657, 153, 59, 75, 55.2],
+        "enemy/4/warden/decal/4": [0, 2, 1736, 153, 59, 75, 55.2],
+        "enemy/4/warden/hit/0": [0, 187, 1197, 179, 184, 79, 174.8],
+        "enemy/4/warden/idle/0": [0, 1064, 1197, 169, 174, 74, 169.8],
+        "enemy/4/warden/walk/0": [0, 1237, 1197, 169, 168, 74, 162.8],
+        "enemy/4/warden/walk/1": [0, 719, 1197, 170, 176, 74, 171.8],
+        "enemy/4/warden/walk/2": [0, 1410, 1197, 169, 168, 74, 162.8],
+        "enemy/4/warden/walk/3": [0, 893, 1197, 167, 176, 74, 171.8],
+        "enemy/4/warden/windup/0": [0, 370, 1197, 166, 184, 82, 179.8],
+        "env/4/boundary/0": [0, 2, 1386, 600, 164, 0, 148],
+        "env/4/landmark0/0": [0, 1283, 1386, 151, 106, 69, 55],
+        "env/4/pillar0/0": [0, 1402, 1554, 99, 92, 43, 57],
+        "env/4/pillar1/0": [0, 1590, 1386, 131, 101, 59, 56],
+        "env/4/pillar2/0": [0, 766, 1386, 215, 125, 91, 47],
+        "env/4/solid0/0": [0, 1665, 833, 259, 196, 123, 109],
+        "env/4/solid1/0": [0, 1034, 833, 419, 316, 203, 169],
+        "env/4/solid2/0": [0, 2, 2, 579, 437, 283, 230]
+      },
+      "ground": {
+        "file": "assets/packs/chapter-04/ground-0.webp",
+        "size": 512,
+        "angle": -0.26
+      }
+    },
+    "chapter-05": {
+      "pages": [
+        "assets/packs/chapter-05/atlas-0.png"
+      ],
+      "frames": {
+        "boss/5/balance/phase1-enraged/0": [0, 1328, 2, 346, 407, 133, 364],
+        "boss/5/balance/phase1-windup-enraged/0": [0, 1678, 2, 357, 407, 146, 364],
+        "boss/5/balance/phase1-windup/0": [0, 1396, 443, 343, 393, 139, 357],
+        "boss/5/balance/phase1/0": [0, 2, 854, 332, 393, 126, 357],
+        "boss/5/balance/phase2-enraged/0": [0, 2, 443, 346, 407, 133, 364],
+        "boss/5/balance/phase2-windup-enraged/0": [0, 352, 443, 357, 407, 146, 364],
+        "boss/5/balance/phase2-windup/0": [0, 338, 854, 343, 393, 139, 357],
+        "boss/5/balance/phase2/0": [0, 685, 854, 332, 393, 126, 357],
+        "boss/5/balance/phase3-enraged/0": [0, 617, 2, 346, 420, 133, 364],
+        "boss/5/balance/phase3-windup-enraged/0": [0, 967, 2, 357, 420, 146, 364],
+        "boss/5/balance/phase3-windup/0": [0, 713, 443, 343, 406, 139, 357],
+        "boss/5/balance/phase3/0": [0, 1060, 443, 332, 406, 126, 357],
+        "enemy/5/charger/death/0": [0, 1462, 1452, 139, 108, 64.1, 98.7],
+        "enemy/5/charger/death/1": [0, 1100, 1452, 151, 118, 71.1, 105.7],
+        "enemy/5/charger/death/2": [0, 940, 1452, 156, 128, 73.1, 110.7],
+        "enemy/5/charger/death/3": [0, 2, 1786, 135, 50, 62.1, 48.7],
+        "enemy/5/charger/death/4": [0, 233, 1786, 120, 40, 56.1, 35.7],
+        "enemy/5/charger/death/5": [0, 357, 1786, 120, 37, 56.1, 32.7],
+        "enemy/5/charger/decal/0": [0, 481, 1786, 124, 36, 61.1, 32.6],
+        "enemy/5/charger/decal/1": [0, 609, 1786, 124, 36, 61.1, 32.6],
+        "enemy/5/charger/decal/2": [0, 737, 1786, 124, 36, 61.1, 32.6],
+        "enemy/5/charger/decal/3": [0, 865, 1786, 124, 36, 61.1, 32.6],
+        "enemy/5/charger/decal/4": [0, 993, 1786, 124, 36, 61.1, 32.6],
+        "enemy/5/charger/hit/0": [0, 1605, 1452, 147, 104, 68, 95.1],
+        "enemy/5/charger/idle/0": [0, 667, 1611, 137, 94, 63, 90.1],
+        "enemy/5/charger/walk/0": [0, 526, 1611, 137, 95, 63, 90.1],
+        "enemy/5/charger/walk/1": [0, 143, 1611, 137, 96, 62, 92.1],
+        "enemy/5/charger/walk/2": [0, 1858, 1452, 137, 97, 63, 93.1],
+        "enemy/5/charger/walk/3": [0, 808, 1611, 137, 94, 63, 90.1],
+        "enemy/5/charger/walk/4": [0, 284, 1611, 137, 96, 62, 92.1],
+        "enemy/5/charger/walk/5": [0, 2, 1611, 137, 97, 63, 93.1],
+        "enemy/5/charger/windup/0": [0, 949, 1611, 144, 93, 74, 86.1],
+        "enemy/5/shooter/death/0": [0, 1097, 1611, 92, 93, 29.8, 86.6],
+        "enemy/5/shooter/death/1": [0, 1756, 1452, 98, 100, 34.8, 90.6],
+        "enemy/5/shooter/death/2": [0, 425, 1611, 97, 96, 31.8, 85.6],
+        "enemy/5/shooter/death/3": [0, 141, 1786, 88, 43, 26.8, 41.6],
+        "enemy/5/shooter/death/4": [0, 1121, 1786, 85, 34, 35.8, 30.6],
+        "enemy/5/shooter/death/5": [0, 1210, 1786, 83, 31, 34.8, 27.6],
+        "enemy/5/shooter/decal/0": [0, 1297, 1786, 87, 30, 38.8, 27.3],
+        "enemy/5/shooter/decal/1": [0, 1388, 1786, 87, 30, 38.8, 27.3],
+        "enemy/5/shooter/decal/2": [0, 1479, 1786, 87, 30, 38.8, 27.3],
+        "enemy/5/shooter/decal/3": [0, 1570, 1786, 87, 30, 38.8, 27.3],
+        "enemy/5/shooter/decal/4": [0, 1661, 1786, 87, 30, 38.8, 27.3],
+        "enemy/5/shooter/hit/0": [0, 1193, 1611, 90, 87, 27.4, 80.4],
+        "enemy/5/shooter/idle/0": [0, 1559, 1611, 82, 79, 23.4, 76.4],
+        "enemy/5/shooter/walk/0": [0, 1645, 1611, 82, 79, 23.4, 76.4],
+        "enemy/5/shooter/walk/1": [0, 1731, 1611, 82, 79, 23.4, 76.4],
+        "enemy/5/shooter/windup/0": [0, 1464, 1611, 91, 82, 25.4, 78.4],
+        "enemy/5/stalker/death/0": [0, 498, 1712, 101, 67, 48, 59.6],
+        "enemy/5/stalker/death/1": [0, 1926, 1611, 111, 75, 55, 63.6],
+        "enemy/5/stalker/death/2": [0, 1817, 1611, 105, 76, 51, 64.6],
+        "enemy/5/stalker/death/3": [0, 1752, 1786, 95, 30, 46, 28.6],
+        "enemy/5/stalker/death/4": [0, 1851, 1786, 83, 25, 39, 21.6],
+        "enemy/5/stalker/death/5": [0, 1938, 1786, 83, 23, 39, 19.6],
+        "enemy/5/stalker/decal/0": [0, 2, 1840, 86, 23, 43, 19.7],
+        "enemy/5/stalker/decal/1": [0, 92, 1840, 86, 23, 43, 19.7],
+        "enemy/5/stalker/decal/2": [0, 182, 1840, 86, 23, 43, 19.7],
+        "enemy/5/stalker/decal/3": [0, 272, 1840, 86, 23, 43, 19.7],
+        "enemy/5/stalker/decal/4": [0, 362, 1840, 86, 23, 43, 19.7],
+        "enemy/5/stalker/hit/0": [0, 2, 1712, 111, 70, 54, 61.7],
+        "enemy/5/stalker/idle/0": [0, 1394, 1712, 103, 62, 50, 57.7],
+        "enemy/5/stalker/walk/0": [0, 760, 1712, 102, 64, 50, 59.7],
+        "enemy/5/stalker/walk/1": [0, 274, 1712, 108, 68, 56, 63.7],
+        "enemy/5/stalker/walk/2": [0, 866, 1712, 102, 64, 50, 59.7],
+        "enemy/5/stalker/walk/3": [0, 386, 1712, 108, 68, 56, 63.7],
+        "enemy/5/stalker/windup/0": [0, 972, 1712, 104, 63, 50, 58.7],
+        "enemy/5/warden/death/0": [0, 482, 1251, 175, 179, 86, 169],
+        "enemy/5/warden/death/1": [0, 297, 1251, 181, 185, 89, 172],
+        "enemy/5/warden/death/2": [0, 1476, 854, 204, 199, 102, 176],
+        "enemy/5/warden/death/3": [0, 1287, 1611, 173, 85, 85, 83],
+        "enemy/5/warden/death/4": [0, 117, 1712, 153, 70, 75, 65],
+        "enemy/5/warden/death/5": [0, 603, 1712, 153, 65, 75, 60],
+        "enemy/5/warden/decal/0": [0, 1080, 1712, 153, 63, 75, 59.2],
+        "enemy/5/warden/decal/1": [0, 1237, 1712, 153, 63, 75, 59.2],
+        "enemy/5/warden/decal/2": [0, 1501, 1712, 153, 59, 75, 55.2],
+        "enemy/5/warden/decal/3": [0, 1658, 1712, 153, 59, 75, 55.2],
+        "enemy/5/warden/decal/4": [0, 1815, 1712, 153, 59, 75, 55.2],
+        "enemy/5/warden/hit/0": [0, 661, 1251, 184, 170, 88, 160.8],
+        "enemy/5/warden/idle/0": [0, 1387, 1251, 174, 160, 83, 155.8],
+        "enemy/5/warden/walk/0": [0, 1749, 1251, 174, 155, 83, 149.8],
+        "enemy/5/warden/walk/1": [0, 1029, 1251, 176, 162, 83, 157.8],
+        "enemy/5/warden/walk/2": [0, 2, 1452, 174, 155, 83, 149.8],
+        "enemy/5/warden/walk/3": [0, 1209, 1251, 174, 162, 84, 157.8],
+        "enemy/5/warden/windup/0": [0, 849, 1251, 176, 170, 88, 165.8],
+        "env/5/boundary/0": [0, 180, 1452, 600, 153, 0, 148],
+        "env/5/landmark0/0": [0, 1684, 854, 244, 199, 104, 110],
+        "env/5/pillar0/0": [0, 784, 1452, 152, 139, 58, 80],
+        "env/5/pillar1/0": [0, 1565, 1251, 180, 157, 72, 89],
+        "env/5/pillar2/0": [0, 1255, 1452, 203, 113, 93, 68],
+        "env/5/solid0/0": [0, 2, 1251, 291, 197, 137, 110],
+        "env/5/solid1/0": [0, 1021, 854, 451, 317, 217, 170],
+        "env/5/solid2/0": [0, 2, 2, 611, 437, 297, 230]
+      },
+      "ground": {
+        "file": "assets/packs/chapter-05/ground-0.webp",
+        "size": 512
+      }
     }
   },
   "animations": {
@@ -520,6 +727,106 @@ export const ATLAS_MANIFEST = {
       }
     },
     "boss/3/empress": {
+      "phase1": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase1-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase1-windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase1-windup-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase2": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase2-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase2-windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase2-windup-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase3": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase3-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase3-windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase3-windup-enraged": {
+        "frames": 1,
+        "fps": 1
+      }
+    },
+    "boss/4/herald": {
+      "phase1": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase1-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase1-windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase1-windup-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase2": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase2-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase2-windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase2-windup-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase3": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase3-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase3-windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase3-windup-enraged": {
+        "frames": 1,
+        "fps": 1
+      }
+    },
+    "boss/5/balance": {
       "phase1": {
         "frames": 1,
         "fps": 1
@@ -881,6 +1188,214 @@ export const ATLAS_MANIFEST = {
         "fps": 0
       }
     },
+    "enemy/4/charger": {
+      "walk": {
+        "frames": 6,
+        "fps": 10
+      },
+      "idle": {
+        "frames": 1,
+        "fps": 1
+      },
+      "windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "hit": {
+        "frames": 1,
+        "fps": 1
+      },
+      "death": {
+        "frames": 6,
+        "fps": 24
+      },
+      "decal": {
+        "frames": 5,
+        "fps": 0
+      }
+    },
+    "enemy/4/shooter": {
+      "walk": {
+        "frames": 2,
+        "fps": 4
+      },
+      "idle": {
+        "frames": 1,
+        "fps": 1
+      },
+      "windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "hit": {
+        "frames": 1,
+        "fps": 1
+      },
+      "death": {
+        "frames": 6,
+        "fps": 24
+      },
+      "decal": {
+        "frames": 5,
+        "fps": 0
+      }
+    },
+    "enemy/4/stalker": {
+      "walk": {
+        "frames": 4,
+        "fps": 8
+      },
+      "idle": {
+        "frames": 1,
+        "fps": 1
+      },
+      "windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "hit": {
+        "frames": 1,
+        "fps": 1
+      },
+      "death": {
+        "frames": 6,
+        "fps": 24
+      },
+      "decal": {
+        "frames": 5,
+        "fps": 0
+      }
+    },
+    "enemy/4/warden": {
+      "walk": {
+        "frames": 4,
+        "fps": 6
+      },
+      "idle": {
+        "frames": 1,
+        "fps": 1
+      },
+      "windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "hit": {
+        "frames": 1,
+        "fps": 1
+      },
+      "death": {
+        "frames": 6,
+        "fps": 24
+      },
+      "decal": {
+        "frames": 5,
+        "fps": 0
+      }
+    },
+    "enemy/5/charger": {
+      "walk": {
+        "frames": 6,
+        "fps": 10
+      },
+      "idle": {
+        "frames": 1,
+        "fps": 1
+      },
+      "windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "hit": {
+        "frames": 1,
+        "fps": 1
+      },
+      "death": {
+        "frames": 6,
+        "fps": 24
+      },
+      "decal": {
+        "frames": 5,
+        "fps": 0
+      }
+    },
+    "enemy/5/shooter": {
+      "walk": {
+        "frames": 2,
+        "fps": 4
+      },
+      "idle": {
+        "frames": 1,
+        "fps": 1
+      },
+      "windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "hit": {
+        "frames": 1,
+        "fps": 1
+      },
+      "death": {
+        "frames": 6,
+        "fps": 24
+      },
+      "decal": {
+        "frames": 5,
+        "fps": 0
+      }
+    },
+    "enemy/5/stalker": {
+      "walk": {
+        "frames": 4,
+        "fps": 8
+      },
+      "idle": {
+        "frames": 1,
+        "fps": 1
+      },
+      "windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "hit": {
+        "frames": 1,
+        "fps": 1
+      },
+      "death": {
+        "frames": 6,
+        "fps": 24
+      },
+      "decal": {
+        "frames": 5,
+        "fps": 0
+      }
+    },
+    "enemy/5/warden": {
+      "walk": {
+        "frames": 4,
+        "fps": 6
+      },
+      "idle": {
+        "frames": 1,
+        "fps": 1
+      },
+      "windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "hit": {
+        "frames": 1,
+        "fps": 1
+      },
+      "death": {
+        "frames": 6,
+        "fps": 24
+      },
+      "decal": {
+        "frames": 5,
+        "fps": 0
+      }
+    },
     "env/1": {
       "solid0": {
         "frames": 1,
@@ -950,6 +1465,74 @@ export const ATLAS_MANIFEST = {
       }
     },
     "env/3": {
+      "solid0": {
+        "frames": 1,
+        "fps": 1
+      },
+      "solid1": {
+        "frames": 1,
+        "fps": 1
+      },
+      "solid2": {
+        "frames": 1,
+        "fps": 1
+      },
+      "pillar0": {
+        "frames": 1,
+        "fps": 1
+      },
+      "pillar1": {
+        "frames": 1,
+        "fps": 1
+      },
+      "pillar2": {
+        "frames": 1,
+        "fps": 1
+      },
+      "landmark0": {
+        "frames": 1,
+        "fps": 1
+      },
+      "boundary": {
+        "frames": 1,
+        "fps": 1
+      }
+    },
+    "env/4": {
+      "solid0": {
+        "frames": 1,
+        "fps": 1
+      },
+      "solid1": {
+        "frames": 1,
+        "fps": 1
+      },
+      "solid2": {
+        "frames": 1,
+        "fps": 1
+      },
+      "pillar0": {
+        "frames": 1,
+        "fps": 1
+      },
+      "pillar1": {
+        "frames": 1,
+        "fps": 1
+      },
+      "pillar2": {
+        "frames": 1,
+        "fps": 1
+      },
+      "landmark0": {
+        "frames": 1,
+        "fps": 1
+      },
+      "boundary": {
+        "frames": 1,
+        "fps": 1
+      }
+    },
+    "env/5": {
       "solid0": {
         "frames": 1,
         "fps": 1

@@ -21,7 +21,8 @@ test('every catalogue footprint matches the bake spec and has a baked kit module
       modules.forEach((_, index) => assert.ok(pack.frames[`env/${chapter}/${kind}${index}/0`], `Ch${chapter} ${kind}${index} is baked`));
     }
     assert.ok(pack.frames[`env/${chapter}/boundary/0`], `the Ch${chapter} edge strip is baked`);
-    assert.deepEqual(pack.ground, { file: `assets/packs/${name}/ground-0.webp`, size: 512 });
+    const ground = pack.ground as { file: string; size: number } | undefined;
+    assert.deepEqual([ground?.file, ground?.size], [`assets/packs/${name}/ground-0.webp`, 512], `${name} ground tile`);
   }
 });
 

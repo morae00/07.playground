@@ -14,4 +14,8 @@ export const OBSTACLE_CATALOGUE: Readonly<Record<number, Readonly<Record<Obstacl
   2: Object.freeze({ solid: SOLID, pillar: Object.freeze([[50, 32], [76, 49], [104, 30]] as const), landmark: Object.freeze([[66, 42]] as const) }),
   // Canal embankments; mooring bollards and a sluice gate; a sluice along the channel.
   3: Object.freeze({ solid: SOLID, pillar: Object.freeze([[28, 28], [40, 40], [124, 30]] as const), landmark: Object.freeze([[170, 54]] as const) }),
+  // Clock plinths; dial headstones and a gear pile; a headstone in the dial ring.
+  4: Object.freeze({ solid: SOLID, pillar: Object.freeze([[40, 25], [56, 35], [96, 56]] as const), landmark: Object.freeze([[66, 41]] as const) }),
+  // Toppled obsidian steles; obsidian stumps and a small stele; a stump in the eclipse ring.
+  5: Object.freeze({ solid: SOLID, pillar: Object.freeze([[46, 30], [60, 39], [76, 28]] as const), landmark: Object.freeze([[92, 60]] as const) }),
 });

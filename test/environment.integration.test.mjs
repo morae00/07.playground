@@ -27,8 +27,8 @@ function map(rules, chapter, stage) {
   return world;
 }
 
-test('ART-05, ART-07: remaster maps of Ch1-3 use only their catalogue footprints, and landmark posts on St3', () => {
-  for (const chapter of [1, 2, 3]) {
+test('ART-05, ART-07, ART-08: remaster maps of every chapter use only their catalogue footprints, and landmark posts on St3', () => {
+  for (const chapter of [1, 2, 3, 4, 5]) {
     const allowed = footprints(chapter);
     for (const stage of [1, 3]) {
       const { obstacles } = map('remaster', chapter, stage);
@@ -41,22 +41,28 @@ test('ART-05, ART-07: remaster maps of Ch1-3 use only their catalogue footprints
   }
 });
 
-test('ART-05: classic maps and chapters without a catalogue keep their random blocks', () => {
-  const classic = map('classic', 1, 1);
-  assert.ok(classic.obstacles.length > 0 && classic.obstacles.every((obstacle) => obstacle.art === undefined));
-  const other = map('remaster', 4, 1);
-  assert.ok(other.obstacles.length > 0 && other.obstacles.every((obstacle) => obstacle.art === undefined));
+test('ART-05: classic maps keep their random blocks', () => {
+  for (const chapter of [1, 4]) {
+    const classic = map('classic', chapter, 1);
+    assert.ok(classic.obstacles.length > 0 && classic.obstacles.every((obstacle) => obstacle.art === undefined));
+  }
 });
 
+/** An engine drawing into a recording context: `target` supplies the calls a test watches; the rest are no-ops. */
+function engineOn(target) {
+  const context = new Proxy(target, { get: (object, key) => (key in object ? object[key] : () => {}), set: (object, key, value) => { object[key] = value; return true; } });
+  const canvas = { width: 0, height: 0, getContext: () => context, getBoundingClientRect: () => ({ width: 1440, height: 900, left: 0, top: 0 }), addEventListener() {}, removeEventListener() {}, setPointerCapture() {}, releasePointerCapture() {}, hasPointerCapture: () => false };
+  return new ProbedGameEngine(canvas, meta(), options, { onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver() {} });
+}
+
+const fakeAtlas = () => new SpriteAtlas({ loadManifest: async () => ATLAS_MANIFEST, loadImage: async (url) => ({ url, width: 1024, height: 1024 }) });
+
 test('ART-05: catalogue obstacles and the ground draw from the chapter pack', async () => {
-  const atlas = new SpriteAtlas({ loadManifest: async () => ATLAS_MANIFEST, loadImage: async (url) => ({ url, width: 1024, height: 1024 }) });
+  const atlas = fakeAtlas();
   assert.equal(await atlas.load('chapter-01'), true);
   assert.equal(atlas.ground('chapter-01')?.size, 512);
   const images = [];
-  const target = { measureText: () => ({ width: 0 }), createPattern: () => ({ setTransform() {} }), drawImage(image, sx, sy) { images.push({ url: image.url, sx, sy }); } };
-  const context = new Proxy(target, { get: (object, key) => (key in object ? object[key] : () => {}), set: (object, key, value) => { object[key] = value; return true; } });
-  const canvas = { width: 0, height: 0, getContext: () => context, getBoundingClientRect: () => ({ width: 1440, height: 900, left: 0, top: 0 }), addEventListener() {}, removeEventListener() {}, setPointerCapture() {}, releasePointerCapture() {}, hasPointerCapture: () => false };
-  const engine = new ProbedGameEngine(canvas, meta(), options, { onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver() {} });
+  const engine = engineOn({ measureText: () => ({ width: 0 }), createPattern: () => ({ setTransform() {} }), drawImage(image, sx, sy) { images.push({ url: image.url, sx, sy }); } });
   try {
     engine.setRuleSet('remaster');
     engine.setSprites(atlas);
@@ -73,5 +79,30 @@ test('ART-05: catalogue obstacles and the ground draw from the chapter pack', as
     assert.ok(tiles.length >= 4 && tiles.length <= 16, `${tiles.length} ground stamps cover the view`);
   } finally {
     engine.dispose();
+  }
+});
+
+test('ART-08: the Ch4 ground is stamped in a frame turned by the kit angle; the others are not turned', async () => {
+  for (const [chapter, turned] of [[1, false], [4, true], [5, false]]) {
+    const pack = `chapter-0${chapter}`;
+    const atlas = fakeAtlas();
+    assert.equal(await atlas.load(pack), true);
+    const rotations = [];
+    const stamps = [];
+    const engine = engineOn({
+      measureText: () => ({ width: 0 }),
+      rotate(angle) { rotations.push(angle); },
+      drawImage(image) { if (image.url === `assets/packs/${pack}/ground-0.webp`) stamps.push(image.url); },
+    });
+    try {
+      engine.setRuleSet('remaster');
+      engine.setSprites(atlas);
+      engine.startRun(chapter, 1, 2468);
+      engine.probe.render(1);
+      assert.ok(stamps.length >= 4 && stamps.length <= 24, `${pack}: ${stamps.length} ground stamps cover the view`);
+      assert.equal(rotations.includes(-0.26), turned, `${pack} ground turn`);
+    } finally {
+      engine.dispose();
+    }
   }
 });

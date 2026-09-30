@@ -15,6 +15,7 @@ try {
   const page = await browser.newPage();
   await page.setContent('<!doctype html><html><body></body></html>');
   for (const file of KIT_FILES) await page.addScriptTag({ content: readFileSync(path.join(kitDir, file), 'utf8') });
+  await page.evaluate(installBakeRecipes);
 
   const manifest = { version: 2, atlasScale: ATLAS_SCALE, packs: {}, animations: {} };
   for (const [packName, pack] of Object.entries(PACKS)) {
@@ -38,7 +39,7 @@ try {
       // The chapter's seamless ground tile (ART-05), drawn as a repeating pattern in world space.
       const webp = await page.evaluate(renderGround, { call: pack.ground.call, size: GROUND_TILE, scale: ATLAS_SCALE, colorMap: COLOR_MAP });
       writeFileSync(path.join(root, 'public', pack.ground.file), Buffer.from(webp.split(',')[1], 'base64'));
-      manifest.packs[packName].ground = { file: pack.ground.file, size: GROUND_TILE };
+      manifest.packs[packName].ground = { file: pack.ground.file, size: GROUND_TILE, ...(pack.ground.angle ? { angle: pack.ground.angle } : {}) };
     }
     for (const item of frames) if (item.animation) manifest.animations[item.animation.key] = item.animation.spec;
     // Pack animations add states to a slot (the Ch1 death and decal poses) rather than replace it.
@@ -95,6 +96,51 @@ function packFrames(frames) {
 
 // ---- browser side ----
 
+/**
+ * Drawings the kit has no call for, composed from its own parts. turnedSlabs is the Ch4 ground: E.ground draws Ch4's
+ * cut slabs in a frame turned about the world origin, which cannot wrap, so this draws the same slab layer, decals,
+ * and paper grain unturned with the wrap period (as E.ground does for the other chapters); the renderer turns the
+ * repeating pattern.
+ */
+function installBakeRecipes() {
+  const E = window.PN.env;
+  window.bake = {
+    /**
+     * The kit's sheets are HTML, which keeps the first of a repeated attribute; an SVG image is XML and refuses the
+     * whole drawing (the Ch4 stalker repeats stroke-linejoin). Tags with a repeat keep the first, as the sheets
+     * showed them; every other tag is left as it is.
+     */
+    firstAttributes(markup) {
+      return markup.replace(/<([a-zA-Z][\w:-]*)((?:\s+[\w:-]+="[^"]*")+)(\s*\/?)>/g, (tag, name, attributes, end) => {
+        const seen = new Set();
+        let repeated = false;
+        const kept = attributes.replace(/\s+([\w:-]+)="[^"]*"/g, (attribute, key) => {
+          if (!seen.has(key)) {
+            seen.add(key);
+            return attribute;
+          }
+          repeated = true;
+          return '';
+        });
+        return repeated ? `<${name}${kept}${end}>` : tag;
+      });
+    },
+    turnedSlabs(ch, size, seed) {
+      const c = E.CH[ch];
+      const p = E.uid();
+      const rnd = E.rng(seed * 97 + ch);
+      const defs = [`<clipPath id="${p}cl"><rect width="${size}" height="${size}"/></clipPath>`, E.grainDef(`${p}gr`, seed + ch), E.roughDef(`${p}rf`, 3, 0.04, seed), E.dotDefs(`${p}w`, E.mix(c.base, c.deep, 0.72), 5)];
+      const period = [Math.max(1, Math.round(size / 280)), Math.max(2, 2 * Math.round(size / 240 / 2))];
+      const cells = E.rectSlabs(-8, -8, size + 8, size + 8, { mw: size / period[0], mh: size / period[1], bias: 1.1, min: 58, maxD: 4, seed: seed * 19 + ch, period });
+      let body = `<rect x="-2" y="-2" width="${size + 4}" height="${size + 4}" fill="${E.mix(c.base, c.deep, 0.55)}"/>`;
+      body += E.slabLayer(c, cells, p, rnd, { wear: true, crackP: 0.16, round: 3 });
+      body += E[`ch${ch}Decals`](c, size, size, rnd, p, { tile: true, center: null }, null);
+      body += `<rect width="${size}" height="${size}" filter="url(#${p}gr)" opacity="0.055"/>`;
+      return `<g class="pn-ground ch${ch}"><defs>${defs.join('')}</defs><g clip-path="url(#${p}cl)">${body}</g></g>`;
+    },
+  };
+}
+
 async function renderFrames({ frames, scale, margin, colorMap, roles }) {
   const expanded = [];
   for (const frame of frames) {
@@ -128,7 +174,7 @@ async function renderFrames({ frames, scale, margin, colorMap, roles }) {
   for (const frame of expanded) {
     const [fnPath, ...args] = frame.call;
     const fn = fnPath.split('.').reduce((owner, key) => owner[key], window);
-    let markup = fn(...args);
+    let markup = window.bake.firstAttributes(fn(...args));
     if (frame.strip) markup = markup.replace(new RegExp(frame.strip, 'g'), '');
     // Drawings made around their own pivot (kit props) are moved onto the box.
     if (frame.translate) markup = `<g transform="translate(${frame.translate[0]} ${frame.translate[1]})">${markup}</g>`;
@@ -143,7 +189,9 @@ async function renderFrames({ frames, scale, margin, colorMap, roles }) {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${-pad - padLeft} ${-pad - padTop} ${width / pxPerUnit} ${height / pxPerUnit}">${markup}</svg>`;
     const image = new Image();
     image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-    await image.decode();
+    await image.decode().catch((error) => {
+      throw new Error(`${frame.key} did not decode as SVG (${error.message})`);
+    });
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -185,7 +233,7 @@ async function renderFrames({ frames, scale, margin, colorMap, roles }) {
 async function renderGround({ call, size, scale, colorMap }) {
   const [fnPath, ...args] = call;
   const fn = fnPath.split('.').reduce((owner, key) => owner[key], window);
-  let markup = fn(...args);
+  let markup = window.bake.firstAttributes(fn(...args));
   for (const [from, to] of colorMap) markup = markup.replace(new RegExp(from, 'gi'), to);
   const pixels = size * scale;
   const image = new Image();

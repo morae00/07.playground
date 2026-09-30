@@ -35,6 +35,8 @@ export const BOSS_SLOTS: Readonly<Record<string, Readonly<{ slot: string; pack: 
   's1-final-rings': { slot: 'boss/1/gaoler', pack: 'chapter-01' },
   's2-final-flame': { slot: 'boss/2/maw', pack: 'chapter-02' },
   's3-final-traps': { slot: 'boss/3/empress', pack: 'chapter-03' },
+  's4-final-saw': { slot: 'boss/4/herald', pack: 'chapter-04' },
+  's5-final-null': { slot: 'boss/5/balance', pack: 'chapter-05' },
 });
 
 /** A boss frame's state key: its phase, whether it winds up, whether it is enraged (atlas-spec bossStates). */
@@ -43,7 +45,7 @@ export function bossState(phase: number, windup: boolean, enraged: boolean) {
 }
 
 /** Atlas packs per chapter; chapters without a pack draw with vectors. Only the chapter on screen stays loaded. */
-export const CHAPTER_PACKS: Readonly<Record<number, string>> = Object.freeze({ 1: 'chapter-01', 2: 'chapter-02', 3: 'chapter-03' });
+export const CHAPTER_PACKS: Readonly<Record<number, string>> = Object.freeze({ 1: 'chapter-01', 2: 'chapter-02', 3: 'chapter-03', 4: 'chapter-04', 5: 'chapter-05' });
 export const COMMON_PACK = 'common';
 
 export function enemySlot(chapter: number, tier: EnemyTier, attackStyle: 'contact' | 'ranged') {

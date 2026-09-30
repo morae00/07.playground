@@ -143,14 +143,14 @@ Two HUD marks live on the canvas, because they need the camera (UI-02):
 - **Global layer (`rareHitStop` rule):** a hit-stop of the whole simulation is kept for rare events only: the rail spear (0.045 s), a boss kill (0.09 s), and an awakening (0.06 s). These still spend the BUG-07 budget, and ordinary heavy and critical hits no longer ask for one, so a strong build does not make the game sticky.
 - Classic rules keep 0.1.0's hit-stop on every heavy hit.
 
-## Chapter environments (ART-05, ART-07)
+## Chapter environments (ART-05, ART-07, ART-08)
 
-Under the `kitProps` rule, a chapter with an obstacle catalogue (`src/game/obstacleCatalogue.ts`, Ch1-3 now) builds its map from kit modules:
-- the chapter's block prop (walls, iron-rail partitions, canal embankments) in the same three footprints in every chapter, so obstacle geometry does not change with the chapter;
+Under the `kitProps` rule, every chapter builds its map from the kit modules in its obstacle catalogue (`src/game/obstacleCatalogue.ts`):
+- the chapter's block prop (walls, iron-rail partitions, canal embankments, clock plinths, toppled steles) in the same three footprints in every chapter, so obstacle geometry does not change with the chapter;
 - three small props of the chapter as pillars;
 - the post of the chapter's landmark stages.
 
-The same two random draws that sized a block now pick its module, so hazards and positions do not move; only the footprints differ. An obstacle records its module in `art`. The renderer draws that module from the chapter pack on the footprint's centre, mirrored by id, and the module carries its own cast shadow. The ground is the pack's tile, stamped tile by tile over the visible world (a repeating pattern fill of it stalled Chromium's canvas in frames with many small stamps; TEC-04), and the kit's edge strip replaces the ink border. `obstacleCatalogue.test.ts` keeps the engine footprints equal to the baked ones. Classic rules and chapters without a catalogue keep random blocks on the grid.
+The same two random draws that sized a block now pick its module, so hazards and positions do not move; only the footprints differ. An obstacle records its module in `art`. The renderer draws that module from the chapter pack on the footprint's centre, mirrored by id, and the module carries its own cast shadow. The ground is the pack's tile, stamped tile by tile over the visible world and turned by the tile's `angle` where the kit turns the chapter's slabs (Ch4); a repeating pattern fill of it stalled Chromium's canvas in frames with many small stamps (TEC-04). The kit's edge strip replaces the ink border. `obstacleCatalogue.test.ts` keeps the engine footprints equal to the baked ones. Classic rules keep random blocks on the grid.
 
 Each chapter's art lives in its own atlas pack. Only the common pack and the pack of the chapter on screen are resident: the menu loads the selected chapter's pack ahead of its run and releases the others (`SpriteAtlas.release`), so textures stay within budget as chapters are added.
 

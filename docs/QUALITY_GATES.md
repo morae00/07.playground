@@ -100,6 +100,20 @@ ART-07 builds the Ch2 and Ch3 maps from their kit catalogues in the same way. Pi
 - `striker` lost 13 clears to crowd contact and gained 3. **[Team check]** accept this with the art, or give the pillar family larger props; SYS-07 retunes the chapter curve either way.
 - The two timeouts (2-5 and 2-10, both `survivor`, boss at 98% and 99% health) are the persona artifact of the R1-end run: both runs cleared before, and the new maps sent the square walk into the loop where auto-aim never picks the boss.
 
+ART-08 does the same for Ch4 and Ch5. Piloted against its parent on six stages of each chapter × 10 seeds × 4 personas:
+
+| | before | after (ART-08) |
+|---|---:|---:|
+| clear, all 480 | 57.5% | 56.5% |
+| clears: striker / survivor / collector / fresh | 86 / 116 / 74 / 0 | 87 / 116 / 68 / 0 |
+| clear by stage: 4-1 / 4-3 / 4-5 / 4-7 / 4-8 / 4-10 | 70 / 63 / 48 / 43 / 30 / 58% | 73 / 58 / 40 / 45 / 33 / 60% |
+| clear by stage: 5-1 / 5-3 / 5-5 / 5-7 / 5-8 / 5-10 | 70 / 68 / 68 / 60 / 53 / 63% | 65 / 65 / 68 / 58 / 53 / 63% |
+| timeouts (20 min of play) | 0 | 1 |
+| deaths: contact / shots / boss | 190 / 7 / 6 | 196 / 4 / 8 |
+| boss stages, clear time p50 / max (s) | 179 / 925 | 197 / 1189 |
+
+The rate moved by 5 of 480 (71 flips), within seed noise. The timeout (5-10 `survivor`, boss at 96%) is the same persona artifact.
+
 ## Game rules and grammar
 
 Gameplay changes ship behind the rule set in `src/game/rules.ts`. `classic` reproduces 0.1.0 exactly and `remaster` is the default. Infinite-mode records and replay fixtures are kept per rules version: the remaster rules (v2) may change freely until a build ships them, and after that the first change to seeded outcomes must raise `RULES_VERSION`. `test/grammarContracts.integration.test.mjs` pins the preserved game grammar (stage structure, draft sizes, radii, tier mix, deterministic replay) and one regression test per R0 gameplay fix.

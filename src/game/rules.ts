@@ -90,9 +90,9 @@ export type RuleSet = Readonly<{
    */
   rareHitStop: boolean;
   /**
-   * ART-05: maps of chapters with an obstacle catalogue are built from its kit modules: solid walls in three sizes,
-   * pillar props in three, and the landmark corridor post. The same random draws pick the module, so everything
-   * else about the map is unchanged; only the obstacle footprints differ.
+   * ART-05, ART-07, ART-08: maps are built from the chapter's kit modules (obstacleCatalogue.ts): its block prop in
+   * three footprints shared by every chapter, three small props, and the landmark post. The same random draws pick
+   * the module, so everything else about the map is unchanged; only the obstacle footprints differ.
    */
   kitProps: boolean;
 }>;

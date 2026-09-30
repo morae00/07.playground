@@ -57,7 +57,7 @@ test('draft tiles and HUD slots cover every skill, plain and awakened, and every
 test('portraits cover the hero expressions and every boss the kit draws; pickups the four kinds', () => {
   // The bosses with baked sprites (ART-07) are the ones with kit art, so each gets a boss bar portrait too.
   const bosses = Object.keys(BOSS_SLOTS);
-  assert.deepEqual(bosses, ['s1-mid-dash', 's1-final-rings', 's2-final-flame', 's3-final-traps']);
+  assert.deepEqual(bosses, ['s1-mid-dash', 's1-final-rings', 's2-final-flame', 's3-final-traps', 's4-final-saw', 's5-final-null']);
   assert.deepEqual(sheet('artPortrait').keys, [
     ...['calm', 'focus', 'hurt', 'lowhp', 'awakened', 'victory'].map((expr) => `hero-${expr}`),
     ...bosses.flatMap((id) => [id, `${id}-enraged`]),

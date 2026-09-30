@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 91451,
-      "kib": 89.31,
+      "bytes": 91677,
+      "kib": 89.53,
       "baselineBytes": 75381,
-      "growthRatio": 0.21318369350366795,
+      "growthRatio": 0.21618179647391256,
       "warningBytes": 86688,
       "failBytes": 94226,
       "status": "warning",
@@ -27,24 +27,24 @@
       "passed": true
     },
     "css": {
-      "bytes": 12412,
-      "kib": 12.12,
+      "bytes": 12446,
+      "kib": 12.15,
       "warningBytes": 32768,
       "failBytes": 49152,
       "status": "passed",
       "passed": true
     },
     "initialAssets": {
-      "bytes": 1393500,
-      "kib": 1360.84,
+      "bytes": 1443442,
+      "kib": 1409.61,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 7836469,
-      "kib": 7652.8,
+      "bytes": 11156135,
+      "kib": 10894.66,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-CYs6f-kC.js",
+      "file": "assets/App-Df8wSfpN.js",
       "category": "appJs",
-      "sourceBytes": 285097,
-      "gzipBytes": 88261
+      "sourceBytes": 285812,
+      "gzipBytes": 88487
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -69,8 +69,8 @@
     {
       "file": "assets/atlas/manifest.json",
       "category": "data",
-      "sourceBytes": 22826,
-      "gzipBytes": 4203
+      "sourceBytes": 36112,
+      "gzipBytes": 6193
     },
     {
       "file": "assets/content/boss-titles.json",
@@ -85,16 +85,16 @@
       "gzipBytes": 113032
     },
     {
-      "file": "assets/index-B9jEh56_.js",
+      "file": "assets/index-CDaS3F7S.js",
       "category": "appJs",
       "sourceBytes": 6698,
       "gzipBytes": 3190
     },
     {
-      "file": "assets/index-s6quJ-8O.css",
+      "file": "assets/index-W8-l2iHn.css",
       "category": "css",
-      "sourceBytes": 42343,
-      "gzipBytes": 12412
+      "sourceBytes": 42666,
+      "gzipBytes": 12446
     },
     {
       "file": "assets/packs/chapter-01/atlas-0.png",
@@ -137,6 +137,30 @@
       "category": "image",
       "sourceBytes": 27922,
       "gzipBytes": 27776
+    },
+    {
+      "file": "assets/packs/chapter-04/atlas-0.png",
+      "category": "image",
+      "sourceBytes": 1580411,
+      "gzipBytes": 1562551
+    },
+    {
+      "file": "assets/packs/chapter-04/ground-0.webp",
+      "category": "image",
+      "sourceBytes": 29600,
+      "gzipBytes": 29471
+    },
+    {
+      "file": "assets/packs/chapter-05/atlas-0.png",
+      "category": "image",
+      "sourceBytes": 1636155,
+      "gzipBytes": 1621778
+    },
+    {
+      "file": "assets/packs/chapter-05/ground-0.webp",
+      "category": "image",
+      "sourceBytes": 23558,
+      "gzipBytes": 23432
     },
     {
       "file": "assets/packs/sfx-common/boss.enraged-0.wav",
@@ -571,10 +595,10 @@
       "gzipBytes": 2004
     },
     {
-      "file": "assets/portraits-NlOza-cR.webp",
+      "file": "assets/portraits-9HpTxBu7.webp",
       "category": "image",
-      "sourceBytes": 120192,
-      "gzipBytes": 119805
+      "sourceBytes": 156848,
+      "gzipBytes": 151496
     },
     {
       "file": "assets/skill-tiles-j80riEru.webp",

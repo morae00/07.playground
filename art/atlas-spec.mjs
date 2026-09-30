@@ -79,6 +79,8 @@ export const BOSS_SPRITES = Object.freeze({
   'boss/1/gaoler': { kit: 'gaoler', module: 'bossesA', bossId: 's1-final-rings', chapter: 1, pad: [150, 0, 60, 0] },
   'boss/2/maw': { kit: 'maw', module: 'bossesA', bossId: 's2-final-flame', chapter: 2, pad: [150, 80, 40, 80] },
   'boss/3/empress': { kit: 'empress', module: 'bossesB', bossId: 's3-final-traps', chapter: 3, pad: [80, 60, 30, 60] },
+  'boss/4/herald': { kit: 'herald', module: 'bossesB', bossId: 's4-final-saw', chapter: 4, pad: [80, 80, 30, 60] },
+  'boss/5/balance': { kit: 'balance', module: 'bossesB', bossId: 's5-final-null', chapter: 5, pad: [80, 80, 30, 60] },
 });
 
 const BOSS_MODULES = Object.freeze({
@@ -232,20 +234,40 @@ export const OBSTACLE_CATALOGUE = Object.freeze({
     // Sluice gates along the canal: the St3 split sluice and the St7 floodgate basin.
     landmark: Object.freeze([['sluice', 170, 54]]),
   }),
+  4: Object.freeze({
+    solid: solids('clock'),
+    pillar: Object.freeze([['tomb', 40, 25], ['tomb', 56, 35], ['gears', 96, 56]]),
+    // Dial headstones in a ring: the St3 broken minute dial and the St7 gear ossuary.
+    landmark: Object.freeze([['tomb', 66, 41]]),
+  }),
+  5: Object.freeze({
+    solid: solids('stele'),
+    pillar: Object.freeze([['pillar', 46, 30], ['pillar', 60, 39], ['stele', 76, 28]]),
+    // Obsidian stumps in a ring: the St3 penumbra ring and the St7 cracked totality.
+    landmark: Object.freeze([['pillar', 92, 60]]),
+  }),
 });
 
-/** Seamless ground per chapter (API-env ground, tile: true), without the one-off plaza pieces a repeat would copy. */
-const GROUND_OPTIONS = Object.freeze({
-  1: { tile: true },
-  2: { tile: true, rose: null, center: null },
-  3: { tile: true, canalY: false },
+/** Seamless ground tile per chapter (API-env ground, tile: true), in world units; baked at ATLAS_SCALE as WebP. */
+export const GROUND_TILE = 512;
+
+/**
+ * Seamless ground per chapter (API-env ground, tile: true), without the one-off plaza pieces a repeat would copy.
+ * The kit turns Ch4's slab frame by -0.26 rad about the world origin, which cannot wrap in a square tile, so its
+ * tile is the same slab layer unturned with the wrap period (build-atlas turnedSlabs) and the renderer turns the
+ * repeating pattern by `angle` instead.
+ */
+const GROUNDS = Object.freeze({
+  1: { call: ['PN.env.ground', 1, GROUND_TILE, GROUND_TILE, 3, { tile: true }] },
+  2: { call: ['PN.env.ground', 2, GROUND_TILE, GROUND_TILE, 3, { tile: true, rose: null, center: null }] },
+  3: { call: ['PN.env.ground', 3, GROUND_TILE, GROUND_TILE, 3, { tile: true, canalY: false }] },
+  4: { call: ['bake.turnedSlabs', 4, GROUND_TILE, 3], angle: -0.26 },
+  5: { call: ['PN.env.ground', 5, GROUND_TILE, GROUND_TILE, 3, { tile: true, center: null, ringC: null }] },
 });
 
 /** The world edge strip (API-env boundary): edge line at y = 0, outside above it; drawn along every edge. */
 export const BOUNDARY_WIDTH = 300;
 
-/** Seamless ground tile per chapter (API-env ground, tile: true), in world units; baked at ATLAS_SCALE as WebP. */
-export const GROUND_TILE = 512;
 
 function envFrames(chapter) {
   const frames = [];
@@ -296,7 +318,7 @@ function chapterPack(chapter) {
     page: `${dir}/atlas`,
     frames: [...enemyFrames(chapter), ...bossFrames(chapter), ...killFrames(chapter), ...envFrames(chapter), boundaryFrame(chapter)],
     animations: { ...bossAnimations(chapter), ...fxAnimations(chapter), ...envAnimations(chapter) },
-    ground: { call: ['PN.env.ground', chapter, GROUND_TILE, GROUND_TILE, 3, GROUND_OPTIONS[chapter]], file: `${dir}/ground-0.webp` },
+    ground: { ...GROUNDS[chapter], file: `${dir}/ground-0.webp` },
   };
 }
 
@@ -305,4 +327,6 @@ export const PACKS = Object.freeze({
   'chapter-01': chapterPack(1),
   'chapter-02': chapterPack(2),
   'chapter-03': chapterPack(3),
+  'chapter-04': chapterPack(4),
+  'chapter-05': chapterPack(5),
 });

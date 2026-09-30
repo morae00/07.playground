@@ -522,7 +522,8 @@ export class WorldRenderer {
    * Stamps the ground tile over the visible part of the world, in world space. A repeating pattern fill of the same
    * tile made Chromium's canvas fall far behind once the frame also stamped many small images, such as a crowd's
    * damage numbers: 180 ms frames in the TEC-04 bench. Neighbouring tiles overlap by GROUND_SEAM so their edges
-   * leave no hairline.
+   * leave no hairline. A turned tile (Ch4, ART-08) is stamped in its turned frame, over the view's bounds as seen
+   * from that frame.
    */
   private drawGround(ctx: CanvasRenderingContext2D, tile: GroundTile) {
     const { viewport } = this;
@@ -535,9 +536,21 @@ export class WorldRenderer {
     ctx.beginPath();
     ctx.rect(left, top, right - left, bottom - top);
     ctx.clip();
-    const { size } = tile;
-    for (let y = Math.floor(top / size) * size; y < bottom; y += size) {
-      for (let x = Math.floor(left / size) * size; x < right; x += size) {
+    const { size, angle } = tile;
+    let bounds = { left, top, right, bottom };
+    if (angle) {
+      ctx.rotate(angle);
+      const [cos, sin] = [Math.cos(angle), Math.sin(angle)];
+      const corners = [[left, top], [right, top], [right, bottom], [left, bottom]].map(([x, y]) => [x * cos + y * sin, y * cos - x * sin]);
+      bounds = {
+        left: Math.min(...corners.map(([u]) => u)),
+        top: Math.min(...corners.map(([, v]) => v)),
+        right: Math.max(...corners.map(([u]) => u)),
+        bottom: Math.max(...corners.map(([, v]) => v)),
+      };
+    }
+    for (let y = Math.floor(bounds.top / size) * size; y < bounds.bottom; y += size) {
+      for (let x = Math.floor(bounds.left / size) * size; x < bounds.right; x += size) {
         ctx.drawImage(tile.image, x - GROUND_SEAM, y - GROUND_SEAM, size + GROUND_SEAM * 2, size + GROUND_SEAM * 2);
       }
     }

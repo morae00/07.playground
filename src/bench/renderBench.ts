@@ -106,7 +106,9 @@ async function run(): Promise<RenderBenchResult> {
   const canvas = document.querySelector('canvas');
   if (!canvas) throw new Error('bench page has no canvas');
   const atlas = new SpriteAtlas();
-  const spritesReady = useSprites ? (await Promise.all([atlas.load(COMMON_PACK), atlas.load(CHAPTER_PACKS[1])])).every(Boolean) : false;
+  // The chapter on screen has its pack loaded, as in the game (ART-07); the stress scene uses Ch1 bodies.
+  const chapterPack = CHAPTER_PACKS[scene === 'game' ? gameChapter : 1];
+  const spritesReady = useSprites ? (await Promise.all([atlas.load(COMMON_PACK), atlas.load(chapterPack)])).every(Boolean) : false;
 
   // Record every animation-frame timestamp the engine receives.
   const stamps: number[] = [];
