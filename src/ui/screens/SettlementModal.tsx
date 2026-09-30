@@ -151,7 +151,8 @@ export function SettlementModal({ settlement, defeated, notes, reducedMotion, le
           <span>{t('settle.gold')}</span>
           <b aria-live="off">{gold}</b>
           <ul aria-label={t('settle.gold.parts')}>
-            {GOLD_PARTS.map(([key, label]) => settlement.goldParts[key] > 0 && <li key={key}>{t(label)} {Math.floor(settlement.goldParts[key])}</li>)}
+            {/* A part that rounds down to nothing (0.9 gold for one kill) is left out rather than shown as 0. */}
+            {GOLD_PARTS.map(([key, label]) => Math.floor(settlement.goldParts[key]) > 0 && <li key={key}>{t(label)} {Math.floor(settlement.goldParts[key])}</li>)}
           </ul>
         </div>
         <div className="settlementXp">
