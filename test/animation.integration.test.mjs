@@ -125,3 +125,55 @@ test('a Ch1 shooter keeps its windup pose for a moment after the shot leaves', a
     engine.dispose();
   }
 });
+
+test('a Ch1 kill tips its body over, leaves an ink stain, and the stain dries away (FX-03)', async () => {
+  const atlas = new SpriteAtlas({ loadManifest: async () => ATLAS_MANIFEST, loadImage: async (url) => ({ url, width: 2048, height: 2048 }) });
+  await atlas.load('common');
+  await atlas.load('chapter-01');
+  const { engine, probe, images, rotations } = arena(1, 2);
+  try {
+    engine.setSprites(atlas);
+    const { player } = probe.read();
+    const id = probe.spawnEnemy({ tier: 'small', x: player.x + 160, y: player.y, speed: 0, damage: 0, hp: 5 });
+    probe.render(1);
+    probe.patchEnemy(id, { hp: 0 });
+    probe.step(1);
+    const [corpse] = probe.effects().corpses;
+    assert.ok(corpse && corpse.fall === 1, 'the body falls away from the player on its left');
+    images.length = 0;
+    rotations.length = 0;
+    probe.step(8);
+    probe.render(1);
+    const hit = ATLAS_MANIFEST.packs['chapter-01'].frames['enemy/1/stalker/hit/0'];
+    assert.ok(images.some((draw) => draw.sx === hit[1] && draw.sy === hit[2]), 'the hit pose is drawn while it falls');
+    assert.ok(rotations.some((angle) => angle > 0.1), 'tipped over to the right');
+    probe.step(60 * 2);
+    assert.equal(probe.effects().corpses.length, 0, 'the stain has dried after 1.75 s');
+  } finally {
+    engine.dispose();
+  }
+});
+
+test('a hit flashes a white cut-out over the sprite in three steps', async () => {
+  const atlas = new SpriteAtlas({ loadManifest: async () => ATLAS_MANIFEST, loadImage: async (url) => ({ url, width: 2048, height: 2048 }) });
+  await atlas.load('common');
+  await atlas.load('chapter-01');
+  const { engine, probe, images } = arena(1, 2);
+  try {
+    engine.setSprites(atlas);
+    const { player } = probe.read();
+    const id = probe.spawnEnemy({ tier: 'small', x: player.x + 160, y: player.y, speed: 0, damage: 0, hp: 1e6 });
+    const cutouts = () => {
+      images.length = 0;
+      probe.render(1);
+      return images.filter((draw) => draw.url === undefined && draw.sx === 0 && draw.sy === 0).length;
+    };
+    assert.equal(cutouts(), 0, 'no flash before a hit');
+    probe.patchEnemy(id, { hitFlash: 0.08 });
+    assert.equal(cutouts(), 1, 'the cut-out draws over the body');
+    probe.patchEnemy(id, { hitFlash: 0 });
+    assert.equal(cutouts(), 0);
+  } finally {
+    engine.dispose();
+  }
+});

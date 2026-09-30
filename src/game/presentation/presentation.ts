@@ -1,6 +1,6 @@
 // Presentation layer (TEC-02): turns game events into particles, damage numbers, impact rings, screen shake,
 // and sound cues for the app's mixer (AUD-01). It owns only cosmetic state; the simulation never reads it back.
-import type { DamageNumber, EffectOwner, ImpactRing, Particle, SkillId } from '../engine/worldTypes.ts';
+import type { Corpse, DamageNumber, EffectOwner, ImpactRing, Particle, SkillId } from '../engine/worldTypes.ts';
 import type { GameOptions } from '../../platform/save.ts';
 import { CUES, HIT_CUES, type CueId, type SoundOutput } from '../audioPolicy.ts';
 import type { GameEvent } from '../engine/events.ts';
@@ -23,6 +23,14 @@ const PARTICLE_CAP_FULL = 520;
 const PARTICLE_CAP_REDUCED = 260;
 const DAMAGE_NUMBER_CAP = 160;
 const IMPACT_RING_CAP = 32;
+/** Ink stains on the floor (style bible P6): 48 at full effects, 24 at reduced; the renderer drops them at minimal detail. */
+const CORPSE_CAP_FULL = 48;
+const CORPSE_CAP_REDUCED = 24;
+/** A body falls over 6 frames at 24 fps, then its stain fades for 1.5 s (FX-03). */
+export const CORPSE_FALL_SECONDS = 0.25;
+export const CORPSE_SECONDS = CORPSE_FALL_SECONDS + 1.5;
+/** Hit ink sprays out of the far side of a hit, inside this cone. */
+const SPLASH_CONE = Math.PI * 0.6;
 /**
  * Pose lengths for the hero (FX-01): the hurt flash (3 frames at 12 fps), the throw (4 frames at 16 fps), and the
  * longer burst for the big actives and awakenings.
@@ -47,6 +55,7 @@ export class Presentation {
   readonly particles: Particle[] = [];
   readonly damageNumbers: DamageNumber[] = [];
   readonly impactRings: ImpactRing[] = [];
+  readonly corpses: Corpse[] = [];
   shake = 0;
   /** Seconds left on the player's hurt, burst, and cast poses (FX-01); they count down in simulated time. */
   playerHurt = 0;
@@ -58,6 +67,11 @@ export class Presentation {
     () => ({ id: 0, x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 0, size: 0, color: '#000000' }),
     (particle) => { particle.life = 0; },
     PARTICLE_CAP_FULL,
+  );
+  readonly corpsePool = new ObjectPool<Corpse>(
+    () => ({ x: 0, y: 0, radius: 0, tier: 'small', attackStyle: 'contact', isBoss: false, fall: 1, life: 0, maxLife: 0 }),
+    (corpse) => { corpse.life = 0; },
+    CORPSE_CAP_FULL,
   );
   readonly damageNumberPool = new ObjectPool<DamageNumber>(
     () => ({ id: 0, x: 0, y: 0, value: 0, crit: false, life: 0, maxLife: 0, owner: 'player' as EffectOwner }),
@@ -94,8 +108,10 @@ export class Presentation {
   clearRound() {
     for (const particle of this.particles) this.particlePool.release(particle);
     for (const number of this.damageNumbers) this.damageNumberPool.release(number);
+    for (const corpse of this.corpses) this.corpsePool.release(corpse);
     this.particles.length = 0;
     this.damageNumbers.length = 0;
+    this.corpses.length = 0;
     this.impactRings.length = 0;
     this.playerHurt = 0;
     this.playerBurst = 0;
@@ -136,7 +152,8 @@ export class Presentation {
           this.addDamageNumber(event.x, event.y - event.radius, event.damage, event.crit, event.crit ? 0.9 : 0.62, 'player');
         }
         const count = event.tier === 'critical' ? 14 : event.tier === 'heavy' ? 8 : 4;
-        this.burst(event.x, event.y, Math.round(count * effects), event.tier === 'critical' ? '#000000' : '#222222', event.tier === 'critical' ? 240 : event.tier === 'heavy' ? 175 : 130);
+        // Ink sprays out of the far side of the hit (FX-03).
+        this.burst(event.x, event.y, Math.round(count * effects), event.tier === 'critical' ? '#000000' : '#222222', event.tier === 'critical' ? 240 : event.tier === 'heavy' ? 175 : 130, Math.atan2(event.dy, event.dx), SPLASH_CONE);
         if (event.tier !== 'light') this.addImpactRing(event.x, event.y, event.radius * (event.tier === 'critical' ? 1.8 : 1.35), event.tier);
         if (event.tier === 'critical') this.addShake(4);
         if (this.legacyHitDraws && this.legacyHitWait <= 0) {
@@ -149,6 +166,7 @@ export class Presentation {
       case 'enemy/killed':
         this.burst(event.x, event.y, event.isBoss ? 42 : 16, '#050505', event.isBoss ? 340 : 190);
         this.addShake(event.isBoss ? 18 : 4);
+        this.addCorpse(event);
         this.play(event.isBoss ? 'boss.kill' : 'enemy.kill', event.x);
         return;
       case 'enemy/contact':
@@ -239,8 +257,10 @@ export class Presentation {
     if (!paused || decayWhilePaused) this.updateParticles(frameDt);
   }
 
-  /** Per fixed simulation step: rings, damage numbers, and the hero's poses age with simulated time. */
+  /** Per fixed simulation step: rings, damage numbers, corpses, and the hero's poses age with simulated time. */
   step(dt: number) {
+    for (const corpse of this.corpses) corpse.life -= dt;
+    recycleWhere(this.corpses, (corpse) => corpse.life > 0, this.corpsePool);
     this.playerHurt = Math.max(0, this.playerHurt - dt);
     this.playerBurst = Math.max(0, this.playerBurst - dt);
     this.playerCast = Math.max(0, this.playerCast - dt);
@@ -253,11 +273,13 @@ export class Presentation {
     recycleWhere(this.damageNumbers, (number) => number.life > 0, this.damageNumberPool);
   }
 
-  burst(x: number, y: number, count: number, color: string, speed: number) {
+  /** Throws particles all around, or inside a cone of the given width around direction. */
+  burst(x: number, y: number, count: number, color: string, speed: number, direction = 0, cone = Math.PI * 2) {
     const maxParticles = this.particleCap();
     const safeCount = Math.min(90, Math.max(0, Math.floor(count)), Math.max(0, maxParticles - this.particles.length));
     for (let i = 0; i < safeCount; i += 1) {
-      const angle = this.random() * Math.PI * 2;
+      // One draw per angle either way, so the cosmetic stream (classic particle ids) stays in step.
+      const angle = direction + (this.random() - 0.5) * cone;
       const velocity = speed * (0.25 + this.random() * 0.75);
       const life = 0.25 + this.random() * 0.45;
       const particle = this.particlePool.acquire();
@@ -287,6 +309,25 @@ export class Presentation {
     number ??= this.damageNumberPool.acquire();
     Object.assign(number, { id: this.host.nextId(), x, y, value, crit, life, maxLife: life, owner });
     this.damageNumbers.push(number);
+  }
+
+  /** A fallen body; the oldest stain goes when the cap for the effect density is reached. */
+  addCorpse(event: Extract<GameEvent, { type: 'enemy/killed' }>) {
+    const cap = this.host.options().effects > 0.65 ? CORPSE_CAP_FULL : CORPSE_CAP_REDUCED;
+    while (this.corpses.length >= cap) this.corpsePool.release(this.corpses.shift()!);
+    const corpse = this.corpsePool.acquire();
+    Object.assign(corpse, {
+      x: event.x,
+      y: event.y,
+      radius: event.radius,
+      tier: event.tier,
+      attackStyle: event.attackStyle,
+      isBoss: event.isBoss,
+      fall: event.dx < 0 ? -1 : 1,
+      life: CORPSE_SECONDS,
+      maxLife: CORPSE_SECONDS,
+    });
+    this.corpses.push(corpse);
   }
 
   addImpactRing(x: number, y: number, radius: number, tier: 'heavy' | 'critical') {

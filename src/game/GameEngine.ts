@@ -3963,7 +3963,8 @@ export class GameEngine {
       enemy.x += dir.x * knockback * 0.035;
       enemy.y += dir.y * knockback * 0.035;
     }
-    this.emit({ type: 'enemy/hit', x: enemy.x, y: enemy.y, radius: enemy.radius, damage, crit, tier: impactTier });
+    const travel = normalize(enemy.x - source.x, enemy.y - source.y);
+    this.emit({ type: 'enemy/hit', x: enemy.x, y: enemy.y, radius: enemy.radius, damage, crit, tier: impactTier, dx: travel.x, dy: travel.y });
     if (impactTier !== 'light') this.requestHitStop(impactTier === 'critical' ? 0.035 : 0.025);
   }
 
@@ -4061,7 +4062,8 @@ export class GameEngine {
         Math.ceil(enemy.coin / Math.max(1, coinCount)),
       );
     }
-    this.emit({ type: 'enemy/killed', x: enemy.x, y: enemy.y, isBoss: enemy.isBoss });
+    const away = normalize(enemy.x - this.player.x, enemy.y - this.player.y);
+    this.emit({ type: 'enemy/killed', x: enemy.x, y: enemy.y, isBoss: enemy.isBoss, radius: enemy.radius, tier: enemy.tier, attackStyle: enemy.attackStyle, dx: away.x, dy: away.y });
 
     if (enemy.isBoss && !suppressBossDraft) {
       if (this.runMode === 'infinite') {

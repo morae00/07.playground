@@ -4,6 +4,7 @@
 // this module; only the test bundle (src/testing/engine.ts) ships it.
 import { FIXED_TIMESTEP } from '../p0Core';
 import type { RenderEffects, RenderFrameStats, RenderWorld, WorldLayer } from '../render/worldRenderer';
+import type { Corpse } from './worldTypes';
 import {
   GameEngine,
   type BeamEffect,
@@ -94,6 +95,7 @@ export type ProbeEffects = {
   particles: Particle[];
   damageNumbers: DamageNumber[];
   impactRings: ImpactRing[];
+  corpses: Corpse[];
   shake: number;
 };
 
@@ -266,6 +268,7 @@ export class ProbedGameEngine extends GameEngine {
         particles: copy(this.presentation.particles),
         damageNumbers: copy(this.presentation.damageNumbers),
         impactRings: copy(this.presentation.impactRings),
+        corpses: copy(this.presentation.corpses),
         shake: this.presentation.shake,
       }),
       step: (ticks = 1) => {
@@ -435,6 +438,7 @@ export class ProbedGameEngine extends GameEngine {
             particles: effects.particles,
             damageNumbers: effects.damageNumbers,
             impactRings: effects.impactRings,
+            corpses: effects.corpses,
             shake: effects.shake,
             playerHurt: effects.playerHurt,
             playerBurst: effects.playerBurst,

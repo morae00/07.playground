@@ -204,6 +204,23 @@ export type Particle = {
   color: string;
 };
 
+/**
+ * A fallen enemy (FX-03): presentation only, with no gameplay id. It falls for CORPSE_FALL_SECONDS, then its ink
+ * stain fades for the rest of its life.
+ */
+export type Corpse = {
+  x: number;
+  y: number;
+  radius: number;
+  tier: EnemyTier;
+  attackStyle: 'contact' | 'ranged';
+  isBoss: boolean;
+  /** 1 falls to the right (away from a player on the left), -1 to the left. */
+  fall: 1 | -1;
+  life: number;
+  maxLife: number;
+};
+
 export type DamageNumber = {
   id: number;
   x: number;

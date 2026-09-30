@@ -1,7 +1,7 @@
 // Game events (TEC-02): the simulation reports what happened and consumers decide how it looks and sounds.
 // Presentation (particles, damage numbers, impact rings, shake, sound), tools, and replays read this stream;
 // nothing here feeds back into the simulation.
-import type { SkillId } from './worldTypes.ts';
+import type { EnemyTier, SkillId } from './worldTypes.ts';
 
 export type ImpactTier = 'light' | 'heavy' | 'critical';
 /** What hurt the player: enemy bodies, ranged enemy shots, boss shots, shock zones, or fire ground. */
@@ -12,9 +12,10 @@ export type GameEvent =
   | { type: 'run/upgradeBought' }
   | { type: 'draft/applied'; kind: AppliedOfferKind; x: number; y: number }
   | { type: 'skill/cast'; skillId: SkillId; x: number; y: number }
-  /** A skill hit an enemy; x/y are the enemy position after knockback. */
-  | { type: 'enemy/hit'; x: number; y: number; radius: number; damage: number; crit: boolean; tier: ImpactTier }
-  | { type: 'enemy/killed'; x: number; y: number; isBoss: boolean }
+  /** A skill hit an enemy; x/y are the enemy position after knockback, dx/dy the unit direction the hit travelled. */
+  | { type: 'enemy/hit'; x: number; y: number; radius: number; damage: number; crit: boolean; tier: ImpactTier; dx: number; dy: number }
+  /** dx/dy point from the player to the body (FX-03 corpses fall away from the player). */
+  | { type: 'enemy/killed'; x: number; y: number; isBoss: boolean; radius: number; tier: EnemyTier; attackStyle: 'contact' | 'ranged'; dx: number; dy: number }
   | { type: 'enemy/contact'; isBoss: boolean }
   | { type: 'player/hurt'; x: number; y: number; damage: number; source: PlayerDamageSource }
   /** The run ended in defeat; source is the last thing that hurt the player (CON-09 telemetry). */

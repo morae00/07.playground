@@ -4,6 +4,7 @@ import type {
   BeamEffect,
   BossProjectile,
   ChainEffect,
+  Corpse,
   DamageNumber,
   Entity,
   Hazard,
@@ -21,9 +22,10 @@ import { HIT_RADIUS } from '../grammar.ts';
 import { SKILL_NUMBERS, scaleAt } from '../skillNumbers.ts';
 import type { ViewFrame } from '../viewPolicy.ts';
 import { motionPolicy } from '../visualContracts.ts';
-import { distance } from '../worldMath.ts';
+import { clamp, distance } from '../worldMath.ts';
+import { CORPSE_FALL_SECONDS } from '../presentation/presentation.ts';
 import { WARDEN_SHIELD } from '../enemyBehaviors.ts';
-import { AnimationBook, enemyPoses, heroPoses, poseFrame, stepBossAnim, stepEnemyAnim, stepPlayerAnim, type AnimState, type EnemyAnim } from './animation.ts';
+import { AnimationBook, SPAWN_SECONDS, enemyPoses, heroPoses, poseFrame, stepBossAnim, stepEnemyAnim, stepPlayerAnim, type AnimState, type EnemyAnim } from './animation.ts';
 import { phaseFor, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
 import { BOSS_SLOTS, CHAPTER_PACKS, HERO_SLOT, bossState, enemyDrawScale, enemySlot, frameKey, slotEnabled } from './assets/slots.ts';
 import { GameRenderer } from './GameRenderer.ts';
@@ -43,6 +45,12 @@ import {
 const TARGET_COLOR = SIGNAL.allyDeep;
 /** Enemy ids start at 1, so the hero's animation state never collides with one. */
 const HERO_ANIM_ID = -1;
+
+/** The hit flash fades in three steps over its 0.08 s (FX-03): bright, half, faint. */
+function hitFlashAlpha(hitFlash: number) {
+  if (hitFlash <= 0) return 0;
+  return hitFlash > 0.054 ? 0.85 : hitFlash > 0.027 ? 0.5 : 0.22;
+}
 
 /** Where a vector body points: its shield, its dash, its aim, or the way it walks; null keeps the last heading. */
 function enemyHeading(enemy: Readonly<Entity>): number | null {
@@ -131,6 +139,8 @@ export type RenderEffects = {
   readonly particles: readonly Readonly<Particle>[];
   readonly damageNumbers: readonly Readonly<DamageNumber>[];
   readonly impactRings: readonly Readonly<ImpactRing>[];
+  /** Fallen enemies (FX-03): falling bodies and their fading ink stains. */
+  readonly corpses: readonly Readonly<Corpse>[];
   readonly shake: number;
   /** Seconds left on the hero's hurt, burst, and cast poses. */
   readonly playerHurt: number;
@@ -184,6 +194,8 @@ export class WorldRenderer {
   /** Animation states by character id (FX-01); the hero is kept under HERO_ANIM_ID. */
   private readonly anims = new AnimationBook();
   private heroAnim: AnimState | null = null;
+  /** White cut-outs of sprite frames for the hit flash (FX-03), built once per frame on first use. */
+  private readonly silhouettes = new Map<SpriteFrame, SpriteFrame | null>();
   private readonly bodyPool: BodyDraw[] = [];
   private readonly sortedBodies: BodyDraw[] = [];
   private bodyCount = 0;
@@ -198,6 +210,7 @@ export class WorldRenderer {
   setSprites(atlas: SpriteAtlas | null) {
     this.sprites = atlas;
     this.anims.clear();
+    this.silhouettes.clear();
   }
 
   /** Forget cached patterns (the canvas was resized or its context reset). */
@@ -266,6 +279,7 @@ export class WorldRenderer {
     switch (layer) {
       case 'ground':
         this.drawWorld(ctx);
+        this.drawCorpseStains(ctx);
         return;
       case 'hazards':
         this.drawHazards(ctx);
@@ -587,9 +601,11 @@ export class WorldRenderer {
 
   /** Marks on the floor under every body: foot shadows, the player's foot ring, and ranged-enemy rings. */
   private drawGroundMarks(ctx: CanvasRenderingContext2D) {
+    this.drawFallingBodies(ctx);
     for (const body of this.sortedBodies) {
       const enemy = body.enemy;
       if (!enemy) continue;
+      if (body.anim?.state === 'spawn') this.drawSpawnBloom(ctx, body.x, body.y, enemy.radius, this.spawnProgress(body.anim));
       if (body.sprite) {
         ctx.save();
         ctx.fillStyle = rgba(NEUTRAL.ink, 0.3);
@@ -813,10 +829,25 @@ export class WorldRenderer {
   }
 
   private drawEnemyBody(ctx: CanvasRenderingContext2D, enemy: Readonly<Entity>, body: BodyDraw) {
+    // A new enemy rises out of its ink bloom (FX-03); hit and contact rules do not change meanwhile.
+    const rise = body.anim?.state === 'spawn' ? 0.35 + 0.65 * this.spawnProgress(body.anim) : 1;
     if (body.sprite) {
-      this.blit(ctx, body.sprite.frame, body.x, body.y, body.sprite.facing, body.sprite.scale);
+      const { frame, facing, scale } = body.sprite;
+      this.blit(ctx, frame, body.x, body.y, facing, scale, rise);
+      const flash = hitFlashAlpha(enemy.hitFlash);
+      const silhouette = flash > 0 ? this.silhouette(frame) : null;
+      if (silhouette) this.blit(ctx, silhouette, body.x, body.y, facing, scale, flash * rise);
       return;
     }
+    if (rise < 1) {
+      ctx.save();
+      ctx.globalAlpha *= rise;
+    }
+    this.drawVectorEnemy(ctx, enemy, body);
+    if (rise < 1) ctx.restore();
+  }
+
+  private drawVectorEnemy(ctx: CanvasRenderingContext2D, enemy: Readonly<Entity>, body: BodyDraw) {
     this.visual.drawEnemy(ctx, {
       id: enemy.id,
       x: body.x,
@@ -1053,6 +1084,91 @@ export class WorldRenderer {
       ctx.stroke();
     }
     ctx.restore();
+  }
+
+  private spawnProgress(anim: AnimState) {
+    return clamp((this.world.elapsed - anim.startedAt) / SPAWN_SECONDS, 0, 1);
+  }
+
+  /** The ink pool a new enemy rises from: it spreads and dries within the spawn window. */
+  private drawSpawnBloom(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, progress: number) {
+    ctx.save();
+    ctx.fillStyle = rgba(NEUTRAL.ink, 0.42 * (1 - progress));
+    ctx.beginPath();
+    ctx.ellipse(x, y, radius * (0.5 + 0.9 * progress), radius * (0.22 + 0.4 * progress), 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /** Ink stains of fallen enemies, part of the floor under hazards; none at minimal detail (style bible P6). */
+  private drawCorpseStains(ctx: CanvasRenderingContext2D) {
+    if (this.stats.detail === 'minimal') return;
+    for (const corpse of this.world.effects.corpses) {
+      const radius = corpse.radius * (corpse.isBoss ? 1.4 : 1.1);
+      if (!circleVisible(this.viewport, corpse.x, corpse.y, radius * 1.6)) continue;
+      const age = corpse.maxLife - corpse.life;
+      // The stain soaks out while the body falls, then dries away.
+      const spread = 0.55 + 0.45 * clamp(age / CORPSE_FALL_SECONDS, 0, 1);
+      const fade = clamp(corpse.life / (corpse.maxLife - CORPSE_FALL_SECONDS), 0, 1);
+      const r = radius * spread;
+      ctx.save();
+      ctx.fillStyle = rgba(NEUTRAL.ink, 0.3 * fade);
+      ctx.beginPath();
+      ctx.ellipse(corpse.x + corpse.fall * r * 0.35, corpse.y, r, r * 0.45, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(corpse.x - corpse.fall * r * 0.3, corpse.y + r * 0.08, r * 0.55, r * 0.26, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  /**
+   * Bodies falling over for the first quarter second (FX-03). A baked death pose plays as drawn; until one exists
+   * the hit pose tips away from the player and fades. Vector bodies and bosses leave only their stain.
+   */
+  private drawFallingBodies(ctx: CanvasRenderingContext2D) {
+    const sprites = this.sprites;
+    const pack = CHAPTER_PACKS[this.world.chapter];
+    if (!sprites || !pack || sprites.status(pack) !== 'ready' || this.stats.detail === 'minimal') return;
+    for (const corpse of this.world.effects.corpses) {
+      const age = corpse.maxLife - corpse.life;
+      if (corpse.isBoss || age >= CORPSE_FALL_SECONDS) continue;
+      if (!circleVisible(this.viewport, corpse.x, corpse.y, corpse.radius + 60)) continue;
+      const slot = enemySlot(this.world.chapter, corpse.tier, corpse.attackStyle);
+      if (!slotEnabled(slot)) continue;
+      const pose = sprites.animation(slot, 'death') ? 'death' : 'hit';
+      const spec = sprites.animation(slot, pose);
+      const frame = spec ? sprites.frame(frameKey(slot, pose, poseFrame(spec, pose, 0, age, 0))) : undefined;
+      if (!frame) continue;
+      const progress = age / CORPSE_FALL_SECONDS;
+      ctx.save();
+      ctx.translate(corpse.x, corpse.y);
+      if (pose === 'hit') ctx.rotate(corpse.fall * progress * progress * Math.PI * 0.45);
+      this.blit(ctx, frame, 0, 0, corpse.fall > 0 ? -1 : 1, enemyDrawScale(enemyRoleFor(corpse.tier, corpse.attackStyle), corpse.tier), 1 - 0.7 * progress);
+      ctx.restore();
+    }
+  }
+
+  /** A frame's white cut-out (source-in fill), cached; null where no offscreen canvas can be made. */
+  private silhouette(frame: SpriteFrame): SpriteFrame | null {
+    let cutout = this.silhouettes.get(frame);
+    if (cutout === undefined) {
+      cutout = null;
+      const canvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+      const context = canvas?.getContext('2d');
+      if (canvas && context) {
+        canvas.width = frame.sw;
+        canvas.height = frame.sh;
+        context.drawImage(frame.image, frame.sx, frame.sy, frame.sw, frame.sh, 0, 0, frame.sw, frame.sh);
+        context.globalCompositeOperation = 'source-in';
+        context.fillStyle = NEUTRAL.paperBright;
+        context.fillRect(0, 0, frame.sw, frame.sh);
+        cutout = { ...frame, image: canvas, sx: 0, sy: 0 };
+      }
+      this.silhouettes.set(frame, cutout);
+    }
+    return cutout;
   }
 
   /** Draws an atlas frame with its anchor on (x, y); scale multiplies the baked size, facing -1 mirrors it. */
