@@ -10,7 +10,7 @@ import { UI_ART_DENSITY, UI_ART_QUALITY, UI_SHEETS } from '../art/ui-art-spec.mj
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const kitDir = path.join(root, 'art/concept-kit');
 const outDir = path.join(root, 'src/ui/art');
-const KIT_FILES = ['lib.js', 'k-hero.js', 'k-bosses1.js', 'k-icons.js'];
+const KIT_FILES = ['lib.js', 'k-hero.js', 'k-bosses1.js', 'k-bosses2.js', 'k-icons.js'];
 
 const browser = await chromium.launch();
 try {
@@ -78,9 +78,12 @@ async function renderSheet({ sheet, density, quality, colorMap }) {
     heroPortrait: (expr) => `<g transform="scale(0.6)">${PN.heroKit.portrait(expr)}</g>`,
     // Framed like PN.heroKit.portrait: a 74 disc with a paper halftone vignette, a 6 ink ring and a paper ring.
     // Enraged bosses get the coral dashed ring (the kit shows coral on bosses only when they are enraged).
-    bossPortrait: ({ kit, center, scale }, enraged) => {
-      const k = 148 / (scale * 400);
-      const body = PN.bossesA.draw(kit, { phase: 1, enraged, lod: 'game', halo: false, shadow: false, fx: true });
+    bossPortrait: ({ kit, module = 'bossesA', center, scale }, enraged) => {
+      // bossesA draws in a 400 box, bossesB in a 384 box with its own detail option.
+      const k = 148 / (scale * (module === 'bossesB' ? 384 : 400));
+      const body = module === 'bossesB'
+        ? PN.bossesB.draw(kit, { phase: 1, enraged, detail: 'game', halo: false, shadow: false })
+        : PN.bossesA.draw(kit, { phase: 1, enraged, lod: 'game', halo: false, shadow: false, fx: true });
       const vignette = PN.halftone(0, 0, 160, 160, 5, (x, y) => Math.max(0, Math.min(1.9, (Math.hypot(x - 80, y - 70) - 44) / 30)), K.ink1, 45);
       const ring = `<circle cx="80" cy="80" r="74" fill="none" stroke="${K.ink}" stroke-width="6"/><circle cx="80" cy="80" r="78.5" fill="none" stroke="${K.p50}" stroke-width="2.4"/>`;
       const rage = enraged ? `<circle cx="80" cy="80" r="74" fill="none" stroke="${K.hostile}" stroke-width="2.4" stroke-dasharray="14 6"/>` : '';

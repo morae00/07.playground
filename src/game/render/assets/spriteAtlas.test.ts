@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ATLAS_MANIFEST } from './atlasManifest.generated.ts';
 import { ATLAS_MANIFEST_URL, SpriteAtlas, loopFrame, phaseFor, type AtlasManifest } from './spriteAtlas.ts';
-import { CHAPTER_PACKS, COMMON_PACK, HERO_SLOT, enemyDrawScale, enemySlot, frameKey } from './slots.ts';
+import { BOSS_SLOTS, CHAPTER_PACKS, COMMON_PACK, HERO_SLOT, enemyDrawScale, enemySlot, frameKey } from './slots.ts';
 
 const manifest = ATLAS_MANIFEST as AtlasManifest;
 const fakeImage = (width: number, height: number) => ({ width, height }) as unknown as CanvasImageSource & { width: number; height: number };
@@ -28,9 +28,13 @@ test('the baked manifest is complete: every animation frame exists and sits insi
       }
     }
   }
-  for (const role of ['stalker', 'charger', 'shooter', 'warden']) assert.ok(manifest.animations[`enemy/1/${role}`], `Ch1 ${role}`);
-  for (const boss of ['butcher', 'gaoler']) {
-    assert.equal(Object.keys(manifest.animations[`boss/1/${boss}`]).length, 12, `Ch1 ${boss}: 3 phases x windup x enraged`);
+  for (const [chapter, pack] of Object.entries(CHAPTER_PACKS)) {
+    assert.ok(manifest.packs[pack], `${pack} is baked`);
+    for (const role of ['stalker', 'charger', 'shooter', 'warden']) assert.ok(manifest.animations[`enemy/${chapter}/${role}`], `Ch${chapter} ${role}`);
+  }
+  for (const [bossId, { slot, pack }] of Object.entries(BOSS_SLOTS)) {
+    assert.equal(Object.keys(manifest.animations[slot]).length, 12, `${bossId}: 3 phases x windup x enraged`);
+    assert.ok(manifest.packs[pack].frames[frameKey(slot, 'phase3-windup-enraged', 0)], `${bossId} is in ${pack}`);
   }
   assert.deepEqual(Object.keys(manifest.animations[HERO_SLOT]).sort(), ['hurt', 'idle', 'run', 'throw']);
   assert.equal(manifest.atlasScale, 2, 'atlas pixels per world unit');
@@ -48,10 +52,18 @@ test('baked sizes stay inside the style bible ranges (hero 56-64 tall, warden 68
   };
   const hero = heightOf('hero/idle/0');
   assert.ok(hero >= 56 && hero <= 70, `hero stands ${hero} units above its feet`);
-  const warden = heightOf('enemy/1/warden/idle/0');
-  assert.ok(warden >= 68 && warden <= 90, `warden stands ${warden}`);
-  const stalker = heightOf('enemy/1/stalker/idle/0');
-  assert.ok(stalker <= 40, `stalker stands ${stalker}`);
+  for (const chapter of Object.keys(CHAPTER_PACKS)) {
+    const warden = heightOf(`enemy/${chapter}/warden/idle/0`);
+    assert.ok(warden >= 68 && warden <= 90, `Ch${chapter} warden stands ${warden}`);
+    const stalker = heightOf(`enemy/${chapter}/stalker/idle/0`);
+    assert.ok(stalker <= 40, `Ch${chapter} stalker stands ${stalker}`);
+  }
+  // Round bosses: the kit draws the r54 body about 156 units across; smoke, horns, and flames reach higher.
+  for (const { slot, pack } of Object.values(BOSS_SLOTS)) {
+    const frame = manifest.packs[pack].frames[frameKey(slot, 'phase1', 0)];
+    const [width, height] = [frame[3] / manifest.atlasScale, frame[6] / manifest.atlasScale];
+    assert.ok(width >= 140 && width <= 170 && height >= 130 && height <= 200, `${slot} is ${width} wide and stands ${height}`);
+  }
 });
 
 test('packs load once, hand out frames, and fall back cleanly when a page fails', async () => {

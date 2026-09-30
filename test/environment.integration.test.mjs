@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createHeadlessCanvas, installHeadlessPlatform } from '../scripts/lib/headless-engine.mjs';
 
-// Ch1 environment (ART-05): under remaster rules Ch1 maps are built from the kit's obstacle catalogue, whose
-// footprints are the hit boxes; the same random draws pick the module, so hazards and positions do not move.
+// Chapter environments (ART-05, ART-07): under remaster rules a chapter with an obstacle catalogue builds its maps from
+// the kit's modules, whose footprints are the hit boxes; the same random draws pick the module, so hazards and
+// positions do not move.
 installHeadlessPlatform();
 Object.defineProperty(globalThis, 'performance', { value: { now: () => 0 }, configurable: true });
-const { ProbedGameEngine, SpriteAtlas, ATLAS_MANIFEST } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
+const { ProbedGameEngine, SpriteAtlas, ATLAS_MANIFEST, OBSTACLE_CATALOGUE } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
 
 const meta = () => ({
   gold: 0, xp: 0, level: 1, passivePoints: 0, progress: { chapter: 5, stage: 10 },
@@ -14,7 +15,8 @@ const meta = () => ({
   passives: { rareLuck: 0, bossHunter: 0, coinMagnet: 0 },
 });
 const options = { healthBars: 'elite', volume: 0, effects: 0.9, damageNumbers: true, screenShake: false, reducedFlash: false, paceMode: 'standard' };
-const FOOTPRINTS = new Set(['120x70', '200x130', '280x190', '34x34', '92x60', '124x60', '70x132']);
+/** Every footprint a chapter's catalogue allows, by module name (`solid1`, `landmark0`, ...). */
+const footprints = (chapter) => new Map(Object.entries(OBSTACLE_CATALOGUE[chapter]).flatMap(([kind, modules]) => modules.map(([w, h], index) => [`${kind}${index}`, `${w}x${h}`])));
 
 function map(rules, chapter, stage) {
   const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), meta(), options, { onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver() {} });
@@ -25,22 +27,24 @@ function map(rules, chapter, stage) {
   return world;
 }
 
-test('ART-05: remaster Ch1 maps use only catalogue footprints, and landmark posts on St3', () => {
-  for (const stage of [1, 3]) {
-    const { obstacles } = map('remaster', 1, stage);
-    assert.ok(obstacles.length > 0);
-    for (const obstacle of obstacles) {
-      assert.ok(FOOTPRINTS.has(`${obstacle.w}x${obstacle.h}`), `1-${stage}: ${obstacle.w}x${obstacle.h}`);
-      assert.match(obstacle.art ?? '', /^(solid|pillar|landmark)\d$/);
+test('ART-05, ART-07: remaster maps of Ch1-3 use only their catalogue footprints, and landmark posts on St3', () => {
+  for (const chapter of [1, 2, 3]) {
+    const allowed = footprints(chapter);
+    for (const stage of [1, 3]) {
+      const { obstacles } = map('remaster', chapter, stage);
+      assert.ok(obstacles.length > 0);
+      for (const obstacle of obstacles) {
+        assert.equal(allowed.get(obstacle.art ?? ''), `${obstacle.w}x${obstacle.h}`, `${chapter}-${stage}: ${obstacle.art} ${obstacle.w}x${obstacle.h}`);
+      }
+      if (stage === 3) assert.ok(obstacles.some((obstacle) => obstacle.art === 'landmark0'), `${chapter}-3 landmark posts`);
     }
-    if (stage === 3) assert.ok(obstacles.some((obstacle) => obstacle.art === 'landmark0'), 'the corridor posts');
   }
 });
 
 test('ART-05: classic maps and chapters without a catalogue keep their random blocks', () => {
   const classic = map('classic', 1, 1);
   assert.ok(classic.obstacles.length > 0 && classic.obstacles.every((obstacle) => obstacle.art === undefined));
-  const other = map('remaster', 3, 1);
+  const other = map('remaster', 4, 1);
   assert.ok(other.obstacles.length > 0 && other.obstacles.every((obstacle) => obstacle.art === undefined));
 });
 

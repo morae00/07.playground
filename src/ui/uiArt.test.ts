@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { BOSS_PHASE_MOVE_SETS } from '../content/bossPhases.ts';
+import { BOSS_SLOTS } from '../game/render/assets/slots.ts';
 import { SKILL_NUMBERS } from '../game/skillNumbers.ts';
 
 // The baked UI art (ART-09): art/ui-art-spec.mjs -> scripts/build-ui-art.mjs -> src/ui/art.
@@ -54,9 +54,10 @@ test('draft tiles and HUD slots cover every skill, plain and awakened, and every
   assert.deepEqual(sheet('artSlot').keys, withAwakened);
 });
 
-test('portraits cover the hero expressions and the Ch1 bosses the kit draws; pickups the four kinds', () => {
-  const bosses = BOSS_PHASE_MOVE_SETS.filter((set) => set.chapter === 1).map((set) => set.bossId);
-  assert.deepEqual(bosses, ['s1-mid-dash', 's1-final-rings']);
+test('portraits cover the hero expressions and every boss the kit draws; pickups the four kinds', () => {
+  // The bosses with baked sprites (ART-07) are the ones with kit art, so each gets a boss bar portrait too.
+  const bosses = Object.keys(BOSS_SLOTS);
+  assert.deepEqual(bosses, ['s1-mid-dash', 's1-final-rings', 's2-final-flame', 's3-final-traps']);
   assert.deepEqual(sheet('artPortrait').keys, [
     ...['calm', 'focus', 'hurt', 'lowhp', 'awakened', 'victory'].map((expr) => `hero-${expr}`),
     ...bosses.flatMap((id) => [id, `${id}-enraged`]),

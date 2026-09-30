@@ -27,13 +27,16 @@ export const BONUS_ART = Object.freeze([
 export const HERO_EXPRESSIONS = Object.freeze(['calm', 'focus', 'hurt', 'lowhp', 'awakened', 'victory']);
 
 /**
- * Boss portraits for the boss bar, keyed by the game's boss id: kit round bosses (API-bosses1) framed like the hero
- * portrait, with the face anchor near the disc centre. `center` is the kit point on the disc centre and `scale`
- * the disc diameter's share of the drawing. The Ch1 field boss (균열 장교) has no kit drawing yet (ART-04).
+ * Boss portraits for the boss bar, keyed by the game's boss id: kit round bosses (API-bosses1, API-bosses2) framed
+ * like the hero portrait, with the face anchor near the disc centre. `center` is the kit point on the disc centre
+ * and `scale` the disc diameter's share of the drawing; `module` picks the kit (bossesA by default). Bosses without
+ * a kit drawing (the field bosses, the Ch2-5 mid bosses) show the plain disc.
  */
 export const BOSS_PORTRAITS = Object.freeze({
   's1-mid-dash': { kit: 'butcher', center: [262, 146], scale: 0.5 },
   's1-final-rings': { kit: 'gaoler', center: [230, 128], scale: 0.54 },
+  's2-final-flame': { kit: 'maw', center: [204, 236], scale: 0.5 },
+  's3-final-traps': { kit: 'empress', module: 'bossesB', center: [196, 112], scale: 0.36 },
 });
 
 export const PICKUP_ART = Object.freeze(['xp', 'coin', 'magnet', 'heal']);

@@ -8,7 +8,7 @@ import { ATLAS_SCALE, BAKE_MARGIN, COLOR_MAP, ENEMY_ROLES, FRAME_PADDING, GROUND
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const kitDir = path.join(root, 'art/concept-kit');
-const KIT_FILES = ['lib.js', 'k-hero.js', 'k-enemies.js', 'k-bosses1.js', 'k-icons.js', 'k-env.js'];
+const KIT_FILES = ['lib.js', 'k-hero.js', 'k-enemies.js', 'k-bosses1.js', 'k-bosses2.js', 'k-icons.js', 'k-env.js'];
 
 const browser = await chromium.launch();
 try {
@@ -108,10 +108,11 @@ async function renderFrames({ frames, scale, margin, colorMap, roles }) {
       box: meta.box,
       anchor: [meta.feet[0], meta.feet[1]],
       scale: meta.displayScale * fit,
+      extraPad: roles[role].pad,
     };
     const options = { lod: 'game', shadow: false, halo: true };
     expanded.push({ ...base, key: `${frame.keyPrefix}/idle/0`, call: ['PN.enemies.draw', chapter, role, { ...options, state: 'idle' }] });
-    expanded.push({ ...base, key: `${frame.keyPrefix}/windup/0`, call: ['PN.enemies.draw', chapter, role, { ...options, state: 'windup' }] });
+    expanded.push({ ...base, key: `${frame.keyPrefix}/windup/0`, call: ['PN.enemies.draw', chapter, role, { ...options, state: 'windup' }], strip: roles[role].strip?.windup });
     expanded.push({ ...base, key: `${frame.keyPrefix}/hit/0`, call: ['PN.enemies.draw', chapter, role, { ...options, state: 'hit' }] });
     for (let walk = 0; walk < meta.frames; walk += 1) {
       expanded.push({ ...base, key: `${frame.keyPrefix}/walk/${walk}`, call: ['PN.enemies.draw', chapter, role, { ...options, state: 'idle', frame: walk }] });
@@ -123,10 +124,12 @@ async function renderFrames({ frames, scale, margin, colorMap, roles }) {
   }
 
   const out = [];
+  const cropped = [];
   for (const frame of expanded) {
     const [fnPath, ...args] = frame.call;
     const fn = fnPath.split('.').reduce((owner, key) => owner[key], window);
     let markup = fn(...args);
+    if (frame.strip) markup = markup.replace(new RegExp(frame.strip, 'g'), '');
     // Drawings made around their own pivot (kit props) are moved onto the box.
     if (frame.translate) markup = `<g transform="translate(${frame.translate[0]} ${frame.translate[1]})">${markup}</g>`;
     for (const [from, to] of colorMap) markup = markup.replace(new RegExp(from, 'gi'), to);
@@ -161,6 +164,10 @@ async function renderFrames({ frames, scale, margin, colorMap, roles }) {
       }
     }
     if (right < 0) throw new Error(`${frame.key} rendered empty`);
+    // A drawing that reaches the cell edge was cut off: give it more room (extraPad) instead of shipping it cropped.
+    // Within a pixel: the viewBox edge can leave the last column clear under a cut stroke.
+    const edges = [top <= 1 && 'top', right >= width - 2 && 'right', bottom >= height - 2 && 'bottom', left <= 1 && 'left'].filter(Boolean);
+    if (edges.length > 0) cropped.push(`${frame.key} (${edges.join(', ')})`);
     const w = right - left + 1;
     const h = bottom - top + 1;
     const trimmed = document.createElement('canvas');
@@ -171,6 +178,7 @@ async function renderFrames({ frames, scale, margin, colorMap, roles }) {
     const ay = Math.round(((frame.anchor[1] + pad + padTop) * pxPerUnit - top) * 10) / 10;
     out.push({ key: frame.key, w, h, ax, ay, png: trimmed.toDataURL('image/png'), animation: frame.animation });
   }
+  if (cropped.length > 0) throw new Error(`drawings reach their cell edge, widen their extraPad: ${cropped.join('; ')}`);
   return out;
 }
 

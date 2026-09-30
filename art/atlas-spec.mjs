@@ -29,14 +29,24 @@ export const HERO_STATES = Object.freeze({
 });
 
 /**
+ * The shooter windup's dotted aim line (two dashed strokes, API-enemies). The sprite only faces left or right, and
+ * the game draws the real aim toward its target (worldRenderer drawTelegraphs), so the bake drops it and keeps the
+ * amber muzzle ring.
+ */
+export const AIM_LINE = '<path d="[^"]*" stroke="[^"]*" stroke-width="[^"]*" stroke-dasharray="[^"]*" stroke-linecap="round"/>';
+
+/**
  * Enemy roles (API-enemies): walk frames, and a size fit that brings the kit's display size inside the style
- * bible's §7.1 ranges (hit radii never change). Values above 1 are not allowed.
+ * bible's §7.1 ranges (hit radii never change). Values above 1 are not allowed. `pad` is extra cell room in box
+ * units, [top, right, bottom, left], for poses that reach past the box: the charger's hit recoil and the shooter's
+ * muzzle ring reach right, and the warden's windup rises. A top or left pad moves the drawing by whole pixels only,
+ * so frames that already fitted bake the same. `strip` removes markup from one state's drawing.
  */
 export const ENEMY_ROLES = Object.freeze({
-  stalker: { walkFps: 8, fit: 36 / 40 },
-  charger: { walkFps: 10, fit: 52 / 54 },
-  shooter: { walkFps: 4, fit: 36 / 46 },
-  warden: { walkFps: 6, fit: 1 },
+  stalker: { walkFps: 8, fit: 36 / 40, pad: [0, 40, 0, 0] },
+  charger: { walkFps: 10, fit: 52 / 54, pad: [0, 60, 0, 0] },
+  shooter: { walkFps: 4, fit: 36 / 46, pad: [0, 60, 0, 0], strip: { windup: AIM_LINE } },
+  warden: { walkFps: 6, fit: 1, pad: [40, 20, 0, 0] },
 });
 
 function heroFrames() {
@@ -56,13 +66,24 @@ function heroFrames() {
 }
 
 /**
- * Ch1 round bosses from PN.bossesA (API-bosses1): 400x400 box facing right, feet at y 392, 0.4 world units per
- * box unit. Every phase (1-3) comes in idle and windup, calm and enraged. The windup key bow rises 132 units
- * above the box, so the cells get 150 units of extra room on top.
+ * Round bosses with kit art, facing right, every phase (1-3) in idle and windup, calm and enraged. Both kit
+ * modules draw the r54 hit circle, so the figure stands about 156 world units tall:
+ * - PN.bossesA (API-bosses1): 400x400 box, feet at y 392, 0.4 world units per box unit. The gaoler's windup key
+ *   bow rises 132 units above the box, so its cells get 150 units of extra room on top.
+ * - PN.bossesB (API-bosses2): 384x384 box, feet at y 360, 0.5 world units per box unit, game detail.
+ * `pad` is extra room in box units, [top, right, bottom, left]; the bake fails if a drawing still reaches its cell edge.
+ * The mid and field bosses of Ch2-5 have no kit drawing yet and keep their vector bodies.
  */
 export const BOSS_SPRITES = Object.freeze({
-  'boss/1/butcher': { kit: 'butcher', bossId: 's1-mid-dash' },
-  'boss/1/gaoler': { kit: 'gaoler', bossId: 's1-final-rings' },
+  'boss/1/butcher': { kit: 'butcher', module: 'bossesA', bossId: 's1-mid-dash', chapter: 1, pad: [150, 0, 60, 0] },
+  'boss/1/gaoler': { kit: 'gaoler', module: 'bossesA', bossId: 's1-final-rings', chapter: 1, pad: [150, 0, 60, 0] },
+  'boss/2/maw': { kit: 'maw', module: 'bossesA', bossId: 's2-final-flame', chapter: 2, pad: [150, 80, 40, 80] },
+  'boss/3/empress': { kit: 'empress', module: 'bossesB', bossId: 's3-final-traps', chapter: 3, pad: [80, 60, 30, 60] },
+});
+
+const BOSS_MODULES = Object.freeze({
+  bossesA: { box: [400, 400], anchor: [200, 392], scale: 0.4, options: { lod: 'game', halo: true, shadow: false, fx: true } },
+  bossesB: { box: [384, 384], anchor: [192, 360], scale: 0.5, options: { detail: 'game', shadow: false } },
 });
 
 export function bossStates() {
@@ -77,25 +98,28 @@ export function bossStates() {
   return states;
 }
 
-function bossFrames() {
+const chapterBosses = (chapter) => Object.entries(BOSS_SPRITES).filter(([, boss]) => boss.chapter === chapter);
+
+function bossFrames(chapter) {
   const frames = [];
-  for (const [slot, { kit }] of Object.entries(BOSS_SPRITES)) {
+  for (const [slot, { kit, module, pad }] of chapterBosses(chapter)) {
+    const { box, anchor, scale, options } = BOSS_MODULES[module];
     for (const state of bossStates()) {
       frames.push({
         key: `${slot}/${state.key}/0`,
-        call: ['PN.bossesA.draw', kit, { phase: state.phase, windup: state.windup, enraged: state.enraged, lod: 'game', halo: true, shadow: false, fx: true }],
-        box: [400, 400],
-        anchor: [200, 392],
-        scale: 0.4,
-        extraPad: [150, 0, 0, 0],
+        call: [`PN.${module}.draw`, kit, { phase: state.phase, windup: state.windup, enraged: state.enraged, ...options }],
+        box,
+        anchor,
+        scale,
+        extraPad: pad,
       });
     }
   }
   return frames;
 }
 
-function bossAnimations() {
-  return Object.fromEntries(Object.keys(BOSS_SPRITES).map((slot) => [slot, Object.fromEntries(bossStates().map((state) => [state.key, { frames: 1, fps: 1 }]))]));
+function bossAnimations(chapter) {
+  return Object.fromEntries(chapterBosses(chapter).map(([slot]) => [slot, Object.fromEntries(bossStates().map((state) => [state.key, { frames: 1, fps: 1 }]))]));
 }
 
 /**
@@ -108,7 +132,7 @@ export const HIT_FRAMES = 4;
 export const KILL_FRAMES = 6;
 /** Decal ages baked, in seconds: wet with glint and eyes, glint dry, eyes gone, dry, scrap gone. */
 export const DECAL_AGES = Object.freeze([0, 1, 1.5, 3, 15]);
-/** Hit radius of each Ch1 role in the kit, in world units (PN._ki.SIL r). */
+/** Hit radius of each role in the kit, the same in every chapter, in world units (PN._ki.SIL r). */
 const ROLE_RADIUS = Object.freeze({ stalker: 12, charger: 19, shooter: 12, warden: 28 });
 
 function hitFrames() {
@@ -176,18 +200,45 @@ function fxAnimations(chapter) {
 }
 
 /**
- * Chapter environments (ART-05, API-env): the obstacle catalogue, each module baked at its exact footprint with the
- * pivot on the footprint's centre, which is the collision rect's centre. Solid obstacles are walls in three sizes;
- * pillars are a pole, a jar pile, and a cart. Remaster rules build maps from these footprints (rules.ts kitProps),
- * so outline and hit box agree. The kit draws props at 1x: the top face rises H (≤ 28) above the footprint.
+ * Chapter environments (ART-05, ART-07, API-env): the obstacle catalogue, each module baked at its exact footprint
+ * with the pivot on the footprint's centre, which is the collision rect's centre. Remaster rules build maps from
+ * these footprints (rules.ts kitProps), so outline and hit box agree. The kit draws props at 1x: the top face rises
+ * H (≤ 28) above the footprint.
+ * - Solid obstacles are the chapter's block prop in the same three footprints in every chapter, so obstacle
+ *   geometry stays the same across chapters and difficulty comes from enemies and bosses.
+ * - Pillars are the chapter's small props at their own sizes. Round props scale evenly, so their depth follows
+ *   their width. Flat or walk-through props (Ch2 glass, Ch3 reeds) are not obstacles.
+ * - Landmark posts line the chapter's landmark stages (St3, St7).
  */
+const SOLID_FOOTPRINTS = Object.freeze([[120, 70], [200, 130], [280, 190]]);
+const solids = (prop) => Object.freeze(SOLID_FOOTPRINTS.map(([w, d]) => [prop, w, d]));
+
 export const OBSTACLE_CATALOGUE = Object.freeze({
   1: Object.freeze({
-    solid: Object.freeze([['wall', 120, 70], ['wall', 200, 130], ['wall', 280, 190]]),
+    solid: solids('wall'),
     pillar: Object.freeze([['pole', 34, 34], ['jars', 92, 60], ['cart', 124, 60]]),
-    // The corridor posts of the Ch1 landmark stages (St3 poster crossing, St7 ink blockade).
+    // Corridor posts: the St3 poster crossing and the St7 ink blockade.
     landmark: Object.freeze([['wall', 70, 132]]),
   }),
+  2: Object.freeze({
+    solid: solids('gate'),
+    pillar: Object.freeze([['pillar', 50, 32], ['pillar', 76, 49], ['gate', 104, 30]]),
+    // Broken drums in a ring: the St3 ribbed nave and the St7 locked rose window.
+    landmark: Object.freeze([['pillar', 66, 42]]),
+  }),
+  3: Object.freeze({
+    solid: solids('embank'),
+    pillar: Object.freeze([['bollard', 28, 28], ['bollard', 40, 40], ['sluice', 124, 30]]),
+    // Sluice gates along the canal: the St3 split sluice and the St7 floodgate basin.
+    landmark: Object.freeze([['sluice', 170, 54]]),
+  }),
+});
+
+/** Seamless ground per chapter (API-env ground, tile: true), without the one-off plaza pieces a repeat would copy. */
+const GROUND_OPTIONS = Object.freeze({
+  1: { tile: true },
+  2: { tile: true, rose: null, center: null },
+  3: { tile: true, canalY: false },
 });
 
 /** The world edge strip (API-env boundary): edge line at y = 0, outside above it; drawn along every edge. */
@@ -238,12 +289,20 @@ function enemyFrames(chapter) {
   }));
 }
 
+/** One pack per chapter: its enemy roles, round bosses with kit art, kill bursts and decals, props, edge, and ground. */
+function chapterPack(chapter) {
+  const dir = `assets/packs/chapter-${String(chapter).padStart(2, '0')}`;
+  return {
+    page: `${dir}/atlas`,
+    frames: [...enemyFrames(chapter), ...bossFrames(chapter), ...killFrames(chapter), ...envFrames(chapter), boundaryFrame(chapter)],
+    animations: { ...bossAnimations(chapter), ...fxAnimations(chapter), ...envAnimations(chapter) },
+    ground: { call: ['PN.env.ground', chapter, GROUND_TILE, GROUND_TILE, 3, GROUND_OPTIONS[chapter]], file: `${dir}/ground-0.webp` },
+  };
+}
+
 export const PACKS = Object.freeze({
   common: { page: 'assets/atlas/common', frames: [...heroFrames(), ...hitFrames(), ...pickupFrames()], animations: fxAnimations() },
-  'chapter-01': {
-    page: 'assets/packs/chapter-01/atlas',
-    frames: [...enemyFrames(1), ...bossFrames(), ...killFrames(1), ...envFrames(1), boundaryFrame(1)],
-    animations: { ...bossAnimations(), ...fxAnimations(1), ...envAnimations(1) },
-    ground: { call: ['PN.env.ground', 1, GROUND_TILE, GROUND_TILE, 3, { tile: true }], file: 'assets/packs/chapter-01/ground-0.webp' },
-  },
+  'chapter-01': chapterPack(1),
+  'chapter-02': chapterPack(2),
+  'chapter-03': chapterPack(3),
 });

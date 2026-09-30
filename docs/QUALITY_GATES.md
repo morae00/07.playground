@@ -84,6 +84,22 @@ ART-05 (Ch1 environment kit, `kitProps` rule) takes obstacle footprints from the
 
 11 of 240 outcomes flipped, in both directions, and the clear rate moved by one scenario, which is within seed noise. Walls keep the old average footprint (200×130), while pillars shrink to prop size (a pole, a jar pile, a cart), leaving more open ground. In 1-10, fewer runs died to the crowd (28 to 23), and more reached the boss and died to its shots (5 to 9), which pass over props.
 
+ART-07 builds the Ch2 and Ch3 maps from their kit catalogues in the same way. Piloted against its parent on six stages of each chapter × 10 seeds × 4 personas:
+
+| | before | after (ART-07) |
+|---|---:|---:|
+| clear, all 480 | 37.5% | 36.0% |
+| clears: striker / survivor / collector / fresh | 47 / 99 / 34 / 0 | 37 / 102 / 34 / 0 |
+| clear by stage: 2-1 / 2-3 / 2-5 / 2-7 / 2-8 / 2-10 | 68 / 40 / 53 / 28 / 23 / 30% | 63 / 40 / 45 / 25 / 23 / 33% |
+| clear by stage: 3-1 / 3-3 / 3-5 / 3-7 / 3-8 / 3-10 | 70 / 53 / 20 / 18 / 23 / 28% | 68 / 55 / 23 / 25 / 18 / 18% |
+| timeouts (20 min of play) | 0 | 2 |
+| deaths: contact / shots / boss | 286 / 6 / 7 | 287 / 10 / 8 |
+| boss stages, clear time p50 / max (s) | 238 / 1136 | 287 / 541 |
+
+- The overall rate moved by 7 of 480, within seed noise, but 75 outcomes flipped, more than in Ch1. The Ch2 and Ch3 crowds are denser, which likely makes the open ground the smaller pillars leave count for more.
+- `striker` lost 13 clears to crowd contact and gained 3. **[Team check]** accept this with the art, or give the pillar family larger props; SYS-07 retunes the chapter curve either way.
+- The two timeouts (2-5 and 2-10, both `survivor`, boss at 98% and 99% health) are the persona artifact of the R1-end run: both runs cleared before, and the new maps sent the square walk into the loop where auto-aim never picks the boss.
+
 ## Game rules and grammar
 
 Gameplay changes ship behind the rule set in `src/game/rules.ts`. `classic` reproduces 0.1.0 exactly and `remaster` is the default. Infinite-mode records and replay fixtures are kept per rules version: the remaster rules (v2) may change freely until a build ships them, and after that the first change to seeded outcomes must raise `RULES_VERSION`. `test/grammarContracts.integration.test.mjs` pins the preserved game grammar (stage structure, draft sizes, radii, tier mix, deterministic replay) and one regression test per R0 gameplay fix.

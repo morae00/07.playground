@@ -27,12 +27,14 @@ export const slotEnabled = (slot: string) => !DISABLED_SLOTS.has(slot);
 export const frameKey = (slot: string, state: string, frame: number) => `${slot}/${state}/${frame}`;
 
 /**
- * Round bosses with baked art (TEC-03b): boss definition id -> slot and the pack that holds it. Bosses not listed
- * (field bosses, later chapters) keep their vector drawing.
+ * Round bosses with baked art (TEC-03b, ART-07): boss definition id -> slot and the pack that holds it. Bosses not
+ * listed (field bosses, and the Ch2-5 mid bosses the kit has not drawn yet) keep their vector drawing.
  */
 export const BOSS_SLOTS: Readonly<Record<string, Readonly<{ slot: string; pack: string }>>> = Object.freeze({
   's1-mid-dash': { slot: 'boss/1/butcher', pack: 'chapter-01' },
   's1-final-rings': { slot: 'boss/1/gaoler', pack: 'chapter-01' },
+  's2-final-flame': { slot: 'boss/2/maw', pack: 'chapter-02' },
+  's3-final-traps': { slot: 'boss/3/empress', pack: 'chapter-03' },
 });
 
 /** A boss frame's state key: its phase, whether it winds up, whether it is enraged (atlas-spec bossStates). */
@@ -40,8 +42,8 @@ export function bossState(phase: number, windup: boolean, enraged: boolean) {
   return `phase${Math.min(3, Math.max(1, phase))}${windup ? '-windup' : ''}${enraged ? '-enraged' : ''}`;
 }
 
-/** Atlas packs per chapter; chapters without a pack draw with vectors. */
-export const CHAPTER_PACKS: Readonly<Record<number, string>> = Object.freeze({ 1: 'chapter-01' });
+/** Atlas packs per chapter; chapters without a pack draw with vectors. Only the chapter on screen stays loaded. */
+export const CHAPTER_PACKS: Readonly<Record<number, string>> = Object.freeze({ 1: 'chapter-01', 2: 'chapter-02', 3: 'chapter-03' });
 export const COMMON_PACK = 'common';
 
 export function enemySlot(chapter: number, tier: EnemyTier, attackStyle: 'contact' | 'ranged') {
