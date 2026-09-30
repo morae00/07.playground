@@ -75,6 +75,8 @@ export class SpriteAtlas {
   private readonly grounds = new Map<string, GroundTile>();
   private readonly statuses = new Map<string, PackStatus>();
   private readonly failures = new Map<string, unknown>();
+  /** Bumped by release, so a load still in flight for a released pack is thrown away. */
+  private readonly generations = new Map<string, number>();
   private readonly options: Required<SpriteAtlasOptions>;
   private readonly listeners = new Set<() => void>();
 
@@ -101,6 +103,7 @@ export class SpriteAtlas {
     if (current === 'failed') return false;
     if (current === 'loading') return new Promise((resolve) => this.whenSettled(pack, resolve));
     this.statuses.set(pack, 'loading');
+    const generation = this.generations.get(pack) ?? 0;
     try {
       this.manifestLoad ??= this.options.loadManifest();
       const manifest = await this.manifestLoad;
@@ -111,15 +114,35 @@ export class SpriteAtlas {
         Promise.all(entry.pages.map((url) => this.options.loadImage(url))),
         entry.ground ? this.options.loadImage(entry.ground.file) : undefined,
       ]);
+      if ((this.generations.get(pack) ?? 0) !== generation) {
+        closeImages([...images, ground]);
+        return false;
+      }
       this.pages.set(pack, images);
       if (ground && entry.ground) this.grounds.set(pack, { image: ground, size: entry.ground.size });
       this.statuses.set(pack, 'ready');
     } catch (error) {
+      if ((this.generations.get(pack) ?? 0) !== generation) return false;
       this.statuses.set(pack, 'failed');
       this.failures.set(pack, error);
     }
     for (const listener of this.listeners) listener();
     return this.status(pack) === 'ready';
+  }
+
+  /**
+   * Drops a pack's pages and ground (ART-07), so only the chapter on screen stays resident and textures keep to
+   * their budget. A later load fetches the pack again; a failed pack is tried again too.
+   */
+  release(pack: string) {
+    if (this.status(pack) === 'idle') return;
+    this.generations.set(pack, (this.generations.get(pack) ?? 0) + 1);
+    closeImages([...(this.pages.get(pack) ?? []), this.grounds.get(pack)?.image]);
+    this.pages.delete(pack);
+    this.grounds.delete(pack);
+    this.statuses.delete(pack);
+    this.failures.delete(pack);
+    for (const listener of this.listeners) listener();
   }
 
   /** Called whenever a pack finishes loading or fails. Returns an unsubscribe function. */
@@ -159,6 +182,11 @@ export class SpriteAtlas {
       resolve(status === 'ready');
     });
   }
+}
+
+/** Frees decoded pages right away where the browser allows it (ImageBitmap.close); others wait for collection. */
+function closeImages(images: readonly (SpriteImage | undefined)[]) {
+  for (const image of images) (image as { close?: () => void } | undefined)?.close?.();
 }
 
 /** The frame index of a looping animation at time t, offset per entity so crowds do not march in step. */

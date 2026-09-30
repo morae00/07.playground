@@ -34,6 +34,7 @@ import { SpriteAtlas } from './game/render/assets/spriteAtlas';
 import { ErrorLog, describeError } from './platform/errorReport';
 import { copyErrorReport } from './ui/ErrorBoundary';
 import { CHAPTER_PACKS, COMMON_PACK } from './game/render/assets/slots';
+import { INFINITE_BASELINE } from './game/infiniteMode';
 import { useGamepadNavigation } from './ui/useGamepadNavigation';
 import { AudioMixer, type SoundPack } from './game/audio/mixer';
 import { installUiSounds } from './ui/uiSounds';
@@ -98,6 +99,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const [options, setOptions] = useState<GameOptions>(() => initialSave.data.options);
   const [profile, setProfile] = useState<ProfileData>(() => initialSave.data.profile);
   const [phase, setPhase] = useState<'menu' | 'playing' | 'draft' | 'roundClear' | 'gameOver'>('menu');
+  /** The chapter of the run on screen; the menu shows the selected chapter instead (atlas packs follow it). */
+  const [runChapter, setRunChapter] = useState(1);
   const [selectedChapterId, setSelectedChapterId] = useState(1);
   const [selectedStageNo, setSelectedStageNo] = useState(1);
   const [developerMode, setDeveloperMode] = useState(DEVELOPER_UI_DEFAULT_ENABLED);
@@ -145,24 +148,33 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     setSelectedStageNo(meta.progress.stage);
   }, [developerAccess, meta, selectedChapterId, selectedStageNo]);
 
+  // Atlas packs (ART-07): the common pack and the pack of the chapter on screen stay resident, and the other chapters
+  // are released, so textures keep to their budget. The menu loads the selected chapter ahead of its run.
+  const artChapter = phase === 'menu' ? selectedChapterId : runChapter;
+  const reportedPacks = useRef(new Set<string>());
   useEffect(() => {
     let cancelled = false;
-    const packs = [COMMON_PACK, ...Object.values(CHAPTER_PACKS)];
+    // Cleared while the packs load, so checks that wait for ready or fallback wait for this chapter's packs.
+    delete document.documentElement.dataset.sprites;
+    const chapterPack = CHAPTER_PACKS[artChapter];
+    for (const pack of Object.values(CHAPTER_PACKS)) if (pack !== chapterPack) spriteAtlas.release(pack);
+    const packs = chapterPack ? [COMMON_PACK, chapterPack] : [COMMON_PACK];
     void Promise.all(packs.map((pack) => spriteAtlas.load(pack))).then((loaded) => {
       if (cancelled) return;
       const ready = loaded.every(Boolean);
       document.documentElement.dataset.sprites = ready ? 'ready' : 'fallback';
-      if (ready) return;
-      // Vectors stand in for missing art (TEC-03); the player is told once instead of left guessing (TEC-14).
-      for (const pack of packs) {
-        if (spriteAtlas.status(pack) === 'failed') errorLog.record('asset', spriteAtlas.failure(pack) ?? `atlas pack ${pack} failed`);
+      // Vectors stand in for missing art (TEC-03); the player is told once per pack instead of left guessing (TEC-14).
+      const failed = packs.filter((pack) => spriteAtlas.status(pack) === 'failed' && !reportedPacks.current.has(pack));
+      for (const pack of failed) {
+        reportedPacks.current.add(pack);
+        errorLog.record('asset', spriteAtlas.failure(pack) ?? `atlas pack ${pack} failed`);
       }
-      setNotice('art');
+      if (failed.length > 0) setNotice('art');
     });
     return () => {
       cancelled = true;
     };
-  }, [errorLog, spriteAtlas]);
+  }, [artChapter, errorLog, spriteAtlas]);
 
   useEffect(() => errorLog.subscribe((entry) => {
     if (entry.source === 'window' || entry.source === 'promise') setNotice('error');
@@ -364,9 +376,10 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     : null;
   const nextStageOpen = nextStage !== null && (developerAccess || isStageUnlocked(meta, nextStage.chapter, nextStage.stage));
 
-  const beginRun = useCallback((launch: (engine: GameEngine) => void) => {
+  const beginRun = useCallback((chapter: number, launch: (engine: GameEngine) => void) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    setRunChapter(chapter);
     endDeathMoment();
     inputRef.current?.dispose();
     releaseReducedMotionRef.current?.();
@@ -402,14 +415,14 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
 
   const startRun = useCallback(() => {
     if (selectedStageLocked) return;
-    beginRun((engine) => engine.startRun(selectedChapter.id, selectedStage.id));
+    beginRun(selectedChapter.id, (engine) => engine.startRun(selectedChapter.id, selectedStage.id));
   }, [beginRun, selectedChapter.id, selectedStage.id, selectedStageLocked]);
 
   /** Settlement's primary action: go straight on to the next stage (CON-02). */
   const startStage = useCallback((address: { chapter: number; stage: number }) => {
     setSelectedChapterId(address.chapter as typeof selectedChapterId);
     setSelectedStageNo(address.stage);
-    beginRun((engine) => engine.startRun(address.chapter, address.stage));
+    beginRun(address.chapter, (engine) => engine.startRun(address.chapter, address.stage));
   }, [beginRun]);
 
   const startInfiniteRun = useCallback(() => {
@@ -421,7 +434,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     const seed = Number.isSafeInteger(parsedSeed) && parsedSeed >= 0 && parsedSeed <= 0xffff_ffff
       ? parsedSeed >>> 0
       : undefined;
-    beginRun((engine) => engine.startInfiniteRun(seed, !developerAccess));
+    beginRun(INFINITE_BASELINE.chapter, (engine) => engine.startInfiniteRun(seed, !developerAccess));
   }, [beginRun, developerAccess, infinitePlayerName, infiniteSeed]);
 
   const buyMetaUpgrade = (id: MetaUpgradeId) => {

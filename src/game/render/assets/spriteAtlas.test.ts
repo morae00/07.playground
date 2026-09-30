@@ -80,6 +80,38 @@ test('packs load once, hand out frames, and fall back cleanly when a page fails'
   assert.equal(await failing.load('no-such-pack'), false);
 });
 
+test('a released pack frees its pages, drops a load still in flight, and loads again on request (ART-07)', async () => {
+  const closed: string[] = [];
+  const waiting: (() => void)[] = [];
+  let hold = false;
+  const atlas = new SpriteAtlas({
+    loadManifest: async () => manifest,
+    loadImage: async (url) => {
+      if (hold) await new Promise<void>((resolve) => waiting.push(resolve));
+      return Object.assign(fakeImage(2048, 512), { close: () => closed.push(url) });
+    },
+  });
+  const pack = CHAPTER_PACKS[1];
+  assert.equal(await atlas.load(pack), true);
+  assert.ok(atlas.frame('enemy/1/stalker/walk/0'));
+  atlas.release(pack);
+  assert.equal(atlas.status(pack), 'idle');
+  assert.equal(atlas.frame('enemy/1/stalker/walk/0'), undefined, 'a released pack hands out no frames');
+  assert.equal(atlas.ground(pack), undefined);
+  assert.equal(closed.length, manifest.packs[pack].pages.length + 1, 'every page and the ground are closed');
+
+  hold = true;
+  const inFlight = atlas.load(pack);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  atlas.release(pack);
+  hold = false;
+  for (const resolve of waiting) resolve();
+  assert.equal(await inFlight, false, 'a load overtaken by a release is thrown away');
+  assert.equal(atlas.status(pack), 'idle');
+  assert.equal(await atlas.load(pack), true, 'the pack loads again when asked');
+  assert.ok(atlas.frame('enemy/1/stalker/walk/0'));
+});
+
 test('loops pick frames by time with a stable per-id phase, and slots map enemies to roles', () => {
   const spec = { frames: 4, fps: 8 };
   assert.deepEqual([0, 0.125, 0.25, 0.5].map((t) => loopFrame(spec, t)), [0, 1, 2, 0]);
