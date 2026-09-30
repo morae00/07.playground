@@ -283,6 +283,15 @@ button:disabled {
   text-align: left;
 }
 
+/* SYS-04: the boss's current phase move, the HUD pattern preview. */
+.bossStrip .bossMoveName {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .hudRight {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

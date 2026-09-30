@@ -34,6 +34,8 @@ const scene = params.get('scene') === 'game' ? 'game' : 'stress';
 const gameChapter = Number(params.get('chapter') ?? '5');
 const gameStage = Number(params.get('stage') ?? '10');
 const gameProgress = Number(params.get('progress') ?? '0.85');
+/** Optional boss health share (for example 0.3 to watch phase 3 moves); the boss then takes no damage. */
+const bossHealth = params.has('bossHp') ? Number(params.get('bossHp')) : null;
 const renderScale = Number(params.get('scale') ?? '2');
 const useSprites = params.get('sprites') !== 'off';
 const warmupSeconds = Number(params.get('warmup') ?? '4');
@@ -127,6 +129,10 @@ async function run(): Promise<RenderBenchResult> {
     probe.setPlayer({ nextXp: 1e12, stats: { bossDamage: 0 } });
     const { duration } = probe.read();
     probe.setClock({ timeLeft: duration * (1 - gameProgress), elapsed: duration * gameProgress });
+    if (bossHealth !== null) {
+      const boss = probe.read().enemies.find((enemy) => enemy.isBoss);
+      if (boss) probe.patchEnemy(boss.id, { hp: boss.maxHp * bossHealth });
+    }
     // Walk a slow circle like a player kiting the swarm, which also steps out of silence and root zones.
     probe.onStep((tick) => {
       const angle = (tick / 420) * Math.PI * 2;

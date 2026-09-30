@@ -70,6 +70,12 @@ export type RuleSet = Readonly<{
    * pushed back out instead of sitting on top of them (the root of BUG-12).
    */
   bossSpacing: boolean;
+  /**
+   * SYS-04: boss phase moves run their attack grammar and movement mode instead of only speeding up. Ch1:
+   * tracked dash pair, crossing dash triple, alternating ring gap, contracting ring walls, and anchor movement.
+   * Warnings keep their real-time length at every phase (V3).
+   */
+  bossMoves: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -94,6 +100,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   bossTelegraphs: false,
   steppedEnrage: false,
   bossSpacing: false,
+  bossMoves: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -118,6 +125,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   bossTelegraphs: true,
   steppedEnrage: true,
   bossSpacing: true,
+  bossMoves: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

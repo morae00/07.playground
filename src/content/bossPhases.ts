@@ -8,6 +8,8 @@ export type TelegraphShape = 'line' | 'circle' | 'ring' | 'lane' | 'grid' | 'con
 
 export type BossPhaseMove = {
   id: string;
+  /** Display name for the HUD pattern preview (SYS-04); moves without one are not announced. */
+  name?: string;
   phase: BossPhase;
   triggerHealthRatio: number;
   cadenceScale: number;
@@ -35,14 +37,14 @@ export type BossPhaseMoveSet = {
 export const BOSS_PHASE_MOVE_SETS = [
   {
     bossId: 's1-mid-dash', chapter: 1, role: 'mid', moves: [
-      { id: 'ink-rush', phase: 2, triggerHealthRatio: 0.66, cadenceScale: 0.82, movement: { mode: 'rush', speedScale: 1.14 }, attackGrammar: 'tracked-dash-pair', telegraph: { shape: 'line', previewSeconds: 0.7, imminentSeconds: 0.22, activeSeconds: 0.5, reducedMotionCue: 'double-dashed-lane' } },
-      { id: 'crosscut-alley', phase: 3, triggerHealthRatio: 0.33, cadenceScale: 0.66, movement: { mode: 'rush', speedScale: 1.28 }, attackGrammar: 'crossing-dash-triple', telegraph: { shape: 'grid', previewSeconds: 0.76, imminentSeconds: 0.24, activeSeconds: 0.58, reducedMotionCue: 'crosshatched-intersection' } },
+      { id: 'ink-rush', name: '먹물 돌진', phase: 2, triggerHealthRatio: 0.66, cadenceScale: 0.82, movement: { mode: 'rush', speedScale: 1.14 }, attackGrammar: 'tracked-dash-pair', telegraph: { shape: 'line', previewSeconds: 0.7, imminentSeconds: 0.22, activeSeconds: 0.5, reducedMotionCue: 'double-dashed-lane' } },
+      { id: 'crosscut-alley', name: '골목 가르기', phase: 3, triggerHealthRatio: 0.33, cadenceScale: 0.66, movement: { mode: 'rush', speedScale: 1.28 }, attackGrammar: 'crossing-dash-triple', telegraph: { shape: 'grid', previewSeconds: 0.76, imminentSeconds: 0.24, activeSeconds: 0.58, reducedMotionCue: 'crosshatched-intersection' } },
     ],
   },
   {
     bossId: 's1-final-rings', chapter: 1, role: 'final', moves: [
-      { id: 'split-belltower-ring', phase: 2, triggerHealthRatio: 0.66, cadenceScale: 0.84, movement: { mode: 'anchor', speedScale: 0.92 }, attackGrammar: 'alternating-ring-gap', telegraph: { shape: 'ring', previewSeconds: 0.82, imminentSeconds: 0.26, activeSeconds: 0.6, reducedMotionCue: 'ring-gap-keyline' } },
-      { id: 'closing-alley-gate', phase: 3, triggerHealthRatio: 0.33, cadenceScale: 0.68, movement: { mode: 'anchor', speedScale: 1 }, attackGrammar: 'contracting-ring-walls', telegraph: { shape: 'ring', previewSeconds: 0.9, imminentSeconds: 0.28, activeSeconds: 0.7, reducedMotionCue: 'dense-concentric-hatch' } },
+      { id: 'split-belltower-ring', name: '갈라진 종소리', phase: 2, triggerHealthRatio: 0.66, cadenceScale: 0.84, movement: { mode: 'anchor', speedScale: 0.92 }, attackGrammar: 'alternating-ring-gap', telegraph: { shape: 'ring', previewSeconds: 0.82, imminentSeconds: 0.26, activeSeconds: 0.6, reducedMotionCue: 'ring-gap-keyline' } },
+      { id: 'closing-alley-gate', name: '닫히는 골목문', phase: 3, triggerHealthRatio: 0.33, cadenceScale: 0.68, movement: { mode: 'anchor', speedScale: 1 }, attackGrammar: 'contracting-ring-walls', telegraph: { shape: 'ring', previewSeconds: 0.9, imminentSeconds: 0.28, activeSeconds: 0.7, reducedMotionCue: 'dense-concentric-hatch' } },
     ],
   },
   {

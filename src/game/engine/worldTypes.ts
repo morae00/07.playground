@@ -99,7 +99,17 @@ export type Entity = {
   shieldAngle?: number;
   /** SYS-04: a telegraphed boss pattern, fixed when its warning appeared and fired as shown. */
   armedPattern?: ArmedPattern;
+  /** SYS-04: dashes still to come in a phase move's chain. */
+  dashChain?: DashStep[];
+  /** SYS-04: volleys fired so far, for patterns that alternate. */
+  volleyIndex?: number;
+  /** SYS-04: where an anchoring boss holds. */
+  anchorX?: number;
+  anchorY?: number;
 };
+
+/** SYS-04: one more dash in a chain: re-aimed at the player (tracked) or along a lane shown in advance. */
+export type DashStep = { tracked: boolean; dx: number; dy: number; windupSeconds: number };
 
 /** SYS-04: what a boss pattern will do when its telegraph runs out. */
 export type ArmedPattern = {
@@ -111,6 +121,10 @@ export type ArmedPattern = {
   points: Array<{ x: number; y: number }>;
   /** Flame: whether the fire drop also bursts. */
   burst: boolean;
+  /** Ring grammars: the direction of the gap left open, in radians. */
+  gap?: number;
+  /** Contracting ring walls: the wall's centre and starting radius. */
+  wall?: { x: number; y: number; radius: number };
 };
 
 export type Projectile = {

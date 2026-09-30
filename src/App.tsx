@@ -737,6 +737,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
               <div className="bossStrip">
                 <span>{snapshot.bossName}</span>
                 <ProgressBar label={`${snapshot.bossName} 체력`} value={snapshot.bossHp ?? 0} max={snapshot.bossMaxHp ?? 1} className="bossBar" />
+                {snapshot.bossMoveName && <span className="bossMoveName">{snapshot.bossMoveName}</span>}
               </div>
             )}
           </div>

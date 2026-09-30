@@ -110,6 +110,7 @@ import {
 
 import type {
   ArmedPattern,
+  DashStep,
   BeamEffect,
   BossDef,
   BossPattern,
@@ -258,6 +259,8 @@ export type HudSnapshot = {
   practice: boolean;
   bossName?: string;
   bossMove?: string;
+  /** SYS-04: the name of the boss's current phase move, shown under the boss bar. */
+  bossMoveName?: string;
   bossHp?: number;
   bossMaxHp?: number;
   skills: Partial<Record<SkillId, SkillState>>;
@@ -334,6 +337,27 @@ const ECLIPSE_WALL_LANE_GAP = 115;
 /** Fair terrain (BUG-13): a root zone binds once on entry, then cannot bind again for a while. */
 const ROOT_BIND_SECONDS = 0.65;
 const ROOT_IMMUNITY_SECONDS = ROOT_BIND_SECONDS + 1.5;
+/** SYS-04: the phase-move attack grammars the engine runs (the others only speed the base pattern up). */
+const IMPLEMENTED_GRAMMARS: ReadonlySet<string> = new Set(['tracked-dash-pair', 'crossing-dash-triple', 'alternating-ring-gap', 'contracting-ring-walls']);
+/** SYS-04 crossing-dash-triple: the cross lanes aim this far beside the player, with this pause between dashes. */
+const CROSSCUT = Object.freeze({ offset: 110, pauseSeconds: 0.24 });
+/** SYS-04 ring grammars: shots left out of a gapped ring, and the contracting wall. */
+const RING_GAP_SHOTS = 5;
+const RING_WALL = Object.freeze({ radius: 460, speed: 140, shots: 28, gateShots: 4 });
+/**
+ * SYS-04: whether shot `index` of an evenly spaced ring of `count` (rotated by `offset`) is one of the `width`
+ * shots left out around the gap direction. Counted in whole shots, so a gap always removes exactly `width`.
+ */
+function inGap(index: number, count: number, gap: number, offset: number, width: number) {
+  const step = (Math.PI * 2) / count;
+  const center = Math.round((gap - offset) / step);
+  const from = -Math.floor((width - 1) / 2);
+  const relative = ((((index - center) % count) + count) % count);
+  const signed = relative > count / 2 ? relative - count : relative;
+  return signed >= from && signed < from + width;
+}
+/** SYS-04 anchor movement: how far an anchoring boss strays from its spot. */
+const ANCHOR_RADIUS = 60;
 /** Bosses enter this far from the player; under bossSpacing never closer than the minimum (SYS-04). */
 const BOSS_SPAWN_DISTANCE = 620;
 const BOSS_MIN_SPAWN_DISTANCE = 420;
@@ -2697,6 +2721,14 @@ export class GameEngine {
       const speed = enemy.speed * phaseSpeed * (enemy.slowMultiplier ?? 1) * (enemy.patternPhase === 'dash' ? 3.8 : 1);
       let moveX = dir.x;
       let moveY = dir.y;
+      if (enemy.isBoss && this.rules.bossMoves && enemy.anchorX !== undefined && enemy.anchorY !== undefined && phaseMove?.movement.mode === 'anchor') {
+        // SYS-04 anchor movement: hold near where the phase began and let the volleys do the work.
+        const homeX = enemy.anchorX - enemy.x;
+        const homeY = enemy.anchorY - enemy.y;
+        const away = Math.hypot(homeX, homeY);
+        moveX = away > ANCHOR_RADIUS ? homeX / away : 0;
+        moveY = away > ANCHOR_RADIUS ? homeY / away : 0;
+      }
 
       if (!enemy.isBoss && enemy.attackStyle === 'ranged') {
         enemy.rangedCooldown = Math.max(0, enemy.rangedCooldown - dt);
@@ -2907,6 +2939,14 @@ export class GameEngine {
       );
       this.emit({ type: 'boss/phase', x: enemy.x, y: enemy.y, phase: nextPhase, chapter: this.chapter });
       if (phaseMove) this.drawPhaseTransitionTelegraph(enemy, phaseMove);
+      if (this.rules.bossMoves) {
+        // SYS-04: a new phase starts its move fresh; anchoring bosses hold where the phase began.
+        enemy.dashChain = undefined;
+        enemy.armedPattern = undefined;
+        enemy.volleyIndex = 0;
+        enemy.anchorX = phaseMove?.movement.mode === 'anchor' ? enemy.x : undefined;
+        enemy.anchorY = phaseMove?.movement.mode === 'anchor' ? enemy.y : undefined;
+      }
       return;
     }
     enemy.bossPhaseFlash = Math.max(0, (enemy.bossPhaseFlash ?? 0) - dt);
@@ -2918,7 +2958,10 @@ export class GameEngine {
       this.updateTelegraphedPattern(enemy, boss.pattern, cadenceMultiplier);
       return;
     }
-    if (boss.pattern === 'dash' && this.rules.telegraphedDash) {
+    const dashMove = boss.pattern === 'dash' && this.rules.telegraphedDash ? this.bossGrammar(enemy) : undefined;
+    if (dashMove) {
+      this.updateDashGrammar(enemy, dashMove, cadenceMultiplier);
+    } else if (boss.pattern === 'dash' && this.rules.telegraphedDash) {
       if (enemy.patternPhase === 'warn' && enemy.patternTimer <= 0) {
         // Launch along the direction locked when the windup began; no homing, so the lane shows the real path.
         enemy.patternPhase = 'dash';
@@ -3124,7 +3167,14 @@ export class GameEngine {
    */
   protected updateTelegraphedPattern(enemy: Entity, pattern: BossPattern, cadence: number) {
     const lead = PATTERN_LEAD_SECONDS[pattern] ?? 0;
-    if (!enemy.armedPattern && enemy.patternTimer <= lead) this.armPattern(enemy, pattern, lead / cadence);
+    // bossMoves keeps every warning at its real-time length whatever the phase cadence (V3), and a ring grammar
+    // warns for its move's preview plus imminent time.
+    const move = pattern === 'rings' ? this.bossGrammar(enemy) : undefined;
+    const warnSeconds = !this.rules.bossMoves
+      ? lead / cadence
+      : move ? move.telegraph.previewSeconds + move.telegraph.imminentSeconds : lead;
+    const armAt = this.rules.bossMoves ? warnSeconds * cadence : lead;
+    if (!enemy.armedPattern && enemy.patternTimer <= armAt) this.armPattern(enemy, pattern, warnSeconds, move);
     if (enemy.patternTimer > 0 || !enemy.armedPattern) return;
     const armed = enemy.armedPattern;
     enemy.armedPattern = undefined;
@@ -3134,15 +3184,34 @@ export class GameEngine {
     }
   }
 
-  protected armPattern(enemy: Entity, pattern: BossPattern, warnSeconds: number) {
+  protected armPattern(enemy: Entity, pattern: BossPattern, warnSeconds: number, move?: BossPhaseMove) {
     const fireAt = this.elapsed + warnSeconds;
     const armed: ArmedPattern = { x: enemy.x, y: enemy.y, offset: 0, points: [], burst: false };
     const ring = (x: number, y: number, radius: number) => this.emit({ type: 'telegraph/ring', x, y, radius, life: warnSeconds });
     switch (pattern) {
-      case 'rings':
+      case 'rings': {
         armed.offset = fireAt * 0.35;
         ring(enemy.x, enemy.y, enemy.radius * 1.9);
+        const grammar = move?.attackGrammar;
+        const volley = enemy.volleyIndex ?? 0;
+        const lane = (x1: number, y1: number, x2: number, y2: number, width: number) => this.laneTelegraphs.push({ id: this.nextId(), x1, y1, x2, y2, width, life: warnSeconds, maxLife: warnSeconds });
+        if (grammar === 'contracting-ring-walls' && volley % 2 === 0) {
+          // A wall of shots closes in on the player; the one gate is marked as the way out.
+          armed.wall = { x: this.player.x, y: this.player.y, radius: RING_WALL.radius };
+          armed.gap = this.gameplayRandom() * Math.PI * 2;
+          ring(this.player.x, this.player.y, RING_WALL.radius);
+          const gx = Math.cos(armed.gap);
+          const gy = Math.sin(armed.gap);
+          lane(this.player.x + gx * (RING_WALL.radius - 140), this.player.y + gy * (RING_WALL.radius - 140), this.player.x + gx * (RING_WALL.radius + 60), this.player.y + gy * (RING_WALL.radius + 60), 110);
+        } else if (grammar === 'alternating-ring-gap' || grammar === 'contracting-ring-walls') {
+          // The ring leaves a gap, toward the player on one volley and away on the next; a keyline shows it.
+          armed.gap = Math.atan2(this.player.y - enemy.y, this.player.x - enemy.x) + (volley % 2 === 0 ? 0 : Math.PI);
+          const gx = Math.cos(armed.gap);
+          const gy = Math.sin(armed.gap);
+          lane(enemy.x + gx * (enemy.radius + 20), enemy.y + gy * (enemy.radius + 20), enemy.x + gx * 380, enemy.y + gy * 380, 70);
+        }
         break;
+      }
       case 'clock':
         armed.offset = Math.PI / 12;
         ring(enemy.x, enemy.y, enemy.radius * 1.9);
@@ -3215,13 +3284,30 @@ export class GameEngine {
     const volley = (count: number) => this.bossProjectiles.length + count <= VOLLEY_SOFT_CAP;
     switch (pattern) {
       case 'rings': {
+        const wall = armed.wall;
+        if (wall) {
+          if (!volley(RING_WALL.shots)) return false;
+          enemy.patternTimer = enemy.legacyBoss ? 3.2 : 2.35;
+          for (let index = 0; index < RING_WALL.shots; index += 1) {
+            const angle = (Math.PI * 2 * index) / RING_WALL.shots;
+            if (armed.gap !== undefined && inGap(index, RING_WALL.shots, armed.gap, 0, RING_WALL.gateShots)) continue;
+            const x = wall.x + Math.cos(angle) * wall.radius;
+            const y = wall.y + Math.sin(angle) * wall.radius;
+            this.spawnBossProjectile(x, y, -Math.cos(angle) * RING_WALL.speed, -Math.sin(angle) * RING_WALL.speed, 7, enemy.damage * 0.62, (wall.radius + 60) / RING_WALL.speed, 'ring');
+          }
+          enemy.volleyIndex = (enemy.volleyIndex ?? 0) + 1;
+          this.emit({ type: 'boss/ringFired', x: wall.x, y: wall.y });
+          return true;
+        }
         const count = enemy.legacyBoss ? 14 : 22;
         if (!volley(count)) return false;
         enemy.patternTimer = enemy.legacyBoss ? 3.2 : 2.35;
         for (let index = 0; index < count; index += 1) {
           const angle = (Math.PI * 2 * index) / count + armed.offset;
+          if (armed.gap !== undefined && inGap(index, count, armed.gap, armed.offset, RING_GAP_SHOTS)) continue;
           this.spawnBossProjectile(armed.x, armed.y, Math.cos(angle) * 215, Math.sin(angle) * 215, 7, enemy.damage * 0.62, 5, 'ring');
         }
+        enemy.volleyIndex = (enemy.volleyIndex ?? 0) + 1;
         this.emit({ type: 'boss/ringFired', x: armed.x, y: armed.y });
         return true;
       }
@@ -3298,7 +3384,96 @@ export class GameEngine {
     }
   }
 
-  protected activeBossPhaseMove(enemy: Entity) {
+  /** The phase move whose attack grammar runs under bossMoves (SYS-04), when that grammar is implemented. */
+  protected bossGrammar(enemy: Entity) {
+    if (!this.rules.bossMoves) return undefined;
+    const move = this.activeBossPhaseMove(enemy);
+    return move && IMPLEMENTED_GRAMMARS.has(move.attackGrammar) ? move : undefined;
+  }
+
+  protected dashSpeed(enemy: Entity) {
+    const phaseSpeed = this.activeBossPhaseMove(enemy)?.movement.speedScale ?? 1 + ((enemy.bossPhase ?? 1) - 1) * 0.1;
+    return enemy.speed * phaseSpeed * (enemy.slowMultiplier ?? 1) * DASH_SPEED_MULTIPLE;
+  }
+
+  /**
+   * SYS-04 dash grammars. tracked-dash-pair: a second dash re-aimed at the player after the first, behind its own
+   * 0.62 s lane. crossing-dash-triple: three lanes crossing around the player, all shown at the first windup,
+   * then run back to back. Timers keep real-time lengths at any cadence, and every windup is at least 0.62 s
+   * (V3) unless its lane has already been on screen for longer.
+   */
+  protected updateDashGrammar(enemy: Entity, move: BossPhaseMove, cadence: number) {
+    const travelSeconds = move.telegraph.activeSeconds;
+    if (enemy.patternPhase === 'warn') {
+      if (enemy.patternTimer <= 0) {
+        enemy.patternPhase = 'dash';
+        enemy.patternTimer = travelSeconds * cadence;
+        enemy.vx = enemy.patternX;
+        enemy.vy = enemy.patternY;
+      }
+      return;
+    }
+    if (enemy.patternPhase === 'dash') {
+      if (enemy.patternTimer > 0) return;
+      const next = enemy.dashChain?.shift();
+      if (next) {
+        this.windDash(enemy, next, cadence, travelSeconds, next.tracked);
+        return;
+      }
+      enemy.patternPhase = 'idle';
+      enemy.patternTimer = 2.4;
+      enemy.vx *= 0.2;
+      enemy.vy *= 0.2;
+      return;
+    }
+    if (enemy.patternTimer > 0) return;
+    const warn = Math.max(DASH_WINDUP_SECONDS, move.telegraph.previewSeconds + move.telegraph.imminentSeconds);
+    const toPlayer = normalize(this.player.x - enemy.x, this.player.y - enemy.y);
+    const reach = this.dashSpeed(enemy) * travelSeconds;
+    const chain: DashStep[] = [];
+    if (move.attackGrammar === 'tracked-dash-pair') {
+      chain.push({ tracked: true, dx: 0, dy: 0, windupSeconds: DASH_WINDUP_SECONDS });
+    } else if (move.attackGrammar === 'crossing-dash-triple') {
+      const side = { x: -toPlayer.y, y: toPlayer.x };
+      let start = { x: enemy.x + toPlayer.x * reach, y: enemy.y + toPlayer.y * reach };
+      let shownFor = warn + travelSeconds;
+      for (const offset of [CROSSCUT.offset, -CROSSCUT.offset]) {
+        const aim = normalize(this.player.x + side.x * offset - start.x, this.player.y + side.y * offset - start.y);
+        const end = { x: start.x + aim.x * reach, y: start.y + aim.y * reach };
+        shownFor += CROSSCUT.pauseSeconds + travelSeconds;
+        this.laneTelegraphs.push({ id: this.nextId(), x1: start.x, y1: start.y, x2: end.x, y2: end.y, width: enemy.radius * 2, life: shownFor, maxLife: shownFor });
+        chain.push({ tracked: false, dx: aim.x, dy: aim.y, windupSeconds: CROSSCUT.pauseSeconds });
+        start = end;
+      }
+    }
+    enemy.dashChain = chain;
+    this.windDash(enemy, { tracked: false, dx: toPlayer.x, dy: toPlayer.y, windupSeconds: warn }, cadence, travelSeconds, true);
+  }
+
+  protected windDash(enemy: Entity, step: DashStep, cadence: number, travelSeconds: number, showLane: boolean) {
+    const dir = step.tracked ? normalize(this.player.x - enemy.x, this.player.y - enemy.y) : { x: step.dx, y: step.dy };
+    const speed = this.dashSpeed(enemy);
+    enemy.patternPhase = 'warn';
+    enemy.patternTimer = step.windupSeconds * cadence;
+    enemy.patternX = dir.x * speed;
+    enemy.patternY = dir.y * speed;
+    enemy.vx = 0;
+    enemy.vy = 0;
+    if (!showLane) return;
+    const reach = speed * travelSeconds;
+    this.laneTelegraphs.push({
+      id: this.nextId(),
+      x1: enemy.x,
+      y1: enemy.y,
+      x2: enemy.x + dir.x * reach,
+      y2: enemy.y + dir.y * reach,
+      width: enemy.radius * 2,
+      life: step.windupSeconds,
+      maxLife: step.windupSeconds,
+    });
+  }
+
+  protected activeBossPhaseMove(enemy: Entity): BossPhaseMove | undefined {
     if (!enemy.boss || (enemy.bossPhase ?? 1) === 1) return undefined;
     const set = BOSS_PHASE_MOVE_SETS.find((candidate) => candidate.bossId === enemy.boss?.id);
     return set?.moves.find((move) => move.phase === enemy.bossPhase);
@@ -4227,6 +4402,7 @@ export class GameEngine {
         ? `${boss.boss.name} · PHASE ${boss.bossPhase ?? 1}${this.bossEnraged ? (this.rules.steppedEnrage ? ` [광폭화 ${this.enrageStep}]` : ' [광폭화]') : ''}`
         : undefined,
       bossMove: bossMove?.attackGrammar,
+      bossMoveName: this.rules.bossMoves && bossMove && IMPLEMENTED_GRAMMARS.has(bossMove.attackGrammar) ? bossMove.name : undefined,
       bossHp: boss?.hp,
       bossMaxHp: boss?.maxHp,
       skills: { ...this.skills },
