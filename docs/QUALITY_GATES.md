@@ -27,7 +27,13 @@ Chapter packs (`assets/packs/<chapter>/`) have a 12 MiB per-pack target and resi
 
 ## Balance
 
-`npm run test:balance:smoke` is a deterministic pressure smoke test, not a difficulty verdict. `npm run test:balance:pilot` checks representative chapter boundaries and boss stages. A release candidate uses `npm run test:balance:full` across all 50 stages, three representative build policies, and ten fixed seeds. Seed shards run through a bounded worker pool, then merge in canonical stage/persona/seed order. The JSON report records clear/death/timeout rates, elapsed-time percentiles, economy percentiles, build growth, scenario details, and a deterministic fingerprint.
+`npm run test:balance:smoke` is a deterministic pressure smoke test, not a difficulty verdict. `npm run test:balance:pilot` checks representative chapter boundaries and boss stages. A release candidate uses `npm run test:balance:full` across all 50 stages, four build policies, and ten fixed seeds. Three policies are representative builds whose permanent upgrades grow by chapter. The fourth, `fresh`, is a new player with no upgrades or passives (CON-09). Seed shards run through a bounded worker pool, then merge in canonical stage/persona/seed order. The JSON report records clear/death/timeout rates, simulated and wall-clock time percentiles, death causes (contact, shot, boss contact, boss shot, shock, fire, each marked when the boss was enraged), economy percentiles, build growth, scenario details, and a deterministic fingerprint.
+
+The remaster baseline is `artifacts/balance-remaster-baseline.json` (CON-09). It covers 2,000 scenarios under the remaster rules on commit bf13b46, before the CON-02 pacing change. The findings to act on:
+
+- `fresh` clears 0 of 500 scenarios. In stage 1-1 it dies to contact after 45 s of wall-clock time (median). This is why the `personaClearsObserved` gate fails and the full run exits 1. SYS-03's opening ramp targets it.
+- Without `fresh`, clear rates fall as chapters rise: Ch1 23%, Ch2 59%, Ch3 72%, Ch4 92%, Ch5 100%. The chapter growth modelled for upgrades outpaces the difficulty growth. This is input for CON-02's Ch1 tuning and SYS-07.
+- Contact causes 96% of deaths (923 of 961). Shots, boss shots, and boss contact cause the rest.
 
 ## Game rules and grammar
 
