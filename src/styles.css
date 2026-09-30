@@ -5,9 +5,12 @@
   --graphite: #cfcec5;
   --muted: #555550;
   --line: #8b8a84;
-  --alert: #e84131;
-  --reward: #b9dd3d;
-  --player-keyline: #2374d8;
+  /* Signal tokens mirror src/game/render/palette.ts (checked by palette.test.ts). */
+  --ally: #00a8c6;
+  --player-keyline: #007c94;
+  --alert: #ef5b4f;
+  --alert-deep: #b8352b;
+  --reward: #86b82d;
   --control-size: 40px;
   --shadow: 3px 3px 0 var(--ink);
   color: #111;
@@ -52,7 +55,7 @@ button:disabled {
 }
 
 :focus-visible {
-  outline: 3px solid var(--alert);
+  outline: 3px solid var(--player-keyline);
   outline-offset: 3px;
 }
 
@@ -1375,7 +1378,7 @@ h2 {
   border: 2px solid var(--ink);
   padding: 8px 12px;
   color: #fff;
-  background: var(--alert);
+  background: var(--alert-deep);
   box-shadow: var(--shadow);
   font-weight: 900;
 }

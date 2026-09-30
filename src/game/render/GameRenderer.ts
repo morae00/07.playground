@@ -10,6 +10,7 @@ import type {
 import { clamp } from '../worldMath.ts';
 import { telegraphPhase } from '../visualContracts.ts';
 import { motionWave, normalizedLifetime } from './animationClock.ts';
+import { NEUTRAL, SIGNAL } from './palette.ts';
 import type { RenderFrameSnapshot } from './renderSnapshot.ts';
 import {
   CHAPTER_ART,
@@ -66,6 +67,9 @@ export type FriendlyProjectileVisualInput = {
   returning: boolean;
   skillId: SkillId;
 };
+
+/** Which side an effect belongs to; it decides the signal colour (BUG-14). */
+export type EffectOwner = 'player' | 'hostile';
 
 export type HostileProjectileVisualInput = {
   x: number;
@@ -313,7 +317,7 @@ export class GameRenderer {
     }
     if (input.silence > 0) {
       ctx.setLineDash([]);
-      ctx.strokeStyle = VISUAL_PALETTE.danger;
+      ctx.strokeStyle = VISUAL_PALETTE.elite;
       ctx.lineWidth = 5;
       ctx.beginPath();
       ctx.moveTo(-24, -35);
@@ -813,11 +817,13 @@ export class GameRenderer {
       width: number;
       life: number;
       maxLife: number;
+      owner?: EffectOwner;
     },
   ) {
     const alpha = normalizedLifetime(input.life, input.maxLife);
+    const hostile = input.owner === 'hostile';
     ctx.save();
-    ctx.globalAlpha = alpha;
+    ctx.globalAlpha = hostile ? Math.max(0.55, alpha) : alpha;
     ctx.lineCap = 'round';
     ctx.strokeStyle = VISUAL_PALETTE.ink;
     ctx.lineWidth = input.width;
@@ -825,12 +831,21 @@ export class GameRenderer {
     ctx.moveTo(input.x1, input.y1);
     ctx.lineTo(input.x2, input.y2);
     ctx.stroke();
-    ctx.strokeStyle = VISUAL_PALETTE.player;
-    ctx.lineWidth = Math.max(3, input.width * 0.42);
-    ctx.stroke();
-    ctx.strokeStyle = VISUAL_PALETTE.paperBright;
-    ctx.lineWidth = Math.max(1.5, input.width * 0.16);
-    ctx.stroke();
+    if (hostile) {
+      // Enemy lanes are amber telegraph hatching, never the player's cyan beam style.
+      ctx.setLineDash([10, 7]);
+      ctx.strokeStyle = SIGNAL.warn;
+      ctx.lineWidth = Math.max(3, input.width * 0.62);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else {
+      ctx.strokeStyle = VISUAL_PALETTE.player;
+      ctx.lineWidth = Math.max(3, input.width * 0.42);
+      ctx.stroke();
+      ctx.strokeStyle = VISUAL_PALETTE.paperBright;
+      ctx.lineWidth = Math.max(1.5, input.width * 0.16);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
@@ -856,7 +871,7 @@ export class GameRenderer {
     ctx.strokeStyle = VISUAL_PALETTE.player;
     ctx.lineWidth = 3;
     ctx.stroke();
-    ctx.strokeStyle = VISUAL_PALETTE.reward;
+    ctx.strokeStyle = VISUAL_PALETTE.paperBright;
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.restore();
@@ -1204,7 +1219,7 @@ export class GameRenderer {
     ctx.translate(x, y);
     ctx.rotate(pickup.kind === 'xp' && !this.frame.reducedMotion ? this.frame.elapsed * 0.6 : 0);
     ctx.strokeStyle = VISUAL_PALETTE.ink;
-    ctx.fillStyle = pickup.kind === 'xp' ? '#dff5a5' : '#f4c95d';
+    ctx.fillStyle = pickup.kind === 'xp' ? SIGNAL.rewardGlow : NEUTRAL.coin;
     ctx.lineWidth = 2.5;
     if (pickup.kind === 'xp') {
       pathPolygon(ctx, [[0, -9 - pulse], [8 + pulse, 0], [0, 9 + pulse], [-8 - pulse, 0]]);
@@ -1213,7 +1228,7 @@ export class GameRenderer {
     }
     ctx.fill();
     ctx.stroke();
-    ctx.strokeStyle = pickup.kind === 'xp' ? VISUAL_PALETTE.player : VISUAL_PALETTE.warning;
+    ctx.strokeStyle = pickup.kind === 'xp' ? SIGNAL.reward : VISUAL_PALETTE.ink;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(-3, 0);
@@ -1233,8 +1248,8 @@ export class GameRenderer {
     ctx.translate(x, y);
     ctx.rotate(angle + Math.PI / 2);
     ctx.fillStyle = VISUAL_PALETTE.paperBright;
-    ctx.strokeStyle = awakened ? VISUAL_PALETTE.elite : VISUAL_PALETTE.ink;
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = awakened ? VISUAL_PALETTE.inkSoft : VISUAL_PALETTE.ink;
+    ctx.lineWidth = awakened ? 3.5 : 3;
     ctx.beginPath();
     ctx.moveTo(0, -19);
     ctx.quadraticCurveTo(18, 0, 0, 19);
@@ -1259,6 +1274,7 @@ export class GameRenderer {
       life: number;
       maxLife: number;
       tier: 'heavy' | 'critical';
+      owner?: EffectOwner;
     },
   ) {
     const alpha = normalizedLifetime(input.life, input.maxLife);
@@ -1266,9 +1282,11 @@ export class GameRenderer {
     ctx.save();
     ctx.translate(input.x, input.y);
     ctx.globalAlpha = this.frame.reducedMotion ? 0.82 : alpha;
-    ctx.strokeStyle = input.tier === 'critical'
-      ? VISUAL_PALETTE.danger
-      : CHAPTER_ART[this.frame.chapter].accent;
+    ctx.strokeStyle = input.owner === 'hostile'
+      ? SIGNAL.warn
+      : input.tier === 'critical'
+        ? VISUAL_PALETTE.ink
+        : CHAPTER_ART[this.frame.chapter].accent;
     ctx.lineWidth = input.tier === 'critical' ? 4 : 2;
     if (this.frame.reducedMotion) ctx.setLineDash([7, 5]);
     const radius = input.radius * expansion;
@@ -1322,6 +1340,7 @@ export class GameRenderer {
       value: number;
       crit: boolean;
       life: number;
+      owner?: EffectOwner;
     },
   ) {
     const alpha = clamp(input.life / (input.crit ? 0.9 : 0.72), 0, 1);
@@ -1330,7 +1349,8 @@ export class GameRenderer {
     ctx.font = `${input.crit ? 900 : 800} ${input.crit ? 17 : 14}px Inter, system-ui, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = input.crit ? VISUAL_PALETTE.danger : VISUAL_PALETTE.ink;
+    // Coral marks damage the player takes; damage the player deals stays ink (crits are larger with "!").
+    ctx.fillStyle = input.owner === 'hostile' ? VISUAL_PALETTE.danger : VISUAL_PALETTE.ink;
     ctx.strokeStyle = VISUAL_PALETTE.paperBright;
     ctx.lineWidth = input.crit ? 5 : 4;
     const text = input.crit ? `${Math.round(input.value)}!` : `${Math.round(input.value)}`;

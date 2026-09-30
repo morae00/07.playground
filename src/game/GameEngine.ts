@@ -56,7 +56,8 @@ import {
   visibleGridLineRange,
   type Viewport,
 } from './render/viewport';
-import { GameRenderer } from './render/GameRenderer';
+import { GameRenderer, type EffectOwner } from './render/GameRenderer';
+import { NEUTRAL, SIGNAL, rgba } from './render/palette';
 import { createRenderFrameSnapshot } from './render/renderSnapshot';
 import {
   CHAPTER_VISUALS,
@@ -406,6 +407,7 @@ export type DamageNumber = {
   value: number;
   crit: boolean;
   life: number;
+  owner: EffectOwner;
 };
 
 export type Hazard = {
@@ -443,6 +445,7 @@ export type BeamEffect = {
   width: number;
   life: number;
   maxLife: number;
+  owner: EffectOwner;
 };
 
 export type ChainEffect = {
@@ -459,12 +462,13 @@ export type ImpactRing = {
   life: number;
   maxLife: number;
   tier: 'heavy' | 'critical';
+  owner: EffectOwner;
 };
 
 export const WORLD_W = 4200;
 export const WORLD_H = 3000;
 const BOSS_PROJECTILE_HARD_CAP = 320;
-const TARGET_COLOR = '#087e9b';
+const TARGET_COLOR = SIGNAL.allyDeep;
 
 export const RARITY: Record<Rarity, { label: string; weight: number; className: string }> = {
   common: { label: '일반', weight: RARITY_WEIGHTS.common, className: 'rarityCommon' },
@@ -1057,7 +1061,7 @@ export class GameEngine {
     520,
   );
   private damageNumberPool = new ObjectPool<DamageNumber>(
-    () => ({ id: 0, x: 0, y: 0, value: 0, crit: false, life: 0 }),
+    () => ({ id: 0, x: 0, y: 0, value: 0, crit: false, life: 0, owner: 'player' as EffectOwner }),
     (number) => { number.life = 0; },
     160,
   );
@@ -1971,7 +1975,7 @@ export class GameEngine {
     const y2 = this.player.y + Math.sin(angle) * 980;
     const width = 12 + skill.level * 3 + (skill.awakened ? 8 : 0);
     const damage = this.player.stats.attack * (0.95 + skill.level * 0.2);
-    this.beams.push({ id: this.nextId(), x1: this.player.x, y1: this.player.y, x2, y2, width, life: 0.28, maxLife: 0.28 });
+    this.beams.push({ id: this.nextId(), x1: this.player.x, y1: this.player.y, x2, y2, width, life: 0.28, maxLife: 0.28, owner: 'player' });
     for (const enemy of this.querySegmentEnemies(this.player.x, this.player.y, x2, y2, width)) {
       if (enemy.hp <= 0) continue;
       if (distancePointToSegment(enemy.x, enemy.y, this.player.x, this.player.y, x2, y2) < enemy.radius + width) {
@@ -2041,6 +2045,7 @@ export class GameEngine {
       width,
       life: 0.22,
       maxLife: 0.22,
+      owner: 'player',
     });
     for (const enemy of this.querySegmentEnemies(x1, y1, x2, y2, width)) {
       if (enemy.hp <= 0) continue;
@@ -2169,6 +2174,7 @@ export class GameEngine {
         width: 10 + skill.level,
         life: 0.2,
         maxLife: 0.2,
+        owner: 'player',
       });
     }
     const damage = this.player.stats.attack * (1.25 + skill.level * 0.22);
@@ -2608,7 +2614,7 @@ export class GameEngine {
         enemy.vy = dir.y * enemy.speed * (enemy.slowMultiplier ?? 1) * 4.6;
         enemy.patternPhase = 'dash';
         enemy.patternTimer = 0.55;
-        this.beams.push({ id: this.nextId(), x1: enemy.x, y1: enemy.y, x2: enemy.x + dir.x * 720, y2: enemy.y + dir.y * 720, width: 10, life: 0.24, maxLife: 0.24 });
+        this.beams.push({ id: this.nextId(), x1: enemy.x, y1: enemy.y, x2: enemy.x + dir.x * 720, y2: enemy.y + dir.y * 720, width: 10, life: 0.24, maxLife: 0.24, owner: 'hostile' });
       } else if (enemy.patternPhase === 'dash' && enemy.patternTimer <= 0) {
         enemy.patternPhase = 'idle';
         enemy.patternTimer = 2.4;
@@ -2745,6 +2751,7 @@ export class GameEngine {
         life,
         maxLife: life,
         tier: 'heavy',
+        owner: 'hostile',
       });
       return;
     }
@@ -2762,6 +2769,7 @@ export class GameEngine {
         width: move.telegraph.shape === 'lane' ? 14 : 8,
         life,
         maxLife: life,
+        owner: 'hostile',
       });
     }
   }
@@ -3107,7 +3115,7 @@ export class GameEngine {
       enemy.y += dir.y * knockback * 0.035;
     }
     if (this.options.damageNumbers) {
-      this.emitDamageNumber(enemy.x, enemy.y - enemy.radius, damage, crit, crit ? 0.9 : 0.62);
+      this.emitDamageNumber(enemy.x, enemy.y - enemy.radius, damage, crit, crit ? 0.9 : 0.62, 'player');
     }
     const particleCount = impactTier === 'critical' ? 14 : impactTier === 'heavy' ? 8 : 4;
     this.burst(enemy.x, enemy.y, Math.round(particleCount * this.options.effects), impactTier === 'critical' ? '#000000' : '#222222', impactTier === 'critical' ? 240 : impactTier === 'heavy' ? 175 : 130);
@@ -3129,7 +3137,7 @@ export class GameEngine {
 
   private addImpactRing(x: number, y: number, radius: number, tier: 'heavy' | 'critical') {
     if (this.impactRings.length >= 32) this.impactRings.shift();
-    this.impactRings.push({ x, y, radius, life: 0.24, maxLife: 0.24, tier });
+    this.impactRings.push({ x, y, radius, life: 0.24, maxLife: 0.24, tier, owner: 'player' });
   }
 
   private damagePlayer(rawDamage: number, physical: boolean) {
@@ -3145,7 +3153,7 @@ export class GameEngine {
     if (this.skills.ironFrame?.awakened) this.player.shield = 0.36;
     if (paperWard?.awakened) this.pushEnemiesFromPlayer(140);
     if (this.options.damageNumbers) {
-      this.emitDamageNumber(this.player.x, this.player.y - 38, reduced, false, 0.72);
+      this.emitDamageNumber(this.player.x, this.player.y - 38, reduced, false, 0.72, 'hostile');
     }
     this.burst(this.player.x, this.player.y, 12, '#000000', 160);
     this.playTone(140, 0.025, 'triangle');
@@ -3265,7 +3273,7 @@ export class GameEngine {
     this.pickups.push(pickup);
   }
 
-  private emitDamageNumber(x: number, y: number, value: number, crit: boolean, life: number) {
+  private emitDamageNumber(x: number, y: number, value: number, crit: boolean, life: number, owner: EffectOwner) {
     let number: DamageNumber | undefined;
     if (this.damageNumbers.length >= 160) {
       if (!crit) return;
@@ -3274,7 +3282,7 @@ export class GameEngine {
       number = this.damageNumbers.splice(replaceIndex, 1)[0];
     }
     number ??= this.damageNumberPool.acquire();
-    Object.assign(number, { id: this.nextId(), x, y, value, crit, life });
+    Object.assign(number, { id: this.nextId(), x, y, value, crit, life, owner });
     this.damageNumbers.push(number);
   }
 
@@ -3588,7 +3596,7 @@ export class GameEngine {
     const shakeY = shaking ? (this.effectRandom() - 0.5) * this.shake : 0;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     ctx.clearRect(0, 0, this.viewW, this.viewH);
-    ctx.fillStyle = '#f4f4f1';
+    ctx.fillStyle = NEUTRAL.paper;
     ctx.fillRect(0, 0, this.viewW, this.viewH);
     ctx.save();
     ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
@@ -3621,7 +3629,7 @@ export class GameEngine {
       ctx.fillStyle = this.gridPattern;
       ctx.fillRect(viewport.left, viewport.top, viewport.right - viewport.left, viewport.bottom - viewport.top);
     } else {
-      ctx.strokeStyle = '#d7d7d2';
+      ctx.strokeStyle = NEUTRAL.gridLine;
       ctx.lineWidth = 1;
       const xs = visibleGridLineRange(viewport.left, viewport.right, 120, 0, WORLD_W);
       const ys = visibleGridLineRange(viewport.top, viewport.bottom, 120, 0, WORLD_H);
@@ -3713,7 +3721,7 @@ export class GameEngine {
     tile.height = 120;
     const tileCtx = tile.getContext('2d');
     if (!tileCtx) return;
-    tileCtx.strokeStyle = '#d7d7d2';
+    tileCtx.strokeStyle = NEUTRAL.gridLine;
     tileCtx.lineWidth = 1;
     tileCtx.beginPath();
     tileCtx.moveTo(0.5, 0);
@@ -3764,14 +3772,14 @@ export class GameEngine {
     ctx.save();
     const gradient = ctx.createLinearGradient?.(player.x, player.y, point.x, point.y);
     if (gradient && typeof gradient.addColorStop === 'function') {
-      gradient.addColorStop(0, 'rgba(8, 126, 155, 0)');
-      gradient.addColorStop(0.18, 'rgba(8, 126, 155, 0.22)');
-      gradient.addColorStop(0.5, 'rgba(8, 126, 155, 0.04)');
-      gradient.addColorStop(0.82, 'rgba(8, 126, 155, 0.38)');
-      gradient.addColorStop(1, 'rgba(8, 126, 155, 0.72)');
+      gradient.addColorStop(0, rgba(TARGET_COLOR, 0));
+      gradient.addColorStop(0.18, rgba(TARGET_COLOR, 0.22));
+      gradient.addColorStop(0.5, rgba(TARGET_COLOR, 0.04));
+      gradient.addColorStop(0.82, rgba(TARGET_COLOR, 0.38));
+      gradient.addColorStop(1, rgba(TARGET_COLOR, 0.72));
       ctx.strokeStyle = gradient;
     } else {
-      ctx.strokeStyle = 'rgba(8, 126, 155, 0.36)';
+      ctx.strokeStyle = rgba(TARGET_COLOR, 0.36);
     }
     ctx.lineWidth = 2;
     ctx.setLineDash([3, 10]);
@@ -3814,8 +3822,9 @@ export class GameEngine {
 
     ctx.save();
     ctx.translate(point.x, point.y);
-    ctx.strokeStyle = target.isBoss ? '#e67e00' : TARGET_COLOR;
-    ctx.fillStyle = target.isBoss ? '#e67e00' : TARGET_COLOR;
+    // The aim reticle is the player's information, so it keeps the ally colour even on a boss (BUG-14).
+    ctx.strokeStyle = TARGET_COLOR;
+    ctx.fillStyle = TARGET_COLOR;
     ctx.lineWidth = target.isBoss ? 3 : 2;
     ctx.globalAlpha = 0.9;
     for (let index = 0; index < 4; index += 1) {
@@ -3907,7 +3916,7 @@ export class GameEngine {
 
       if (!enemy.isBoss && enemy.attackStyle === 'ranged') {
         ctx.save();
-        ctx.strokeStyle = '#e84131';
+        ctx.strokeStyle = SIGNAL.hostile;
         ctx.lineWidth = enemy.rangedTelegraph > 0 ? 3 : 2;
         ctx.globalAlpha = enemy.rangedTelegraph > 0 ? 0.78 : 0.62;
         if (enemy.rangedTelegraph > 0) {
@@ -3921,7 +3930,7 @@ export class GameEngine {
         ctx.beginPath();
         ctx.arc(point.x, point.y, enemy.radius + 6, 0, Math.PI * 2);
         ctx.stroke();
-        ctx.fillStyle = '#e84131';
+        ctx.fillStyle = SIGNAL.hostile;
         ctx.beginPath();
         ctx.moveTo(point.x, point.y - enemy.radius - 12);
         ctx.lineTo(point.x + 5, point.y - enemy.radius - 4);

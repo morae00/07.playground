@@ -4,23 +4,25 @@ import type {
   Hazard,
   SkillId,
 } from '../GameEngine';
+import { NEUTRAL, SIGNAL } from './palette.ts';
 
 export type VisualChapter = 1 | 2 | 3 | 4 | 5;
 export type EnemyVisualRole = 'stalker' | 'charger' | 'shooter' | 'warden';
 export type VisualDetail = 'full' | 'reduced' | 'minimal';
 
 export const VISUAL_PALETTE = Object.freeze({
-  paper: '#f4f4ef',
-  paperBright: '#fffff8',
-  paperShadow: '#d8dad3',
-  ink: '#101312',
-  inkSoft: '#343936',
-  player: '#00a8c6',
+  paper: NEUTRAL.paper,
+  paperBright: NEUTRAL.paperBright,
+  paperShadow: NEUTRAL.paperShadow,
+  ink: NEUTRAL.ink,
+  inkSoft: NEUTRAL.inkSoft,
+  player: SIGNAL.ally,
+  playerDeep: SIGNAL.allyDeep,
   playerCore: '#dffaff',
-  danger: '#ef5b4f',
-  warning: '#d88d16',
-  elite: '#805ad5',
-  reward: '#86b82d',
+  danger: SIGNAL.hostile,
+  warning: SIGNAL.warn,
+  elite: SIGNAL.elite,
+  reward: SIGNAL.reward,
 });
 
 export type ChapterArtProfile = Readonly<{
@@ -40,7 +42,7 @@ export const CHAPTER_ART: Readonly<Record<VisualChapter, ChapterArtProfile>> = O
     key: 'ink-alley',
     label: '먹선 골목',
     accent: '#5f6661',
-    secondary: '#ef5b4f',
+    secondary: '#7e6a4e',
     surface: '#c8cbc4',
     enemyMaterial: 'scrap',
     obstacleMaterial: 'plaster',
@@ -50,7 +52,7 @@ export const CHAPTER_ART: Readonly<Record<VisualChapter, ChapterArtProfile>> = O
     key: 'iron-chapel',
     label: '철문 예배당',
     accent: '#665d78',
-    secondary: '#d88d16',
+    secondary: '#566077',
     surface: '#a9a7ad',
     enemyMaterial: 'iron',
     obstacleMaterial: 'iron',
@@ -59,8 +61,8 @@ export const CHAPTER_ART: Readonly<Record<VisualChapter, ChapterArtProfile>> = O
     chapter: 3,
     key: 'ashen-canal',
     label: '무채 운하',
-    accent: '#397f8d',
-    secondary: '#00a8c6',
+    accent: '#56706b',
+    secondary: '#56625c',
     surface: '#a7c1c4',
     enemyMaterial: 'water',
     obstacleMaterial: 'stone',
@@ -69,8 +71,8 @@ export const CHAPTER_ART: Readonly<Record<VisualChapter, ChapterArtProfile>> = O
     chapter: 4,
     key: 'clock-grave',
     label: '시계 무덤',
-    accent: '#8a692d',
-    secondary: '#86b82d',
+    accent: '#76654a',
+    secondary: '#6f6048',
     surface: '#b9aa8a',
     enemyMaterial: 'clockwork',
     obstacleMaterial: 'brass',
@@ -80,7 +82,7 @@ export const CHAPTER_ART: Readonly<Record<VisualChapter, ChapterArtProfile>> = O
     key: 'eclipse-gate',
     label: '일식 관문',
     accent: '#684f82',
-    secondary: '#ef5b4f',
+    secondary: '#3e3747',
     surface: '#928a9c',
     enemyMaterial: 'eclipse',
     obstacleMaterial: 'obsidian',
@@ -248,32 +250,35 @@ const projectile = (
   trail,
 });
 
+// Player skills are cyan, ink, and paper only; they differ by shape, never by borrowing enemy or reward colours.
+const ALLY_TRAIL = '#6ad7e8';
 export const SKILL_PROJECTILE_ART: Readonly<Record<SkillId, ProjectileArtProfile>> = Object.freeze({
-  needleStorm: projectile('needle', '#f6feff', '#00a8c6', '#6ad7e8'),
-  fanKnives: projectile('knife', '#fffff8', '#343936', '#00a8c6'),
-  chainSpark: projectile('spark', '#dffaff', '#00a8c6', '#86b82d'),
-  frostLine: projectile('spear', '#e8fbff', '#397f8d', '#80d8e5'),
-  orbitScythes: projectile('knife', '#fffff8', '#101312', '#805ad5'),
-  boneMortar: projectile('orb', '#ece8dc', '#343936', '#d88d16'),
-  railSpear: projectile('spear', '#fffff8', '#101312', '#ef5b4f'),
-  mirrorClone: projectile('needle', '#e5faff', '#00a8c6', '#805ad5'),
-  voidMine: projectile('sigil', '#2a2134', '#805ad5', '#ef5b4f'),
-  blackSun: projectile('orb', '#101312', '#805ad5', '#ef5b4f'),
-  ironFrame: projectile('sigil', '#d8dad3', '#343936', '#d88d16'),
-  magnetSigil: projectile('sigil', '#eff8da', '#86b82d', '#00a8c6'),
-  paperWard: projectile('sigil', '#fffff8', '#00a8c6', '#d88d16'),
-  recoveryThread: projectile('needle', '#eff8da', '#86b82d', '#00a8c6'),
-  coinFever: projectile('orb', '#fff1c8', '#d88d16', '#86b82d'),
-  eclipseStep: projectile('knife', '#2a2134', '#805ad5', '#00a8c6'),
-  executionMark: projectile('spear', '#fff0ed', '#ef5b4f', '#d88d16'),
+  needleStorm: projectile('needle', '#f6feff', SIGNAL.ally, ALLY_TRAIL),
+  fanKnives: projectile('knife', '#fffff8', '#343936', SIGNAL.ally),
+  chainSpark: projectile('spark', '#dffaff', SIGNAL.ally, ALLY_TRAIL),
+  frostLine: projectile('spear', '#e8fbff', SIGNAL.allyDeep, '#80d8e5'),
+  orbitScythes: projectile('knife', '#fffff8', '#101312', ALLY_TRAIL),
+  boneMortar: projectile('orb', '#ece8dc', '#343936', ALLY_TRAIL),
+  railSpear: projectile('spear', '#fffff8', '#101312', SIGNAL.ally),
+  mirrorClone: projectile('needle', '#e5faff', SIGNAL.ally, ALLY_TRAIL),
+  voidMine: projectile('sigil', '#2a2134', SIGNAL.ally, ALLY_TRAIL),
+  blackSun: projectile('orb', '#101312', SIGNAL.ally, ALLY_TRAIL),
+  ironFrame: projectile('sigil', '#d8dad3', '#343936', ALLY_TRAIL),
+  magnetSigil: projectile('sigil', '#f6feff', SIGNAL.allyDeep, SIGNAL.ally),
+  paperWard: projectile('sigil', '#fffff8', SIGNAL.ally, ALLY_TRAIL),
+  recoveryThread: projectile('needle', '#f6feff', SIGNAL.allyDeep, SIGNAL.ally),
+  coinFever: projectile('orb', '#fffff8', SIGNAL.ally, ALLY_TRAIL),
+  eclipseStep: projectile('knife', '#2a2134', SIGNAL.ally, ALLY_TRAIL),
+  executionMark: projectile('spear', '#fff0ed', '#101312', SIGNAL.ally),
 });
 
+// Every enemy shot that deals damage is coral; the kinds differ by shape and weight of the hostile outline.
 export const HOSTILE_PROJECTILE_ART: Readonly<Record<BossProjectile['kind'], ProjectileArtProfile>> = Object.freeze({
-  dot: projectile('orb', '#ef5b4f', '#fff4f1', '#ff8b82'),
-  ring: projectile('sigil', '#00a8c6', '#e9fdff', '#65d8e6'),
-  saw: projectile('knife', '#d88d16', '#fff3cd', '#ffd268'),
-  eclipse: projectile('spear', '#805ad5', '#f4efff', '#b69ae8'),
-  enemy: projectile('needle', '#dd3c75', '#fff0f5', '#ff79a5'),
+  dot: projectile('orb', SIGNAL.hostile, '#fff4f1', '#ff8b82'),
+  ring: projectile('sigil', SIGNAL.hostile, '#fff4f1', '#ff8b82'),
+  saw: projectile('knife', SIGNAL.hostileDeep, '#fff4f1', '#ff8b82'),
+  eclipse: projectile('spear', SIGNAL.hostileDeep, '#fff4f1', '#ff8b82'),
+  enemy: projectile('needle', SIGNAL.hostile, '#fff4f1', '#ff8b82'),
 });
 
 export type HazardArtProfile = Readonly<{
@@ -282,14 +287,16 @@ export type HazardArtProfile = Readonly<{
   edge: 'circle' | 'square' | 'flow' | 'spiral' | 'burst';
 }>;
 
+// Hazard ownership: water and trap are neutral terrain; slow, root, and null are enemy control zones (amber rim);
+// fire deals enemy damage (coral); shock is an enemy telegraph (amber); warning and vortex belong to player skills (cyan).
 export const HAZARD_ART: Readonly<Record<Hazard['kind'], HazardArtProfile>> = Object.freeze({
-  water: Object.freeze({ color: '#397f8d', fill: '#c5e3e7', edge: 'flow' }),
+  water: Object.freeze({ color: '#5e7c82', fill: '#d3dfe0', edge: 'flow' }),
   trap: Object.freeze({ color: '#343936', fill: '#d8dad3', edge: 'square' }),
-  fire: Object.freeze({ color: '#ef5b4f', fill: '#ffe4df', edge: 'burst' }),
-  slow: Object.freeze({ color: '#00a8c6', fill: '#dffaff', edge: 'flow' }),
-  root: Object.freeze({ color: '#665d45', fill: '#e8e0cd', edge: 'square' }),
-  null: Object.freeze({ color: '#805ad5', fill: '#ddd1f5', edge: 'circle' }),
-  warning: Object.freeze({ color: '#ef5b4f', fill: '#ffe4df', edge: 'circle' }),
-  vortex: Object.freeze({ color: '#684f82', fill: '#e1d8eb', edge: 'spiral' }),
-  shock: Object.freeze({ color: '#d88d16', fill: '#fff0c9', edge: 'burst' }),
+  fire: Object.freeze({ color: SIGNAL.hostile, fill: SIGNAL.hostileGlow, edge: 'burst' }),
+  slow: Object.freeze({ color: SIGNAL.warn, fill: '#f3ead7', edge: 'flow' }),
+  root: Object.freeze({ color: SIGNAL.warn, fill: '#efe6d3', edge: 'square' }),
+  null: Object.freeze({ color: SIGNAL.warn, fill: '#e9e4d8', edge: 'circle' }),
+  warning: Object.freeze({ color: SIGNAL.ally, fill: SIGNAL.allyGlow, edge: 'circle' }),
+  vortex: Object.freeze({ color: SIGNAL.allyDeep, fill: '#e3ecee', edge: 'spiral' }),
+  shock: Object.freeze({ color: SIGNAL.warn, fill: SIGNAL.warnGlow, edge: 'burst' }),
 });
