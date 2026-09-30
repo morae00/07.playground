@@ -79,79 +79,51 @@ test('all fifteen boss profiles produce distinct code-rendered silhouettes', () 
   assert.equal(fingerprints.size, 15);
 });
 
-test('renderer preserves core signals while reducing decorative density', () => {
+const mob = (overrides: Record<string, unknown> = {}) => ({
+  id: 2, x: 0, y: 0, vx: 1, vy: 0, radius: 20, tier: 'medium' as const, variant: 1, isBoss: false,
+  attackStyle: 'ranged' as const, hitFlash: 0, bossPhase: 1 as const, legacyBoss: false, heading: 0, ...overrides,
+});
+
+test('an enemy without its sprite is the hit circle with the hostile rim and its role glyph (TEC-10)', () => {
   const recorder = createRecordingContext();
   const renderer = new GameRenderer();
   renderer.beginFrame(frame(3, 12));
-  renderer.drawEnemy(recorder.context, {
-    id: 2,
-    x: 0,
-    y: 0,
-    vx: 1,
-    vy: 0,
-    radius: 20,
-    tier: 'medium',
-    variant: 1,
-    isBoss: false,
-    attackStyle: 'ranged',
-    hitFlash: 0,
-    bossPhase: 1,
-    legacyBoss: false,
-    heading: 0,
-  });
-  const fullCommands = recorder.calls.length;
+  renderer.drawEnemy(recorder.context, mob());
+  const log = recorder.calls.join('|');
+  assert.match(log, /arc:0\.00,0\.00,20\.00/, 'the body is the hit circle');
+  assert.match(log, /set:strokeStyle:#ef5b4f/, 'in the hostile rim');
+  assert.match(log, /set:fillStyle:#101312.*set:fillStyle:#fffff8/, 'an ink body with a paper glyph');
+  assert.ok(recorder.calls.length < 40, `one silhouette, not a drawing (${recorder.calls.length} commands)`);
 
   recorder.reset();
-  renderer.beginFrame(frame(3, 180));
-  renderer.drawEnemy(recorder.context, {
-    id: 2,
-    x: 0,
-    y: 0,
-    vx: 1,
-    vy: 0,
-    radius: 20,
-    tier: 'medium',
-    variant: 1,
-    isBoss: false,
-    attackStyle: 'ranged',
-    hitFlash: 0,
-    bossPhase: 1,
-    legacyBoss: false,
-    heading: 0,
-  });
-  const minimalCommands = recorder.calls.length;
+  renderer.drawEnemy(recorder.context, mob({ hitFlash: 0.05 }));
+  assert.match(recorder.calls.join('|'), /set:fillStyle:#fffff8.*set:fillStyle:#101312/, 'a hit flashes the body paper with an ink glyph');
 
-  assert.ok(minimalCommands > 12, 'minimal detail must keep the combat silhouette and ranged core');
-  assert.ok(minimalCommands < fullCommands, 'minimal detail should remove decorative draw commands');
+  const glyphs = new Set();
+  for (const [tier, attackStyle] of [['small', 'contact'], ['medium', 'contact'], ['medium', 'ranged'], ['large', 'contact']]) {
+    recorder.reset();
+    renderer.drawEnemy(recorder.context, mob({ tier, attackStyle }));
+    glyphs.add(recorder.calls.filter((call) => /^(moveTo|lineTo|rect):/.test(call)).join('|'));
+  }
+  assert.equal(glyphs.size, 4, 'each role keeps its own glyph');
 });
 
-test('player and clone share a readable silhouette with different signal strength', () => {
+test('player and clone share one silhouette, the clone faint and dashed (TEC-10)', () => {
   const recorder = createRecordingContext();
   const renderer = new GameRenderer();
   renderer.beginFrame(frame(1));
-  renderer.drawPlayer(recorder.context, {
-    x: 0,
-    y: 0,
-    aimAngle: 0,
-    moving: true,
-    shield: 1,
-  });
-  const playerCommands = recorder.calls.length;
+  renderer.drawPlayer(recorder.context, { x: 0, y: 0, aimAngle: 0, moving: true, shield: 1 });
+  const playerLog = recorder.calls.join('|');
+  assert.match(playerLog, /arc:0\.00,0\.00,20\.00/, 'the hero disc');
+  assert.match(playerLog, /set:strokeStyle:#00a8c6/, 'in the ally rim');
+  assert.match(playerLog, /arc:0\.00,0\.00,32\.00/, 'a shield adds the outer ring');
 
   recorder.reset();
-  renderer.drawMirrorClone(recorder.context, {
-    x: 0,
-    y: 0,
-    aimAngle: 0,
-    moving: true,
-    shield: 0,
-    alpha: 0.35,
-  });
+  renderer.drawMirrorClone(recorder.context, { x: 0, y: 0, aimAngle: 0, moving: true, shield: 0, alpha: 0.35 });
   const cloneLog = recorder.calls.join('|');
-
-  assert.ok(playerCommands > 30);
   assert.match(cloneLog, /globalAlpha/);
   assert.match(cloneLog, /setLineDash/);
+  assert.doesNotMatch(cloneLog, /arc:0\.00,0\.00,32\.00/, 'no shield ring without a shield');
 });
 
 test('player x-ray keyline redraws the silhouette and hit circle above covering bodies (BUG-12)', () => {

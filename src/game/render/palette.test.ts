@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { NEUTRAL, SIGNAL, signalFamily } from './palette.ts';
-import { BOSS_ART, CHAPTER_ART, ENEMY_ART, HAZARD_ART, HOSTILE_PROJECTILE_ART, SKILL_PROJECTILE_ART, VISUAL_PALETTE } from './visualRegistry.ts';
+import { BOSS_ART, CHAPTER_ART, HAZARD_ART, HOSTILE_PROJECTILE_ART, SKILL_PROJECTILE_ART, VISUAL_PALETTE } from './visualRegistry.ts';
 
 // Signal-colour ownership (BUG-14, style bible P2): each signal hue belongs to one side of the fight.
 
@@ -35,12 +35,9 @@ test('enemy damage shots use only hostile or neutral colours', () => {
   }
 });
 
-test('chapter materials, enemies, and bosses never wear a signal colour', () => {
+test('chapter materials and bosses never wear a signal colour', () => {
   for (const [chapter, art] of Object.entries(CHAPTER_ART)) {
     for (const color of colorsOf(art)) assert.equal(signalFamily(color), null, `chapter ${chapter} material ${color}`);
-  }
-  for (const [key, art] of Object.entries(ENEMY_ART)) {
-    for (const color of colorsOf(art)) assert.equal(signalFamily(color), null, `${key} ${color}`);
   }
   for (const [key, art] of Object.entries(BOSS_ART)) {
     for (const color of colorsOf(art)) assert.equal(signalFamily(color), null, `${key} ${color}`);

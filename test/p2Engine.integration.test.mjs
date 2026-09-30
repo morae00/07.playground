@@ -162,23 +162,6 @@ function killAt(probe, points) {
   probe.step(1);
 }
 
-// Draws one frame at a fixed clock and returns the draw calls after the last translate (the player's, when no shots,
-// keyline, or nearer body follow it: bodies are depth-sorted since TEC-12, so callers clear obstacles), so two frames
-// compare by pose alone wherever the player stands.
-function playerPose(probe, recorder) {
-  probe.setClock({ elapsed: 1.3 });
-  recorder.reset();
-  probe.render(1);
-  const start = recorder.calls.findLastIndex(([name]) => name === 'translate') + 1;
-  // The body's own drawing ends at the restore that closes its transform; HUD marks over it (UI-02) come after.
-  let end = start;
-  for (let depth = 1; end < recorder.calls.length && depth > 0; end += 1) {
-    if (recorder.calls[end][0] === 'save') depth += 1;
-    if (recorder.calls[end][0] === 'restore') depth -= 1;
-  }
-  return recorder.calls.slice(start, end);
-}
-
 test('mirror clone ownership draws both side silhouettes, one per clone shot (BUG-16)', () => {
   const { engine, probe, recorder } = createEngine();
   try {
@@ -370,7 +353,7 @@ test('bosses standing on the player trigger the top-layer player keyline (BUG-12
   }
 });
 
-test('reduced motion draws orbit blades where they hit, and the walk cycle follows real movement (BUG-15)', () => {
+test('reduced motion draws orbit blades where they hit (BUG-15)', () => {
   const { engine, probe, recorder } = createEngine();
   try {
     engine.setSystemReducedMotion(true);
@@ -389,18 +372,6 @@ test('reduced motion draws orbit blades where they hit, and the walk cycle follo
       assert.ok(recorder.translations.some(([tx, ty]) => Math.abs(tx - x) < 1e-6 && Math.abs(ty - y) < 1e-6), `blade drawn at simulated position ${x},${y}`);
     }
 
-    // Reduced motion never animates the walk, so the walk cycle is read from full-motion poses. Orbit blades
-    // draw above bodies (TEC-12), so they are removed to keep the player's pose the last translated drawing.
-    probe.setSkills({});
-    engine.setSystemReducedMotion(false);
-    const standing = playerPose(probe, recorder);
-    probe.setPlayer({ root: 5 });
-    engine.dispatch({ type: 'input/action', action: 'moveRight', pressed: true });
-    probe.step(1);
-    assert.deepEqual(playerPose(probe, recorder), standing, 'a rooted player holding a key does not walk');
-    probe.setPlayer({ root: 0 });
-    probe.step(1);
-    assert.notDeepEqual(playerPose(probe, recorder), standing, 'moving once free');
   } finally {
     engine.dispose();
   }

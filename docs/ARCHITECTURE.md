@@ -183,7 +183,15 @@ Tests, balance runners, and soak tools use `ProbedGameEngine` (`src/game/engine/
 
 - Render errors: `src/ui/ErrorBoundary.tsx` catches them and shows a recovery screen (return to the menu, copy the log, reload). Returning remounts the app from its save.
 - Frame errors: the engine's animation loop catches an exception in a frame, pauses the run, stops the loop, and reports through `EngineCallbacks.onFault`. The app shows a dialog. Retrying (`recoverFromFault`) restarts the loop paused, and the normal pause dialog resumes play. Leaving goes to the menu without the stage's rewards.
-- Asset errors: a failed atlas pack falls back to vectors (TEC-03). The failure is logged, and a dismissible notice tells the player.
+- Asset errors: a failed atlas pack falls back to silhouettes (TEC-03, TEC-10). The failure is logged, and a dismissible notice tells the player.
+
+## Load-failure silhouettes (TEC-10)
+
+Every character and prop has kit art, so the vector drawings that stood in during the rollout are gone from `GameRenderer`. What draws when a pack is missing, a slot is disabled, or classic rules place a random block is one high-contrast silhouette per owner:
+- The hero is a paper disc in the ally rim on its hit circle, with an ink chevron toward the aim. A shield adds a dashed outer ring. The mirror clone is the same disc with a dashed rim, drawn faint.
+- An enemy is its hit circle in ink with the hostile rim and a paper role glyph turned to its heading: a small wedge for the stalker, a long one for the charger, a barrel on a stock for the shooter, and a square for the warden. A hit inverts it to paper, so a strike still reads.
+- An obstacle is a plain inked block with a lighter top face.
+- Round bosses without kit art (the Ch2-5 mid bosses and the field bosses) keep their vector bodies until the kit draws them; so do projectiles, beams, hazards, and telegraphs.
 - Other uncaught errors are logged and raise the same notice.
 
 Copied reports replace the home folder in paths. Nothing is sent anywhere. In the desktop app, `electron/crashLog.cjs` appends the renderer's `[blackline:error]` console lines and renderer or child process exits to `logs/errors.log` in the app's data folder, rotating at 512 KiB. `crashReporter` keeps native crash dumps there with uploads off. A crashed renderer reloads to the menu, at most three times in five minutes. Developer builds add the cheats `FAULT` (the next frame throws) and `UIFAULT` (the next render throws) to exercise these paths.

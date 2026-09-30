@@ -4,7 +4,6 @@ import type {
   Hazard,
   SkillId,
 } from '../engine/worldTypes.ts';
-import { CAMPAIGN_CHAPTER_IDS } from '../../content/campaign.ts';
 import { enemyRole } from '../enemyBehaviors.ts';
 import { NEUTRAL, SIGNAL } from './palette.ts';
 
@@ -34,8 +33,6 @@ export type ChapterArtProfile = Readonly<{
   accent: string;
   secondary: string;
   surface: string;
-  enemyMaterial: 'scrap' | 'iron' | 'water' | 'clockwork' | 'eclipse';
-  obstacleMaterial: 'plaster' | 'iron' | 'stone' | 'brass' | 'obsidian';
 }>;
 
 export const CHAPTER_ART: Readonly<Record<VisualChapter, ChapterArtProfile>> = Object.freeze({
@@ -46,8 +43,6 @@ export const CHAPTER_ART: Readonly<Record<VisualChapter, ChapterArtProfile>> = O
     accent: '#5f6661',
     secondary: '#7e6a4e',
     surface: '#c8cbc4',
-    enemyMaterial: 'scrap',
-    obstacleMaterial: 'plaster',
   }),
   2: Object.freeze({
     chapter: 2,
@@ -56,8 +51,6 @@ export const CHAPTER_ART: Readonly<Record<VisualChapter, ChapterArtProfile>> = O
     accent: '#665d78',
     secondary: '#566077',
     surface: '#a9a7ad',
-    enemyMaterial: 'iron',
-    obstacleMaterial: 'iron',
   }),
   3: Object.freeze({
     chapter: 3,
@@ -66,8 +59,6 @@ export const CHAPTER_ART: Readonly<Record<VisualChapter, ChapterArtProfile>> = O
     accent: '#56706b',
     secondary: '#56625c',
     surface: '#a7c1c4',
-    enemyMaterial: 'water',
-    obstacleMaterial: 'stone',
   }),
   4: Object.freeze({
     chapter: 4,
@@ -76,8 +67,6 @@ export const CHAPTER_ART: Readonly<Record<VisualChapter, ChapterArtProfile>> = O
     accent: '#76654a',
     secondary: '#6f6048',
     surface: '#b9aa8a',
-    enemyMaterial: 'clockwork',
-    obstacleMaterial: 'brass',
   }),
   5: Object.freeze({
     chapter: 5,
@@ -86,19 +75,8 @@ export const CHAPTER_ART: Readonly<Record<VisualChapter, ChapterArtProfile>> = O
     accent: '#684f82',
     secondary: '#3e3747',
     surface: '#928a9c',
-    enemyMaterial: 'eclipse',
-    obstacleMaterial: 'obsidian',
   }),
 });
-
-export type EnemyArtProfile = Readonly<{
-  chapter: VisualChapter;
-  role: EnemyVisualRole;
-  material: ChapterArtProfile['enemyMaterial'];
-  fill: string;
-  accent: string;
-  core: string;
-}>;
 
 export const ENEMY_VISUAL_ROLES = Object.freeze([
   'stalker',
@@ -106,32 +84,6 @@ export const ENEMY_VISUAL_ROLES = Object.freeze([
   'shooter',
   'warden',
 ] as const);
-
-const roleFill: Record<EnemyVisualRole, string> = {
-  stalker: '#1a1e1c',
-  charger: '#292e2b',
-  shooter: '#343a36',
-  warden: '#484f4a',
-};
-
-const enemyProfiles = Object.fromEntries(
-  CAMPAIGN_CHAPTER_IDS.flatMap((chapter) => (
-    ENEMY_VISUAL_ROLES.map((role) => {
-      const chapterArt = CHAPTER_ART[chapter];
-      const key = `enemy-${chapterArt.key}-${role}`;
-      return [key, Object.freeze({
-        chapter,
-        role,
-        material: chapterArt.enemyMaterial,
-        fill: roleFill[role],
-        accent: chapterArt.accent,
-        core: chapterArt.secondary,
-      } satisfies EnemyArtProfile)];
-    })
-  )),
-) as Record<string, EnemyArtProfile>;
-
-export const ENEMY_ART = Object.freeze(enemyProfiles);
 
 /** The same mapping the simulation uses for role behaviour (SYS-02), so art and behaviour never disagree. */
 export function enemyRoleFor(
@@ -141,15 +93,6 @@ export function enemyRoleFor(
   return enemyRole(tier, attackStyle);
 }
 
-export function enemyArtFor(
-  chapter: number,
-  tier: EnemyTier,
-  attackStyle: 'contact' | 'ranged',
-): EnemyArtProfile {
-  const safeChapter = Math.min(5, Math.max(1, Math.round(chapter))) as VisualChapter;
-  const role = enemyRoleFor(tier, attackStyle);
-  return ENEMY_ART[`enemy-${CHAPTER_ART[safeChapter].key}-${role}`];
-}
 
 export type BossBody =
   | 'commander'

@@ -19,9 +19,8 @@ import {
   SKILL_PROJECTILE_ART,
   VISUAL_PALETTE,
   bossArtFor,
-  enemyArtFor,
+  enemyRoleFor,
   type BossArtProfile,
-  type EnemyArtProfile,
   type HazardArtProfile,
   type HazardGlyph,
   type ProjectileArtProfile,
@@ -102,17 +101,8 @@ const DEFAULT_FRAME: RenderFrameSnapshot = Object.freeze({
   enemyCount: 0,
 });
 
-const PLAYER_BODY_POINTS: ReadonlyArray<readonly [number, number]> = [
-  [-14, -12],
-  [14, -12],
-  [18, 7],
-  [10, 25],
-  [2, 18],
-  [-3, 29],
-  [-17, 16],
-  [-15, 1],
-];
-const PLAYER_HEAD = { x: 0, y: -25, radius: 10.5 };
+/** Radius of the hero's load-failure silhouette (TEC-10), a little larger than its hit circle so it reads. */
+const PLAYER_SILHOUETTE_RADIUS = 20;
 
 function pathPolygon(
   ctx: CanvasRenderingContext2D,
@@ -146,19 +136,6 @@ function pathStar(
   ctx.closePath();
 }
 
-function drawPaperCut(
-  ctx: CanvasRenderingContext2D,
-  fill: string,
-  stroke: string = VISUAL_PALETTE.ink,
-  lineWidth: number = 3,
-) {
-  ctx.fillStyle = fill;
-  ctx.strokeStyle = stroke;
-  ctx.lineWidth = lineWidth;
-  ctx.fill();
-  ctx.stroke();
-}
-
 export class GameRenderer {
   private frame = DEFAULT_FRAME;
   /** Hazard ground textures by owner and colour; undefined where no pattern canvas can be made (headless). */
@@ -185,7 +162,7 @@ export class GameRenderer {
   drawPlayerBody(ctx: CanvasRenderingContext2D, input: PlayerVisualInput) {
     ctx.save();
     ctx.translate(input.x, input.y);
-    this.drawPlayerFigure(ctx, input, 1, false);
+    this.drawPlayerSilhouette(ctx, input, false);
     ctx.restore();
   }
 
@@ -193,14 +170,7 @@ export class GameRenderer {
     ctx.save();
     ctx.translate(input.x, input.y);
     ctx.globalAlpha = clamp(input.alpha, 0.18, 0.42);
-    this.drawPlayerFigure(ctx, input, 0.94, true);
-    ctx.globalAlpha = clamp(input.alpha * 0.72, 0.12, 0.32);
-    ctx.strokeStyle = VISUAL_PALETTE.player;
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 7]);
-    ctx.beginPath();
-    ctx.ellipse(0, 3, 31, 38, 0, 0, Math.PI * 2);
-    ctx.stroke();
+    this.drawPlayerSilhouette(ctx, input, true);
     ctx.restore();
   }
 
@@ -227,116 +197,37 @@ export class GameRenderer {
     ctx.restore();
   }
 
-  private drawPlayerFigure(
-    ctx: CanvasRenderingContext2D,
-    input: PlayerVisualInput,
-    scale: number,
-    clone: boolean,
-  ) {
-    const walk = input.moving
-      ? motionWave(this.frame.elapsed, 11, this.frame.reducedMotion ? 0 : 1)
-      : 0;
+  /**
+   * The hero when its sprite is missing (TEC-10): a paper disc in the ally rim on the hit circle, with an ink chevron
+   * toward the aim. The mirror clone is the same disc with a dashed rim; a shield adds the dashed outer ring.
+   */
+  private drawPlayerSilhouette(ctx: CanvasRenderingContext2D, input: PlayerVisualInput, clone: boolean) {
+    const radius = PLAYER_SILHOUETTE_RADIUS;
     const aimX = Math.cos(input.aimAngle);
     const aimY = Math.sin(input.aimAngle);
-    const sideX = -aimY;
-    const sideY = aimX;
-
     ctx.save();
-    ctx.scale(scale, scale);
     ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-
-    if (!clone && this.frame.detail !== 'minimal') {
-      ctx.globalAlpha = 0.18;
-      ctx.fillStyle = VISUAL_PALETTE.ink;
-      ctx.beginPath();
-      ctx.ellipse(-aimX * 4, 23 - aimY * 2, 21, 9, input.aimAngle * 0.15, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-
-    ctx.strokeStyle = clone ? VISUAL_PALETTE.player : VISUAL_PALETTE.ink;
-    ctx.fillStyle = clone ? VISUAL_PALETTE.paperBright : VISUAL_PALETTE.ink;
-    ctx.lineWidth = clone ? 3 : 3.5;
-    if (clone) ctx.setLineDash([6, 3]);
-
-    pathPolygon(ctx, PLAYER_BODY_POINTS);
-    drawPaperCut(ctx, clone ? VISUAL_PALETTE.paperBright : VISUAL_PALETTE.ink, clone ? VISUAL_PALETTE.player : VISUAL_PALETTE.ink, 3.5);
-
-    ctx.setLineDash([]);
-    ctx.fillStyle = clone ? VISUAL_PALETTE.playerCore : VISUAL_PALETTE.paperBright;
-    ctx.strokeStyle = clone ? VISUAL_PALETTE.player : VISUAL_PALETTE.ink;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(PLAYER_HEAD.x, PLAYER_HEAD.y, PLAYER_HEAD.radius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = clone ? VISUAL_PALETTE.player : VISUAL_PALETTE.ink;
-    ctx.beginPath();
-    ctx.moveTo(aimX * 11, -25 + aimY * 8);
-    ctx.lineTo(aimX * 18 + sideX * 4, -25 + aimY * 12 + sideY * 4);
-    ctx.lineTo(aimX * 18 - sideX * 4, -25 + aimY * 12 - sideY * 4);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.strokeStyle = clone ? VISUAL_PALETTE.player : VISUAL_PALETTE.player;
+    ctx.fillStyle = VISUAL_PALETTE.paperBright;
+    ctx.strokeStyle = VISUAL_PALETTE.player;
     ctx.lineWidth = 4;
+    if (clone) ctx.setLineDash([6, 4]);
     ctx.beginPath();
-    ctx.moveTo(-sideX * 8, -13 - sideY * 8);
-    ctx.quadraticCurveTo(
-      -aimX * 13 - sideX * 8,
-      -6 - aimY * 9 - sideY * 8,
-      -aimX * (30 + Math.abs(walk) * 3),
-      2 - aimY * 20,
-    );
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.fill();
     ctx.stroke();
-
-    ctx.strokeStyle = clone ? VISUAL_PALETTE.player : VISUAL_PALETTE.paperBright;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(-9, -7);
-    ctx.lineTo(9, -7);
-    ctx.moveTo(0, -10);
-    ctx.lineTo(0, 14);
-    ctx.stroke();
-
-    ctx.strokeStyle = clone ? VISUAL_PALETTE.player : VISUAL_PALETTE.ink;
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(-6, 20);
-    ctx.lineTo(-13 - walk * 3, 36);
-    ctx.moveTo(6, 20);
-    ctx.lineTo(14 + walk * 3, 35);
-    ctx.stroke();
-
-    const handX = aimX * 20;
-    const handY = -3 + aimY * 18;
-    ctx.strokeStyle = clone ? VISUAL_PALETTE.player : VISUAL_PALETTE.ink;
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(sideX * 8, -7 + sideY * 8);
-    ctx.lineTo(handX, handY);
-    ctx.moveTo(-sideX * 8, -7 - sideY * 8);
-    ctx.lineTo(handX - aimX * 5, handY - aimY * 5);
-    ctx.stroke();
-
-    ctx.strokeStyle = clone ? VISUAL_PALETTE.player : VISUAL_PALETTE.paperBright;
-    ctx.lineWidth = clone ? 4 : 7;
-    ctx.beginPath();
-    ctx.moveTo(handX - aimX * 8, handY - aimY * 8);
-    ctx.lineTo(handX + aimX * 28, handY + aimY * 28);
-    ctx.stroke();
-    ctx.strokeStyle = clone ? VISUAL_PALETTE.playerCore : VISUAL_PALETTE.ink;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
+    ctx.setLineDash([]);
+    ctx.fillStyle = VISUAL_PALETTE.ink;
+    pathPolygon(ctx, [
+      [aimX * radius * 0.7, aimY * radius * 0.7],
+      [(-aimY * 0.45 - aimX * 0.3) * radius, (aimX * 0.45 - aimY * 0.3) * radius],
+      [(aimY * 0.45 - aimX * 0.3) * radius, (-aimX * 0.45 - aimY * 0.3) * radius],
+    ]);
+    ctx.fill();
     if (input.shield > 0) {
-      ctx.strokeStyle = VISUAL_PALETTE.player;
       ctx.lineWidth = 3;
       ctx.setLineDash([8, 5]);
       ctx.beginPath();
-      ctx.arc(0, 3, 46, 0, Math.PI * 2);
+      ctx.arc(0, 0, radius + 12, 0, Math.PI * 2);
       ctx.stroke();
     }
     ctx.restore();
@@ -353,10 +244,8 @@ export class GameRenderer {
     for (const [color, width] of [[VISUAL_PALETTE.paperBright, 5], [VISUAL_PALETTE.player, 2.5]] as const) {
       ctx.strokeStyle = color;
       ctx.lineWidth = width;
-      pathPolygon(ctx, PLAYER_BODY_POINTS);
-      ctx.stroke();
       ctx.beginPath();
-      ctx.arc(PLAYER_HEAD.x, PLAYER_HEAD.y, PLAYER_HEAD.radius, 0, Math.PI * 2);
+      ctx.arc(0, 0, PLAYER_SILHOUETTE_RADIUS, 0, Math.PI * 2);
       ctx.stroke();
     }
     ctx.setLineDash([4, 4]);
@@ -447,179 +336,38 @@ export class GameRenderer {
     ctx.restore();
   }
 
+  /**
+   * An enemy when its sprite is missing (TEC-10): the hit circle in ink with the hostile rim and its role's glyph,
+   * turned to the heading: the stalker a small wedge, the charger a long one, the shooter a barrel on a stock, the
+   * warden a square. A hit flashes it paper, so a strike still reads.
+   */
   private drawMob(ctx: CanvasRenderingContext2D, input: EnemyVisualInput) {
-    const profile = enemyArtFor(this.frame.chapter, input.tier, input.attackStyle);
+    const role = enemyRoleFor(input.tier, input.attackStyle);
     const hit = input.hitFlash > 0;
-
-    if (this.frame.detail === 'full') {
-      ctx.save();
-      ctx.globalAlpha = 0.18;
-      ctx.fillStyle = VISUAL_PALETTE.ink;
-      ctx.beginPath();
-      ctx.ellipse(3, input.radius * 0.7, input.radius * 0.9, input.radius * 0.36, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    ctx.rotate(input.heading);
+    const glyph = input.radius * 0.5;
     ctx.lineJoin = 'round';
-    ctx.fillStyle = hit ? VISUAL_PALETTE.paperBright : profile.fill;
-    ctx.strokeStyle = VISUAL_PALETTE.ink;
+    ctx.fillStyle = hit ? VISUAL_PALETTE.paperBright : VISUAL_PALETTE.ink;
+    ctx.strokeStyle = VISUAL_PALETTE.danger;
     ctx.lineWidth = input.tier === 'large' ? 4 : 3;
-
-    this.drawMobHull(ctx, profile, input.radius, input.variant);
+    ctx.beginPath();
+    ctx.arc(0, 0, input.radius, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-    this.drawMobRoleMark(ctx, profile, input.radius);
-    this.drawChapterMaterial(ctx, profile, input.radius, input.variant);
-
-    if (input.attackStyle === 'ranged') {
-      ctx.fillStyle = profile.core;
-      ctx.strokeStyle = VISUAL_PALETTE.paperBright;
-      ctx.lineWidth = 1.5;
+    ctx.rotate(input.heading);
+    ctx.fillStyle = hit ? VISUAL_PALETTE.ink : VISUAL_PALETTE.paperBright;
+    if (role === 'stalker') {
+      pathPolygon(ctx, [[glyph, 0], [-glyph * 0.6, -glyph * 0.8], [-glyph * 0.6, glyph * 0.8]]);
+    } else if (role === 'charger') {
+      pathPolygon(ctx, [[glyph * 1.3, 0], [-glyph * 0.8, -glyph * 0.6], [-glyph * 0.35, 0], [-glyph * 0.8, glyph * 0.6]]);
+    } else if (role === 'shooter') {
       ctx.beginPath();
-      ctx.arc(input.radius * 0.58, 0, Math.max(3.5, input.radius * 0.18), 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-    }
-  }
-
-  private drawMobHull(
-    ctx: CanvasRenderingContext2D,
-    profile: EnemyArtProfile,
-    radius: number,
-    variant: number,
-  ) {
-    if (profile.role === 'stalker') {
-      pathPolygon(ctx, [
-        [radius * 1.15, 0],
-        [radius * 0.12, -radius * 0.78],
-        [-radius * 0.72, -radius * 0.48],
-        [-radius, 0],
-        [-radius * 0.62, radius * 0.58],
-        [radius * 0.12, radius * 0.82],
-      ]);
-    } else if (profile.role === 'charger') {
-      pathPolygon(ctx, [
-        [radius * 1.25, 0],
-        [radius * 0.35, -radius * 0.88],
-        [-radius * 0.78, -radius * 0.68],
-        [-radius, 0],
-        [-radius * 0.78, radius * 0.68],
-        [radius * 0.35, radius * 0.88],
-      ]);
-    } else if (profile.role === 'shooter') {
-      pathPolygon(ctx, [
-        [radius, 0],
-        [radius * 0.28, -radius * 0.78],
-        [-radius * 0.74, -radius * 0.62],
-        [-radius * 1.02, 0],
-        [-radius * 0.74, radius * 0.62],
-        [radius * 0.28, radius * 0.78],
-      ]);
-    } else {
-      const inset = variant % 2 === 0 ? 0.72 : 0.62;
-      pathPolygon(ctx, [
-        [radius * 0.92, -radius * 0.72],
-        [radius * 1.05, radius * 0.28],
-        [radius * 0.5, radius],
-        [-radius * 0.5, radius],
-        [-radius * 1.05, radius * 0.28],
-        [-radius * 0.92, -radius * 0.72],
-        [0, -radius * inset],
-      ]);
-    }
-  }
-
-  private drawMobRoleMark(
-    ctx: CanvasRenderingContext2D,
-    profile: EnemyArtProfile,
-    radius: number,
-  ) {
-    ctx.save();
-    ctx.strokeStyle = VISUAL_PALETTE.paperBright;
-    ctx.fillStyle = profile.core;
-    ctx.lineWidth = Math.max(1.5, radius * 0.08);
-    if (profile.role === 'stalker') {
-      ctx.beginPath();
-      ctx.moveTo(-radius * 0.3, -radius * 0.2);
-      ctx.lineTo(radius * 0.5, radius * 0.2);
-      ctx.stroke();
-    } else if (profile.role === 'charger') {
-      pathPolygon(ctx, [
-        [radius * 0.42, 0],
-        [-radius * 0.18, -radius * 0.32],
-        [-radius * 0.18, radius * 0.32],
-      ]);
-      ctx.fill();
-      ctx.stroke();
-    } else if (profile.role === 'shooter') {
-      ctx.beginPath();
-      ctx.arc(0, 0, radius * 0.3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(radius * 0.24, 0);
-      ctx.lineTo(radius * 0.72, 0);
-      ctx.stroke();
-    } else {
-      ctx.strokeRect(-radius * 0.44, -radius * 0.34, radius * 0.88, radius * 0.68);
-      ctx.beginPath();
-      ctx.moveTo(-radius * 0.32, 0);
-      ctx.lineTo(radius * 0.32, 0);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  private drawChapterMaterial(
-    ctx: CanvasRenderingContext2D,
-    profile: EnemyArtProfile,
-    radius: number,
-    variant: number,
-  ) {
-    if (this.frame.detail === 'minimal') return;
-    ctx.save();
-    ctx.strokeStyle = profile.accent;
-    ctx.lineWidth = Math.max(1.5, radius * 0.07);
-    ctx.globalAlpha = 0.96;
-    if (profile.material === 'scrap') {
-      ctx.beginPath();
-      ctx.moveTo(-radius * 0.6, -radius * 0.5);
-      ctx.lineTo(radius * 0.42, radius * 0.54);
-      ctx.moveTo(-radius * 0.12, -radius * 0.62);
-      ctx.lineTo(radius * 0.62, radius * 0.08);
-      ctx.stroke();
-    } else if (profile.material === 'iron') {
-      ctx.beginPath();
-      ctx.arc(0, radius * 0.2, radius * 0.48, Math.PI, Math.PI * 2);
-      ctx.moveTo(-radius * 0.48, radius * 0.2);
-      ctx.lineTo(-radius * 0.48, radius * 0.52);
-      ctx.moveTo(radius * 0.48, radius * 0.2);
-      ctx.lineTo(radius * 0.48, radius * 0.52);
-      ctx.stroke();
-    } else if (profile.material === 'water') {
-      for (let index = -1; index <= 1; index += 1) {
-        ctx.beginPath();
-        ctx.moveTo(-radius * 0.62, index * radius * 0.25);
-        ctx.quadraticCurveTo(0, index * radius * 0.25 - radius * 0.2, radius * 0.62, index * radius * 0.25);
-        ctx.stroke();
-      }
-    } else if (profile.material === 'clockwork') {
-      ctx.beginPath();
-      ctx.arc(0, 0, radius * 0.48, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(Math.cos(variant) * radius * 0.4, Math.sin(variant) * radius * 0.4);
-      ctx.stroke();
+      ctx.rect(-glyph * 0.7, -glyph * 0.8, glyph * 0.45, glyph * 1.6);
+      ctx.rect(-glyph * 0.3, -glyph * 0.2, glyph * 1.5, glyph * 0.4);
     } else {
       ctx.beginPath();
-      ctx.arc(-radius * 0.08, 0, radius * 0.5, Math.PI * 0.25, Math.PI * 1.75);
-      ctx.arc(radius * 0.18, 0, radius * 0.4, Math.PI * 0.25, Math.PI * 1.75);
-      ctx.stroke();
+      ctx.rect(-glyph * 0.7, -glyph * 0.7, glyph * 1.4, glyph * 1.4);
     }
-    ctx.restore();
+    ctx.fill();
   }
 
   private drawBoss(ctx: CanvasRenderingContext2D, input: EnemyVisualInput) {
@@ -1191,11 +939,6 @@ export class GameRenderer {
     ctx.restore();
   }
 
-  drawObstacle(ctx: CanvasRenderingContext2D, obstacle: Obstacle) {
-    this.drawObstacleShadow(ctx, obstacle);
-    this.drawObstacleBlock(ctx, obstacle);
-  }
-
   /** The cast shadow on the floor, drawn under every body (TEC-12). */
   drawObstacleShadow(ctx: CanvasRenderingContext2D, obstacle: Obstacle) {
     ctx.save();
@@ -1205,168 +948,19 @@ export class GameRenderer {
     ctx.restore();
   }
 
-  /** The block itself, depth-sorted with characters by its bottom edge (TEC-12). */
+  /**
+   * The block, depth-sorted with characters by its bottom edge (TEC-12). Kit props draw from the chapter pack; this is
+   * their load-failure fallback and classic rules' random block (TEC-10): a plain inked block with a lighter top face.
+   */
   drawObstacleBlock(ctx: CanvasRenderingContext2D, obstacle: Obstacle) {
-    const art = CHAPTER_ART[this.frame.chapter];
-    const inset = clamp(Math.min(obstacle.w, obstacle.h) * 0.11, 6, 14);
-    const centerX = obstacle.x + obstacle.w / 2;
-    const centerY = obstacle.y + obstacle.h / 2;
-    const left = obstacle.x + inset;
-    const top = obstacle.y + inset;
-    const width = Math.max(1, obstacle.w - inset * 2);
-    const height = Math.max(1, obstacle.h - inset * 2);
-
     ctx.save();
-    ctx.fillStyle = art.accent;
-    pathPolygon(ctx, [
-      [obstacle.x, obstacle.y],
-      [obstacle.x + 10, obstacle.y - 8],
-      [obstacle.x + obstacle.w + 10, obstacle.y - 8],
-      [obstacle.x + obstacle.w, obstacle.y],
-    ]);
-    drawPaperCut(ctx, art.accent, VISUAL_PALETTE.ink, 3);
-
-    ctx.fillStyle = obstacle.kind === 'pillar' ? VISUAL_PALETTE.inkSoft : art.surface;
+    ctx.fillStyle = VISUAL_PALETTE.paperShadow;
+    ctx.fillRect(obstacle.x, obstacle.y - 8, obstacle.w, 8);
+    ctx.fillStyle = obstacle.kind === 'pillar' ? VISUAL_PALETTE.inkSoft : CHAPTER_ART[this.frame.chapter].surface;
+    ctx.fillRect(obstacle.x, obstacle.y, obstacle.w, obstacle.h);
     ctx.strokeStyle = VISUAL_PALETTE.ink;
     ctx.lineWidth = 3.5;
-    ctx.fillRect(obstacle.x, obstacle.y, obstacle.w, obstacle.h);
-    ctx.strokeRect(obstacle.x, obstacle.y, obstacle.w, obstacle.h);
-    ctx.strokeStyle = obstacle.kind === 'pillar' ? art.surface : VISUAL_PALETTE.paperBright;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(left, top, width, height);
-
-    ctx.fillStyle = VISUAL_PALETTE.ink;
-    for (const [x, y] of [
-      [obstacle.x + 7, obstacle.y + 7],
-      [obstacle.x + obstacle.w - 7, obstacle.y + 7],
-      [obstacle.x + 7, obstacle.y + obstacle.h - 7],
-      [obstacle.x + obstacle.w - 7, obstacle.y + obstacle.h - 7],
-    ]) {
-      ctx.beginPath();
-      ctx.arc(x, y, 2.4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    if (this.frame.detail !== 'minimal') {
-      this.drawObstacleMaterial(ctx, art.obstacleMaterial, {
-        left,
-        top,
-        width,
-        height,
-        centerX,
-        centerY,
-        accent: art.accent,
-        id: obstacle.id,
-      });
-    }
-    ctx.restore();
-  }
-
-  private drawObstacleMaterial(
-    ctx: CanvasRenderingContext2D,
-    material: (typeof CHAPTER_ART)[1]['obstacleMaterial'],
-    geometry: {
-      left: number;
-      top: number;
-      width: number;
-      height: number;
-      centerX: number;
-      centerY: number;
-      accent: string;
-      id: number;
-    },
-  ) {
-    const { left, top, width, height, centerX, centerY, accent, id } = geometry;
-    ctx.save();
-    ctx.strokeStyle = accent;
-    ctx.fillStyle = accent;
-    ctx.lineWidth = 2.5;
-    ctx.globalAlpha = 0.9;
-
-    if (material === 'plaster') {
-      const spacing = Math.max(16, Math.min(28, height / 3));
-      for (let y = top + spacing; y < top + height; y += spacing) {
-        ctx.beginPath();
-        ctx.moveTo(left + 3, y);
-        ctx.lineTo(left + width - 3, y - 5);
-        ctx.stroke();
-      }
-      if (width > 54 && height > 42) {
-        ctx.fillStyle = VISUAL_PALETTE.paperBright;
-        ctx.fillRect(centerX - 18, centerY - 22, 36, 44);
-        ctx.strokeStyle = VISUAL_PALETTE.ink;
-        ctx.strokeRect(centerX - 18, centerY - 22, 36, 44);
-        ctx.beginPath();
-        ctx.moveTo(centerX - 11, centerY - 13);
-        ctx.lineTo(centerX + 11, centerY + 13);
-        ctx.moveTo(centerX + 11, centerY - 13);
-        ctx.lineTo(centerX - 11, centerY + 13);
-        ctx.stroke();
-      }
-    } else if (material === 'iron') {
-      const arch = Math.max(10, Math.min(width * 0.38, height * 0.42));
-      ctx.beginPath();
-      ctx.arc(centerX, top + height * 0.62, arch, Math.PI, Math.PI * 2);
-      ctx.lineTo(centerX + arch, top + height * 0.88);
-      ctx.moveTo(centerX - arch, top + height * 0.62);
-      ctx.lineTo(centerX - arch, top + height * 0.88);
-      ctx.stroke();
-      for (let x = centerX - arch * 0.6; x <= centerX + arch * 0.6; x += Math.max(8, arch * 0.4)) {
-        ctx.beginPath();
-        ctx.moveTo(x, top + height * 0.38);
-        ctx.lineTo(x, top + height * 0.84);
-        ctx.stroke();
-      }
-    } else if (material === 'stone') {
-      for (let index = -1; index <= 1; index += 1) {
-        const y = centerY + index * Math.min(18, height * 0.22);
-        ctx.beginPath();
-        ctx.moveTo(left + 3, y);
-        ctx.bezierCurveTo(left + width * 0.28, y - 10, left + width * 0.68, y + 10, left + width - 3, y);
-        ctx.stroke();
-      }
-    } else if (material === 'brass') {
-      const radius = Math.max(10, Math.min(width, height) * 0.3);
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-      ctx.stroke();
-      for (let index = 0; index < 8; index += 1) {
-        const angle = index * Math.PI / 4;
-        ctx.beginPath();
-        ctx.moveTo(centerX + Math.cos(angle) * radius * 0.72, centerY + Math.sin(angle) * radius * 0.72);
-        ctx.lineTo(centerX + Math.cos(angle) * radius, centerY + Math.sin(angle) * radius);
-        ctx.stroke();
-      }
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.lineTo(centerX + radius * 0.14, centerY - radius * 0.72);
-      ctx.moveTo(centerX, centerY);
-      ctx.lineTo(centerX + radius * 0.58, centerY + radius * 0.2);
-      ctx.stroke();
-    } else {
-      const radius = Math.max(10, Math.min(width, height) * 0.3);
-      ctx.fillStyle = '#18151c';
-      ctx.beginPath();
-      ctx.ellipse(centerX, centerY, radius * 1.24, radius, id * 0.13, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.setLineDash([6, 5]);
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius * 1.42, Math.PI * 0.12, Math.PI * 1.88);
-      ctx.stroke();
-    }
-
-    ctx.setLineDash([]);
-    ctx.globalAlpha = 0.38;
-    ctx.strokeStyle = VISUAL_PALETTE.ink;
-    ctx.lineWidth = 1.5;
-    const crack = ((id % 5) - 2) * Math.min(9, width * 0.08);
-    ctx.beginPath();
-    ctx.moveTo(centerX + crack, top + 3);
-    ctx.lineTo(centerX + crack - 7, centerY - 3);
-    ctx.lineTo(centerX + crack + 5, centerY + 7);
-    ctx.lineTo(centerX + crack - 3, top + height - 3);
-    ctx.stroke();
+    ctx.strokeRect(obstacle.x, obstacle.y - 8, obstacle.w, obstacle.h + 8);
     ctx.restore();
   }
 

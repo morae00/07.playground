@@ -95,6 +95,31 @@ test('vector bodies face where they walk and hold that heading when they stop, i
   }
 });
 
+test('the hero runs only when it really moves: a rooted hero holding a key stands (BUG-15)', async () => {
+  const atlas = new SpriteAtlas({ loadManifest: async () => ATLAS_MANIFEST, loadImage: async (url) => ({ url, width: 2048, height: 2048 }) });
+  assert.equal(await atlas.load('common'), true);
+  const { engine, probe, images } = arena(1, 2);
+  try {
+    engine.setSprites(atlas);
+    const heroFrames = Object.entries(ATLAS_MANIFEST.packs.common.frames).filter(([key]) => key.startsWith('hero/'));
+    const heroState = () => {
+      images.length = 0;
+      probe.render(1);
+      const drawn = heroFrames.find(([, frame]) => images.some((draw) => draw.sx === frame[1] && draw.sy === frame[2]));
+      return drawn?.[0].split('/')[1];
+    };
+    probe.setPlayer({ root: 5 });
+    engine.dispatch({ type: 'input/action', action: 'moveRight', pressed: true });
+    probe.step(6);
+    assert.equal(heroState(), 'idle', 'a rooted hero holding a key stands');
+    probe.setPlayer({ root: 0 });
+    probe.step(6);
+    assert.equal(heroState(), 'run', 'once free it runs');
+  } finally {
+    engine.dispose();
+  }
+});
+
 test('a Ch1 shooter keeps its windup pose for a moment after the shot leaves', async () => {
   const atlas = new SpriteAtlas({ loadManifest: async () => ATLAS_MANIFEST, loadImage: async (url) => ({ url, width: 2048, height: 2048 }) });
   assert.equal(await atlas.load('common'), true);
