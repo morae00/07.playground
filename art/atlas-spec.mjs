@@ -55,6 +55,49 @@ function heroFrames() {
   return frames;
 }
 
+/**
+ * Ch1 round bosses from PN.bossesA (API-bosses1): 400x400 box facing right, feet at y 392, 0.4 world units per
+ * box unit. Every phase (1-3) comes in idle and windup, calm and enraged. The windup key bow rises 132 units
+ * above the box, so the cells get 150 units of extra room on top.
+ */
+export const BOSS_SPRITES = Object.freeze({
+  'boss/1/butcher': { kit: 'butcher', bossId: 's1-mid-dash' },
+  'boss/1/gaoler': { kit: 'gaoler', bossId: 's1-final-rings' },
+});
+
+export function bossStates() {
+  const states = [];
+  for (const phase of [1, 2, 3]) {
+    for (const windup of [false, true]) {
+      for (const enraged of [false, true]) {
+        states.push({ key: `phase${phase}${windup ? '-windup' : ''}${enraged ? '-enraged' : ''}`, phase, windup, enraged });
+      }
+    }
+  }
+  return states;
+}
+
+function bossFrames() {
+  const frames = [];
+  for (const [slot, { kit }] of Object.entries(BOSS_SPRITES)) {
+    for (const state of bossStates()) {
+      frames.push({
+        key: `${slot}/${state.key}/0`,
+        call: ['PN.bossesA.draw', kit, { phase: state.phase, windup: state.windup, enraged: state.enraged, lod: 'game', halo: true, shadow: false, fx: true }],
+        box: [400, 400],
+        anchor: [200, 392],
+        scale: 0.4,
+        extraPad: [150, 0, 0, 0],
+      });
+    }
+  }
+  return frames;
+}
+
+function bossAnimations() {
+  return Object.fromEntries(Object.keys(BOSS_SPRITES).map((slot) => [slot, Object.fromEntries(bossStates().map((state) => [state.key, { frames: 1, fps: 1 }]))]));
+}
+
 /** Filled from the kit's own metadata at bake time (box, pivot, feet, displayScale, walk frame count). */
 function enemyFrames(chapter) {
   return Object.entries(ENEMY_ROLES).map(([role, { fit }]) => ({
@@ -65,5 +108,5 @@ function enemyFrames(chapter) {
 
 export const PACKS = Object.freeze({
   common: { page: 'assets/atlas/common', frames: heroFrames() },
-  'chapter-01': { page: 'assets/packs/chapter-01/atlas', frames: enemyFrames(1) },
+  'chapter-01': { page: 'assets/packs/chapter-01/atlas', frames: [...enemyFrames(1), ...bossFrames()], animations: bossAnimations() },
 });

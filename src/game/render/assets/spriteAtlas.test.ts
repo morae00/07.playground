@@ -29,6 +29,9 @@ test('the baked manifest is complete: every animation frame exists and sits insi
     }
   }
   for (const role of ['stalker', 'charger', 'shooter', 'warden']) assert.ok(manifest.animations[`enemy/1/${role}`], `Ch1 ${role}`);
+  for (const boss of ['butcher', 'gaoler']) {
+    assert.equal(Object.keys(manifest.animations[`boss/1/${boss}`]).length, 12, `Ch1 ${boss}: 3 phases x windup x enraged`);
+  }
   assert.deepEqual(Object.keys(manifest.animations[HERO_SLOT]).sort(), ['hurt', 'idle', 'run', 'throw']);
   assert.equal(manifest.atlasScale, 2, 'atlas pixels per world unit');
 });

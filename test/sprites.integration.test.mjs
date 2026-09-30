@@ -76,7 +76,7 @@ test('the hero draws from the atlas with its feet on the player position', async
   }
 });
 
-test('Ch1 enemies draw from the chapter pack; bosses and other chapters keep vectors', async () => {
+test('Ch1 enemies and round bosses draw from the chapter pack; field bosses and other chapters keep vectors', async () => {
   const atlas = await loadedAtlas();
   const ch1 = arena(1, 2, atlas);
   try {
@@ -97,7 +97,19 @@ test('Ch1 enemies draw from the chapter pack; bosses and other chapters keep vec
   try {
     boss.engine.probe.spawnBoss('mid');
     boss.engine.probe.render(1);
-    assert.equal(boss.images.filter((draw) => draw.image.url?.includes('chapter-01')).length, 0, 'bosses are not in the pack yet');
+    const butcher = ATLAS_MANIFEST.packs['chapter-01'].frames['boss/1/butcher/phase1/0'];
+    assert.ok(boss.images.some((draw) => draw.image.url === 'assets/packs/chapter-01/atlas-0.png' && draw.sx === butcher[1] && draw.sy === butcher[2]), 'the Ink Butcher draws its phase 1 art');
+    const id = boss.engine.probe.read().enemies.find((enemy) => enemy.isBoss).id;
+    boss.engine.probe.patchEnemy(id, { bossPhase: 3, patternPhase: 'warn' });
+    boss.images.length = 0;
+    boss.engine.probe.render(1);
+    const windup = ATLAS_MANIFEST.packs['chapter-01'].frames['boss/1/butcher/phase3-windup/0'];
+    assert.ok(boss.images.some((draw) => draw.sx === windup[1] && draw.sy === windup[2]), 'phase 3 winding up uses its own drawing');
+    boss.engine.probe.clear('enemies');
+    boss.engine.probe.spawnBoss('field');
+    boss.images.length = 0;
+    boss.engine.probe.render(1);
+    assert.equal(boss.images.filter((draw) => draw.image.url?.includes('chapter-01')).length, 0, 'the field boss has no kit art yet');
   } finally {
     boss.engine.dispose();
   }

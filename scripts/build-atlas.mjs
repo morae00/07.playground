@@ -8,7 +8,7 @@ import { ATLAS_SCALE, BAKE_MARGIN, COLOR_MAP, ENEMY_ROLES, FRAME_PADDING, HERO_S
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const kitDir = path.join(root, 'art/concept-kit');
-const KIT_FILES = ['lib.js', 'k-hero.js', 'k-enemies.js'];
+const KIT_FILES = ['lib.js', 'k-hero.js', 'k-enemies.js', 'k-bosses1.js'];
 
 const browser = await chromium.launch();
 try {
@@ -35,6 +35,7 @@ try {
     });
     manifest.packs[packName] = { pages: pagePaths, frames: Object.fromEntries(Object.entries(table).sort(([a], [b]) => a.localeCompare(b))) };
     for (const item of frames) if (item.animation) manifest.animations[item.animation.key] = item.animation.spec;
+    Object.assign(manifest.animations, pack.animations ?? {});
     console.log(`${packName}: ${frames.length} frames on ${pages.length} page(s): ${pages.map((sheet) => `${sheet.width}x${sheet.height}`).join(', ')}`);
   }
   manifest.animations.hero = Object.fromEntries(Object.entries(HERO_STATES).map(([state, spec]) => [state, spec]));
@@ -120,10 +121,12 @@ async function renderFrames({ frames, scale, margin, colorMap, roles }) {
     for (const [from, to] of colorMap) markup = markup.replace(new RegExp(from, 'gi'), to);
     const pxPerUnit = frame.scale * scale;
     const pad = margin / pxPerUnit;
+    // Extra room in box units for drawings that reach past their box: [top, right, bottom, left].
+    const [padTop, padRight, padBottom, padLeft] = frame.extraPad ?? [0, 0, 0, 0];
     const [bw, bh] = frame.box;
-    const width = Math.ceil(bw * pxPerUnit + margin * 2);
-    const height = Math.ceil(bh * pxPerUnit + margin * 2);
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${-pad} ${-pad} ${width / pxPerUnit} ${height / pxPerUnit}">${markup}</svg>`;
+    const width = Math.ceil((bw + padLeft + padRight) * pxPerUnit + margin * 2);
+    const height = Math.ceil((bh + padTop + padBottom) * pxPerUnit + margin * 2);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${-pad - padLeft} ${-pad - padTop} ${width / pxPerUnit} ${height / pxPerUnit}">${markup}</svg>`;
     const image = new Image();
     image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
     await image.decode();
@@ -153,8 +156,8 @@ async function renderFrames({ frames, scale, margin, colorMap, roles }) {
     trimmed.width = w;
     trimmed.height = h;
     trimmed.getContext('2d').drawImage(canvas, left, top, w, h, 0, 0, w, h);
-    const ax = Math.round(((frame.anchor[0] + pad) * pxPerUnit - left) * 10) / 10;
-    const ay = Math.round(((frame.anchor[1] + pad) * pxPerUnit - top) * 10) / 10;
+    const ax = Math.round(((frame.anchor[0] + pad + padLeft) * pxPerUnit - left) * 10) / 10;
+    const ay = Math.round(((frame.anchor[1] + pad + padTop) * pxPerUnit - top) * 10) / 10;
     out.push({ key: frame.key, w, h, ax, ay, png: trimmed.toDataURL('image/png'), animation: frame.animation });
   }
   return out;

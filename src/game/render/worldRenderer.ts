@@ -25,7 +25,7 @@ import { distance } from '../worldMath.ts';
 import { PLAYER_CAST_POSE_SECONDS, PLAYER_HURT_POSE_SECONDS } from '../presentation/presentation.ts';
 import { WARDEN_SHIELD } from '../enemyBehaviors.ts';
 import { loopFrame, phaseFor, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
-import { CHAPTER_PACKS, HERO_SLOT, enemyDrawScale, enemySlot, frameKey, slotEnabled, type HeroState } from './assets/slots.ts';
+import { BOSS_SLOTS, CHAPTER_PACKS, HERO_SLOT, bossState, enemyDrawScale, enemySlot, frameKey, slotEnabled, type HeroState } from './assets/slots.ts';
 import { GameRenderer } from './GameRenderer.ts';
 import { NEUTRAL, SIGNAL, rgba } from './palette.ts';
 import { createRenderFrameSnapshot } from './renderSnapshot.ts';
@@ -1026,10 +1026,11 @@ export class WorldRenderer {
     ctx.restore();
   }
 
-  /** An enemy's atlas frame, facing, and scale, or undefined to draw it with vectors (bosses stay vector). */
+  /** An enemy's atlas frame, facing, and scale, or undefined to draw it with vectors. */
   private enemySprite(enemy: Readonly<Entity>) {
     const sprites = this.sprites;
-    if (!sprites || enemy.isBoss) return undefined;
+    if (!sprites) return undefined;
+    if (enemy.isBoss) return this.bossSprite(enemy, sprites);
     const pack = CHAPTER_PACKS[this.world.chapter];
     if (!pack || sprites.status(pack) !== 'ready') return undefined;
     const slot = enemySlot(this.world.chapter, enemy.tier, enemy.attackStyle);
@@ -1050,6 +1051,23 @@ export class WorldRenderer {
     const facing: 1 | -1 = lateral !== 0 ? (lateral < 0 ? -1 : 1) : this.enemyFacing.get(enemy.id) ?? (this.world.player.x < enemy.x ? -1 : 1);
     this.enemyFacing.set(enemy.id, facing);
     return { frame, facing, scale: enemyDrawScale(enemyRoleFor(enemy.tier, enemy.attackStyle), enemy.tier) };
+  }
+
+  /**
+   * A round boss's frame (TEC-03b): its phase art, the windup pose while a dash winds up or a volley is armed,
+   * and the enraged variant. The kit draws bosses facing right; they turn toward the dash or the player.
+   */
+  private bossSprite(enemy: Readonly<Entity>, sprites: SpriteAtlas) {
+    const entry = enemy.boss ? BOSS_SLOTS[enemy.boss.id] : undefined;
+    if (!entry || !slotEnabled(entry.slot) || sprites.status(entry.pack) !== 'ready') return undefined;
+    const windup = enemy.patternPhase === 'warn' || enemy.armedPattern !== undefined;
+    const frame = sprites.frame(frameKey(entry.slot, bossState(enemy.bossPhase ?? 1, windup, this.world.bossEnraged), 0));
+    if (!frame) return undefined;
+    // Classic rules keep a target point in patternX during the windup, so only the dash itself reads velocity.
+    const heading = enemy.patternPhase === 'dash' ? enemy.vx : this.world.player.x - enemy.x;
+    const facing: 1 | -1 = Math.abs(heading) > 5 ? (heading < 0 ? -1 : 1) : this.enemyFacing.get(enemy.id) ?? 1;
+    this.enemyFacing.set(enemy.id, facing);
+    return { frame, facing, scale: 1 };
   }
 
   private drawParticles(ctx: CanvasRenderingContext2D) {

@@ -38,38 +38,162 @@ export const ATLAS_MANIFEST = {
         "assets/packs/chapter-01/atlas-0.png"
       ],
       "frames": {
-        "enemy/1/charger/hit/0": [0, 1262, 2, 153, 111, 70, 102.1],
-        "enemy/1/charger/idle/0": [0, 149, 192, 143, 101, 65, 97.1],
-        "enemy/1/charger/walk/0": [0, 2, 192, 143, 102, 65, 97.1],
-        "enemy/1/charger/walk/1": [0, 1713, 2, 144, 103, 65, 99.1],
-        "enemy/1/charger/walk/2": [0, 1419, 2, 143, 104, 65, 100.1],
-        "enemy/1/charger/walk/3": [0, 296, 192, 143, 101, 65, 97.1],
-        "enemy/1/charger/walk/4": [0, 1861, 2, 144, 103, 65, 99.1],
-        "enemy/1/charger/walk/5": [0, 1566, 2, 143, 104, 65, 100.1],
-        "enemy/1/charger/windup/0": [0, 443, 192, 148, 96, 74, 89.1],
-        "enemy/1/shooter/hit/0": [0, 595, 192, 94, 96, 30.4, 89.4],
-        "enemy/1/shooter/idle/0": [0, 797, 192, 86, 88, 26.4, 85.4],
-        "enemy/1/shooter/walk/0": [0, 887, 192, 85, 88, 25.4, 85.4],
-        "enemy/1/shooter/walk/1": [0, 976, 192, 85, 88, 25.4, 85.4],
-        "enemy/1/shooter/windup/0": [0, 693, 192, 100, 90, 28.4, 87.4],
-        "enemy/1/stalker/hit/0": [0, 1065, 192, 109, 65, 52, 57.7],
-        "enemy/1/stalker/idle/0": [0, 1610, 192, 101, 57, 48, 53.7],
-        "enemy/1/stalker/walk/0": [0, 1402, 192, 100, 59, 48, 55.7],
-        "enemy/1/stalker/walk/1": [0, 1178, 192, 108, 64, 56, 60.7],
-        "enemy/1/stalker/walk/2": [0, 1506, 192, 100, 59, 48, 55.7],
-        "enemy/1/stalker/walk/3": [0, 1290, 192, 108, 64, 56, 60.7],
-        "enemy/1/stalker/windup/0": [0, 1715, 192, 102, 55, 48, 51.7],
-        "enemy/1/warden/hit/0": [0, 2, 2, 185, 186, 88, 176.8],
-        "enemy/1/warden/idle/0": [0, 725, 2, 175, 176, 83, 171.8],
-        "enemy/1/warden/walk/0": [0, 904, 2, 175, 169, 83, 164.8],
-        "enemy/1/warden/walk/1": [0, 369, 2, 176, 178, 82, 173.8],
-        "enemy/1/warden/walk/2": [0, 1083, 2, 175, 169, 83, 164.8],
-        "enemy/1/warden/walk/3": [0, 549, 2, 172, 178, 83, 173.8],
-        "enemy/1/warden/windup/0": [0, 191, 2, 174, 185, 88, 180.8]
+        "boss/1/butcher/phase1-enraged/0": [0, 2, 1165, 318, 319, 144, 296.6],
+        "boss/1/butcher/phase1-windup-enraged/0": [0, 2, 825, 339, 336, 165, 319.6],
+        "boss/1/butcher/phase1-windup/0": [0, 1031, 825, 323, 331, 157, 319.6],
+        "boss/1/butcher/phase1/0": [0, 968, 1165, 302, 294, 136, 278.6],
+        "boss/1/butcher/phase2-enraged/0": [0, 324, 1165, 318, 319, 144, 296.6],
+        "boss/1/butcher/phase2-windup-enraged/0": [0, 345, 825, 339, 336, 165, 319.6],
+        "boss/1/butcher/phase2-windup/0": [0, 1358, 825, 323, 331, 157, 319.6],
+        "boss/1/butcher/phase2/0": [0, 1274, 1165, 302, 294, 136, 278.6],
+        "boss/1/butcher/phase3-enraged/0": [0, 646, 1165, 318, 319, 144, 296.6],
+        "boss/1/butcher/phase3-windup-enraged/0": [0, 688, 825, 339, 336, 165, 319.6],
+        "boss/1/butcher/phase3-windup/0": [0, 1685, 825, 323, 331, 157, 319.6],
+        "boss/1/butcher/phase3/0": [0, 1580, 1165, 302, 294, 136, 278.6],
+        "boss/1/gaoler/phase1-enraged/0": [0, 2, 458, 340, 363, 168, 340.6],
+        "boss/1/gaoler/phase1-windup-enraged/0": [0, 2, 2, 331, 452, 168, 429.6],
+        "boss/1/gaoler/phase1-windup/0": [0, 1326, 2, 315, 443, 160, 421.6],
+        "boss/1/gaoler/phase1/0": [0, 1362, 458, 324, 354, 160, 332.6],
+        "boss/1/gaoler/phase2-enraged/0": [0, 346, 458, 340, 363, 168, 340.6],
+        "boss/1/gaoler/phase2-windup-enraged/0": [0, 337, 2, 331, 452, 168, 429.6],
+        "boss/1/gaoler/phase2-windup/0": [0, 1645, 2, 315, 443, 160, 421.6],
+        "boss/1/gaoler/phase2/0": [0, 1690, 458, 324, 354, 160, 332.6],
+        "boss/1/gaoler/phase3-enraged/0": [0, 690, 458, 340, 363, 168, 340.6],
+        "boss/1/gaoler/phase3-windup-enraged/0": [0, 672, 2, 331, 452, 168, 429.6],
+        "boss/1/gaoler/phase3-windup/0": [0, 1007, 2, 315, 444, 160, 421.6],
+        "boss/1/gaoler/phase3/0": [0, 1034, 458, 324, 355, 160, 332.6],
+        "enemy/1/charger/hit/0": [0, 1262, 1488, 153, 111, 70, 102.1],
+        "enemy/1/charger/idle/0": [0, 149, 1678, 143, 101, 65, 97.1],
+        "enemy/1/charger/walk/0": [0, 2, 1678, 143, 102, 65, 97.1],
+        "enemy/1/charger/walk/1": [0, 1713, 1488, 144, 103, 65, 99.1],
+        "enemy/1/charger/walk/2": [0, 1419, 1488, 143, 104, 65, 100.1],
+        "enemy/1/charger/walk/3": [0, 296, 1678, 143, 101, 65, 97.1],
+        "enemy/1/charger/walk/4": [0, 1861, 1488, 144, 103, 65, 99.1],
+        "enemy/1/charger/walk/5": [0, 1566, 1488, 143, 104, 65, 100.1],
+        "enemy/1/charger/windup/0": [0, 443, 1678, 148, 96, 74, 89.1],
+        "enemy/1/shooter/hit/0": [0, 595, 1678, 94, 96, 30.4, 89.4],
+        "enemy/1/shooter/idle/0": [0, 797, 1678, 86, 88, 26.4, 85.4],
+        "enemy/1/shooter/walk/0": [0, 887, 1678, 85, 88, 25.4, 85.4],
+        "enemy/1/shooter/walk/1": [0, 976, 1678, 85, 88, 25.4, 85.4],
+        "enemy/1/shooter/windup/0": [0, 693, 1678, 100, 90, 28.4, 87.4],
+        "enemy/1/stalker/hit/0": [0, 1065, 1678, 109, 65, 52, 57.7],
+        "enemy/1/stalker/idle/0": [0, 1610, 1678, 101, 57, 48, 53.7],
+        "enemy/1/stalker/walk/0": [0, 1402, 1678, 100, 59, 48, 55.7],
+        "enemy/1/stalker/walk/1": [0, 1178, 1678, 108, 64, 56, 60.7],
+        "enemy/1/stalker/walk/2": [0, 1506, 1678, 100, 59, 48, 55.7],
+        "enemy/1/stalker/walk/3": [0, 1290, 1678, 108, 64, 56, 60.7],
+        "enemy/1/stalker/windup/0": [0, 1715, 1678, 102, 55, 48, 51.7],
+        "enemy/1/warden/hit/0": [0, 2, 1488, 185, 186, 88, 176.8],
+        "enemy/1/warden/idle/0": [0, 725, 1488, 175, 176, 83, 171.8],
+        "enemy/1/warden/walk/0": [0, 904, 1488, 175, 169, 83, 164.8],
+        "enemy/1/warden/walk/1": [0, 369, 1488, 176, 178, 82, 173.8],
+        "enemy/1/warden/walk/2": [0, 1083, 1488, 175, 169, 83, 164.8],
+        "enemy/1/warden/walk/3": [0, 549, 1488, 172, 178, 83, 173.8],
+        "enemy/1/warden/windup/0": [0, 191, 1488, 174, 185, 88, 180.8]
       }
     }
   },
   "animations": {
+    "boss/1/butcher": {
+      "phase1": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase1-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase1-windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase1-windup-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase2": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase2-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase2-windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase2-windup-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase3": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase3-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase3-windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase3-windup-enraged": {
+        "frames": 1,
+        "fps": 1
+      }
+    },
+    "boss/1/gaoler": {
+      "phase1": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase1-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase1-windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase1-windup-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase2": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase2-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase2-windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase2-windup-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase3": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase3-enraged": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase3-windup": {
+        "frames": 1,
+        "fps": 1
+      },
+      "phase3-windup-enraged": {
+        "frames": 1,
+        "fps": 1
+      }
+    },
     "enemy/1/charger": {
       "walk": {
         "frames": 6,

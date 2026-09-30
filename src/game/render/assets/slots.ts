@@ -15,6 +15,20 @@ export type HeroState = 'idle' | 'run' | 'throw' | 'hurt';
 export const slotEnabled = (slot: string) => !DISABLED_SLOTS.has(slot);
 export const frameKey = (slot: string, state: string, frame: number) => `${slot}/${state}/${frame}`;
 
+/**
+ * Round bosses with baked art (TEC-03b): boss definition id -> slot and the pack that holds it. Bosses not listed
+ * (field bosses, later chapters) keep their vector drawing.
+ */
+export const BOSS_SLOTS: Readonly<Record<string, Readonly<{ slot: string; pack: string }>>> = Object.freeze({
+  's1-mid-dash': { slot: 'boss/1/butcher', pack: 'chapter-01' },
+  's1-final-rings': { slot: 'boss/1/gaoler', pack: 'chapter-01' },
+});
+
+/** A boss frame's state key: its phase, whether it winds up, whether it is enraged (atlas-spec bossStates). */
+export function bossState(phase: number, windup: boolean, enraged: boolean) {
+  return `phase${Math.min(3, Math.max(1, phase))}${windup ? '-windup' : ''}${enraged ? '-enraged' : ''}`;
+}
+
 /** Atlas packs per chapter; chapters without a pack draw with vectors. */
 export const CHAPTER_PACKS: Readonly<Record<number, string>> = Object.freeze({ 1: 'chapter-01' });
 export const COMMON_PACK = 'common';
