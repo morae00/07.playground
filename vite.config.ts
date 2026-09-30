@@ -33,6 +33,9 @@ export default defineConfig(({ command, mode }) => {
     },
     plugins: [react(), devContentSecurityPolicy()],
     build: {
+      // Electron 43 runs Chromium 142, and the gates run current Chromium. Native class fields and other ES2022
+      // syntax are smaller than esbuild's down-levelled helpers (about 1.1 KiB gzip of app JS).
+      target: 'es2022',
       rollupOptions: {
         output: {
           // Split third-party runtime code so the bundle budget can track app and vendor growth separately.
