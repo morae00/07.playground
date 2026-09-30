@@ -162,7 +162,7 @@ button:disabled {
 
 
 .emptyText {
-  font-size: 12px;
+  font-size: 13px;
   color: #4a4a47;
 }
 
@@ -660,7 +660,7 @@ button:disabled {
 .small {
   min-height: 28px;
   padding: 4px 7px;
-  font-size: 12px;
+  font-size: 13px;
   box-shadow: none;
 }
 
@@ -977,7 +977,7 @@ h2 {
 
 .eyebrow {
   margin-bottom: 6px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 900;
 }
 
@@ -985,7 +985,7 @@ h2 {
   margin-left: 8px;
   border: 1px solid currentColor;
   padding: 1px 5px;
-  font-size: 10px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -994,7 +994,7 @@ h2 {
   padding: 2px 6px;
   color: #fff;
   background: #b42318;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 900;
 }
 
@@ -1018,7 +1018,7 @@ h2 {
 .wallet span,
 .metaXp span {
   color: #555;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .wallet strong {
@@ -1113,7 +1113,7 @@ h2 {
   display: block;
   margin-bottom: 5px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 900;
 }
 
@@ -1156,7 +1156,7 @@ h2 {
   padding: 8px 10px;
   color: #811a12;
   background: #fff2ef;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -1214,7 +1214,7 @@ h2 {
   height: 34px;
   color: var(--paper);
   background: var(--ink);
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .leaderboardTable tbody tr:last-child td {
@@ -1239,7 +1239,7 @@ h2 {
 .leaderboardTable td small {
   margin-top: 2px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 13px;
 }
 
 .seedChallenge {
@@ -1309,14 +1309,14 @@ h2 {
 
 .stageCard strong {
   justify-self: end;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .stageCard em {
   grid-column: 1 / -1;
   color: inherit;
   opacity: 0.74;
-  font-size: 11px;
+  font-size: 13px;
   font-style: normal;
 }
 
@@ -1326,7 +1326,7 @@ h2 {
   overflow: hidden;
   color: inherit;
   opacity: 0.68;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1359,7 +1359,7 @@ h2 {
   border: 2px solid #111;
   padding: 7px 9px;
   background: #fff;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 900;
 }
 
@@ -1387,7 +1387,7 @@ h2 {
   align-items: center;
   border: 1px solid #d7d7d2;
   padding: 7px;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .stageNode {
@@ -1428,7 +1428,7 @@ h2 {
 
 .treeRow b {
   justify-self: end;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .launch {
@@ -1466,7 +1466,7 @@ h2 {
   min-height: 36px;
   display: flex;
   align-items: center;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 900;
   cursor: pointer;
 }
@@ -1482,7 +1482,7 @@ h2 {
   display: block;
   margin-bottom: 5px;
   color: #555;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .statCell strong {
@@ -1508,7 +1508,7 @@ h2 {
 .upgradeButton em {
   grid-column: 1 / -1;
   color: #555;
-  font-size: 12px;
+  font-size: 13px;
   font-style: normal;
 }
 
@@ -1868,7 +1868,7 @@ h2 {
   display: block;
   margin-bottom: 8px;
   color: #555;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .settlementGrid b {
@@ -1878,7 +1878,7 @@ h2 {
 .settlementGrid span small {
   display: block;
   margin-top: 2px;
-  font-size: 11px;
+  font-size: 13px;
   color: #666;
 }
 
@@ -2199,11 +2199,11 @@ h2 {
   padding: 7px;
   overflow-wrap: anywhere;
   background: var(--paper-raised);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .faultMessage code {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .recoveryShell {
