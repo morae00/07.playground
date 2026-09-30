@@ -1,3 +1,4 @@
+import { CHECK_CONTENT_AT_LOAD } from './checks.ts';
 import {
   CAMPAIGN_CHAPTER_IDS,
   CAMPAIGN_STAGE_IDS,
@@ -243,4 +244,4 @@ export function encounterGrammarForChapter(
   return grammar;
 }
 
-assertEncounterGrammars(CHAPTER_ENCOUNTER_GRAMMARS);
+if (CHECK_CONTENT_AT_LOAD) assertEncounterGrammars(CHAPTER_ENCOUNTER_GRAMMARS);

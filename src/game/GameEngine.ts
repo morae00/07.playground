@@ -41,6 +41,7 @@ import {
 } from './skillNumbers';
 import { REMASTER_RULES, ruleSetFor, type RuleSet, type RuleSetId } from './rules';
 import { EncounterDirector, type SpawnEdge } from './encounterDirector';
+import { CHECK_CONTENT_AT_LOAD } from '../content/checks';
 import { LOGICAL_VIEW, SPAWN_MARGIN, classicViewFrame, logicalViewFrame, spawnFrameOrigin, type ViewFrame } from './viewPolicy';
 import {
   DRAFT_SIZE,
@@ -716,11 +717,13 @@ export const GAME_CONTENT_CATALOG = defineContentCatalog({
   })),
 });
 
-const encounterReferenceIssues = validateEncounterGrammarReferences(GAME_CONTENT_CATALOG.chapters, CHAPTER_ENCOUNTER_GRAMMARS);
-if (encounterReferenceIssues.length > 0) {
-  throw new Error(`Encounter content references are invalid:\n- ${encounterReferenceIssues.join('\n- ')}`);
+if (CHECK_CONTENT_AT_LOAD) {
+  const encounterReferenceIssues = validateEncounterGrammarReferences(GAME_CONTENT_CATALOG.chapters, CHAPTER_ENCOUNTER_GRAMMARS);
+  if (encounterReferenceIssues.length > 0) {
+    throw new Error(`Encounter content references are invalid:\n- ${encounterReferenceIssues.join('\n- ')}`);
+  }
+  assertBossPhaseMoveSets(BOSS_PHASE_MOVE_SETS, GAME_CONTENT_CATALOG.bosses);
 }
-assertBossPhaseMoveSets(BOSS_PHASE_MOVE_SETS, GAME_CONTENT_CATALOG.bosses);
 
 export const makeRunUpgrades = (): Record<RunUpgradeId, number> => ({
   attack: 0,

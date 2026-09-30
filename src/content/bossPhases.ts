@@ -1,3 +1,4 @@
+import { CHECK_CONTENT_AT_LOAD } from './checks.ts';
 import { CAMPAIGN_CHAPTER_IDS, type ChapterId } from './schema.ts';
 
 export type BossPhase = 2 | 3;
@@ -212,4 +213,4 @@ export function bossMovesCrossed(
   return set.moves.filter((move) => move.phase > previousPhase && move.phase <= nextPhase);
 }
 
-assertBossPhaseMoveSets(BOSS_PHASE_MOVE_SETS);
+if (CHECK_CONTENT_AT_LOAD) assertBossPhaseMoveSets(BOSS_PHASE_MOVE_SETS);

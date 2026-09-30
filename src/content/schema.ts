@@ -1,3 +1,4 @@
+import { CHECK_CONTENT_AT_LOAD } from './checks.ts';
 import {
   validateCampaignContent,
   type BossRole,
@@ -182,7 +183,7 @@ function deepFreeze<T>(value: T, visited = new WeakSet<object>()): DeepReadonly<
 }
 
 export function defineContentCatalog<const Catalog extends ContentCatalog>(catalog: Catalog) {
-  assertContentCatalog(catalog);
+  if (CHECK_CONTENT_AT_LOAD) assertContentCatalog(catalog);
   return deepFreeze(catalog);
 }
 

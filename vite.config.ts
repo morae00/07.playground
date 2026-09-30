@@ -30,6 +30,7 @@ export default defineConfig(({ command, mode }) => {
       __APP_VERSION__: JSON.stringify(version),
       __DEVELOPER_UI_AVAILABLE__: JSON.stringify(developerUiAvailable),
       __DEVELOPER_UI_DEFAULT_ENABLED__: JSON.stringify(packagedDeveloperBuild),
+      __CONTENT_CHECKS__: JSON.stringify(command === 'serve'),
     },
     plugins: [react(), devContentSecurityPolicy()],
     build: {
