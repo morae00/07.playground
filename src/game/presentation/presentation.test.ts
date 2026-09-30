@@ -1,14 +1,26 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import type { CueId, SoundOutput } from '../audioPolicy.ts';
 import { createDefaultOptions } from '../../platform/save.ts';
 import { Presentation } from './presentation.ts';
 
 function setup(overrides: Partial<ReturnType<typeof createDefaultOptions>> = {}) {
   let id = 0;
   const options = { ...createDefaultOptions(), volume: 0, ...overrides };
-  const presentation = new Presentation({ nextId: () => (id += 1), options: () => options });
+  // A 1000-unit-wide screen centred on x = 500.
+  const presentation = new Presentation({ nextId: () => (id += 1), options: () => options, pan: (x) => Math.max(-1, Math.min(1, (x - 500) / 500)) });
   presentation.reseed(1234);
   return { presentation, ids: () => id };
+}
+
+function recorder() {
+  const played: { cue: CueId; pan: number }[] = [];
+  let unlocks = 0;
+  const sound: SoundOutput = {
+    unlock: () => { unlocks += 1; },
+    play: (cue, pan = 0) => { played.push({ cue, pan }); },
+  };
+  return { sound, played, unlocks: () => unlocks };
 }
 
 test('bursts respect the particle cap for the effect density and draw ids from the host', () => {
@@ -83,17 +95,63 @@ test('rings and damage numbers age per simulation step and are recycled when don
   assert.equal(presentation.damageNumberPool.retained, 1);
 });
 
-test('silent volume never opens an audio context', () => {
-  const opened: unknown[] = [];
-  const saved = (globalThis as { AudioContext?: unknown }).AudioContext;
-  (globalThis as { AudioContext?: unknown }).AudioContext = class { constructor() { opened.push(this); } };
-  try {
-    const { presentation } = setup({ volume: 0 });
-    presentation.handle({ type: 'enemy/killed', x: 0, y: 0, isBoss: true });
-    presentation.handle({ type: 'run/upgradeBought' });
-    assert.equal(opened.length, 0);
-    presentation.dispose();
-  } finally {
-    (globalThis as { AudioContext?: unknown }).AudioContext = saved;
-  }
+test('events play their cues on the mixer, panned by screen position', () => {
+  const { presentation } = setup();
+  const { sound, played, unlocks } = recorder();
+  presentation.setSound(sound);
+  presentation.unlockSound();
+  presentation.handle({ type: 'enemy/hit', x: 750, y: 0, radius: 12, damage: 30, crit: true, tier: 'critical' });
+  presentation.handle({ type: 'enemy/killed', x: 0, y: 0, isBoss: false });
+  presentation.handle({ type: 'enemy/killed', x: 500, y: 0, isBoss: true });
+  presentation.handle({ type: 'skill/cast', skillId: 'railSpear', x: 500, y: 0 });
+  presentation.handle({ type: 'skill/cast', skillId: 'eclipseStep', x: 500, y: 0 });
+  presentation.handle({ type: 'draft/applied', kind: 'coins', x: 500, y: 0 });
+  presentation.handle({ type: 'run/upgradeBought' });
+  assert.equal(unlocks(), 1);
+  assert.deepEqual(played, [
+    { cue: 'hit.critical', pan: 0.5 },
+    { cue: 'enemy.kill', pan: -1 },
+    { cue: 'boss.kill', pan: 0 },
+    { cue: 'cast.railSpear', pan: 0 },
+    { cue: 'draft.coins', pan: 0 },
+    { cue: 'run.upgrade', pan: 0 },
+  ]);
+  presentation.dispose();
+  presentation.handle({ type: 'enemy/killed', x: 0, y: 0, isBoss: false });
+  presentation.unlockSound();
+  assert.equal(played.length, 6, 'a disposed presentation sends nothing');
+  assert.equal(unlocks(), 1);
+});
+
+test('classic rules keep 0.1.0 drawing a hit pitch from the cosmetic stream, once per hit spacing', () => {
+  const hit = { type: 'enemy/hit', x: 0, y: 0, radius: 12, damage: 5, crit: false, tier: 'heavy' } as const;
+  const classic = setup({ effects: 1 }).presentation;
+  classic.reseed(1234, true);
+  // Heavy hits are 44 ms apart: the first and fourth hits draw; the others fall inside the spacing.
+  classic.handle(hit);
+  classic.handle(hit);
+  classic.beginFrame(0.02, false);
+  classic.handle(hit);
+  classic.beginFrame(0.03, false);
+  classic.handle(hit);
+  classic.handle(hit);
+  const remaster = setup({ effects: 1 }).presentation;
+  remaster.handle(hit);
+  remaster.random();
+  remaster.handle(hit);
+  remaster.handle(hit);
+  remaster.handle(hit);
+  remaster.random();
+  remaster.handle(hit);
+  assert.deepEqual(classic.particles.map((particle) => [particle.vx, particle.life]), remaster.particles.map((particle) => [particle.vx, particle.life]));
+});
+
+test('sound never draws from the cosmetic stream that places particles', () => {
+  const hits = (withSound: boolean) => {
+    const { presentation } = setup({ effects: 1 });
+    if (withSound) presentation.setSound(recorder().sound);
+    for (let index = 0; index < 12; index += 1) presentation.handle({ type: 'enemy/hit', x: index * 40, y: 0, radius: 12, damage: 5, crit: false, tier: 'heavy' });
+    return presentation.particles.map((particle) => [particle.vx, particle.vy]);
+  };
+  assert.deepEqual(hits(true), hits(false));
 });

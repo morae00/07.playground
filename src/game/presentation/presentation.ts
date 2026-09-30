@@ -1,9 +1,9 @@
 // Presentation layer (TEC-02): turns game events into particles, damage numbers, impact rings, screen shake,
-// and sound. It owns only cosmetic state; the simulation never reads it back.
-import type { DamageNumber, EffectOwner, ImpactRing, Particle } from '../engine/worldTypes.ts';
+// and sound cues for the app's mixer (AUD-01). It owns only cosmetic state; the simulation never reads it back.
+import type { DamageNumber, EffectOwner, ImpactRing, Particle, SkillId } from '../engine/worldTypes.ts';
 import type { GameOptions } from '../../platform/save.ts';
-import { impactCue, toneGain } from '../audioPolicy.ts';
-import type { GameEvent, ImpactTier } from '../engine/events.ts';
+import { CUES, HIT_CUES, type CueId, type SoundOutput } from '../audioPolicy.ts';
+import type { GameEvent } from '../engine/events.ts';
 import { ObjectPool, compactWhere, recycleWhere } from '../objectPool.ts';
 import { createSeededRandom } from '../p0Core.ts';
 import { CHAPTER_VISUALS } from '../render/visualRegistry.ts';
@@ -15,6 +15,8 @@ export type PresentationHost = {
    */
   nextId(): number;
   options(): GameOptions;
+  /** Where a world x sits across the screen, -1 (left edge) to 1 (right edge), for stereo panning. */
+  pan(x: number): number;
 };
 
 const PARTICLE_CAP_FULL = 520;
@@ -25,17 +27,15 @@ const IMPACT_RING_CAP = 32;
 export const PLAYER_HURT_POSE_SECONDS = 0.25;
 export const PLAYER_CAST_POSE_SECONDS = 0.25;
 
-type Tone = readonly [frequency: number, duration: number, oscillator: OscillatorType];
-
-const CAST_EFFECTS: Partial<Record<string, { shake?: number; tone?: Tone }>> = {
-  fanKnives: { tone: [390, 0.025, 'triangle'] },
-  chainSpark: { tone: [660, 0.025, 'square'] },
-  frostLine: { tone: [510, 0.04, 'sine'] },
-  railSpear: { shake: 9, tone: [95, 0.055, 'sawtooth'] },
-  boneMortar: { tone: [120, 0.055, 'sawtooth'] },
-  mirrorClone: { tone: [470, 0.035, 'square'] },
-  voidMine: { tone: [82, 0.055, 'sine'] },
-  blackSun: { shake: 5, tone: [70, 0.06, 'sine'] },
+const CAST_EFFECTS: Partial<Record<SkillId, { shake?: number; sound?: CueId }>> = {
+  fanKnives: { sound: 'cast.fanKnives' },
+  chainSpark: { sound: 'cast.chainSpark' },
+  frostLine: { sound: 'cast.frostLine' },
+  railSpear: { shake: 9, sound: 'cast.railSpear' },
+  boneMortar: { sound: 'cast.boneMortar' },
+  mirrorClone: { sound: 'cast.mirrorClone' },
+  voidMine: { sound: 'cast.voidMine' },
+  blackSun: { shake: 5, sound: 'cast.blackSun' },
   eclipseStep: { shake: 12 },
 };
 
@@ -60,17 +60,29 @@ export class Presentation {
     DAMAGE_NUMBER_CAP,
   );
   private readonly host: PresentationHost;
-  private soundCooldown = 0;
-  private audio?: AudioContext;
+  private sound: SoundOutput | null = null;
   private disposed = false;
+  /**
+   * Classic rules only: 0.1.0 drew each hit sound's pitch from the cosmetic stream, at most once per hit spacing in
+   * wall time. Classic particle ids feed gameplay ids, so that draw is kept to stay bit-identical.
+   */
+  private legacyHitDraws = false;
+  private legacyHitWait = 0;
 
   constructor(host: PresentationHost) {
     this.host = host;
   }
 
+  /** The app's mixer; without one (tools, tests) the game is silent. */
+  setSound(sound: SoundOutput | null) {
+    this.sound = sound;
+  }
+
   /** A new run: reseed the cosmetic stream (the value 0.1.0 derived from the run seed). */
-  reseed(runSeed: number) {
+  reseed(runSeed: number, legacyHitDraws = false) {
     this.random = createSeededRandom(runSeed ^ 0x9e3779b9);
+    this.legacyHitDraws = legacyHitDraws;
+    this.legacyHitWait = 0;
   }
 
   /** A new round: drop particles and damage numbers (rings clear with the round's other effects). */
@@ -88,32 +100,27 @@ export class Presentation {
     const effects = this.host.options().effects;
     switch (event.type) {
       case 'run/upgradeBought':
-        this.tone(180, 0.03, 'triangle');
+        this.play('run.upgrade');
         return;
       case 'draft/applied':
         if (event.kind === 'awakening') {
           this.burst(event.x, event.y, 36, '#050505', 260);
           this.addShake(14);
-          this.tone(110, 0.09, 'sawtooth');
-        } else if (event.kind === 'skill') {
-          this.tone(420, 0.05, 'square');
         } else if (event.kind === 'heal') {
           this.burst(event.x, event.y, 28, '#111111', 180);
-          this.tone(520, 0.045, 'sine');
         } else if (event.kind === 'coins') {
           this.burst(event.x, event.y, 22, '#222222', 160);
-          this.tone(360, 0.05, 'triangle');
-        } else {
+        } else if (event.kind === 'overdrive') {
           this.burst(event.x, event.y, 36, '#000000', 260);
           this.addShake(10);
-          this.tone(130, 0.08, 'sawtooth');
         }
+        this.play(`draft.${event.kind}`, event.x);
         return;
       case 'skill/cast': {
         this.playerCast = PLAYER_CAST_POSE_SECONDS;
         const cast = CAST_EFFECTS[event.skillId];
         if (cast?.shake !== undefined) this.addShake(cast.shake);
-        if (cast?.tone) this.tone(...cast.tone);
+        if (cast?.sound) this.play(cast.sound, event.x);
         return;
       }
       case 'enemy/hit': {
@@ -124,13 +131,17 @@ export class Presentation {
         this.burst(event.x, event.y, Math.round(count * effects), event.tier === 'critical' ? '#000000' : '#222222', event.tier === 'critical' ? 240 : event.tier === 'heavy' ? 175 : 130);
         if (event.tier !== 'light') this.addImpactRing(event.x, event.y, event.radius * (event.tier === 'critical' ? 1.8 : 1.35), event.tier);
         if (event.tier === 'critical') this.addShake(4);
-        this.hit(event.tier);
+        if (this.legacyHitDraws && this.legacyHitWait <= 0) {
+          this.random();
+          this.legacyHitWait = CUES[HIT_CUES[event.tier]].spacing;
+        }
+        this.play(HIT_CUES[event.tier], event.x);
         return;
       }
       case 'enemy/killed':
         this.burst(event.x, event.y, event.isBoss ? 42 : 16, '#050505', event.isBoss ? 340 : 190);
         this.addShake(event.isBoss ? 18 : 4);
-        this.tone(event.isBoss ? 80 : 240, event.isBoss ? 0.09 : 0.035, event.isBoss ? 'sawtooth' : 'square');
+        this.play(event.isBoss ? 'boss.kill' : 'enemy.kill', event.x);
         return;
       case 'enemy/contact':
         this.addShake(event.isBoss ? 12 : 5);
@@ -139,7 +150,7 @@ export class Presentation {
         this.playerHurt = PLAYER_HURT_POSE_SECONDS;
         if (this.host.options().damageNumbers) this.addDamageNumber(event.x, event.y - 38, event.damage, false, 0.72, 'hostile');
         this.burst(event.x, event.y, 12, '#000000', 160);
-        this.tone(140, 0.025, 'triangle');
+        this.play('player.hurt', event.x);
         return;
       case 'area/damage':
         this.burst(event.x, event.y, Math.round(22 * effects), '#050505', 230);
@@ -165,14 +176,11 @@ export class Presentation {
       case 'enemy/blocked':
         // A glancing clink off the warden's shield (SYS-02).
         this.burst(event.x, event.y, 5, '#343936', 150);
-        if (this.soundCooldown <= 0) {
-          this.soundCooldown = 0.05;
-          this.tone(1480, 0.025, 'square');
-        }
+        this.play('shield.block', event.x);
         return;
       case 'enemy/stunned':
         this.burst(event.x, event.y, 12, '#111111', 150);
-        this.tone(120, 0.06, 'triangle');
+        this.play('enemy.stunned', event.x);
         return;
       case 'magnet/pulse':
         this.burst(event.x, event.y, 16, '#111111', 130);
@@ -198,7 +206,7 @@ export class Presentation {
       case 'boss/enraged':
         this.addShake(22);
         this.burst(event.x, event.y, 60, '#000000', 320);
-        this.tone(65, 0.12, 'sawtooth');
+        this.play('boss.enraged', event.x);
         return;
       case 'telegraph/ring':
         // Warnings are never dropped by the ring cap.
@@ -207,9 +215,9 @@ export class Presentation {
     }
   }
 
-  /** Start of an animation frame: sound spacing always runs; shake decays in wall time unless paused. */
+  /** Start of an animation frame: shake and poses decay in wall time unless paused. */
   beginFrame(frameDt: number, paused: boolean) {
-    this.soundCooldown = Math.max(0, this.soundCooldown - frameDt);
+    this.legacyHitWait = Math.max(0, this.legacyHitWait - frameDt);
     if (paused) return;
     this.shake = Math.max(0, this.shake - frameDt * 12);
     this.playerHurt = Math.max(0, this.playerHurt - frameDt);
@@ -282,24 +290,14 @@ export class Presentation {
   }
 
   /** Browsers only allow audio after a user gesture; a run start is one. */
-  ensureAudio() {
-    if (this.disposed) return;
-    if (!this.audio) {
-      try {
-        this.audio = new AudioContext();
-      } catch {
-        this.audio = undefined;
-      }
-    }
-    if (this.audio?.state === 'suspended') void this.audio.resume().catch(() => undefined);
+  unlockSound() {
+    if (!this.disposed) this.sound?.unlock();
   }
 
+  /** The mixer outlives every run (AUD-01): a disposed presentation only stops sending it cues. */
   dispose() {
-    if (this.disposed) return;
     this.disposed = true;
-    const audio = this.audio;
-    this.audio = undefined;
-    if (audio && audio.state !== 'closed') void audio.close().catch(() => undefined);
+    this.sound = null;
   }
 
   private particleCap() {
@@ -319,31 +317,12 @@ export class Presentation {
     while (this.particles.length > maxParticles) this.particlePool.release(this.particles.shift()!);
   }
 
-  private hit(tier: ImpactTier) {
-    if (this.soundCooldown > 0) return;
-    const cue = impactCue(tier, this.random());
-    this.soundCooldown = cue.cooldown;
-    this.tone(cue.frequency, cue.duration, cue.oscillator, cue.gain);
-  }
-
-  private tone(frequency: number, duration: number, type: OscillatorType, gainScale = 1) {
-    if (this.disposed || this.host.options().volume <= 0.001) return;
-    this.ensureAudio();
-    if (!this.audio) return;
-    const osc = this.audio.createOscillator();
-    const gain = this.audio.createGain();
-    osc.type = type;
-    osc.frequency.value = frequency;
-    gain.gain.value = 0.0001;
-    gain.gain.exponentialRampToValueAtTime(toneGain(this.host.options().volume, gainScale), this.audio.currentTime + 0.004);
-    gain.gain.exponentialRampToValueAtTime(0.0001, this.audio.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(this.audio.destination);
-    osc.addEventListener('ended', () => {
-      osc.disconnect();
-      gain.disconnect();
-    }, { once: true });
-    osc.start();
-    osc.stop(this.audio.currentTime + duration + 0.01);
+  /**
+   * Sends a cue to the mixer, panned by where x sits on screen. Pitch variation and voice limits live in the mixer,
+   * so sound never draws from the cosmetic stream that places particles.
+   */
+  private play(cue: CueId, x?: number) {
+    if (this.disposed || !this.sound) return;
+    this.sound.play(cue, x === undefined ? 0 : this.host.pan(x));
   }
 }

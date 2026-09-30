@@ -1,4 +1,4 @@
-// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, CON-02) against the developer build.
+// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, CON-02, AUD-01) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -264,6 +264,46 @@ try {
     record('TEC-14 missing art falls back to vectors with a notice, and the run plays', sprites === 'fallback' && running && !running.paused && running.elapsed > 0.2, `sprites ${sprites}`);
     await banner.getByRole('button', { name: '닫기' }).click();
     record('TEC-14 the notice can be dismissed', (await banner.count()) === 0);
+    await page.close();
+  });
+
+  await probe('AUD-01', async () => {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await page.addInitScript(() => {
+      const Native = window.AudioContext;
+      window.__audioContexts = 0;
+      window.AudioContext = class extends Native {
+        constructor(...args) {
+          super(...args);
+          window.__audioContexts += 1;
+        }
+      };
+    });
+    await openStage(page);
+    await cheat(page, 'GOD');
+    await page.getByRole('button', { name: '런 패널 닫기' }).click();
+    // Double speed until a crowd has gathered (about 20 s of play), then clear it in one frame.
+    await page.getByRole('button', { name: /게임 속도/ }).click();
+    await page.waitForFunction(() => window.__blacklineDiagnostics?.().enemies >= 8, undefined, { timeout: 15000 });
+    const playing = await diagnostics(page);
+    record('AUD-01 a run plays through one running context with a limiter', playing.audio.contexts === 1 && playing.audio.state === 'running' && playing.audio.limiter && playing.audio.started > 0, `state ${playing.audio.state}, ${playing.audio.started} voices started`);
+    await cheat(page, 'NUKE');
+    const cleared = await diagnostics(page);
+    const spaced = cleared.audio.spaced - playing.audio.spaced;
+    record('AUD-01 clearing the screen at once stays under the voice cap', spaced >= 5 && cleared.audio.peak <= 16, `${playing.enemies} enemies before, ${spaced} cues spaced out, peak ${cleared.audio.peak} voices`);
+    await page.getByRole('button', { name: '런 패널 닫기' }).click();
+    const beforeClick = (await diagnostics(page)).audio.started;
+    await page.getByRole('button', { name: '게임 일시정지' }).click();
+    await page.waitForTimeout(100);
+    record('AUD-01 a button click plays a ui cue', (await diagnostics(page)).audio.started > beforeClick);
+    const pauseDialog = page.getByRole('dialog', { name: '일시정지' });
+    await pauseDialog.getByRole('button', { name: 'Stage 메뉴' }).click();
+    await page.getByRole('button', { name: '포기하고 메뉴로' }).click();
+    await page.getByRole('button', { name: 'Ch.1 / St.1 시작' }).click();
+    await page.waitForTimeout(500);
+    const second = await diagnostics(page);
+    const constructed = await page.evaluate(() => window.__audioContexts);
+    record('AUD-01 the next run reuses the same audio context', constructed === 1 && second.audio.contexts === 1 && second.audio.state === 'running', `${constructed} contexts constructed`);
     await page.close();
   });
 } finally {

@@ -88,6 +88,7 @@ import { DEVELOPER_UI_AVAILABLE } from '../platform/developerAccess';
 import type { EngineAction, EngineCommand } from './engine/contracts';
 import type { GameEvent, GameEventListener, PlayerDamageSource } from './engine/events';
 import { Presentation } from './presentation/presentation';
+import type { SoundOutput } from './audioPolicy';
 import {
   INFINITE_BASELINE,
   infiniteDifficultyAt,
@@ -1032,7 +1033,7 @@ export class GameEngine {
     PICKUP_HARD_CAP,
   );
   /** Cosmetic state (particles, damage numbers, rings, shake, sound) lives here and only consumes events (TEC-02). */
-  protected presentation = new Presentation({ nextId: () => this.nextCosmeticId(), options: () => this.options });
+  protected presentation = new Presentation({ nextId: () => this.nextCosmeticId(), options: () => this.options, pan: (x) => this.screenPan(x) });
   protected eventListeners = new Set<GameEventListener>();
   protected playerAimAngle = -Math.PI / 2;
   protected aimTargetId: number | null = null;
@@ -1079,6 +1080,11 @@ export class GameEngine {
   /** Baked character art for the renderer (TEC-03); without it every visual draws with vectors. */
   setSprites(atlas: SpriteAtlas | null) {
     this.worldRenderer.setSprites(atlas);
+  }
+
+  /** The app's mixer (AUD-01): it outlives the engine, which only sends it cues. */
+  setSound(sound: SoundOutput | null) {
+    this.presentation.setSound(sound);
   }
 
   /** The operating system's reduced-motion preference; the app shell watches it and passes it in. */
@@ -1128,7 +1134,7 @@ export class GameEngine {
   }
 
   protected startConfiguredRun(chapter: number, stageNo: number, seed: number | undefined, scoreEligible: boolean) {
-    this.presentation.ensureAudio();
+    this.presentation.unlockSound();
     const randomSeed = seed ?? globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
     this.runSeed = randomSeed || 1;
     if (this.rules.isolatedCosmeticIds) {
@@ -1136,7 +1142,7 @@ export class GameEngine {
       this.cosmeticIdSeed = 1;
     }
     this.gameplayRandom = createSeededRandom(this.runSeed);
-    this.presentation.reseed(this.runSeed);
+    this.presentation.reseed(this.runSeed, !this.rules.isolatedCosmeticIds);
     this.hitStop = 0;
     this.hitStopBudget = createHitStopBudget();
     this.chapter = chapter;
@@ -1936,6 +1942,12 @@ export class GameEngine {
   /** Visible world frame: fixed 900-unit height with pillarboxing (remaster) or 1:1 canvas pixels (classic). */
   protected viewFrame(): ViewFrame {
     return this.rules.logicalSpawnFrame ? logicalViewFrame(this.viewW, this.viewH) : classicViewFrame(this.viewW, this.viewH);
+  }
+
+  /** Where a world x sits across the visible frame, -1 (left edge) to 1 (right edge). */
+  protected screenPan(x: number) {
+    const half = this.viewFrame().width / 2;
+    return half > 0 ? clamp((x - this.camera.x - half) / half, -1, 1) : 0;
   }
 
   protected placeCamera() {

@@ -31,6 +31,8 @@ import { ErrorLog, describeError } from './platform/errorReport';
 import { copyErrorReport } from './ui/ErrorBoundary';
 import { CHAPTER_PACKS, COMMON_PACK } from './game/render/assets/slots';
 import { useGamepadNavigation } from './ui/useGamepadNavigation';
+import { AudioMixer } from './game/audio/mixer';
+import { installUiSounds } from './ui/uiSounds';
 import {
   CHAPTERS,
   GameEngine,
@@ -100,6 +102,8 @@ function InjectedRenderFault(): never {
 }
 
 const standaloneErrorLog = new ErrorLog();
+// One mixer and audio context for the whole session (AUD-01); it outlives every run and every app remount.
+const appMixer = new AudioMixer();
 
 function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -154,7 +158,10 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     if (initialSave.writable) saveGameSave(window.localStorage, { meta, options, profile });
     engineRef.current?.setMeta(meta);
     engineRef.current?.setOptions(options);
+    appMixer.setLevels(options);
   }, [initialSave.writable, meta, options, profile]);
+
+  useEffect(() => installUiSounds(document, appMixer), []);
 
   useEffect(() => {
     if (developerAccess || isStageUnlocked(meta, selectedChapterId, selectedStageNo)) return;
@@ -197,7 +204,10 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     // Read-only diagnostics for browser regression probes; developer builds only.
     if (!DEVELOPER_UI_AVAILABLE) return undefined;
     const target = window as typeof window & { __blacklineDiagnostics?: () => unknown };
-    target.__blacklineDiagnostics = () => engineRef.current?.getDiagnostics() ?? null;
+    target.__blacklineDiagnostics = () => {
+      const diagnostics = engineRef.current?.getDiagnostics();
+      return diagnostics ? { ...diagnostics, audio: appMixer.stats() } : null;
+    };
     return () => { delete target.__blacklineDiagnostics; };
   }, []);
 
@@ -383,6 +393,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     const engine = new GameEngine(canvas, meta, options, callbacks);
     engineRef.current = engine;
     engine.setSprites(spriteAtlas);
+    engine.setSound(appMixer);
     releaseReducedMotionRef.current = watchReducedMotion(
       typeof window.matchMedia === 'function' ? window.matchMedia.bind(window) : undefined,
       (reduced) => engine.setSystemReducedMotion(reduced),
@@ -545,7 +556,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         : '오류가 나서 기록해 두었습니다. 문제가 계속되면 로그를 복사해 알려 주세요.'}</p>
       <div className="noticeActions">
         <button className="ghost" type="button" onClick={() => void copyErrorLog()}>로그 복사</button>
-        <button className="ghost" type="button" onClick={() => { setNotice(null); setErrorCopyStatus(''); }}>닫기</button>
+        <button className="ghost" type="button" data-sound="cancel" onClick={() => { setNotice(null); setErrorCopyStatus(''); }}>닫기</button>
       </div>
       {errorCopyStatus && <p className="seedStatus">{errorCopyStatus}</p>}
     </div>
@@ -829,7 +840,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
                 const reason = snapshot.coins < cost ? `코인 ${cost - snapshot.coins}개 부족` : undefined;
                 const reasonId = `run-upgrade-${id}-reason`;
                 return (
-                  <button className="shopButton" aria-disabled={Boolean(reason)} aria-describedby={reason ? reasonId : undefined} title={reason ?? RUN_UPGRADES[id].line} onClick={() => { if (!reason) buyRunUpgrade(id); }} key={id}>
+                  <button className="shopButton" data-sound="none" aria-disabled={Boolean(reason)} aria-describedby={reason ? reasonId : undefined} title={reason ?? RUN_UPGRADES[id].line} onClick={() => { if (!reason) buyRunUpgrade(id); }} key={id}>
                     <span>{RUN_UPGRADES[id].label} <em>Lv.{level}</em></span>
                     <b>{cost}c</b>
                     {reason && <small className="srOnly" id={reasonId}>{reason}</small>}
@@ -850,8 +861,12 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
               </select>
             </label>
             <label>
-              <span>볼륨</span>
+              <span>전체 볼륨</span>
               <input type="range" min="0" max="1" step="0.01" value={options.volume} onChange={(event) => setOptions({ ...options, volume: Number(event.target.value) })} />
+            </label>
+            <label>
+              <span>효과음</span>
+              <input type="range" min="0" max="1" step="0.01" value={options.sfxVolume} onChange={(event) => setOptions({ ...options, sfxVolume: Number(event.target.value) })} />
             </label>
             <label>
               <span>이펙트</span>
@@ -1160,7 +1175,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
           {errorCopyStatus && <p className="seedStatus" role="status" aria-live="polite">{errorCopyStatus}</p>}
           <div className="modalActions">
             <button className="primary" onClick={retryAfterFault}>이어서 시도</button>
-            <button className="ghost" onClick={toMenu}>메뉴로</button>
+            <button className="ghost" data-sound="cancel" onClick={toMenu}>메뉴로</button>
             <button className="ghost" type="button" onClick={() => void copyErrorLog()}>로그 복사</button>
           </div>
         </ModalDialog>
@@ -1180,7 +1195,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
                   : '지금 포기하면 이번 Stage의 골드와 경험치를 받지 못합니다. 정말 메뉴로 돌아갈까요?'}
               </p>
               <div className="modalActions">
-                <button className="primary" onClick={() => setAbandonConfirmOpen(false)}>계속 플레이</button>
+                <button className="primary" data-sound="cancel" onClick={() => setAbandonConfirmOpen(false)}>계속 플레이</button>
                 <button className="danger" onClick={toMenu}>포기하고 메뉴로</button>
               </div>
             </>
@@ -1210,6 +1225,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
                 return (
                   <button
                     className={`draftCard ${RARITY[offer.rarity].className} ${offer.kind === 'awakening' ? 'awakening' : ''}`}
+                    data-sound="none"
                     onClick={() => handleOffer(offer)}
                     aria-keyshortcuts={`${index + 1}`}
                     key={offer.kind === 'bonus' ? `${offer.kind}-${offer.bonus}` : `${offer.kind}-${offer.skillId}`}
@@ -1277,7 +1293,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
           <p>골드, 외부 레벨, 영구 강화, Stage 해금 진행도가 기본 상태로 돌아갑니다.</p>
           <div className="modalActions">
             <button className="danger" onClick={confirmResetMeta}>초기화</button>
-            <button className="ghost" onClick={() => setResetConfirmOpen(false)}>취소</button>
+            <button className="ghost" data-sound="cancel" onClick={() => setResetConfirmOpen(false)}>취소</button>
           </div>
         </ModalDialog>
       )}

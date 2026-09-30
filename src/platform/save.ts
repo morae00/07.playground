@@ -31,7 +31,7 @@ export type GameOptions = {
   paceMode: PaceMode;
   /** Pause the run when the window loses focus, is hidden, or the gamepad disconnects (BUG-03). */
   autoPause: boolean;
-  /** Music and effects levels relative to the master volume (TEC-08; the audio buses arrive with AUD-01). */
+  /** Music and effects levels relative to the master volume (TEC-08); the mixer's buses apply them (AUD-01). */
   musicVolume: number;
   sfxVolume: number;
 };

@@ -317,14 +317,23 @@ test('vortex hazards snapshot independent source profiles', () => {
   engine.dispose();
 });
 
-test('dispose closes the run audio context exactly once', async () => {
-  const { engine } = createEngine();
+test('the engine never opens an audio context; it sends cues to the shared mixer until disposed (AUD-01)', () => {
+  const { engine, probe } = createEngine();
+  const played = [];
+  let unlocks = 0;
+  engine.setSound({ unlock() { unlocks += 1; }, play(cue, pan) { played.push({ cue, pan }); } });
+  const opened = audioContexts.length;
   engine.startRun(1, 1, 303);
-  const audio = audioContexts.at(-1);
+  probe.step(60 * 6);
+  assert.equal(audioContexts.length, opened, 'no audio context of its own');
+  assert.equal(unlocks, 1, 'a run start unlocks audio');
+  assert.ok(played.some(({ cue }) => cue.startsWith('cast.') || cue.startsWith('hit.')), played.map(({ cue }) => cue).join(' '));
+  assert.ok(played.every(({ pan }) => pan >= -1 && pan <= 1));
   engine.dispose();
   engine.dispose();
-  await Promise.resolve();
-  assert.equal(audio.state, 'closed');
+  const count = played.length;
+  probe.step(60);
+  assert.equal(played.length, count, 'a disposed engine sends nothing');
 });
 
 test('player aim tracks the nearest enemy without boss preference', () => {
