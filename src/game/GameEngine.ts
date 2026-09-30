@@ -2,7 +2,10 @@ import {
   FIXED_TIMESTEP,
   collectSegmentHits,
   consumeHitStopStep,
+  createHitStopBudget,
   createSeededRandom,
+  grantHitStop,
+  tickHitStopBudget,
   createVortexProfile,
   expiredThisStep,
   planFixedSteps,
@@ -1000,6 +1003,7 @@ export class GameEngine {
   private cheatGodMode = false;
   private snapshotTimer = 0;
   private hitStop = 0;
+  private hitStopBudget = createHitStopBudget();
   private shake = 0;
   private elapsed = 0;
   private coinFeverRushTimer = 0;
@@ -1201,6 +1205,8 @@ export class GameEngine {
     }
     this.gameplayRandom = createSeededRandom(this.runSeed);
     this.effectRandom = createSeededRandom(this.runSeed ^ 0x9e3779b9);
+    this.hitStop = 0;
+    this.hitStopBudget = createHitStopBudget();
     this.chapter = chapter;
     this.stage = stageNo;
     this.skills = {
@@ -1704,7 +1710,10 @@ export class GameEngine {
   private update(dt: number) {
     this.capturePreviousPositions();
     this.elapsed += dt;
-    if (this.runMode === 'campaign') this.timeLeft = Math.max(0, this.timeLeft - dt);
+    if (this.rules.hitStopBudget) this.hitStopBudget = tickHitStopBudget(this.hitStopBudget);
+    // Budgeted rules count the stage clock in real steps so hit-stop never stretches a stage (BUG-07).
+    const clockDelta = this.rules.hitStopBudget ? Math.max(dt, FIXED_TIMESTEP) : dt;
+    if (this.runMode === 'campaign') this.timeLeft = Math.max(0, this.timeLeft - clockDelta);
 
     if (this.player.hp <= 0) {
       this.flushDeadEnemies(true);
@@ -2030,7 +2039,7 @@ export class GameEngine {
         );
       }
     }
-    this.hitStop = Math.max(this.hitStop, 0.045);
+    this.requestHitStop(0.045);
     this.shake = Math.max(this.shake, 9);
     this.playTone(95, 0.055, 'sawtooth');
   }
@@ -3120,7 +3129,10 @@ export class GameEngine {
     const critMultiplier = crit ? this.player.stats.critDamage : 1;
     const damage = Math.max(1, rawDamage * targetMultiplier * critMultiplier * execution);
     enemy.hp -= damage;
-    const impactTier = classifyImpact(damage, enemy.maxHp, crit, enemy.hp <= 0);
+    const impactTier = classifyImpact(damage, enemy.maxHp, crit, enemy.hp <= 0, {
+      classification: this.rules.hitStopBudget ? 'budgeted' : 'classic',
+      notableTarget: enemy.isBoss,
+    });
     enemy.hitFlash = 0.08;
     if (knockback > 0 && !enemy.isBoss) {
       const dir = normalize(enemy.x - this.player.x, enemy.y - this.player.y);
@@ -3133,9 +3145,19 @@ export class GameEngine {
     const particleCount = impactTier === 'critical' ? 14 : impactTier === 'heavy' ? 8 : 4;
     this.burst(enemy.x, enemy.y, Math.round(particleCount * this.options.effects), impactTier === 'critical' ? '#000000' : '#222222', impactTier === 'critical' ? 240 : impactTier === 'heavy' ? 175 : 130);
     if (impactTier !== 'light') this.addImpactRing(enemy.x, enemy.y, enemy.radius * (impactTier === 'critical' ? 1.8 : 1.35), impactTier);
-    if (impactTier !== 'light') this.hitStop = Math.max(this.hitStop, impactTier === 'critical' ? 0.035 : 0.025);
+    if (impactTier !== 'light') this.requestHitStop(impactTier === 'critical' ? 0.035 : 0.025);
     if (impactTier === 'critical') this.shake = Math.max(this.shake, 4);
     this.playHit(impactTier);
+  }
+
+  private requestHitStop(seconds: number) {
+    if (!this.rules.hitStopBudget) {
+      this.hitStop = Math.max(this.hitStop, seconds);
+      return;
+    }
+    const grant = grantHitStop(this.hitStopBudget, seconds);
+    this.hitStopBudget = grant.budget;
+    if (grant.granted > 0) this.hitStop = Math.max(this.hitStop, grant.granted);
   }
 
   private areaDamage(x: number, y: number, radius: number, damage: number, skillId: SkillId, knockback: number, forceCrit = false) {

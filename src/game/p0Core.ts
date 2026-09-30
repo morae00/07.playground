@@ -150,6 +150,53 @@ export function consumeHitStopStep(hitStop: number) {
   };
 }
 
+/**
+ * Global hit-stop budget (BUG-07): every tier together may slow the simulation for at most 80 ms per second,
+ * and a new hit-stop needs 120 ms since the last one. A token bucket refills one step at a time.
+ */
+export const HIT_STOP_BUDGET = Object.freeze({
+  perSecond: 0.08,
+  minIntervalSeconds: 0.12,
+});
+
+export type HitStopBudget = {
+  tokens: number;
+  secondsSinceGrant: number;
+};
+
+/** The bucket starts empty so the long-run slowed share never exceeds perSecond (no opening burst). */
+export function createHitStopBudget(): HitStopBudget {
+  return { tokens: 0, secondsSinceGrant: HIT_STOP_BUDGET.minIntervalSeconds };
+}
+
+export function tickHitStopBudget(budget: HitStopBudget, stepSeconds = FIXED_TIMESTEP): HitStopBudget {
+  return {
+    tokens: Math.min(HIT_STOP_BUDGET.perSecond, budget.tokens + HIT_STOP_BUDGET.perSecond * stepSeconds),
+    secondsSinceGrant: budget.secondsSinceGrant + stepSeconds,
+  };
+}
+
+/**
+ * Grants hit-stop in whole fixed steps, because consumeHitStopStep slows every step while any hit-stop remains.
+ * The bucket is charged for the steps actually slowed, and the returned duration keeps exactly that many
+ * steps active (half a step short of the boundary so float error cannot add one more).
+ */
+export function grantHitStop(budget: HitStopBudget, requested: number) {
+  const wanted = Math.max(0, Number.isFinite(requested) ? requested : 0);
+  if (wanted <= 0 || budget.secondsSinceGrant + 1e-9 < HIT_STOP_BUDGET.minIntervalSeconds) {
+    return { granted: 0, steps: 0, budget };
+  }
+  const wantedSteps = Math.ceil(wanted / FIXED_TIMESTEP - 1e-9);
+  const affordableSteps = Math.floor(budget.tokens / FIXED_TIMESTEP + 1e-9);
+  const steps = Math.min(wantedSteps, affordableSteps);
+  if (steps <= 0) return { granted: 0, steps: 0, budget };
+  return {
+    granted: (steps - 0.5) * FIXED_TIMESTEP,
+    steps,
+    budget: { tokens: budget.tokens - steps * FIXED_TIMESTEP, secondsSinceGrant: 0 },
+  };
+}
+
 export function shockHitsPlayer(shock: Point, radius: number, player: Point, playerRadius: number) {
   return Math.hypot(shock.x - player.x, shock.y - player.y) <= radius + playerRadius;
 }

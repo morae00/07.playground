@@ -27,6 +27,16 @@ test('boss phases cross 66 and 33 percent without regressing after healing', () 
   assert.equal(bossPhaseForHealth(90, 100, 3), 3);
 });
 
+test('budgeted impact classification keeps critical for boss kills and big hits only (BUG-07)', () => {
+  const budgeted = { classification: 'budgeted' as const };
+  assert.equal(classifyImpact(2, 100, false, false, budgeted), 'light');
+  assert.equal(classifyImpact(10, 100, false, false, budgeted), 'heavy');
+  assert.equal(classifyImpact(1, 100, true, false, budgeted), 'heavy', 'a small crit is heavy');
+  assert.equal(classifyImpact(1, 100, false, true, budgeted), 'heavy', 'an ordinary kill is heavy');
+  assert.equal(classifyImpact(1, 100, false, true, { ...budgeted, notableTarget: true }), 'critical', 'a boss kill is critical');
+  assert.equal(classifyImpact(25, 100, false, false, budgeted), 'critical', 'a hit for 20% or more is critical');
+});
+
 test('impact classification is monotonic and critical for crit or kill', () => {
   assert.equal(classifyImpact(2, 100, false, false), 'light');
   assert.equal(classifyImpact(10, 100, false, false), 'heavy');

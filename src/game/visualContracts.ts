@@ -29,10 +29,28 @@ export function bossPhaseForHealth(hp: number, maxHp: number, previousPhase: 1 |
   return Math.max(previousPhase, calculated) as 1 | 2 | 3;
 }
 
-export function classifyImpact(damage: number, maxHp: number, crit: boolean, killed: boolean): ImpactTier {
+export type ImpactClassification = 'classic' | 'budgeted';
+
+/**
+ * Impact tier for a hit. Classic (0.1.0) rules made every kill and every crit critical, which saturated
+ * hit-stop late in a run. Budgeted rules (BUG-07) reserve critical for boss and elite kills and for hits
+ * that remove at least 20% of the target's health; ordinary kills and small crits are heavy.
+ */
+export function classifyImpact(
+  damage: number,
+  maxHp: number,
+  crit: boolean,
+  killed: boolean,
+  { classification = 'classic', notableTarget = false }: { classification?: ImpactClassification; notableTarget?: boolean } = {},
+): ImpactTier {
   const ratio = maxHp > 0 ? Math.max(0, finiteOr(damage, 0)) / maxHp : 0;
-  if (killed || crit || ratio >= 0.2) return 'critical';
-  if (ratio >= 0.08) return 'heavy';
+  if (classification === 'classic') {
+    if (killed || crit || ratio >= 0.2) return 'critical';
+    if (ratio >= 0.08) return 'heavy';
+    return 'light';
+  }
+  if (ratio >= 0.2 || (killed && notableTarget)) return 'critical';
+  if (killed || crit || ratio >= 0.08) return 'heavy';
   return 'light';
 }
 

@@ -4,6 +4,9 @@ import {
   FIXED_TIMESTEP,
   collectSegmentHits,
   consumeHitStopStep,
+  createHitStopBudget,
+  grantHitStop,
+  tickHitStopBudget,
   createSeededRandom,
   createVortexProfile,
   expiredThisStep,
@@ -177,4 +180,38 @@ test('expiry and death partitioning are edge-triggered and stable', () => {
   assert.deepEqual(partitionAlive([]), { alive: [], dead: [] });
   assert.equal(expiredThisStep(0.1, 0.05), false);
   assert.deepEqual(consumeHitStopStep(0), { simulationDelta: FIXED_TIMESTEP, hitStop: 0 });
+});
+
+test('hit-stop budget caps slowed steps at 80 ms per second with a 120 ms minimum gap (BUG-07)', () => {
+  let budget = createHitStopBudget();
+  assert.equal(grantHitStop(budget, 0.035).granted, 0, 'the bucket starts empty');
+  for (let step = 0; step < 60; step += 1) budget = tickHitStopBudget(budget);
+  const first = grantHitStop(budget, 0.035);
+  assert.equal(first.steps, 3, '0.035 s of hit-stop slows three fixed steps');
+  let remaining = first.granted;
+  let active = 0;
+  while (remaining > 0) {
+    const step = consumeHitStopStep(remaining);
+    remaining = step.hitStop;
+    active += 1;
+  }
+  assert.equal(active, 3, 'the granted duration keeps exactly the charged number of steps active');
+  budget = first.budget;
+  assert.equal(grantHitStop(budget, 0.035).granted, 0, 'a second hit-stop within 120 ms is refused');
+  for (let step = 0; step < 8; step += 1) budget = tickHitStopBudget(budget);
+  assert.ok(grantHitStop(budget, 0.025).steps >= 1, 'granted again after the gap');
+
+  let slowedSteps = 0;
+  budget = createHitStopBudget();
+  for (let step = 0; step < 600; step += 1) {
+    budget = tickHitStopBudget(budget);
+    const grant = grantHitStop(budget, 0.045);
+    budget = grant.budget;
+    slowedSteps += grant.steps;
+  }
+  assert.ok(slowedSteps <= Math.ceil(0.08 * 60 * 10) + 5, `at most 80 ms of slowed steps per second, got ${slowedSteps} steps in 10 s`);
+  assert.ok(slowedSteps / 600 <= 0.08 + 1e-9, `slowed share ${slowedSteps / 600}`);
+  assert.equal(grantHitStop({ tokens: 1, secondsSinceGrant: 1 }, 0).granted, 0);
+  assert.equal(grantHitStop({ tokens: 1, secondsSinceGrant: 1 }, Number.NaN).granted, 0);
+  assert.equal(grantHitStop({ tokens: 0, secondsSinceGrant: 1 }, 0.03).granted, 0, 'an empty bucket grants nothing');
 });
