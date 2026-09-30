@@ -90,6 +90,9 @@ export type Entity = {
   damageCooldowns: Record<string, number>;
   bossPhase: 1 | 2 | 3;
   bossPhaseFlash: number;
+  /** SYS-01: consecutive aimed shots that missed this enemy, and when the last one missed. */
+  aimMisses?: number;
+  aimMissedAt?: number;
 };
 
 export type Projectile = {
@@ -110,6 +113,8 @@ export type Projectile = {
   skillId: SkillId;
   blockedBySolid: boolean;
   hitEnemyIds: Set<number>;
+  /** SYS-01: the enemy this shot was aimed at (-1 for spread or flank shots); a miss counts against it. */
+  aimTargetId: number;
 };
 
 export type BossProjectile = {

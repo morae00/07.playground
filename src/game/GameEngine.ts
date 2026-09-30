@@ -318,6 +318,11 @@ const ECLIPSE_WALL_LANE_GAP = 115;
 /** Fair terrain (BUG-13): a root zone binds once on entry, then cannot bind again for a while. */
 const ROOT_BIND_SECONDS = 0.65;
 const ROOT_IMMUNITY_SECONDS = ROOT_BIND_SECONDS + 1.5;
+// SYS-01 auto-aim: three straight misses push a target to the back of the queue for four seconds.
+const AIM_MISS_LIMIT = 3;
+const AIM_MISS_MEMORY_SECONDS = 4;
+const AIM_MAX_LEAD_SECONDS = 1.2;
+
 /** Nothing harmful is generated within this distance of the stage start (the world centre). */
 const START_SAFE_RADIUS = 420;
 
@@ -896,7 +901,7 @@ export class GameEngine {
   protected enemyIndex = new SpatialIndex<Entity>(96);
   protected deadEnemyScratch: Entity[] = [];
   protected projectilePool = new ObjectPool<Projectile>(
-    () => ({ id: 0, x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0, radius: 0, damage: 0, life: 0, maxLife: 0, returning: false, pierce: 0, knockback: 0, skillId: 'needleStorm', blockedBySolid: false, hitEnemyIds: new Set() }),
+    () => ({ id: 0, x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0, radius: 0, damage: 0, life: 0, maxLife: 0, returning: false, pierce: 0, knockback: 0, skillId: 'needleStorm', blockedBySolid: false, hitEnemyIds: new Set(), aimTargetId: -1 }),
     (projectile) => { projectile.life = 0; projectile.hitEnemyIds.clear(); },
     384,
   );
@@ -1754,7 +1759,7 @@ export class GameEngine {
 
   protected updateNeedleStorm(skill: SkillState) {
     if ((this.skillCooldowns.needleStorm ?? 0) > 0) return;
-    const target = this.findNearestEnemy(980);
+    const target = this.acquireTarget(980, { projectileSpeed: 760, blockedBySolid: true, projectileRadius: 4.5 });
     if (!target) return;
     const baseCooldown = 0.72 / this.effectiveAttackSpeed();
     this.skillCooldowns.needleStorm = Math.max(0.16, baseCooldown - skill.level * 0.035);
@@ -1765,27 +1770,29 @@ export class GameEngine {
       const offset = (i - (count - 1) / 2) * spread;
       const angle = baseAngle + offset;
       const damage = this.player.stats.attack * scaleAt(SKILL_NUMBERS.needleStorm.damage, skill.level, skill.awakened);
-      this.spawnProjectile('needleStorm', this.player.x, this.player.y, Math.cos(angle) * 760, Math.sin(angle) * 760, 4.5, damage, 1.15, skill.awakened ? SKILL_NUMBERS.needleStorm.awakenedPierce : 0, 120, true);
+      const tracked = i === Math.floor((count - 1) / 2) ? target.enemy.id : -1;
+      this.spawnProjectile('needleStorm', this.player.x, this.player.y, Math.cos(angle) * 760, Math.sin(angle) * 760, 4.5, damage, 1.15, skill.awakened ? SKILL_NUMBERS.needleStorm.awakenedPierce : 0, 120, true, tracked);
     }
   }
 
   protected updateFanKnives(skill: SkillState) {
     if ((this.skillCooldowns.fanKnives ?? 0) > 0) return;
-    const target = this.findNearestEnemy(760);
+    const target = this.acquireTarget(760, { projectileSpeed: 680, blockedBySolid: true, projectileRadius: 5.2 });
     if (!target) return;
     this.skillCooldowns.fanKnives = Math.max(0.42, 1.05 / this.effectiveAttackSpeed() - skill.level * SKILL_NUMBERS.fanKnives.cooldownPerLevel);
     const count = scaleAt(SKILL_NUMBERS.fanKnives.knives, skill.level, skill.awakened);
     const baseAngle = Math.atan2(target.y - this.player.y, target.x - this.player.x);
     for (let i = 0; i < count; i += 1) {
       const angle = baseAngle + (i - (count - 1) / 2) * 0.22;
-      this.spawnProjectile('fanKnives', this.player.x, this.player.y, Math.cos(angle) * 680, Math.sin(angle) * 680, 5.2, this.player.stats.attack * (0.55 + skill.level * 0.12), skill.awakened ? 1.35 : 0.82, skill.awakened ? 2 : 0, 80, true);
+      const tracked = i === Math.floor((count - 1) / 2) ? target.enemy.id : -1;
+      this.spawnProjectile('fanKnives', this.player.x, this.player.y, Math.cos(angle) * 680, Math.sin(angle) * 680, 5.2, this.player.stats.attack * (0.55 + skill.level * 0.12), skill.awakened ? 1.35 : 0.82, skill.awakened ? 2 : 0, 80, true, tracked);
     }
     this.emit({ type: 'skill/cast', skillId: 'fanKnives', x: this.player.x, y: this.player.y });
   }
 
   protected updateChainSpark(skill: SkillState) {
     if ((this.skillCooldowns.chainSpark ?? 0) > 0) return;
-    const first = this.findNearestEnemy(780);
+    const first = this.acquireTarget(780)?.enemy;
     if (!first) return;
     this.skillCooldowns.chainSpark = Math.max(0.55, 1.48 / this.effectiveAttackSpeed() - skill.level * 0.055);
     const jumps = scaleAt(SKILL_NUMBERS.chainSpark.jumps, skill.level, skill.awakened);
@@ -1809,7 +1816,7 @@ export class GameEngine {
 
   protected updateFrostLine(skill: SkillState) {
     if ((this.skillCooldowns.frostLine ?? 0) > 0) return;
-    const target = this.findNearestEnemy(980, true);
+    const target = this.acquireTarget(980, { preferBoss: true });
     if (!target) return;
     this.skillCooldowns.frostLine = Math.max(1.05, 2.35 / this.effectiveAttackSpeed() - skill.level * 0.06);
     const angle = Math.atan2(target.y - this.player.y, target.x - this.player.x);
@@ -1837,7 +1844,7 @@ export class GameEngine {
 
   protected updateRailSpear(skill: SkillState) {
     if ((this.skillCooldowns.railSpear ?? 0) > 0) return;
-    const target = this.findNearestEnemy(1250, true);
+    const target = this.acquireTarget(1250, { preferBoss: true });
     if (!target) return;
     this.skillCooldowns.railSpear = Math.max(1.25, 3.8 / this.effectiveAttackSpeed() - skill.level * 0.12);
     const angle = Math.atan2(target.y - this.player.y, target.x - this.player.x);
@@ -1926,7 +1933,7 @@ export class GameEngine {
 
   protected updateMirrorClone(skill: SkillState) {
     if ((this.skillCooldowns.mirrorClone ?? 0) > 0) return;
-    const target = this.findNearestEnemy(1100, true);
+    const target = this.acquireTarget(1100, { preferBoss: true, projectileSpeed: 820, blockedBySolid: true, projectileRadius: 5.5 });
     if (!target) return;
     this.skillCooldowns.mirrorClone = Math.max(1.05, 2.7 / this.effectiveAttackSpeed() - skill.level * 0.08);
     const angle = Math.atan2(target.y - this.player.y, target.x - this.player.x);
@@ -1948,7 +1955,7 @@ export class GameEngine {
       const sx = this.player.x + side.x * sign * offset;
       const sy = this.player.y + side.y * sign * offset;
       const shotAngle = Math.atan2(target.y - sy, target.x - sx);
-      this.spawnProjectile('mirrorClone', sx, sy, Math.cos(shotAngle) * 820, Math.sin(shotAngle) * 820, 5.5, damage, 1.15, volley.pierce, 95, true);
+      this.spawnProjectile('mirrorClone', sx, sy, Math.cos(shotAngle) * 820, Math.sin(shotAngle) * 820, 5.5, damage, 1.15, volley.pierce, 95, true, target.enemy.id);
     }
     this.emit({ type: 'skill/cast', skillId: 'mirrorClone', x: this.player.x, y: this.player.y });
   }
@@ -2758,11 +2765,9 @@ export class GameEngine {
         this.emit({ type: 'shot/blocked', x: projectile.x, y: projectile.y });
       }
     }
-    recycleWhere(
-      this.projectiles,
-      (projectile) => projectile.life > 0 && projectile.x > -120 && projectile.x < WORLD_W + 120 && projectile.y > -120 && projectile.y < WORLD_H + 120,
-      this.projectilePool,
-    );
+    const inFlight = (projectile: Projectile) => projectile.life > 0 && projectile.x > -120 && projectile.x < WORLD_W + 120 && projectile.y > -120 && projectile.y < WORLD_H + 120;
+    if (this.rules.reliableAim) this.recordAimResults(inFlight);
+    recycleWhere(this.projectiles, inFlight, this.projectilePool);
   }
 
   protected updateBossProjectiles(dt: number) {
@@ -2929,6 +2934,7 @@ export class GameEngine {
     pierce: number,
     knockback: number,
     blockedBySolid: boolean,
+    aimTargetId = -1,
   ) {
     const projectile = this.projectilePool.acquire();
     projectile.hitEnemyIds.clear();
@@ -2949,6 +2955,7 @@ export class GameEngine {
       knockback,
       skillId,
       blockedBySolid,
+      aimTargetId,
     });
     this.projectiles.push(projectile);
   }
@@ -2970,6 +2977,80 @@ export class GameEngine {
     const projectile = this.bossProjectilePool.acquire();
     Object.assign(projectile, { id: this.nextId(), x, y, prevX: x, prevY: y, vx, vy, radius, damage, life, kind });
     this.bossProjectiles.push(projectile);
+  }
+
+  /**
+   * Picks the target and aim point of an aimed skill. Classic rules aim at the nearest enemy in range. Remaster
+   * rules (SYS-01) prefer enemies inside the fixed logical view (off-view ones only when none is in view), skip
+   * targets a wall-blocked shot cannot reach, push a target back after three straight misses, and lead moving
+   * targets for projectile skills. Boss preference is unchanged (G2).
+   */
+  protected acquireTarget(
+    range: number,
+    { preferBoss = false, projectileSpeed = 0, blockedBySolid = false, projectileRadius = 0 } = {},
+  ): { enemy: Entity; x: number; y: number } | undefined {
+    if (!this.rules.reliableAim) {
+      const enemy = this.findNearestEnemy(range, preferBoss);
+      return enemy ? { enemy, x: enemy.x, y: enemy.y } : undefined;
+    }
+    const view = spawnFrameOrigin(this.player.x, this.player.y, WORLD_W, WORLD_H);
+    const candidates: Array<{ enemy: Entity; score: number }> = [];
+    for (const enemy of this.enemyIndex.queryCircle(this.player.x, this.player.y, range)) {
+      if (enemy.hp <= 0) continue;
+      const d = distance(enemy, this.player);
+      if (d >= range) continue;
+      const inView = enemy.x + enemy.radius >= view.left
+        && enemy.x - enemy.radius <= view.left + view.width
+        && enemy.y + enemy.radius >= view.top
+        && enemy.y - enemy.radius <= view.top + view.height;
+      const shunned = (enemy.aimMisses ?? 0) >= AIM_MISS_LIMIT && this.elapsed - (enemy.aimMissedAt ?? -Infinity) < AIM_MISS_MEMORY_SECONDS;
+      // Order: in view, then off view, then targets on a miss streak; distance and boss bonus within each group.
+      const score = d - (preferBoss && enemy.isBoss ? 400 : 0) + (inView ? 0 : 50_000) + (shunned ? 1_000_000 : 0);
+      candidates.push({ enemy, score });
+    }
+    candidates.sort((a, b) => a.score - b.score || a.enemy.id - b.enemy.id);
+    for (const { enemy } of candidates) {
+      const aim = projectileSpeed > 0 ? this.leadPoint(enemy, projectileSpeed) : { x: enemy.x, y: enemy.y };
+      if (blockedBySolid && !this.clearShot(this.player, aim, projectileRadius)) continue;
+      return { enemy, x: aim.x, y: aim.y };
+    }
+    return undefined;
+  }
+
+  /** Where a projectile of this speed meets the enemy if it keeps its current velocity (two refinement passes). */
+  protected leadPoint(enemy: Entity, speed: number) {
+    let x = enemy.x;
+    let y = enemy.y;
+    for (let pass = 0; pass < 2; pass += 1) {
+      const time = Math.min(AIM_MAX_LEAD_SECONDS, Math.hypot(x - this.player.x, y - this.player.y) / speed);
+      x = enemy.x + enemy.vx * time;
+      y = enemy.y + enemy.vy * time;
+    }
+    return { x, y };
+  }
+
+  protected clearShot(from: { x: number; y: number }, to: { x: number; y: number }, radius: number) {
+    for (const obstacle of this.obstacles) {
+      if (segmentRectHitTime(from, to, obstacle, radius) !== null) return false;
+    }
+    return true;
+  }
+
+  /** Counts finished aimed shots: a hit clears the target's miss streak, a miss extends it (SYS-01). */
+  protected recordAimResults(inFlight: (projectile: Projectile) => boolean) {
+    for (const projectile of this.projectiles) {
+      if (projectile.aimTargetId < 0 || inFlight(projectile)) continue;
+      const target = this.enemies.find((enemy) => enemy.id === projectile.aimTargetId);
+      projectile.aimTargetId = -1;
+      if (!target || target.hp <= 0) continue;
+      if (projectile.hitEnemyIds.has(target.id)) {
+        target.aimMisses = 0;
+        continue;
+      }
+      if (this.elapsed - (target.aimMissedAt ?? -Infinity) >= AIM_MISS_MEMORY_SECONDS) target.aimMisses = 0;
+      target.aimMisses = (target.aimMisses ?? 0) + 1;
+      target.aimMissedAt = this.elapsed;
+    }
   }
 
   protected findNearestEnemy(maxDistance: number, preferBoss = false) {
@@ -3165,8 +3246,9 @@ export class GameEngine {
   }
 
   protected updatePlayerAim() {
-    const target = this.findNearestEnemy(980);
-    this.aimTargetId = target?.id ?? null;
+    // The shown aim is the primary weapon's (needle) target, so the reticle marks what the needles will hit.
+    const target = this.acquireTarget(980, { projectileSpeed: 760, blockedBySolid: true, projectileRadius: 4.5 });
+    this.aimTargetId = target?.enemy.id ?? null;
     this.playerAimAngle = target
       ? Math.atan2(target.y - this.player.y, target.x - this.player.x)
       : -Math.PI / 2;

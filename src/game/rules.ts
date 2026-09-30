@@ -1,7 +1,8 @@
 // Simulation rule versions and flags (TEC-11).
 // Rule-changing fixes are gated here so the original rules stay reproducible for A/B balance runs.
-// Bump RULES_VERSION whenever the default rule set changes seeded outcomes; the infinite leaderboard and
-// replay fixtures are namespaced by this number so records made under different rules never mix.
+// The infinite leaderboard and replay fixtures are namespaced by RULES_VERSION so records made under different
+// rules never mix. Until a build ships it, the remaster rule set may keep changing under the same version;
+// after that, the first change to seeded outcomes must bump it.
 
 export const RULES_VERSION = 2;
 export const CLASSIC_RULES_VERSION = 1;
@@ -25,6 +26,8 @@ export type RuleSet = Readonly<{
   fairTerrain: boolean;
   /** BUG-16: mirror clone awakening adds clone shots instead of depending on the rail skill. */
   mirrorAwakeningRework: boolean;
+  /** SYS-01: auto-aim leads moving targets, skips walled-off targets, retargets after 3 misses, stays in view. */
+  reliableAim: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -37,6 +40,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   eclipseWallFromView: false,
   fairTerrain: false,
   mirrorAwakeningRework: false,
+  reliableAim: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -49,6 +53,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   eclipseWallFromView: true,
   fairTerrain: true,
   mirrorAwakeningRework: true,
+  reliableAim: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {
