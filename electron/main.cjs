@@ -31,6 +31,9 @@ function openExternal(url) {
 
 function createWindow() {
   const window = new BrowserWindow({
+    // Sizes are the page (canvas) size, not the outer frame: the 1440x900 reference view and the 1024x720
+    // minimum from TEC-01 are what the game draws into.
+    useContentSize: true,
     width: 1440,
     height: 900,
     minWidth: 1024,
