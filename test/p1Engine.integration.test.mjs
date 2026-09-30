@@ -232,7 +232,7 @@ test('every chapter has its required Stage 5 mid boss and Stage 10 final boss', 
   }
 });
 
-test('mobile canvas uses its CSS logical size, DPR backing store, and scaled pointer coordinates', () => {
+test('mobile canvas uses its CSS logical size, DPR backing store, and camera-scaled pointer coordinates', () => {
   const previousDpr = window.devicePixelRatio;
   window.devicePixelRatio = 2;
   const rect = { width: 320, height: 568, left: 12, top: 24 };
@@ -255,8 +255,15 @@ test('mobile canvas uses its CSS logical size, DPR backing store, and scaled poi
       pointerId: 1,
     });
 
-    assert.equal(engine.pointer.x, 900 + 320, 'pointer x must scale from CSS to logical coordinates before adding camera');
-    assert.equal(engine.pointer.y, 500 + 568, 'pointer y must scale from CSS to logical coordinates before adding camera');
+    // The camera shows 900 world units vertically (BUG-09), so screen pixels divide by the camera zoom.
+    const zoom = engine.viewH / 900;
+    assert.ok(Math.abs(engine.pointer.x - (900 + 320 / zoom)) < 1e-9, 'pointer x scales CSS → canvas → world before adding the camera');
+    assert.ok(Math.abs(engine.pointer.y - (500 + 568 / zoom)) < 1e-9, 'pointer y scales CSS → canvas → world before adding the camera');
+
+    engine.setRuleSet('classic');
+    engine.setPointer({ clientX: rect.left + 160, clientY: rect.top + 284, isPrimary: true, pointerId: 1 });
+    assert.equal(engine.pointer.x, 900 + 320, 'classic rules keep the 1:1 pointer mapping');
+    assert.equal(engine.pointer.y, 500 + 568, 'classic rules keep the 1:1 pointer mapping');
   } finally {
     engine.dispose();
     window.devicePixelRatio = previousDpr;

@@ -29,6 +29,7 @@ import {
 } from './p1Core';
 import { SpatialIndex } from './spatialIndex';
 import { REMASTER_RULES, ruleSetFor, type RuleSet, type RuleSetId } from './rules';
+import { SPAWN_MARGIN, classicViewFrame, logicalViewFrame, spawnFrameOrigin, type ViewFrame } from './viewPolicy';
 import {
   DRAFT_SIZE,
   ENEMY_RADIUS,
@@ -1486,8 +1487,9 @@ export class GameEngine {
     if (rect.width <= 0 || rect.height <= 0) return;
     const scaleX = this.viewW / rect.width;
     const scaleY = this.viewH / rect.height;
-    this.pointer.x = (event.clientX - rect.left) * scaleX + this.camera.x;
-    this.pointer.y = (event.clientY - rect.top) * scaleY + this.camera.y;
+    const frame = this.viewFrame();
+    this.pointer.x = ((event.clientX - rect.left) * scaleX - frame.offsetX) / frame.zoom + this.camera.x;
+    this.pointer.y = ((event.clientY - rect.top) * scaleY) / frame.zoom + this.camera.y;
   }
 
   private tick(now: number) {
@@ -1588,8 +1590,7 @@ export class GameEngine {
     this.player.y = WORLD_H / 2;
     this.player.prevX = this.player.x;
     this.player.prevY = this.player.y;
-    this.camera.x = clamp(this.player.x - this.viewW / 2, 0, Math.max(0, WORLD_W - this.viewW));
-    this.camera.y = clamp(this.player.y - this.viewH / 2, 0, Math.max(0, WORLD_H - this.viewH));
+    this.placeCamera();
     this.camera.prevX = this.camera.x;
     this.camera.prevY = this.camera.y;
     this.player.root = 0;
@@ -1884,8 +1885,18 @@ export class GameEngine {
       }
     }
 
-    this.camera.x = clamp(this.player.x - this.viewW / 2, 0, Math.max(0, WORLD_W - this.viewW));
-    this.camera.y = clamp(this.player.y - this.viewH / 2, 0, Math.max(0, WORLD_H - this.viewH));
+    this.placeCamera();
+  }
+
+  /** Visible world frame: fixed 900-unit height with pillarboxing (remaster) or 1:1 canvas pixels (classic). */
+  private viewFrame(): ViewFrame {
+    return this.rules.logicalSpawnFrame ? logicalViewFrame(this.viewW, this.viewH) : classicViewFrame(this.viewW, this.viewH);
+  }
+
+  private placeCamera() {
+    const frame = this.viewFrame();
+    this.camera.x = clamp(this.player.x - frame.width / 2, 0, Math.max(0, WORLD_W - frame.width));
+    this.camera.y = clamp(this.player.y - frame.height / 2, 0, Math.max(0, WORLD_H - frame.height));
   }
 
   private updateSkills(dt: number) {
@@ -2310,23 +2321,31 @@ export class GameEngine {
 
   private spawnEnemy(difficulty: number, forcedTier?: EnemyTier) {
     const edge = Math.floor(this.gameplayRandom() * 4);
-    const left = clamp(this.player.x - this.viewW / 2, 40, WORLD_W - this.viewW - 40);
-    const top = clamp(this.player.y - this.viewH / 2, 40, WORLD_H - this.viewH - 40);
+    // Remaster rules spawn from the fixed logical frame so window size never changes a seeded run (BUG-09).
+    const spawnFrame = this.rules.logicalSpawnFrame
+      ? spawnFrameOrigin(this.player.x, this.player.y, WORLD_W, WORLD_H)
+      : {
+        left: clamp(this.player.x - this.viewW / 2, 40, WORLD_W - this.viewW - 40),
+        top: clamp(this.player.y - this.viewH / 2, 40, WORLD_H - this.viewH - 40),
+        width: this.viewW,
+        height: this.viewH,
+      };
+    const { left, top, width: spawnWidth, height: spawnHeight } = spawnFrame;
     let x = this.player.x;
     let y = this.player.y;
-    const margin = 110;
+    const margin = SPAWN_MARGIN;
     if (edge === 0) {
       x = left - margin;
-      y = top + this.gameplayRandom() * this.viewH;
+      y = top + this.gameplayRandom() * spawnHeight;
     } else if (edge === 1) {
-      x = left + this.viewW + margin;
-      y = top + this.gameplayRandom() * this.viewH;
+      x = left + spawnWidth + margin;
+      y = top + this.gameplayRandom() * spawnHeight;
     } else if (edge === 2) {
-      x = left + this.gameplayRandom() * this.viewW;
+      x = left + this.gameplayRandom() * spawnWidth;
       y = top - margin;
     } else {
-      x = left + this.gameplayRandom() * this.viewW;
-      y = top + this.viewH + margin;
+      x = left + this.gameplayRandom() * spawnWidth;
+      y = top + spawnHeight + margin;
     }
     x = clamp(x, -80, WORLD_W + 80);
     y = clamp(y, -80, WORLD_H + 80);
@@ -3615,7 +3634,8 @@ export class GameEngine {
     const ctx = this.ctx;
     this.renderAlpha = alpha;
     const camera = this.interpolated(this.camera);
-    this.renderViewport = makeViewport(camera.x, camera.y, this.viewW, this.viewH, 160);
+    const frame = this.viewFrame();
+    this.renderViewport = makeViewport(camera.x, camera.y, frame.width, frame.height, 160);
     const policy = motionPolicy(this.options.reducedFlash, this.systemReducedMotion);
     this.visualRenderer.beginFrame(createRenderFrameSnapshot({
       chapter: this.chapter,
@@ -3638,6 +3658,7 @@ export class GameEngine {
     ctx.fillStyle = NEUTRAL.paper;
     ctx.fillRect(0, 0, this.viewW, this.viewH);
     ctx.save();
+    ctx.setTransform(this.dpr * frame.zoom, 0, 0, this.dpr * frame.zoom, this.dpr * frame.offsetX, 0);
     ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
     // Layer order (BUG-12 / TEC-12): effects never cover the player body, enemy shots stay above every
     // body so an incoming hit is always visible, and the player keyline sits on top of everything.
@@ -3659,6 +3680,12 @@ export class GameEngine {
     this.drawHostileProjectiles(ctx);
     this.drawPlayerXray(ctx);
     ctx.restore();
+    if (frame.offsetX > 0) {
+      // Pillarbox bars keep windows wider than 16:9 from seeing past the logical frame (and its spawns).
+      ctx.fillStyle = NEUTRAL.ink;
+      ctx.fillRect(0, 0, frame.offsetX, this.viewH);
+      ctx.fillRect(this.viewW - frame.offsetX, 0, frame.offsetX, this.viewH);
+    }
   }
 
   private drawWorld(ctx: CanvasRenderingContext2D) {

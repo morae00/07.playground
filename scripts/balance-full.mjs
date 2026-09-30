@@ -65,6 +65,7 @@ const report = parallel
       stages,
       personas: BALANCE_PERSONAS,
       maxFrames,
+      ruleSet: process.env.BALANCE_RULES ?? 'remaster',
     })
   : await runFullBalanceBatch({ bundlePath, seeds, stages, maxFrames });
 const outputPath = path.resolve(process.env.BALANCE_FULL_REPORT ?? 'artifacts/balance-full-report.json');

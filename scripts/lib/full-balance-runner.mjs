@@ -122,7 +122,7 @@ function summarizeGroup(scenarios) {
   };
 }
 
-export function createFullBalanceReport({ scenarios, seeds, stages, personas, maxFrames }) {
+export function createFullBalanceReport({ scenarios, seeds, stages, personas, maxFrames, ruleSet = 'remaster' }) {
   const personaOrder = new Map(personas.map((persona, index) => [persona.id, index]));
   const seedOrder = new Map(seeds.map((seed, index) => [seed, index]));
   const orderedScenarios = [...scenarios].sort((left, right) => (
@@ -135,6 +135,7 @@ export function createFullBalanceReport({ scenarios, seeds, stages, personas, ma
   const byPersona = Object.fromEntries(personas.map((persona) => [persona.id, summarizeGroup(orderedScenarios.filter((item) => item.persona === persona.id))]));
   const byKind = Object.fromEntries(['normal', 'midBoss', 'finalBoss'].map((kind) => [kind, summarizeGroup(orderedScenarios.filter((item) => item.kind === kind))]));
   const summary = {
+    ruleSet,
     scenarioCount: orderedScenarios.length,
     stageCount: stages.length,
     seedCount: seeds.length,
@@ -165,6 +166,7 @@ export async function runFullBalanceBatch({
   stages = DEFAULT_STAGE_ADDRESSES,
   personas = BALANCE_PERSONAS,
   maxFrames = 72_000,
+  ruleSet = process.env.BALANCE_RULES ?? 'remaster',
 } = {}) {
   installHeadlessPlatform();
   const { GameEngine } = await import(bundlePath);
@@ -190,6 +192,7 @@ export async function runFullBalanceBatch({
         });
 
         const seed = scenarioSeed(address.chapter, address.stage, personaIndex, baseSeed);
+        engine.setRuleSet?.(ruleSet);
         engine.startRun(address.chapter, address.stage, seed);
         let frame = 0;
         for (; frame < maxFrames && outcome === 'timeout'; frame += 1) {
@@ -224,5 +227,5 @@ export async function runFullBalanceBatch({
     }
   }
 
-  return createFullBalanceReport({ scenarios, seeds, stages, personas, maxFrames });
+  return createFullBalanceReport({ scenarios, seeds, stages, personas, maxFrames, ruleSet });
 }
