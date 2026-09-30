@@ -26,6 +26,8 @@ import { ModalDialog } from './ui/ModalDialog';
 import { ProgressBar } from './ui/ProgressBar';
 import { nextRovingId, watchReducedMotion, type RovingKey } from './ui/inputContracts';
 import { InputAdapter } from './ui/inputAdapter';
+import { SpriteAtlas } from './game/render/assets/spriteAtlas';
+import { CHAPTER_PACKS, COMMON_PACK } from './game/render/assets/slots';
 import { useGamepadNavigation } from './ui/useGamepadNavigation';
 import {
   CHAPTERS,
@@ -96,6 +98,8 @@ function App() {
   // Keyboard, pointer, and gamepad reach the engine only as commands through this adapter (TEC-07).
   const inputRef = useRef<InputAdapter | null>(null);
   const releaseReducedMotionRef = useRef<(() => void) | null>(null);
+  // Character art (TEC-03) loads once in the background; until it is ready, or if it fails, vectors draw.
+  const [spriteAtlas] = useState(() => new SpriteAtlas());
   const pauseIntentRef = useRef<() => void>(() => undefined);
   const drawerToggleRef = useRef<HTMLButtonElement | null>(null);
   const runPausedRef = useRef(false);
@@ -143,6 +147,16 @@ function App() {
     setSelectedChapterId(meta.progress.chapter);
     setSelectedStageNo(meta.progress.stage);
   }, [developerAccess, meta, selectedChapterId, selectedStageNo]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.all([COMMON_PACK, ...Object.values(CHAPTER_PACKS)].map((pack) => spriteAtlas.load(pack))).then((loaded) => {
+      if (!cancelled) document.documentElement.dataset.sprites = loaded.every(Boolean) ? 'ready' : 'fallback';
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [spriteAtlas]);
 
   useEffect(() => {
     return () => {
@@ -333,6 +347,7 @@ function App() {
     engineRef.current?.dispose();
     const engine = new GameEngine(canvas, meta, options, callbacks);
     engineRef.current = engine;
+    engine.setSprites(spriteAtlas);
     releaseReducedMotionRef.current = watchReducedMotion(
       typeof window.matchMedia === 'function' ? window.matchMedia.bind(window) : undefined,
       (reduced) => engine.setSystemReducedMotion(reduced),
@@ -355,7 +370,7 @@ function App() {
     setCheatMessage('');
     setPhase('playing');
     launch(engine);
-  }, [callbacks, meta, options]);
+  }, [callbacks, meta, options, spriteAtlas]);
 
   const startRun = useCallback(() => {
     if (selectedStageLocked) return;

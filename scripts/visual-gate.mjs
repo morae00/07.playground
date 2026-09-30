@@ -335,10 +335,23 @@ async function captureEvidence(page, viewport, dpr, motion, state) {
   });
 }
 
+/** Waits in real time (the page clock is paused) until the character atlas is loaded or has fallen back. */
+async function waitForSprites(page, timeoutMs = 15_000) {
+  const started = Date.now();
+  for (;;) {
+    const status = await page.evaluate(() => document.documentElement.dataset.sprites ?? null);
+    if (status) return status;
+    if (Date.now() - started > timeoutMs) throw new Error('character atlas never reported ready or fallback');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+}
+
 async function runScenario(page, viewport, dpr, motion) {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
   await settle(page, 120);
   await unique(page.getByRole('heading', { name: '흑백 타격 생존전' }), 'menu heading');
+  const sprites = await waitForSprites(page);
+  if (sprites !== 'ready') throw new Error(`character atlas failed to load (${sprites})`);
   await captureEvidence(page, viewport, dpr, motion, 'menu');
 
   await (await unique(page.getByRole('tab', { name: '무한 경쟁' }), 'infinite menu tab')).click();

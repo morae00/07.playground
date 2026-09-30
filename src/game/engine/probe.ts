@@ -384,7 +384,14 @@ export class ProbedGameEngine extends GameEngine {
         const { effects, ...world } = this.buildRenderWorld(alpha);
         return copy({
           ...world,
-          effects: { particles: effects.particles, damageNumbers: effects.damageNumbers, impactRings: effects.impactRings, shake: effects.shake },
+          effects: {
+            particles: effects.particles,
+            damageNumbers: effects.damageNumbers,
+            impactRings: effects.impactRings,
+            shake: effects.shake,
+            playerHurt: effects.playerHurt,
+            playerCast: effects.playerCast,
+          },
         });
       },
       resize: () => this.onResize(),

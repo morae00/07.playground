@@ -21,6 +21,9 @@ const PARTICLE_CAP_FULL = 520;
 const PARTICLE_CAP_REDUCED = 260;
 const DAMAGE_NUMBER_CAP = 160;
 const IMPACT_RING_CAP = 32;
+/** Pose lengths for the hero sprite: the hurt flash (3 frames at 12 fps) and the throw (4 frames at 16 fps). */
+export const PLAYER_HURT_POSE_SECONDS = 0.25;
+export const PLAYER_CAST_POSE_SECONDS = 0.25;
 
 type Tone = readonly [frequency: number, duration: number, oscillator: OscillatorType];
 
@@ -41,6 +44,9 @@ export class Presentation {
   readonly damageNumbers: DamageNumber[] = [];
   readonly impactRings: ImpactRing[] = [];
   shake = 0;
+  /** Seconds left on the player's hurt and cast poses (FX-01); they count down in wall time. */
+  playerHurt = 0;
+  playerCast = 0;
   /** Cosmetic random stream (particle spread, hit pitch, shake jitter); reseeded per run. */
   random = createSeededRandom(2);
   readonly particlePool = new ObjectPool<Particle>(
@@ -74,6 +80,8 @@ export class Presentation {
     this.particles.length = 0;
     this.damageNumbers.length = 0;
     this.impactRings.length = 0;
+    this.playerHurt = 0;
+    this.playerCast = 0;
   }
 
   handle(event: GameEvent) {
@@ -102,6 +110,7 @@ export class Presentation {
         }
         return;
       case 'skill/cast': {
+        this.playerCast = PLAYER_CAST_POSE_SECONDS;
         const cast = CAST_EFFECTS[event.skillId];
         if (cast?.shake !== undefined) this.addShake(cast.shake);
         if (cast?.tone) this.tone(...cast.tone);
@@ -127,6 +136,7 @@ export class Presentation {
         this.addShake(event.isBoss ? 12 : 5);
         return;
       case 'player/hurt':
+        this.playerHurt = PLAYER_HURT_POSE_SECONDS;
         if (this.host.options().damageNumbers) this.addDamageNumber(event.x, event.y - 38, event.damage, false, 0.72, 'hostile');
         this.burst(event.x, event.y, 12, '#000000', 160);
         this.tone(140, 0.025, 'triangle');
@@ -188,7 +198,10 @@ export class Presentation {
   /** Start of an animation frame: sound spacing always runs; shake decays in wall time unless paused. */
   beginFrame(frameDt: number, paused: boolean) {
     this.soundCooldown = Math.max(0, this.soundCooldown - frameDt);
-    if (!paused) this.shake = Math.max(0, this.shake - frameDt * 12);
+    if (paused) return;
+    this.shake = Math.max(0, this.shake - frameDt * 12);
+    this.playerHurt = Math.max(0, this.playerHurt - frameDt);
+    this.playerCast = Math.max(0, this.playerCast - frameDt);
   }
 
   /**

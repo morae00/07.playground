@@ -22,10 +22,13 @@ import { SKILL_NUMBERS, scaleAt } from '../skillNumbers.ts';
 import type { ViewFrame } from '../viewPolicy.ts';
 import { motionPolicy } from '../visualContracts.ts';
 import { distance } from '../worldMath.ts';
+import { PLAYER_CAST_POSE_SECONDS, PLAYER_HURT_POSE_SECONDS } from '../presentation/presentation.ts';
+import { loopFrame, phaseFor, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
+import { CHAPTER_PACKS, HERO_SLOT, enemyDrawScale, enemySlot, frameKey, slotEnabled, type HeroState } from './assets/slots.ts';
 import { GameRenderer } from './GameRenderer.ts';
 import { NEUTRAL, SIGNAL, rgba } from './palette.ts';
 import { createRenderFrameSnapshot } from './renderSnapshot.ts';
-import { CHAPTER_VISUALS } from './visualRegistry.ts';
+import { CHAPTER_VISUALS, enemyRoleFor } from './visualRegistry.ts';
 import {
   circleVisible,
   interpolatePosition,
@@ -54,6 +57,9 @@ export type RenderEffects = {
   readonly damageNumbers: readonly Readonly<DamageNumber>[];
   readonly impactRings: readonly Readonly<ImpactRing>[];
   readonly shake: number;
+  /** Seconds left on the hero's hurt and cast poses. */
+  readonly playerHurt: number;
+  readonly playerCast: number;
   random(): number;
 };
 
@@ -97,6 +103,15 @@ export class WorldRenderer {
   private gridPattern?: CanvasPattern;
   private viewport: Viewport = makeViewport(0, 0, 1280, 720, 160);
   private world!: RenderWorld;
+  /** Baked character art (TEC-03); null or not yet loaded means every slot draws with vectors. */
+  private sprites: SpriteAtlas | null = null;
+  private heroFacing: 1 | -1 = 1;
+  private readonly enemyFacing = new Map<number, 1 | -1>();
+
+  setSprites(atlas: SpriteAtlas | null) {
+    this.sprites = atlas;
+    this.enemyFacing.clear();
+  }
 
   /** Forget cached patterns (the canvas was resized or its context reset). */
   invalidateGrid() {
@@ -453,8 +468,20 @@ export class WorldRenderer {
   private drawEnemies(ctx: CanvasRenderingContext2D) {
     for (const enemy of this.world.enemies) {
       const point = this.interpolated(enemy);
-      if (!circleVisible(this.viewport, point.x, point.y, enemy.radius + 24)) continue;
-      this.visual.drawEnemy(ctx, {
+      const sprite = this.enemySprite(enemy);
+      // Sprites stand on the hit circle's centre and rise above it; vectors are centred on it.
+      const headY = sprite ? point.y - (sprite.frame.ay / sprite.frame.scale) * sprite.scale : point.y - enemy.radius;
+      const reach = sprite ? Math.max(enemy.radius + 24, point.y - headY + 8) : enemy.radius + 24;
+      if (!circleVisible(this.viewport, point.x, point.y, reach)) continue;
+      if (sprite) {
+        ctx.save();
+        ctx.fillStyle = rgba(NEUTRAL.ink, 0.3);
+        ctx.beginPath();
+        ctx.ellipse(point.x, point.y, enemy.radius, enemy.radius * 0.42, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        this.blit(ctx, sprite.frame, point.x, point.y, sprite.facing, sprite.scale);
+      } else this.visual.drawEnemy(ctx, {
         id: enemy.id,
         x: point.x,
         y: point.y,
@@ -491,9 +518,9 @@ export class WorldRenderer {
         ctx.stroke();
         ctx.fillStyle = SIGNAL.hostile;
         ctx.beginPath();
-        ctx.moveTo(point.x, point.y - enemy.radius - 12);
-        ctx.lineTo(point.x + 5, point.y - enemy.radius - 4);
-        ctx.lineTo(point.x - 5, point.y - enemy.radius - 4);
+        ctx.moveTo(point.x, headY - 12);
+        ctx.lineTo(point.x + 5, headY - 4);
+        ctx.lineTo(point.x - 5, headY - 4);
         ctx.closePath();
         ctx.fill();
         ctx.restore();
@@ -502,7 +529,7 @@ export class WorldRenderer {
       const showHealth =
         this.world.options.healthBars === 'all' ||
         (this.world.options.healthBars === 'elite' && (enemy.isBoss || enemy.tier === 'large'));
-      if (showHealth) this.drawHealthBar(ctx, point.x, point.y - enemy.radius - 14, enemy.radius * 2.1, 6, enemy.hp / enemy.maxHp);
+      if (showHealth) this.drawHealthBar(ctx, point.x, headY - 14, enemy.radius * 2.1, 6, enemy.hp / enemy.maxHp);
     }
   }
 
@@ -545,6 +572,11 @@ export class WorldRenderer {
       const drift = policy.reduced ? 0 : Math.sin(this.world.elapsed * 4.2 + side) * 3;
       const x = player.x + Math.cos(sideAngle) * distanceFromPlayer * side + Math.cos(this.world.aim.angle) * drift;
       const y = player.y + Math.sin(sideAngle) * distanceFromPlayer * side + Math.sin(this.world.aim.angle) * drift;
+      const sprite = this.heroFrame(this.playerMoved());
+      if (sprite) {
+        this.blit(ctx, sprite, x, y, this.heroFacing, 0.94, skill.awakened ? 0.3 : 0.38);
+        continue;
+      }
       this.visual.drawMirrorClone(ctx, {
         x,
         y,
@@ -565,6 +597,13 @@ export class WorldRenderer {
   private drawPlayer(ctx: CanvasRenderingContext2D) {
     const moving = this.playerMoved();
     const player = this.interpolated(this.world.player);
+    const sprite = this.heroFrame(moving);
+    if (sprite) {
+      this.drawHeroGround(ctx, player.x, player.y);
+      this.blit(ctx, sprite, player.x, player.y, this.heroFacing, 1);
+      this.drawHeroMarks(ctx, player.x, player.y, sprite);
+      return;
+    }
     this.visual.drawPlayer(ctx, {
       x: player.x,
       y: player.y,
@@ -586,7 +625,119 @@ export class WorldRenderer {
   private drawPlayerXray(ctx: CanvasRenderingContext2D) {
     if (!this.playerCovered()) return;
     const player = this.interpolated(this.world.player);
+    const sprite = this.heroFrame(this.playerMoved());
+    if (sprite) {
+      // The hero is redrawn half-transparent over the covering body, with the hit circle (BUG-12).
+      this.blit(ctx, sprite, player.x, player.y, this.heroFacing, 1, 0.6);
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = SIGNAL.ally;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, HIT_RADIUS.playerContact, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
     this.visual.drawPlayerXray(ctx, { x: player.x, y: player.y, hitRadius: HIT_RADIUS.playerContact });
+  }
+
+  /** The hero's atlas frame for this moment, or undefined to draw with vectors (FX-01 states, TEC-03). */
+  private heroFrame(moving: boolean): SpriteFrame | undefined {
+    const sprites = this.sprites;
+    if (!sprites || !slotEnabled(HERO_SLOT)) return undefined;
+    const { effects, aim, player } = this.world;
+    const lateral = aim.targetId !== null ? Math.cos(aim.angle) : player.x - player.prevX;
+    if (Math.abs(lateral) > 0.01) this.heroFacing = lateral < 0 ? -1 : 1;
+    const state: HeroState = effects.playerHurt > 0 ? 'hurt' : effects.playerCast > 0 ? 'throw' : moving ? 'run' : 'idle';
+    const spec = sprites.animation(HERO_SLOT, state);
+    if (!spec) return undefined;
+    let index: number;
+    if (state === 'hurt') index = Math.floor((PLAYER_HURT_POSE_SECONDS - effects.playerHurt) * spec.fps);
+    else if (state === 'throw') index = Math.floor((PLAYER_CAST_POSE_SECONDS - effects.playerCast) * spec.fps);
+    else index = loopFrame(spec, this.world.elapsed);
+    index = Math.max(0, Math.min(spec.frames - 1, index));
+    return sprites.frame(frameKey(HERO_SLOT, state, index)) ?? sprites.frame(frameKey(HERO_SLOT, 'idle', 0));
+  }
+
+  /** Foot shadow (the hit circle, style bible §2.3) and the cyan four-part foot ring turned toward the aim. */
+  private drawHeroGround(ctx: CanvasRenderingContext2D, x: number, y: number) {
+    const r = HIT_RADIUS.playerContact;
+    ctx.save();
+    ctx.fillStyle = rgba(NEUTRAL.ink, 0.3);
+    ctx.beginPath();
+    ctx.ellipse(x, y, r, r * 0.42, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const aim = this.world.aim.angle;
+    for (const [color, width] of [[rgba(NEUTRAL.ink, 0.8), 5.2], [SIGNAL.allyDeep, 4.2], [SIGNAL.ally, 2.6], [SIGNAL.allyGlow, 0.7]] as const) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      for (let index = 0; index < 4; index += 1) {
+        const start = aim + (index * Math.PI) / 2 - 0.35;
+        ctx.beginPath();
+        ctx.ellipse(x, y, 24, 10.3, 0, start, start + 0.7);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  /** Shield ring around the body and the silence mark above the head (SYS-11 keeps it overhead). */
+  private drawHeroMarks(ctx: CanvasRenderingContext2D, x: number, y: number, sprite: SpriteFrame) {
+    const { shield, silence } = this.world.player;
+    if (shield <= 0 && silence <= 0) return;
+    const top = y - sprite.ay / sprite.scale;
+    ctx.save();
+    if (shield > 0) {
+      ctx.strokeStyle = SIGNAL.ally;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([8, 5]);
+      ctx.beginPath();
+      ctx.ellipse(x, (top + y) / 2, 30, (y - top) / 2 + 8, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    if (silence > 0) {
+      ctx.setLineDash([]);
+      ctx.strokeStyle = SIGNAL.elite;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(x, top - 12, 8, 0, Math.PI * 2);
+      ctx.moveTo(x - 5.6, top - 17.6);
+      ctx.lineTo(x + 5.6, top - 6.4);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /** Draws an atlas frame with its anchor on (x, y); scale multiplies the baked size, facing -1 mirrors it. */
+  private blit(ctx: CanvasRenderingContext2D, sprite: SpriteFrame, x: number, y: number, facing: 1 | -1, scale: number, alpha = 1) {
+    const unit = scale / sprite.scale;
+    ctx.save();
+    if (alpha !== 1) ctx.globalAlpha *= alpha;
+    ctx.translate(x, y);
+    if (facing < 0) ctx.scale(-1, 1);
+    ctx.drawImage(sprite.image, sprite.sx, sprite.sy, sprite.sw, sprite.sh, -sprite.ax * unit, -sprite.ay * unit, sprite.sw * unit, sprite.sh * unit);
+    ctx.restore();
+  }
+
+  /** An enemy's atlas frame, facing, and scale, or undefined to draw it with vectors (bosses stay vector). */
+  private enemySprite(enemy: Readonly<Entity>) {
+    const sprites = this.sprites;
+    if (!sprites || enemy.isBoss) return undefined;
+    const pack = CHAPTER_PACKS[this.world.chapter];
+    if (!pack || sprites.status(pack) !== 'ready') return undefined;
+    const slot = enemySlot(this.world.chapter, enemy.tier, enemy.attackStyle);
+    if (!slotEnabled(slot)) return undefined;
+    const moving = Math.hypot(enemy.vx, enemy.vy) > 5;
+    const state = enemy.hitFlash > 0 ? 'hit' : enemy.attackStyle === 'ranged' && enemy.rangedTelegraph > 0 ? 'windup' : moving ? 'walk' : 'idle';
+    const spec = sprites.animation(slot, state);
+    if (!spec) return undefined;
+    const frame = sprites.frame(frameKey(slot, state, state === 'walk' ? loopFrame(spec, this.world.elapsed, phaseFor(enemy.id)) : 0));
+    if (!frame) return undefined;
+    const lateral = Math.abs(enemy.vx) > 5 ? enemy.vx : 0;
+    const facing: 1 | -1 = lateral !== 0 ? (lateral < 0 ? -1 : 1) : this.enemyFacing.get(enemy.id) ?? (this.world.player.x < enemy.x ? -1 : 1);
+    this.enemyFacing.set(enemy.id, facing);
+    return { frame, facing, scale: enemyDrawScale(enemyRoleFor(enemy.tier, enemy.attackStyle), enemy.tier) };
   }
 
   private drawParticles(ctx: CanvasRenderingContext2D) {

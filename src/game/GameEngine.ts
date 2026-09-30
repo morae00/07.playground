@@ -62,6 +62,7 @@ import {
   selectPickupMergeTarget,
 } from './pickupLifecycle';
 import { WorldRenderer, type RenderWorld } from './render/worldRenderer';
+import type { SpriteAtlas } from './render/assets/spriteAtlas';
 import {
   bossPhaseForHealth,
   classifyImpact,
@@ -994,6 +995,11 @@ export class GameEngine {
     this.presentation.dispose();
   }
 
+  /** Baked character art for the renderer (TEC-03); without it every visual draws with vectors. */
+  setSprites(atlas: SpriteAtlas | null) {
+    this.worldRenderer.setSprites(atlas);
+  }
+
   /** The operating system's reduced-motion preference; the app shell watches it and passes it in. */
   setSystemReducedMotion(reduced: boolean) {
     this.systemReducedMotion = reduced;
@@ -1872,6 +1878,7 @@ export class GameEngine {
       const tracked = i === Math.floor((count - 1) / 2) ? target.enemy.id : -1;
       this.spawnProjectile('needleStorm', this.player.x, this.player.y, Math.cos(angle) * 760, Math.sin(angle) * 760, 4.5, damage, 1.15, skill.awakened ? SKILL_NUMBERS.needleStorm.awakenedPierce : 0, 120, true, tracked);
     }
+    this.emit({ type: 'skill/cast', skillId: 'needleStorm', x: this.player.x, y: this.player.y });
   }
 
   protected updateFanKnives(skill: SkillState) {
