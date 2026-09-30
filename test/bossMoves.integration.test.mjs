@@ -160,24 +160,66 @@ test('in phase 3 a ring wall closes in on the player with one gate, alternating 
   }
 });
 
-test('an anchoring boss holds its spot while the player walks away', () => {
+test('an anchoring boss holds its spot while the player stays within its leash', () => {
   const arena = bossInPhase(10, 2);
   try {
     arena.probe.clear('obstacles');
     const anchor = arena.read();
     assert.ok(anchor.anchorX !== undefined);
+    // Start 300 from the boss and walk away for a second and a half: farther, but inside the 720 leash.
+    const side = anchor.x < 2100 ? 1 : -1;
+    arena.probe.setPlayer({ x: anchor.x + side * 300, y: anchor.y, prevX: anchor.x + side * 300, prevY: anchor.y });
     const start = arena.probe.read().player;
-    const toward = anchor.x < start.x ? 'moveRight' : 'moveLeft';
+    const toward = side > 0 ? 'moveRight' : 'moveLeft';
     arena.engine.dispatch({ type: 'input/action', action: toward, pressed: true });
-    arena.probe.step(60 * 3);
+    arena.probe.step(90);
+    arena.engine.dispatch({ type: 'input/action', action: toward, pressed: false });
+    arena.probe.step(60);
     const boss = arena.read();
     const player = arena.probe.read().player;
-    assert.ok(Math.abs(player.x - start.x) > 400, `the player walked away (${Math.abs(player.x - start.x).toFixed(0)})`);
+    const gap = Math.hypot(player.x - boss.x, player.y - boss.y);
+    assert.ok(Math.abs(player.x - start.x) > 250 && gap < 720, `the player walked away inside the leash (${Math.abs(player.x - start.x).toFixed(0)}, gap ${gap.toFixed(0)})`);
     assert.ok(Math.hypot(boss.x - anchor.anchorX, boss.y - anchor.anchorY) < 90, 'the boss stays within reach of its anchor');
   } finally {
     arena.engine.dispose();
   }
 });
+
+test('SYS-05 fix: an anchoring boss follows a player who leaves its leash, plants again, and enrage ends the hold', () => {
+  const arena = bossInPhase(10, 2);
+  try {
+    arena.probe.clear('obstacles');
+    const anchor = arena.read();
+    const { player } = arena.probe.read();
+    // The player stands 1,400 away, twice the leash: the boss walks after them and stops at the leash.
+    const away = normalizeTo(player, anchor, 1400);
+    arena.probe.setPlayer({ x: away.x, y: away.y, prevX: away.x, prevY: away.y });
+    arena.probe.step(60 * 16);
+    const followed = arena.read();
+    const gap = Math.hypot(followed.x - away.x, followed.y - away.y);
+    assert.ok(gap <= 760 && gap > 600, `the boss came back within its leash and stopped there (${gap.toFixed(0)})`);
+    assert.ok(Math.hypot(followed.anchorX - followed.x, followed.anchorY - followed.y) < 90, 'and holds its new spot');
+    arena.probe.step(60 * 2);
+    const held = arena.read();
+    assert.ok(Math.hypot(held.x - followed.x, held.y - followed.y) < 90, 'without closing in');
+
+    // The stage clock runs out: the enraged boss leaves its spot and comes for the player.
+    arena.probe.setClock({ timeLeft: 0 });
+    arena.probe.step(60 * 6);
+    const enraged = arena.read();
+    assert.ok(Math.hypot(enraged.x - away.x, enraged.y - away.y) < gap - 250, 'enrage ends the hold');
+  } finally {
+    arena.engine.dispose();
+  }
+});
+
+/** A point `length` away from `from`, on the side away from `other`, kept inside the arena. */
+function normalizeTo(from, other, length) {
+  const dx = from.x - other.x;
+  const dy = from.y - other.y;
+  const d = Math.hypot(dx, dy) || 1;
+  return { x: Math.max(120, Math.min(4080, other.x + (dx / d) * length)), y: Math.max(120, Math.min(2880, other.y + (dy / d) * length)) };
+}
 
 test('a boss whose phase grammar is not built yet keeps chasing instead of anchoring or sweeping', () => {
   // Ch4's mid boss authors a sweeping phase 2 (second-hand-sweep); its grammar waits for the boss's kit art (SYS-05).

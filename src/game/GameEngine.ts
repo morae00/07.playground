@@ -418,6 +418,8 @@ function trapCell(x: number, y: number, half: number, spacing: number, gap: numb
 }
 /** SYS-04 anchor movement: how far an anchoring boss strays from its spot. */
 const ANCHOR_RADIUS = 60;
+/** SYS-05 fix: an anchoring boss holds its spot only while the player is this close (about the view's reach). */
+const ANCHOR_LEASH = 720;
 /** Bosses enter this far from the player; under bossSpacing never closer than the minimum (SYS-04). */
 const BOSS_SPAWN_DISTANCE = 620;
 const BOSS_MIN_SPAWN_DISTANCE = 420;
@@ -2621,7 +2623,13 @@ export class GameEngine {
       const speed = enemy.speed * phaseSpeed * (enemy.slowMultiplier ?? 1) * (enemy.patternPhase === 'dash' ? 3.8 : 1);
       let moveX = dir.x;
       let moveY = dir.y;
-      if (enemy.isBoss && enemy.anchorX !== undefined && enemy.anchorY !== undefined && this.bossGrammar(enemy)?.movement.mode === 'anchor') {
+      const anchored = enemy.isBoss && enemy.anchorX !== undefined && enemy.anchorY !== undefined && this.bossGrammar(enemy)?.movement.mode === 'anchor';
+      if (anchored && (playerDistance > ANCHOR_LEASH || this.bossEnraged)) {
+        // SYS-05 fix: a player who leaves the fight is followed, and the boss plants again where it stops. Once
+        // the stage clock runs out, enrage ends the hold, so an anchored boss can never be outwaited.
+        enemy.anchorX = enemy.x;
+        enemy.anchorY = enemy.y;
+      } else if (anchored && enemy.anchorX !== undefined && enemy.anchorY !== undefined) {
         // SYS-04 anchor movement: hold near where the phase began and let the volleys do the work. Only a move
         // whose attack grammar runs anchors; the others keep chasing with their old patterns.
         const homeX = enemy.anchorX - enemy.x;

@@ -166,6 +166,21 @@ SYS-05 (the Ch2-5 final bosses' phase moves) was piloted on those bosses' stages
 - Boss deaths rose from 3 to 5 and the median clear took 16 s longer.
 - The gameplay fingerprints did not change, because their scenarios never bring these bosses to phase 2. `test/bossMovesFinal.integration.test.mjs` covers every move instead.
 
+The SYS-05 anchor leash (an anchoring boss follows a player more than 720 away and plants again, and enrage ends the hold) was piloted on the stages whose bosses anchor (1-10, 2-10, 5-10) × the baseline's 10 seeds × 4 personas, against the R2-end baseline:
+
+| | R2 end | leash |
+|---|---:|---:|
+| clear, all 120 | 35.0% | 35.8% |
+| clear without fresh, 1-10 / 2-10 / 5-10 (%) | 30.0 / 33.3 / 76.7 | 30.0 / 33.3 / 80.0 |
+| clear time p50 / max, 1-10 (s) | 425 / 848 | 429 / 804 |
+| clear time p50 / max, 2-10 (s) | 380 / 428 | 345 / 396 |
+| clear time p50 / max, 5-10 (s) | 198 / 805 | 182 / 445 |
+| timeouts | 3 | 2 |
+
+- One run flipped: the 5-10 stalemate above (striker, base seed 997) now clears. The other 119 end the same way, with the same death causes.
+- Long anchored fights end sooner: 5-10's longest clear fell from 805 s to 445 s.
+- The two survivor pins remain. There the boss comes, but auto-aim keeps to the nearer crowd (the **[Team decision]** above).
+
 SYS-09 (pickups wait 60 s before flying home, `patientPickups` rule) was piloted with the flag on and off (`BALANCE_RULE_PATCH`) on 1-2, 1-5, 1-6, 2-4, 3-7, 4-3, and 5-2 × the pilot seeds (11, 23, 37, 41, 59, 67, 71, 83, 97, 101) × 4 personas:
 
 | | off (30 s) | on (60 s) |
