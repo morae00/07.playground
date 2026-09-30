@@ -21,6 +21,26 @@ export const BALANCE_PERSONAS = Object.freeze([
   Object.freeze({ id: 'fresh', skillPriority: ['needleStorm', 'chainSpark', 'fanKnives', 'ironFrame', 'recoveryThread'], movePeriod: 180, freshMeta: true }),
 ]);
 
+/**
+ * Opt-in personas for focused questions, outside the default matrix so baselines stay comparable. Pick them with
+ * BALANCE_FULL_PERSONAS (ids, comma separated).
+ * - novice: a new player (fresh meta) who steers away from nearby threats instead of walking a fixed square. It is
+ *   the proxy for the R1 new-player gate (CON-02); human playtests still decide it.
+ */
+export const EXTRA_PERSONAS = Object.freeze([
+  Object.freeze({ id: 'novice', skillPriority: ['needleStorm', 'chainSpark', 'fanKnives', 'ironFrame', 'recoveryThread'], movePeriod: 180, freshMeta: true, evasive: true }),
+]);
+
+/** Personas by id from the default and opt-in lists, in the order given. */
+export function personasById(ids) {
+  const all = [...BALANCE_PERSONAS, ...EXTRA_PERSONAS];
+  return ids.map((id) => {
+    const persona = all.find((candidate) => candidate.id === id);
+    if (!persona) throw new TypeError(`Unknown balance persona: ${id}`);
+    return persona;
+  });
+}
+
 const ACTIVE_SKILLS = new Set([
   'needleStorm', 'fanKnives', 'chainSpark', 'frostLine', 'orbitScythes',
   'boneMortar', 'railSpear', 'mirrorClone', 'voidMine', 'blackSun', 'eclipseStep',
@@ -104,9 +124,61 @@ export function selectBalanceOffer(cards, persona, snapshot) {
   return ranked[0];
 }
 
-function updateMovement(engine, frame, personaIndex, persona) {
+function updateMovement(engine, frame, personaIndex, persona, context) {
+  if (persona.evasive) {
+    evasiveMovement(engine, frame, context);
+    return;
+  }
   const directions = persona.id === 'survivor' ? ['a', 'w', 'd', 's'] : persona.id === 'collector' ? ['w', 'd', 's', 'a'] : ['d', 's', 'a', 'w'];
   holdDirection(engine, directions[(Math.floor(frame / persona.movePeriod) + personaIndex) % directions.length]);
+}
+
+/**
+ * The novice steers with the analog stick every 0.1 s: away from enemies within reach (bosses and dashing chargers
+ * count more), away from hostile shots, circling the threat instead of backing straight off, and pulled back from
+ * the walls. With nothing near it drifts round the arena centre.
+ */
+function evasiveMovement(engine, frame, context) {
+  if (frame % 6 !== 0) return;
+  const player = engine.player;
+  let fx = 0;
+  let fy = 0;
+  const push = (x, y, reach, weight) => {
+    const dx = player.x - x;
+    const dy = player.y - y;
+    const d = Math.hypot(dx, dy);
+    if (d >= reach || d < 1e-6) return;
+    const closeness = (reach - d) / reach;
+    fx += (dx / d) * closeness * closeness * weight;
+    fy += (dy / d) * closeness * closeness * weight;
+  };
+  for (const enemy of engine.enemies) {
+    if (enemy.hp <= 0) continue;
+    const dashing = enemy.patternPhase === 'warn' || enemy.patternPhase === 'dash';
+    push(enemy.x, enemy.y, enemy.radius + (dashing ? 320 : 200), enemy.isBoss ? 3 : dashing ? 2 : 1);
+  }
+  for (const shot of engine.bossProjectiles) push(shot.x, shot.y, 150, 1.5);
+  const threat = Math.hypot(fx, fy);
+  let mx = fx;
+  let my = fy;
+  if (threat > 1e-6) {
+    mx += (-fy / threat) * 0.7 * threat * context.turn;
+    my += (fx / threat) * 0.7 * threat * context.turn;
+  } else {
+    const angle = frame * 0.004 * context.turn;
+    mx = context.width / 2 + Math.cos(angle) * 450 - player.x;
+    my = context.height / 2 + Math.sin(angle) * 450 - player.y;
+  }
+  const margin = 320;
+  const scale = Math.max(1e-6, Math.hypot(mx, my));
+  mx /= scale;
+  my /= scale;
+  if (player.x < margin) mx += ((margin - player.x) / margin) * 1.5;
+  if (player.x > context.width - margin) mx -= ((player.x - (context.width - margin)) / margin) * 1.5;
+  if (player.y < margin) my += ((margin - player.y) / margin) * 1.5;
+  if (player.y > context.height - margin) my -= ((player.y - (context.height - margin)) / margin) * 1.5;
+  const length = Math.hypot(mx, my);
+  engine.dispatch({ type: 'input/analog', x: length > 1e-6 ? mx / length : 0, y: length > 1e-6 ? my / length : 0 });
 }
 
 function summarizeGroup(scenarios) {
@@ -225,9 +297,11 @@ export async function runFullBalanceBatch({
           if (event.type === 'player/died') death = event;
         });
         engine.startRun(address.chapter, address.stage, seed);
+        const { worldSize } = engine.probe.renderWorld(1);
+        const context = { turn: seed % 2 === 0 ? 1 : -1, width: worldSize.width, height: worldSize.height };
         let frame = 0;
         for (; frame < maxFrames && outcome === 'timeout'; frame += 1) {
-          updateMovement(engine, frame, personaIndex, persona);
+          updateMovement(engine, frame, personaIndex, persona, context);
           engine.advanceFrame(1 / 60, false);
         }
         const diagnostics = engine.getDiagnostics();

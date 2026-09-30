@@ -29,16 +29,29 @@ Chapter packs (`assets/packs/<chapter>/`) have a 12 MiB per-pack target and resi
 
 `npm run test:balance:smoke` is a deterministic pressure smoke test, not a difficulty verdict. `npm run test:balance:pilot` checks representative chapter boundaries and boss stages. A release candidate uses `npm run test:balance:full` across all 50 stages, four build policies, and ten fixed seeds. Three policies are representative builds whose permanent upgrades grow by chapter. The fourth, `fresh`, is a new player with no upgrades or passives (CON-09). Seed shards run through a bounded worker pool, then merge in canonical stage/persona/seed order. The JSON report records clear/death/timeout rates, simulated and wall-clock time percentiles, death causes (contact, shot, boss contact, boss shot, shock, fire, each marked when the boss was enraged), economy percentiles, build growth, scenario details, and a deterministic fingerprint.
 
-The remaster baseline is `artifacts/balance-remaster-baseline.json` (CON-09). It covers 2,000 scenarios under the remaster rules on commit bf13b46, before the CON-02 pacing change. The findings to act on:
+The remaster baseline is `artifacts/balance-remaster-baseline.json` (CON-09): 2,000 scenarios under the remaster rules on commit bf4d474, after SYS-02, SYS-03, SYS-04, and two boss-fight fixes. Earlier full runs used the same seeds and personas:
 
-- `fresh` clears 0 of 500 scenarios. In stage 1-1 it dies to contact after 45 s of wall-clock time (median). This is why the `personaClearsObserved` gate fails and the full run exits 1. SYS-03's opening ramp targets it.
-- Without `fresh`, clear rates fall as chapters rise: Ch1 23%, Ch2 59%, Ch3 72%, Ch4 92%, Ch5 100%. The chapter growth modelled for upgrades outpaces the difficulty growth. This is input for CON-02's Ch1 tuning and SYS-07.
-- Contact causes 96% of deaths (923 of 961). Shots, boss shots, and boss contact cause the rest.
+| | bf13b46 (CON-09) | 565e8b2 (SYS-03) | 73d367c (SYS-02, SYS-04) | bf4d474 (boss fixes) |
+|---|---:|---:|---:|---:|
+| clear, all 2,000 | 52.0% | 51.2% | 39.6% | 40.0% |
+| clears: striker / survivor / collector / fresh (of 500) | 299 / 456 / 284 / 0 | 294 / 466 / 264 / 0 | 220 / 410 / 162 / 0 | 224 / 416 / 159 / 0 |
+| clear by chapter without fresh, Ch1 / 2 / 3 / 4 / 5 (%) | 23.3 / 59.0 / 72.3 / 91.7 / 100.0 | 27.3 / 54.3 / 69.3 / 90.7 / 99.7 | 23.7 / 41.7 / 43.3 / 70.3 / 85.0 | 24.0 / 46.0 / 42.7 / 70.3 / 83.3 |
+| timeouts (20 min of play) | 0 | 0 | 2 | 1 |
+| deaths: contact / shots / boss | 923 / 9 / 29 | 934 / 7 / 33 | 1120 / 57 / 21 | 1118 / 50 / 25 |
+| boss stages without fresh, clear time p50 / max (s) | 199 / 1155 | 184 / 755 | 249 / 751 | 252 / 927 |
+| fresh in 1-1, death p50 (s) | 45 | 67 | 72 | 72 |
 
-SYS-03 (encounter director) was compared on Ch1: 10 stages x 4 personas x 10 seeds, remaster rules, before and after.
-- fresh: dies later in 1-1 (median about 68 s instead of 49 s) and kills twice as many, but still clears 0/100.
-- striker clears 4/100 instead of 1/100; survivor 78/100 instead of 69/100.
-Reaching the R1 playtest goals (1-1: 80% survive 3 minutes, 40-70% clear) is left to CON-02's Ch1 tuning of the base spawn rate and ramp.
+Findings:
+
+- Without `fresh`, clear rates rise with the chapter. The chapter growth modelled for upgrades outpaces the difficulty growth. SYS-02 (enemy roles) and SYS-04 (boss moves, stepped enrage) made Ch2 to Ch5 harder and flattened that curve; Ch1 stayed near 24%. Shot deaths rose from 7 to 50, because shooters lead their aim now. This is input for SYS-07.
+- Boss fights got longer, and at 73d367c two never ended. A crowd at the enemy cap shoved the boss away from the player (fixed in 83c3294), and Ch3 and Ch5 bosses anchored in place although their phase grammars are not built yet (fixed in bf4d474).
+- One fight still times out: 2-10 survivor, seed 211531, boss at 13% health after 20 minutes. The stepped enrage (SYS-04) stops at damage x2.0, so a tank build that keeps moving is never forced to end the fight. The 0.1.0 enrage (x4.5 and a silence field) was a hard stop. **[Team decision]** an overtime rule after the last enrage step, or accept the risk; either way this is why `noTimeouts` fails. `personaClearsObserved` fails because `fresh` clears 0 of 500.
+- `fresh` walks a fixed square and runs into enemies, so it says little about a new player. The opt-in `novice` persona (`BALANCE_FULL_PERSONAS=novice`) has the same fresh meta but steers away from nearby threats with the analog stick every 0.1 s, circling instead of backing into walls. On bf4d474:
+  - 1-1, 20 seeds: 50% clear (fresh 0 of 10) and 70% survive 3 minutes.
+  - Ch1, 10 seeds each: 1-1 4/10, 1-2 3/10, 1-3 4/10, 1-4 4/10, 1-5 4/10, 1-6 2/10, 1-7 1/10, 1-8 1/10, 1-9 4/10, 1-10 1/10. Later stages are harder because the novice keeps the fresh meta throughout.
+  - Contact still causes nearly every death.
+
+CON-02 Ch1 tuning: by the novice proxy, 1-1 already clears within the R1 target band (40-70%), and 3-minute survival (70%) is near its 80% target. A longer opening ramp does not help (1-1, novice, 20 seeds): a 90 s ramp kept 50% clear but dropped 3-minute survival to 50%, and 120 s gave 45% and 65%. Fewer early enemies mean less XP and fewer drafts (median 14 drafts at 45 s, 5 at 90 s), so the player is weaker when the pressure arrives. The 45 s ramp stays. The R1 playtest (6 or more new players) decides the final Ch1 numbers.
 
 ## Game rules and grammar
 

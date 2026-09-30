@@ -1,10 +1,18 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { BALANCE_PERSONAS, DEFAULT_FULL_SEEDS, createFullBalanceReport, selectBalanceOffer } from '../scripts/lib/full-balance-runner.mjs';
+import { BALANCE_PERSONAS, DEFAULT_FULL_SEEDS, EXTRA_PERSONAS, createFullBalanceReport, personasById, selectBalanceOffer } from '../scripts/lib/full-balance-runner.mjs';
 
 test('release balance matrix owns ten unique deterministic seeds', () => {
   assert.equal(DEFAULT_FULL_SEEDS.length, 10);
   assert.equal(new Set(DEFAULT_FULL_SEEDS).size, 10);
+});
+
+test('opt-in personas stay out of the default matrix and are picked by id', () => {
+  assert.deepEqual(BALANCE_PERSONAS.map((persona) => persona.id), ['striker', 'survivor', 'collector', 'fresh']);
+  const novice = EXTRA_PERSONAS.find((persona) => persona.id === 'novice');
+  assert.ok(novice && novice.freshMeta && novice.evasive, 'the novice is a new player who steers away from threats');
+  assert.deepEqual(personasById(['novice', 'fresh']).map((persona) => persona.id), ['novice', 'fresh']);
+  assert.throws(() => personasById(['expert']), /Unknown balance persona/);
 });
 
 test('balance personas secure three active skills before specialization', () => {

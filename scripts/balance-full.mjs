@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { Worker } from 'node:worker_threads';
 import { DEFAULT_STAGE_ADDRESSES } from './lib/balance-runner.mjs';
-import { BALANCE_PERSONAS, DEFAULT_FULL_SEEDS, createFullBalanceReport, runFullBalanceBatch } from './lib/full-balance-runner.mjs';
+import { BALANCE_PERSONAS, DEFAULT_FULL_SEEDS, createFullBalanceReport, personasById, runFullBalanceBatch } from './lib/full-balance-runner.mjs';
 
 function parseIntegerList(value) {
   if (!value) return undefined;
@@ -22,10 +22,10 @@ function parseStages(value) {
   });
 }
 
-function runSeedWorker({ bundlePath, seed, stages, maxFrames }) {
+function runSeedWorker({ bundlePath, seed, stages, maxFrames, personaIds }) {
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL('./balance-full-worker.mjs', import.meta.url), {
-      workerData: { bundlePath, seed, stages, maxFrames },
+      workerData: { bundlePath, seed, stages, maxFrames, personas: personaIds },
     });
     worker.once('message', resolve);
     worker.once('error', reject);
@@ -35,14 +35,14 @@ function runSeedWorker({ bundlePath, seed, stages, maxFrames }) {
   });
 }
 
-async function runSeedWorkers({ bundlePath, seeds, stages, maxFrames, concurrency }) {
+async function runSeedWorkers({ bundlePath, seeds, stages, maxFrames, concurrency, personaIds }) {
   const results = new Array(seeds.length);
   let cursor = 0;
   async function consume() {
     while (cursor < seeds.length) {
       const index = cursor;
       cursor += 1;
-      results[index] = await runSeedWorker({ bundlePath, seed: seeds[index], stages, maxFrames });
+      results[index] = await runSeedWorker({ bundlePath, seed: seeds[index], stages, maxFrames, personaIds });
     }
   }
   await Promise.all(Array.from({ length: Math.min(concurrency, seeds.length) }, consume));
@@ -55,19 +55,21 @@ const stages = parseStages(process.env.BALANCE_FULL_STAGES);
 const maxFrames = Number.parseInt(process.env.BALANCE_FULL_MAX_FRAMES ?? '72000', 10);
 const parallel = process.env.BALANCE_FULL_PARALLEL !== '0' && seeds.length > 1;
 const concurrency = Number.parseInt(process.env.BALANCE_FULL_WORKERS ?? '4', 10);
+const personaIds = process.env.BALANCE_FULL_PERSONAS ? process.env.BALANCE_FULL_PERSONAS.split(',').map((id) => id.trim()).filter(Boolean) : undefined;
+const personas = personaIds ? personasById(personaIds) : BALANCE_PERSONAS;
 if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 16) {
   throw new RangeError('BALANCE_FULL_WORKERS must be an integer within 1..16');
 }
 const report = parallel
   ? createFullBalanceReport({
-      scenarios: (await runSeedWorkers({ bundlePath, seeds, stages, maxFrames, concurrency })).flat(),
+      scenarios: (await runSeedWorkers({ bundlePath, seeds, stages, maxFrames, concurrency, personaIds })).flat(),
       seeds,
       stages,
-      personas: BALANCE_PERSONAS,
+      personas,
       maxFrames,
       ruleSet: process.env.BALANCE_RULES ?? 'remaster',
     })
-  : await runFullBalanceBatch({ bundlePath, seeds, stages, maxFrames });
+  : await runFullBalanceBatch({ bundlePath, seeds, stages, maxFrames, personas });
 const outputPath = path.resolve(process.env.BALANCE_FULL_REPORT ?? 'artifacts/balance-full-report.json');
 await mkdir(path.dirname(outputPath), { recursive: true });
 await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
