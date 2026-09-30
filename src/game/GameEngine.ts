@@ -3592,21 +3592,25 @@ export class GameEngine {
     ctx.fillRect(0, 0, this.viewW, this.viewH);
     ctx.save();
     ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
+    // Layer order (BUG-12 / TEC-12): effects never cover the player body, enemy shots stay above every
+    // body so an incoming hit is always visible, and the player keyline sits on top of everything.
     this.drawWorld(ctx);
     this.drawHazards(ctx);
     this.drawObstacles(ctx);
     this.drawTargetGuide(ctx);
     this.drawPickups(ctx);
     this.drawBeams(ctx);
-    this.drawProjectiles(ctx);
     this.drawEnemies(ctx);
     this.drawTargetReticle(ctx);
     this.drawImpactRings(ctx);
+    this.drawParticles(ctx);
+    this.drawDamageNumbers(ctx);
     this.drawOrbitScythes(ctx);
     this.drawMirrorClone(ctx);
     this.drawPlayer(ctx);
-    this.drawParticles(ctx);
-    this.drawDamageNumbers(ctx);
+    this.drawFriendlyProjectiles(ctx);
+    this.drawHostileProjectiles(ctx);
+    this.drawPlayerXray(ctx);
     ctx.restore();
   }
 
@@ -3845,7 +3849,7 @@ export class GameEngine {
     }
   }
 
-  private drawProjectiles(ctx: CanvasRenderingContext2D) {
+  private drawFriendlyProjectiles(ctx: CanvasRenderingContext2D) {
     for (const projectile of this.projectiles) {
       const point = this.interpolated(projectile);
       if (!circleVisible(this.renderViewport, point.x, point.y, projectile.radius * 8)) continue;
@@ -3861,6 +3865,9 @@ export class GameEngine {
         skillId: projectile.skillId,
       });
     }
+  }
+
+  private drawHostileProjectiles(ctx: CanvasRenderingContext2D) {
     for (const projectile of this.bossProjectiles) {
       const point = this.interpolated(projectile);
       if (!circleVisible(this.renderViewport, point.x, point.y, projectile.radius * 2.2)) continue;
@@ -3992,6 +3999,20 @@ export class GameEngine {
       shield: this.player.shield,
       silence: this.player.silence,
     });
+  }
+
+  private playerCovered() {
+    for (const enemy of this.enemies) {
+      if (enemy.hp <= 0 || !(enemy.isBoss || enemy.tier === 'large')) continue;
+      if (distance(enemy, this.player) < enemy.radius + 34) return true;
+    }
+    return false;
+  }
+
+  private drawPlayerXray(ctx: CanvasRenderingContext2D) {
+    if (!this.playerCovered()) return;
+    const player = this.interpolated(this.player);
+    this.visualRenderer.drawPlayerXray(ctx, { x: player.x, y: player.y, hitRadius: HIT_RADIUS.playerContact });
   }
 
   private drawParticles(ctx: CanvasRenderingContext2D) {

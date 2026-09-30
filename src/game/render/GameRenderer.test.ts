@@ -152,3 +152,15 @@ test('player and clone share a readable silhouette with different signal strengt
   assert.match(cloneLog, /globalAlpha/);
   assert.match(cloneLog, /setLineDash/);
 });
+
+test('player x-ray keyline redraws the silhouette and hit circle above covering bodies (BUG-12)', () => {
+  const recorder = createRecordingContext();
+  const renderer = new GameRenderer();
+  renderer.beginFrame(frame(1));
+  renderer.drawPlayerXray(recorder.context, { x: 40, y: 60, hitRadius: 15 });
+  const log = recorder.calls.join('|');
+  assert.match(log, /translate:40\.00,60\.00/);
+  assert.match(log, /set:strokeStyle:#00a8c6/);
+  assert.match(log, /arc:0\.00,0\.00,15\.00/, 'the hit circle is drawn at the true contact radius');
+  assert.equal(recorder.calls.filter((call) => call.startsWith('fill:') || call === 'fill:').length, 0, 'the keyline never fills over the scene');
+});

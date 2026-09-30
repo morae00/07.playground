@@ -346,3 +346,21 @@ test('a paused run draws a still frame: no shake, no particle drift (BUG-03)', (
     engine.dispose();
   }
 });
+
+test('bosses standing on the player trigger the top-layer player keyline (BUG-12)', () => {
+  const { engine, recorder } = createEngine();
+  try {
+    engine.enemies = [];
+    engine.render(1);
+    recorder.reset();
+    engine.render(1);
+    const alone = recorder.count('translate');
+    const boss = enemyAt(50_001, engine.player.x + 10, engine.player.y);
+    engine.enemies = [{ ...boss, isBoss: true, tier: 'boss', radius: 54, hp: 500, maxHp: 500, boss: { id: 's1-mid-dash', pattern: 'dash' }, bossPhase: 1 }];
+    recorder.reset();
+    engine.render(1);
+    assert.equal(recorder.count('translate'), alone + 2, 'one translate for the boss body and one for the keyline');
+  } finally {
+    engine.dispose();
+  }
+});

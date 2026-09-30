@@ -89,6 +89,18 @@ const DEFAULT_FRAME: RenderFrameSnapshot = Object.freeze({
   enemyCount: 0,
 });
 
+const PLAYER_BODY_POINTS: ReadonlyArray<readonly [number, number]> = [
+  [-14, -12],
+  [14, -12],
+  [18, 7],
+  [10, 25],
+  [2, 18],
+  [-3, 29],
+  [-17, 16],
+  [-15, 1],
+];
+const PLAYER_HEAD = { x: 0, y: -25, radius: 10.5 };
+
 function pathPolygon(
   ctx: CanvasRenderingContext2D,
   points: ReadonlyArray<readonly [number, number]>,
@@ -220,16 +232,7 @@ export class GameRenderer {
     ctx.lineWidth = clone ? 3 : 3.5;
     if (clone) ctx.setLineDash([6, 3]);
 
-    pathPolygon(ctx, [
-      [-14, -12],
-      [14, -12],
-      [18, 7],
-      [10, 25],
-      [2, 18],
-      [-3, 29],
-      [-17, 16],
-      [-15, 1],
-    ]);
+    pathPolygon(ctx, PLAYER_BODY_POINTS);
     drawPaperCut(ctx, clone ? VISUAL_PALETTE.paperBright : VISUAL_PALETTE.ink, clone ? VISUAL_PALETTE.player : VISUAL_PALETTE.ink, 3.5);
 
     ctx.setLineDash([]);
@@ -237,7 +240,7 @@ export class GameRenderer {
     ctx.strokeStyle = clone ? VISUAL_PALETTE.player : VISUAL_PALETTE.ink;
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(0, -25, 10.5, 0, Math.PI * 2);
+    ctx.arc(PLAYER_HEAD.x, PLAYER_HEAD.y, PLAYER_HEAD.radius, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
@@ -317,6 +320,32 @@ export class GameRenderer {
       ctx.lineTo(24, 38);
       ctx.stroke();
     }
+    ctx.restore();
+  }
+
+  /**
+   * Top-layer player keyline (BUG-12): when a large dark body covers the player, their outline and hit
+   * circle are redrawn above everything so the player never vanishes into a boss silhouette.
+   */
+  drawPlayerXray(ctx: CanvasRenderingContext2D, input: { x: number; y: number; hitRadius: number }) {
+    ctx.save();
+    ctx.translate(input.x, input.y);
+    ctx.lineJoin = 'round';
+    for (const [color, width] of [[VISUAL_PALETTE.paperBright, 5], [VISUAL_PALETTE.player, 2.5]] as const) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      pathPolygon(ctx, PLAYER_BODY_POINTS);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(PLAYER_HEAD.x, PLAYER_HEAD.y, PLAYER_HEAD.radius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = VISUAL_PALETTE.player;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, input.hitRadius, 0, Math.PI * 2);
+    ctx.stroke();
     ctx.restore();
   }
 
