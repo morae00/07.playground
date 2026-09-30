@@ -23,7 +23,7 @@ Update `config/bundle-baseline.json` only when promoting a reviewed release, and
 | Initial assets (images, audio, fonts, data outside `assets/packs/`) | raw bytes | 3 MiB | 4 MiB |
 | Installed assets (everything outside JS/CSS, including chapter packs) | raw bytes | 200 MiB | 250 MiB |
 
-Chapter packs (`assets/packs/<chapter>/`) have a 12 MiB per-pack target and resident textures a 96 MiB target; both are checked at runtime by the renderer spike, not by this script. The v2 baseline was recorded before R0 fixes on commit 174eb99 (app 53,565 B, vendor 60,279 B). A baseline change needs the budget report, the reason, and review in the same change.
+Chapter packs (`assets/packs/<chapter>/`) have a 12 MiB per-pack target and resident textures a 96 MiB target; both are checked at runtime by the renderer spike, not by this script. The v2 baseline was first recorded before R0 fixes on commit 174eb99 (app 53,565 B, vendor 60,279 B). The app baseline now sits at the R0 milestone, 60,407 B measured on 0e53a01, because R1 builds planned systems on top of R0 (awaiting review at the R0 merge). A baseline change needs the budget report, the reason, and review in the same change.
 
 ## Balance
 

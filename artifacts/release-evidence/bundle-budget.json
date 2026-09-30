@@ -1,18 +1,18 @@
 {
   "version": 2,
   "baseline": {
-    "appJsGzip": 53565,
+    "appJsGzip": 60407,
     "vendorJsGzip": 60279,
     "recordedAt": "2026-09-30"
   },
   "budgets": {
     "appJs": {
-      "bytes": 60407,
-      "kib": 58.99,
-      "baselineBytes": 53565,
-      "growthRatio": 0.12773266125268368,
-      "warningBytes": 61599,
-      "failBytes": 66956,
+      "bytes": 64934,
+      "kib": 63.41,
+      "baselineBytes": 60407,
+      "growthRatio": 0.07494164583574747,
+      "warningBytes": 69468,
+      "failBytes": 75508,
       "status": "passed",
       "passed": true
     },
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/index-B1BMqOwY.js",
+      "file": "assets/index-CAkQA_7H.js",
       "category": "appJs",
-      "sourceBytes": 202496,
-      "gzipBytes": 60407
+      "sourceBytes": 218150,
+      "gzipBytes": 64934
     },
     {
       "file": "assets/index-DyPeWnVm.css",
