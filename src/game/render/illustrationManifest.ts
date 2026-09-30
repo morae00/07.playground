@@ -1,3 +1,4 @@
+import { CAMPAIGN_CHAPTER_IDS } from '../../content/campaign.ts';
 import {
   BOSS_ART,
   ENEMY_ART,
@@ -38,7 +39,7 @@ export const ILLUSTRATION_SLOTS: readonly IllustrationSlot[] = Object.freeze([
     key: `game/hazard/${kind}`,
     category: 'hazard' as const,
   })),
-  ...([1, 2, 3, 4, 5] as const).map((chapter) => Object.freeze({
+  ...CAMPAIGN_CHAPTER_IDS.map((chapter) => Object.freeze({
     key: `game/chapter-${String(chapter).padStart(2, '0')}/environment`,
     category: 'environment' as const,
     chapter,

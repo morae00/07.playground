@@ -28,6 +28,7 @@ import {
   selectRequiredBoss,
 } from './p1Core';
 import { SpatialIndex } from './spatialIndex';
+import { CAMPAIGN_CHAPTER_COUNT, FINAL_CHAPTER, FINAL_STAGE, STAGES_PER_CHAPTER } from '../content/campaign';
 import {
   CLASSIC_AWAKENING_TEXT,
   SKILL_AWAKENING_TEXT,
@@ -282,6 +283,8 @@ export type Settlement = {
   rulesVersion: number;
   /** A practice-pace run: no unlock, reduced rewards (CON-02). */
   practice: boolean;
+  /** Simulated seconds the stage lasted (campaign records, TEC-08). */
+  clearSeconds: number;
 };
 
 export type EngineCallbacks = {
@@ -581,8 +584,8 @@ export const CHAPTER_THEME = [
   '일식 관문',
 ];
 
-export const CHAPTER_COUNT = 5;
-export const STAGES_PER_CHAPTER = 10;
+export const CHAPTER_COUNT = CAMPAIGN_CHAPTER_COUNT;
+export { STAGES_PER_CHAPTER };
 export const TOTAL_STAGE_COUNT = CHAPTER_COUNT * STAGES_PER_CHAPTER;
 
 export const OBJECTIVE_POOL = [
@@ -3524,7 +3527,7 @@ export class GameEngine {
     const rewardScale = this.practiceRun ? PRACTICE_REWARD_SCALE : 1;
     const gold = Math.floor((base + bossBonus + this.stageKills * 0.9 + this.stageCoinsEarned * 0.28 + this.chapter * 18 + this.stage * 8) * rewardScale);
     const xp = Math.floor((70 + this.stageKills * 1.1 + this.chapter * 24 + (infinite ? this.infiniteBossKills * 18 : this.kind === 'normal' ? 0 : 80)) * rewardScale);
-    const gameComplete = !infinite && this.chapter === 5 && this.stage === 10 && cleared;
+    const gameComplete = !infinite && this.chapter === FINAL_CHAPTER && this.stage === FINAL_STAGE && cleared;
     return {
       runMode: this.runMode,
       seed: this.runSeed,
@@ -3544,6 +3547,7 @@ export class GameEngine {
       scoreEligible: infinite ? this.scoreEligible : false,
       rulesVersion: this.rules.version,
       practice: this.practiceRun,
+      clearSeconds: this.elapsed,
     };
   }
 

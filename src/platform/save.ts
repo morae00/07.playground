@@ -1,3 +1,4 @@
+import { CAMPAIGN_CHAPTER_COUNT, STAGES_PER_CHAPTER } from '../content/campaign.ts';
 import { DEVELOPER_UI_AVAILABLE } from './developerAccess.ts';
 
 export type MetaUpgradeId = 'attack' | 'defense' | 'maxHp' | 'moveSpeed' | 'crit' | 'regen' | 'magnet';
@@ -30,17 +31,47 @@ export type GameOptions = {
   paceMode: PaceMode;
   /** Pause the run when the window loses focus, is hidden, or the gamepad disconnects (BUG-03). */
   autoPause: boolean;
+  /** Music and effects levels relative to the master volume (TEC-08; the audio buses arrive with AUD-01). */
+  musicVolume: number;
+  sfxVolume: number;
+};
+
+/** Per-stage record, keyed "<chapter>-<stage>". Practice runs are not recorded. */
+export type StageRecord = {
+  attempts: number;
+  clears: number;
+  bestKills: number;
+  /** Fastest clear in simulated seconds, or null before the first clear. */
+  bestClearSeconds: number | null;
+};
+
+/**
+ * Save v3 profile (TEC-08): room for the systems R3 adds (characters, codex, achievements, run suspension),
+ * so they arrive without another migration. Stage records are filled in now.
+ */
+export type ProfileData = {
+  stageRecords: Record<string, StageRecord>;
+  characters: { selected: string; unlocked: string[] };
+  codex: { enemies: string[]; bosses: string[]; skills: string[] };
+  achievements: Record<string, { unlockedAt: number }>;
+  runSuspend: null | { savedAt: number; rulesVersion: number; state: unknown };
 };
 
 export type SaveData = {
   meta: MetaState;
   options: GameOptions;
+  profile: ProfileData;
 };
 
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem'>;
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
+/**
+ * The key keeps its old name on purpose: an older build reads version 3 here, sees a future version, and
+ * refuses to write, so rolling back never overwrites newer progress.
+ */
 export const SAVE_KEY = 'blackline-survivor-save-v2';
+export const DEFAULT_CHARACTER = 'gyeol';
 export const SAVE_BACKUP_KEY = `${SAVE_KEY}.backup`;
 export const LEGACY_META_KEY = 'blackline-survivor-meta-v1';
 
@@ -79,6 +110,16 @@ export const createDefaultOptions = (): GameOptions => ({
   reducedFlash: false,
   paceMode: 'standard',
   autoPause: true,
+  musicVolume: 0.8,
+  sfxVolume: 1,
+});
+
+export const createDefaultProfile = (): ProfileData => ({
+  stageRecords: {},
+  characters: { selected: DEFAULT_CHARACTER, unlocked: [DEFAULT_CHARACTER] },
+  codex: { enemies: [], bosses: [], skills: [] },
+  achievements: {},
+  runSuspend: null,
 });
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -108,8 +149,8 @@ export function sanitizeMeta(value: unknown): MetaState {
     level: finiteNumber(value.level, fallback.level, 1, 10_000, true),
     passivePoints: finiteNumber(value.passivePoints, fallback.passivePoints, 0, 10_000, true),
     progress: {
-      chapter: finiteNumber(progress.chapter, 1, 1, 5, true),
-      stage: finiteNumber(progress.stage, 1, 1, 10, true),
+      chapter: finiteNumber(progress.chapter, 1, 1, CAMPAIGN_CHAPTER_COUNT, true),
+      stage: finiteNumber(progress.stage, 1, 1, STAGES_PER_CHAPTER, true),
     },
     upgrades: Object.fromEntries(
       (Object.keys(UPGRADE_LIMITS) as MetaUpgradeId[]).map((id) => [id, finiteNumber(upgrades[id], 0, 0, UPGRADE_LIMITS[id], true)]),
@@ -133,17 +174,109 @@ export function sanitizeOptions(value: unknown, allowShowcase = DEVELOPER_UI_AVA
     // Saves made while showcase pacing was selectable keep working but fall back to standard outside developer builds (G17).
     paceMode: value.paceMode === 'practice' ? 'practice' : value.paceMode === 'showcase' && allowShowcase ? 'showcase' : 'standard',
     autoPause: booleanValue(value.autoPause, fallback.autoPause),
+    musicVolume: finiteNumber(value.musicVolume, fallback.musicVolume, 0, 1),
+    sfxVolume: finiteNumber(value.sfxVolume, fallback.sfxVolume, 0, 1),
   };
 }
 
-function parseEnvelope(raw: string): SaveData | null {
-  const parsed: unknown = JSON.parse(raw);
-  if (!isRecord(parsed) || parsed.version !== SAVE_VERSION) return null;
+const STAGE_KEY = /^([1-9]\d?)-([1-9]\d?)$/;
+
+function stringList(value: unknown, limit = 512) {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter((item): item is string => typeof item === 'string' && item.length > 0 && item.length <= 64))].slice(0, limit);
+}
+
+export function sanitizeProfile(value: unknown): ProfileData {
+  const fallback = createDefaultProfile();
+  if (!isRecord(value)) return fallback;
+  const stageRecords: Record<string, StageRecord> = {};
+  if (isRecord(value.stageRecords)) {
+    for (const [key, record] of Object.entries(value.stageRecords)) {
+      const match = STAGE_KEY.exec(key);
+      if (!match || !isRecord(record)) continue;
+      const [chapter, stage] = [Number(match[1]), Number(match[2])];
+      if (chapter > CAMPAIGN_CHAPTER_COUNT || stage > STAGES_PER_CHAPTER) continue;
+      const attempts = finiteNumber(record.attempts, 0, 0, Number.MAX_SAFE_INTEGER, true);
+      const clears = Math.min(attempts, finiteNumber(record.clears, 0, 0, Number.MAX_SAFE_INTEGER, true));
+      const best = record.bestClearSeconds;
+      stageRecords[key] = {
+        attempts,
+        clears,
+        bestKills: finiteNumber(record.bestKills, 0, 0, Number.MAX_SAFE_INTEGER, true),
+        bestClearSeconds: clears > 0 && typeof best === 'number' && Number.isFinite(best) && best > 0 ? best : null,
+      };
+    }
+  }
+  const characters = isRecord(value.characters) ? value.characters : {};
+  const unlocked = stringList(characters.unlocked);
+  if (!unlocked.includes(DEFAULT_CHARACTER)) unlocked.unshift(DEFAULT_CHARACTER);
+  const selected = typeof characters.selected === 'string' && unlocked.includes(characters.selected) ? characters.selected : DEFAULT_CHARACTER;
+  const codex = isRecord(value.codex) ? value.codex : {};
+  const achievements: Record<string, { unlockedAt: number }> = {};
+  if (isRecord(value.achievements)) {
+    for (const [id, entry] of Object.entries(value.achievements)) {
+      if (id.length > 64 || !isRecord(entry)) continue;
+      achievements[id] = { unlockedAt: finiteNumber(entry.unlockedAt, 0, 0, Number.MAX_SAFE_INTEGER, true) };
+    }
+  }
+  const suspend = value.runSuspend;
+  const runSuspend = isRecord(suspend) && typeof suspend.savedAt === 'number' && typeof suspend.rulesVersion === 'number'
+    ? { savedAt: suspend.savedAt, rulesVersion: suspend.rulesVersion, state: suspend.state ?? null }
+    : null;
   return {
-    meta: sanitizeMeta(parsed.meta),
-    options: sanitizeOptions(parsed.options),
+    stageRecords,
+    characters: { selected, unlocked },
+    codex: { enemies: stringList(codex.enemies), bosses: stringList(codex.bosses), skills: stringList(codex.skills) },
+    achievements,
+    runSuspend,
   };
 }
+
+/** Folds one campaign result into the stage records. Practice runs leave the records alone (CON-02). */
+export function recordStageResult(
+  profile: ProfileData,
+  result: { chapter: number; stage: number; cleared: boolean; kills: number; clearSeconds: number; practice: boolean },
+): ProfileData {
+  if (result.practice) return profile;
+  const key = `${result.chapter}-${result.stage}`;
+  const previous = profile.stageRecords[key] ?? { attempts: 0, clears: 0, bestKills: 0, bestClearSeconds: null };
+  const bestClearSeconds = result.cleared
+    ? Math.min(previous.bestClearSeconds ?? Number.POSITIVE_INFINITY, result.clearSeconds)
+    : previous.bestClearSeconds;
+  return {
+    ...profile,
+    stageRecords: {
+      ...profile.stageRecords,
+      [key]: {
+        attempts: previous.attempts + 1,
+        clears: previous.clears + (result.cleared ? 1 : 0),
+        bestKills: Math.max(previous.bestKills, result.kills),
+        bestClearSeconds: Number.isFinite(bestClearSeconds ?? Number.NaN) ? bestClearSeconds : null,
+      },
+    },
+  };
+}
+
+/** Parses a v3 envelope, or migrates a v2 one (meta and options carry over; the profile starts empty). */
+function parseEnvelope(raw: string): { data: SaveData; migrated: boolean } | null {
+  const parsed: unknown = JSON.parse(raw);
+  if (!isRecord(parsed)) return null;
+  if (parsed.version === SAVE_VERSION) {
+    return {
+      data: { meta: sanitizeMeta(parsed.meta), options: sanitizeOptions(parsed.options), profile: sanitizeProfile(parsed.profile) },
+      migrated: false,
+    };
+  }
+  if (parsed.version === 2) {
+    return {
+      data: { meta: sanitizeMeta(parsed.meta), options: sanitizeOptions(parsed.options), profile: createDefaultProfile() },
+      migrated: true,
+    };
+  }
+  return null;
+}
+
+const defaultSave = (): SaveData => ({ meta: createDefaultMeta(), options: createDefaultOptions(), profile: createDefaultProfile() });
 
 export type LoadSaveResult = {
   data: SaveData;
@@ -169,14 +302,14 @@ export function loadGameSave(storage: StorageLike): LoadSaveResult {
       const parsed: unknown = JSON.parse(primary);
       if (isRecord(parsed) && typeof parsed.version === 'number' && parsed.version > SAVE_VERSION) {
         return {
-          data: { meta: createDefaultMeta(), options: createDefaultOptions() },
+          data: defaultSave(),
           status: 'defaulted',
           warnings: [...warnings, 'primary:future-version'],
           writable: false,
         };
       }
-      const data = parseEnvelope(primary);
-      if (data) return { data, status: 'ok', warnings, writable: true };
+      const envelope = parseEnvelope(primary);
+      if (envelope) return { data: envelope.data, status: envelope.migrated ? 'migrated' : 'ok', warnings, writable: true };
       warnings.push('primary:unsupported');
     } catch {
       warnings.push('primary:corrupt');
@@ -186,8 +319,8 @@ export function loadGameSave(storage: StorageLike): LoadSaveResult {
   const backup = read(SAVE_BACKUP_KEY);
   if (backup) {
     try {
-      const data = parseEnvelope(backup);
-      if (data) return { data, status: 'recovered', warnings, writable: true };
+      const envelope = parseEnvelope(backup);
+      if (envelope) return { data: envelope.data, status: 'recovered', warnings, writable: true };
       warnings.push('backup:unsupported');
     } catch {
       warnings.push('backup:corrupt');
@@ -198,7 +331,7 @@ export function loadGameSave(storage: StorageLike): LoadSaveResult {
   if (legacy) {
     try {
       return {
-        data: { meta: sanitizeMeta(JSON.parse(legacy)), options: createDefaultOptions() },
+        data: { meta: sanitizeMeta(JSON.parse(legacy)), options: createDefaultOptions(), profile: createDefaultProfile() },
         status: 'migrated',
         warnings,
         writable: true,
@@ -209,7 +342,7 @@ export function loadGameSave(storage: StorageLike): LoadSaveResult {
   }
 
   return {
-    data: { meta: createDefaultMeta(), options: createDefaultOptions() },
+    data: defaultSave(),
     status: 'defaulted',
     warnings,
     writable: true,
@@ -222,6 +355,7 @@ export function saveGameSave(storage: StorageLike, data: SaveData) {
     savedAt: Date.now(),
     meta: sanitizeMeta(data.meta),
     options: sanitizeOptions(data.options),
+    profile: sanitizeProfile(data.profile),
   });
 
   try {

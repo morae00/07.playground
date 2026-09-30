@@ -4,6 +4,7 @@ import type {
   Hazard,
   SkillId,
 } from '../engine/worldTypes.ts';
+import { CAMPAIGN_CHAPTER_IDS } from '../../content/campaign.ts';
 import { NEUTRAL, SIGNAL } from './palette.ts';
 
 export type VisualChapter = 1 | 2 | 3 | 4 | 5;
@@ -121,7 +122,7 @@ const roleRotation: Record<EnemyVisualRole, number> = {
 };
 
 const enemyProfiles = Object.fromEntries(
-  ([1, 2, 3, 4, 5] as const).flatMap((chapter) => (
+  CAMPAIGN_CHAPTER_IDS.flatMap((chapter) => (
     ENEMY_VISUAL_ROLES.map((role) => {
       const chapterArt = CHAPTER_ART[chapter];
       const key = `enemy-${chapterArt.key}-${role}`;

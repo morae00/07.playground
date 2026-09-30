@@ -4,8 +4,9 @@ export const MAX_SKILL_LEVEL = 5;
 export const FIRE_DOT_DEFENSE_FACTOR = 0.42;
 export const COIN_FEVER_FRENZY_DURATION = 2.4;
 export const COIN_FEVER_FRENZY_ATTACK_SPEED_MULTIPLIER = 1.3;
-export const CAMPAIGN_CHAPTER_COUNT = 5;
-export const STAGES_PER_CHAPTER = 10;
+import { CAMPAIGN_CHAPTER_COUNT, STAGES_PER_CHAPTER } from '../content/campaign.ts';
+
+export { CAMPAIGN_CHAPTER_COUNT, STAGES_PER_CHAPTER };
 
 export type TimedSlow = {
   multiplier: number;

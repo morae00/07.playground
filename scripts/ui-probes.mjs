@@ -1,4 +1,4 @@
-// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, CON-02) against the developer build.
+// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, CON-02) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -147,6 +147,24 @@ try {
     const badge = await page.locator('.roundBadge strong').textContent().catch(() => '');
     record('CON-02 the settlement offers the next stage and starts it', offered && badge?.trim() === 'Ch.1 / St.2', `badge ${badge?.trim() ?? 'none'}`);
     await page.close();
+  });
+
+  await probe('TEC-08', async () => {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await context.addInitScript(() => {
+      if (sessionStorage.getItem('probe-seeded')) return;
+      sessionStorage.setItem('probe-seeded', '1');
+      const meta = { gold: 4321, xp: 0, level: 3, passivePoints: 0, progress: { chapter: 2, stage: 3 }, upgrades: { attack: 1, defense: 0, maxHp: 0, moveSpeed: 0, crit: 0, regen: 0, magnet: 0 }, passives: { rareLuck: 0, bossHunter: 0, coinMagnet: 0 } };
+      localStorage.setItem('blackline-survivor-save-v2', JSON.stringify({ version: 2, savedAt: 1, meta, options: { healthBars: 'elite', volume: 0.3, effects: 0.9, damageNumbers: true, screenShake: true, reducedFlash: false, paceMode: 'standard' } }));
+    });
+    const page = await context.newPage();
+    await page.goto('http://127.0.0.1:5177/');
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    await page.waitForTimeout(200);
+    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('blackline-survivor-save-v2') ?? '{}'));
+    const shownGold = await page.getByText('4,321').count() + await page.getByText('4321').count();
+    record('TEC-08 a v2 save keeps its progress and is rewritten as v3', stored.version === 3 && stored.meta?.gold === 4321 && stored.meta?.progress?.chapter === 2 && typeof stored.profile === 'object' && shownGold > 0, `version ${stored.version}, gold ${stored.meta?.gold}`);
+    await context.close();
   });
 
   await probe('TEC-07', async () => {

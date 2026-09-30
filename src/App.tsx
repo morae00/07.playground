@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DEVELOPER_UI_AVAILABLE, DEVELOPER_UI_DEFAULT_ENABLED } from './platform/developerAccess';
 import { RULES_VERSION, rulesLabel } from './game/rules';
+import { FINAL_CHAPTER } from './content/campaign';
 import {
   addInfiniteScore,
   loadInfiniteLeaderboard,
@@ -10,9 +11,12 @@ import {
 } from './platform/infiniteLeaderboard';
 import {
   createDefaultMeta,
+  createDefaultProfile,
   loadGameSave,
+  recordStageResult,
   saveGameSave,
   type GameOptions,
+  type ProfileData,
   type MetaState,
   type MetaUpgradeId,
   type PaceMode,
@@ -100,6 +104,7 @@ function App() {
   const [initialInfiniteLeaderboard] = useState(() => loadInfiniteLeaderboard(window.localStorage));
   const [meta, setMeta] = useState<MetaState>(() => initialSave.data.meta);
   const [options, setOptions] = useState<GameOptions>(() => initialSave.data.options);
+  const [profile, setProfile] = useState<ProfileData>(() => initialSave.data.profile);
   const [phase, setPhase] = useState<'menu' | 'playing' | 'draft' | 'roundClear' | 'gameOver'>('menu');
   const [selectedChapterId, setSelectedChapterId] = useState(1);
   const [selectedStageNo, setSelectedStageNo] = useState(1);
@@ -128,10 +133,10 @@ function App() {
   infiniteEntriesRef.current = infiniteEntries;
 
   useEffect(() => {
-    if (initialSave.writable) saveGameSave(window.localStorage, { meta, options });
+    if (initialSave.writable) saveGameSave(window.localStorage, { meta, options, profile });
     engineRef.current?.setMeta(meta);
     engineRef.current?.setOptions(options);
-  }, [initialSave.writable, meta, options]);
+  }, [initialSave.writable, meta, options, profile]);
 
   useEffect(() => {
     if (developerAccess || isStageUnlocked(meta, selectedChapterId, selectedStageNo)) return;
@@ -288,6 +293,7 @@ function App() {
         runPausedRef.current = false;
         setRunPaused(false);
         setSettlement(result);
+        if (result.runMode === 'campaign') setProfile((prev) => recordStageResult(prev, result));
         // Practice pace never unlocks stages (CON-02).
         grantSettlement(result, !developerAccess && !result.practice);
         setPhase('roundClear');
@@ -296,6 +302,7 @@ function App() {
         runPausedRef.current = false;
         setRunPaused(false);
         setSettlement(result);
+        if (result.runMode === 'campaign') setProfile((prev) => recordStageResult(prev, result));
         if (result.runMode === 'infinite') setInfiniteSeed(String(result.seed));
         grantSettlement(result, false);
         recordInfiniteSettlement(result);
@@ -522,6 +529,7 @@ function App() {
 
   const confirmResetMeta = () => {
     setMeta(createDefaultMeta());
+    setProfile(createDefaultProfile());
     setSelectedChapterId(1);
     setSelectedStageNo(1);
     setResetConfirmOpen(false);
@@ -1111,8 +1119,8 @@ function App() {
       {(phase === 'roundClear' || phase === 'gameOver') && settlement && (
         <ModalDialog key={`${settlement.runMode}-${settlement.seed}-${phase}`} className="settlementBox" labelledBy="settlement-dialog-title" onEscape={toMenu} inputGuardMs={DIALOG_INPUT_GUARD_MS}>
             <div className="modalHead">
-              <p>{settlement.runMode === 'infinite' ? 'INFINITE RUN END' : phase === 'gameOver' ? 'STAGE MATCH END' : settlement.gameComplete ? 'CHAPTER 5 CLEAR' : `CH.${settlement.chapter} / ST.${settlement.stage}`}</p>
-              <h2 id="settlement-dialog-title">{settlement.gameComplete ? '5챕터 돌파' : settlement.title}</h2>
+              <p>{settlement.runMode === 'infinite' ? 'INFINITE RUN END' : phase === 'gameOver' ? 'STAGE MATCH END' : settlement.gameComplete ? `CHAPTER ${FINAL_CHAPTER} CLEAR` : `CH.${settlement.chapter} / ST.${settlement.stage}`}</p>
+              <h2 id="settlement-dialog-title">{settlement.gameComplete ? `${FINAL_CHAPTER}챕터 돌파` : settlement.title}</h2>
             </div>
             {settlement.runMode === 'infinite' ? (
               <div className="settlementGrid infiniteResultGrid">
@@ -1133,7 +1141,7 @@ function App() {
             )}
             {settlement.runMode === 'infinite' && <div className={settlement.scoreEligible ? 'soonStrip recordSaved' : 'soonStrip recordRejected'}>{leaderboardStatus || (settlement.scoreEligible ? '경쟁 기록 판정 완료' : 'PRACTICE / 기록 제외')}</div>}
             {settlement.runMode === 'infinite' && seedCopyStatus && <p className="seedStatus" role="status" aria-live="polite">{seedCopyStatus}</p>}
-            {settlement.gameComplete && <div className="soonStrip">Chapter 6 Coming Soon</div>}
+            {settlement.gameComplete && <div className="soonStrip">Chapter {FINAL_CHAPTER + 1} Coming Soon</div>}
             {settlement.practice && <div className="soonStrip">연습 Stage는 해금에 반영되지 않고 보상은 30%입니다.</div>}
             {!settlement.practice && settlement.cleared && !settlement.gameComplete && <div className="soonStrip">{nextStageOpen ? 'Stage 클리어. 다음 Stage로 바로 이어갈 수 있습니다.' : 'Stage 클리어. 다음 Stage는 Stage 선택에서 시작할 수 있습니다.'}</div>}
             <div className="modalActions">

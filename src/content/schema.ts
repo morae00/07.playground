@@ -5,8 +5,9 @@ import {
 } from '../game/p1Core.ts';
 
 export const CONTENT_SCHEMA_VERSION = 1 as const;
-export const CAMPAIGN_CHAPTER_IDS = [1, 2, 3, 4, 5] as const;
-export const CAMPAIGN_STAGE_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
+import { CAMPAIGN_CHAPTER_IDS, CAMPAIGN_STAGE_IDS } from './campaign.ts';
+
+export { CAMPAIGN_CHAPTER_IDS, CAMPAIGN_STAGE_IDS };
 
 export type ChapterId = (typeof CAMPAIGN_CHAPTER_IDS)[number];
 export type StageId = (typeof CAMPAIGN_STAGE_IDS)[number];
