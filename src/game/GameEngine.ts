@@ -311,6 +311,14 @@ export type Settlement = {
   practice: boolean;
   /** Simulated seconds the stage lasted (campaign records, TEC-08). */
   clearSeconds: number;
+  /** UI-05: the player's level when the run ended. */
+  level: number;
+  /** UI-05: health the player lost over the run (hits and burns, after defence). */
+  damageTaken: number;
+  /** UI-05: the parts the gold is made of, in settlement order, after the practice scale; they sum to `gold` before its floor. */
+  goldParts: Readonly<{ base: number; boss: number; kills: number; coins: number; stage: number }>;
+  /** UI-05: health each skill took off enemies. A presentation tally: the simulation never reads it. */
+  damageBySkill: Readonly<Partial<Record<SkillId, number>>>;
 };
 
 export type EngineCallbacks = {
@@ -976,6 +984,9 @@ export class GameEngine {
   protected pendingEnrageZone: { x: number; y: number; at: number } | null = null;
   protected stageKills = 0;
   protected stageCoinsEarned = 0;
+  /** UI-05 settlement tallies, per stage; presentation only, the simulation never reads them. */
+  protected damageTakenTotal = 0;
+  protected damageBySkill: Partial<Record<SkillId, number>> = {};
   protected infiniteEventScore = 0;
   protected infiniteBossKills = 0;
   protected infiniteBossRespawnTimer = 0;
@@ -1211,6 +1222,8 @@ export class GameEngine {
     this.pendingRoundClear = false;
     this.stageKills = 0;
     this.stageCoinsEarned = 0;
+    this.damageTakenTotal = 0;
+    this.damageBySkill = {};
     this.infiniteEventScore = 0;
     this.infiniteBossKills = 0;
     this.infiniteBossRespawnTimer = 0;
@@ -1653,6 +1666,8 @@ export class GameEngine {
     this.lowHealth = false;
     this.stageKills = 0;
     this.stageCoinsEarned = 0;
+    this.damageTakenTotal = 0;
+    this.damageBySkill = {};
     this.draftQueue = [];
     this.elapsed = 0;
     this.enemies = [];
@@ -4091,6 +4106,8 @@ export class GameEngine {
         y: enemy.y + Math.sin(enemy.shieldAngle) * enemy.radius,
       });
     }
+    // UI-05: the health this hit actually took, for the settlement's damage bars (presentation only).
+    this.damageBySkill[skillId] = (this.damageBySkill[skillId] ?? 0) + Math.min(damage, enemy.hp);
     enemy.hp -= damage;
     const impactTier = classifyImpact(damage, enemy.maxHp, crit, enemy.hp <= 0, {
       classification: this.rules.hitStopBudget ? 'budgeted' : 'classic',
@@ -4134,6 +4151,7 @@ export class GameEngine {
     }
     if (this.player.invuln > 0 || this.player.shield > 0) return;
     const reduced = Math.max(1, rawDamage - this.player.stats.defense * (physical ? 0.72 : 0.42));
+    this.damageTakenTotal += Math.min(reduced, Math.max(0, this.player.hp));
     this.player.hp -= reduced;
     const paperWard = this.skills.paperWard;
     this.player.invuln = paperWardDirectHitInvulnerability(paperWard?.level ?? 0);
@@ -4153,7 +4171,9 @@ export class GameEngine {
       return;
     }
     if (this.player.shield > 0) return;
-    this.player.hp -= calculateFireDotDamage(damagePerSecond, dt, this.player.stats.defense);
+    const burn = calculateFireDotDamage(damagePerSecond, dt, this.player.stats.defense);
+    this.damageTakenTotal += Math.min(burn, Math.max(0, this.player.hp));
+    this.player.hp -= burn;
     this.lastDamageSource = source;
   }
 
@@ -4420,6 +4440,13 @@ export class GameEngine {
         : 70 + this.chapter * 20;
     const rewardScale = this.practiceRun ? PRACTICE_REWARD_SCALE : 1;
     const gold = Math.floor((base + bossBonus + this.stageKills * 0.9 + this.stageCoinsEarned * 0.28 + this.chapter * 18 + this.stage * 8) * rewardScale);
+    const goldParts = {
+      base: base * rewardScale,
+      boss: bossBonus * rewardScale,
+      kills: this.stageKills * 0.9 * rewardScale,
+      coins: this.stageCoinsEarned * 0.28 * rewardScale,
+      stage: (this.chapter * 18 + this.stage * 8) * rewardScale,
+    };
     const xp = Math.floor((70 + this.stageKills * 1.1 + this.chapter * 24 + (infinite ? this.infiniteBossKills * 18 : this.kind === 'normal' ? 0 : 80)) * rewardScale);
     const gameComplete = !infinite && this.chapter === FINAL_CHAPTER && this.stage === FINAL_STAGE && cleared;
     return {
@@ -4442,6 +4469,10 @@ export class GameEngine {
       rulesVersion: this.rules.version,
       practice: this.practiceRun,
       clearSeconds: this.elapsed,
+      level: this.player.level,
+      damageTaken: this.damageTakenTotal,
+      goldParts,
+      damageBySkill: { ...this.damageBySkill },
     };
   }
 

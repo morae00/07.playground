@@ -22,6 +22,7 @@ import {
 } from './platform/save';
 import { DraftModal } from './ui/screens/DraftModal';
 import { SettlementModal } from './ui/screens/SettlementModal';
+import { NO_SETTLEMENT_NOTES, settlementNotes, type SettlementNotes } from './ui/settlementNotes';
 import { FaultDialog, ResetDialog } from './ui/screens/RunDialogs';
 import { HudLayer } from './ui/screens/HudLayer';
 import { DevPanel } from './ui/screens/DevPanel';
@@ -113,6 +114,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const [snapshot, setSnapshot] = useState<HudSnapshot | null>(null);
   const [draft, setDraft] = useState<DraftState | null>(null);
   const [settlement, setSettlement] = useState<Settlement | null>(null);
+  /** New records and level-ups of the settlement on screen, worked out before it is applied (UI-05). */
+  const [notes, setNotes] = useState<SettlementNotes | null>(null);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [abandonConfirmOpen, setAbandonConfirmOpen] = useState(false);
   const [runPaused, setRunPaused] = useState(false);
@@ -132,6 +135,11 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   // During active play the gamepad only moves the player; menus and dialogs take it over otherwise.
   useGamepadNavigation(phase !== 'playing' || runPaused);
   infiniteEntriesRef.current = infiniteEntries;
+  // The settlement callbacks read the save as it was before the result is applied (UI-05 notes).
+  const metaRef = useRef(meta);
+  const profileRef = useRef(profile);
+  metaRef.current = meta;
+  profileRef.current = profile;
 
   useEffect(() => {
     if (initialSave.writable) saveGameSave(window.localStorage, { meta, options, profile });
@@ -331,15 +339,18 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
       onRoundClear: (result: Settlement) => {
         runPausedRef.current = false;
         setRunPaused(false);
+        // Practice pace never unlocks stages (CON-02).
+        const unlockProgress = !developerAccess && !result.practice;
+        setNotes(settlementNotes(result, profileRef.current.stageRecords[`${result.chapter}-${result.stage}`], metaRef.current, unlockProgress));
         setSettlement(result);
         if (result.runMode === 'campaign') setProfile((prev) => recordStageResult(prev, result));
-        // Practice pace never unlocks stages (CON-02).
-        grantSettlement(result, !developerAccess && !result.practice);
+        grantSettlement(result, unlockProgress);
         setPhase('roundClear');
       },
       onGameOver: (result: Settlement) => {
         runPausedRef.current = false;
         setRunPaused(false);
+        setNotes(settlementNotes(result, profileRef.current.stageRecords[`${result.chapter}-${result.stage}`], metaRef.current, false));
         setSettlement(result);
         if (result.runMode === 'campaign') setProfile((prev) => recordStageResult(prev, result));
         if (result.runMode === 'infinite') setInfiniteSeed(String(result.seed));
@@ -768,6 +779,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
           key={`${settlement.runMode}-${settlement.seed}-${phase}`}
           settlement={settlement}
           defeated={phase === 'gameOver'}
+          notes={notes ?? NO_SETTLEMENT_NOTES}
+          reducedMotion={options.reducedMotion}
           leaderboardStatus={leaderboardStatus}
           seedCopyStatus={seedCopyStatus}
           nextStage={nextStage}

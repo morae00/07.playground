@@ -86,8 +86,8 @@ async function openDeveloperMode(page) {
 }
 
 // Dialogs ignore input for a short guard window after opening (BUG-05); wait it out before choosing.
-async function passInputGuard(page) {
-  await settle(page, 420);
+async function passInputGuard(page, ms = 420) {
+  await settle(page, ms);
 }
 
 async function openCheatPanel(page) {
@@ -424,8 +424,9 @@ async function runScenario(page, viewport, dpr, motion) {
   await enterCheat(page, 'CLEAR');
   await unique(page.getByRole('dialog'), 'settlement dialog');
   await captureEvidence(page, viewport, dpr, motion, 'settlement');
-  await passInputGuard(page);
-  await (await unique(page.getByRole('dialog').getByRole('button', { name: 'Stage 선택', exact: true }), 'settlement Stage selection')).click();
+  // The settlement's input guard is 0.8 s (UI-05).
+  await passInputGuard(page, 860);
+  await (await unique(page.getByRole('dialog').getByRole('button', { name: '메뉴로', exact: true }), 'settlement menu button')).click();
   await settle(page, 80);
 
   const stageFive = await unique(page.locator('.stageNode').filter({ has: page.locator('span', { hasText: /^Stage 5$/ }) }), 'Stage 5 node');

@@ -133,6 +133,14 @@ Pausing opens the pause hub (UI-04, `PauseHub.tsx`), and the run stays stopped w
 - `SettingsPanel.tsx` is shared by the hub and the menu's settings tab.
 - In developer builds, the cheat input lives in a small developer panel (`DevPanel.tsx`) that leaves the run going.
 
+The settlement (UI-05, `SettlementModal.tsx`) shows the result first, then the numbers behind it, then where to go next:
+- A clear shows the hero's victory portrait under an ink seal. A defeat shows the hurt portrait in an ink bleed.
+- It lists survival time, kills, the highest level, and the damage taken. `settlementNotes` (`src/ui/settlementNotes.ts`) compares the run with the stage record saved before it and badges a new best kill count or clear time. Practice runs and first attempts get no badge.
+- Gold counts up in 0.7 s (at once under reduced motion) and lists its parts. The engine's `goldParts` are the terms of the gold formula after the reward scale, so they add up to the gold before it is rounded down.
+- Outer XP follows, with the account level it reaches and the passive points that brings. A first clear that opens a stage or a chapter says so, by the same rule that unlocks it (not in practice or developer access).
+- Bars show each skill's share of the damage dealt, from the engine's `damageBySkill` tally. The tally counts only the health a hit actually took, and `damageTaken` counts the same way.
+- Enter starts the next stage once the 0.8 s input guard has passed. A focused button keeps its own Enter.
+
 Two HUD marks live on the canvas, because they need the camera (UI-02):
 - Bosses and elites outside the view get a coral arrow on the screen edge. The arrow sits on the line from the screen centre toward the enemy and keeps clear of the HUD rows. Bosses come first; at most four arrows show.
 - Silence and root show as round timers over the hero's head. The renderer infers each debuff's length when it sees one start, and the ring empties as the debuff runs out. The DOM effect rack still announces both to screen readers but no longer shows them.

@@ -1,4 +1,4 @@
-// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, TEC-15, CON-02, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-09) against the developer build.
+// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, TEC-15, CON-02, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-05, UI-09) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -147,7 +147,8 @@ try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     await openStage(page);
     await cheat(page, 'CLEAR');
-    await page.waitForTimeout(420);
+    // The settlement ignores activation for its 0.8 s input guard (UI-05).
+    await page.waitForTimeout(900);
     const next = page.getByRole('dialog').getByRole('button', { name: '다음 Stage (Ch.1 / St.2)' });
     const offered = (await next.count()) === 1;
     if (offered) await next.click();
@@ -314,7 +315,7 @@ try {
     await openStage(page);
     await cheat(page, 'KO');
     await page.getByRole('button', { name: '개발 패널 닫기' }).click();
-    const settlement = page.getByRole('dialog').filter({ hasText: 'STAGE MATCH END' });
+    const settlement = page.getByRole('dialog').filter({ hasText: '쓰러짐' });
     // The run ends on the next step; 300 ms in, the 700 ms death moment is still on the canvas.
     await page.waitForTimeout(300);
     const earlyDialogs = await settlement.count();
@@ -516,6 +517,51 @@ try {
       record(`UI-03 ${size} every card shows its baked tile`, draft.widths.length > 0 && draft.widths.every((sheetWidth) => sheetWidth > 0), `${draft.widths.length} sheet(s)`);
       record(`UI-03 ${size} no draft text under 13 px`, draft.small.length === 0, draft.small.slice(0, 3).join(', '));
       record(`UI-03 ${size} the draft fits without scrolling`, !draft.scrolls);
+      await page.close();
+    }
+  });
+
+  await probe('UI-05', async () => {
+    for (const [width, height] of [[1440, 900], [1024, 720]]) {
+      const page = await browser.newPage({ viewport: { width, height } });
+      await openStage(page);
+      // A few seconds of play, so the settlement has kills and damage to show.
+      await page.waitForTimeout(6000);
+      await settleDrafts(page);
+      await cheat(page, 'CLEAR');
+      const dialog = page.getByRole('dialog', { name: 'Stage 돌파' });
+      await dialog.waitFor({ timeout: 3000 });
+      await page.keyboard.press('Enter');
+      await page.waitForTimeout(120);
+      const heldByGuard = (await dialog.count()) === 1;
+      // Past the 0.8 s input guard and the 0.7 s gold count-up.
+      await page.waitForTimeout(900);
+      const shown = await page.evaluate(() => {
+        const box = document.querySelector('.settlementBox');
+        const portrait = box.querySelector('.settlementFace .artPortrait');
+        // UI-01 baseline (UI-08): no text under 13 px.
+        const small = [...box.querySelectorAll('*')]
+          .filter((node) => [...node.childNodes].some((child) => child.nodeType === Node.TEXT_NODE && child.textContent.trim()))
+          .filter((node) => parseFloat(getComputedStyle(node).fontSize) < 13)
+          .map((node) => `${node.className || node.tagName} ${getComputedStyle(node).fontSize}`);
+        return {
+          portrait: portrait?.dataset.art ?? '',
+          portraitImage: portrait ? getComputedStyle(portrait).backgroundImage : 'none',
+          gold: box.querySelector('.settlementGold b')?.textContent ?? '',
+          parts: box.querySelectorAll('.settlementGold li').length,
+          bars: box.querySelectorAll('.settlementDamage li').length,
+          small,
+          scrolls: box.scrollHeight > box.clientHeight + 1,
+        };
+      });
+      const size = `${width}x${height}`;
+      record(`UI-05 ${size} Enter inside the input guard does nothing`, heldByGuard);
+      record(`UI-05 ${size} the settlement shows the victory portrait, the gold's parts, and the damage bars`, shown.portrait === 'hero-victory' && shown.portraitImage !== 'none' && shown.parts > 0 && shown.bars > 0, `gold ${shown.gold}, ${shown.parts} part(s), ${shown.bars} bar(s)`);
+      record(`UI-05 ${size} no settlement text under 13 px, and it fits without scrolling`, shown.small.length === 0 && !shown.scrolls, shown.small.slice(0, 3).join(', '));
+      await page.keyboard.press('Enter');
+      await page.waitForTimeout(300);
+      const badge = await page.locator('.heroLine strong').textContent().catch(() => '');
+      record(`UI-05 ${size} Enter after the guard starts the next stage`, Boolean(badge?.startsWith('Ch.1 / St.2 ')), `badge ${badge?.trim() ?? 'none'}`);
       await page.close();
     }
   });

@@ -1625,7 +1625,7 @@ h2 {
 }
 
 .settlementBox {
-  width: min(560px, 100%);
+  width: min(660px, 100%);
 }
 
 .pauseBox {
@@ -2027,6 +2027,184 @@ h2 {
 
 .infiniteResultGrid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Settlement (UI-05): the result at a glance, the numbers, the rewards, and each skill's share of the damage. */
+.settlementHead {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 3px solid var(--ink);
+}
+
+.settlementHead p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.settlementHead h2 {
+  margin: 2px 0;
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.settlementFace {
+  position: relative;
+  flex: 0 0 auto;
+  width: 88px;
+}
+
+.settlementFace .artPortrait {
+  display: block;
+  width: 88px;
+}
+
+/* A defeat sits in an ink bleed; a clear carries the ink seal. */
+.settlementLost .settlementFace::before {
+  content: "";
+  position: absolute;
+  inset: -16px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(17, 17, 15, 0.42) 0 42%, rgba(17, 17, 15, 0) 72%);
+}
+
+.settlementSeal {
+  position: absolute;
+  right: -12px;
+  bottom: -4px;
+  border: 3px solid var(--ink);
+  padding: 2px 6px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
+  transform: rotate(-8deg);
+}
+
+.recordBadge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 1px 6px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.settlementRewards {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.settlementGold,
+.settlementXp {
+  border: 2px solid var(--ink);
+  padding: 10px;
+  background: #fff;
+}
+
+.settlementGold span,
+.settlementXp span {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.settlementGold b,
+.settlementXp b {
+  font-size: 28px;
+  font-variant-numeric: tabular-nums;
+}
+
+.settlementGold ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.levelUpBanner {
+  margin: 8px 0 0;
+  padding: 4px 8px;
+  background: var(--player-keyline);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.unlockBanner {
+  margin: 0 0 12px;
+  border-left: 6px solid var(--ink);
+  padding: 6px 10px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.settlementDamage {
+  margin-bottom: 12px;
+}
+
+.settlementDamage h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.settlementDamage ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settlementDamage li {
+  display: grid;
+  grid-template-columns: 28px 112px minmax(0, 1fr) 44px;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.settlementDamage .artSlot {
+  display: block;
+  width: 28px;
+}
+
+.settlementDamageBar {
+  height: 12px;
+  border: 2px solid var(--ink);
+  background: #fff;
+}
+
+.settlementDamageBar i {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+}
+
+.settlementDamage b {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.modalActions kbd {
+  margin-left: 8px;
+  border: 1px solid currentColor;
+  padding: 0 4px;
+  font: inherit;
+  font-size: 13px;
 }
 
 .infiniteResultGrid .scoreResult {
