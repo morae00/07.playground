@@ -178,6 +178,16 @@ Every player-facing string lives in a locale file: `public/assets/content/string
 - Terms follow the glossary (`docs/lore/glossary.md`): 계정 레벨 (was 외부 레벨), 금 (골드), 엽전 (코인), 런 (Run). English is used only in the logo and the small eyebrows.
 - Boss titles and lines (FX-05) are still Korean-only data in `boss-titles.json`. They move into the tables once the lore bible's names are final.
 
+## Content tables (TEC-05)
+
+Content that is data, not code, lives in `src/content/data/`: one module per table, each with a single default export of plain JSON data, deep-frozen so no system can change it for the next run.
+- The tables: `catalog` (base stats, skills, permanent and run upgrades, passives, the bosses), `skillNumbers`, `bossPhaseMoves`, `encounterGrammars`, and `soundCues`. The modules that used to hold them (`GameEngine.ts`, `skillNumbers.ts`, `bossPhases.ts`, `encounters.ts`, `audioPolicy.ts`) re-export them under their old names.
+- Tests, tools, the headless engine bundles, and the dev server import the modules as they are.
+- A Vite build (`vite.config.ts`, `contentTables`) evaluates `src/content/data/index.ts` the same way and emits it as `assets/content/tables.json`. It then swaps each data module for a read of that file (`src/content/tableRuntime.ts`). The runtime fetches the file once with a top-level await, so every game module sees its tables when it first runs. A failed fetch fails the app module, and the boot recovery screen shows (TEC-14).
+- The bundle budget counts the file as data, not app JS.
+- `src/game/contentTables.test.ts` checks that the index lists every module, and that every table survives JSON unchanged and is frozen. It also checks that the runtime read returns the same tables.
+- New content tables (objectives, affixes, achievements, codex entries) go in this folder too.
+
 ## Hit-stop in two layers (FX-02)
 
 - **Presentation layer:** a struck body recoils along the blow and eases back within 0.12 s: 2, 5, or 8 units for light, heavy, and critical hits. It holds its hit pose meanwhile (FX-01). Its simulated position does not move for it (G14). The `hitReaction` option (0-100%) scales the recoil. It is presentation only, so it cannot change a seeded outcome or an infinite record.

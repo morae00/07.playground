@@ -63,7 +63,7 @@ const ALLOWED: Record<string, readonly string[]> = {
   'ui/screens/SettingsPanel.tsx': ['쇼케이스'],
   'App.tsx': ['게임 중 사용 가능한 코드입니다'],
   'game/render/visualRegistry.ts': ['먹선 골목', '철문 예배당', '무채 운하', '시계 무덤', '일식 관문'],
-  'content/encounters.ts': ['직교 골목을', '방사형 리브가', '수평 수로가', '회전축을 따라', '동심원 안전 공간이'],
+  'content/data/encounterGrammars.ts': ['직교 골목을', '방사형 리브가', '수평 수로가', '회전축을 따라', '동심원 안전 공간이'],
 };
 
 test('UI-10: no player-facing Korean is left in code outside the strings files', () => {
