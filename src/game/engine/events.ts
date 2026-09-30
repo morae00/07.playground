@@ -4,6 +4,8 @@
 import type { SkillId } from './worldTypes.ts';
 
 export type ImpactTier = 'light' | 'heavy' | 'critical';
+/** What hurt the player: enemy bodies, ranged enemy shots, boss shots, shock zones, or fire ground. */
+export type PlayerDamageSource = 'contact' | 'bossContact' | 'shot' | 'bossShot' | 'shock' | 'fire';
 export type AppliedOfferKind = 'skill' | 'awakening' | 'heal' | 'coins' | 'overdrive';
 
 export type GameEvent =
@@ -14,7 +16,9 @@ export type GameEvent =
   | { type: 'enemy/hit'; x: number; y: number; radius: number; damage: number; crit: boolean; tier: ImpactTier }
   | { type: 'enemy/killed'; x: number; y: number; isBoss: boolean }
   | { type: 'enemy/contact'; isBoss: boolean }
-  | { type: 'player/hurt'; x: number; y: number; damage: number }
+  | { type: 'player/hurt'; x: number; y: number; damage: number; source: PlayerDamageSource }
+  /** The run ended in defeat; source is the last thing that hurt the player (CON-09 telemetry). */
+  | { type: 'player/died'; source: PlayerDamageSource | 'unknown'; bossEnraged: boolean }
   /** Area damage landed at a point (mortar shockwave, vortex collapse, rail fissure). */
   | { type: 'area/damage'; x: number; y: number }
   /** A delayed skill blast (bone mortar, eclipse afterimage) went off. */

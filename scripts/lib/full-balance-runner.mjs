@@ -17,6 +17,8 @@ export const BALANCE_PERSONAS = Object.freeze([
   Object.freeze({ id: 'striker', skillPriority: ['blackSun', 'railSpear', 'boneMortar', 'chainSpark', 'needleStorm', 'fanKnives'], movePeriod: 150 }),
   Object.freeze({ id: 'survivor', skillPriority: ['ironFrame', 'paperWard', 'recoveryThread', 'frostLine', 'orbitScythes'], movePeriod: 210 }),
   Object.freeze({ id: 'collector', skillPriority: ['coinFever', 'needleStorm', 'mirrorClone', 'magnetSigil', 'recoveryThread'], movePeriod: 120 }),
+  // A new player: no permanent upgrades or passives at any chapter (CON-09).
+  Object.freeze({ id: 'fresh', skillPriority: ['needleStorm', 'chainSpark', 'fanKnives', 'ironFrame', 'recoveryThread'], movePeriod: 180, freshMeta: true }),
 ]);
 
 const ACTIVE_SKILLS = new Set([
@@ -44,6 +46,17 @@ function scenarioSeed(chapter, stage, personaIndex, baseSeed) {
 }
 
 function progressionMeta(chapter, persona) {
+  if (persona.freshMeta) {
+    return {
+      gold: 0,
+      xp: 0,
+      level: 1,
+      passivePoints: 0,
+      progress: { chapter: 5, stage: 10 },
+      upgrades: { attack: 0, defense: 0, maxHp: 0, moveSpeed: 0, crit: 0, regen: 0, magnet: 0 },
+      passives: { rareLuck: 0, bossHunter: 0, coinMagnet: 0 },
+    };
+  }
   const tier = chapter - 1;
   const attackBias = persona.id === 'striker' ? 3 : 0;
   const defenseBias = persona.id === 'survivor' ? 3 : 0;
@@ -98,6 +111,12 @@ function updateMovement(engine, frame, personaIndex, persona) {
 
 function summarizeGroup(scenarios) {
   const total = scenarios.length || 1;
+  const deaths = scenarios.filter((item) => item.outcome === 'death');
+  const deathCauses = {};
+  for (const item of deaths) {
+    const cause = item.enraged ? `${item.deathCause}+enrage` : item.deathCause;
+    deathCauses[cause] = (deathCauses[cause] ?? 0) + 1;
+  }
   return {
     scenarios: scenarios.length,
     clearRate: round(scenarios.filter((item) => item.outcome === 'clear').length / total, 4),
@@ -118,6 +137,13 @@ function summarizeGroup(scenarios) {
       p50: percentile(scenarios.map((item) => item.coins), 0.5),
       p90: percentile(scenarios.map((item) => item.coins), 0.9),
     },
+    realSeconds: {
+      p10: round(percentile(scenarios.map((item) => item.realSeconds), 0.1)),
+      p50: round(percentile(scenarios.map((item) => item.realSeconds), 0.5)),
+      p90: round(percentile(scenarios.map((item) => item.realSeconds), 0.9)),
+    },
+    drafts: { p50: percentile(scenarios.map((item) => item.drafts), 0.5) },
+    deathCauses: Object.fromEntries(Object.entries(deathCauses).sort((left, right) => right[1] - left[1])),
   };
 }
 
@@ -156,7 +182,7 @@ export function createFullBalanceReport({ scenarios, seeds, stages, personas, ma
     .sort((left, right) => (right.outcome === 'timeout') - (left.outcome === 'timeout') || right.elapsed - left.elapsed)
     .slice(0, 20);
   const fingerprint = createHash('sha256').update(JSON.stringify({ summary, scenarios: orderedScenarios })).digest('hex').slice(0, 16);
-  return { version: 1, fingerprint, summary, gates, outliers, scenarios: orderedScenarios };
+  return { version: 2, fingerprint, summary, gates, outliers, scenarios: orderedScenarios };
 }
 
 export async function runFullBalanceBatch({
@@ -179,9 +205,12 @@ export async function runFullBalanceBatch({
         let outcome = 'timeout';
         let latestSnapshot;
         let settlement;
+        let drafts = 0;
+        let death = null;
         engine = new ProbedGameEngine(createHeadlessCanvas(), progressionMeta(address.chapter, persona), standardOptions(), {
           onSnapshot(snapshot) { latestSnapshot = snapshot; },
           onDraft(draft) {
+            drafts += 1;
             const offer = selectBalanceOffer(draft.cards, persona, latestSnapshot);
             if (!offer) throw new Error(`Draft ${draft.id} contained no offer`);
             engine.completeDraft(offer, draft.id);
@@ -192,6 +221,9 @@ export async function runFullBalanceBatch({
 
         const seed = scenarioSeed(address.chapter, address.stage, personaIndex, baseSeed);
         engine.setRuleSet(ruleSet);
+        engine.subscribe((event) => {
+          if (event.type === 'player/died') death = event;
+        });
         engine.startRun(address.chapter, address.stage, seed);
         let frame = 0;
         for (; frame < maxFrames && outcome === 'timeout'; frame += 1) {
@@ -211,6 +243,11 @@ export async function runFullBalanceBatch({
           outcome,
           frames: frame,
           elapsed: round(diagnostics.elapsed),
+          // Wall-clock seconds at 60 fps; elapsed is simulated time, which hit-stop slows (CON-09).
+          realSeconds: round(frame / 60),
+          drafts,
+          deathCause: death?.source ?? null,
+          enraged: death?.bossEnraged ?? false,
           kills: settlement?.kills ?? world.player.kills,
           coins: settlement?.coins ?? world.player.coins,
           hpRatio: round(world.player.hp / Math.max(1, world.player.stats.maxHp), 5),

@@ -81,7 +81,7 @@ import type {
 } from '../platform/save';
 import { DEVELOPER_UI_AVAILABLE } from '../platform/developerAccess';
 import type { EngineAction, EngineCommand } from './engine/contracts';
-import type { GameEvent, GameEventListener } from './engine/events';
+import type { GameEvent, GameEventListener, PlayerDamageSource } from './engine/events';
 import { Presentation } from './presentation/presentation';
 import {
   INFINITE_BASELINE,
@@ -850,6 +850,8 @@ export class GameEngine {
   protected objective = '';
   protected objectiveTarget = 0;
   protected cheatGodMode = false;
+  /** The last thing that hurt the player, reported when the run is lost (CON-09). */
+  protected lastDamageSource: PlayerDamageSource | 'unknown' = 'unknown';
   /** Set only by probes: stops the stage director from adding enemies so a test controls the whole world. */
   protected spawnsHalted = false;
   protected snapshotTimer = 0;
@@ -1041,6 +1043,7 @@ export class GameEngine {
     this.coinFeverRushTimer = 0;
     this.bossEnraged = false;
     this.cheatGodMode = false;
+    this.lastDamageSource = 'unknown';
     this.player = {
       x: WORLD_W / 2,
       y: WORLD_H / 2,
@@ -1590,6 +1593,7 @@ export class GameEngine {
       this.activeDraftCards = [];
       this.draftQueue = [];
       this.paused = true;
+      this.emit({ type: 'player/died', source: this.lastDamageSource, bossEnraged: this.bossEnraged });
       this.callbacks.onGameOver(this.makeSettlement('정산', false));
       return;
     }
@@ -1655,7 +1659,7 @@ export class GameEngine {
           this.player.rootImmunity = ROOT_IMMUNITY_SECONDS;
         }
       }
-      if (hazard.kind === 'fire') this.damagePlayerOverTime(hazard.damage, dt);
+      if (hazard.kind === 'fire') this.damagePlayerOverTime(hazard.damage, dt, 'fire');
       // Null zones only silence; they never slowed, so their slow stays 1 (BUG-16, SYS-11 keeps one penalty).
       if (hazard.kind === 'null') this.player.silence = Math.max(this.player.silence, 0.4);
     }
@@ -2436,7 +2440,7 @@ export class GameEngine {
 
       if (distance(enemy, this.player) < enemy.radius + HIT_RADIUS.playerContact && enemy.contactTimer <= 0) {
         enemy.contactTimer = enemy.isBoss ? 0.78 : 1;
-        this.damagePlayer(enemy.damage, true);
+        this.damagePlayer(enemy.damage, true, enemy.isBoss ? 'bossContact' : 'contact');
         this.emit({ type: 'enemy/contact', isBoss: enemy.isBoss });
       }
     }
@@ -2785,7 +2789,7 @@ export class GameEngine {
       projectile.y += projectile.vy * dt;
       if (segmentCircleHitTime(start, projectile, this.player, projectile.radius + HIT_RADIUS.playerVsHostileShot) !== null) {
         projectile.life = 0;
-        this.damagePlayer(projectile.damage, true);
+        this.damagePlayer(projectile.damage, true, projectile.kind === 'enemy' ? 'shot' : 'bossShot');
       }
     }
     recycleWhere(
@@ -2841,7 +2845,7 @@ export class GameEngine {
       if (Number.isFinite(hazard.life)) hazard.life -= dt;
       if (hazard.kind === 'shock' && !hazard.triggered && expiredThisStep(previousLife, hazard.life)) {
         hazard.triggered = true;
-        if (shockHitsPlayer(hazard, hazard.radius, this.player, HIT_RADIUS.playerVsHostileShot)) this.damagePlayer(hazard.damage, false);
+        if (shockHitsPlayer(hazard, hazard.radius, this.player, HIT_RADIUS.playerVsHostileShot)) this.damagePlayer(hazard.damage, false, 'shock');
         this.emit({ type: 'shock/burst', x: hazard.x, y: hazard.y });
       }
       if (hazard.kind === 'warning' && !hazard.triggered && expiredThisStep(previousLife, hazard.life)) {
@@ -3144,7 +3148,7 @@ export class GameEngine {
     this.emit({ type: 'area/damage', x, y });
   }
 
-  protected damagePlayer(rawDamage: number, physical: boolean) {
+  protected damagePlayer(rawDamage: number, physical: boolean, source: PlayerDamageSource) {
     if (this.cheatGodMode) {
       this.player.hp = this.player.stats.maxHp;
       return;
@@ -3156,16 +3160,18 @@ export class GameEngine {
     this.player.invuln = paperWardDirectHitInvulnerability(paperWard?.level ?? 0);
     if (this.skills.ironFrame?.awakened) this.player.shield = SKILL_NUMBERS.ironFrame.shieldSeconds;
     if (paperWard?.awakened) this.pushEnemiesFromPlayer(SKILL_NUMBERS.paperWard.pushRadius);
-    this.emit({ type: 'player/hurt', x: this.player.x, y: this.player.y, damage: reduced });
+    this.lastDamageSource = source;
+    this.emit({ type: 'player/hurt', x: this.player.x, y: this.player.y, damage: reduced, source });
   }
 
-  protected damagePlayerOverTime(damagePerSecond: number, dt: number) {
+  protected damagePlayerOverTime(damagePerSecond: number, dt: number, source: PlayerDamageSource) {
     if (this.cheatGodMode) {
       this.player.hp = this.player.stats.maxHp;
       return;
     }
     if (this.player.shield > 0) return;
     this.player.hp -= calculateFireDotDamage(damagePerSecond, dt, this.player.stats.defense);
+    this.lastDamageSource = source;
   }
 
   protected pushEnemiesFromPlayer(radius: number) {
