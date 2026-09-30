@@ -321,6 +321,9 @@ const ECLIPSE_WALL_LANE_GAP = 115;
 /** Fair terrain (BUG-13): a root zone binds once on entry, then cannot bind again for a while. */
 const ROOT_BIND_SECONDS = 0.65;
 const ROOT_IMMUNITY_SECONDS = ROOT_BIND_SECONDS + 1.5;
+/** SYS-11: after silence ends, ready skills fire one at a time this far apart instead of all at once. */
+const SILENCE_RELEASE_STAGGER_SECONDS = 0.1;
+
 // SYS-01 auto-aim: three straight misses push a target to the back of the queue for four seconds.
 const AIM_MISS_LIMIT = 3;
 const AIM_MISS_MEMORY_SECONDS = 4;
@@ -873,6 +876,9 @@ export class GameEngine {
   protected cheatGodMode = false;
   /** This round runs at practice pace: no unlock and reduced rewards (CON-02). */
   protected practiceRun = false;
+  /** SYS-11: casts are being released one by one after silence, with this much time left until the next. */
+  protected releaseStagger = false;
+  protected castGap = 0;
   /** The last thing that hurt the player, reported when the run is lost (CON-09). */
   protected lastDamageSource: PlayerDamageSource | 'unknown' = 'unknown';
   /** Set only by probes: stops the stage director from adding enemies so a test controls the whole world. */
@@ -1067,6 +1073,8 @@ export class GameEngine {
     this.bossEnraged = false;
     this.cheatGodMode = false;
     this.lastDamageSource = 'unknown';
+    this.releaseStagger = false;
+    this.castGap = 0;
     this.player = {
       x: WORLD_W / 2,
       y: WORLD_H / 2,
@@ -1746,6 +1754,10 @@ export class GameEngine {
   }
 
   protected updateSkills(dt: number) {
+    if (this.rules.skillLoopRework) {
+      this.updateSkillsReworked(dt);
+      return;
+    }
     if (this.player.silence > 0) return;
     for (const id of Object.keys(this.skillCooldowns) as SkillId[]) {
       this.skillCooldowns[id] = Math.max(0, (this.skillCooldowns[id] ?? 0) - dt);
@@ -1785,6 +1797,60 @@ export class GameEngine {
     if (orbit) this.updateOrbitScythes(orbit);
 
     if (this.skills.magnetSigil?.awakened) this.updateMagnetPulse();
+  }
+
+  /**
+   * SYS-11 (a). Silence blocks new casts only: cooldowns keep counting and the orbit blades and magnet pulse keep
+   * working. When silence ends, the skills that became ready fire one at a time, 0.1 s apart, in the usual order.
+   */
+  protected updateSkillsReworked(dt: number) {
+    const silenced = this.player.silence > 0;
+    for (const id of Object.keys(this.skillCooldowns) as SkillId[]) {
+      // The recovery thread's counter runs in updatePlayer while at full health; counting it here too halved it.
+      if (id === 'recoveryThread') continue;
+      this.skillCooldowns[id] = Math.max(0, (this.skillCooldowns[id] ?? 0) - dt);
+    }
+    this.castGap = Math.max(0, this.castGap - dt);
+    if (silenced) {
+      this.releaseStagger = true;
+    } else {
+      let fired = false;
+      let waiting = false;
+      for (const [id, cast] of this.castOrder()) {
+        const skill = this.skills[id];
+        if (!skill) continue;
+        const ready = (this.skillCooldowns[id] ?? 0) <= 0;
+        if (this.releaseStagger && (fired || this.castGap > 0)) {
+          if (ready) waiting = true;
+          continue;
+        }
+        cast(skill);
+        if (ready && (this.skillCooldowns[id] ?? 0) > 0) {
+          fired = true;
+          if (this.releaseStagger) this.castGap = SILENCE_RELEASE_STAGGER_SECONDS;
+        }
+      }
+      if (this.releaseStagger && !fired && !waiting && this.castGap <= 0) this.releaseStagger = false;
+    }
+    const orbit = this.skills.orbitScythes;
+    if (orbit) this.updateOrbitScythes(orbit);
+    if (this.skills.magnetSigil?.awakened) this.updateMagnetPulse();
+  }
+
+  /** Active skills in their firing order (the order classic rules call them in). */
+  protected castOrder(): Array<[SkillId, (skill: SkillState) => void]> {
+    return [
+      ['needleStorm', (skill) => this.updateNeedleStorm(skill)],
+      ['fanKnives', (skill) => this.updateFanKnives(skill)],
+      ['chainSpark', (skill) => this.updateChainSpark(skill)],
+      ['frostLine', (skill) => this.updateFrostLine(skill)],
+      ['railSpear', (skill) => this.updateRailSpear(skill)],
+      ['boneMortar', (skill) => this.updateBoneMortar(skill)],
+      ['mirrorClone', (skill) => this.updateMirrorClone(skill)],
+      ['voidMine', (skill) => this.updateVoidMine(skill)],
+      ['blackSun', (skill) => this.updateBlackSun(skill)],
+      ['eclipseStep', (skill) => this.updateEclipseStep(skill)],
+    ];
   }
 
   protected updateNeedleStorm(skill: SkillState) {

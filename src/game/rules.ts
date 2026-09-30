@@ -30,6 +30,11 @@ export type RuleSet = Readonly<{
   reliableAim: boolean;
   /** CON-02: 8-minute stages, 10-minute boss enrage timer, 5-minute Ch1-St1, and the practice pace. */
   pacing: boolean;
+  /**
+   * SYS-11 (a): silence only blocks new casts (cooldowns, orbit blades, and the magnet pulse keep running), and
+   * skills ready at release fire one by one 0.1 s apart. Also stops the recovery-thread timer counting twice.
+   */
+  skillLoopRework: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -44,6 +49,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   mirrorAwakeningRework: false,
   reliableAim: false,
   pacing: false,
+  skillLoopRework: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -58,6 +64,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   mirrorAwakeningRework: true,
   reliableAim: true,
   pacing: true,
+  skillLoopRework: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {
