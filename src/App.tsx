@@ -64,7 +64,6 @@ function StatGrid({ stats }: { stats: StatBlock }) {
     ['치명타', `${Math.round(stats.critChance * 100)}%`],
     ['치명피해', `${Math.round(stats.critDamage * 100)}%`],
     ['보스피해', `${Math.round(stats.bossDamage * 100)}%`],
-    ['일반피해', `${Math.round(stats.normalDamage * 100)}%`],
     ['공격속도', `${Math.round(stats.attackSpeed * 100)}%`],
     ['회복속도', `${stats.hpRegen.toFixed(1)}/s`],
     ['자석', Math.round(stats.magnet).toString()],

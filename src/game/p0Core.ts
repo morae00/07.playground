@@ -1,3 +1,5 @@
+import { SKILL_NUMBERS, scaleAt } from './skillNumbers.ts';
+
 export const FIXED_TIMESTEP = 1 / 60;
 export const MAX_FRAME_DELTA = 0.05;
 export const MAX_FIXED_STEPS = 6;
@@ -123,18 +125,11 @@ export function resolveDraftTransition(
 }
 
 export function createVortexProfile(sourceSkillId: VortexSource, level: number, awakened: boolean) {
-  if (sourceSkillId === 'voidMine') {
-    return {
-      sourceSkillId,
-      pull: 74 + level * 14 + (awakened ? 36 : 0),
-      collapseDamageMultiplier: awakened ? 1.6 : 0,
-    };
-  }
-
+  const numbers = SKILL_NUMBERS[sourceSkillId];
   return {
     sourceSkillId,
-    pull: 74 + level * 16 + (awakened ? 55 : 0),
-    collapseDamageMultiplier: awakened ? 2.4 : 0,
+    pull: scaleAt(numbers.pull, level, awakened),
+    collapseDamageMultiplier: awakened ? numbers.collapseDamage : 0,
   };
 }
 

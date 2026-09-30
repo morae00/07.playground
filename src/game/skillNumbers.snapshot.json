@@ -1,0 +1,363 @@
+{
+  "numbers": {
+    "needleStorm": {
+      "damage": {
+        "base": 0.85,
+        "perLevel": 0.18,
+        "awakened": 0.4
+      },
+      "extraNeedleLevels": [
+        3,
+        5
+      ],
+      "awakenedNeedles": 2,
+      "awakenedPierce": 1,
+      "shardDamage": 0.35,
+      "shardRange": 220
+    },
+    "fanKnives": {
+      "knives": {
+        "base": 3,
+        "perLevel": 1,
+        "awakened": 3
+      },
+      "cooldownPerLevel": 0.04
+    },
+    "chainSpark": {
+      "jumps": {
+        "base": 2,
+        "perLevel": 1,
+        "awakened": 2
+      },
+      "damage": {
+        "base": 0.95,
+        "perLevel": 0.14,
+        "awakened": 0.28
+      },
+      "stunSeconds": 0.45
+    },
+    "frostLine": {
+      "width": {
+        "base": 12,
+        "perLevel": 3,
+        "awakened": 8
+      },
+      "slow": {
+        "base": 0.25,
+        "perLevel": 0.07
+      },
+      "slowCap": 0.7,
+      "rootSeconds": 0.26
+    },
+    "orbitScythes": {
+      "blades": {
+        "base": 1,
+        "perLevel": 1
+      },
+      "awakenedOuterBlades": 3,
+      "radius": {
+        "base": 72,
+        "perLevel": 10
+      }
+    },
+    "boneMortar": {
+      "radius": {
+        "base": 86,
+        "perLevel": 12,
+        "awakened": 34
+      },
+      "damage": {
+        "base": 1.35,
+        "perLevel": 0.22,
+        "awakened": 0.55
+      },
+      "aftershockDamage": 0.65
+    },
+    "railSpear": {
+      "width": {
+        "base": 18,
+        "perLevel": 3,
+        "awakened": 12
+      },
+      "damage": {
+        "base": 2.15,
+        "perLevel": 0.32,
+        "awakened": 0.8
+      },
+      "fissureDamage": 0.42
+    },
+    "mirrorClone": {
+      "damage": {
+        "base": 0.72,
+        "perLevel": 0.18
+      },
+      "basePierce": 1,
+      "cloneOffset": 42,
+      "awakenedShots": 2,
+      "awakenedPierce": 1,
+      "railCopyChance": 0.3,
+      "railCopyDamage": 0.35
+    },
+    "voidMine": {
+      "radius": {
+        "base": 92,
+        "perLevel": 11,
+        "awakened": 30
+      },
+      "duration": {
+        "base": 2.4,
+        "perLevel": 0.25,
+        "awakened": 0.9
+      },
+      "pull": {
+        "base": 74,
+        "perLevel": 14,
+        "awakened": 36
+      },
+      "collapseDamage": 1.6
+    },
+    "blackSun": {
+      "radius": {
+        "base": 116,
+        "perLevel": 14,
+        "awakened": 42
+      },
+      "duration": {
+        "base": 3.2,
+        "perLevel": 0.35,
+        "awakened": 1.2
+      },
+      "pull": {
+        "base": 74,
+        "perLevel": 16,
+        "awakened": 55
+      },
+      "collapseDamage": 2.4
+    },
+    "ironFrame": {
+      "defense": {
+        "base": 0,
+        "perLevel": 1.2,
+        "awakened": 3.5
+      },
+      "maxHp": {
+        "base": 0,
+        "perLevel": 18,
+        "awakened": 40
+      },
+      "shieldSeconds": 0.36
+    },
+    "magnetSigil": {
+      "magnet": {
+        "base": 0,
+        "perLevel": 36,
+        "awakened": 180
+      },
+      "coinGain": {
+        "base": 0,
+        "perLevel": 0.04,
+        "awakened": 0.15
+      },
+      "pulseSeconds": 4.8
+    },
+    "paperWard": {
+      "defense": {
+        "base": 0,
+        "perLevel": 1,
+        "awakened": 2.5
+      },
+      "pushRadius": 140
+    },
+    "recoveryThread": {
+      "regen": {
+        "base": 0,
+        "perLevel": 0.65,
+        "awakened": 2.4
+      },
+      "magnet": {
+        "base": 0,
+        "perLevel": 14,
+        "awakened": 60
+      },
+      "counterSeconds": 2.2
+    },
+    "coinFever": {
+      "coinGain": {
+        "base": 0,
+        "perLevel": 0.09
+      },
+      "attackSpeed": {
+        "base": 0,
+        "perLevel": 0.04
+      }
+    },
+    "eclipseStep": {
+      "radius": {
+        "base": 128,
+        "perLevel": 16,
+        "awakened": 55
+      },
+      "invulnerability": {
+        "base": 0.28,
+        "perLevel": 0.05
+      },
+      "afterimageDamage": 0.72
+    },
+    "executionMark": {
+      "critChance": {
+        "base": 0,
+        "perLevel": 0.03,
+        "awakened": 0.1
+      },
+      "bossDamage": {
+        "base": 0,
+        "perLevel": 0.07,
+        "awakened": 0.2
+      },
+      "lowHpBossBonus": 0.45
+    }
+  },
+  "levelText": {
+    "needleStorm": [
+      "피해 +18%, 투사체 1개",
+      "피해 +36%, 투사체 1개",
+      "피해 +54%, 투사체 2개",
+      "피해 +72%, 투사체 2개",
+      "피해 +90%, 투사체 3개"
+    ],
+    "fanKnives": [
+      "단검 4개, 재사용 대기 -0.04s",
+      "단검 5개, 재사용 대기 -0.08s",
+      "단검 6개, 재사용 대기 -0.12s",
+      "단검 7개, 재사용 대기 -0.16s",
+      "단검 8개, 재사용 대기 -0.2s"
+    ],
+    "chainSpark": [
+      "연쇄 3회, 피해 +14%",
+      "연쇄 4회, 피해 +28%",
+      "연쇄 5회, 피해 +42%",
+      "연쇄 6회, 피해 +56%",
+      "연쇄 7회, 피해 +70%"
+    ],
+    "frostLine": [
+      "폭 +3, 감속 32%",
+      "폭 +6, 감속 39%",
+      "폭 +9, 감속 46%",
+      "폭 +12, 감속 53%",
+      "폭 +15, 감속 60%"
+    ],
+    "orbitScythes": [
+      "날 2개, 궤도 반경 +10",
+      "날 3개, 궤도 반경 +20",
+      "날 4개, 궤도 반경 +30",
+      "날 5개, 궤도 반경 +40",
+      "날 6개, 궤도 반경 +50"
+    ],
+    "boneMortar": [
+      "폭발 반경 +12, 피해 +22%",
+      "폭발 반경 +24, 피해 +44%",
+      "폭발 반경 +36, 피해 +66%",
+      "폭발 반경 +48, 피해 +88%",
+      "폭발 반경 +60, 피해 +110%"
+    ],
+    "railSpear": [
+      "폭 +3, 피해 +32%",
+      "폭 +6, 피해 +64%",
+      "폭 +9, 피해 +96%",
+      "폭 +12, 피해 +128%",
+      "폭 +15, 피해 +160%"
+    ],
+    "mirrorClone": [
+      "분신 사격 피해 +18%, 관통 +0",
+      "분신 사격 피해 +36%, 관통 +1",
+      "분신 사격 피해 +54%, 관통 +1",
+      "분신 사격 피해 +72%, 관통 +2",
+      "분신 사격 피해 +90%, 관통 +2"
+    ],
+    "voidMine": [
+      "지속 +0.25s, 흡입력 +19%",
+      "지속 +0.5s, 흡입력 +38%",
+      "지속 +0.75s, 흡입력 +57%",
+      "지속 +1s, 흡입력 +76%",
+      "지속 +1.25s, 흡입력 +95%"
+    ],
+    "blackSun": [
+      "지속 +0.35s, 흡입력 +22%",
+      "지속 +0.7s, 흡입력 +43%",
+      "지속 +1.05s, 흡입력 +65%",
+      "지속 +1.4s, 흡입력 +86%",
+      "지속 +1.75s, 흡입력 +108%"
+    ],
+    "ironFrame": [
+      "방어 +1.2, 최대 체력 +18",
+      "방어 +2.4, 최대 체력 +36",
+      "방어 +3.6, 최대 체력 +54",
+      "방어 +4.8, 최대 체력 +72",
+      "방어 +6, 최대 체력 +90"
+    ],
+    "magnetSigil": [
+      "획득 반경 +36, 코인 획득 +4%",
+      "획득 반경 +72, 코인 획득 +8%",
+      "획득 반경 +108, 코인 획득 +12%",
+      "획득 반경 +144, 코인 획득 +16%",
+      "획득 반경 +180, 코인 획득 +20%"
+    ],
+    "paperWard": [
+      "방어 +1, 피격 무적 +0.04s",
+      "방어 +2, 피격 무적 +0.08s",
+      "방어 +3, 피격 무적 +0.12s",
+      "방어 +4, 피격 무적 +0.16s",
+      "방어 +5, 피격 무적 +0.2s"
+    ],
+    "recoveryThread": [
+      "초당 회복 +0.65, 자석 +14",
+      "초당 회복 +1.3, 자석 +28",
+      "초당 회복 +1.95, 자석 +42",
+      "초당 회복 +2.6, 자석 +56",
+      "초당 회복 +3.25, 자석 +70"
+    ],
+    "coinFever": [
+      "코인 +9%, 공격속도 +4%",
+      "코인 +18%, 공격속도 +8%",
+      "코인 +27%, 공격속도 +12%",
+      "코인 +36%, 공격속도 +16%",
+      "코인 +45%, 공격속도 +20%"
+    ],
+    "eclipseStep": [
+      "베기 반경 +16, 무적 +0.05s",
+      "베기 반경 +32, 무적 +0.1s",
+      "베기 반경 +48, 무적 +0.15s",
+      "베기 반경 +64, 무적 +0.2s",
+      "베기 반경 +80, 무적 +0.25s"
+    ],
+    "executionMark": [
+      "치명타 +3%, 보스 피해 +7%",
+      "치명타 +6%, 보스 피해 +14%",
+      "치명타 +9%, 보스 피해 +21%",
+      "치명타 +12%, 보스 피해 +28%",
+      "치명타 +15%, 보스 피해 +35%"
+    ]
+  },
+  "awakeningText": {
+    "needleStorm": "바늘 +2개 부채꼴 난사, 피해 +40%, 관통 1회. 적중 시 파편이 주변 적 하나를 35% 피해로 추가로 찌릅니다.",
+    "fanKnives": "단검 +3개. 단검이 되돌아오며 후방의 적도 베어냅니다.",
+    "chainSpark": "연쇄 +2회, 피해 +28%. 마지막 연쇄가 폭발하고 0.45초 기절을 남깁니다.",
+    "frostLine": "폭 +8. 절단선이 남긴 서리가 적을 0.26초 속박합니다.",
+    "orbitScythes": "반대 방향으로 도는 외곽 날 3개가 추가됩니다.",
+    "boneMortar": "폭발 반경 +34, 피해 +55%. 폭발 중심에 65% 충격파가 한 번 더 터집니다.",
+    "railSpear": "폭 +12, 피해 +80%. 레일이 지나간 자리에 42% 균열 폭발이 이어집니다.",
+    "mirrorClone": "분신이 목표를 조준하는 사격 +2발, 관통 +1. 흑선 레일 보유 시 30% 확률로 레일을 35% 피해로 복제합니다.",
+    "voidMine": "반경 +30, 지속 +0.9s. 지뢰장이 사라질 때 처형 폭발을 일으킵니다.",
+    "blackSun": "반경 +42, 지속 +1.2s. 붕괴 순간 최대 체력 비례 피해와 긴 감속을 겹칩니다.",
+    "ironFrame": "방어 +3.5, 최대 체력 +40. 피격 직후 0.36초 보호막을 만듭니다.",
+    "magnetSigil": "획득 반경 +180, 코인 +15%. 기본 4.8초마다 맵 위 보상을 강하게 당깁니다.",
+    "paperWard": "방어 +2.5. 피격 시 반경 140의 적을 밀쳐내는 종이 파열이 발생합니다.",
+    "recoveryThread": "초당 회복 +2.4, 자석 +60. 체력이 가득 찬 동안 기본 2.2초마다 주변으로 반격선을 뿌립니다.",
+    "coinFever": "코인을 먹으면 2.4초 동안 공격속도가 30% 폭주합니다.",
+    "eclipseStep": "베기 반경 +55. 베기 후 검은 잔상이 72% 피해로 한 번 더 전장을 훑습니다.",
+    "executionMark": "치명타 +10%, 보스 피해 +20%. 낮은 체력의 보스에게 최대 45% 추가 피해를 줍니다."
+  },
+  "classicAwakeningText": {
+    "mirrorClone": "흑선 레일 보유 시 분신이 30% 확률로 레일을 35% 피해로 복제합니다. 레일이 없으면 효과가 없습니다."
+  }
+}

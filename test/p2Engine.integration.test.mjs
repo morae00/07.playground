@@ -184,7 +184,7 @@ function enemyAt(id, x, y) {
   };
 }
 
-test('mirror clone ownership adds persistent side silhouettes to the rendered player', () => {
+test('mirror clone ownership draws both side silhouettes, one per clone shot (BUG-16)', () => {
   const { engine, recorder } = createEngine();
   try {
     engine.enemies = [];
@@ -196,7 +196,7 @@ test('mirror clone ownership adds persistent side silhouettes to the rendered pl
     engine.skills.mirrorClone = { level: 1, awakened: false };
     recorder.reset();
     engine.render(1);
-    assert.equal(recorder.count('translate'), baseTranslations + 1);
+    assert.equal(recorder.count('translate'), baseTranslations + 2, 'both clones fire, so both are drawn before awakening too');
 
     engine.skills.mirrorClone = { level: 5, awakened: true };
     recorder.reset();

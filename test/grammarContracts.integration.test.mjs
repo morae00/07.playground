@@ -296,3 +296,73 @@ test('BUG-13: a root zone binds once and then lets the player walk out; hazards 
     engine.dispose();
   }
 });
+
+test('BUG-16: skills do what their cards say, and the mirror clone awakening adds aimed shots and pierce', () => {
+  const engine = createEngine();
+  try {
+    const volley = (rules, awakened) => {
+      engine.setRuleSet(rules);
+      engine.startRun(3, 2, 909);
+      engine.obstacles = [];
+      engine.hazards = [];
+      engine.enemies = [];
+      engine.spawnEnemy(1, 'small');
+      const target = engine.enemies[0];
+      target.x = engine.player.x + 320;
+      target.y = engine.player.y + 40;
+      target.hp = target.maxHp = 1e9;
+      engine.rebuildEnemyIndex();
+      engine.skills = { mirrorClone: { level: 5, awakened } };
+      engine.skillCooldowns = {};
+      engine.projectiles.length = 0;
+      engine.updateMirrorClone(engine.skills.mirrorClone);
+      return { shots: engine.projectiles.filter((shot) => shot.skillId === 'mirrorClone'), target, card: engine.makeOffer('mirrorClone', 'awakening').body };
+    };
+
+    const plain = volley('remaster', false);
+    assert.equal(plain.shots.length, 2, 'two clones, two shots');
+    assert.ok(plain.shots.every((shot) => shot.pierce === 3), 'Lv5 pierce is 1 + floor(5 / 2)');
+    const reworked = volley('remaster', true);
+    assert.equal(reworked.shots.length, 4, 'awakening adds two shots');
+    assert.ok(reworked.shots.every((shot) => shot.pierce === 4), 'awakening adds one pierce');
+    for (const shot of reworked.shots.slice(2)) {
+      const toTarget = Math.atan2(reworked.target.y - shot.y, reworked.target.x - shot.x);
+      assert.ok(Math.abs(Math.atan2(shot.vy, shot.vx) - toTarget) < 1e-9, 'the added shots aim at the target');
+    }
+    assert.match(reworked.card, /사격 \+2발, 관통 \+1/);
+    const classic = volley('classic', true);
+    assert.equal(classic.shots.length, 2, 'classic rules keep the 0.1.0 awakening');
+    assert.match(classic.card, /레일이 없으면 효과가 없습니다/);
+
+    engine.setRuleSet('remaster');
+    engine.startRun(3, 2, 910);
+    engine.enemies = [];
+    engine.spawnEnemy(1, 'small');
+    const target = engine.enemies[0];
+    engine.obstacles = [];
+    target.x = engine.player.x + 300;
+    target.y = engine.player.y;
+    target.hp = target.maxHp = 1e9;
+    engine.rebuildEnemyIndex();
+    engine.skills = { railSpear: { level: 3, awakened: false }, voidMine: { level: 3, awakened: false } };
+    const railCard = engine.makeOffer('railSpear', 'skill');
+    assert.equal(railCard.body, '폭 +12, 피해 +128%');
+    engine.skills.railSpear.level = 4;
+    engine.skillCooldowns = {};
+    engine.beams.length = 0;
+    engine.updateRailSpear(engine.skills.railSpear);
+    assert.equal(engine.beams.at(-1).width, 18 + 12, 'the Lv4 rail is as wide as its card says');
+    assert.equal(engine.makeOffer('railSpear', 'skill').title, '흑선 레일 Lv.5');
+    assert.doesNotMatch(engine.makeOffer('railSpear', 'skill').body, /충전/);
+
+    engine.hazards = [];
+    engine.updateVoidMine(engine.skills.voidMine);
+    assert.equal(engine.hazards.at(-1).pull, 74 + 3 * 14, 'void mine pull matches the +19% per level on its card');
+
+    const overdrive = engine.makeBonusOffers('level').find((offer) => offer.bonus === 'overdrive');
+    assert.equal(overdrive.title, '과부하');
+    assert.match(overdrive.body, /이번 런이 끝날 때까지/);
+  } finally {
+    engine.dispose();
+  }
+});

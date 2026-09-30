@@ -28,6 +28,16 @@ import {
   selectRequiredBoss,
 } from './p1Core';
 import { SpatialIndex } from './spatialIndex';
+import {
+  CLASSIC_AWAKENING_TEXT,
+  SKILL_AWAKENING_TEXT,
+  SKILL_LEVEL_TEXT,
+  SKILL_NUMBERS,
+  frostLineSlow,
+  mirrorCloneVolley,
+  needleCount,
+  scaleAt,
+} from './skillNumbers';
 import { REMASTER_RULES, ruleSetFor, type RuleSet, type RuleSetId } from './rules';
 import { LOGICAL_VIEW, SPAWN_MARGIN, classicViewFrame, logicalViewFrame, spawnFrameOrigin, type ViewFrame } from './viewPolicy';
 import {
@@ -140,7 +150,6 @@ export type StatBlock = {
   critChance: number;
   critDamage: number;
   bossDamage: number;
-  normalDamage: number;
   attackSpeed: number;
   hpRegen: number;
   magnet: number;
@@ -530,7 +539,6 @@ export const BASE_STATS: StatBlock = {
   critChance: 0.08,
   critDamage: 1.65,
   bossDamage: 1,
-  normalDamage: 1,
   attackSpeed: 1,
   hpRegen: 1.1,
   magnet: 115,
@@ -546,8 +554,8 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 1,
     summary: '가장 가까운 적에게 벽에 막히는 고속 투사체를 발사합니다.',
-    levelText: (level) => `피해 +${level * 18}%, 투사체 ${(level >= 3 ? 2 : 1) + (level >= 5 ? 1 : 0)}개`,
-    awakeningText: '부채꼴 난사로 변해 타격 시 파편이 튀며 가장 가까운 적을 추가로 찌릅니다.',
+    levelText: SKILL_LEVEL_TEXT.needleStorm,
+    awakeningText: SKILL_AWAKENING_TEXT.needleStorm,
   },
   fanKnives: {
     id: 'fanKnives',
@@ -557,8 +565,8 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 1,
     summary: '전방 부채꼴로 얇은 단검을 흩뿌립니다.',
-    levelText: (level) => `단검 ${level + 3}개, 재사용 대기 -${level * 4}%`,
-    awakeningText: '단검이 되돌아오며 후방의 적도 베어냅니다.',
+    levelText: SKILL_LEVEL_TEXT.fanKnives,
+    awakeningText: SKILL_AWAKENING_TEXT.fanKnives,
   },
   chainSpark: {
     id: 'chainSpark',
@@ -568,8 +576,8 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 1,
     summary: '적 사이를 튀는 번개선을 즉시 꽂습니다.',
-    levelText: (level) => `연쇄 ${level + 2}회, 피해 +${level * 14}%`,
-    awakeningText: '마지막 연쇄가 폭발하고 짧은 기절을 남깁니다.',
+    levelText: SKILL_LEVEL_TEXT.chainSpark,
+    awakeningText: SKILL_AWAKENING_TEXT.chainSpark,
   },
   frostLine: {
     id: 'frostLine',
@@ -579,8 +587,8 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 1,
     summary: '가장 가까운 적 방향으로 감속 절단선을 긋습니다.',
-    levelText: (level) => `폭 +${level * 3}, 감속 ${Math.min(70, 25 + level * 7)}%`,
-    awakeningText: '절단선이 남긴 서리가 적을 짧게 속박합니다.',
+    levelText: SKILL_LEVEL_TEXT.frostLine,
+    awakeningText: SKILL_AWAKENING_TEXT.frostLine,
   },
   orbitScythes: {
     id: 'orbitScythes',
@@ -590,8 +598,8 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 2,
     summary: '몸 주위를 도는 날이 근접한 적을 계속 갈아냅니다.',
-    levelText: (level) => `날 ${level + 1}개, 궤도 반경 +${level * 10}`,
-    awakeningText: '반대 방향 외곽 궤도가 추가되어 보스에게 연속 타격을 넣습니다.',
+    levelText: SKILL_LEVEL_TEXT.orbitScythes,
+    awakeningText: SKILL_AWAKENING_TEXT.orbitScythes,
   },
   boneMortar: {
     id: 'boneMortar',
@@ -601,8 +609,8 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 2,
     summary: '적이 가장 많이 몰린 지점에 묵직한 낙하 폭발을 일으킵니다.',
-    levelText: (level) => `폭발 반경 +${level * 12}, 피해 +${level * 22}%`,
-    awakeningText: '폭발 중심에 충격파가 한 번 더 터집니다.',
+    levelText: SKILL_LEVEL_TEXT.boneMortar,
+    awakeningText: SKILL_AWAKENING_TEXT.boneMortar,
   },
   railSpear: {
     id: 'railSpear',
@@ -611,9 +619,9 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     rarity: 'legendary',
     active: true,
     chapterMin: 3,
-    summary: '화면을 가르는 관통 직선을 충전 후 발사합니다.',
-    levelText: (level) => `폭 +${level * 2}, 피해 +${level * 28}%`,
-    awakeningText: '레일이 지나간 자리에 균열 폭발이 이어집니다.',
+    summary: '화면을 가르는 관통 직선을 즉시 발사합니다.',
+    levelText: SKILL_LEVEL_TEXT.railSpear,
+    awakeningText: SKILL_AWAKENING_TEXT.railSpear,
   },
   mirrorClone: {
     id: 'mirrorClone',
@@ -623,8 +631,8 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 3,
     summary: '좌우 잔상이 보조 사격을 합니다.',
-    levelText: (level) => `분신 사격 피해 +${level * 18}%, 관통 +${Math.floor(level / 2)}`,
-    awakeningText: '분신이 가끔 레일 사격을 복제합니다.',
+    levelText: SKILL_LEVEL_TEXT.mirrorClone,
+    awakeningText: SKILL_AWAKENING_TEXT.mirrorClone,
   },
   voidMine: {
     id: 'voidMine',
@@ -634,8 +642,8 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 3,
     summary: '발밑에 끌어당기는 지뢰장을 남깁니다.',
-    levelText: (level) => `지속 +${(level * 0.25).toFixed(1)}s, 흡입력 +${level * 10}%`,
-    awakeningText: '지뢰장이 사라질 때 처형 폭발을 일으킵니다.',
+    levelText: SKILL_LEVEL_TEXT.voidMine,
+    awakeningText: SKILL_AWAKENING_TEXT.voidMine,
   },
   blackSun: {
     id: 'blackSun',
@@ -645,8 +653,8 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 4,
     summary: '적 밀집 지점에 끌어당기는 중력장을 엽니다.',
-    levelText: (level) => `지속 +${level * 0.35}s, 흡입력 +${level * 12}%`,
-    awakeningText: '붕괴 순간 최대 체력 비례 피해와 긴 감속을 겹칩니다.',
+    levelText: SKILL_LEVEL_TEXT.blackSun,
+    awakeningText: SKILL_AWAKENING_TEXT.blackSun,
   },
   ironFrame: {
     id: 'ironFrame',
@@ -656,8 +664,8 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: false,
     chapterMin: 1,
     summary: '방어력과 최대 체력을 올립니다.',
-    levelText: (level) => `방어 +${level * 1.2}, 최대 체력 +${level * 18}`,
-    awakeningText: '방어 +3.5, 최대 체력 +40. 피격 직후 0.36초 보호막을 만듭니다.',
+    levelText: SKILL_LEVEL_TEXT.ironFrame,
+    awakeningText: SKILL_AWAKENING_TEXT.ironFrame,
   },
   magnetSigil: {
     id: 'magnetSigil',
@@ -667,8 +675,8 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: false,
     chapterMin: 1,
     summary: '경험치와 코인을 더 먼 거리에서 끌어옵니다.',
-    levelText: (level) => `획득 반경 +${level * 36}, 코인 획득 +${level * 4}%`,
-    awakeningText: '획득 반경 +180, 코인 +15%. 4.8초마다 맵 위 보상을 강하게 당깁니다.',
+    levelText: SKILL_LEVEL_TEXT.magnetSigil,
+    awakeningText: SKILL_AWAKENING_TEXT.magnetSigil,
   },
   paperWard: {
     id: 'paperWard',
@@ -678,8 +686,8 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: false,
     chapterMin: 2,
     summary: '방어력과 피격 후 무적 시간을 올립니다.',
-    levelText: (level) => `방어 +${level}, 피격 무적 +${(level * 0.04).toFixed(2)}s`,
-    awakeningText: '방어 +2.5. 피격 시 반경 140의 적을 밀쳐내는 종이 파열이 발생합니다.',
+    levelText: SKILL_LEVEL_TEXT.paperWard,
+    awakeningText: SKILL_AWAKENING_TEXT.paperWard,
   },
   recoveryThread: {
     id: 'recoveryThread',
@@ -689,8 +697,8 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: false,
     chapterMin: 1,
     summary: '체력 회복과 획득 반경을 올립니다.',
-    levelText: (level) => `초당 회복 +${(level * 0.65).toFixed(1)}, 자석 +${level * 14}`,
-    awakeningText: '체력이 가득 찬 동안 2.2초마다 주변으로 반격선을 뿌립니다.',
+    levelText: SKILL_LEVEL_TEXT.recoveryThread,
+    awakeningText: SKILL_AWAKENING_TEXT.recoveryThread,
   },
   coinFever: {
     id: 'coinFever',
@@ -700,8 +708,8 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: false,
     chapterMin: 4,
     summary: '코인 획득량과 공격속도를 함께 올립니다.',
-    levelText: (level) => `코인 +${level * 9}%, 공격속도 +${level * 4}%`,
-    awakeningText: '코인을 먹을 때 짧은 공격속도 폭주가 발동합니다.',
+    levelText: SKILL_LEVEL_TEXT.coinFever,
+    awakeningText: SKILL_AWAKENING_TEXT.coinFever,
   },
   eclipseStep: {
     id: 'eclipseStep',
@@ -711,8 +719,8 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: true,
     chapterMin: 5,
     summary: '위협이 몰릴 때 순간적으로 그림자 베기를 펼칩니다.',
-    levelText: (level) => `베기 반경 +${level * 16}, 무적 +${(level * 0.05).toFixed(2)}s`,
-    awakeningText: '베기 후 검은 잔상이 한 번 더 전장을 훑습니다.',
+    levelText: SKILL_LEVEL_TEXT.eclipseStep,
+    awakeningText: SKILL_AWAKENING_TEXT.eclipseStep,
   },
   executionMark: {
     id: 'executionMark',
@@ -722,8 +730,8 @@ export const SKILLS: Record<SkillId, SkillDef> = {
     active: false,
     chapterMin: 2,
     summary: '치명타와 보스 피해량을 올립니다.',
-    levelText: (level) => `치명타 +${level * 3}%, 보스 피해 +${level * 7}%`,
-    awakeningText: '치명타 +10%, 보스 피해 +20%. 낮은 체력의 보스에게 최대 45% 추가 피해를 줍니다.',
+    levelText: SKILL_LEVEL_TEXT.executionMark,
+    awakeningText: SKILL_AWAKENING_TEXT.executionMark,
   },
 };
 
@@ -948,37 +956,37 @@ export function buildStats(
 
   const ironFrame = skills.ironFrame;
   if (ironFrame) {
-    stats.defense += ironFrame.level * 1.2 + (ironFrame.awakened ? 3.5 : 0);
-    stats.maxHp += ironFrame.level * 18 + (ironFrame.awakened ? 40 : 0);
+    stats.defense += scaleAt(SKILL_NUMBERS.ironFrame.defense, ironFrame.level, ironFrame.awakened);
+    stats.maxHp += scaleAt(SKILL_NUMBERS.ironFrame.maxHp, ironFrame.level, ironFrame.awakened);
   }
 
   const recoveryThread = skills.recoveryThread;
   if (recoveryThread) {
-    stats.hpRegen += recoveryThread.level * 0.65 + (recoveryThread.awakened ? 2.4 : 0);
-    stats.magnet += recoveryThread.level * 14 + (recoveryThread.awakened ? 60 : 0);
+    stats.hpRegen += scaleAt(SKILL_NUMBERS.recoveryThread.regen, recoveryThread.level, recoveryThread.awakened);
+    stats.magnet += scaleAt(SKILL_NUMBERS.recoveryThread.magnet, recoveryThread.level, recoveryThread.awakened);
   }
 
   const magnetSigil = skills.magnetSigil;
   if (magnetSigil) {
-    stats.magnet += magnetSigil.level * 36 + (magnetSigil.awakened ? 180 : 0);
-    stats.coinGain += magnetSigil.level * 0.04 + (magnetSigil.awakened ? 0.15 : 0);
+    stats.magnet += scaleAt(SKILL_NUMBERS.magnetSigil.magnet, magnetSigil.level, magnetSigil.awakened);
+    stats.coinGain += scaleAt(SKILL_NUMBERS.magnetSigil.coinGain, magnetSigil.level, magnetSigil.awakened);
   }
 
   const paperWard = skills.paperWard;
   if (paperWard) {
-    stats.defense += paperWard.level + (paperWard.awakened ? 2.5 : 0);
+    stats.defense += scaleAt(SKILL_NUMBERS.paperWard.defense, paperWard.level, paperWard.awakened);
   }
 
   const coinFever = skills.coinFever;
   if (coinFever) {
-    stats.coinGain += coinFever.level * 0.09;
-    stats.attackSpeed *= 1 + coinFever.level * 0.04;
+    stats.coinGain += scaleAt(SKILL_NUMBERS.coinFever.coinGain, coinFever.level);
+    stats.attackSpeed *= 1 + scaleAt(SKILL_NUMBERS.coinFever.attackSpeed, coinFever.level);
   }
 
   const executionMark = skills.executionMark;
   if (executionMark) {
-    stats.critChance += executionMark.level * 0.03 + (executionMark.awakened ? 0.1 : 0);
-    stats.bossDamage += executionMark.level * 0.07 + (executionMark.awakened ? 0.2 : 0);
+    stats.critChance += scaleAt(SKILL_NUMBERS.executionMark.critChance, executionMark.level, executionMark.awakened);
+    stats.bossDamage += scaleAt(SKILL_NUMBERS.executionMark.bossDamage, executionMark.level, executionMark.awakened);
   }
 
   stats.critChance = clamp(stats.critChance, 0, 0.72);
@@ -1899,6 +1907,7 @@ export class GameEngine {
         }
       }
       if (hazard.kind === 'fire') this.damagePlayerOverTime(hazard.damage, dt);
+      // Null zones only silence; they never slowed, so their slow stays 1 (BUG-16, SYS-11 keeps one penalty).
       if (hazard.kind === 'null') this.player.silence = Math.max(this.player.silence, 0.4);
     }
 
@@ -1935,7 +1944,7 @@ export class GameEngine {
     if (this.skills.recoveryThread?.awakened && this.player.hp >= this.player.stats.maxHp - 0.5) {
       this.skillCooldowns.recoveryThread = (this.skillCooldowns.recoveryThread ?? 0) - dt;
       if ((this.skillCooldowns.recoveryThread ?? 0) <= 0) {
-        this.skillCooldowns.recoveryThread = 2.2 / this.effectiveAttackSpeed();
+        this.skillCooldowns.recoveryThread = SKILL_NUMBERS.recoveryThread.counterSeconds / this.effectiveAttackSpeed();
         for (let i = 0; i < 8; i += 1) {
           const angle = (Math.PI * 2 * i) / 8 + this.elapsed * 0.7;
           this.spawnProjectile('recoveryThread', this.player.x, this.player.y, Math.cos(angle) * 620, Math.sin(angle) * 620, 5, this.player.stats.attack * 0.7, 0.45, 0, 60, false);
@@ -2005,14 +2014,14 @@ export class GameEngine {
     if (!target) return;
     const baseCooldown = 0.72 / this.effectiveAttackSpeed();
     this.skillCooldowns.needleStorm = Math.max(0.16, baseCooldown - skill.level * 0.035);
-    const count = 1 + (skill.level >= 3 ? 1 : 0) + (skill.level >= 5 ? 1 : 0) + (skill.awakened ? 2 : 0);
+    const count = needleCount(skill.level, skill.awakened);
     const baseAngle = Math.atan2(target.y - this.player.y, target.x - this.player.x);
     const spread = skill.awakened ? 0.34 : 0.18;
     for (let i = 0; i < count; i += 1) {
       const offset = (i - (count - 1) / 2) * spread;
       const angle = baseAngle + offset;
-      const damage = this.player.stats.attack * (0.85 + skill.level * 0.18 + (skill.awakened ? 0.4 : 0));
-      this.spawnProjectile('needleStorm', this.player.x, this.player.y, Math.cos(angle) * 760, Math.sin(angle) * 760, 4.5, damage, 1.15, skill.awakened ? 1 : 0, 120, true);
+      const damage = this.player.stats.attack * scaleAt(SKILL_NUMBERS.needleStorm.damage, skill.level, skill.awakened);
+      this.spawnProjectile('needleStorm', this.player.x, this.player.y, Math.cos(angle) * 760, Math.sin(angle) * 760, 4.5, damage, 1.15, skill.awakened ? SKILL_NUMBERS.needleStorm.awakenedPierce : 0, 120, true);
     }
   }
 
@@ -2020,8 +2029,8 @@ export class GameEngine {
     if ((this.skillCooldowns.fanKnives ?? 0) > 0) return;
     const target = this.findNearestEnemy(760);
     if (!target) return;
-    this.skillCooldowns.fanKnives = Math.max(0.42, 1.05 / this.effectiveAttackSpeed() - skill.level * 0.04);
-    const count = skill.level + 3 + (skill.awakened ? 3 : 0);
+    this.skillCooldowns.fanKnives = Math.max(0.42, 1.05 / this.effectiveAttackSpeed() - skill.level * SKILL_NUMBERS.fanKnives.cooldownPerLevel);
+    const count = scaleAt(SKILL_NUMBERS.fanKnives.knives, skill.level, skill.awakened);
     const baseAngle = Math.atan2(target.y - this.player.y, target.x - this.player.x);
     for (let i = 0; i < count; i += 1) {
       const angle = baseAngle + (i - (count - 1) / 2) * 0.22;
@@ -2035,8 +2044,8 @@ export class GameEngine {
     const first = this.findNearestEnemy(780);
     if (!first) return;
     this.skillCooldowns.chainSpark = Math.max(0.55, 1.48 / this.effectiveAttackSpeed() - skill.level * 0.055);
-    const jumps = skill.level + 2 + (skill.awakened ? 2 : 0);
-    const damage = this.player.stats.attack * (0.95 + skill.level * 0.14 + (skill.awakened ? 0.28 : 0));
+    const jumps = scaleAt(SKILL_NUMBERS.chainSpark.jumps, skill.level, skill.awakened);
+    const damage = this.player.stats.attack * scaleAt(SKILL_NUMBERS.chainSpark.damage, skill.level, skill.awakened);
     const hit = new Set<number>();
     const points = [{ x: this.player.x, y: this.player.y }];
     let current: Entity | undefined = first;
@@ -2045,7 +2054,7 @@ export class GameEngine {
       points.push({ x: current.x, y: current.y });
       this.dealDamage(current, damage * (1 - i * 0.08), 'chainSpark', 80, skill.awakened && i === jumps - 1);
       if (skill.awakened && i === jumps - 1) {
-        current.stun = Math.max(current.stun, 0.45);
+        current.stun = Math.max(current.stun, SKILL_NUMBERS.chainSpark.stunSeconds);
         this.areaDamage(current.x, current.y, 78, damage * 0.7, 'chainSpark', 90);
       }
       current = this.findNearestEnemyFrom(current.x, current.y, 330, hit);
@@ -2062,7 +2071,7 @@ export class GameEngine {
     const angle = Math.atan2(target.y - this.player.y, target.x - this.player.x);
     const x2 = this.player.x + Math.cos(angle) * 980;
     const y2 = this.player.y + Math.sin(angle) * 980;
-    const width = 12 + skill.level * 3 + (skill.awakened ? 8 : 0);
+    const width = scaleAt(SKILL_NUMBERS.frostLine.width, skill.level, skill.awakened);
     const damage = this.player.stats.attack * (0.95 + skill.level * 0.2);
     this.beams.push({ id: this.nextId(), x1: this.player.x, y1: this.player.y, x2, y2, width, life: 0.28, maxLife: 0.28, owner: 'player' });
     for (const enemy of this.querySegmentEnemies(this.player.x, this.player.y, x2, y2, width)) {
@@ -2071,12 +2080,12 @@ export class GameEngine {
         this.dealDamage(enemy, damage, 'frostLine', 110, false);
         const slow = applyTimedSlow(
           { multiplier: enemy.slowMultiplier ?? 1, remaining: enemy.slowTimer ?? 0 },
-          1 - Math.min(0.7, 0.25 + skill.level * 0.07),
+          1 - frostLineSlow(skill.level),
           1.25,
         );
         enemy.slowMultiplier = slow.multiplier;
         enemy.slowTimer = slow.remaining;
-        if (skill.awakened) enemy.root = Math.max(enemy.root, 0.26);
+        if (skill.awakened) enemy.root = Math.max(enemy.root, SKILL_NUMBERS.frostLine.rootSeconds);
       }
     }
     this.playTone(510, 0.04, 'sine');
@@ -2088,20 +2097,20 @@ export class GameEngine {
     if (!target) return;
     this.skillCooldowns.railSpear = Math.max(1.25, 3.8 / this.effectiveAttackSpeed() - skill.level * 0.12);
     const angle = Math.atan2(target.y - this.player.y, target.x - this.player.x);
-    const width = 18 + skill.level * 3 + (skill.awakened ? 12 : 0);
-    const damage = this.player.stats.attack * (2.15 + skill.level * 0.32 + (skill.awakened ? 0.8 : 0));
-    const mirrorsRail = this.skills.mirrorClone?.awakened === true && this.gameplayRandom() < 0.3;
+    const width = scaleAt(SKILL_NUMBERS.railSpear.width, skill.level, skill.awakened);
+    const damage = this.player.stats.attack * scaleAt(SKILL_NUMBERS.railSpear.damage, skill.level, skill.awakened);
+    const mirrorsRail = this.skills.mirrorClone?.awakened === true && this.gameplayRandom() < SKILL_NUMBERS.mirrorClone.railCopyChance;
     this.fireRailBeam(this.player.x, this.player.y, angle, width, damage, 'railSpear', 180, skill.awakened);
     if (mirrorsRail) {
       const sideX = Math.cos(angle + Math.PI / 2);
       const sideY = Math.sin(angle + Math.PI / 2);
       for (const sign of [-1, 1]) {
         this.fireRailBeam(
-          this.player.x + sideX * sign * 42,
-          this.player.y + sideY * sign * 42,
+          this.player.x + sideX * sign * SKILL_NUMBERS.mirrorClone.cloneOffset,
+          this.player.y + sideY * sign * SKILL_NUMBERS.mirrorClone.cloneOffset,
           angle,
           width,
-          damage * 0.35,
+          damage * SKILL_NUMBERS.mirrorClone.railCopyDamage,
           'mirrorClone',
           95,
           false,
@@ -2141,7 +2150,7 @@ export class GameEngine {
       if (distancePointToSegment(enemy.x, enemy.y, x1, y1, x2, y2) < enemy.radius + width) {
         this.dealDamage(enemy, damage, skillId, knockback, false);
         if (explode) {
-          this.areaDamage(enemy.x, enemy.y, 58, damage * 0.42, skillId, 120);
+          this.areaDamage(enemy.x, enemy.y, 58, damage * SKILL_NUMBERS.railSpear.fissureDamage, skillId, 120);
         }
       }
     }
@@ -2152,8 +2161,8 @@ export class GameEngine {
     const target = this.findClusterTarget();
     if (!target) return;
     this.skillCooldowns.boneMortar = Math.max(1.6, 3.4 / this.effectiveAttackSpeed() - skill.level * 0.08);
-    const radius = 86 + skill.level * 12 + (skill.awakened ? 34 : 0);
-    const damage = this.player.stats.attack * (1.35 + skill.level * 0.22 + (skill.awakened ? 0.55 : 0));
+    const radius = scaleAt(SKILL_NUMBERS.boneMortar.radius, skill.level, skill.awakened);
+    const damage = this.player.stats.attack * scaleAt(SKILL_NUMBERS.boneMortar.damage, skill.level, skill.awakened);
     this.hazards.push({
       id: this.nextId(),
       kind: 'warning',
@@ -2167,7 +2176,7 @@ export class GameEngine {
       triggered: false,
       sourceSkillId: 'boneMortar',
       skillDamage: damage,
-      collapseDamage: skill.awakened ? damage * 0.65 : 0,
+      collapseDamage: skill.awakened ? damage * SKILL_NUMBERS.boneMortar.aftershockDamage : 0,
     });
     this.playTone(120, 0.055, 'sawtooth');
   }
@@ -2179,14 +2188,24 @@ export class GameEngine {
     this.skillCooldowns.mirrorClone = Math.max(1.05, 2.7 / this.effectiveAttackSpeed() - skill.level * 0.08);
     const angle = Math.atan2(target.y - this.player.y, target.x - this.player.x);
     const side = { x: Math.cos(angle + Math.PI / 2), y: Math.sin(angle + Math.PI / 2) };
-    const count = 2;
-    for (let i = 0; i < count; i += 1) {
+    // Awakening used to do nothing without rail spear; the rework adds aimed shots and pierce (BUG-16).
+    const volley = mirrorCloneVolley(skill.level, skill.awakened && this.rules.mirrorAwakeningRework);
+    const offset = SKILL_NUMBERS.mirrorClone.cloneOffset;
+    const damage = this.player.stats.attack * scaleAt(SKILL_NUMBERS.mirrorClone.damage, skill.level);
+    for (let i = 0; i < volley.flankShots; i += 1) {
       const sign = i % 2 === 0 ? -1 : 1;
-      const sx = this.player.x + side.x * sign * 42;
-      const sy = this.player.y + side.y * sign * 42;
+      const sx = this.player.x + side.x * sign * offset;
+      const sy = this.player.y + side.y * sign * offset;
       const shotAngle = angle;
-      this.spawnProjectile('mirrorClone', sx, sy, Math.cos(shotAngle) * 820, Math.sin(shotAngle) * 820, 5.5, this.player.stats.attack * (0.72 + skill.level * 0.18), 1.15, 1 + Math.floor(skill.level / 2), 95, true);
+      this.spawnProjectile('mirrorClone', sx, sy, Math.cos(shotAngle) * 820, Math.sin(shotAngle) * 820, 5.5, damage, 1.15, volley.pierce, 95, true);
       this.chains.push({ id: this.nextId(), points: [{ x: this.player.x, y: this.player.y }, { x: sx, y: sy }], life: 0.16, maxLife: 0.16 });
+    }
+    for (let i = 0; i < volley.aimedShots; i += 1) {
+      const sign = i % 2 === 0 ? -1 : 1;
+      const sx = this.player.x + side.x * sign * offset;
+      const sy = this.player.y + side.y * sign * offset;
+      const shotAngle = Math.atan2(target.y - sy, target.x - sx);
+      this.spawnProjectile('mirrorClone', sx, sy, Math.cos(shotAngle) * 820, Math.sin(shotAngle) * 820, 5.5, damage, 1.15, volley.pierce, 95, true);
     }
     this.playTone(470, 0.035, 'square');
   }
@@ -2194,8 +2213,8 @@ export class GameEngine {
   private updateVoidMine(skill: SkillState) {
     if ((this.skillCooldowns.voidMine ?? 0) > 0) return;
     this.skillCooldowns.voidMine = Math.max(2.1, 4.1 / this.effectiveAttackSpeed() - skill.level * 0.12);
-    const radius = 92 + skill.level * 11 + (skill.awakened ? 30 : 0);
-    const life = 2.4 + skill.level * 0.25 + (skill.awakened ? 0.9 : 0);
+    const radius = scaleAt(SKILL_NUMBERS.voidMine.radius, skill.level, skill.awakened);
+    const life = scaleAt(SKILL_NUMBERS.voidMine.duration, skill.level, skill.awakened);
     const profile = createVortexProfile('voidMine', skill.level, skill.awakened);
     this.hazards.push({
       id: this.nextId(),
@@ -2221,8 +2240,8 @@ export class GameEngine {
     const target = this.findClusterTarget();
     if (!target) return;
     this.skillCooldowns.blackSun = Math.max(2.6, 6.3 / this.effectiveAttackSpeed() - skill.level * 0.18);
-    const radius = 116 + skill.level * 14 + (skill.awakened ? 42 : 0);
-    const life = 3.2 + skill.level * 0.35 + (skill.awakened ? 1.2 : 0);
+    const radius = scaleAt(SKILL_NUMBERS.blackSun.radius, skill.level, skill.awakened);
+    const life = scaleAt(SKILL_NUMBERS.blackSun.duration, skill.level, skill.awakened);
     const profile = createVortexProfile('blackSun', skill.level, skill.awakened);
     this.hazards.push({
       id: this.nextId(),
@@ -2249,8 +2268,8 @@ export class GameEngine {
     const nearby = this.enemies.filter((enemy) => enemy.hp > 0 && distance(enemy, this.player) < 260).length;
     if (nearby < 3 && this.player.hp / this.player.stats.maxHp > 0.45) return;
     this.skillCooldowns.eclipseStep = Math.max(2.7, 5.4 / this.effectiveAttackSpeed() - skill.level * 0.12);
-    const radius = 128 + skill.level * 16 + (skill.awakened ? 55 : 0);
-    this.player.invuln = Math.max(this.player.invuln, 0.28 + skill.level * 0.05);
+    const radius = scaleAt(SKILL_NUMBERS.eclipseStep.radius, skill.level, skill.awakened);
+    this.player.invuln = Math.max(this.player.invuln, scaleAt(SKILL_NUMBERS.eclipseStep.invulnerability, skill.level));
     for (let i = 0; i < 5 + skill.level; i += 1) {
       const angle = (Math.PI * 2 * i) / (5 + skill.level) + this.elapsed;
       this.beams.push({
@@ -2281,17 +2300,18 @@ export class GameEngine {
         slow: 1,
         triggered: false,
         sourceSkillId: 'eclipseStep',
-        skillDamage: damage * 0.72,
+        skillDamage: damage * SKILL_NUMBERS.eclipseStep.afterimageDamage,
       });
     }
     this.shake = Math.max(this.shake, 12);
   }
 
   private updateOrbitScythes(skill: SkillState) {
-    const blades = skill.level + 1 + (skill.awakened ? 3 : 0);
-    const baseRadius = 72 + skill.level * 10;
+    const forwardBlades = scaleAt(SKILL_NUMBERS.orbitScythes.blades, skill.level);
+    const blades = forwardBlades + (skill.awakened ? SKILL_NUMBERS.orbitScythes.awakenedOuterBlades : 0);
+    const baseRadius = scaleAt(SKILL_NUMBERS.orbitScythes.radius, skill.level);
     for (let i = 0; i < blades; i += 1) {
-      const reverse = skill.awakened && i >= skill.level + 1;
+      const reverse = skill.awakened && i >= forwardBlades;
       const speed = reverse ? -2.6 : 3.2;
       const bladeRadius = reverse ? baseRadius + 52 : baseRadius;
       const angle = this.elapsed * speed + (Math.PI * 2 * i) / blades;
@@ -2311,7 +2331,7 @@ export class GameEngine {
 
   private updateMagnetPulse() {
     if ((this.skillCooldowns.magnetSigil ?? 0) > 0) return;
-    this.skillCooldowns.magnetSigil = 4.8 / this.effectiveAttackSpeed();
+    this.skillCooldowns.magnetSigil = SKILL_NUMBERS.magnetSigil.pulseSeconds / this.effectiveAttackSpeed();
     for (const pickup of this.pickups) {
       const dir = normalize(this.player.x - pickup.x, this.player.y - pickup.y);
       pickup.vx += dir.x * 920;
@@ -2903,7 +2923,7 @@ export class GameEngine {
 
     if (boss.pattern === 'null' && enemy.patternTimer <= 0) {
       enemy.patternTimer = 4.8;
-      this.hazards.push({ id: this.nextId(), kind: 'null', x: this.player.x + (this.gameplayRandom() - 0.5) * 160, y: this.player.y + (this.gameplayRandom() - 0.5) * 160, radius: 130, life: 5.4, maxLife: 5.4, damage: 0, slow: 0.65, triggered: false });
+      this.hazards.push({ id: this.nextId(), kind: 'null', x: this.player.x + (this.gameplayRandom() - 0.5) * 160, y: this.player.y + (this.gameplayRandom() - 0.5) * 160, radius: 130, life: 5.4, maxLife: 5.4, damage: 0, slow: 1, triggered: false });
       for (let i = 0; i < 16; i += 1) {
         const angle = (Math.PI * 2 * i) / 16 + this.elapsed * 0.2;
         this.spawnBossProjectile(enemy.x, enemy.y, Math.cos(angle) * 190, Math.sin(angle) * 190, 8, enemy.damage * 0.5, 4.8, 'eclipse');
@@ -2991,8 +3011,8 @@ export class GameEngine {
         this.dealDamage(enemy, projectile.damage, projectile.skillId, projectile.knockback, false);
         projectile.pierce -= 1;
         if (projectile.skillId === 'needleStorm' && this.skills.needleStorm?.awakened) {
-          const extra = this.findNearestEnemyFrom(enemy.x, enemy.y, 220, new Set([enemy.id]));
-          if (extra) this.dealDamage(extra, projectile.damage * 0.35, projectile.skillId, 40, false);
+          const extra = this.findNearestEnemyFrom(enemy.x, enemy.y, SKILL_NUMBERS.needleStorm.shardRange, new Set([enemy.id]));
+          if (extra) this.dealDamage(extra, projectile.damage * SKILL_NUMBERS.needleStorm.shardDamage, projectile.skillId, 40, false);
         }
         if (projectile.pierce < 0) {
           projectile.life = 0;
@@ -3287,8 +3307,8 @@ export class GameEngine {
   private dealDamage(enemy: Entity, rawDamage: number, skillId: SkillId, knockback: number, forceCrit: boolean) {
     if (enemy.hp <= 0) return;
     const hpRatio = enemy.hp / enemy.maxHp;
-    const execution = this.skills.executionMark?.awakened && enemy.isBoss ? 1 + (1 - hpRatio) * 0.45 : 1;
-    const targetMultiplier = enemy.isBoss ? this.player.stats.bossDamage : this.player.stats.normalDamage;
+    const execution = this.skills.executionMark?.awakened && enemy.isBoss ? 1 + (1 - hpRatio) * SKILL_NUMBERS.executionMark.lowHpBossBonus : 1;
+    const targetMultiplier = enemy.isBoss ? this.player.stats.bossDamage : 1;
     const crit = forceCrit || this.gameplayRandom() < this.player.stats.critChance;
     const critMultiplier = crit ? this.player.stats.critDamage : 1;
     const damage = Math.max(1, rawDamage * targetMultiplier * critMultiplier * execution);
@@ -3349,8 +3369,8 @@ export class GameEngine {
     this.player.hp -= reduced;
     const paperWard = this.skills.paperWard;
     this.player.invuln = paperWardDirectHitInvulnerability(paperWard?.level ?? 0);
-    if (this.skills.ironFrame?.awakened) this.player.shield = 0.36;
-    if (paperWard?.awakened) this.pushEnemiesFromPlayer(140);
+    if (this.skills.ironFrame?.awakened) this.player.shield = SKILL_NUMBERS.ironFrame.shieldSeconds;
+    if (paperWard?.awakened) this.pushEnemiesFromPlayer(SKILL_NUMBERS.paperWard.pushRadius);
     if (this.options.damageNumbers) {
       this.emitDamageNumber(this.player.x, this.player.y - 38, reduced, false, 0.72, 'hostile');
     }
@@ -3576,7 +3596,7 @@ export class GameEngine {
         skillId,
         rarity: def.rarity,
         title: `${def.name} 각성`,
-        body: def.awakeningText,
+        body: this.awakeningText(skillId),
         levelLine: 'Lv.5 이후 확정 등장',
       };
     }
@@ -3591,6 +3611,11 @@ export class GameEngine {
     };
   }
 
+  private awakeningText(skillId: SkillId) {
+    const classic = this.rules.mirrorAwakeningRework ? undefined : CLASSIC_AWAKENING_TEXT[skillId];
+    return classic ?? SKILLS[skillId].awakeningText;
+  }
+
   private makeBonusOffers(reason: DraftReason): SkillOffer[] {
     const bonusRarity: Rarity = reason === 'boss' ? 'epic' : 'rare';
     return [
@@ -3598,8 +3623,8 @@ export class GameEngine {
         kind: 'bonus',
         bonus: 'overdrive',
         rarity: bonusRarity,
-        title: '임시 과부하',
-        body: '이번 세트 동안 공격력과 공격속도 라운드 강화가 1단계씩 즉시 상승합니다.',
+        title: '과부하',
+        body: '공격력과 공격속도 런 강화가 즉시 1단계씩 오르고, 이번 런이 끝날 때까지 유지됩니다.',
         levelLine: '스킬 풀이 모두 막혔을 때 등장',
       },
       {
@@ -3675,7 +3700,7 @@ export class GameEngine {
       life: 8,
       maxLife: 8,
       damage: 0,
-      slow: 0.62,
+      slow: 1,
       triggered: false,
     });
     this.shake = Math.max(this.shake, 22);
@@ -4178,11 +4203,12 @@ export class GameEngine {
   private drawOrbitScythes(ctx: CanvasRenderingContext2D) {
     const skill = this.skills.orbitScythes;
     if (!skill) return;
-    const blades = skill.level + 1 + (skill.awakened ? 3 : 0);
-    const baseRadius = 72 + skill.level * 10;
+    const forwardBlades = scaleAt(SKILL_NUMBERS.orbitScythes.blades, skill.level);
+    const blades = forwardBlades + (skill.awakened ? SKILL_NUMBERS.orbitScythes.awakenedOuterBlades : 0);
+    const baseRadius = scaleAt(SKILL_NUMBERS.orbitScythes.radius, skill.level);
     const player = this.interpolated(this.player);
     for (let i = 0; i < blades; i += 1) {
-      const reverse = skill.awakened && i >= skill.level + 1;
+      const reverse = skill.awakened && i >= forwardBlades;
       const speed = reverse ? -2.6 : 3.2;
       const bladeRadius = reverse ? baseRadius + 52 : baseRadius;
       // Blades hit where the simulation puts them, so reduced motion must not freeze their drawn position (BUG-15).
@@ -4198,11 +4224,11 @@ export class GameEngine {
     if (!skill) return;
     const player = this.interpolated(this.player);
     const sideAngle = this.playerAimAngle + Math.PI / 2;
-    const offsets = skill.awakened ? [-1, 1] : [1];
     const policy = motionPolicy(this.options.reducedFlash, this.systemReducedMotion);
 
-    for (const side of offsets) {
-      const distanceFromPlayer = 48 + skill.level * 2;
+    // Both clones fire every volley, so both are drawn, at the offset the shots start from (BUG-16).
+    for (const side of [-1, 1]) {
+      const distanceFromPlayer = SKILL_NUMBERS.mirrorClone.cloneOffset;
       const drift = policy.reduced ? 0 : Math.sin(this.elapsed * 4.2 + side) * 3;
       const x = player.x + Math.cos(sideAngle) * distanceFromPlayer * side + Math.cos(this.playerAimAngle) * drift;
       const y = player.y + Math.sin(sideAngle) * distanceFromPlayer * side + Math.sin(this.playerAimAngle) * drift;
