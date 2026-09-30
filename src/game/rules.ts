@@ -60,6 +60,11 @@ export type RuleSet = Readonly<{
    * wait for room under the shot cap, and shots pushed over it fade out harmlessly instead of vanishing.
    */
   bossTelegraphs: boolean;
+  /**
+   * SYS-04: when a boss stage's clock runs out, enrage climbs a step every 30 s (speed, then pattern density,
+   * then damage x1.5 and x2.0) instead of x4.5 damage at once, and the silence zone lands after a warning.
+   */
+  steppedEnrage: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -82,6 +87,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   shooterLeadAim: false,
   wardenShield: false,
   bossTelegraphs: false,
+  steppedEnrage: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -104,6 +110,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   shooterLeadAim: true,
   wardenShield: true,
   bossTelegraphs: true,
+  steppedEnrage: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

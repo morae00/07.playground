@@ -234,6 +234,8 @@ test('campaign normal stages only clear when the survival countdown reaches zero
 test('campaign boss stages enter a single enrage phase when their countdown expires', () => {
   const { engine, probe, events } = createEngine();
   try {
+    // The one-shot x4.5 enrage is the classic rule; remaster rules step it up (SYS-04, enrage.integration.test).
+    engine.setRuleSet('classic');
     engine.startRun(1, 5, 79);
     const boss = probe.read().enemies.find((enemy) => enemy.isBoss && !enemy.legacyBoss);
     assert.ok(boss);

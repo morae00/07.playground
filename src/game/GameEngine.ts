@@ -334,6 +334,10 @@ const ECLIPSE_WALL_LANE_GAP = 115;
 /** Fair terrain (BUG-13): a root zone binds once on entry, then cannot bind again for a while. */
 const ROOT_BIND_SECONDS = 0.65;
 const ROOT_IMMUNITY_SECONDS = ROOT_BIND_SECONDS + 1.5;
+/** SYS-04: enrage climbs one of four steps every 30 s of stage clock; its silence zone warns for 0.8 s. */
+const ENRAGE_STEPS = 4;
+const ENRAGE_STEP_SECONDS = 30;
+const ENRAGE_ZONE_WARNING_SECONDS = 0.8;
 /** SYS-04: how long each boss pattern is telegraphed before it fires (V3 timings: shots 0.44 s, shock 0.52 s). */
 const PATTERN_LEAD_SECONDS: Partial<Record<BossPattern, number>> = {
   rings: 0.44,
@@ -893,6 +897,11 @@ export class GameEngine {
   protected stageFinished = false;
   protected rewardLock = false;
   protected bossEnraged = false;
+  /** SYS-04: enrage step (1-4) and seconds since the boss stage clock ran out. */
+  protected enrageStep = 0;
+  protected enrageSeconds = 0;
+  /** SYS-04: a silence zone waiting behind its warning during enrage. */
+  protected pendingEnrageZone: { x: number; y: number; at: number } | null = null;
   protected stageKills = 0;
   protected stageCoinsEarned = 0;
   protected infiniteEventScore = 0;
@@ -1123,6 +1132,9 @@ export class GameEngine {
     this.scoreEligible = scoreEligible;
     this.coinFeverRushTimer = 0;
     this.bossEnraged = false;
+    this.enrageStep = 0;
+    this.enrageSeconds = 0;
+    this.pendingEnrageZone = null;
     this.cheatGodMode = false;
     this.lastDamageSource = 'unknown';
     this.releaseStagger = false;
@@ -1527,6 +1539,9 @@ export class GameEngine {
     this.activeDraftCards = [];
     this.pendingRoundClear = false;
     this.bossEnraged = false;
+    this.enrageStep = 0;
+    this.enrageSeconds = 0;
+    this.pendingEnrageZone = null;
     this.stageKills = 0;
     this.stageCoinsEarned = 0;
     this.draftQueue = [];
@@ -1669,6 +1684,7 @@ export class GameEngine {
     // Budgeted rules count the stage clock in real steps so hit-stop never stretches a stage (BUG-07).
     const clockDelta = this.rules.hitStopBudget ? Math.max(dt, FIXED_TIMESTEP) : dt;
     if (this.runMode === 'campaign') this.timeLeft = Math.max(0, this.timeLeft - clockDelta);
+    if (this.bossEnraged && this.rules.steppedEnrage) this.advanceEnrage(clockDelta);
 
     if (this.player.hp <= 0) {
       this.flushDeadEnemies(true);
@@ -1752,6 +1768,39 @@ export class GameEngine {
 
     if (this.runMode === 'campaign' && this.kind !== 'normal' && this.timeLeft <= 0 && !this.bossEnraged) {
       this.enrageBosses();
+    }
+  }
+
+  /** SYS-04: one enrage step: 1 speed x1.2, 2 pattern density x1.3, 3 damage x1.5, 4 damage x2.0. */
+  protected raiseEnrage() {
+    if (this.enrageStep >= ENRAGE_STEPS) return;
+    this.enrageStep += 1;
+    for (const enemy of this.enemies) {
+      if (enemy.hp <= 0 || !enemy.isBoss) continue;
+      if (this.enrageStep === 1) {
+        enemy.speed *= 1.2;
+        enemy.patternTimer = Math.min(enemy.patternTimer, 0.65);
+      } else if (this.enrageStep === 3) {
+        enemy.damage *= 1.5;
+      } else if (this.enrageStep === 4) {
+        enemy.damage *= 2 / 1.5;
+      }
+      enemy.hitFlash = 0.4;
+    }
+  }
+
+  /** The multiplier on boss pattern cadence from enrage step 2 on (SYS-04). */
+  protected enrageCadence() {
+    return this.rules.steppedEnrage && this.enrageStep >= 2 ? 1.3 : 1;
+  }
+
+  protected advanceEnrage(clockDelta: number) {
+    this.enrageSeconds += clockDelta;
+    while (this.enrageStep < ENRAGE_STEPS && this.enrageSeconds >= this.enrageStep * ENRAGE_STEP_SECONDS) this.raiseEnrage();
+    const zone = this.pendingEnrageZone;
+    if (zone && this.elapsed >= zone.at) {
+      this.pendingEnrageZone = null;
+      this.hazards.push({ id: this.nextId(), kind: 'null', x: zone.x, y: zone.y, radius: 170, life: 6, maxLife: 6, damage: 0, slow: 1, triggered: false });
     }
   }
 
@@ -2830,7 +2879,7 @@ export class GameEngine {
     enemy.bossPhaseFlash = Math.max(0, (enemy.bossPhaseFlash ?? 0) - dt);
     if (enemy.bossPhaseFlash > 0) return;
     const phaseMove = this.activeBossPhaseMove(enemy);
-    const cadenceMultiplier = phaseMove ? 1 / phaseMove.cadenceScale : 1 + ((enemy.bossPhase ?? 1) - 1) * 0.22;
+    const cadenceMultiplier = (phaseMove ? 1 / phaseMove.cadenceScale : 1 + ((enemy.bossPhase ?? 1) - 1) * 0.22) * this.enrageCadence();
     enemy.patternTimer -= dt * cadenceMultiplier;
     if (this.rules.bossTelegraphs && PATTERN_LEAD_SECONDS[boss.pattern] !== undefined) {
       this.updateTelegraphedPattern(enemy, boss.pattern, cadenceMultiplier);
@@ -4024,6 +4073,20 @@ export class GameEngine {
 
   protected enrageBosses() {
     this.bossEnraged = true;
+    if (this.rules.steppedEnrage) {
+      this.enrageStep = 0;
+      this.enrageSeconds = 0;
+      this.raiseEnrage();
+      const reinforcements = Math.min(14 + this.chapter * 3, Math.max(0, this.enemyCap() - this.enemies.length));
+      for (let index = 0; index < reinforcements; index += 1) {
+        this.spawnEnemy(1.4 + this.chapter * 0.55, index % 5 === 0 ? 'medium' : 'small');
+      }
+      // The silence zone warns first, so the player can step out of it (V3, SYS-11).
+      this.pendingEnrageZone = { x: this.player.x, y: this.player.y, at: this.elapsed + ENRAGE_ZONE_WARNING_SECONDS };
+      this.emit({ type: 'telegraph/ring', x: this.player.x, y: this.player.y, radius: 170, life: ENRAGE_ZONE_WARNING_SECONDS });
+      this.emit({ type: 'boss/enraged', x: this.player.x, y: this.player.y });
+      return;
+    }
     for (const enemy of this.enemies) {
       if (enemy.hp <= 0 || !enemy.isBoss) continue;
       enemy.damage *= 4.5;
@@ -4127,7 +4190,9 @@ export class GameEngine {
       scoreEligible: this.runMode === 'infinite' && this.scoreEligible,
       rulesVersion: this.rules.version,
       practice: this.practiceRun,
-      bossName: boss?.boss?.name ? `${boss.boss.name} · PHASE ${boss.bossPhase ?? 1}${this.bossEnraged ? ' [광폭화]' : ''}` : undefined,
+      bossName: boss?.boss?.name
+        ? `${boss.boss.name} · PHASE ${boss.bossPhase ?? 1}${this.bossEnraged ? (this.rules.steppedEnrage ? ` [광폭화 ${this.enrageStep}]` : ' [광폭화]') : ''}`
+        : undefined,
       bossMove: bossMove?.attackGrammar,
       bossHp: boss?.hp,
       bossMaxHp: boss?.maxHp,
