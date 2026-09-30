@@ -916,7 +916,7 @@ export class GameEngine {
     PICKUP_HARD_CAP,
   );
   /** Cosmetic state (particles, damage numbers, rings, shake, sound) lives here and only consumes events (TEC-02). */
-  protected presentation = new Presentation({ nextId: () => this.nextCosmeticId(), options: () => this.options, pan: (x) => this.screenPan(x) });
+  protected presentation = new Presentation({ nextId: () => this.nextCosmeticId(), options: () => this.options, pan: (x) => this.screenPan(x), chapter: () => this.chapter });
   protected eventListeners = new Set<GameEventListener>();
   protected playerAimAngle = -Math.PI / 2;
   protected aimTargetId: number | null = null;
@@ -2982,6 +2982,7 @@ export class GameEngine {
         enemy.patternTimer = DASH_TRAVEL_SECONDS / cadenceMultiplier;
         enemy.vx = enemy.patternX;
         enemy.vy = enemy.patternY;
+        this.emit({ type: 'boss/attack', x: enemy.x, y: enemy.y, pattern: 'dash' });
       } else if (enemy.patternPhase === 'dash' && enemy.patternTimer <= 0) {
         enemy.patternPhase = 'idle';
         enemy.patternTimer = 2.4;
@@ -3042,6 +3043,7 @@ export class GameEngine {
 
     if (boss.pattern === 'shock' && enemy.patternTimer <= 0) {
       enemy.patternTimer = 3.1;
+      if (this.rules.bossTelegraphs) this.emit({ type: 'boss/attack', x: enemy.x, y: enemy.y, pattern: 'shock' });
       this.hazards.push({
         id: this.nextId(),
         kind: 'shock',
@@ -3118,6 +3120,7 @@ export class GameEngine {
 
     if (boss.pattern === 'eclipse' && enemy.patternTimer <= 0 && this.rules.eclipseWallFromView) {
       enemy.patternTimer = 4.4;
+      this.emit({ type: 'boss/attack', x: enemy.x, y: enemy.y, pattern: 'eclipse' });
       // The wall enters from the edge of the player's logical view, so it reaches the player wherever
       // they stand, and one lane is left open (BUG-11). Edge lanes flash for 0.6 s before the shots fly.
       const roll = this.gameplayRandom();
@@ -3195,7 +3198,9 @@ export class GameEngine {
     if (!this.fireArmedPattern(enemy, pattern, armed)) {
       // No room under the shot cap: try again shortly, with a fresh warning.
       enemy.patternTimer = lead + 0.3;
+      return;
     }
+    this.emit({ type: 'boss/attack', x: enemy.x, y: enemy.y, pattern });
   }
 
   protected armPattern(enemy: Entity, pattern: BossPattern, warnSeconds: number, move?: BossPhaseMove) {
@@ -3605,6 +3610,7 @@ export class GameEngine {
         enemy.patternTimer = travelSeconds * cadence;
         enemy.vx = enemy.patternX;
         enemy.vy = enemy.patternY;
+        this.emit({ type: 'boss/attack', x: enemy.x, y: enemy.y, pattern: 'dash' });
       }
       return;
     }

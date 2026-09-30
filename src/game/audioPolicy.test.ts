@@ -12,12 +12,14 @@ test('impact audio separates light, heavy, and critical cues', () => {
   assert.ok(heavy.gain < critical.gain);
 });
 
-test('every cue has a bus, a voice limit, a spacing, and a synth fallback', () => {
+test('every cue has a bus, a voice limit, a spacing, and a synth fallback; ambience beds loop samples only', () => {
   for (const [id, spec] of Object.entries(CUES)) {
     assert.ok(['music', 'sfx', 'ui', 'ambience'].includes(spec.bus), id);
     assert.ok(spec.maxVoices >= 1 && spec.maxVoices <= MAX_VOICES, id);
     assert.ok(spec.spacing >= 0 && spec.priority >= 1, id);
-    assert.ok(spec.synth.frequency > 0 && spec.synth.duration > 0 && spec.synth.gain > 0, id);
+    // AUD-04: a bed plays only as a loop through AudioMixer.ambience, so a synth blip would never stand in for it.
+    if (spec.bus === 'ambience') assert.equal(spec.synth.gain, 0, id);
+    else assert.ok(spec.synth.frequency > 0 && spec.synth.duration > 0 && spec.synth.gain > 0, id);
   }
 });
 

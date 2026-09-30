@@ -4,11 +4,11 @@ import type { CueId, SoundOutput } from '../audioPolicy.ts';
 import { createDefaultOptions } from '../../platform/save.ts';
 import { CORPSE_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HIT_STAMP_SECONDS, HURT_VIGNETTE_SECONDS, NUMBER_MERGE_SECONDS, PICKUP_COMBO_MAX, PICKUP_COMBO_SECONDS, PICKUP_COMBO_STEP, Presentation, RECOIL_SECONDS, RECOIL_SIZE } from './presentation.ts';
 
-function setup(overrides: Partial<ReturnType<typeof createDefaultOptions>> = {}) {
+function setup(overrides: Partial<ReturnType<typeof createDefaultOptions>> = {}, chapter = 1) {
   let id = 0;
   const options = { ...createDefaultOptions(), volume: 0, ...overrides };
   // A 1000-unit-wide screen centred on x = 500.
-  const presentation = new Presentation({ nextId: () => (id += 1), options: () => options, pan: (x) => Math.max(-1, Math.min(1, (x - 500) / 500)) });
+  const presentation = new Presentation({ nextId: () => (id += 1), options: () => options, pan: (x) => Math.max(-1, Math.min(1, (x - 500) / 500)), chapter: () => chapter });
   presentation.reseed(1234);
   return { presentation, ids: () => id };
 }
@@ -314,4 +314,23 @@ test('a struck body recoils along the blow, once per body, scaled by the hit rea
   const calm = setup({ hitReaction: 0 });
   calm.presentation.handle({ type: 'enemy/hit', id: 7, x: 0, y: 0, radius: 12, damage: 30, crit: false, tier: 'heavy', dx: 1, dy: 0 });
   assert.equal(calm.presentation.recoils.length, 0, 'the option can turn it off');
+});
+
+test('AUD-04: kills sound in the chapter material, and each boss pattern has its own sound', () => {
+  const kill = { type: 'enemy/killed', x: 500, y: 0, isBoss: false, radius: 12, tier: 'small', attackStyle: 'contact', dx: 0, dy: 0 } as const;
+  const heard = (chapter: number) => {
+    const { presentation } = setup({ volume: 1 }, chapter);
+    const { sound, played } = recorder();
+    presentation.setSound(sound);
+    presentation.unlockSound();
+    presentation.handle(kill);
+    return played.map((entry) => entry.cue);
+  };
+  assert.deepEqual([1, 2, 3, 4, 5].map((chapter) => heard(chapter)[0]), ['enemy.kill', 'enemy.kill.iron', 'enemy.kill.water', 'enemy.kill.clock', 'enemy.kill.eclipse']);
+  const { presentation } = setup({ volume: 1 });
+  const { sound, played } = recorder();
+  presentation.setSound(sound);
+  presentation.unlockSound();
+  for (const pattern of ['dash', 'saw', 'null'] as const) presentation.handle({ type: 'boss/attack', x: 500, y: 0, pattern });
+  assert.deepEqual(played.map((entry) => entry.cue), ['boss.dash', 'boss.saw', 'boss.null']);
 });

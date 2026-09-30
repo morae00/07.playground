@@ -22,6 +22,9 @@ const LEVEL_GLIDE = 0.015;
 const CUT_FADE = 0.012;
 /** Samples vary their pitch by up to 4% each play so repeats do not sound mechanical. */
 const SAMPLE_PITCH_JITTER = 0.04;
+/** AUD-04 ambience beds: their level on the ambience bus, and how long one fades into the next. */
+const AMBIENCE_LEVEL = 0.3;
+const AMBIENCE_FADE = 1.2;
 
 async function fetchArrayBuffer(url: string) {
   const response = await fetch(url);
@@ -37,6 +40,8 @@ export class AudioMixer implements SoundOutput {
   private readonly samples = new Map<CueId, AudioBuffer[]>();
   private readonly waiting: { pack: SoundPack; done: (complete: boolean) => void }[] = [];
   private readonly ledger = new VoiceLedger(MAX_VOICES);
+  private ambienceCue: CueId | null = null;
+  private ambienceVoice: LiveVoice | null = null;
   private levels: SoundLevels = mixLevels({ volume: 0, musicVolume: 0, sfxVolume: 0 });
   private contexts = 0;
   private unavailable = false;
@@ -122,6 +127,47 @@ export class AudioMixer implements SoundOutput {
     source.stop(now + duration);
   }
 
+  /**
+   * Loops a chapter's ambience bed on the ambience bus, fading over from the one before; null fades it out (AUD-04).
+   * A bed whose samples have not decoded yet starts once they have.
+   */
+  ambience(cueId: CueId | null) {
+    if (cueId === this.ambienceCue) return;
+    this.ambienceCue = cueId;
+    this.startAmbience();
+  }
+
+  private startAmbience() {
+    const { context } = this;
+    const bus = this.buses.get('ambience');
+    if (!context || !bus) return;
+    const now = context.currentTime;
+    const old = this.ambienceVoice;
+    if (old) {
+      old.gain.gain.cancelScheduledValues(now);
+      old.gain.gain.setValueAtTime(Math.max(0.0001, old.gain.gain.value), now);
+      old.gain.gain.exponentialRampToValueAtTime(0.0001, now + AMBIENCE_FADE);
+      old.source.stop(now + AMBIENCE_FADE);
+      this.ambienceVoice = null;
+    }
+    const buffer = this.ambienceCue ? this.samples.get(this.ambienceCue)?.[0] : undefined;
+    if (!buffer) return;
+    const source = context.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    const gain = context.createGain();
+    gain.gain.value = 0.0001;
+    gain.gain.exponentialRampToValueAtTime(AMBIENCE_LEVEL, now + AMBIENCE_FADE);
+    source.connect(gain);
+    gain.connect(bus);
+    source.addEventListener('ended', () => {
+      source.disconnect();
+      gain.disconnect();
+    }, { once: true });
+    source.start(now);
+    this.ambienceVoice = { source, gain };
+  }
+
   /** Queues a sound pack; its samples decode once audio is open. Resolves false if any file failed (synth covers it). */
   loadPack(pack: SoundPack) {
     return new Promise<boolean>((done) => {
@@ -202,6 +248,7 @@ export class AudioMixer implements SoundOutput {
         }
       }
       if (buffers.length > 0) this.samples.set(cueId as CueId, buffers);
+      if (cueId === this.ambienceCue && !this.ambienceVoice) this.startAmbience();
     }));
     return complete;
   }

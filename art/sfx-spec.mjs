@@ -8,7 +8,9 @@
 //   { noise: 'white' | 'crackle', filter: 'lowpass' | 'bandpass' | 'highpass', hz, to?, q?, attack, decay, gain, at? }
 //   { tone: 'sine' | 'triangle' | 'square' | 'sawtooth', hz, to?, attack, decay, gain, at? }
 // `to` sweeps the frequency exponentially over the decay; `at` delays the layer (seconds). Crackle is noise gated
-// by short random pulses: the tear of paper.
+// by short random pulses: the tear of paper. `hold` keeps a layer at full level for that long before its decay,
+// and `lfo: { hz, depth }` swells its level. A recipe with `loop` (seconds) is an ambience bed: it renders a
+// second longer and folds that tail over its head, so the file loops without a seam (AUD-04).
 
 export const SFX_RATE = 22050;
 /** Every file is normalized to this peak; the mixer brings it back to the synth level (audioPolicy SAMPLE_PEAK). */
@@ -59,4 +61,27 @@ export const RECIPES = Object.freeze({
   'ui.confirm': { variants: 2, layers: [tap(3000, 0.018, 0.8), { tone: 'triangle', hz: 740, attack: 0.001, decay: 0.03, gain: 0.3 }] },
   'ui.cancel': { variants: 2, layers: [tap(1800, 0.022, 0.8), { tone: 'triangle', hz: 440, attack: 0.001, decay: 0.035, gain: 0.3 }] },
   'ui.deny': { variants: 1, layers: [{ tone: 'square', hz: 150, attack: 0.002, decay: 0.06, gain: 0.35 }, tap(700, 0.04, 0.5)] },
+  // Chapter materials (AUD-04): each chapter's enemies die in their own stuff. Ch1 keeps the paper tear above.
+  'enemy.kill.iron': { variants: 4, layers: [{ tone: 'triangle', hz: 880, to: 640, attack: 0.001, decay: 0.12, gain: 0.7 }, { tone: 'square', hz: 1330, attack: 0.001, decay: 0.035, gain: 0.25 }, tap(3100, 0.03, 0.6)] },
+  'enemy.kill.water': { variants: 4, layers: [{ noise: 'white', filter: 'lowpass', hz: 2400, to: 380, attack: 0.004, decay: 0.2, gain: 0.9 }, thud(320, 110, 0.1, 0.5)] },
+  'enemy.kill.clock': { variants: 4, layers: [{ tone: 'square', hz: 2100, attack: 0.001, decay: 0.018, gain: 0.45 }, { tone: 'triangle', hz: 1250, to: 560, attack: 0.001, decay: 0.09, gain: 0.5, at: 0.03 }, { noise: 'crackle', filter: 'highpass', hz: 2800, attack: 0.001, decay: 0.06, gain: 0.35 }] },
+  'enemy.kill.eclipse': { variants: 4, layers: [{ tone: 'sine', hz: 1760, to: 420, attack: 0.002, decay: 0.22, gain: 0.6 }, { noise: 'white', filter: 'highpass', hz: 5200, attack: 0.001, decay: 0.09, gain: 0.35 }] },
+  // Boss patterns (AUD-04): one gesture each, played when the pattern fires.
+  'boss.dash': { variants: 2, layers: [{ noise: 'white', filter: 'bandpass', hz: 500, to: 2400, q: 1.2, attack: 0.04, decay: 0.3, gain: 0.8 }, thud(90, 60, 0.25, 0.6)] },
+  'boss.rings': { variants: 2, layers: [{ tone: 'sine', hz: 392, attack: 0.002, decay: 0.9, gain: 0.6 }, { tone: 'sine', hz: 988, attack: 0.002, decay: 0.5, gain: 0.3 }, { tone: 'triangle', hz: 196, attack: 0.004, decay: 0.7, gain: 0.3 }] },
+  'boss.shock': { variants: 2, layers: [{ noise: 'crackle', filter: 'highpass', hz: 1800, attack: 0.001, decay: 0.25, gain: 1 }, thud(70, 40, 0.3, 0.8)] },
+  'boss.clones': { variants: 2, layers: [{ tone: 'triangle', hz: 1175, to: 1760, attack: 0.02, decay: 0.3, gain: 0.45 }, { tone: 'triangle', hz: 1568, to: 2349, attack: 0.02, decay: 0.3, gain: 0.35, at: 0.06 }, { noise: 'white', filter: 'highpass', hz: 6000, attack: 0.05, decay: 0.2, gain: 0.2 }] },
+  'boss.flame': { variants: 2, layers: [{ noise: 'white', filter: 'lowpass', hz: 900, to: 2600, attack: 0.05, decay: 0.45, gain: 0.9 }, { noise: 'crackle', filter: 'bandpass', hz: 1400, q: 0.7, attack: 0.02, decay: 0.4, gain: 0.4 }] },
+  'boss.tide': { variants: 2, layers: [{ noise: 'white', filter: 'lowpass', hz: 300, to: 1500, attack: 0.25, decay: 0.6, gain: 0.8 }, { tone: 'sine', hz: 110, to: 82, attack: 0.2, decay: 0.6, gain: 0.4 }] },
+  'boss.traps': { variants: 2, layers: [{ tone: 'square', hz: 740, attack: 0.001, decay: 0.03, gain: 0.35 }, { tone: 'square', hz: 988, attack: 0.001, decay: 0.03, gain: 0.3, at: 0.07 }, { tone: 'square', hz: 622, attack: 0.001, decay: 0.03, gain: 0.3, at: 0.14 }, tap(2400, 0.05, 0.6)] },
+  'boss.clock': { variants: 2, layers: [{ tone: 'square', hz: 1760, attack: 0.001, decay: 0.02, gain: 0.5 }, { tone: 'square', hz: 1320, attack: 0.001, decay: 0.02, gain: 0.45, at: 0.25 }, thud(160, 120, 0.2, 0.4)] },
+  'boss.saw': { variants: 2, layers: [{ tone: 'sawtooth', hz: 180, to: 420, attack: 0.02, decay: 0.35, gain: 0.5 }, { noise: 'white', filter: 'bandpass', hz: 3400, q: 2.4, attack: 0.02, decay: 0.3, gain: 0.5 }] },
+  'boss.eclipse': { variants: 2, layers: [{ tone: 'sine', hz: 55, to: 41, attack: 0.1, decay: 0.8, gain: 0.9 }, { noise: 'white', filter: 'lowpass', hz: 500, to: 120, attack: 0.1, decay: 0.7, gain: 0.4 }] },
+  'boss.null': { variants: 2, layers: [{ noise: 'white', filter: 'bandpass', hz: 3000, to: 300, q: 1.5, attack: 0.35, decay: 0.3, gain: 0.7 }, { tone: 'sine', hz: 880, to: 110, attack: 0.3, decay: 0.3, gain: 0.3 }] },
+  // Ambience beds (AUD-04): one quiet loop per chapter, under the effects.
+  'ambience.ch1': { variants: 1, loop: 8, layers: [{ noise: 'white', filter: 'lowpass', hz: 420, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.8, lfo: { hz: 0.25, depth: 0.5 } }, ...[1.3, 3.9, 6.2].map((at) => ({ noise: 'crackle', filter: 'highpass', hz: 2600, attack: 0.02, decay: 0.25, gain: 0.25, at }))] },
+  'ambience.ch2': { variants: 1, loop: 8, layers: [{ tone: 'sine', hz: 73, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.5, lfo: { hz: 0.125, depth: 0.4 } }, { tone: 'triangle', hz: 146, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.15, lfo: { hz: 0.25, depth: 0.6 } }, { tone: 'sine', hz: 523, attack: 0.002, decay: 2.4, gain: 0.2, at: 2 }] },
+  'ambience.ch3': { variants: 1, loop: 8, layers: [{ noise: 'white', filter: 'bandpass', hz: 700, q: 0.6, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.8, lfo: { hz: 0.375, depth: 0.45 } }, { noise: 'white', filter: 'lowpass', hz: 220, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.6, lfo: { hz: 0.125, depth: 0.3 } }] },
+  'ambience.ch4': { variants: 1, loop: 8, layers: [{ noise: 'white', filter: 'lowpass', hz: 300, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.35 }, ...Array.from({ length: 16 }, (_, index) => ({ tone: 'square', hz: index % 2 ? 1320 : 1760, attack: 0.001, decay: 0.012, gain: 0.18, at: index * 0.5 }))] },
+  'ambience.ch5': { variants: 1, loop: 8, layers: [{ tone: 'sine', hz: 55, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.5, lfo: { hz: 0.125, depth: 0.5 } }, { noise: 'white', filter: 'highpass', hz: 4800, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.08, lfo: { hz: 0.5, depth: 0.8 } }] },
 });

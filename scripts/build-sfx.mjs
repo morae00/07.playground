@@ -37,12 +37,18 @@ function blep(phase, step) {
 /** Frequency at time t of a layer that sweeps exponentially from hz to `to` over its length. */
 const sweep = (hz, to, t, length) => (to ? hz * (to / hz) ** Math.min(1, t / length) : hz);
 
-/** Linear attack to the layer's gain, then an exponential fall to 0.0001, like Web Audio's ramps. */
+/**
+ * Linear attack to the layer's gain, an optional hold, then an exponential fall to 0.0001, like Web Audio's ramps.
+ * An LFO swells the level around its middle.
+ */
 function envelope(layer, t, decay) {
   if (t < 0) return 0;
-  if (t < layer.attack) return (layer.gain * t) / layer.attack;
-  const fall = (t - layer.attack) / decay;
-  return fall >= 1 ? 0 : layer.gain * (0.0001 / layer.gain) ** fall;
+  const swell = layer.lfo ? 1 - layer.lfo.depth / 2 + (layer.lfo.depth / 2) * Math.sin(2 * Math.PI * layer.lfo.hz * t) : 1;
+  if (t < layer.attack) return ((layer.gain * t) / layer.attack) * swell;
+  const held = t - layer.attack - (layer.hold ?? 0);
+  if (held < 0) return layer.gain * swell;
+  const fall = held / decay;
+  return fall >= 1 ? 0 : layer.gain * swell * (0.0001 / layer.gain) ** fall;
 }
 
 /** An RBJ biquad; coefficients follow the sweep every 32 samples. */
@@ -70,7 +76,7 @@ function biquad(type, q) {
 function renderLayer(samples, layer, random, detune, stretch) {
   const start = layer.at ?? 0;
   const decay = layer.decay * stretch;
-  const length = layer.attack + decay;
+  const length = layer.attack + (layer.hold ?? 0) + decay;
   const first = Math.floor(start * RATE);
   const count = Math.ceil(length * RATE);
   let phase = 0;
@@ -99,6 +105,20 @@ function renderLayer(samples, layer, random, detune, stretch) {
     }
     samples[first + index] += value * envelope(layer, t, decay);
   }
+}
+
+/** Ambience beds render this much past their loop; the extra folds back over the start. */
+const LOOP_FOLD = 1;
+
+/** Crossfades the tail past `length` into the head (equal power), so the file loops without a seam. */
+function foldLoop(samples, length) {
+  const fold = samples.length - length;
+  const loop = samples.slice(0, length);
+  for (let index = 0; index < fold; index += 1) {
+    const t = index / fold;
+    loop[index] = loop[index] * Math.sin((Math.PI / 2) * t) + samples[length + index] * Math.cos((Math.PI / 2) * t);
+  }
+  return loop;
 }
 
 function wav(samples, scale) {
@@ -130,9 +150,10 @@ for (const [cue, recipe] of Object.entries(RECIPES)) {
     const random = seeded((seed += 1) * 7919);
     const detune = recipe.variants > 1 ? 1 + (random() - 0.5) * 0.12 : 1;
     const stretch = recipe.variants > 1 ? 1 + (random() - 0.5) * 0.16 : 1;
-    const length = Math.max(...recipe.layers.map((layer) => (layer.at ?? 0) + layer.attack + layer.decay * stretch)) + 0.02;
-    const samples = new Float64Array(Math.ceil(length * RATE));
+    const length = recipe.loop ? recipe.loop + LOOP_FOLD : Math.max(...recipe.layers.map((layer) => (layer.at ?? 0) + layer.attack + (layer.hold ?? 0) + layer.decay * stretch)) + 0.02;
+    let samples = new Float64Array(Math.ceil(length * RATE));
     for (const layer of recipe.layers) renderLayer(samples, layer, random, detune, stretch);
+    if (recipe.loop) samples = foldLoop(samples, Math.round(recipe.loop * RATE));
     const loudest = samples.reduce((peak, sample) => Math.max(peak, Math.abs(sample)), 0);
     if (loudest < 1e-4) throw new Error(`${cue} variant ${variant} rendered silent`);
     const name = `${cue}-${variant}.wav`;

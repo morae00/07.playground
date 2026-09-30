@@ -53,11 +53,17 @@ Each frame the engine builds a read-only `RenderWorld` (`src/game/render/worldRe
 
 Pitch variation comes from the mixer, not the cosmetic stream, so sounds never move particles. Classic rules keep 0.1.0's per-hit draw on the cosmetic stream, because classic particle ids feed gameplay ids. `src/ui/uiSounds.ts` plays button clicks on the ui bus; a button can choose `data-sound="cancel"`, or `"none"` when its action already makes a game sound. A sound pack (`AudioMixer.loadPack`, audio files per cue with variants) replaces a cue's synth tone once it is decoded.
 
-The v0 pack (AUD-02) covers all 33 cues, with three to four variants for hits and pickups:
+The v0 pack (AUD-02) covers the first 33 cues, with three to four variants for hits and pickups:
 - It is placeholder sound design in the paper-and-ink tone. `art/sfx-spec.mjs` holds a recipe per cue, and `npm run build:sfx` renders them in plain JavaScript into 16-bit mono WAV under `public/assets/packs/sfx-common`, so a rebake is byte-identical.
 - Files are normalized to `SAMPLE_PEAK`, and the mixer plays them back at the level the synth tone had.
 - Recorded sounds from the SFX library order replace files by name, with no code change.
 - A cue whose file fails to load keeps its synth tone.
+
+AUD-04 adds the chapters' sounds to the same pack (v0 too; music waits for a composer):
+- Ch2-5 enemies die in their chapter's material: iron, water, clockwork, and eclipse glass (`KILL_CUES`); Ch1 keeps the paper tear. `PresentationHost.chapter` tells the presentation which one.
+- Each of the 11 boss patterns has its own sound, played on the new `boss/attack` event when a telegraphed pattern, a dash, a shock, or an eclipse wall fires. Classic rules keep 0.1.0's silence there, since their old pattern paths do not emit it.
+- Each chapter has an 8 s ambience bed. The baker renders it a second longer and folds that tail over its head, so it loops without a seam. `AudioMixer.ambience(cue)` loops the chapter's bed on the ambience bus from the run's start and fades it over 1.2 s into the next; the menu fades it out. A bed asked for before it decodes starts once it does.
+- The pack is 3.0 MiB of install assets (the beds are 1.7 MiB of it). Adding the new recipes after the old ones keeps every earlier file byte-identical.
 
 ## Render layers (TEC-12)
 

@@ -247,3 +247,26 @@ test('without Web Audio the mixer stays silent and stops trying', () => {
   assert.equal(attempts, 1);
   assert.equal(mixer.stats().state, 'closed');
 });
+
+test('AUD-04: a chapter ambience bed loops on the ambience bus once decoded, fades into the next, and stops on null', async () => {
+  const { mixer, open } = setup();
+  const loaded = mixer.loadPack({ id: 'test', base: 'assets/sfx/', cues: { 'ambience.ch1': ['alley.wav'], 'ambience.ch2': ['chapel.wav'] } });
+  mixer.ambience('ambience.ch1');
+  const context = await open();
+  await loaded;
+  const beds = () => sources(context).filter((source) => (source.buffer as { name?: string } | null)?.name?.startsWith('assets/sfx/'));
+  const [alley] = beds();
+  assert.ok(alley, 'the bed asked for before decoding starts once it decodes');
+  assert.equal((alley as FakeSource & { loop?: boolean }).loop, true);
+  const ambienceBus = context.nodes.find((node) => node.kind === 'gain' && (node as Gain).gain.value === 0.8 * 1 && node.outputs.length === 1 && node !== alley.outputs[0]);
+  assert.ok(ambienceBus, 'there is an ambience bus at the music level');
+  mixer.ambience('ambience.ch1');
+  assert.equal(beds().length, 1, 'asking for the bed already playing changes nothing');
+  mixer.ambience('ambience.ch2');
+  const [, chapel] = beds();
+  assert.equal((chapel.buffer as { name: string }).name, 'assets/sfx/chapel.wav');
+  assert.equal(alley.stops.length, 1, 'the old bed fades out and stops');
+  mixer.ambience(null);
+  assert.equal(chapel.stops.length, 1);
+  assert.equal(beds().length, 2, 'null starts nothing new');
+});

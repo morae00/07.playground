@@ -2,7 +2,7 @@
 // and sound cues for the app's mixer (AUD-01). It owns only cosmetic state; the simulation never reads it back.
 import type { Corpse, DamageNumber, EffectOwner, HitStamp, ImpactRing, Particle, Recoil, SkillId } from '../engine/worldTypes.ts';
 import type { GameOptions } from '../../platform/save.ts';
-import { CUES, HIT_CUES, type CueId, type SoundOutput } from '../audioPolicy.ts';
+import { CUES, HIT_CUES, KILL_CUES, type CueId, type SoundOutput } from '../audioPolicy.ts';
 import type { GameEvent } from '../engine/events.ts';
 import { ObjectPool, compactWhere, recycleWhere } from '../objectPool.ts';
 import { createSeededRandom } from '../p0Core.ts';
@@ -17,6 +17,8 @@ export type PresentationHost = {
   options(): GameOptions;
   /** Where a world x sits across the screen, -1 (left edge) to 1 (right edge), for stereo panning. */
   pan(x: number): number;
+  /** The chapter on screen, for its material's sounds (AUD-04). */
+  chapter(): number;
 };
 
 const PARTICLE_CAP_FULL = 520;
@@ -232,7 +234,7 @@ export class Presentation {
         this.burst(event.x, event.y, event.isBoss ? 42 : 16, '#050505', event.isBoss ? 340 : 190);
         this.addShake(event.isBoss ? 18 : 4);
         this.addCorpse(event);
-        this.play(event.isBoss ? 'boss.kill' : 'enemy.kill', event.x);
+        this.play(event.isBoss ? 'boss.kill' : KILL_CUES[this.host.chapter() - 1] ?? 'enemy.kill', event.x);
         return;
       case 'enemy/contact':
         this.addShake(event.isBoss ? 12 : 5);
@@ -302,6 +304,9 @@ export class Presentation {
         return;
       case 'boss/ringFired':
         this.addShake(4);
+        return;
+      case 'boss/attack':
+        this.play(`boss.${event.pattern}`, event.x);
         return;
       case 'boss/cloned':
         this.burst(event.x, event.y, 18, '#111111', 170);

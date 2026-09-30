@@ -138,6 +138,89 @@
   ],
   "ui.deny": [
    "ui.deny-0.wav"
+  ],
+  "enemy.kill.iron": [
+   "enemy.kill.iron-0.wav",
+   "enemy.kill.iron-1.wav",
+   "enemy.kill.iron-2.wav",
+   "enemy.kill.iron-3.wav"
+  ],
+  "enemy.kill.water": [
+   "enemy.kill.water-0.wav",
+   "enemy.kill.water-1.wav",
+   "enemy.kill.water-2.wav",
+   "enemy.kill.water-3.wav"
+  ],
+  "enemy.kill.clock": [
+   "enemy.kill.clock-0.wav",
+   "enemy.kill.clock-1.wav",
+   "enemy.kill.clock-2.wav",
+   "enemy.kill.clock-3.wav"
+  ],
+  "enemy.kill.eclipse": [
+   "enemy.kill.eclipse-0.wav",
+   "enemy.kill.eclipse-1.wav",
+   "enemy.kill.eclipse-2.wav",
+   "enemy.kill.eclipse-3.wav"
+  ],
+  "boss.dash": [
+   "boss.dash-0.wav",
+   "boss.dash-1.wav"
+  ],
+  "boss.rings": [
+   "boss.rings-0.wav",
+   "boss.rings-1.wav"
+  ],
+  "boss.shock": [
+   "boss.shock-0.wav",
+   "boss.shock-1.wav"
+  ],
+  "boss.clones": [
+   "boss.clones-0.wav",
+   "boss.clones-1.wav"
+  ],
+  "boss.flame": [
+   "boss.flame-0.wav",
+   "boss.flame-1.wav"
+  ],
+  "boss.tide": [
+   "boss.tide-0.wav",
+   "boss.tide-1.wav"
+  ],
+  "boss.traps": [
+   "boss.traps-0.wav",
+   "boss.traps-1.wav"
+  ],
+  "boss.clock": [
+   "boss.clock-0.wav",
+   "boss.clock-1.wav"
+  ],
+  "boss.saw": [
+   "boss.saw-0.wav",
+   "boss.saw-1.wav"
+  ],
+  "boss.eclipse": [
+   "boss.eclipse-0.wav",
+   "boss.eclipse-1.wav"
+  ],
+  "boss.null": [
+   "boss.null-0.wav",
+   "boss.null-1.wav"
+  ],
+  "ambience.ch1": [
+   "ambience.ch1-0.wav"
+  ],
+  "ambience.ch2": [
+   "ambience.ch2-0.wav"
+  ],
+  "ambience.ch3": [
+   "ambience.ch3-0.wav"
+  ],
+  "ambience.ch4": [
+   "ambience.ch4-0.wav"
+  ],
+  "ambience.ch5": [
+   "ambience.ch5-0.wav"
   ]
  }
 }

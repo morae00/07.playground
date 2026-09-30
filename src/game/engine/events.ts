@@ -1,7 +1,7 @@
 // Game events (TEC-02): the simulation reports what happened and consumers decide how it looks and sounds.
 // Presentation (particles, damage numbers, impact rings, shake, sound), tools, and replays read this stream;
 // nothing here feeds back into the simulation.
-import type { EnemyTier, SkillId } from './worldTypes.ts';
+import type { BossPattern, EnemyTier, SkillId } from './worldTypes.ts';
 
 export type ImpactTier = 'light' | 'heavy' | 'critical';
 /** What hurt the player: enemy bodies, ranged enemy shots, boss shots, shock zones, or fire ground. */
@@ -42,6 +42,8 @@ export type GameEvent =
   | { type: 'boss/spawned'; x: number; y: number; infinite: boolean }
   | { type: 'boss/phase'; x: number; y: number; phase: number; chapter: number }
   | { type: 'boss/ringFired'; x: number; y: number }
+  /** AUD-04: a boss pattern fired (the telegraphed patterns, dashes, shocks, and eclipse walls). */
+  | { type: 'boss/attack'; x: number; y: number; pattern: BossPattern }
   | { type: 'boss/cloned'; x: number; y: number }
   | { type: 'boss/enraged'; x: number; y: number }
   /** A boss phase move shows a circle or ring warning around the boss before it starts. */

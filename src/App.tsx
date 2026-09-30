@@ -392,6 +392,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     setRunChapter(chapter);
+    // The chapter's ambience bed plays under the run (AUD-04).
+    appMixer.ambience(`ambience.ch${Math.min(5, Math.max(1, chapter)) as 1 | 2 | 3 | 4 | 5}`);
     endDeathMoment();
     inputRef.current?.dispose();
     releaseReducedMotionRef.current?.();
@@ -518,6 +520,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   }, [draft, phase]);
 
   const toMenu = () => {
+    appMixer.ambience(null);
     endDeathMoment();
     inputRef.current?.dispose();
     inputRef.current = null;

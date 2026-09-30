@@ -71,7 +71,33 @@ export const CUES = {
   'ui.confirm': cue('ui', 3, 2, 0.03, [740, 0.02, 'triangle', 0.5]),
   'ui.cancel': cue('ui', 3, 2, 0.03, [440, 0.024, 'triangle', 0.5]),
   'ui.deny': cue('ui', 3, 1, 0.08, [150, 0.04, 'square', 0.4]),
+  // Chapter materials (AUD-04): Ch2-5 enemies die in iron, water, clockwork, and eclipse glass.
+  'enemy.kill.iron': cue('sfx', 2, 3, 0.03, [880, 0.03, 'triangle']),
+  'enemy.kill.water': cue('sfx', 2, 3, 0.03, [320, 0.04, 'sine']),
+  'enemy.kill.clock': cue('sfx', 2, 3, 0.03, [1250, 0.025, 'square']),
+  'enemy.kill.eclipse': cue('sfx', 2, 3, 0.03, [1760, 0.04, 'sine']),
+  // Boss patterns (AUD-04): one gesture per pattern, when it fires; they share a spacing group.
+  'boss.dash': cue('sfx', 4, 1, 0.2, [90, 0.1, 'sawtooth'], 'bossAttack'),
+  'boss.rings': cue('sfx', 4, 1, 0.2, [392, 0.12, 'sine'], 'bossAttack'),
+  'boss.shock': cue('sfx', 4, 1, 0.2, [70, 0.1, 'square'], 'bossAttack'),
+  'boss.clones': cue('sfx', 4, 1, 0.2, [1175, 0.08, 'triangle'], 'bossAttack'),
+  'boss.flame': cue('sfx', 4, 1, 0.2, [140, 0.12, 'sawtooth'], 'bossAttack'),
+  'boss.tide': cue('sfx', 4, 1, 0.2, [110, 0.14, 'sine'], 'bossAttack'),
+  'boss.traps': cue('sfx', 4, 1, 0.2, [740, 0.05, 'square'], 'bossAttack'),
+  'boss.clock': cue('sfx', 4, 1, 0.2, [1760, 0.04, 'square'], 'bossAttack'),
+  'boss.saw': cue('sfx', 4, 1, 0.2, [180, 0.1, 'sawtooth'], 'bossAttack'),
+  'boss.eclipse': cue('sfx', 4, 1, 0.2, [55, 0.16, 'sine'], 'bossAttack'),
+  'boss.null': cue('sfx', 4, 1, 0.2, [880, 0.1, 'sine'], 'bossAttack'),
+  // Ambience beds (AUD-04): loops on the ambience bus (AudioMixer.ambience); no synth stand-in, silent until loaded.
+  'ambience.ch1': cue('ambience', 1, 1, 0, [0, 0, 'sine', 0]),
+  'ambience.ch2': cue('ambience', 1, 1, 0, [0, 0, 'sine', 0]),
+  'ambience.ch3': cue('ambience', 1, 1, 0, [0, 0, 'sine', 0]),
+  'ambience.ch4': cue('ambience', 1, 1, 0, [0, 0, 'sine', 0]),
+  'ambience.ch5': cue('ambience', 1, 1, 0, [0, 0, 'sine', 0]),
 } satisfies Record<string, CueSpec>;
+
+/** The enemy kill each chapter's material makes (AUD-04); Ch1 keeps the paper tear. */
+export const KILL_CUES: readonly CueId[] = ['enemy.kill', 'enemy.kill.iron', 'enemy.kill.water', 'enemy.kill.clock', 'enemy.kill.eclipse'];
 
 export type CueId = keyof typeof CUES;
 
