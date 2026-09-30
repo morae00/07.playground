@@ -1,16 +1,6 @@
-import { CHAPTER_ART } from './render/visualRegistry.ts';
-
-export type ChapterMotif = 'orthogonal' | 'radial' | 'flow' | 'clock' | 'eclipse';
+// Pure visual policy shared by simulation and presentation (no colours, no render imports; TEC-02).
 export type TelegraphPhase = 'preview' | 'imminent' | 'active';
 export type ImpactTier = 'light' | 'heavy' | 'critical';
-
-export const CHAPTER_VISUALS: Record<number, { motif: ChapterMotif; accent: string; label: string }> = {
-  1: { motif: 'orthogonal', accent: CHAPTER_ART[1].accent, label: CHAPTER_ART[1].label },
-  2: { motif: 'radial', accent: CHAPTER_ART[2].accent, label: CHAPTER_ART[2].label },
-  3: { motif: 'flow', accent: CHAPTER_ART[3].accent, label: CHAPTER_ART[3].label },
-  4: { motif: 'clock', accent: CHAPTER_ART[4].accent, label: CHAPTER_ART[4].label },
-  5: { motif: 'eclipse', accent: CHAPTER_ART[5].accent, label: CHAPTER_ART[5].label },
-};
 
 function finiteOr(value: number, fallback: number) {
   return Number.isFinite(value) ? value : fallback;

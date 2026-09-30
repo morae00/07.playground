@@ -19,7 +19,7 @@
     "verify:developer": "node scripts/verify-developer-bundle.mjs",
     "verify:bundle": "node scripts/check-bundle-budget.mjs",
     "test": "npm run test:unit && npm run test:security && npm run test:release && npm run test:engine",
-    "test:unit": "node --test src/game/*.test.ts src/game/render/*.test.ts src/platform/*.test.ts src/ui/*.test.ts",
+    "test:unit": "node --test src/game/*.test.ts src/game/render/*.test.ts src/platform/*.test.ts src/ui/*.test.ts src/game/presentation/*.test.ts",
     "test:coverage:core": "node --test --experimental-test-coverage --test-coverage-branches=90 --test-coverage-lines=90 --test-coverage-include='src/game/p0Core.ts' --test-coverage-include='src/game/worldMath.ts' --test-coverage-include='src/game/audioPolicy.ts' src/game/p0Core.test.ts src/game/worldMath.test.ts src/game/audioPolicy.test.ts",
     "test:security": "node --test electron/*.test.cjs",
     "test:release": "node --test test/release*.test.mjs",

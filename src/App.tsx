@@ -20,7 +20,7 @@ import {
 } from './platform/save';
 import { ModalDialog } from './ui/ModalDialog';
 import { ProgressBar } from './ui/ProgressBar';
-import { nextRovingId, type RovingKey } from './ui/inputContracts';
+import { nextRovingId, watchReducedMotion, type RovingKey } from './ui/inputContracts';
 import { InputAdapter } from './ui/inputAdapter';
 import { useGamepadNavigation } from './ui/useGamepadNavigation';
 import {
@@ -91,6 +91,7 @@ function App() {
   const engineRef = useRef<GameEngine | null>(null);
   // Keyboard, pointer, and gamepad reach the engine only as commands through this adapter (TEC-07).
   const inputRef = useRef<InputAdapter | null>(null);
+  const releaseReducedMotionRef = useRef<(() => void) | null>(null);
   const pauseIntentRef = useRef<() => void>(() => undefined);
   const drawerToggleRef = useRef<HTMLButtonElement | null>(null);
   const runPausedRef = useRef(false);
@@ -141,6 +142,7 @@ function App() {
   useEffect(() => {
     return () => {
       inputRef.current?.dispose();
+      releaseReducedMotionRef.current?.();
       engineRef.current?.dispose();
     };
   }, []);
@@ -315,9 +317,14 @@ function App() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     inputRef.current?.dispose();
+    releaseReducedMotionRef.current?.();
     engineRef.current?.dispose();
     const engine = new GameEngine(canvas, meta, options, callbacks);
     engineRef.current = engine;
+    releaseReducedMotionRef.current = watchReducedMotion(
+      typeof window.matchMedia === 'function' ? window.matchMedia.bind(window) : undefined,
+      (reduced) => engine.setSystemReducedMotion(reduced),
+    );
     inputRef.current = new InputAdapter({
       window,
       document,
@@ -426,6 +433,8 @@ function App() {
   const toMenu = () => {
     inputRef.current?.dispose();
     inputRef.current = null;
+    releaseReducedMotionRef.current?.();
+    releaseReducedMotionRef.current = null;
     engineRef.current?.dispose();
     engineRef.current = null;
     setPhase('menu');

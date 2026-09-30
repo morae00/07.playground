@@ -53,7 +53,6 @@ import {
   TIER_ROLL,
 } from './grammar';
 import { ObjectPool, compactWhere, recycleWhere } from './objectPool';
-import { impactCue, toneGain } from './audioPolicy';
 import {
   PICKUP_HARD_CAP,
   PICKUP_SOFT_TTL,
@@ -61,23 +60,10 @@ import {
   pickupTtl,
   selectPickupMergeTarget,
 } from './pickupLifecycle';
+import { WorldRenderer, type RenderWorld } from './render/worldRenderer';
 import {
-  circleVisible,
-  interpolatePosition,
-  makeViewport,
-  rectVisible,
-  segmentVisible,
-  visibleGridLineRange,
-  type Viewport,
-} from './render/viewport';
-import { GameRenderer, type EffectOwner } from './render/GameRenderer';
-import { NEUTRAL, SIGNAL, rgba } from './render/palette';
-import { createRenderFrameSnapshot } from './render/renderSnapshot';
-import {
-  CHAPTER_VISUALS,
   bossPhaseForHealth,
   classifyImpact,
-  motionPolicy,
 } from './visualContracts';
 import {
   circleRectPush,
@@ -85,7 +71,6 @@ import {
   distance,
   distancePointToSegment,
   normalize,
-  pointInRect,
 } from './worldMath';
 import type {
   GameOptions,
@@ -95,8 +80,9 @@ import type {
   PassiveId,
 } from '../platform/save';
 import { DEVELOPER_UI_AVAILABLE } from '../platform/developerAccess';
-import { watchReducedMotion } from '../ui/inputContracts';
 import type { EngineAction, EngineCommand } from './engine/contracts';
+import type { GameEvent, GameEventListener } from './engine/events';
+import { Presentation } from './presentation/presentation';
 import {
   INFINITE_BASELINE,
   infiniteDifficultyAt,
@@ -117,29 +103,55 @@ import {
   type StageId,
 } from '../content';
 
+import type {
+  BeamEffect,
+  BossDef,
+  BossPattern,
+  BossProjectile,
+  ChainEffect,
+  DamageNumber,
+  EffectOwner,
+  EnemyTier,
+  Entity,
+  Hazard,
+  ImpactRing,
+  LaneTelegraph,
+  Obstacle,
+  Particle,
+  PendingHostileShot,
+  Pickup,
+  Projectile,
+  SkillId,
+  SkillState,
+} from './engine/worldTypes';
+
+// World types live in engine/worldTypes.ts so renderers and presentation need not import the engine (TEC-02).
+export type {
+  BeamEffect,
+  BossDef,
+  BossPattern,
+  BossProjectile,
+  ChainEffect,
+  DamageNumber,
+  EffectOwner,
+  EnemyTier,
+  Entity,
+  Hazard,
+  ImpactRing,
+  LaneTelegraph,
+  Obstacle,
+  Particle,
+  PendingHostileShot,
+  Pickup,
+  Projectile,
+  SkillId,
+  SkillState,
+} from './engine/worldTypes';
+
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
 export type StageKind = 'normal' | 'midBoss' | 'finalBoss';
 export type RunMode = 'campaign' | 'infinite';
 export type DraftReason = 'level' | 'boss';
-
-export type SkillId =
-  | 'needleStorm'
-  | 'fanKnives'
-  | 'chainSpark'
-  | 'frostLine'
-  | 'orbitScythes'
-  | 'boneMortar'
-  | 'railSpear'
-  | 'mirrorClone'
-  | 'voidMine'
-  | 'blackSun'
-  | 'ironFrame'
-  | 'magnetSigil'
-  | 'paperWard'
-  | 'recoveryThread'
-  | 'coinFever'
-  | 'eclipseStep'
-  | 'executionMark';
 
 export type RunUpgradeId = 'attack' | 'maxHp' | 'moveSpeed' | 'attackSpeed' | 'magnet';
 
@@ -167,11 +179,6 @@ export type SkillDef = {
   summary: string;
   levelText: (level: number) => string;
   awakeningText: string;
-};
-
-export type SkillState = {
-  level: number;
-  awakened: boolean;
 };
 
 export type SkillOffer =
@@ -283,31 +290,6 @@ export type EngineCallbacks = {
   onFrameStart?: () => void;
 };
 
-export type EnemyTier = 'small' | 'medium' | 'large' | 'boss';
-export type BossPattern =
-  | 'dash'
-  | 'rings'
-  | 'clones'
-  | 'flame'
-  | 'tide'
-  | 'traps'
-  | 'clock'
-  | 'saw'
-  | 'eclipse'
-  | 'null'
-  | 'shock';
-
-export type BossDef = {
-  id: string;
-  name: string;
-  chapter: number;
-  role: 'field' | 'mid' | 'final';
-  pattern: BossPattern;
-  hp: number;
-  damage: number;
-  speed: number;
-};
-
 export type StageDef = {
   id: number;
   name: string;
@@ -321,185 +303,9 @@ export type StageDef = {
   }>;
 };
 
-export type Entity = {
-  id: number;
-  x: number;
-  y: number;
-  prevX: number;
-  prevY: number;
-  vx: number;
-  vy: number;
-  radius: number;
-  hp: number;
-  maxHp: number;
-  speed: number;
-  damage: number;
-  xp: number;
-  coin: number;
-  tier: EnemyTier;
-  variant: number;
-  isBoss: boolean;
-  attackStyle: 'contact' | 'ranged';
-  rangedCooldown: number;
-  rangedTelegraph: number;
-  boss?: BossDef;
-  legacyBoss?: boolean;
-  contactTimer: number;
-  hitFlash: number;
-  stun: number;
-  root: number;
-  slowMultiplier: number;
-  slowTimer: number;
-  patternTimer: number;
-  patternPhase: string;
-  patternX: number;
-  patternY: number;
-  damageCooldowns: Record<string, number>;
-  bossPhase: 1 | 2 | 3;
-  bossPhaseFlash: number;
-};
-
-export type Projectile = {
-  id: number;
-  x: number;
-  y: number;
-  prevX: number;
-  prevY: number;
-  vx: number;
-  vy: number;
-  radius: number;
-  damage: number;
-  life: number;
-  maxLife: number;
-  returning: boolean;
-  pierce: number;
-  knockback: number;
-  skillId: SkillId;
-  blockedBySolid: boolean;
-  hitEnemyIds: Set<number>;
-};
-
-export type BossProjectile = {
-  id: number;
-  x: number;
-  y: number;
-  prevX: number;
-  prevY: number;
-  vx: number;
-  vy: number;
-  radius: number;
-  damage: number;
-  life: number;
-  kind: 'dot' | 'ring' | 'saw' | 'eclipse' | 'enemy';
-};
-
-export type Pickup = {
-  id: number;
-  x: number;
-  y: number;
-  prevX: number;
-  prevY: number;
-  vx: number;
-  vy: number;
-  radius: number;
-  kind: 'xp' | 'coin';
-  value: number;
-  life: number;
-  maxLife: number;
-};
-
-export type Particle = {
-  id: number;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  maxLife: number;
-  size: number;
-  color: string;
-};
-
-export type DamageNumber = {
-  id: number;
-  x: number;
-  y: number;
-  value: number;
-  crit: boolean;
-  life: number;
-  maxLife: number;
-  owner: EffectOwner;
-};
-
-export type Hazard = {
-  id: number;
-  kind: 'water' | 'trap' | 'fire' | 'slow' | 'root' | 'null' | 'warning' | 'vortex' | 'shock';
-  x: number;
-  y: number;
-  radius: number;
-  life: number;
-  maxLife: number;
-  damage: number;
-  slow: number;
-  triggered: boolean;
-  skillDamage?: number;
-  sourceSkillId?: SkillId;
-  pull?: number;
-  collapseDamage?: number;
-};
-
-export type Obstacle = {
-  id: number;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  kind: 'solid' | 'pillar';
-};
-
-export type BeamEffect = {
-  id: number;
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-  width: number;
-  life: number;
-  maxLife: number;
-  owner: EffectOwner;
-};
-
-/** A hostile area the player can read before it activates (lane = rectangle from start to end). */
-export type LaneTelegraph = {
-  id: number;
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-  width: number;
-  life: number;
-  maxLife: number;
-};
-
-export type ChainEffect = {
-  id: number;
-  points: Array<{ x: number; y: number }>;
-  life: number;
-  maxLife: number;
-};
-
-export type ImpactRing = {
-  x: number;
-  y: number;
-  radius: number;
-  life: number;
-  maxLife: number;
-  tier: 'heavy' | 'critical';
-  owner: EffectOwner;
-};
-
 export const WORLD_W = 4200;
 export const WORLD_H = 3000;
+const WORLD_SIZE = Object.freeze({ width: WORLD_W, height: WORLD_H });
 const BOSS_PROJECTILE_HARD_CAP = 320;
 /** Telegraphed boss dash (BUG-10): windup, straight-line travel time, and speed multiple. */
 const DASH_WINDUP_SECONDS = 0.62;
@@ -514,19 +320,6 @@ const ROOT_BIND_SECONDS = 0.65;
 const ROOT_IMMUNITY_SECONDS = ROOT_BIND_SECONDS + 1.5;
 /** Nothing harmful is generated within this distance of the stage start (the world centre). */
 const START_SAFE_RADIUS = 420;
-
-export type PendingHostileShot = {
-  at: number;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  radius: number;
-  damage: number;
-  life: number;
-  kind: BossProjectile['kind'];
-};
-const TARGET_COLOR = SIGNAL.allyDeep;
 
 export const RARITY: Record<Rarity, { label: string; weight: number; className: string }> = {
   common: { label: '일반', weight: RARITY_WEIGHTS.common, className: 'rarityCommon' },
@@ -1003,7 +796,7 @@ export function buildStats(
 export class GameEngine {
   protected canvas: HTMLCanvasElement;
   protected ctx: CanvasRenderingContext2D;
-  protected visualRenderer = new GameRenderer();
+  protected worldRenderer = new WorldRenderer();
   protected callbacks: EngineCallbacks;
 
   protected meta: MetaState;
@@ -1023,9 +816,6 @@ export class GameEngine {
   protected cosmeticIdSeed = 1;
   protected runSeed = 1;
   protected gameplayRandom = createSeededRandom(1);
-  protected effectRandom = createSeededRandom(2);
-  protected audio?: AudioContext;
-  protected soundCooldown = 0;
   protected resizeObserver?: ResizeObserver;
 
   protected chapter = 1;
@@ -1060,7 +850,6 @@ export class GameEngine {
   protected snapshotTimer = 0;
   protected hitStop = 0;
   protected hitStopBudget = createHitStopBudget();
-  protected shake = 0;
   protected elapsed = 0;
   protected coinFeverRushTimer = 0;
 
@@ -1098,15 +887,12 @@ export class GameEngine {
   protected projectiles: Projectile[] = [];
   protected bossProjectiles: BossProjectile[] = [];
   protected pickups: Pickup[] = [];
-  protected particles: Particle[] = [];
-  protected damageNumbers: DamageNumber[] = [];
   protected hazards: Hazard[] = [];
   protected obstacles: Obstacle[] = [];
   protected beams: BeamEffect[] = [];
   protected laneTelegraphs: LaneTelegraph[] = [];
   protected pendingHostileShots: PendingHostileShot[] = [];
   protected chains: ChainEffect[] = [];
-  protected impactRings: ImpactRing[] = [];
   protected enemyIndex = new SpatialIndex<Entity>(96);
   protected deadEnemyScratch: Entity[] = [];
   protected projectilePool = new ObjectPool<Projectile>(
@@ -1124,24 +910,12 @@ export class GameEngine {
     (pickup) => { pickup.value = 0; pickup.life = 0; },
     PICKUP_HARD_CAP,
   );
-  protected particlePool = new ObjectPool<Particle>(
-    () => ({ id: 0, x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 0, size: 0, color: '#000000' }),
-    (particle) => { particle.life = 0; },
-    520,
-  );
-  protected damageNumberPool = new ObjectPool<DamageNumber>(
-    () => ({ id: 0, x: 0, y: 0, value: 0, crit: false, life: 0, maxLife: 0, owner: 'player' as EffectOwner }),
-    (number) => { number.life = 0; },
-    160,
-  );
-  protected renderAlpha = 1;
-  protected renderViewport: Viewport = makeViewport(0, 0, 1280, 720, 160);
-  protected gridPattern?: CanvasPattern;
-  protected gridCacheBuilds = 0;
+  /** Cosmetic state (particles, damage numbers, rings, shake, sound) lives here and only consumes events (TEC-02). */
+  protected presentation = new Presentation({ nextId: () => this.nextCosmeticId(), options: () => this.options });
+  protected eventListeners = new Set<GameEventListener>();
   protected playerAimAngle = -Math.PI / 2;
   protected aimTargetId: number | null = null;
   protected systemReducedMotion = false;
-  protected releaseReducedMotion?: () => void;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -1156,13 +930,6 @@ export class GameEngine {
     this.meta = meta;
     this.options = options;
     this.callbacks = callbacks;
-    this.releaseReducedMotion = watchReducedMotion(
-      typeof window.matchMedia === 'function' ? window.matchMedia.bind(window) : undefined,
-      (reduced) => {
-        this.systemReducedMotion = reduced;
-        if (reduced) this.shake = 0;
-      },
-    );
     this.onResize = this.onResize.bind(this);
     this.tick = this.tick.bind(this);
     window.addEventListener('resize', this.onResize);
@@ -1183,13 +950,15 @@ export class GameEngine {
     window.removeEventListener('resize', this.onResize);
     this.resizeObserver?.disconnect();
     this.resizeObserver = undefined;
-    this.releaseReducedMotion?.();
-    this.releaseReducedMotion = undefined;
-    this.gridPattern = undefined;
+    this.worldRenderer.invalidateGrid();
     this.releaseInput();
-    const audio = this.audio;
-    this.audio = undefined;
-    if (audio && audio.state !== 'closed') void audio.close().catch(() => undefined);
+    this.presentation.dispose();
+  }
+
+  /** The operating system's reduced-motion preference; the app shell watches it and passes it in. */
+  setSystemReducedMotion(reduced: boolean) {
+    this.systemReducedMotion = reduced;
+    if (reduced) this.presentation.shake = 0;
   }
 
   setOptions(options: GameOptions) {
@@ -1233,7 +1002,7 @@ export class GameEngine {
   }
 
   protected startConfiguredRun(chapter: number, stageNo: number, seed: number | undefined, scoreEligible: boolean) {
-    this.ensureAudio();
+    this.presentation.ensureAudio();
     const randomSeed = seed ?? globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
     this.runSeed = randomSeed || 1;
     if (this.rules.isolatedCosmeticIds) {
@@ -1241,7 +1010,7 @@ export class GameEngine {
       this.cosmeticIdSeed = 1;
     }
     this.gameplayRandom = createSeededRandom(this.runSeed);
-    this.effectRandom = createSeededRandom(this.runSeed ^ 0x9e3779b9);
+    this.presentation.reseed(this.runSeed);
     this.hitStop = 0;
     this.hitStopBudget = createHitStopBudget();
     this.chapter = chapter;
@@ -1317,7 +1086,7 @@ export class GameEngine {
     const oldMax = this.player.stats.maxHp;
     this.recalculateStats(false);
     if (this.player.stats.maxHp > oldMax) this.player.hp += this.player.stats.maxHp - oldMax;
-    this.playTone(180, 0.03, 'triangle');
+    this.emit({ type: 'run/upgradeBought' });
     this.emitSnapshot(true);
     return true;
   }
@@ -1414,16 +1183,14 @@ export class GameEngine {
     if (offer.kind === 'awakening') {
       this.skills[offer.skillId] = { level: Math.max(5, state.level), awakened: true };
       this.pendingAwakenings = this.pendingAwakenings.filter((id) => id !== offer.skillId);
-      this.burst(this.player.x, this.player.y, 36, '#050505', 260);
-      this.shake = Math.max(this.shake, 14);
-      this.playTone(110, 0.09, 'sawtooth');
+      this.emit({ type: 'draft/applied', kind: 'awakening', x: this.player.x, y: this.player.y });
     } else {
       const nextLevel = clamp(state.level + 1, 1, MAX_SKILL_LEVEL);
       this.skills[offer.skillId] = { level: nextLevel, awakened: state.awakened };
       if (nextLevel >= 5 && !state.awakened && !this.pendingAwakenings.includes(offer.skillId)) {
         this.pendingAwakenings.push(offer.skillId);
       }
-      this.playTone(420, 0.05, 'square');
+      this.emit({ type: 'draft/applied', kind: 'skill', x: this.player.x, y: this.player.y });
     }
     const oldMax = this.player.stats.maxHp;
     this.recalculateStats(false);
@@ -1435,8 +1202,7 @@ export class GameEngine {
   protected chooseBonusOffer(offer: Extract<SkillOffer, { kind: 'bonus' }>) {
     if (offer.bonus === 'heal') {
       this.player.hp = Math.min(this.player.stats.maxHp, this.player.hp + this.player.stats.maxHp * 0.5);
-      this.burst(this.player.x, this.player.y, 28, '#111111', 180);
-      this.playTone(520, 0.045, 'sine');
+      this.emit({ type: 'draft/applied', kind: 'heal', x: this.player.x, y: this.player.y });
       return;
     }
 
@@ -1444,17 +1210,14 @@ export class GameEngine {
       const gained = 65 + this.chapter * 18 + this.stage * 9;
       this.player.coins += gained;
       this.stageCoinsEarned += gained;
-      this.burst(this.player.x, this.player.y, 22, '#222222', 160);
-      this.playTone(360, 0.05, 'triangle');
+      this.emit({ type: 'draft/applied', kind: 'coins', x: this.player.x, y: this.player.y });
       return;
     }
 
     this.runUpgrades.attack += 1;
     this.runUpgrades.attackSpeed += 1;
     this.recalculateStats(false);
-    this.burst(this.player.x, this.player.y, 36, '#000000', 260);
-    this.shake = Math.max(this.shake, 10);
-    this.playTone(130, 0.08, 'sawtooth');
+    this.emit({ type: 'draft/applied', kind: 'overdrive', x: this.player.x, y: this.player.y });
   }
 
   protected onResize() {
@@ -1465,7 +1228,7 @@ export class GameEngine {
     this.canvas.width = Math.round(this.viewW * this.dpr);
     this.canvas.height = Math.round(this.viewH * this.dpr);
     this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-    this.gridPattern = undefined;
+    this.worldRenderer.invalidateGrid();
   }
 
   /** Applies one engine command (TEC-07). Commands are the only way input reaches the simulation. */
@@ -1537,12 +1300,11 @@ export class GameEngine {
   advanceFrame(frameDt: number, renderFrame = true) {
     const safeFrameDt = Math.min(0.05, Math.max(0, frameDt));
     this.callbacks.onFrameStart?.();
-    this.soundCooldown = Math.max(0, this.soundCooldown - safeFrameDt);
+    // Shake and sound spacing are presentation-only and follow wall-clock time, not hit-stop-scaled sim time.
+    this.presentation.beginFrame(safeFrameDt, this.paused);
     this.snapshotTimer -= safeFrameDt;
 
     if (!this.paused) {
-      // Shake is presentation-only, so it decays in wall-clock time rather than with hit-stop-scaled sim time.
-      this.shake = Math.max(0, this.shake - safeFrameDt * 12);
       const plan = planFixedSteps(this.accumulator, safeFrameDt, this.timeScale);
       this.accumulator = plan.remainder;
       for (let step = 0; step < plan.steps; step += 1) {
@@ -1558,9 +1320,7 @@ export class GameEngine {
       this.accumulator = 0;
     }
     // A paused run draws a still frame: no particle drift, no shake, no cosmetic random draws (BUG-03).
-    // Classic rules keep 0.1.0's paused particle decay because their particle ids feed the gameplay id stream.
-    if (this.paused) this.shake = 0;
-    if (!this.paused || !this.rules.isolatedCosmeticIds) this.updateParticles(safeFrameDt);
+    this.presentation.endFrame(safeFrameDt, this.paused, !this.rules.isolatedCosmeticIds);
     if (this.snapshotTimer <= 0) this.emitSnapshot(false);
     if (renderFrame) this.render(this.paused ? 1 : clamp(this.accumulator / FIXED_TIMESTEP, 0, 1));
   }
@@ -1579,15 +1339,15 @@ export class GameEngine {
       projectiles: this.projectiles.length,
       bossProjectiles: this.bossProjectiles.length,
       pickups: this.pickups.length,
-      particles: this.particles.length,
-      damageNumbers: this.damageNumbers.length,
-      gridCacheBuilds: this.gridCacheBuilds,
+      particles: this.presentation.particles.length,
+      damageNumbers: this.presentation.damageNumbers.length,
+      gridCacheBuilds: this.worldRenderer.gridCacheBuilds,
       pooled: {
         projectiles: this.projectilePool.retained,
         bossProjectiles: this.bossProjectilePool.retained,
         pickups: this.pickupPool.retained,
-        particles: this.particlePool.retained,
-        damageNumbers: this.damageNumberPool.retained,
+        particles: this.presentation.particlePool.retained,
+        damageNumbers: this.presentation.damageNumberPool.retained,
       },
     };
   }
@@ -1622,7 +1382,7 @@ export class GameEngine {
     this.laneTelegraphs = [];
     this.pendingHostileShots = [];
     this.chains = [];
-    this.impactRings = [];
+    this.presentation.clearRound();
     this.player.x = WORLD_W / 2;
     this.player.y = WORLD_H / 2;
     this.player.prevX = this.player.x;
@@ -1645,13 +1405,9 @@ export class GameEngine {
     for (const projectile of this.projectiles) this.projectilePool.release(projectile);
     for (const projectile of this.bossProjectiles) this.bossProjectilePool.release(projectile);
     for (const pickup of this.pickups) this.pickupPool.release(pickup);
-    for (const particle of this.particles) this.particlePool.release(particle);
-    for (const number of this.damageNumbers) this.damageNumberPool.release(number);
     this.projectiles.length = 0;
     this.bossProjectiles.length = 0;
     this.pickups.length = 0;
-    this.particles.length = 0;
-    this.damageNumbers.length = 0;
   }
 
   protected generateMap() {
@@ -1883,7 +1639,7 @@ export class GameEngine {
         hazard.life = Math.min(hazard.life, 3.2);
         hazard.maxLife = Math.min(hazard.maxLife, 3.2);
         this.player.root = Math.max(this.player.root, 0.65);
-        this.burst(hazard.x, hazard.y, 12, '#111111', 120);
+        this.emit({ type: 'trap/sprung', x: hazard.x, y: hazard.y });
       }
       if (hazard.kind === 'root') {
         if (!this.rules.fairTerrain) {
@@ -2024,7 +1780,7 @@ export class GameEngine {
       const angle = baseAngle + (i - (count - 1) / 2) * 0.22;
       this.spawnProjectile('fanKnives', this.player.x, this.player.y, Math.cos(angle) * 680, Math.sin(angle) * 680, 5.2, this.player.stats.attack * (0.55 + skill.level * 0.12), skill.awakened ? 1.35 : 0.82, skill.awakened ? 2 : 0, 80, true);
     }
-    this.playTone(390, 0.025, 'triangle');
+    this.emit({ type: 'skill/cast', skillId: 'fanKnives', x: this.player.x, y: this.player.y });
   }
 
   protected updateChainSpark(skill: SkillState) {
@@ -2048,7 +1804,7 @@ export class GameEngine {
       current = this.findNearestEnemyFrom(current.x, current.y, 330, hit);
     }
     this.chains.push({ id: this.nextId(), points, life: 0.18, maxLife: 0.18 });
-    this.playTone(660, 0.025, 'square');
+    this.emit({ type: 'skill/cast', skillId: 'chainSpark', x: this.player.x, y: this.player.y });
   }
 
   protected updateFrostLine(skill: SkillState) {
@@ -2076,7 +1832,7 @@ export class GameEngine {
         if (skill.awakened) enemy.root = Math.max(enemy.root, SKILL_NUMBERS.frostLine.rootSeconds);
       }
     }
-    this.playTone(510, 0.04, 'sine');
+    this.emit({ type: 'skill/cast', skillId: 'frostLine', x: this.player.x, y: this.player.y });
   }
 
   protected updateRailSpear(skill: SkillState) {
@@ -2106,8 +1862,7 @@ export class GameEngine {
       }
     }
     this.requestHitStop(0.045);
-    this.shake = Math.max(this.shake, 9);
-    this.playTone(95, 0.055, 'sawtooth');
+    this.emit({ type: 'skill/cast', skillId: 'railSpear', x: this.player.x, y: this.player.y });
   }
 
   protected fireRailBeam(
@@ -2166,7 +1921,7 @@ export class GameEngine {
       skillDamage: damage,
       collapseDamage: skill.awakened ? damage * SKILL_NUMBERS.boneMortar.aftershockDamage : 0,
     });
-    this.playTone(120, 0.055, 'sawtooth');
+    this.emit({ type: 'skill/cast', skillId: 'boneMortar', x: this.player.x, y: this.player.y });
   }
 
   protected updateMirrorClone(skill: SkillState) {
@@ -2195,7 +1950,7 @@ export class GameEngine {
       const shotAngle = Math.atan2(target.y - sy, target.x - sx);
       this.spawnProjectile('mirrorClone', sx, sy, Math.cos(shotAngle) * 820, Math.sin(shotAngle) * 820, 5.5, damage, 1.15, volley.pierce, 95, true);
     }
-    this.playTone(470, 0.035, 'square');
+    this.emit({ type: 'skill/cast', skillId: 'mirrorClone', x: this.player.x, y: this.player.y });
   }
 
   protected updateVoidMine(skill: SkillState) {
@@ -2220,7 +1975,7 @@ export class GameEngine {
       pull: profile.pull,
       collapseDamage: this.player.stats.attack * profile.collapseDamageMultiplier,
     });
-    this.playTone(82, 0.055, 'sine');
+    this.emit({ type: 'skill/cast', skillId: 'voidMine', x: this.player.x, y: this.player.y });
   }
 
   protected updateBlackSun(skill: SkillState) {
@@ -2247,8 +2002,7 @@ export class GameEngine {
       pull: profile.pull,
       collapseDamage: this.player.stats.attack * profile.collapseDamageMultiplier,
     });
-    this.shake = Math.max(this.shake, 5);
-    this.playTone(70, 0.06, 'sine');
+    this.emit({ type: 'skill/cast', skillId: 'blackSun', x: target.x, y: target.y });
   }
 
   protected updateEclipseStep(skill: SkillState) {
@@ -2291,7 +2045,7 @@ export class GameEngine {
         skillDamage: damage * SKILL_NUMBERS.eclipseStep.afterimageDamage,
       });
     }
-    this.shake = Math.max(this.shake, 12);
+    this.emit({ type: 'skill/cast', skillId: 'eclipseStep', x: this.player.x, y: this.player.y });
   }
 
   protected updateOrbitScythes(skill: SkillState) {
@@ -2325,7 +2079,7 @@ export class GameEngine {
       pickup.vx += dir.x * 920;
       pickup.vy += dir.y * 920;
     }
-    this.burst(this.player.x, this.player.y, 16, '#111111', 130);
+    this.emit({ type: 'magnet/pulse', x: this.player.x, y: this.player.y });
   }
 
   protected spawnEnemies(dt: number) {
@@ -2534,7 +2288,7 @@ export class GameEngine {
       bossPhaseFlash: 0,
     };
     this.enemies.push(boss);
-    this.burst(x, y, 24, '#111111', 190);
+    this.emit({ type: 'boss/spawned', x, y, infinite: false });
   }
 
   protected spawnInfiniteBoss() {
@@ -2589,8 +2343,7 @@ export class GameEngine {
     this.previousInfiniteBossId = def.id;
     this.objectiveTarget = this.infiniteBossKills + 1;
     this.enemies.push(boss);
-    this.burst(x, y, 28, '#111111', 210);
-    this.shake = Math.max(this.shake, 8);
+    this.emit({ type: 'boss/spawned', x, y, infinite: true });
   }
 
   protected updateEnemies(dt: number) {
@@ -2677,7 +2430,7 @@ export class GameEngine {
       if (distance(enemy, this.player) < enemy.radius + HIT_RADIUS.playerContact && enemy.contactTimer <= 0) {
         enemy.contactTimer = enemy.isBoss ? 0.78 : 1;
         this.damagePlayer(enemy.damage, true);
-        this.shake = Math.max(this.shake, enemy.isBoss ? 12 : 5);
+        this.emit({ type: 'enemy/contact', isBoss: enemy.isBoss });
       }
     }
 
@@ -2712,9 +2465,8 @@ export class GameEngine {
         enemy.patternTimer,
         phaseMove ? phaseMove.telegraph.previewSeconds + phaseMove.telegraph.imminentSeconds : 0.45,
       );
-      this.burst(enemy.x, enemy.y, 18 + nextPhase * 6, CHAPTER_VISUALS[this.chapter].accent, 240);
+      this.emit({ type: 'boss/phase', x: enemy.x, y: enemy.y, phase: nextPhase, chapter: this.chapter });
       if (phaseMove) this.drawPhaseTransitionTelegraph(enemy, phaseMove);
-      this.shake = Math.max(this.shake, 8 + nextPhase * 2);
       return;
     }
     enemy.bossPhaseFlash = Math.max(0, (enemy.bossPhaseFlash ?? 0) - dt);
@@ -2784,7 +2536,7 @@ export class GameEngine {
         const angle = (Math.PI * 2 * i) / count + this.elapsed * 0.35;
         this.spawnBossProjectile(enemy.x, enemy.y, Math.cos(angle) * 215, Math.sin(angle) * 215, 7, enemy.damage * 0.62, 5, 'ring');
       }
-      this.shake = Math.max(this.shake, 4);
+      this.emit({ type: 'boss/ringFired', x: enemy.x, y: enemy.y });
     }
 
     if (boss.pattern === 'shock' && enemy.patternTimer <= 0) {
@@ -2815,7 +2567,7 @@ export class GameEngine {
         clone.maxHp = clone.hp;
         clone.variant = 4;
       }
-      this.burst(enemy.x, enemy.y, 18, '#111111', 170);
+      this.emit({ type: 'boss/cloned', x: enemy.x, y: enemy.y });
     }
 
     if (boss.pattern === 'flame' && enemy.patternTimer <= 0) {
@@ -2928,15 +2680,7 @@ export class GameEngine {
   protected drawPhaseTransitionTelegraph(enemy: Entity, move: BossPhaseMove) {
     const life = move.telegraph.previewSeconds + move.telegraph.imminentSeconds;
     if (move.telegraph.shape === 'circle' || move.telegraph.shape === 'ring') {
-      this.impactRings.push({
-        x: enemy.x,
-        y: enemy.y,
-        radius: enemy.radius * (move.telegraph.shape === 'ring' ? 3.2 : 2.3),
-        life,
-        maxLife: life,
-        tier: 'heavy',
-        owner: 'hostile',
-      });
+      this.emit({ type: 'telegraph/ring', x: enemy.x, y: enemy.y, radius: enemy.radius * (move.telegraph.shape === 'ring' ? 3.2 : 2.3), life });
       return;
     }
 
@@ -3011,7 +2755,7 @@ export class GameEngine {
         projectile.x = start.x + (projectile.x - start.x) * obstacleHitTime;
         projectile.y = start.y + (projectile.y - start.y) * obstacleHitTime;
         projectile.life = 0;
-        this.burst(projectile.x, projectile.y, 4, '#111111', 90);
+        this.emit({ type: 'shot/blocked', x: projectile.x, y: projectile.y });
       }
     }
     recycleWhere(
@@ -3093,8 +2837,7 @@ export class GameEngine {
       if (hazard.kind === 'shock' && !hazard.triggered && expiredThisStep(previousLife, hazard.life)) {
         hazard.triggered = true;
         if (shockHitsPlayer(hazard, hazard.radius, this.player, HIT_RADIUS.playerVsHostileShot)) this.damagePlayer(hazard.damage, false);
-        this.burst(hazard.x, hazard.y, Math.round(28 * this.options.effects), '#050505', 280);
-        this.shake = Math.max(this.shake, 11);
+        this.emit({ type: 'shock/burst', x: hazard.x, y: hazard.y });
       }
       if (hazard.kind === 'warning' && !hazard.triggered && expiredThisStep(previousLife, hazard.life)) {
         hazard.triggered = true;
@@ -3103,8 +2846,7 @@ export class GameEngine {
         if ((hazard.collapseDamage ?? 0) > 0) {
           this.areaDamage(hazard.x, hazard.y, hazard.radius * 0.55, hazard.collapseDamage!, sourceSkillId, 260, true);
         }
-        this.addImpactRing(hazard.x, hazard.y, hazard.radius, 'critical');
-        if (sourceSkillId === 'boneMortar') this.shake = Math.max(this.shake, 8);
+        this.emit({ type: 'area/blast', x: hazard.x, y: hazard.y, radius: hazard.radius, source: sourceSkillId });
       }
       if (hazard.kind === 'vortex') {
         const sourceSkillId = hazard.sourceSkillId ?? 'voidMine';
@@ -3134,11 +2876,16 @@ export class GameEngine {
                 enemy.slowMultiplier = slow.multiplier;
                 enemy.slowTimer = slow.remaining;
               }
-              this.addImpactRing(hazard.x, hazard.y, hazard.radius + 30, 'critical');
             } else {
               this.areaDamage(hazard.x, hazard.y, hazard.radius + 30, hazard.collapseDamage!, sourceSkillId, 220, true);
             }
-            this.shake = Math.max(this.shake, 12);
+            this.emit({
+              type: 'vortex/collapse',
+              x: hazard.x,
+              y: hazard.y,
+              radius: hazard.radius,
+              ring: sourceSkillId === 'blackSun' && this.skills.blackSun?.awakened === true,
+            });
           }
           expiredVortexIds.push(hazard.id);
         }
@@ -3156,29 +2903,10 @@ export class GameEngine {
     for (const beam of this.beams) beam.life -= dt;
     for (const lane of this.laneTelegraphs) lane.life -= dt;
     for (const chain of this.chains) chain.life -= dt;
-    for (const ring of this.impactRings) ring.life -= dt;
-    for (const number of this.damageNumbers) {
-      number.life -= dt;
-      number.y -= dt * 38;
-    }
     compactWhere(this.beams, (beam) => beam.life > 0);
     compactWhere(this.laneTelegraphs, (lane) => lane.life > 0);
     compactWhere(this.chains, (chain) => chain.life > 0);
-    compactWhere(this.impactRings, (ring) => ring.life > 0);
-    recycleWhere(this.damageNumbers, (number) => number.life > 0, this.damageNumberPool);
-  }
-
-  protected updateParticles(dt: number) {
-    for (const particle of this.particles) {
-      particle.life -= dt;
-      particle.x += particle.vx * dt;
-      particle.y += particle.vy * dt;
-      particle.vx *= 0.96;
-      particle.vy *= 0.96;
-    }
-    const maxParticles = this.options.effects > 0.65 ? 520 : 260;
-    recycleWhere(this.particles, (particle) => particle.life > 0, this.particlePool);
-    while (this.particles.length > maxParticles) this.particlePool.release(this.particles.shift()!);
+    this.presentation.step(dt);
   }
 
   protected resolveEntityVsObstacles(entity: { x: number; y: number }, radius: number) {
@@ -3311,15 +3039,8 @@ export class GameEngine {
       enemy.x += dir.x * knockback * 0.035;
       enemy.y += dir.y * knockback * 0.035;
     }
-    if (this.options.damageNumbers) {
-      this.emitDamageNumber(enemy.x, enemy.y - enemy.radius, damage, crit, crit ? 0.9 : 0.62, 'player');
-    }
-    const particleCount = impactTier === 'critical' ? 14 : impactTier === 'heavy' ? 8 : 4;
-    this.burst(enemy.x, enemy.y, Math.round(particleCount * this.options.effects), impactTier === 'critical' ? '#000000' : '#222222', impactTier === 'critical' ? 240 : impactTier === 'heavy' ? 175 : 130);
-    if (impactTier !== 'light') this.addImpactRing(enemy.x, enemy.y, enemy.radius * (impactTier === 'critical' ? 1.8 : 1.35), impactTier);
+    this.emit({ type: 'enemy/hit', x: enemy.x, y: enemy.y, radius: enemy.radius, damage, crit, tier: impactTier });
     if (impactTier !== 'light') this.requestHitStop(impactTier === 'critical' ? 0.035 : 0.025);
-    if (impactTier === 'critical') this.shake = Math.max(this.shake, 4);
-    this.playHit(impactTier);
   }
 
   protected requestHitStop(seconds: number) {
@@ -3339,12 +3060,7 @@ export class GameEngine {
         this.dealDamage(enemy, damage, skillId, knockback, forceCrit);
       }
     }
-    this.burst(x, y, Math.round(22 * this.options.effects), '#050505', 230);
-  }
-
-  protected addImpactRing(x: number, y: number, radius: number, tier: 'heavy' | 'critical') {
-    if (this.impactRings.length >= 32) this.impactRings.shift();
-    this.impactRings.push({ x, y, radius, life: 0.24, maxLife: 0.24, tier, owner: 'player' });
+    this.emit({ type: 'area/damage', x, y });
   }
 
   protected damagePlayer(rawDamage: number, physical: boolean) {
@@ -3359,11 +3075,7 @@ export class GameEngine {
     this.player.invuln = paperWardDirectHitInvulnerability(paperWard?.level ?? 0);
     if (this.skills.ironFrame?.awakened) this.player.shield = SKILL_NUMBERS.ironFrame.shieldSeconds;
     if (paperWard?.awakened) this.pushEnemiesFromPlayer(SKILL_NUMBERS.paperWard.pushRadius);
-    if (this.options.damageNumbers) {
-      this.emitDamageNumber(this.player.x, this.player.y - 38, reduced, false, 0.72, 'hostile');
-    }
-    this.burst(this.player.x, this.player.y, 12, '#000000', 160);
-    this.playTone(140, 0.025, 'triangle');
+    this.emit({ type: 'player/hurt', x: this.player.x, y: this.player.y, damage: reduced });
   }
 
   protected damagePlayerOverTime(damagePerSecond: number, dt: number) {
@@ -3423,9 +3135,7 @@ export class GameEngine {
         Math.ceil(enemy.coin / Math.max(1, coinCount)),
       );
     }
-    this.burst(enemy.x, enemy.y, enemy.isBoss ? 42 : 16, '#050505', enemy.isBoss ? 340 : 190);
-    this.shake = Math.max(this.shake, enemy.isBoss ? 18 : 4);
-    this.playTone(enemy.isBoss ? 80 : 240, enemy.isBoss ? 0.09 : 0.035, enemy.isBoss ? 'sawtooth' : 'square');
+    this.emit({ type: 'enemy/killed', x: enemy.x, y: enemy.y, isBoss: enemy.isBoss });
 
     if (enemy.isBoss && !suppressBossDraft) {
       if (this.runMode === 'infinite') {
@@ -3478,19 +3188,6 @@ export class GameEngine {
       return;
     }
     this.pickups.push(pickup);
-  }
-
-  protected emitDamageNumber(x: number, y: number, value: number, crit: boolean, life: number, owner: EffectOwner) {
-    let number: DamageNumber | undefined;
-    if (this.damageNumbers.length >= 160) {
-      if (!crit) return;
-      const replaceIndex = this.damageNumbers.findIndex((candidate) => !candidate.crit);
-      if (replaceIndex < 0) return;
-      number = this.damageNumbers.splice(replaceIndex, 1)[0];
-    }
-    number ??= this.damageNumberPool.acquire();
-    Object.assign(number, { id: this.nextCosmeticId(), x, y, value, crit, life, maxLife: life, owner });
-    this.damageNumbers.push(number);
   }
 
   protected openDraft(reason: DraftReason, after: DraftState['after']) {
@@ -3693,9 +3390,7 @@ export class GameEngine {
       slow: 1,
       triggered: false,
     });
-    this.shake = Math.max(this.shake, 22);
-    this.burst(this.player.x, this.player.y, 60, '#000000', 320);
-    this.playTone(65, 0.12, 'sawtooth');
+    this.emit({ type: 'boss/enraged', x: this.player.x, y: this.player.y });
     this.emitSnapshot(true);
   }
 
@@ -3786,570 +3481,50 @@ export class GameEngine {
     };
   }
 
-  protected interpolated(item: { x: number; y: number; prevX?: number; prevY?: number }) {
-    return interpolatePosition(
-      { x: item.prevX ?? item.x, y: item.prevY ?? item.y },
-      item,
-      this.renderAlpha,
-    );
+  protected render(alpha = 1) {
+    this.worldRenderer.draw(this.ctx, this.buildRenderWorld(alpha));
   }
 
-  protected render(alpha = 1) {
-    const ctx = this.ctx;
-    this.renderAlpha = alpha;
-    const camera = this.interpolated(this.camera);
-    const frame = this.viewFrame();
-    this.renderViewport = makeViewport(camera.x, camera.y, frame.width, frame.height, 160);
-    const policy = motionPolicy(this.options.reducedFlash, this.systemReducedMotion);
-    this.visualRenderer.beginFrame(createRenderFrameSnapshot({
+  /** Read-only view of this frame for the renderer (TEC-02). Arrays are live references, never copies. */
+  protected buildRenderWorld(alpha: number): RenderWorld {
+    return {
+      alpha,
+      view: { width: this.viewW, height: this.viewH, dpr: this.dpr, frame: this.viewFrame() },
+      worldSize: WORLD_SIZE,
       chapter: this.chapter,
       elapsed: this.elapsed,
-      alpha,
-      reducedMotion: policy.reduced,
-      aimAngle: this.playerAimAngle,
-      moving: this.playerMoved(),
+      paused: this.paused,
       bossEnraged: this.bossEnraged,
-      enemyCount: this.enemies.length,
-    }));
-    const shakeEnabled = this.options.screenShake && !policy.reduced;
-    // Classic rules draw the shake jitter every frame like 0.1.0 did, because under them cosmetic random draws
-    // still reach gameplay through particle ids; remaster rules draw only while actually shaking.
-    const drawJitter = this.rules.isolatedCosmeticIds ? shakeEnabled && !this.paused && this.shake > 0.01 : shakeEnabled;
-    const shakeX = drawJitter ? (this.effectRandom() - 0.5) * this.shake : 0;
-    const shakeY = drawJitter ? (this.effectRandom() - 0.5) * this.shake : 0;
-    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-    ctx.clearRect(0, 0, this.viewW, this.viewH);
-    ctx.fillStyle = NEUTRAL.paper;
-    ctx.fillRect(0, 0, this.viewW, this.viewH);
-    ctx.save();
-    ctx.setTransform(this.dpr * frame.zoom, 0, 0, this.dpr * frame.zoom, this.dpr * frame.offsetX, 0);
-    ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
-    // Layer order (BUG-12 / TEC-12): effects never cover the player body, enemy shots stay above every
-    // body so an incoming hit is always visible, and the player keyline sits on top of everything.
-    this.drawWorld(ctx);
-    this.drawHazards(ctx);
-    this.drawObstacles(ctx);
-    this.drawLaneTelegraphs(ctx);
-    this.drawTargetGuide(ctx);
-    this.drawPickups(ctx);
-    this.drawBeams(ctx);
-    this.drawEnemies(ctx);
-    this.drawTargetReticle(ctx);
-    this.drawImpactRings(ctx);
-    this.drawParticles(ctx);
-    this.drawDamageNumbers(ctx);
-    this.drawOrbitScythes(ctx);
-    this.drawMirrorClone(ctx);
-    this.drawPlayer(ctx);
-    this.drawFriendlyProjectiles(ctx);
-    this.drawHostileProjectiles(ctx);
-    this.drawPlayerXray(ctx);
-    ctx.restore();
-    if (frame.offsetX > 0) {
-      // Pillarbox bars keep windows wider than 16:9 from seeing past the logical frame (and its spawns).
-      ctx.fillStyle = NEUTRAL.ink;
-      ctx.fillRect(0, 0, frame.offsetX, this.viewH);
-      ctx.fillRect(this.viewW - frame.offsetX, 0, frame.offsetX, this.viewH);
-    }
+      jitterEveryFrame: !this.rules.isolatedCosmeticIds,
+      reducedMotion: this.systemReducedMotion,
+      options: this.options,
+      camera: this.camera,
+      player: this.player,
+      aim: { angle: this.playerAimAngle, targetId: this.aimTargetId },
+      skills: this.skills,
+      enemies: this.enemies,
+      projectiles: this.projectiles,
+      bossProjectiles: this.bossProjectiles,
+      pickups: this.pickups,
+      hazards: this.hazards,
+      obstacles: this.obstacles,
+      beams: this.beams,
+      laneTelegraphs: this.laneTelegraphs,
+      chains: this.chains,
+      effects: this.presentation,
+    };
   }
 
-  protected drawWorld(ctx: CanvasRenderingContext2D) {
-    this.ensureGridPattern();
-    const viewport = this.renderViewport;
-    if (this.gridPattern) {
-      ctx.fillStyle = this.gridPattern;
-      ctx.fillRect(viewport.left, viewport.top, viewport.right - viewport.left, viewport.bottom - viewport.top);
-    } else {
-      ctx.strokeStyle = NEUTRAL.gridLine;
-      ctx.lineWidth = 1;
-      const xs = visibleGridLineRange(viewport.left, viewport.right, 120, 0, WORLD_W);
-      const ys = visibleGridLineRange(viewport.top, viewport.bottom, 120, 0, WORLD_H);
-      if (xs) {
-        for (let x = xs.first; x <= xs.last; x += xs.step) {
-          ctx.beginPath();
-          ctx.moveTo(x, Math.max(0, viewport.top));
-          ctx.lineTo(x, Math.min(WORLD_H, viewport.bottom));
-          ctx.stroke();
-        }
-      }
-      if (ys) {
-        for (let y = ys.first; y <= ys.last; y += ys.step) {
-          ctx.beginPath();
-          ctx.moveTo(Math.max(0, viewport.left), y);
-          ctx.lineTo(Math.min(WORLD_W, viewport.right), y);
-          ctx.stroke();
-        }
-      }
-    }
-    this.drawChapterMotif(ctx);
-    if (rectVisible(viewport, -4, -4, WORLD_W + 8, WORLD_H + 8)) {
-      ctx.strokeStyle = '#111111';
-      ctx.lineWidth = 8;
-      ctx.strokeRect(0, 0, WORLD_W, WORLD_H);
-    }
+  /** Reports a game event to presentation and subscribers; events never change the simulation. */
+  protected emit(event: GameEvent) {
+    this.presentation.handle(event);
+    for (const listener of this.eventListeners) listener(event);
   }
 
-  protected drawChapterMotif(ctx: CanvasRenderingContext2D) {
-    const viewport = this.renderViewport;
-    const visual = CHAPTER_VISUALS[this.chapter] ?? CHAPTER_VISUALS[1];
-    const centerX = Math.round(((viewport.left + viewport.right) / 2) / 480) * 480;
-    const centerY = Math.round(((viewport.top + viewport.bottom) / 2) / 480) * 480;
-    ctx.save();
-    ctx.strokeStyle = visual.accent;
-    ctx.globalAlpha = 0.2;
-    ctx.lineWidth = 2;
-
-    if (visual.motif === 'orthogonal') {
-      const xs = visibleGridLineRange(viewport.left, viewport.right, 480, 0, WORLD_W);
-      const ys = visibleGridLineRange(viewport.top, viewport.bottom, 480, 0, WORLD_H);
-      if (xs) for (let x = xs.first; x <= xs.last; x += xs.step) ctx.strokeRect(x - 12, Math.max(0, viewport.top), 24, Math.min(WORLD_H, viewport.bottom) - Math.max(0, viewport.top));
-      if (ys) for (let y = ys.first; y <= ys.last; y += ys.step) ctx.strokeRect(Math.max(0, viewport.left), y - 8, Math.min(WORLD_W, viewport.right) - Math.max(0, viewport.left), 16);
-    } else if (visual.motif === 'radial') {
-      for (let index = 0; index < 12; index += 1) {
-        const angle = (Math.PI * 2 * index) / 12;
-        ctx.beginPath();
-        ctx.moveTo(centerX + Math.cos(angle) * 54, centerY + Math.sin(angle) * 54);
-        ctx.lineTo(centerX + Math.cos(angle) * 310, centerY + Math.sin(angle) * 310);
-        ctx.stroke();
-      }
-    } else if (visual.motif === 'flow') {
-      for (let offset = -240; offset <= 240; offset += 120) {
-        ctx.beginPath();
-        ctx.moveTo(viewport.left, centerY + offset);
-        for (let x = viewport.left; x <= viewport.right; x += 120) {
-          ctx.quadraticCurveTo(x + 60, centerY + offset - 32, x + 120, centerY + offset);
-        }
-        ctx.stroke();
-      }
-    } else if (visual.motif === 'clock') {
-      for (const radius of [80, 160, 240]) {
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-      for (let index = 0; index < 12; index += 1) {
-        const angle = (Math.PI * 2 * index) / 12;
-        ctx.beginPath();
-        ctx.moveTo(centerX + Math.cos(angle) * 210, centerY + Math.sin(angle) * 210);
-        ctx.lineTo(centerX + Math.cos(angle) * 240, centerY + Math.sin(angle) * 240);
-        ctx.stroke();
-      }
-    } else {
-      ctx.lineWidth = 4;
-      for (const radius of [72, 128, 210, 300]) {
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radius, Math.PI * 0.12, Math.PI * 1.88);
-        ctx.stroke();
-      }
-    }
-    ctx.restore();
-  }
-
-  protected ensureGridPattern() {
-    if (this.gridPattern || typeof document.createElement !== 'function') return;
-    const tile = document.createElement('canvas');
-    tile.width = 120;
-    tile.height = 120;
-    const tileCtx = tile.getContext('2d');
-    if (!tileCtx) return;
-    tileCtx.strokeStyle = NEUTRAL.gridLine;
-    tileCtx.lineWidth = 1;
-    tileCtx.beginPath();
-    tileCtx.moveTo(0.5, 0);
-    tileCtx.lineTo(0.5, 120);
-    tileCtx.moveTo(0, 0.5);
-    tileCtx.lineTo(120, 0.5);
-    tileCtx.stroke();
-    this.gridPattern = this.ctx.createPattern(tile, 'repeat') ?? undefined;
-    if (this.gridPattern) this.gridCacheBuilds += 1;
-  }
-
-  protected drawHazards(ctx: CanvasRenderingContext2D) {
-    for (const hazard of this.hazards) {
-      if (!circleVisible(this.renderViewport, hazard.x, hazard.y, hazard.radius * 1.25 + 8)) continue;
-      const fadedRoot = hazard.kind === 'root' && this.player.rootImmunity > 0;
-      this.visualRenderer.drawHazard(ctx, hazard, fadedRoot ? 0.35 : 1);
-    }
-  }
-
-  protected drawLaneTelegraphs(ctx: CanvasRenderingContext2D) {
-    for (const lane of this.laneTelegraphs) {
-      if (!segmentVisible(this.renderViewport, lane.x1, lane.y1, lane.x2, lane.y2, lane.width + 40)) continue;
-      this.visualRenderer.drawLaneTelegraph(ctx, lane);
-    }
-  }
-
-  protected drawObstacles(ctx: CanvasRenderingContext2D) {
-    for (const obstacle of this.obstacles) {
-      if (!rectVisible(this.renderViewport, obstacle.x - 12, obstacle.y - 12, obstacle.w + 28, obstacle.h + 30)) continue;
-      this.visualRenderer.drawObstacle(ctx, obstacle);
-    }
-  }
-
-  protected drawPickups(ctx: CanvasRenderingContext2D) {
-    for (const pickup of this.pickups) {
-      const point = this.interpolated(pickup);
-      if (!circleVisible(this.renderViewport, point.x, point.y, pickup.radius + 10)) continue;
-      this.visualRenderer.drawPickup(ctx, pickup, point.x, point.y);
-    }
-  }
-
-  protected currentAimTarget() {
-    if (this.aimTargetId === null) return undefined;
-    return this.enemies.find((enemy) => enemy.id === this.aimTargetId && enemy.hp > 0);
-  }
-
-  protected drawTargetGuide(ctx: CanvasRenderingContext2D) {
-    const target = this.currentAimTarget();
-    if (!target) return;
-    const player = this.interpolated(this.player);
-    const point = this.interpolated(target);
-    if (!segmentVisible(this.renderViewport, player.x, player.y, point.x, point.y, 24)) return;
-    const angle = Math.atan2(point.y - player.y, point.x - player.x);
-    const distanceToTarget = Math.hypot(point.x - player.x, point.y - player.y);
-
-    ctx.save();
-    const gradient = ctx.createLinearGradient?.(player.x, player.y, point.x, point.y);
-    if (gradient && typeof gradient.addColorStop === 'function') {
-      gradient.addColorStop(0, rgba(TARGET_COLOR, 0));
-      gradient.addColorStop(0.18, rgba(TARGET_COLOR, 0.22));
-      gradient.addColorStop(0.5, rgba(TARGET_COLOR, 0.04));
-      gradient.addColorStop(0.82, rgba(TARGET_COLOR, 0.38));
-      gradient.addColorStop(1, rgba(TARGET_COLOR, 0.72));
-      ctx.strokeStyle = gradient;
-    } else {
-      ctx.strokeStyle = rgba(TARGET_COLOR, 0.36);
-    }
-    ctx.lineWidth = 2;
-    ctx.setLineDash([3, 10]);
-    ctx.beginPath();
-    ctx.moveTo(
-      player.x + Math.cos(angle) * 48,
-      player.y + Math.sin(angle) * 48,
-    );
-    ctx.lineTo(
-      point.x - Math.cos(angle) * (target.radius + 18),
-      point.y - Math.sin(angle) * (target.radius + 18),
-    );
-    ctx.stroke();
-
-    if (distanceToTarget > 150) {
-      const arrowDistance = Math.max(86, distanceToTarget - target.radius - 44);
-      const arrowX = player.x + Math.cos(angle) * arrowDistance;
-      const arrowY = player.y + Math.sin(angle) * arrowDistance;
-      ctx.setLineDash([]);
-      ctx.globalAlpha = 0.68;
-      ctx.fillStyle = TARGET_COLOR;
-      ctx.beginPath();
-      ctx.moveTo(arrowX + Math.cos(angle) * 8, arrowY + Math.sin(angle) * 8);
-      ctx.lineTo(arrowX + Math.cos(angle + 2.45) * 7, arrowY + Math.sin(angle + 2.45) * 7);
-      ctx.lineTo(arrowX + Math.cos(angle - 2.45) * 7, arrowY + Math.sin(angle - 2.45) * 7);
-      ctx.closePath();
-      ctx.fill();
-    }
-    ctx.restore();
-  }
-
-  protected drawTargetReticle(ctx: CanvasRenderingContext2D) {
-    const target = this.currentAimTarget();
-    if (!target) return;
-    const point = this.interpolated(target);
-    const outerRadius = target.radius + (target.isBoss ? 22 : 14);
-    if (!circleVisible(this.renderViewport, point.x, point.y, outerRadius + 12)) return;
-    const policy = motionPolicy(this.options.reducedFlash, this.systemReducedMotion);
-    const rotation = policy.rotateDanger ? this.elapsed * 0.9 : 0;
-
-    ctx.save();
-    ctx.translate(point.x, point.y);
-    // The aim reticle is the player's information, so it keeps the ally colour even on a boss (BUG-14).
-    ctx.strokeStyle = TARGET_COLOR;
-    ctx.fillStyle = TARGET_COLOR;
-    ctx.lineWidth = target.isBoss ? 3 : 2;
-    ctx.globalAlpha = 0.9;
-    for (let index = 0; index < 4; index += 1) {
-      const start = rotation + index * Math.PI / 2 - 0.28;
-      ctx.beginPath();
-      ctx.arc(0, 0, outerRadius, start, start + 0.56);
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 0.42;
-    ctx.setLineDash([2, 6]);
-    ctx.beginPath();
-    ctx.arc(0, 0, outerRadius + 7, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.globalAlpha = 0.95;
-    ctx.beginPath();
-    ctx.arc(0, -outerRadius - 7, 3.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  protected drawBeams(ctx: CanvasRenderingContext2D) {
-    for (const beam of this.beams) {
-      if (!segmentVisible(this.renderViewport, beam.x1, beam.y1, beam.x2, beam.y2, beam.width)) continue;
-      this.visualRenderer.drawBeam(ctx, beam);
-    }
-
-    for (const chain of this.chains) {
-      if (!chain.points.some((point, index) => index > 0 && segmentVisible(this.renderViewport, chain.points[index - 1].x, chain.points[index - 1].y, point.x, point.y, 5))) continue;
-      this.visualRenderer.drawChain(ctx, chain.points, chain.life, chain.maxLife);
-    }
-  }
-
-  protected drawFriendlyProjectiles(ctx: CanvasRenderingContext2D) {
-    for (const projectile of this.projectiles) {
-      const point = this.interpolated(projectile);
-      if (!circleVisible(this.renderViewport, point.x, point.y, projectile.radius * 8)) continue;
-      this.visualRenderer.drawFriendlyProjectile(ctx, {
-        x: point.x,
-        y: point.y,
-        vx: projectile.vx,
-        vy: projectile.vy,
-        radius: projectile.radius,
-        life: projectile.life,
-        maxLife: projectile.maxLife,
-        returning: projectile.returning,
-        skillId: projectile.skillId,
-      });
-    }
-  }
-
-  protected drawHostileProjectiles(ctx: CanvasRenderingContext2D) {
-    for (const projectile of this.bossProjectiles) {
-      const point = this.interpolated(projectile);
-      if (!circleVisible(this.renderViewport, point.x, point.y, projectile.radius * 2.2)) continue;
-      this.visualRenderer.drawHostileProjectile(ctx, {
-        x: point.x,
-        y: point.y,
-        vx: projectile.vx,
-        vy: projectile.vy,
-        radius: projectile.radius,
-        life: projectile.life,
-        kind: projectile.kind,
-      });
-    }
-  }
-
-  protected drawEnemies(ctx: CanvasRenderingContext2D) {
-    for (const enemy of this.enemies) {
-      const point = this.interpolated(enemy);
-      if (!circleVisible(this.renderViewport, point.x, point.y, enemy.radius + 24)) continue;
-      this.visualRenderer.drawEnemy(ctx, {
-        id: enemy.id,
-        x: point.x,
-        y: point.y,
-        vx: enemy.vx,
-        vy: enemy.vy,
-        radius: enemy.radius,
-        tier: enemy.tier,
-        variant: enemy.variant,
-        isBoss: enemy.isBoss,
-        attackStyle: enemy.attackStyle,
-        hitFlash: enemy.hitFlash,
-        bossId: enemy.boss?.id,
-        bossPattern: enemy.boss?.pattern,
-        bossPhase: enemy.bossPhase,
-        legacyBoss: enemy.legacyBoss === true,
-        patternPhase: enemy.patternPhase,
-      });
-
-      if (!enemy.isBoss && enemy.attackStyle === 'ranged') {
-        ctx.save();
-        ctx.strokeStyle = SIGNAL.hostile;
-        ctx.lineWidth = enemy.rangedTelegraph > 0 ? 3 : 2;
-        ctx.globalAlpha = enemy.rangedTelegraph > 0 ? 0.78 : 0.62;
-        if (enemy.rangedTelegraph > 0) {
-          ctx.setLineDash([8, 7]);
-          ctx.beginPath();
-          ctx.moveTo(point.x, point.y);
-          ctx.lineTo(enemy.patternX, enemy.patternY);
-          ctx.stroke();
-          ctx.setLineDash([]);
-        }
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, enemy.radius + 6, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.fillStyle = SIGNAL.hostile;
-        ctx.beginPath();
-        ctx.moveTo(point.x, point.y - enemy.radius - 12);
-        ctx.lineTo(point.x + 5, point.y - enemy.radius - 4);
-        ctx.lineTo(point.x - 5, point.y - enemy.radius - 4);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-      }
-
-      const showHealth =
-        this.options.healthBars === 'all' ||
-        (this.options.healthBars === 'elite' && (enemy.isBoss || enemy.tier === 'large'));
-      if (showHealth) this.drawHealthBar(ctx, point.x, point.y - enemy.radius - 14, enemy.radius * 2.1, 6, enemy.hp / enemy.maxHp);
-    }
-  }
-
-  protected drawImpactRings(ctx: CanvasRenderingContext2D) {
-    for (const ring of this.impactRings) {
-      if (!circleVisible(this.renderViewport, ring.x, ring.y, ring.radius * 1.5)) continue;
-      this.visualRenderer.drawImpactRing(ctx, ring);
-    }
-  }
-
-  protected drawOrbitScythes(ctx: CanvasRenderingContext2D) {
-    const skill = this.skills.orbitScythes;
-    if (!skill) return;
-    const forwardBlades = scaleAt(SKILL_NUMBERS.orbitScythes.blades, skill.level);
-    const blades = forwardBlades + (skill.awakened ? SKILL_NUMBERS.orbitScythes.awakenedOuterBlades : 0);
-    const baseRadius = scaleAt(SKILL_NUMBERS.orbitScythes.radius, skill.level);
-    const player = this.interpolated(this.player);
-    for (let i = 0; i < blades; i += 1) {
-      const reverse = skill.awakened && i >= forwardBlades;
-      const speed = reverse ? -2.6 : 3.2;
-      const bladeRadius = reverse ? baseRadius + 52 : baseRadius;
-      // Blades hit where the simulation puts them, so reduced motion must not freeze their drawn position (BUG-15).
-      const angle = this.elapsed * speed + (Math.PI * 2 * i) / blades;
-      const x = player.x + Math.cos(angle) * bladeRadius;
-      const y = player.y + Math.sin(angle) * bladeRadius;
-      this.visualRenderer.drawOrbitBlade(ctx, x, y, angle, reverse);
-    }
-  }
-
-  protected drawMirrorClone(ctx: CanvasRenderingContext2D) {
-    const skill = this.skills.mirrorClone;
-    if (!skill) return;
-    const player = this.interpolated(this.player);
-    const sideAngle = this.playerAimAngle + Math.PI / 2;
-    const policy = motionPolicy(this.options.reducedFlash, this.systemReducedMotion);
-
-    // Both clones fire every volley, so both are drawn, at the offset the shots start from (BUG-16).
-    for (const side of [-1, 1]) {
-      const distanceFromPlayer = SKILL_NUMBERS.mirrorClone.cloneOffset;
-      const drift = policy.reduced ? 0 : Math.sin(this.elapsed * 4.2 + side) * 3;
-      const x = player.x + Math.cos(sideAngle) * distanceFromPlayer * side + Math.cos(this.playerAimAngle) * drift;
-      const y = player.y + Math.sin(sideAngle) * distanceFromPlayer * side + Math.sin(this.playerAimAngle) * drift;
-      this.visualRenderer.drawMirrorClone(ctx, {
-        x,
-        y,
-        aimAngle: this.playerAimAngle,
-        moving: this.playerMoved(),
-        shield: 0,
-        silence: 0,
-        alpha: skill.awakened ? 0.28 : 0.36,
-      });
-    }
-  }
-
-  /** Walk cycles follow actual movement (keys held while rooted or paused must not animate) (BUG-15). */
-  protected playerMoved() {
-    return !this.paused && Math.hypot(this.player.x - this.player.prevX, this.player.y - this.player.prevY) > 0.01;
-  }
-
-  protected drawPlayer(ctx: CanvasRenderingContext2D) {
-    const moving = this.playerMoved();
-    const player = this.interpolated(this.player);
-    this.visualRenderer.drawPlayer(ctx, {
-      x: player.x,
-      y: player.y,
-      aimAngle: this.playerAimAngle,
-      moving,
-      shield: this.player.shield,
-      silence: this.player.silence,
-    });
-  }
-
-  protected playerCovered() {
-    for (const enemy of this.enemies) {
-      if (enemy.hp <= 0 || !(enemy.isBoss || enemy.tier === 'large')) continue;
-      if (distance(enemy, this.player) < enemy.radius + 34) return true;
-    }
-    return false;
-  }
-
-  protected drawPlayerXray(ctx: CanvasRenderingContext2D) {
-    if (!this.playerCovered()) return;
-    const player = this.interpolated(this.player);
-    this.visualRenderer.drawPlayerXray(ctx, { x: player.x, y: player.y, hitRadius: HIT_RADIUS.playerContact });
-  }
-
-  protected drawParticles(ctx: CanvasRenderingContext2D) {
-    for (const particle of this.particles) {
-      if (!circleVisible(this.renderViewport, particle.x, particle.y, particle.size)) continue;
-      this.visualRenderer.drawParticle(ctx, particle);
-    }
-  }
-
-  protected drawDamageNumbers(ctx: CanvasRenderingContext2D) {
-    if (!this.options.damageNumbers) return;
-    for (const number of this.damageNumbers) {
-      if (!circleVisible(this.renderViewport, number.x, number.y, 52)) continue;
-      this.visualRenderer.drawDamageNumber(ctx, number);
-    }
-  }
-
-  protected drawHealthBar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, ratio: number) {
-    this.visualRenderer.drawHealthBar(ctx, x, y, w, h, ratio);
-  }
-
-  protected burst(x: number, y: number, count: number, color: string, speed: number) {
-    const maxParticles = this.options.effects > 0.65 ? 520 : 260;
-    const safeCount = Math.min(90, Math.max(0, Math.floor(count)), Math.max(0, maxParticles - this.particles.length));
-    for (let i = 0; i < safeCount; i += 1) {
-      const angle = this.effectRandom() * Math.PI * 2;
-      const velocity = speed * (0.25 + this.effectRandom() * 0.75);
-      const life = 0.25 + this.effectRandom() * 0.45;
-      const particle = this.particlePool.acquire();
-      Object.assign(particle, {
-        id: this.nextCosmeticId(),
-        x,
-        y,
-        vx: Math.cos(angle) * velocity,
-        vy: Math.sin(angle) * velocity,
-        life,
-        maxLife: life,
-        size: 2 + this.effectRandom() * 5,
-        color,
-      });
-      this.particles.push(particle);
-    }
-  }
-
-  protected playHit(tier: 'light' | 'heavy' | 'critical') {
-    if (this.soundCooldown > 0) return;
-    const cue = impactCue(tier, this.effectRandom());
-    this.soundCooldown = cue.cooldown;
-    this.playTone(cue.frequency, cue.duration, cue.oscillator, cue.gain);
-  }
-
-  protected playTone(frequency: number, duration: number, type: OscillatorType, gainScale = 1) {
-    if (this.disposed || this.options.volume <= 0.001) return;
-    this.ensureAudio();
-    if (!this.audio) return;
-    const osc = this.audio.createOscillator();
-    const gain = this.audio.createGain();
-    osc.type = type;
-    osc.frequency.value = frequency;
-    gain.gain.value = 0.0001;
-    gain.gain.exponentialRampToValueAtTime(toneGain(this.options.volume, gainScale), this.audio.currentTime + 0.004);
-    gain.gain.exponentialRampToValueAtTime(0.0001, this.audio.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(this.audio.destination);
-    osc.addEventListener('ended', () => {
-      osc.disconnect();
-      gain.disconnect();
-    }, { once: true });
-    osc.start();
-    osc.stop(this.audio.currentTime + duration + 0.01);
-  }
-
-  protected ensureAudio() {
-    if (this.disposed) return;
-    if (!this.audio) {
-      try {
-        this.audio = new AudioContext();
-      } catch {
-        this.audio = undefined;
-      }
-    }
-    if (this.audio?.state === 'suspended') void this.audio.resume().catch(() => undefined);
+  /** Subscribes to the game event stream (tools, replays, telemetry). Returns an unsubscribe function. */
+  subscribe(listener: GameEventListener) {
+    this.eventListeners.add(listener);
+    return () => this.eventListeners.delete(listener);
   }
 
   protected nextId() {

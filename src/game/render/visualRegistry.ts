@@ -3,7 +3,7 @@ import type {
   EnemyTier,
   Hazard,
   SkillId,
-} from '../GameEngine';
+} from '../engine/worldTypes.ts';
 import { NEUTRAL, SIGNAL } from './palette.ts';
 
 export type VisualChapter = 1 | 2 | 3 | 4 | 5;
@@ -300,3 +300,13 @@ export const HAZARD_ART: Readonly<Record<Hazard['kind'], HazardArtProfile>> = Ob
   vortex: Object.freeze({ color: SIGNAL.allyDeep, fill: '#e3ecee', edge: 'spiral' }),
   shock: Object.freeze({ color: SIGNAL.warn, fill: SIGNAL.warnGlow, edge: 'burst' }),
 });
+
+export type ChapterMotif = 'orthogonal' | 'radial' | 'flow' | 'clock' | 'eclipse';
+
+export const CHAPTER_VISUALS: Record<number, { motif: ChapterMotif; accent: string; label: string }> = {
+  1: { motif: 'orthogonal', accent: CHAPTER_ART[1].accent, label: CHAPTER_ART[1].label },
+  2: { motif: 'radial', accent: CHAPTER_ART[2].accent, label: CHAPTER_ART[2].label },
+  3: { motif: 'flow', accent: CHAPTER_ART[3].accent, label: CHAPTER_ART[3].label },
+  4: { motif: 'clock', accent: CHAPTER_ART[4].accent, label: CHAPTER_ART[4].label },
+  5: { motif: 'eclipse', accent: CHAPTER_ART[5].accent, label: CHAPTER_ART[5].label },
+};

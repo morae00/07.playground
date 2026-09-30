@@ -3,9 +3,11 @@
 ## Dependency direction
 
 ```text
-content -> engine contracts -> engine systems -> render snapshots
-  input -> engine commands                    -> UI and audio
-platform ------------------------------------> application shell
+content -> engine contracts/world types -> simulation (GameEngine) -> game events + RenderWorld
+  input adapter -> engine commands -----/                    |              |
+                                        presentation (particles, numbers, shake, sound) <-+
+                                        world renderer (RenderWorld + presentation) -> Canvas
+platform -----------------------------------------------------------> application shell
 ```
 
 ## Rules
@@ -21,6 +23,12 @@ platform ------------------------------------> application shell
 ## Input and commands (TEC-07)
 
 `src/ui/inputAdapter.ts` owns the keyboard, pointer, and gamepad devices at the application level. It maps keys to the four movement actions (`ENGINE_ACTIONS`), pointer drags to world targets through `GameEngine.screenToWorld`, and the gamepad stick to analog movement, polling pads in `EngineCallbacks.onFrameStart`. The gamepad Start button is a UI event (`onPauseIntent`), not an engine command. The engine accepts input only through `GameEngine.dispatch(command)` with the commands in `src/game/engine/contracts.ts`; it registers no keyboard or pointer listeners. Draft cards carry an `offerId`, so `draft/select` commands can pick them from a log.
+
+## Simulation, presentation, and rendering (TEC-02)
+
+The simulation reports what happened as game events (`src/game/engine/events.ts`: hits, kills, casts, pickups, boss phases, telegraphs, enrage, and so on) through `GameEngine.emit`; tools subscribe with `GameEngine.subscribe`. `src/game/presentation/presentation.ts` consumes the events and owns every cosmetic: particles, damage numbers, impact rings, screen shake, and sound. It keeps its own seeded cosmetic random stream, and its effects age with frame time or with simulation steps exactly as before the split. The simulation never reads presentation state back. Under classic rules the presentation draws particle and damage-number ids from the gameplay counter, which keeps 0.1.0 runs bit-identical; remaster rules use a separate cosmetic counter (BUG-08).
+
+Each frame the engine builds a read-only `RenderWorld` (`src/game/render/worldRenderer.ts`) with live references to the simulation arrays plus the presentation state, and `WorldRenderer` draws it. The renderer never sees the engine, so it cannot change outcomes, and tests can draw hand-built worlds. Entity and effect types live in `src/game/engine/worldTypes.ts` (types only), so renderers and presentation import neither the engine nor each other's internals. The app shell watches the operating system's reduced-motion preference and passes it in with `setSystemReducedMotion`.
 
 ## Test access (TEC-07)
 

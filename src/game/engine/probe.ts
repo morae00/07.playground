@@ -3,9 +3,13 @@
 // engine fields, so a refactor of the simulation only has to keep the probe working. The app never imports
 // this module; only the test bundle (src/testing/engine.ts) ships it.
 import { FIXED_TIMESTEP } from '../p0Core';
+import type { RenderEffects, RenderWorld } from '../render/worldRenderer';
 import {
   GameEngine,
   type BeamEffect,
+  type DamageNumber,
+  type ImpactRing,
+  type Particle,
   type BossProjectile,
   type ChainEffect,
   type DraftReason,
@@ -83,6 +87,16 @@ export type ProbeWorld = {
 };
 
 /** Moving the player also moves its previous position unless prevX/prevY are given (interpolation tests). */
+/** Copies of the presentation layer's cosmetic state (particles, damage numbers, impact rings). */
+export type ProbeEffects = {
+  particles: Particle[];
+  damageNumbers: DamageNumber[];
+  impactRings: ImpactRing[];
+  shake: number;
+};
+
+export type ProbeRenderWorld = Omit<RenderWorld, 'effects'> & { effects: Omit<RenderEffects, 'random'> };
+
 export type ProbePlayerPatch = Partial<Omit<ProbePlayer, 'stats'>> & { stats?: Partial<StatBlock> };
 
 export type ProbeEnemySpec = {
@@ -105,6 +119,7 @@ export type ProbeLoadout = Partial<Record<SkillId, { level: number; awakened?: b
 
 export interface EngineProbe {
   read(): ProbeWorld;
+  effects(): ProbeEffects;
   /** Advances exactly `ticks` fixed steps the way the frame loop does (hit-stop aware), without drawing. */
   step(ticks?: number): void;
   /** Stops the stage director from adding enemies; enemies already present keep acting. */
@@ -123,6 +138,8 @@ export interface EngineProbe {
   /** Takes enemies out of the world without killing them (no rewards, kills, or drafts). */
   removeEnemies(ids: readonly number[]): void;
   addHazard(spec: Omit<Hazard, 'id'> & { id?: number }): number;
+  /** Removes every hazard of the given kinds, keeping the others in order. */
+  removeHazards(kinds: readonly Hazard['kind'][]): void;
   /** Drops a pickup through the regular spawner (merging, caps, and lifetimes apply). */
   spawnPickup(spec: { kind: Pickup['kind']; x: number; y: number; value: number; vx?: number; vy?: number; radius?: number }): void;
   addObstacle(spec: Omit<Obstacle, 'id'> & { id?: number }): number;
@@ -137,6 +154,8 @@ export interface EngineProbe {
   hud(): HudSnapshot;
   /** Draws one frame at the given interpolation alpha (renderer tests). */
   render(alpha?: number): void;
+  /** Plain-data copy of what the renderer receives this frame (the cosmetic random stream left out). */
+  renderWorld(alpha?: number): ProbeRenderWorld;
   /** Re-reads the canvas size as a window resize would. */
   resize(): void;
   /**
@@ -227,6 +246,12 @@ export class ProbedGameEngine extends GameEngine {
         laneTelegraphs: copy(this.laneTelegraphs),
         chains: copy(this.chains),
       }),
+      effects: () => ({
+        particles: copy(this.presentation.particles),
+        damageNumbers: copy(this.presentation.damageNumbers),
+        impactRings: copy(this.presentation.impactRings),
+        shake: this.presentation.shake,
+      }),
       step: (ticks = 1) => {
         const scale = this.timeScale;
         this.timeScale = 1;
@@ -265,11 +290,7 @@ export class ProbedGameEngine extends GameEngine {
             this.beams = [];
             this.laneTelegraphs = [];
             this.chains = [];
-            this.impactRings = [];
-            for (const particle of this.particles) this.particlePool.release(particle);
-            this.particles = [];
-            for (const number of this.damageNumbers) this.damageNumberPool.release(number);
-            this.damageNumbers = [];
+            this.presentation.clearRound();
           }
         }
       },
@@ -336,6 +357,10 @@ export class ProbedGameEngine extends GameEngine {
       spawnPickup: ({ kind, x, y, value, vx = 0, vy = 0, radius = kind === 'xp' ? 5 : 6 }) => {
         this.spawnPickup(kind, x, y, vx, vy, radius, value);
       },
+      removeHazards: (kinds) => {
+        const drop = new Set(kinds);
+        this.hazards = this.hazards.filter((hazard) => !drop.has(hazard.kind));
+      },
       addObstacle: ({ id, ...spec }) => {
         const obstacle: Obstacle = { ...spec, id: id ?? this.nextId() };
         this.obstacles.push(obstacle);
@@ -355,6 +380,13 @@ export class ProbedGameEngine extends GameEngine {
       previewBonusOffers: (reason) => this.makeBonusOffers(reason),
       hud: () => this.buildHudSnapshot(),
       render: (alpha = 1) => this.render(alpha),
+      renderWorld: (alpha = 1) => {
+        const { effects, ...world } = this.buildRenderWorld(alpha);
+        return copy({
+          ...world,
+          effects: { particles: effects.particles, damageNumbers: effects.damageNumbers, impactRings: effects.impactRings, shake: effects.shake },
+        });
+      },
       resize: () => this.onResize(),
       onStep: (watcher) => {
         this.stepWatchers.add(watcher);

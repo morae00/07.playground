@@ -32,10 +32,12 @@ class FakeAudioContext {
 
 function createCountingContext() {
   let commandCount = 0;
+  const calls = [];
   const translations = [];
   const counts = new Map();
   const record = (name, args = []) => {
     commandCount += 1;
+    calls.push([name, [...args]]);
     counts.set(name, (counts.get(name) ?? 0) + 1);
     if (name === 'translate') translations.push([...args]);
   };
@@ -59,10 +61,12 @@ function createCountingContext() {
   return {
     context,
     get commandCount() { return commandCount; },
+    get calls() { return calls; },
     get translations() { return translations; },
     count(name) { return counts.get(name) ?? 0; },
     reset() {
       commandCount = 0;
+      calls.length = 0;
       translations.length = 0;
       counts.clear();
     },
@@ -97,7 +101,7 @@ globalThis.requestAnimationFrame = () => 1;
 globalThis.cancelAnimationFrame = () => {};
 Object.defineProperty(globalThis, 'performance', { value: { now: () => 0 }, configurable: true });
 
-const { GameEngine, ProbedGameEngine } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
+const { ProbedGameEngine } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
 
 const defaultMeta = () => ({
   gold: 120,
@@ -139,107 +143,88 @@ function createCanvas(rect = { width: 800, height: 600, left: 0, top: 0 }) {
   };
 }
 
-function createEngine() {
+function createEngine({ options = defaultOptions(), stage = 1, seed = 2001 } = {}) {
   const canvasFixture = createCanvas();
-  const engine = new GameEngine(canvasFixture.canvas, defaultMeta(), defaultOptions(), {
+  const engine = new ProbedGameEngine(canvasFixture.canvas, defaultMeta(), options, {
     onSnapshot() {},
     onDraft() {},
     onRoundClear() {},
     onGameOver() {},
   });
-  engine.startRun(1, 1, 2001);
-  return { engine, ...canvasFixture };
+  engine.startRun(1, stage, seed);
+  return { engine, probe: engine.probe, ...canvasFixture };
 }
 
-function enemyAt(id, x, y) {
-  return {
-    id,
-    x,
-    y,
-    prevX: x,
-    prevY: y,
-    vx: 0,
-    vy: 0,
-    radius: 12,
-    hp: 20,
-    maxHp: 20,
-    speed: 0,
-    damage: 0,
-    xp: 0,
-    coin: 0,
-    tier: 'small',
-    variant: 0,
-    isBoss: false,
-    contactTimer: 0,
-    hitFlash: 0,
-    stun: 0,
-    root: 0,
-    slowMultiplier: 1,
-    slowTimer: 0,
-    patternTimer: 0,
-    patternPhase: 'idle',
-    patternX: 0,
-    patternY: 0,
-    damageCooldowns: {},
-  };
+// Particles only exist as the presentation's answer to game events, so tests make them with real kills: an enemy
+// spawned at each point dies on the next step and leaves its kill burst there.
+function killAt(probe, points) {
+  for (const [x, y] of points) probe.patchEnemy(probe.spawnEnemy({ x, y }), { hp: 0 });
+  probe.step(1);
+}
+
+// Draws one frame at a fixed clock and returns the draw calls after the last translate (the player's, when no shots or
+// keyline follow it), so two frames compare by pose alone wherever the player stands.
+function playerPose(probe, recorder) {
+  probe.setClock({ elapsed: 1.3 });
+  recorder.reset();
+  probe.render(1);
+  return recorder.calls.slice(recorder.calls.findLastIndex(([name]) => name === 'translate') + 1);
 }
 
 test('mirror clone ownership draws both side silhouettes, one per clone shot (BUG-16)', () => {
-  const { engine, recorder } = createEngine();
+  const { engine, probe, recorder } = createEngine();
   try {
-    engine.enemies = [];
-    engine.skills = { needleStorm: { level: 1, awakened: false } };
+    probe.clear('enemies');
+    probe.setSkills({ needleStorm: { level: 1 } });
     recorder.reset();
-    engine.render(1);
+    probe.render(1);
     const baseTranslations = recorder.count('translate');
 
-    engine.skills.mirrorClone = { level: 1, awakened: false };
+    probe.setSkills({ needleStorm: { level: 1 }, mirrorClone: { level: 1 } });
     recorder.reset();
-    engine.render(1);
+    probe.render(1);
     assert.equal(recorder.count('translate'), baseTranslations + 2, 'both clones fire, so both are drawn before awakening too');
 
-    engine.skills.mirrorClone = { level: 5, awakened: true };
+    probe.setSkills({ needleStorm: { level: 1 }, mirrorClone: { level: 5, awakened: true } });
     recorder.reset();
-    engine.render(1);
+    probe.render(1);
     assert.equal(recorder.count('translate'), baseTranslations + 2);
   } finally {
     engine.dispose();
   }
 });
 
-function pickupAt(id, x, y) {
-  return { id, x, y, prevX: x, prevY: y, vx: 0, vy: 0, radius: 6, kind: 'coin', value: 1, life: 45, maxLife: 45 };
-}
-
-function particleAt(id, x, y) {
-  return { id, x, y, vx: 0, vy: 0, life: 1, maxLife: 1, size: 4, color: '#000000' };
-}
-
 test('viewport culling makes offscreen entities draw-neutral while onscreen objects add commands', () => {
-  const { engine, recorder } = createEngine();
+  const { engine, probe, recorder } = createEngine();
   try {
-    engine.enemies = [];
-    engine.pickups = [];
-    engine.particles = [];
-    engine.render(1);
+    probe.haltSpawns();
+    probe.clear('enemies', 'pickups', 'effects');
+    probe.render(1);
     recorder.reset();
-    engine.render(1);
+    probe.render(1);
     const baseline = recorder.commandCount;
 
-    engine.enemies = Array.from({ length: 120 }, (_, index) => enemyAt(10_000 + index, -1_000 - index, -1_000));
-    engine.pickups = Array.from({ length: 120 }, (_, index) => pickupAt(20_000 + index, -1_000 - index, -1_000));
-    engine.particles = Array.from({ length: 120 }, (_, index) => particleAt(30_000 + index, -1_000 - index, -1_000));
+    // Kills far offscreen leave their bursts (and drops) there, in a row apart from the coins so nothing merges.
+    killAt(probe, Array.from({ length: 10 }, (_, index) => [-1_000 - index * 60, -1_400]));
+    for (let index = 0; index < 120; index += 1) {
+      probe.spawnEnemy({ x: -1_000 - index, y: -1_000, speed: 0, damage: 0, attackStyle: 'contact' });
+      probe.spawnPickup({ kind: 'coin', x: -1_000 - index * 60, y: -1_000, value: 1 });
+    }
+    const offscreen = probe.read();
+    assert.equal(offscreen.enemies.length, 120, 'every offscreen enemy is in the world');
+    assert.ok(offscreen.pickups.length >= 120, `offscreen pickups stay separate: ${offscreen.pickups.length}`);
+    assert.ok(probe.effects().particles.length >= 120, `offscreen kills leave their bursts: ${probe.effects().particles.length}`);
     recorder.reset();
-    engine.render(1);
+    probe.render(1);
     const offscreenCommands = recorder.commandCount;
     assert.ok(Math.abs(offscreenCommands - baseline) <= 1, `offscreen draw delta must be negligible; baseline=${baseline}, actual=${offscreenCommands}`);
 
-    const { x, y } = engine.player;
-    engine.enemies.push(enemyAt(40_001, x + 80, y));
-    engine.pickups.push(pickupAt(40_002, x + 40, y));
-    engine.particles.push(particleAt(40_003, x, y + 40));
+    const { x, y } = probe.read().player;
+    killAt(probe, [[x, y + 40]]);
+    probe.spawnEnemy({ x: x + 80, y, speed: 0, damage: 0, attackStyle: 'contact' });
+    probe.spawnPickup({ kind: 'coin', x: x + 40, y, value: 1 });
     recorder.reset();
-    engine.render(1);
+    probe.render(1);
     assert.ok(recorder.commandCount > offscreenCommands + 10, 'onscreen objects must issue visible draw commands');
   } finally {
     engine.dispose();
@@ -247,21 +232,12 @@ test('viewport culling makes offscreen entities draw-neutral while onscreen obje
 });
 
 test('render alpha interpolates camera and player at 0, 0.5, and 1', () => {
-  const { engine, recorder } = createEngine();
+  const { engine, probe, recorder } = createEngine();
   try {
-    engine.enemies = [];
-    engine.pickups = [];
-    engine.particles = [];
-    engine.hazards = [];
-    engine.obstacles = [];
-    engine.beams = [];
-    engine.chains = [];
-    engine.projectiles = [];
-    engine.bossProjectiles = [];
-    engine.damageNumbers = [];
-    engine.skills = {};
-    engine.player = { ...engine.player, prevX: 100, prevY: 100, x: 300, y: 300 };
-    engine.camera = { prevX: 20, prevY: 0, x: 80, y: 60 };
+    probe.clear('enemies', 'pickups', 'effects', 'hazards', 'obstacles', 'projectiles', 'hostileShots');
+    probe.setSkills({});
+    probe.setPlayer({ prevX: 100, prevY: 100, x: 300, y: 300 });
+    probe.setCamera({ prevX: 20, prevY: 0, x: 80, y: 60 });
 
     for (const [alpha, expectedCamera, expectedPlayer] of [
       [0, [-20, 0], [100, 100]],
@@ -269,7 +245,7 @@ test('render alpha interpolates camera and player at 0, 0.5, and 1', () => {
       [1, [-80, -60], [300, 300]],
     ]) {
       recorder.reset();
-      engine.render(alpha);
+      probe.render(alpha);
       assert.deepEqual(recorder.translations[0], expectedCamera, `camera alpha=${alpha}`);
       assert.deepEqual(recorder.translations.at(-1), expectedPlayer, `player alpha=${alpha}`);
     }
@@ -279,86 +255,107 @@ test('render alpha interpolates camera and player at 0, 0.5, and 1', () => {
 });
 
 test('grid cache builds once across 100 renders and exactly once more after resize', () => {
-  const { engine, setRect } = createEngine();
+  const { engine, probe, setRect } = createEngine();
   try {
-    for (let index = 0; index < 100; index += 1) engine.render(1);
-    assert.equal(engine.gridCacheBuilds, 1);
+    for (let index = 0; index < 100; index += 1) probe.render(1);
+    assert.equal(engine.getDiagnostics().gridCacheBuilds, 1);
 
     setRect({ width: 1024, height: 720, left: 0, top: 0 });
-    engine.onResize();
-    for (let index = 0; index < 100; index += 1) engine.render(1);
-    assert.equal(engine.gridCacheBuilds, 2);
+    probe.resize();
+    for (let index = 0; index < 100; index += 1) probe.render(1);
+    assert.equal(engine.getDiagnostics().gridCacheBuilds, 2);
   } finally {
     engine.dispose();
   }
 });
 
 test('runtime diagnostics enforce pickup TTL and hard effect caps', () => {
-  const { engine } = createEngine();
+  const { engine, probe } = createEngine();
   try {
-    engine.pickups = [];
+    probe.haltSpawns();
+    probe.setGodMode();
+    probe.clear('enemies', 'pickups');
     for (let index = 0; index < 400; index += 1) {
-      engine.spawnPickup('coin', index * 100, -500, 0, 0, 5, 1);
+      probe.spawnPickup({ kind: 'coin', x: index * 100, y: -500, radius: 5, value: 1 });
     }
     assert.equal(engine.getDiagnostics().pickups, 240, 'pickup count must stop at the hard cap');
 
-    for (const pickup of engine.pickups) engine.pickupPool.release(pickup);
-    engine.pickups = [];
-    engine.spawnPickup('coin', 0, 0, 0, 0, 5, 7);
-    assert.equal(engine.pickups[0].maxLife, 45);
-    for (let step = 0; step < 45 * 60; step += 1) engine.updatePickups(1 / 60);
+    probe.clear('pickups');
+    probe.spawnPickup({ kind: 'coin', x: 0, y: 0, radius: 5, value: 7 });
+    assert.equal(probe.read().pickups[0].maxLife, 45);
+    probe.step(45 * 60);
     assert.equal(engine.getDiagnostics().pickups, 0, 'pickup must be collected no later than 45 seconds');
 
-    for (let burst = 0; burst < 20; burst += 1) engine.burst(engine.player.x, engine.player.y, 90, '#000000', 100);
-    for (let index = 0; index < 320; index += 1) engine.emitDamageNumber(engine.player.x, engine.player.y, 10, index % 3 === 0, 1);
-    const diagnostics = engine.getDiagnostics();
-    assert.ok(diagnostics.particles <= 520, `particles exceeded cap: ${diagnostics.particles}`);
-    assert.ok(diagnostics.damageNumbers <= 160, `damage numbers exceeded cap: ${diagnostics.damageNumbers}`);
+    // Particles and damage numbers are presentation state now (the caps themselves are unit-tested in
+    // presentation.test.ts): after every step of a fight that overruns both caps, the diagnostics stay within them.
+    // The crowd never dies, so no level-up draft pauses the fight.
+    const { x, y } = probe.read().player;
+    probe.setSkills({
+      needleStorm: { level: 5, awakened: true },
+      chainSpark: { level: 5, awakened: true },
+      orbitScythes: { level: 5, awakened: true },
+      boneMortar: { level: 5 },
+      voidMine: { level: 5 },
+    });
+    for (let index = 0; index < 150; index += 1) {
+      const angle = (Math.PI * 2 * index) / 150;
+      const reach = 70 + (index % 5) * 30;
+      probe.spawnEnemy({ x: x + Math.cos(angle) * reach, y: y + Math.sin(angle) * reach, hp: 1e9, damage: 0 });
+    }
+    const peak = { particles: 0, damageNumbers: 0 };
+    const stopWatching = probe.onStep(() => {
+      const { particles, damageNumbers } = engine.getDiagnostics();
+      assert.ok(particles <= 520, `particles exceeded cap: ${particles}`);
+      assert.ok(damageNumbers <= 160, `damage numbers exceeded cap: ${damageNumbers}`);
+      peak.particles = Math.max(peak.particles, particles);
+      peak.damageNumbers = Math.max(peak.damageNumbers, damageNumbers);
+    });
+    probe.step(300);
+    stopWatching();
+    assert.equal(peak.particles, 520, 'the fight must fill the particle cap');
+    assert.equal(peak.damageNumbers, 160, 'the fight must fill the damage-number cap');
   } finally {
     engine.dispose();
   }
 });
 
 test('a paused run draws a still frame: no shake, no particle drift (BUG-03)', () => {
-  const canvasFixture = createCanvas();
-  const engine = new GameEngine(canvasFixture.canvas, defaultMeta(), { ...defaultOptions(), screenShake: true }, {
-    onSnapshot() {},
-    onDraft() {},
-    onRoundClear() {},
-    onGameOver() {},
-  });
+  const { engine, probe, recorder } = createEngine({ options: { ...defaultOptions(), screenShake: true }, stage: 5, seed: 2002 });
+  const particleState = () => probe.effects().particles.map((particle) => [particle.x, particle.y, particle.life]);
   try {
-    engine.startRun(1, 5, 2002);
-    const boss = engine.enemies.find((enemy) => enemy.isBoss);
-    boss.hp = 0;
+    const boss = probe.read().enemies.find((enemy) => enemy.isBoss);
+    probe.patchEnemy(boss.id, { hp: 0 });
     engine.advanceFrame(1 / 60, false);
-    assert.equal(engine.paused, true, 'killing the mid boss opens the reward draft');
-    assert.equal(engine.shake, 0, 'opening a dialog clears the screen shake');
-    const particlesBefore = engine.particles.map((particle) => [particle.x, particle.y, particle.life]);
+    assert.equal(probe.read().paused, true, 'killing the mid boss opens the reward draft');
+    assert.equal(probe.effects().shake, 0, 'opening a dialog clears the screen shake');
+    const particlesBefore = particleState();
     assert.ok(particlesBefore.length > 0, 'the kill burst leaves particles to freeze');
     for (let frame = 0; frame < 120; frame += 1) {
-      canvasFixture.recorder.reset();
+      recorder.reset();
       engine.advanceFrame(1 / 60, true);
-      assert.deepEqual(canvasFixture.recorder.translations[0], [-engine.camera.x, -engine.camera.y], 'the camera never jitters while paused');
+      const { camera } = probe.read();
+      assert.deepEqual(recorder.translations[0], [-camera.x, -camera.y], 'the camera never jitters while paused');
     }
-    assert.deepEqual(engine.particles.map((particle) => [particle.x, particle.y, particle.life]), particlesBefore, 'particles hold still while paused');
+    assert.deepEqual(particleState(), particlesBefore, 'particles hold still while paused');
   } finally {
     engine.dispose();
   }
 });
 
 test('bosses standing on the player trigger the top-layer player keyline (BUG-12)', () => {
-  const { engine, recorder } = createEngine();
+  const { engine, probe, recorder } = createEngine();
   try {
-    engine.enemies = [];
-    engine.render(1);
+    probe.clear('enemies');
+    probe.render(1);
     recorder.reset();
-    engine.render(1);
+    probe.render(1);
     const alone = recorder.count('translate');
-    const boss = enemyAt(50_001, engine.player.x + 10, engine.player.y);
-    engine.enemies = [{ ...boss, isBoss: true, tier: 'boss', radius: 54, hp: 500, maxHp: 500, boss: { id: 's1-mid-dash', pattern: 'dash' }, bossPhase: 1 }];
+    const { x, y } = probe.read().player;
+    probe.spawnBoss('mid', { x: x + 10, y, hp: 500 });
+    // The spawn burst lands where the boss entered the arena; this frame compares bodies only.
+    probe.clear('effects');
     recorder.reset();
-    engine.render(1);
+    probe.render(1);
     assert.equal(recorder.count('translate'), alone + 2, 'one translate for the boss body and one for the keyline');
   } finally {
     engine.dispose();
@@ -366,30 +363,34 @@ test('bosses standing on the player trigger the top-layer player keyline (BUG-12
 });
 
 test('reduced motion draws orbit blades where they hit, and the walk cycle follows real movement (BUG-15)', () => {
-  const { engine, recorder } = createEngine();
+  const { engine, probe, recorder } = createEngine();
   try {
-    engine.systemReducedMotion = true;
-    engine.enemies = [];
-    engine.skills = { orbitScythes: { level: 1, awakened: false } };
-    engine.elapsed = 1.3;
+    engine.setSystemReducedMotion(true);
+    probe.clear('enemies');
+    probe.setSkills({ orbitScythes: { level: 1 } });
+    probe.setClock({ elapsed: 1.3 });
     recorder.reset();
-    engine.render(1);
+    probe.render(1);
+    const { elapsed, player } = probe.read();
     const blades = 2;
     const expected = Array.from({ length: blades }, (_, index) => {
-      const angle = engine.elapsed * 3.2 + (Math.PI * 2 * index) / blades;
-      return [engine.player.x + Math.cos(angle) * 82, engine.player.y + Math.sin(angle) * 82];
+      const angle = elapsed * 3.2 + (Math.PI * 2 * index) / blades;
+      return [player.x + Math.cos(angle) * 82, player.y + Math.sin(angle) * 82];
     });
     for (const [x, y] of expected) {
       assert.ok(recorder.translations.some(([tx, ty]) => Math.abs(tx - x) < 1e-6 && Math.abs(ty - y) < 1e-6), `blade drawn at simulated position ${x},${y}`);
     }
 
-    engine.player.root = 5;
+    // Reduced motion never animates the walk, so the walk cycle is read from full-motion poses.
+    engine.setSystemReducedMotion(false);
+    const standing = playerPose(probe, recorder);
+    probe.setPlayer({ root: 5 });
     engine.dispatch({ type: 'input/action', action: 'moveRight', pressed: true });
-    engine.update(1 / 60);
-    assert.equal(engine.playerMoved(), false, 'a rooted player holding a key does not walk');
-    engine.player.root = 0;
-    engine.update(1 / 60);
-    assert.equal(engine.playerMoved(), true, 'moving once free');
+    probe.step(1);
+    assert.deepEqual(playerPose(probe, recorder), standing, 'a rooted player holding a key does not walk');
+    probe.setPlayer({ root: 0 });
+    probe.step(1);
+    assert.notDeepEqual(playerPose(probe, recorder), standing, 'moving once free');
   } finally {
     engine.dispose();
   }

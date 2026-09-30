@@ -99,6 +99,8 @@ export function createEngineHarness(createEngine: EngineFactory): RealEngineHarn
       events = [];
       openDraft = null;
       engine = createEngine(callbacks);
+      // Game events join the replay record, so a fingerprint covers what happened, not only where it ended (TEC-02).
+      engine.subscribe(({ type, ...payload }) => emit(type, payload));
       engine.setRuleSet(request.rules ?? 'remaster');
       runState = 'running';
       engine.startRun(request.address.chapter, request.address.stage, request.seed);

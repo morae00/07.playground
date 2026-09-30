@@ -148,10 +148,8 @@ function assertFiniteCoordinates(engine, world, label) {
     ['bossProjectiles', world.bossProjectiles],
     ['pickups', world.pickups],
     ['hazards', world.hazards],
-    // TEC-07 gap: probe.read() has no particles or damage numbers (and render() culls non-finite ones), so these
-    // two cosmetic lists are still read directly.
-    ['particles', engine.particles],
-    ['damageNumbers', engine.damageNumbers],
+    ['particles', engine.probe.effects().particles],
+    ['damageNumbers', engine.probe.effects().damageNumbers],
   ]) {
     collection.forEach((item, index) => assertFinitePoint(item, `${label}.${collectionName}[${index}]`));
   }

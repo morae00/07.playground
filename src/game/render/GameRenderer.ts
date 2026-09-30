@@ -6,7 +6,7 @@ import type {
   Obstacle,
   Pickup,
   SkillId,
-} from '../GameEngine';
+} from '../engine/worldTypes.ts';
 import { clamp } from '../worldMath.ts';
 import { telegraphPhase } from '../visualContracts.ts';
 import { motionWave, normalizedLifetime } from './animationClock.ts';
@@ -71,7 +71,9 @@ export type FriendlyProjectileVisualInput = {
 };
 
 /** Which side an effect belongs to; it decides the signal colour (BUG-14). */
-export type EffectOwner = 'player' | 'hostile';
+import type { EffectOwner } from '../engine/worldTypes.ts';
+
+export type { EffectOwner };
 
 export type HostileProjectileVisualInput = {
   x: number;

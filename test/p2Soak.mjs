@@ -119,14 +119,7 @@ function round(value, digits = 3) {
 
 /** Silence would switch every skill off, so null zones are dropped and silence cleared before every fixed step. */
 function neutralizeSilence() {
-  const { hazards } = engine.probe.read();
-  if (hazards.some((hazard) => hazard.kind === 'null')) {
-    engine.probe.clear('hazards');
-    // Keeping each id preserves hazard order, vortex cooldown keys, and the gameplay id stream.
-    for (const hazard of hazards) {
-      if (hazard.kind !== 'null') engine.probe.addHazard(hazard);
-    }
-  }
+  engine.probe.removeHazards(['null']);
   engine.probe.setPlayer({ silence: 0 });
 }
 

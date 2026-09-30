@@ -2,7 +2,7 @@
 // The engine reads every number a player can see on a card from SKILL_NUMBERS, and the level and awakening
 // lines below are rendered from the same entries, so a description can no longer drift from what the skill does.
 // Damage entries are coefficients of the player's attack; per-level entries are the total at that level.
-import type { SkillId } from './GameEngine.ts';
+import type { SkillId } from './engine/worldTypes.ts';
 import {
   COIN_FEVER_FRENZY_ATTACK_SPEED_MULTIPLIER,
   COIN_FEVER_FRENZY_DURATION,

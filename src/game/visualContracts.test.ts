@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { CHAPTER_VISUALS } from './render/visualRegistry.ts';
 import {
-  CHAPTER_VISUALS,
   bossPhaseForHealth,
   classifyImpact,
   motionPolicy,
