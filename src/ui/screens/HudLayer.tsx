@@ -152,7 +152,8 @@ export function HudLayer({ snapshot, playing, runPaused, sidePanelOpen, drawerTo
       {snapshot.activeEffects.length > 0 && (
         <div className="effectRack" role="status" aria-live="polite" aria-label="현재 버프와 디버프">
           {snapshot.activeEffects.map((effect) => (
-            <div className={`effectItem ${effect.kind}`} key={effect.id}>
+            // Silence and root show as timers over the hero (UI-02); the rack still announces them.
+            <div className={`effectItem ${effect.kind}${effect.id === 'silence' || effect.id === 'root' ? ' srOnly' : ''}`} key={effect.id}>
               <span className="effectMark" aria-hidden="true">{effect.kind === 'buff' ? '+' : '!'}</span>
               <span className="effectCopy">
                 <b>{effect.label}</b>

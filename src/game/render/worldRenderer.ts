@@ -129,7 +129,16 @@ export type RenderFrameStats = {
   xray: boolean;
   /** Level of detail, from the enemies on screen (FX-01). */
   detail: VisualDetail;
+  /** Edge arrows drawn for bosses and elites outside the view (UI-02). */
+  markers: number;
 };
+
+/** Off-screen markers (UI-02): at most this many, bosses first, then the nearest elites. */
+export const MAX_OFFSCREEN_MARKERS = 4;
+/** Radius of the round debuff timers over the hero's head, in world units. */
+const DEBUFF_TIMER_RADIUS = 13;
+/** The markers keep clear of the HUD: the top rows, the boss bar, and a margin at the sides (CSS px). */
+const MARKER_INSET = Object.freeze({ top: 150, right: 26, bottom: 96, left: 26 });
 
 export type RenderPlayer = Readonly<{
   x: number;
@@ -221,7 +230,10 @@ export class WorldRenderer {
   private heroMoving = false;
   private playerBody: BodyDraw | null = null;
   /** Statistics of the last drawn frame. */
-  readonly stats: RenderFrameStats = { bodies: 0, playerCoverage: 0, xray: false, detail: 'full' };
+  readonly stats: RenderFrameStats = { bodies: 0, playerCoverage: 0, xray: false, detail: 'full', markers: 0 };
+  /** Critical debuffs over the hero (UI-02): each one's length, taken when it is seen to start, and its last reading. */
+  private readonly debuffSpans = { silence: 0, root: 0 };
+  private readonly debuffLast = { silence: 0, root: 0 };
   /** Called as each world layer starts drawing; tests use it to check the layer contract. */
   onLayer: ((layer: WorldLayer) => void) | null = null;
 
@@ -265,6 +277,11 @@ export class WorldRenderer {
     });
     this.visual.beginFrame(snapshot);
     this.stats.detail = snapshot.detail;
+    for (const key of ['silence', 'root'] as const) {
+      const value = this.world.player[key];
+      if (value > this.debuffLast[key] + 1e-6) this.debuffSpans[key] = value;
+      this.debuffLast[key] = value;
+    }
     const shakeEnabled = this.world.options.screenShake && !policy.reduced;
     // Classic rules draw the shake jitter every frame like 0.1.0 did, because under them cosmetic random draws
     // still reach gameplay through particle ids; remaster rules draw only while actually shaking.
@@ -286,6 +303,7 @@ export class WorldRenderer {
     }
     ctx.restore();
     this.drawPlayerFeedback(ctx, policy.pulse);
+    this.drawOffscreenMarkers(ctx, camera);
     if (frame.offsetX > 0) {
       // Pillarbox bars keep windows wider than 16:9 from seeing past the logical frame (and its spawns).
       ctx.fillStyle = NEUTRAL.ink;
@@ -930,7 +948,6 @@ export class WorldRenderer {
       aimAngle: this.world.aim.angle,
       moving: this.heroMoving,
       shield: 0,
-      silence: 0,
       alpha: skill.awakened ? 0.28 : 0.36,
     });
   }
@@ -947,7 +964,6 @@ export class WorldRenderer {
       aimAngle: this.world.aim.angle,
       moving: this.heroMoving,
       shield: this.world.player.shield,
-      silence: this.world.player.silence,
     };
   }
 
@@ -963,6 +979,7 @@ export class WorldRenderer {
       return;
     }
     this.visual.drawPlayerBody(ctx, this.playerInput(body));
+    this.drawDebuffTimers(ctx, body.x, body.top - 18);
   }
 
   /** The hero falls back over the death moment (FX-03) and lies still until the settlement; upright otherwise. */
@@ -1137,31 +1154,124 @@ export class WorldRenderer {
     ctx.restore();
   }
 
-  /** Shield ring around the body and the silence mark above the head (SYS-11 keeps it overhead). */
+  /** Shield ring around the body, and the critical debuffs above the head (SYS-11, UI-02). */
   private drawHeroMarks(ctx: CanvasRenderingContext2D, x: number, y: number, sprite: SpriteFrame) {
-    const { shield, silence } = this.world.player;
-    if (shield <= 0 && silence <= 0) return;
+    const { shield } = this.world.player;
     const top = y - sprite.ay / sprite.scale;
-    ctx.save();
     if (shield > 0) {
+      ctx.save();
       ctx.strokeStyle = SIGNAL.ally;
       ctx.lineWidth = 3;
       ctx.setLineDash([8, 5]);
       ctx.beginPath();
       ctx.ellipse(x, (top + y) / 2, 30, (y - top) / 2 + 8, 0, 0, Math.PI * 2);
       ctx.stroke();
+      ctx.restore();
     }
-    if (silence > 0) {
-      ctx.setLineDash([]);
-      ctx.strokeStyle = SIGNAL.elite;
-      ctx.lineWidth = 3;
+    this.drawDebuffTimers(ctx, x, top - 18);
+  }
+
+  /**
+   * Silence and root as round timers over the hero's head (UI-02): the mark on a paper disc inside a ring that
+   * empties clockwise from 12 o'clock as the debuff runs out. Silence keeps its violet (SYS-11); root is amber, the
+   * colour of the root zones that cause it.
+   */
+  private drawDebuffTimers(ctx: CanvasRenderingContext2D, x: number, y: number) {
+    const active = (['silence', 'root'] as const).filter((key) => this.world.player[key] > 0);
+    active.forEach((key, index) => {
+      const cx = x + (index - (active.length - 1) / 2) * 32;
+      const share = clamp(this.world.player[key] / Math.max(1e-6, this.debuffSpans[key]), 0, 1);
+      ctx.save();
+      ctx.fillStyle = NEUTRAL.paper;
+      ctx.strokeStyle = NEUTRAL.ink;
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(x, top - 12, 8, 0, Math.PI * 2);
-      ctx.moveTo(x - 5.6, top - 17.6);
-      ctx.lineTo(x + 5.6, top - 6.4);
+      ctx.arc(cx, y, DEBUFF_TIMER_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
       ctx.stroke();
+      ctx.strokeStyle = key === 'silence' ? SIGNAL.elite : SIGNAL.warn;
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(cx, y, DEBUFF_TIMER_RADIUS, -Math.PI / 2, -Math.PI / 2 + share * Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = NEUTRAL.ink;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      if (key === 'silence') {
+        ctx.arc(cx, y, 6.5, 0, Math.PI * 2);
+        ctx.moveTo(cx - 4.6, y - 4.6);
+        ctx.lineTo(cx + 4.6, y + 4.6);
+      } else {
+        // Two chain links.
+        ctx.ellipse(cx - 3.1, y, 4.5, 2.8, -0.5, 0, Math.PI * 2);
+        ctx.moveTo(cx + 7.6, y);
+        ctx.ellipse(cx + 3.1, y, 4.5, 2.8, -0.5, 0, Math.PI * 2);
+      }
+      ctx.stroke();
+      ctx.restore();
+    });
+  }
+
+  /**
+   * Bosses and elites outside the view (UI-02): a coral arrow on the screen edge, on the line from the screen centre
+   * toward each, kept clear of the HUD. Bosses come first and draw larger with an ink ring; at most
+   * MAX_OFFSCREEN_MARKERS show.
+   */
+  private drawOffscreenMarkers(ctx: CanvasRenderingContext2D, camera: { x: number; y: number }) {
+    this.stats.markers = 0;
+    const { frame } = this.world.view;
+    const left = frame.offsetX;
+    const right = left + frame.width * frame.zoom;
+    const bottom = frame.height * frame.zoom;
+    const cx = (left + right) / 2;
+    const cy = bottom / 2;
+    const marks: Array<{ boss: boolean; x: number; y: number; distance: number }> = [];
+    for (const enemy of this.world.enemies) {
+      const boss = enemy.isBoss && !enemy.legacyBoss;
+      if (enemy.hp <= 0 || (!boss && enemy.tier !== 'large')) continue;
+      const point = this.interpolated(enemy);
+      const x = left + (point.x - camera.x) * frame.zoom;
+      const y = (point.y - camera.y) * frame.zoom;
+      const reach = enemy.radius * frame.zoom;
+      if (x + reach > left && x - reach < right && y + reach > 0 && y - reach < bottom) continue;
+      marks.push({ boss, x, y, distance: Math.hypot(x - cx, y - cy) });
     }
-    ctx.restore();
+    if (marks.length === 0) return;
+    marks.sort((a, b) => Number(b.boss) - Number(a.boss) || a.distance - b.distance);
+    const edge = { left: left + MARKER_INSET.left, right: right - MARKER_INSET.right, top: MARKER_INSET.top, bottom: bottom - MARKER_INSET.bottom };
+    for (const mark of marks.slice(0, MAX_OFFSCREEN_MARKERS)) {
+      const angle = Math.atan2(mark.y - cy, mark.x - cx);
+      const dx = Math.cos(angle);
+      const dy = Math.sin(angle);
+      // Scale the direction until it meets the inset rectangle.
+      const reachX = dx > 0 ? (edge.right - cx) / dx : dx < 0 ? (edge.left - cx) / dx : Infinity;
+      const reachY = dy > 0 ? (edge.bottom - cy) / dy : dy < 0 ? (edge.top - cy) / dy : Infinity;
+      const reach = Math.max(0, Math.min(reachX, reachY));
+      const size = mark.boss ? 18 : 13;
+      ctx.save();
+      ctx.translate(cx + dx * reach, cy + dy * reach);
+      ctx.rotate(angle);
+      if (mark.boss) {
+        ctx.fillStyle = NEUTRAL.ink;
+        ctx.beginPath();
+        ctx.arc(-size * 0.9, 0, size * 0.72, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = SIGNAL.hostile;
+      ctx.strokeStyle = NEUTRAL.ink;
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(size, 0);
+      ctx.lineTo(-size * 0.55, size * 0.8);
+      ctx.lineTo(-size * 0.55, -size * 0.8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+      this.stats.markers += 1;
+    }
   }
 
   private spawnProgress(anim: AnimState) {

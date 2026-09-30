@@ -31,7 +31,6 @@ export type PlayerVisualInput = {
   aimAngle: number;
   moving: boolean;
   shield: number;
-  silence: number;
 };
 
 export type CloneVisualInput = PlayerVisualInput & {
@@ -334,15 +333,6 @@ export class GameRenderer {
       ctx.setLineDash([8, 5]);
       ctx.beginPath();
       ctx.arc(0, 3, 46, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    if (input.silence > 0) {
-      ctx.setLineDash([]);
-      ctx.strokeStyle = VISUAL_PALETTE.elite;
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.moveTo(-24, -35);
-      ctx.lineTo(24, 38);
       ctx.stroke();
     }
     ctx.restore();

@@ -63,3 +63,72 @@ test('UI-02: active skills report the share of their cooldown still to run; pass
     assert.equal('ironFrame' in engine.probe.hud().cooldowns, false);
   });
 });
+
+/** A canvas that records the arcs and fills the frame draws, so the tests can find the HUD marks. */
+function markCanvas() {
+  const arcs = [];
+  const target = {
+    measureText: () => ({ width: 0 }),
+    createPattern: () => null,
+    arc(x, y, radius, start, end) { arcs.push({ x, y, radius, sweep: end - start, strokeStyle: target.strokeStyle }); },
+  };
+  const context = new Proxy(target, {
+    get(object, property) { return property in object ? object[property] : () => {}; },
+    set(object, property, value) { object[property] = value; return true; },
+  });
+  return {
+    arcs,
+    canvas: {
+      width: 0, height: 0,
+      getContext: () => context,
+      getBoundingClientRect: () => ({ width: 1440, height: 900, left: 0, top: 0 }),
+      addEventListener() {}, removeEventListener() {},
+      setPointerCapture() {}, releasePointerCapture() {}, hasPointerCapture: () => false,
+    },
+  };
+}
+
+function arena(fixture) {
+  const engine = new ProbedGameEngine(fixture.canvas, meta(), options, { onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver() {} });
+  engine.startRun(1, 1, 5150);
+  engine.probe.haltSpawns();
+  engine.probe.setGodMode();
+  engine.probe.clear('enemies', 'hazards', 'obstacles', 'pickups', 'projectiles', 'hostileShots', 'effects');
+  engine.probe.setSkills({});
+  return engine;
+}
+
+test('UI-02: elites and bosses off screen get an edge arrow each, bosses first, four at most', () => {
+  const engine = arena(markCanvas());
+  try {
+    const { player } = engine.probe.read();
+    engine.probe.spawnEnemy({ tier: 'large', x: player.x + 200, y: player.y, speed: 0, damage: 0 });
+    engine.probe.render(1);
+    assert.equal(engine.probe.renderStats().markers, 0, 'an elite on screen needs no arrow');
+    for (let index = 0; index < 5; index += 1) engine.probe.spawnEnemy({ tier: 'large', x: player.x - 1400 - index * 60, y: player.y + index * 90, speed: 0, damage: 0 });
+    engine.probe.spawnEnemy({ tier: 'small', x: player.x + 1500, y: player.y, speed: 0, damage: 0 });
+    engine.probe.render(1);
+    assert.equal(engine.probe.renderStats().markers, 4, 'five elites off screen, four arrows; small enemies get none');
+  } finally {
+    engine.dispose();
+  }
+});
+
+test('UI-02: silence and root sit over the hero as timers that run down', () => {
+  const fixture = markCanvas();
+  const engine = arena(fixture);
+  try {
+    const rings = (color) => fixture.arcs.filter((arc) => arc.radius === 13 && arc.strokeStyle === color && arc.sweep > 0);
+    engine.probe.setPlayer({ silence: 2 });
+    engine.probe.render(1);
+    const full = rings('#805ad5').at(-1);
+    assert.ok(full && Math.abs(full.sweep - Math.PI * 2) < 1e-6, 'a silence just begun shows a full ring');
+    engine.probe.setPlayer({ silence: 0.5, root: 1 });
+    fixture.arcs.length = 0;
+    engine.probe.render(1);
+    assert.ok(Math.abs(rings('#805ad5').at(-1).sweep - Math.PI * 0.5) < 1e-6, 'a quarter of the silence left, a quarter of the ring');
+    assert.equal(rings('#d88d16').length, 1, 'root gets its own amber timer beside it');
+  } finally {
+    engine.dispose();
+  }
+});

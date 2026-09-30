@@ -169,7 +169,14 @@ function playerPose(probe, recorder) {
   probe.setClock({ elapsed: 1.3 });
   recorder.reset();
   probe.render(1);
-  return recorder.calls.slice(recorder.calls.findLastIndex(([name]) => name === 'translate') + 1);
+  const start = recorder.calls.findLastIndex(([name]) => name === 'translate') + 1;
+  // The body's own drawing ends at the restore that closes its transform; HUD marks over it (UI-02) come after.
+  let end = start;
+  for (let depth = 1; end < recorder.calls.length && depth > 0; end += 1) {
+    if (recorder.calls[end][0] === 'save') depth += 1;
+    if (recorder.calls[end][0] === 'restore') depth -= 1;
+  }
+  return recorder.calls.slice(start, end);
 }
 
 test('mirror clone ownership draws both side silhouettes, one per clone shot (BUG-16)', () => {

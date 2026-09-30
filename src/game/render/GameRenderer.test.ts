@@ -135,7 +135,6 @@ test('player and clone share a readable silhouette with different signal strengt
     aimAngle: 0,
     moving: true,
     shield: 1,
-    silence: 0,
   });
   const playerCommands = recorder.calls.length;
 
@@ -146,7 +145,6 @@ test('player and clone share a readable silhouette with different signal strengt
     aimAngle: 0,
     moving: true,
     shield: 0,
-    silence: 0,
     alpha: 0.35,
   });
   const cloneLog = recorder.calls.join('|');
