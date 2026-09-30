@@ -46,7 +46,11 @@ async function defaultLoadImage(url: string): Promise<SpriteImage> {
   const image = new Image();
   image.decoding = 'async';
   image.src = url;
-  await image.decode();
+  try {
+    await image.decode();
+  } catch (error) {
+    throw new Error(`atlas page ${url} did not load (${error instanceof Error ? error.message : String(error)})`);
+  }
   return typeof createImageBitmap === 'function' ? createImageBitmap(image) : image;
 }
 
@@ -57,6 +61,7 @@ export class SpriteAtlas {
   private manifestLoad: Promise<AtlasManifest> | null = null;
   private readonly pages = new Map<string, SpriteImage[]>();
   private readonly statuses = new Map<string, PackStatus>();
+  private readonly failures = new Map<string, unknown>();
   private readonly options: Required<SpriteAtlasOptions>;
   private readonly listeners = new Set<() => void>();
 
@@ -69,6 +74,11 @@ export class SpriteAtlas {
 
   status(pack: string): PackStatus {
     return this.statuses.get(pack) ?? 'idle';
+  }
+
+  /** Why a pack failed to load, for the error log (TEC-14). */
+  failure(pack: string): unknown {
+    return this.failures.get(pack);
   }
 
   /** Loads a pack once; resolves true when its pages are ready, false if anything failed (callers fall back). */
@@ -87,8 +97,9 @@ export class SpriteAtlas {
       const images = await Promise.all(entry.pages.map((url) => this.options.loadImage(url)));
       this.pages.set(pack, images);
       this.statuses.set(pack, 'ready');
-    } catch {
+    } catch (error) {
       this.statuses.set(pack, 'failed');
+      this.failures.set(pack, error);
     }
     for (const listener of this.listeners) listener();
     return this.status(pack) === 'ready';

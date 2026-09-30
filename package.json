@@ -34,6 +34,7 @@
     "test:visual": "node scripts/visual-gate.mjs",
     "test:dev-smoke": "node scripts/dev-smoke.mjs",
     "test:ui-probes": "node scripts/ui-probes.mjs",
+    "test:electron-smoke": "node scripts/electron-smoke.mjs",
     "fingerprint:draw": "npm run build:test-bundles && node scripts/draw-fingerprint.mjs",
     "build:atlas": "node scripts/build-atlas.mjs",
     "preview": "vite preview --host 127.0.0.1",

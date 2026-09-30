@@ -72,6 +72,7 @@ test('packs load once, hand out frames, and fall back cleanly when a page fails'
   const failing = new SpriteAtlas({ loadManifest: async () => manifest, loadImage: async () => { throw new Error('404'); } });
   assert.equal(await failing.load(CHAPTER_PACKS[1]), false);
   assert.equal(failing.status(CHAPTER_PACKS[1]), 'failed');
+  assert.match(String(failing.failure(CHAPTER_PACKS[1])), /404/, 'the reason is kept for the error log');
   assert.equal(failing.frame('enemy/1/stalker/walk/0'), undefined);
   assert.equal(await failing.load('no-such-pack'), false);
 });

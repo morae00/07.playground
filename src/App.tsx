@@ -27,6 +27,8 @@ import { ProgressBar } from './ui/ProgressBar';
 import { nextRovingId, watchReducedMotion, type RovingKey } from './ui/inputContracts';
 import { InputAdapter } from './ui/inputAdapter';
 import { SpriteAtlas } from './game/render/assets/spriteAtlas';
+import { ErrorLog, describeError } from './platform/errorReport';
+import { copyErrorReport } from './ui/ErrorBoundary';
 import { CHAPTER_PACKS, COMMON_PACK } from './game/render/assets/slots';
 import { useGamepadNavigation } from './ui/useGamepadNavigation';
 import {
@@ -92,7 +94,14 @@ function StatGrid({ stats }: { stats: StatBlock }) {
   );
 }
 
-function App() {
+// Developer cheat UIFAULT (TEC-14): throws while rendering to exercise the error boundary.
+function InjectedRenderFault(): never {
+  throw new Error('Injected render fault (developer cheat UIFAULT)');
+}
+
+const standaloneErrorLog = new ErrorLog();
+
+function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<GameEngine | null>(null);
   // Keyboard, pointer, and gamepad reach the engine only as commands through this adapter (TEC-07).
@@ -129,6 +138,11 @@ function App() {
   const [infinitePlayerName, setInfinitePlayerName] = useState(() => initialInfiniteLeaderboard.playerName);
   const [infiniteSeed, setInfiniteSeed] = useState('');
   const [leaderboardStatus, setLeaderboardStatus] = useState('');
+  // TEC-14: a frame that threw stops the loop, and the run waits paused behind this dialog.
+  const [loopFault, setLoopFault] = useState<{ message: string; count: number } | null>(null);
+  const [notice, setNotice] = useState<'art' | 'error' | null>(null);
+  const [errorCopyStatus, setErrorCopyStatus] = useState('');
+  const [uiFault, setUiFault] = useState(false);
   const infiniteEntriesRef = useRef(infiniteEntries);
   const developerAccess = DEVELOPER_UI_AVAILABLE && developerMode;
   phaseRef.current = phase;
@@ -150,13 +164,26 @@ function App() {
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([COMMON_PACK, ...Object.values(CHAPTER_PACKS)].map((pack) => spriteAtlas.load(pack))).then((loaded) => {
-      if (!cancelled) document.documentElement.dataset.sprites = loaded.every(Boolean) ? 'ready' : 'fallback';
+    const packs = [COMMON_PACK, ...Object.values(CHAPTER_PACKS)];
+    void Promise.all(packs.map((pack) => spriteAtlas.load(pack))).then((loaded) => {
+      if (cancelled) return;
+      const ready = loaded.every(Boolean);
+      document.documentElement.dataset.sprites = ready ? 'ready' : 'fallback';
+      if (ready) return;
+      // Vectors stand in for missing art (TEC-03); the player is told once instead of left guessing (TEC-14).
+      for (const pack of packs) {
+        if (spriteAtlas.status(pack) === 'failed') errorLog.record('asset', spriteAtlas.failure(pack) ?? `atlas pack ${pack} failed`);
+      }
+      setNotice('art');
     });
     return () => {
       cancelled = true;
     };
-  }, [spriteAtlas]);
+  }, [errorLog, spriteAtlas]);
+
+  useEffect(() => errorLog.subscribe((entry) => {
+    if (entry.source === 'window' || entry.source === 'promise') setNotice('error');
+  }), [errorLog]);
 
   useEffect(() => {
     return () => {
@@ -323,8 +350,16 @@ function App() {
         setPhase('gameOver');
       },
       onFrameStart: () => inputRef.current?.poll(),
+      onFault: (error: unknown) => {
+        const entry = errorLog.record('loop', error);
+        runPausedRef.current = false;
+        setRunPaused(false);
+        setSidePanelOpen(false);
+        setErrorCopyStatus('');
+        setLoopFault({ message: entry?.message ?? describeError(error).message, count: entry?.count ?? 1 });
+      },
     }),
-    [developerAccess, grantSettlement, recordInfiniteSettlement],
+    [developerAccess, errorLog, grantSettlement, recordInfiniteSettlement],
   );
 
   const visibleStats = useMemo(() => buildStats(meta, makeRunUpgrades(), {}), [meta]);
@@ -368,6 +403,7 @@ function App() {
     setSeedCopyStatus('');
     setLeaderboardStatus('');
     setCheatMessage('');
+    setLoopFault(null);
     setPhase('playing');
     launch(engine);
   }, [callbacks, meta, options, spriteAtlas]);
@@ -471,6 +507,7 @@ function App() {
     releaseReducedMotionRef.current = null;
     engineRef.current?.dispose();
     engineRef.current = null;
+    setLoopFault(null);
     setPhase('menu');
     setSnapshot(null);
     setDraft(null);
@@ -480,6 +517,39 @@ function App() {
     setAbandonConfirmOpen(false);
     setSidePanelOpen(false);
   };
+
+  const retryAfterFault = () => {
+    setLoopFault(null);
+    engineRef.current?.recoverFromFault();
+    // The run comes back paused, so the player is ready before enemies move again.
+    setManualPause(true);
+  };
+
+  const copyErrorLog = async () => {
+    const scene = snapshot
+      ? snapshot.runMode === 'infinite' ? `infinite (${rulesLabel(snapshot.rulesVersion)})` : `Ch.${snapshot.chapter} / St.${snapshot.stage} (${rulesLabel(snapshot.rulesVersion)})`
+      : phase;
+    try {
+      await copyErrorReport(errorLog, scene);
+      setErrorCopyStatus('오류 로그를 복사했습니다.');
+    } catch {
+      setErrorCopyStatus('클립보드를 사용할 수 없어 로그를 복사하지 못했습니다.');
+    }
+  };
+
+  // In the menu the notice sits in the page flow so it never covers the start button; in play it floats.
+  const noticeBanner = (placement: 'inline' | 'floating') => notice && (
+    <div className={`noticeBanner ${placement}`} role="status" aria-live="polite">
+      <p>{notice === 'art'
+        ? '캐릭터 그림을 불러오지 못해 기본 도형으로 그립니다. 플레이에는 지장이 없습니다.'
+        : '오류가 나서 기록해 두었습니다. 문제가 계속되면 로그를 복사해 알려 주세요.'}</p>
+      <div className="noticeActions">
+        <button className="ghost" type="button" onClick={() => void copyErrorLog()}>로그 복사</button>
+        <button className="ghost" type="button" onClick={() => { setNotice(null); setErrorCopyStatus(''); }}>닫기</button>
+      </div>
+      {errorCopyStatus && <p className="seedStatus">{errorCopyStatus}</p>}
+    </div>
+  );
 
   const toggleSpeed = () => {
     const next = snapshot?.timeScale === 2 ? 1 : 2;
@@ -556,6 +626,12 @@ function App() {
     if (!code) return;
     setCheatCode('');
     engineRef.current?.invalidateInfiniteScore();
+
+    if (code === 'UIFAULT') {
+      setUiFault(true);
+      setCheatMessage('UI FAULT ARMED');
+      return;
+    }
 
     if (code === 'GOLD999' || code === 'GOLD') {
       setMeta((prev) => ({ ...prev, gold: prev.gold + 9999 }));
@@ -839,6 +915,8 @@ function App() {
             </div>
           </section>
 
+          {noticeBanner('inline')}
+
           <nav className="menuTabs" role="tablist" aria-label="메뉴 보기">
             <button id="menu-tab-play" className={menuView === 'play' ? 'menuTab active' : 'menuTab'} role="tab" aria-selected={menuView === 'play'} aria-controls="menu-panel-play" tabIndex={menuView === 'play' ? 0 : -1} onKeyDown={handleMenuTabKey} onClick={() => setMenuView('play')}>Stage 선택</button>
             <button id="menu-tab-infinite" className={menuView === 'infinite' ? 'menuTab active' : 'menuTab'} role="tab" aria-selected={menuView === 'infinite'} aria-controls="menu-panel-infinite" tabIndex={menuView === 'infinite' ? 0 : -1} onKeyDown={handleMenuTabKey} onClick={() => setMenuView('infinite')}>무한 경쟁</button>
@@ -1070,7 +1148,24 @@ function App() {
         </main>
       )}
 
-      {phase === 'playing' && runPaused && (
+      {loopFault && (
+        <ModalDialog className="settlementBox faultBox" labelledBy="fault-dialog-title" describedBy="fault-dialog-description">
+          <div className="modalHead">
+            <p>RUN INTERRUPTED</p>
+            <h2 id="fault-dialog-title">오류로 Run을 멈췄습니다</h2>
+          </div>
+          <p id="fault-dialog-description">게임 진행 중 오류가 나서 자동으로 일시정지했습니다. 이어서 시도하면 일시정지 화면으로 돌아가고, 메뉴로 가면 이번 Stage의 보상은 받지 못합니다.</p>
+          <p className="faultMessage"><code>{loopFault.message}</code>{loopFault.count > 1 && <span> · {loopFault.count}번째</span>}</p>
+          {errorCopyStatus && <p className="seedStatus" role="status" aria-live="polite">{errorCopyStatus}</p>}
+          <div className="modalActions">
+            <button className="primary" onClick={retryAfterFault}>이어서 시도</button>
+            <button className="ghost" onClick={toMenu}>메뉴로</button>
+            <button className="ghost" type="button" onClick={() => void copyErrorLog()}>로그 복사</button>
+          </div>
+        </ModalDialog>
+      )}
+
+      {!loopFault && phase === 'playing' && runPaused && (
         <ModalDialog className="settlementBox pauseBox" labelledBy="pause-dialog-title" describedBy="pause-dialog-description" onEscape={() => setManualPause(false)}>
           <div className="modalHead">
             <p>RUN PAUSED</p>
@@ -1101,7 +1196,7 @@ function App() {
         </ModalDialog>
       )}
 
-      {phase === 'draft' && draft && (
+      {!loopFault && phase === 'draft' && draft && (
         <ModalDialog key={draft.id} className="draftBox" labelledBy="draft-dialog-title" describedBy="draft-dialog-description" inputGuardMs={DIALOG_INPUT_GUARD_MS}>
             <p className="srOnly" id="draft-dialog-description">계속하려면 보상 하나를 반드시 선택해야 합니다. 숫자키, 방향키와 Enter, 또는 게임패드 A로 고릅니다.</p>
             <div className="modalHead">
@@ -1131,7 +1226,7 @@ function App() {
         </ModalDialog>
       )}
 
-      {(phase === 'roundClear' || phase === 'gameOver') && settlement && (
+      {!loopFault && (phase === 'roundClear' || phase === 'gameOver') && settlement && (
         <ModalDialog key={`${settlement.runMode}-${settlement.seed}-${phase}`} className="settlementBox" labelledBy="settlement-dialog-title" onEscape={toMenu} inputGuardMs={DIALOG_INPUT_GUARD_MS}>
             <div className="modalHead">
               <p>{settlement.runMode === 'infinite' ? 'INFINITE RUN END' : phase === 'gameOver' ? 'STAGE MATCH END' : settlement.gameComplete ? `CHAPTER ${FINAL_CHAPTER} CLEAR` : `CH.${settlement.chapter} / ST.${settlement.stage}`}</p>
@@ -1167,6 +1262,10 @@ function App() {
             </div>
         </ModalDialog>
       )}
+
+      {phase !== 'menu' && !loopFault && noticeBanner('floating')}
+
+      {DEVELOPER_UI_AVAILABLE && uiFault && <InjectedRenderFault />}
 
       {phase === 'menu' && resetConfirmOpen && (
         <ModalDialog className="settlementBox confirmBox" labelledBy="reset-dialog-title" onEscape={() => setResetConfirmOpen(false)}>

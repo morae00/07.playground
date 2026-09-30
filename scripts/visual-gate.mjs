@@ -346,8 +346,20 @@ async function waitForSprites(page, timeoutMs = 15_000) {
   }
 }
 
+/** Waits in real time until the app has mounted; it loads as a separate module after the boot guard (TEC-14). */
+async function waitForApp(page, timeoutMs = 15_000) {
+  const started = Date.now();
+  for (;;) {
+    const mounted = await page.evaluate(() => document.querySelector('h1') !== null || document.querySelector('[role="alertdialog"]') !== null);
+    if (mounted) return;
+    if (Date.now() - started > timeoutMs) throw new Error('the app never mounted');
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+}
+
 async function runScenario(page, viewport, dpr, motion) {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
+  await waitForApp(page);
   await settle(page, 120);
   await unique(page.getByRole('heading', { name: '흑백 타격 생존전' }), 'menu heading');
   const sprites = await waitForSprites(page);

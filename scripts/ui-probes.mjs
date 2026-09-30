@@ -1,4 +1,4 @@
-// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, CON-02) against the developer build.
+// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, CON-02) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -193,6 +193,77 @@ try {
     await page.evaluate(() => window.__probePad.release(9));
     await page.waitForTimeout(120);
     record('TEC-07 gamepad Start pauses the run', (await diagnostics(page)).paused === true);
+    await page.close();
+  });
+
+  await probe('TEC-14 loop', async () => {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] });
+    const page = await context.newPage();
+    const pageErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    await openStage(page);
+    await cheat(page, 'GOD');
+    await page.getByRole('button', { name: '런 패널 닫기' }).click();
+    await page.waitForTimeout(300);
+    await cheat(page, 'FAULT');
+    const faultDialog = page.getByRole('dialog', { name: '오류로 Run을 멈췄습니다' });
+    await faultDialog.waitFor({ timeout: 3000 });
+    const atFault = await diagnostics(page);
+    await page.waitForTimeout(400);
+    const later = await diagnostics(page);
+    record('TEC-14 a loop fault pauses the run behind a dialog', atFault.paused && later.elapsed === atFault.elapsed && pageErrors.length === 0, `paused ${atFault.paused}, clock ${atFault.elapsed.toFixed(2)} -> ${later.elapsed.toFixed(2)}, page errors ${pageErrors.length}`);
+    await faultDialog.getByRole('button', { name: '로그 복사' }).click();
+    await page.waitForTimeout(100);
+    const report = await page.evaluate(() => navigator.clipboard.readText());
+    record('TEC-14 the copied report names the scene and the error', /error report/.test(report) && /scene: Ch\.1 \/ St\.1/.test(report) && /loop: Error: Injected loop fault/.test(report));
+    await faultDialog.getByRole('button', { name: '이어서 시도' }).click();
+    const pauseDialog = page.getByRole('dialog', { name: '일시정지' });
+    await pauseDialog.waitFor({ timeout: 2000 });
+    await pauseDialog.getByRole('button', { name: '계속하기' }).click();
+    await page.waitForTimeout(500);
+    const resumed = await diagnostics(page);
+    record('TEC-14 retrying comes back paused, then the run continues', !resumed.paused && resumed.elapsed > atFault.elapsed + 0.2, `clock ${resumed.elapsed.toFixed(2)}`);
+    await cheat(page, 'FAULT');
+    await faultDialog.waitFor({ timeout: 3000 });
+    await faultDialog.getByRole('button', { name: '메뉴로' }).click();
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor({ timeout: 2000 });
+    record('TEC-14 the fault dialog can leave for the menu', (await diagnostics(page)) === null);
+    await context.close();
+  });
+
+  await probe('TEC-14 render', async () => {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] });
+    const page = await context.newPage();
+    await openStage(page);
+    await cheat(page, 'UIFAULT');
+    const recovery = page.getByRole('alertdialog', { name: '화면을 그리다 문제가 생겼습니다' });
+    await recovery.waitFor({ timeout: 3000 });
+    await recovery.getByRole('button', { name: '로그 복사' }).click();
+    await page.waitForTimeout(100);
+    const report = await page.evaluate(() => navigator.clipboard.readText());
+    record('TEC-14 a render error shows the recovery screen with its log', /render: Error: Injected render fault/.test(report));
+    await recovery.getByRole('button', { name: '메뉴로 돌아가기' }).click();
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor({ timeout: 3000 });
+    await page.getByRole('button', { name: 'Ch.1 / St.1 시작' }).click();
+    await page.waitForTimeout(500);
+    const running = await diagnostics(page);
+    record('TEC-14 returning to the menu remounts the app and a new run plays', running && !running.paused && running.elapsed > 0.2, running ? `clock ${running.elapsed.toFixed(2)}` : 'no engine');
+    await context.close();
+  });
+
+  await probe('TEC-14 art', async () => {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await page.route('**/assets/atlas/common-0.png', (route) => route.abort());
+    await openStage(page);
+    await page.waitForFunction(() => document.documentElement.dataset.sprites !== undefined, undefined, { timeout: 5000 });
+    const sprites = await page.evaluate(() => document.documentElement.dataset.sprites);
+    const banner = page.getByRole('status').filter({ hasText: '캐릭터 그림을 불러오지 못해' });
+    await banner.waitFor({ timeout: 3000 });
+    await page.waitForTimeout(400);
+    const running = await diagnostics(page);
+    record('TEC-14 missing art falls back to vectors with a notice, and the run plays', sprites === 'fallback' && running && !running.paused && running.elapsed > 0.2, `sprites ${sprites}`);
+    await banner.getByRole('button', { name: '닫기' }).click();
+    record('TEC-14 the notice can be dismissed', (await banner.count()) === 0);
     await page.close();
   });
 } finally {

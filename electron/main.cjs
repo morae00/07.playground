@@ -1,5 +1,6 @@
-const { app, BrowserWindow, Menu, shell } = require('electron');
+const { app, BrowserWindow, Menu, crashReporter, shell } = require('electron');
 const path = require('node:path');
+const { createCrashLog, createReloadGate, rendererErrorLine } = require('./crashLog.cjs');
 const {
   focusPrimaryWindow,
   isAllowedAppNavigation,
@@ -12,6 +13,31 @@ const entryDirectory = developerBuild ? 'dist-developer' : 'dist';
 const entryFile = path.join(__dirname, '..', entryDirectory, 'index.html');
 const windowTitle = developerBuild ? 'Blackline Survivor Dev' : 'Blackline Survivor';
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
+
+// Error resilience (TEC-14): native crash dumps and the error log stay in this app's data folder. Nothing is
+// uploaded anywhere.
+crashReporter.start({ uploadToServer: false });
+let crashLog = null;
+const localLog = () => {
+  crashLog ??= createCrashLog(path.join(app.getPath('userData'), 'logs'));
+  return crashLog;
+};
+const allowAutomaticReload = createReloadGate();
+
+function watchForFailures(window) {
+  const { webContents } = window;
+  webContents.on('console-message', (details, level, message) => {
+    const line = rendererErrorLine(details, level, message);
+    if (line) localLog().append('renderer-error', line);
+  });
+  webContents.on('render-process-gone', (_event, details) => {
+    localLog().append('renderer-gone', `${details.reason} (exit ${details.exitCode})`);
+    // Bring the player back to the menu instead of leaving a blank window, unless it keeps crashing.
+    if (details.reason !== 'clean-exit' && !window.isDestroyed() && allowAutomaticReload()) window.reload();
+  });
+  webContents.on('unresponsive', () => localLog().append('renderer-unresponsive', 'the page stopped responding'));
+  webContents.on('responsive', () => localLog().append('renderer-responsive', 'the page responds again'));
+}
 
 // macOS needs role-based app and edit menus for Cmd+Q, Cmd+H, and Cmd+C/V (e.g. pasting a Challenge Seed).
 // No custom items or navigation live here; other platforms keep the menu bar hidden (BUG-17).
@@ -68,6 +94,7 @@ function createWindow() {
     openExternal(url);
     return { action: 'deny' };
   });
+  watchForFailures(window);
   void window.loadFile(entryFile);
 }
 
@@ -87,6 +114,11 @@ if (!hasSingleInstanceLock) {
     });
   });
 }
+
+app.on('child-process-gone', (_event, details) => {
+  if (details.reason === 'clean-exit') return;
+  localLog().append('process-gone', `${details.type} ${details.reason} (exit ${details.exitCode})`);
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

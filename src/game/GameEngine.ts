@@ -295,6 +295,11 @@ export type EngineCallbacks = {
   onGameOver: (settlement: Settlement) => void;
   /** Called at the start of every animation frame, before simulation; input adapters poll gamepads here. */
   onFrameStart?: () => void;
+  /**
+   * Called when a frame throws (TEC-14). The loop has stopped and the run is paused; recoverFromFault()
+   * restarts the loop, still paused.
+   */
+  onFault?: (error: unknown) => void;
 };
 
 export type StageDef = {
@@ -885,6 +890,10 @@ export class GameEngine {
   protected castGap = 0;
   /** The last thing that hurt the player, reported when the run is lost (CON-09). */
   protected lastDamageSource: PlayerDamageSource | 'unknown' = 'unknown';
+  /** A frame threw and the loop stopped (TEC-14). */
+  protected faulted = false;
+  /** Developer cheat FAULT: the next frame throws, to exercise the fault path. */
+  protected faultInjection = false;
   /** Set only by probes: stops the stage director from adding enemies so a test controls the whole world. */
   protected spawnsHalted = false;
   protected snapshotTimer = 0;
@@ -1108,16 +1117,33 @@ export class GameEngine {
     this.beginRound();
     this.running = true;
     this.paused = false;
+    this.faulted = false;
+    this.accumulator = 0;
+    this.lastTime = performance.now();
+    cancelAnimationFrame(this.raf);
+    this.raf = requestAnimationFrame(this.tick);
+  }
+
+  resume() {
+    if (this.faulted) return;
+    this.paused = false;
+    this.rewardLock = false;
+    this.accumulator = 0;
+    this.lastTime = performance.now();
+  }
+
+  /** After a fault, restarts the animation loop with the run paused so the player can get ready (TEC-14). */
+  recoverFromFault() {
+    if (!this.faulted || this.disposed || !this.running) return;
+    this.faulted = false;
+    this.paused = true;
     this.accumulator = 0;
     this.lastTime = performance.now();
     this.raf = requestAnimationFrame(this.tick);
   }
 
-  resume() {
-    this.paused = false;
-    this.rewardLock = false;
-    this.accumulator = 0;
-    this.lastTime = performance.now();
+  get isFaulted() {
+    return this.faulted;
   }
 
   pause() {
@@ -1141,6 +1167,10 @@ export class GameEngine {
 
   applyCheat(code: string) {
     if (!DEVELOPER_UI_AVAILABLE) return 'DISABLED';
+    if (code === 'FAULT') {
+      this.faultInjection = true;
+      return 'LOOP FAULT ARMED';
+    }
     if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR'].includes(code)) {
       this.invalidateInfiniteScore();
     }
@@ -1338,14 +1368,37 @@ export class GameEngine {
   }
 
   protected tick(now: number) {
-    if (!this.running) return;
+    if (!this.running || this.faulted) return;
     const frameDt = Math.min(0.05, Math.max(0, (now - this.lastTime) / 1000));
     this.lastTime = now;
-    this.advanceFrame(frameDt, true);
+    try {
+      this.advanceFrame(frameDt, true);
+    } catch (error) {
+      // An exception used to stop the loop silently with enemies frozen mid-attack (TEC-14). Now the run
+      // pauses, the loop stays stopped, and the app shows what happened.
+      this.fault(error);
+      return;
+    }
     this.raf = requestAnimationFrame(this.tick);
   }
 
+  protected fault(error: unknown) {
+    this.faulted = true;
+    this.paused = true;
+    this.accumulator = 0;
+    this.releaseInput();
+    try {
+      this.callbacks.onFault?.(error);
+    } catch {
+      // The app's own handler failed; the loop stays stopped and the error is not rethrown into rAF.
+    }
+  }
+
   advanceFrame(frameDt: number, renderFrame = true) {
+    if (DEVELOPER_UI_AVAILABLE && this.faultInjection) {
+      this.faultInjection = false;
+      throw new Error('Injected loop fault (developer cheat FAULT)');
+    }
     const safeFrameDt = Math.min(0.05, Math.max(0, frameDt));
     this.callbacks.onFrameStart?.();
     // Shake and sound spacing are presentation-only and follow wall-clock time, not hit-stop-scaled sim time.

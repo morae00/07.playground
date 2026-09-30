@@ -17,6 +17,7 @@ tsconfig.tsbuildinfo
 artifacts/visual/
 artifacts/performance/
 artifacts/release/
+artifacts/electron-smoke/
 
 # Local environment and signing credentials.
 .env

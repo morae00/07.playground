@@ -20,6 +20,11 @@ export const PRODUCTION_BANNED_MARKERS = Object.freeze([
   'OBJECTIVE CLEARED',
   'UNKNOWN CODE',
   '쇼케이스',
+  // Fault injection for the error-resilience probes (TEC-14).
+  'LOOP FAULT ARMED',
+  'UI FAULT ARMED',
+  'Injected loop fault',
+  'Injected render fault',
 ]);
 
 async function collectTextFiles(root) {

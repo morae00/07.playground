@@ -16,6 +16,8 @@ const REQUIRED_DEVELOPER_MARKERS = Object.freeze([
   'ENDLESS SCORE ATTACK',
   '무한 모드 시작',
   'PRACTICE / NO RECORD',
+  'LOOP FAULT ARMED',
+  'UI FAULT ARMED',
 ]);
 
 async function collectText(root) {

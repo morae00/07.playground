@@ -1752,3 +1752,82 @@ h2 {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Error resilience (TEC-14): loop fault dialog, recovery screen, and the non-blocking notice. */
+.faultBox {
+  width: min(520px, 100%);
+  border-color: var(--alert-deep);
+  box-shadow: 4px 4px 0 var(--alert-deep);
+}
+
+.faultMessage {
+  margin: 10px 0;
+  border: 2px solid var(--ink);
+  padding: 7px;
+  overflow-wrap: anywhere;
+  background: var(--paper-raised);
+  font-size: 12px;
+}
+
+.faultMessage code {
+  font-size: 12px;
+}
+
+.recoveryShell {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #f4f4f1;
+}
+
+.recoveryBox {
+  width: min(560px, 100%);
+}
+
+.noticeBanner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: center;
+  border: 2px solid var(--ink);
+  padding: 8px 10px;
+  color: var(--ink);
+  background: rgba(247, 247, 242, 0.96);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.noticeBanner.floating {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  bottom: 16px;
+  width: min(560px, calc(100% - 32px));
+  transform: translateX(-50%);
+}
+
+.noticeBanner.inline {
+  margin-top: 16px;
+  box-shadow: none;
+}
+
+.noticeBanner p {
+  margin: 0;
+}
+
+.noticeBanner .seedStatus {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.noticeActions {
+  display: flex;
+  gap: 8px;
+}
+
+.noticeActions button {
+  min-height: 32px;
+  padding: 4px 10px;
+  box-shadow: none;
+}
