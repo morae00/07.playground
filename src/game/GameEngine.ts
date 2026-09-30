@@ -409,6 +409,8 @@ const PATTERN_LEAD_SECONDS: Partial<Record<BossPattern, number>> = {
   tide: 0.5,
   traps: 0.5,
 };
+/** SYS-06 A/B: terrain acts on enemies at this share of its strength on the player. */
+const TERRAIN_ENEMY_SCALE = 0.5;
 /** SYS-04: a boss volley waits while it would push the shot count over this. */
 const VOLLEY_SOFT_CAP = 300;
 /** SYS-04: shots pushed over the hard cap fade out over this long, harmless. */
@@ -2633,6 +2635,7 @@ export class GameEngine {
       const slow = advanceTimedSlow({ multiplier: enemy.slowMultiplier ?? 1, remaining: enemy.slowTimer ?? 0 }, dt);
       enemy.slowMultiplier = slow.multiplier;
       enemy.slowTimer = slow.remaining;
+      if (this.rules.terrainOnEnemies && !enemy.isBoss) this.applyTerrainToEnemy(enemy, dt);
       if (enemy.isBoss && enemy.boss) this.updateBossPattern(enemy, dt);
       if (enemy.stun > 0 || enemy.root > 0) continue;
       const role = enemy.isBoss ? null : enemyRole(enemy.tier, enemy.attackStyle);
@@ -2860,6 +2863,29 @@ export class GameEngine {
     this.enemies.length = writeIndex;
     for (const enemy of this.deadEnemyScratch) this.onEnemyKilled(enemy, suppressBossDraft);
     this.deadEnemyScratch.length = 0;
+  }
+
+  /** SYS-06 A/B: fire, water, and traps act on an enemy standing in them, at TERRAIN_ENEMY_SCALE of their strength. */
+  protected applyTerrainToEnemy(enemy: Entity, dt: number) {
+    for (const hazard of this.hazards) {
+      if (distance(enemy, hazard) > hazard.radius) continue;
+      if (hazard.kind === 'fire') {
+        enemy.hp -= hazard.damage * TERRAIN_ENEMY_SCALE * dt;
+      } else if (hazard.kind === 'water' || hazard.kind === 'slow' || hazard.kind === 'root') {
+        // A binding zone slows enemies instead of holding them, since they get no immunity to walk out on.
+        const strength = hazard.kind === 'root' ? 0 : hazard.slow;
+        const slow = applyTimedSlow({ multiplier: enemy.slowMultiplier ?? 1, remaining: enemy.slowTimer ?? 0 }, 1 - (1 - strength) * TERRAIN_ENEMY_SCALE, dt * 2);
+        enemy.slowMultiplier = slow.multiplier;
+        enemy.slowTimer = slow.remaining;
+      } else if (hazard.kind === 'trap' && !hazard.triggered) {
+        // The enemy springs the trap, so it no longer waits for the player.
+        hazard.triggered = true;
+        hazard.life = Math.min(hazard.life, 3.2);
+        hazard.maxLife = Math.min(hazard.maxLife, 3.2);
+        enemy.root = Math.max(enemy.root, 0.65 * TERRAIN_ENEMY_SCALE);
+        this.emit({ type: 'trap/sprung', x: hazard.x, y: hazard.y });
+      }
+    }
   }
 
   protected updateBossPattern(enemy: Entity, dt: number) {

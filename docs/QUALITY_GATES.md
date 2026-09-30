@@ -129,6 +129,22 @@ SYS-06 (obstacles as cover, `obstacleCover` rule) was piloted against its parent
 - Boss deaths fell from 21 to 14.
 - The three timeouts are the same `survivor` loops before and after.
 
+The terrain A/B (SYS-06, `terrainOnEnemies`, off in both rule sets) was piloted on the same 520 runs with the flag switched on (`BALANCE_RULE_PATCH`), against the flag off:
+
+| | off | on |
+|---|---:|---:|
+| clear, all 520 | 40.8% | 40.0% |
+| clears: striker / survivor / collector / fresh | 56 / 118 / 38 / 0 | 54 / 120 / 34 / 0 |
+| clear by chapter without fresh, Ch1 / 2 / 3 / 4 / 5 (%) | 30.0 / 52.2 / 50.0 / 65.0 / 90.0 | 31.1 / 53.3 / 44.4 / 65.0 / 88.3 |
+| deaths: contact / shots / boss | 282 / 8 / 14 | 283 / 7 / 20 |
+| boss stages, clear time p50 / max (s) | 243 / 985 | 231 / 747 |
+| kills, all runs | 257,499 | 243,435 (−5.5%) |
+
+- The clear rate did not move beyond noise: 48 runs flipped, 22 to a clear and 26 away from one.
+- Boss stages end sooner (p50 243 to 231 s) and the runs make 5.5% fewer kills.
+- The largest single change is 3-3 (27 to 20 clears of 40), where water covers the most ground.
+- The personas never lure enemies into terrain on purpose, so this measures the side effects only. **[Team decision]** Whether luring is worth having is a playtest question; the flag stays off until then.
+
 ## Game rules and grammar
 
 Gameplay changes ship behind the rule set in `src/game/rules.ts`. `classic` reproduces 0.1.0 exactly and `remaster` is the default. Infinite-mode records and replay fixtures are kept per rules version: the remaster rules (v2) may change freely until a build ships them, and after that the first change to seeded outcomes must raise `RULES_VERSION`. `test/grammarContracts.integration.test.mjs` pins the preserved game grammar (stage structure, draft sizes, radii, tier mix, deterministic replay) and one regression test per R0 gameplay fix.

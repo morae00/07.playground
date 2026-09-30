@@ -293,6 +293,8 @@ export async function runFullBalanceBatch({
 
         const seed = scenarioSeed(address.chapter, address.stage, personaIndex, baseSeed);
         engine.setRuleSet(ruleSet);
+        // An experiment's rule flags on top of the rule set (the SYS-06 terrain A/B), as JSON.
+        if (process.env.BALANCE_RULE_PATCH) engine.probe.patchRules(JSON.parse(process.env.BALANCE_RULE_PATCH));
         engine.subscribe((event) => {
           if (event.type === 'player/died') death = event;
         });

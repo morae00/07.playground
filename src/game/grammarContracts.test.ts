@@ -55,7 +55,9 @@ test('rule versions: remaster rules are the default and classic rules keep every
   for (const [flag, value] of Object.entries(CLASSIC_RULES)) {
     if (typeof value === 'boolean') assert.equal(value, false, `classic rules must disable ${flag}`);
   }
+  // Experiments the team has not decided yet stay off in both rule sets; tools switch them on (SYS-06 terrain A/B).
+  const experiments = new Set(['terrainOnEnemies']);
   for (const [flag, value] of Object.entries(REMASTER_RULES)) {
-    if (typeof value === 'boolean') assert.equal(value, true, `remaster rules must enable ${flag}`);
+    if (typeof value === 'boolean') assert.equal(value, !experiments.has(flag), `remaster rules must ${experiments.has(flag) ? 'leave off' : 'enable'} ${flag}`);
   }
 });

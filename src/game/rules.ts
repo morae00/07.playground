@@ -101,6 +101,12 @@ export type RuleSet = Readonly<{
    * airborne and fly over obstacles, drawn above them with a ground shadow so that reads.
    */
   obstacleCover: boolean;
+  /**
+   * SYS-06 A/B (off in both rule sets until the team decides): fire, water, and traps act on enemies at half
+   * strength. Fire burns them, water and bindings slow them, and an enemy that walks onto a trap springs it.
+   * Bosses are immune. Tools switch it on with the probe's patchRules.
+   */
+  terrainOnEnemies: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -130,6 +136,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   rareHitStop: false,
   kitProps: false,
   obstacleCover: false,
+  terrainOnEnemies: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -159,6 +166,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   rareHitStop: true,
   kitProps: true,
   obstacleCover: true,
+  terrainOnEnemies: false,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

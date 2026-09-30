@@ -3,6 +3,7 @@
 // engine fields, so a refactor of the simulation only has to keep the probe working. The app never imports
 // this module; only the test bundle (src/testing/engine.ts) ships it.
 import { FIXED_TIMESTEP } from '../p0Core';
+import type { RuleSet } from '../rules';
 import type { RenderEffects, RenderFrameStats, RenderWorld, WorldLayer } from '../render/worldRenderer';
 import type { Corpse, HitStamp, Recoil } from './worldTypes';
 import {
@@ -169,6 +170,8 @@ export interface EngineProbe {
   resolveRound(): void;
   openDraft(reason: DraftReason, after: DraftState['after']): void;
   requestRoundClear(): void;
+  /** Overrides rule flags for an experiment (the SYS-06 terrain A/B); setRuleSet puts the rule set back. */
+  patchRules(patch: Partial<Omit<RuleSet, 'id' | 'version'>>): void;
   previewOffer(skillId: SkillId, kind: 'skill' | 'awakening'): SkillOffer;
   previewBonusOffers(reason: DraftReason): SkillOffer[];
   hud(): HudSnapshot;
@@ -436,6 +439,9 @@ export class ProbedGameEngine extends GameEngine {
       resolveRound: () => this.resolveRoundState(),
       openDraft: (reason, after) => this.openDraft(reason, after),
       requestRoundClear: () => this.requestRoundClear(),
+      patchRules: (patch) => {
+        this.rules = Object.freeze({ ...this.rules, ...patch });
+      },
       previewOffer: (skillId, kind) => this.makeOffer(skillId, kind),
       previewBonusOffers: (reason) => this.makeBonusOffers(reason),
       hud: () => this.buildHudSnapshot(),
