@@ -29,17 +29,17 @@ Chapter packs (`assets/packs/<chapter>/`) have a 12 MiB per-pack target and resi
 
 `npm run test:balance:smoke` is a deterministic pressure smoke test, not a difficulty verdict. `npm run test:balance:pilot` checks representative chapter boundaries and boss stages. A release candidate uses `npm run test:balance:full` across all 50 stages, four build policies, and ten fixed seeds. Three policies are representative builds whose permanent upgrades grow by chapter. The fourth, `fresh`, is a new player with no upgrades or passives (CON-09). Seed shards run through a bounded worker pool, then merge in canonical stage/persona/seed order. The JSON report records clear/death/timeout rates, simulated and wall-clock time percentiles, death causes (contact, shot, boss contact, boss shot, shock, fire, each marked when the boss was enraged), economy percentiles, build growth, scenario details, and a deterministic fingerprint.
 
-The remaster baseline is `artifacts/balance-remaster-baseline.json`: 2,000 scenarios under the remaster rules on commit f05b83e, the end of R1 (fingerprint 64444bdb1ab34b81). Earlier full runs used the same seeds and personas:
+The remaster baseline is `artifacts/balance-remaster-baseline.json`: 2,000 scenarios under the remaster rules on commit 3d0c5d3, the end of R2 (fingerprint fa29bc029e7815cd). The refactors after it (de0d957, 03276fb) keep every fingerprint, so it stands for them too. Earlier full runs used the same seeds and personas:
 
-| | bf13b46 (CON-09) | 565e8b2 (SYS-03) | 73d367c (SYS-02, SYS-04) | bf4d474 (boss fixes) | f05b83e (R1 end) |
-|---|---:|---:|---:|---:|---:|
-| clear, all 2,000 | 52.0% | 51.2% | 39.6% | 40.0% | 41.1% |
-| clears: striker / survivor / collector / fresh (of 500) | 299 / 456 / 284 / 0 | 294 / 466 / 264 / 0 | 220 / 410 / 162 / 0 | 224 / 416 / 159 / 0 | 221 / 444 / 157 / 0 |
-| clear by chapter without fresh, Ch1 / 2 / 3 / 4 / 5 (%) | 23.3 / 59.0 / 72.3 / 91.7 / 100.0 | 27.3 / 54.3 / 69.3 / 90.7 / 99.7 | 23.7 / 41.7 / 43.3 / 70.3 / 85.0 | 24.0 / 46.0 / 42.7 / 70.3 / 83.3 | 28.0 / 49.0 / 47.7 / 66.7 / 82.7 |
-| timeouts (20 min of play) | 0 | 0 | 2 | 1 | 2 |
-| deaths: contact / shots / boss | 923 / 9 / 29 | 934 / 7 / 33 | 1120 / 57 / 21 | 1118 / 50 / 25 | 1085 / 59 / 27 |
-| boss stages without fresh, clear time p50 / max (s) | 199 / 1155 | 184 / 755 | 249 / 751 | 252 / 927 | 222 / 1001 |
-| fresh in 1-1, death p50 (s) | 45 | 67 | 72 | 72 | 65 |
+| | bf13b46 (CON-09) | 565e8b2 (SYS-03) | 73d367c (SYS-02, SYS-04) | bf4d474 (boss fixes) | f05b83e (R1 end) | 3d0c5d3 (R2 end) |
+|---|---:|---:|---:|---:|---:|---:|
+| clear, all 2,000 | 52.0% | 51.2% | 39.6% | 40.0% | 41.1% | 42.0% |
+| clears: striker / survivor / collector / fresh (of 500) | 299 / 456 / 284 / 0 | 294 / 466 / 264 / 0 | 220 / 410 / 162 / 0 | 224 / 416 / 159 / 0 | 221 / 444 / 157 / 0 | 225 / 456 / 159 / 0 |
+| clear by chapter without fresh, Ch1 / 2 / 3 / 4 / 5 (%) | 23.3 / 59.0 / 72.3 / 91.7 / 100.0 | 27.3 / 54.3 / 69.3 / 90.7 / 99.7 | 23.7 / 41.7 / 43.3 / 70.3 / 85.0 | 24.0 / 46.0 / 42.7 / 70.3 / 83.3 | 28.0 / 49.0 / 47.7 / 66.7 / 82.7 | 30.3 / 49.7 / 48.3 / 69.7 / 82.0 |
+| timeouts (20 min of play) | 0 | 0 | 2 | 1 | 2 | 3 |
+| deaths: contact / shots / boss | 923 / 9 / 29 | 934 / 7 / 33 | 1120 / 57 / 21 | 1118 / 50 / 25 | 1085 / 59 / 27 | 1071 / 57 / 25 |
+| boss stages without fresh, clear time p50 / max (s) | 199 / 1155 | 184 / 755 | 249 / 751 | 252 / 927 | 222 / 1001 | 251 / 1098 |
+| fresh in 1-1, death p50 (s) | 45 | 67 | 72 | 72 | 65 | 66 |
 
 Findings:
 
@@ -52,6 +52,13 @@ Findings:
   - The crowd sits at its 150 cap, so a mob is always nearer than the boss, and auto-aim, which takes the nearest target, never picks the boss.
   - Without per-hit hit-stop (FX-02), the walk and the boss's following repeat exactly every 70 s, so nothing breaks the loop. The uneven slow-downs of per-hit hit-stop likely broke it at bf4d474.
   - A player walks to the boss, so this is a persona artifact. It still shows that a boss can go unhurt for a whole fight, which adds weight to the overtime decision above; a boss-priority rule for auto-aim is another option. **[Team decision]**
+- R2 end (3d0c5d3): clears 41.1% to 42.0%. The rule changes since f05b83e are SYS-06 cover, the SYS-05 phase moves of the Ch2-5 final bosses, and the Ch2-5 kit footprints (ART-07, ART-08). Ch1 rose 2.3 points and Ch4 3.0 points. Ch2, Ch3, and Ch5 moved within noise. The chapter curve is still inverted (Ch1 30% to Ch5 82%), for SYS-07. `fresh` still clears 0 of 500.
+- Boss fights got longer: clear time p50 222 to 251 s, max 1,001 to 1,098 s. The Ch2-5 final bosses now run their phase moves.
+- Three fights time out. Two are the survivor pin above: 2-10 at 99% (base seed 17) and 5-10 at 98% (base seed 524287).
+- The third is new and is not a persona artifact: 5-10 striker, base seed 997, boss at 41% after 20 minutes. It cleared in 146 s at f05b83e.
+  - The Ch5 final boss's phase 2 (silence balance) anchors where the phase began.
+  - The striker was pinned at the top edge about 2,100 away. The boss never came to it and took no damage for the last 13 minutes, and enrage step 4 does nothing at that range.
+  - A player who runs away gets the same stalemate. The next SYS-05 commit gives anchored bosses a leash.
 - `fresh` walks a fixed square and runs into enemies, so it says little about a new player. The opt-in `novice` persona (`BALANCE_FULL_PERSONAS=novice`) has the same fresh meta but steers away from nearby threats with the analog stick every 0.1 s, circling instead of backing into walls. On bf4d474:
   - 1-1, 20 seeds: 50% clear (fresh 0 of 10) and 70% survive 3 minutes.
   - Ch1, 10 seeds each: 1-1 4/10, 1-2 3/10, 1-3 4/10, 1-4 4/10, 1-5 4/10, 1-6 2/10, 1-7 1/10, 1-8 1/10, 1-9 4/10, 1-10 1/10. Later stages are harder because the novice keeps the fresh meta throughout.
