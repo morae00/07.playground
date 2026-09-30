@@ -2735,8 +2735,9 @@ export class GameEngine {
       const speed = enemy.speed * phaseSpeed * (enemy.slowMultiplier ?? 1) * (enemy.patternPhase === 'dash' ? 3.8 : 1);
       let moveX = dir.x;
       let moveY = dir.y;
-      if (enemy.isBoss && this.rules.bossMoves && enemy.anchorX !== undefined && enemy.anchorY !== undefined && phaseMove?.movement.mode === 'anchor') {
-        // SYS-04 anchor movement: hold near where the phase began and let the volleys do the work.
+      if (enemy.isBoss && enemy.anchorX !== undefined && enemy.anchorY !== undefined && this.bossGrammar(enemy)?.movement.mode === 'anchor') {
+        // SYS-04 anchor movement: hold near where the phase began and let the volleys do the work. Only a move
+        // whose attack grammar runs anchors; the others keep chasing with their old patterns.
         const homeX = enemy.anchorX - enemy.x;
         const homeY = enemy.anchorY - enemy.y;
         const away = Math.hypot(homeX, homeY);
@@ -2960,8 +2961,9 @@ export class GameEngine {
         enemy.dashChain = undefined;
         enemy.armedPattern = undefined;
         enemy.volleyIndex = 0;
-        enemy.anchorX = phaseMove?.movement.mode === 'anchor' ? enemy.x : undefined;
-        enemy.anchorY = phaseMove?.movement.mode === 'anchor' ? enemy.y : undefined;
+        const anchors = this.bossGrammar(enemy)?.movement.mode === 'anchor';
+        enemy.anchorX = anchors ? enemy.x : undefined;
+        enemy.anchorY = anchors ? enemy.y : undefined;
       }
       return;
     }

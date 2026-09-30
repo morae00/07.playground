@@ -178,6 +178,35 @@ test('an anchoring boss holds its spot while the player walks away', () => {
   }
 });
 
+test('a boss whose phase grammar is not built yet keeps chasing instead of anchoring', () => {
+  // Ch5's final boss authors an anchoring phase 2 (silence-balance), but only Ch1 grammars run so far.
+  const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), meta(), standardOptions(), { onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver() {} });
+  engine.setRuleSet('remaster');
+  engine.startRun(5, 10, 7373);
+  const { probe } = engine;
+  try {
+    probe.haltSpawns();
+    probe.setSkills({});
+    probe.setGodMode();
+    probe.clear('obstacles', 'hazards');
+    const boss = probe.read().enemies.find((enemy) => enemy.isBoss);
+    probe.removeEnemies(probe.read().enemies.filter((enemy) => !enemy.isBoss).map((enemy) => enemy.id));
+    probe.patchEnemy(boss.id, { hp: boss.maxHp * 0.6 });
+    probe.step(31);
+    const phase2 = probe.read().enemies.find((enemy) => enemy.id === boss.id);
+    assert.equal(phase2.bossPhase, 2);
+    assert.equal(phase2.anchorX, undefined, 'no anchor');
+    const { player } = probe.read();
+    const before = Math.hypot(phase2.x - player.x, phase2.y - player.y);
+    probe.step(60);
+    const later = probe.read().enemies.find((enemy) => enemy.id === boss.id);
+    const after = Math.hypot(later.x - probe.read().player.x, later.y - probe.read().player.y);
+    assert.ok(after < before - 40, `it closes in (${before.toFixed(0)} -> ${after.toFixed(0)})`);
+  } finally {
+    engine.dispose();
+  }
+});
+
 test('warnings keep their real-time length at phase cadence', () => {
   const arena = bossInPhase(10, 2);
   try {
