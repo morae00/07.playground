@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DEVELOPER_UI_AVAILABLE, DEVELOPER_UI_DEFAULT_ENABLED } from './platform/developerAccess';
+import { RULES_VERSION, rulesLabel } from './game/rules';
 import {
   addInfiniteScore,
   loadInfiniteLeaderboard,
@@ -403,6 +404,7 @@ function App() {
       `TIME ${formatClock(settlement.survivedSeconds)}`,
       `BOSS ${settlement.bossKills} / KILLS ${settlement.kills}`,
       `SEED ${settlement.seed}`,
+      rulesLabel(settlement.rulesVersion),
     ].join('\n');
     try {
       if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
@@ -891,6 +893,12 @@ function App() {
                     </table>
                   </div>
                 ) : <div className="leaderboardEmpty">아직 기록이 없습니다.</div>}
+                {initialInfiniteLeaderboard.legacyEntries.length > 0 && (
+                  <p className="leaderboardLegacy">
+                    이전 규칙(v1) 기록 {initialInfiniteLeaderboard.legacyEntries.length}건은 현재 규칙(v{RULES_VERSION}) 순위와 섞이지 않도록 따로 보관합니다.
+                    최고 {initialInfiniteLeaderboard.legacyEntries[0].score.toLocaleString('ko-KR')}점 · {initialInfiniteLeaderboard.legacyEntries[0].player}
+                  </p>
+                )}
               </section>
             </div>
 

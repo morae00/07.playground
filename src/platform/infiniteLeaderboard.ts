@@ -1,4 +1,9 @@
-export const INFINITE_LEADERBOARD_KEY = 'blackline-survivor-infinite-leaderboard-v1';
+import { CLASSIC_RULES_VERSION, RULES_VERSION } from '../game/rules.ts';
+
+/** Records made before rule versioning (classic rules, 0.1.0). Read-only; kept for display as legacy. */
+export const LEGACY_INFINITE_LEADERBOARD_KEY = 'blackline-survivor-infinite-leaderboard-v1';
+export const infiniteLeaderboardKey = (rulesVersion: number) => `blackline-survivor-infinite-leaderboard-r${rulesVersion}`;
+export const INFINITE_LEADERBOARD_KEY = infiniteLeaderboardKey(RULES_VERSION);
 export const INFINITE_LEADERBOARD_LIMIT = 10;
 
 export type InfiniteScoreEntry = {
@@ -10,11 +15,14 @@ export type InfiniteScoreEntry = {
   bosses: number;
   seed: number;
   endedAt: string;
+  rulesVersion: number;
 };
 
 export type InfiniteLeaderboard = {
   playerName: string;
   entries: InfiniteScoreEntry[];
+  /** Top records from an older rule version. They are never merged into the current ranking. */
+  legacyEntries: InfiniteScoreEntry[];
   writable: boolean;
 };
 
@@ -30,7 +38,7 @@ export function normalizeInfinitePlayerName(value: unknown) {
   return normalized || 'PLAYER';
 }
 
-function normalizeEntry(value: unknown): InfiniteScoreEntry | null {
+function normalizeEntry(value: unknown, rulesVersion: number): InfiniteScoreEntry | null {
   if (!value || typeof value !== 'object') return null;
   const source = value as Partial<InfiniteScoreEntry>;
   const endedAt = typeof source.endedAt === 'string' && Number.isFinite(Date.parse(source.endedAt))
@@ -45,7 +53,7 @@ function normalizeEntry(value: unknown): InfiniteScoreEntry | null {
   const id = typeof source.id === 'string' && source.id.trim()
     ? source.id.slice(0, 96)
     : `${endedAt}-${seed}-${score}`;
-  return { id, player, score, survivedSeconds, kills, bosses, seed, endedAt };
+  return { id, player, score, survivedSeconds, kills, bosses, seed, endedAt, rulesVersion };
 }
 
 export function rankInfiniteEntries(entries: readonly InfiniteScoreEntry[]) {
@@ -54,27 +62,46 @@ export function rankInfiniteEntries(entries: readonly InfiniteScoreEntry[]) {
     .slice(0, INFINITE_LEADERBOARD_LIMIT);
 }
 
+type StoredBoard = { playerName?: unknown; entries?: unknown };
+
+function readBoard(storage: StorageLike, key: string): StoredBoard | null {
+  const raw = storage.getItem(key);
+  if (!raw) return null;
+  return JSON.parse(raw) as StoredBoard;
+}
+
+function boardEntries(board: StoredBoard | null, rulesVersion: number) {
+  if (!board || !Array.isArray(board.entries)) return [];
+  return rankInfiniteEntries(board.entries
+    .map((entry) => normalizeEntry(entry, rulesVersion))
+    .filter((entry): entry is InfiniteScoreEntry => entry !== null));
+}
+
 export function loadInfiniteLeaderboard(storage: StorageLike): InfiniteLeaderboard {
+  let legacy: StoredBoard | null = null;
   try {
-    const raw = storage.getItem(INFINITE_LEADERBOARD_KEY);
-    if (!raw) return { playerName: 'PLAYER', entries: [], writable: true };
-    const parsed = JSON.parse(raw) as { playerName?: unknown; entries?: unknown };
-    const entries = Array.isArray(parsed.entries)
-      ? parsed.entries.map(normalizeEntry).filter((entry): entry is InfiniteScoreEntry => entry !== null)
-      : [];
+    legacy = readBoard(storage, LEGACY_INFINITE_LEADERBOARD_KEY);
+  } catch {
+    legacy = null;
+  }
+  const legacyEntries = boardEntries(legacy, CLASSIC_RULES_VERSION);
+  try {
+    const current = readBoard(storage, INFINITE_LEADERBOARD_KEY);
     return {
-      playerName: normalizeInfinitePlayerName(parsed.playerName),
-      entries: rankInfiniteEntries(entries),
+      playerName: normalizeInfinitePlayerName(current?.playerName ?? legacy?.playerName),
+      entries: boardEntries(current, RULES_VERSION),
+      legacyEntries,
       writable: true,
     };
   } catch {
-    return { playerName: 'PLAYER', entries: [], writable: false };
+    return { playerName: 'PLAYER', entries: [], legacyEntries, writable: false };
   }
 }
 
 function persist(storage: StorageLike, playerName: string, entries: readonly InfiniteScoreEntry[]) {
   try {
     storage.setItem(INFINITE_LEADERBOARD_KEY, JSON.stringify({
+      rulesVersion: RULES_VERSION,
       playerName: normalizeInfinitePlayerName(playerName),
       entries: rankInfiniteEntries(entries),
     }));
@@ -92,7 +119,7 @@ export function addInfiniteScore(
   storage: StorageLike,
   playerName: string,
   entries: readonly InfiniteScoreEntry[],
-  entry: Omit<InfiniteScoreEntry, 'id' | 'player' | 'endedAt'>,
+  entry: Omit<InfiniteScoreEntry, 'id' | 'player' | 'endedAt' | 'rulesVersion'>,
 ) {
   const endedAt = new Date().toISOString();
   const normalized: InfiniteScoreEntry = {
@@ -105,7 +132,8 @@ export function addInfiniteScore(
     bosses: finiteInteger(entry.bosses),
     seed: finiteInteger(entry.seed) >>> 0,
     endedAt,
+    rulesVersion: RULES_VERSION,
   };
-  const next = rankInfiniteEntries([...entries, normalized]);
+  const next = rankInfiniteEntries([...entries.filter((candidate) => candidate.rulesVersion === RULES_VERSION), normalized]);
   return { entries: next, writable: persist(storage, playerName, next), entry: normalized };
 }

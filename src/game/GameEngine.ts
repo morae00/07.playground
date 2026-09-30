@@ -25,6 +25,19 @@ import {
   selectRequiredBoss,
 } from './p1Core';
 import { SpatialIndex } from './spatialIndex';
+import { REMASTER_RULES, ruleSetFor, type RuleSet, type RuleSetId } from './rules';
+import {
+  DRAFT_SIZE,
+  ENEMY_RADIUS,
+  FIELD_BOSS_MARKS,
+  HIT_RADIUS,
+  LEGACY_BOSS_MARK,
+  LEGACY_BOSS_MIN_CHAPTER,
+  MAX_SKILL_LEVEL,
+  RANGED_ENEMY,
+  RARITY_WEIGHTS,
+  TIER_ROLL,
+} from './grammar';
 import { ObjectPool, compactWhere, recycleWhere } from './objectPool';
 import { impactCue, toneGain } from './audioPolicy';
 import {
@@ -210,6 +223,7 @@ export type HudSnapshot = {
   bossKills: number;
   dangerRank: number;
   scoreEligible: boolean;
+  rulesVersion: number;
   bossName?: string;
   bossMove?: string;
   bossHp?: number;
@@ -237,6 +251,7 @@ export type Settlement = {
   survivedSeconds: number;
   bossKills: number;
   scoreEligible: boolean;
+  rulesVersion: number;
 };
 
 export type EngineCallbacks = {
@@ -452,11 +467,11 @@ const BOSS_PROJECTILE_HARD_CAP = 320;
 const TARGET_COLOR = '#087e9b';
 
 export const RARITY: Record<Rarity, { label: string; weight: number; className: string }> = {
-  common: { label: '일반', weight: 52, className: 'rarityCommon' },
-  rare: { label: '희귀', weight: 25, className: 'rarityRare' },
-  epic: { label: '영웅', weight: 14, className: 'rarityEpic' },
-  legendary: { label: '전설', weight: 7, className: 'rarityLegendary' },
-  mythic: { label: '신화', weight: 2, className: 'rarityMythic' },
+  common: { label: '일반', weight: RARITY_WEIGHTS.common, className: 'rarityCommon' },
+  rare: { label: '희귀', weight: RARITY_WEIGHTS.rare, className: 'rarityRare' },
+  epic: { label: '영웅', weight: RARITY_WEIGHTS.epic, className: 'rarityEpic' },
+  legendary: { label: '전설', weight: RARITY_WEIGHTS.legendary, className: 'rarityLegendary' },
+  mythic: { label: '신화', weight: RARITY_WEIGHTS.mythic, className: 'rarityMythic' },
 };
 
 export const BASE_STATS: StatBlock = {
@@ -929,6 +944,7 @@ export class GameEngine {
 
   private meta: MetaState;
   private options: GameOptions;
+  private rules: RuleSet = REMASTER_RULES;
   private raf = 0;
   private lastTime = 0;
   private accumulator = 0;
@@ -1134,6 +1150,15 @@ export class GameEngine {
     this.recalculateStats(false);
   }
 
+  /** Selects the simulation rule set for the next started run (classic reproduces the 0.1.0 rules for A/B runs). */
+  setRuleSet(id: RuleSetId) {
+    this.rules = ruleSetFor(id);
+  }
+
+  get ruleSet() {
+    return this.rules;
+  }
+
   setTimeScale(scale: number) {
     this.timeScale = scale;
     this.accumulator = 0;
@@ -1333,7 +1358,7 @@ export class GameEngine {
       this.shake = Math.max(this.shake, 14);
       this.playTone(110, 0.09, 'sawtooth');
     } else {
-      const nextLevel = clamp(state.level + 1, 1, 5);
+      const nextLevel = clamp(state.level + 1, 1, MAX_SKILL_LEVEL);
       this.skills[offer.skillId] = { level: nextLevel, awakened: state.awakened };
       if (nextLevel >= 5 && !state.awakened && !this.pendingAwakenings.includes(offer.skillId)) {
         this.pendingAwakenings.push(offer.skillId);
@@ -1810,7 +1835,7 @@ export class GameEngine {
       this.player.y += dir.y * speed * dt;
       this.player.x = clamp(this.player.x, 42, WORLD_W - 42);
       this.player.y = clamp(this.player.y, 42, WORLD_H - 42);
-      this.resolveEntityVsObstacles(this.player, 16);
+      this.resolveEntityVsObstacles(this.player, HIT_RADIUS.playerVsObstacle);
     }
 
     this.player.hp = Math.min(this.player.stats.maxHp, this.player.hp + this.player.stats.hpRegen * dt);
@@ -2226,14 +2251,13 @@ export class GameEngine {
     }
 
     if (this.kind === 'normal') {
-      const marks = [0.36, 0.72];
-      marks.forEach((mark, index) => {
+      FIELD_BOSS_MARKS.forEach((mark, index) => {
         if (progress >= mark && !this.fieldBossMarks.has(index)) {
           this.fieldBossMarks.add(index);
           this.spawnBoss('normal', false);
         }
       });
-      if (this.chapter >= 3 && progress >= 0.55 && !this.fieldBossMarks.has(8)) {
+      if (this.chapter >= LEGACY_BOSS_MIN_CHAPTER && progress >= LEGACY_BOSS_MARK && !this.fieldBossMarks.has(8)) {
         this.fieldBossMarks.add(8);
         this.spawnBoss('normal', true);
       }
@@ -2272,7 +2296,7 @@ export class GameEngine {
     x = clamp(x, -80, WORLD_W + 80);
     y = clamp(y, -80, WORLD_H + 80);
     const roll = this.gameplayRandom();
-    const tier = forcedTier ?? (roll < 0.58 ? 'small' : roll < 0.88 ? 'medium' : 'large');
+    const tier = forcedTier ?? (roll < TIER_ROLL.small ? 'small' : roll < TIER_ROLL.medium ? 'medium' : 'large');
     const infiniteDifficulty = this.runMode === 'infinite'
       ? infiniteDifficultyAt(this.elapsed, this.infiniteBossKills)
       : null;
@@ -2280,12 +2304,12 @@ export class GameEngine {
       ? INFINITE_BASELINE.mobDifficulty * infiniteDifficulty.enemyHealthScale
       : difficulty;
     const hpBase = tier === 'small' ? 22 : tier === 'medium' ? 62 : 150;
-    const radius = tier === 'small' ? 12 : tier === 'medium' ? 19 : 28;
+    const radius = tier === 'small' ? ENEMY_RADIUS.small : tier === 'medium' ? ENEMY_RADIUS.medium : ENEMY_RADIUS.large;
     const speed = (tier === 'small' ? 128 : tier === 'medium' ? 96 : 62)
       * (0.9 + this.gameplayRandom() * 0.22)
       * (infiniteDifficulty?.enemySpeedScale ?? 1);
     const rangedCount = this.enemies.reduce((count, candidate) => count + (candidate.attackStyle === 'ranged' ? 1 : 0), 0);
-    const rangedCap = infiniteDifficulty?.rangedCap ?? Math.min(3, 1 + Math.ceil(this.chapter / 2));
+    const rangedCap = infiniteDifficulty?.rangedCap ?? Math.min(RANGED_ENEMY.maxConcurrent, 1 + Math.ceil(this.chapter / 2));
     const rangedChance = infiniteDifficulty?.rangedChance ?? 0.035 + this.chapter * 0.004;
     const attackStyle = tier !== 'large' && rangedCount < rangedCap && this.gameplayRandom() < rangedChance
       ? 'ranged'
@@ -2360,7 +2384,7 @@ export class GameEngine {
       prevY: y,
       vx: 0,
       vy: 0,
-      radius: kind === 'normal' ? 38 : 54,
+      radius: kind === 'normal' ? ENEMY_RADIUS.fieldBoss : ENEMY_RADIUS.boss,
       hp: def.hp * stageScale * scale,
       maxHp: def.hp * stageScale * scale,
       speed: def.speed * (kind === 'normal' ? 1.06 : 1),
@@ -2413,7 +2437,7 @@ export class GameEngine {
       prevY: y,
       vx: 0,
       vy: 0,
-      radius: 54,
+      radius: ENEMY_RADIUS.boss,
       hp,
       maxHp: hp,
       speed: Math.min(178, def.speed * difficulty.enemySpeedScale),
@@ -2494,7 +2518,7 @@ export class GameEngine {
         } else if (enemy.rangedCooldown <= 0 && playerDistance <= 760) {
           enemy.patternX = this.player.x;
           enemy.patternY = this.player.y;
-          enemy.rangedTelegraph = 0.44;
+          enemy.rangedTelegraph = RANGED_ENEMY.telegraphSeconds;
           const cadenceScale = this.runMode === 'infinite'
             ? Math.min(1.55, 1 + infiniteDifficultyAt(this.elapsed, this.infiniteBossKills).minute * 0.012)
             : 1;
@@ -2519,7 +2543,7 @@ export class GameEngine {
       enemy.y = clamp(enemy.y, -90, WORLD_H + 90);
       this.resolveEntityVsObstacles(enemy, enemy.radius);
 
-      if (distance(enemy, this.player) < enemy.radius + 15 && enemy.contactTimer <= 0) {
+      if (distance(enemy, this.player) < enemy.radius + HIT_RADIUS.playerContact && enemy.contactTimer <= 0) {
         enemy.contactTimer = enemy.isBoss ? 0.78 : 1;
         this.damagePlayer(enemy.damage, true);
         this.shake = Math.max(this.shake, enemy.isBoss ? 12 : 5);
@@ -2801,7 +2825,7 @@ export class GameEngine {
       projectile.life -= dt;
       projectile.x += projectile.vx * dt;
       projectile.y += projectile.vy * dt;
-      if (segmentCircleHitTime(start, projectile, this.player, projectile.radius + 13) !== null) {
+      if (segmentCircleHitTime(start, projectile, this.player, projectile.radius + HIT_RADIUS.playerVsHostileShot) !== null) {
         projectile.life = 0;
         this.damagePlayer(projectile.damage, true);
       }
@@ -2828,7 +2852,7 @@ export class GameEngine {
       pickup.y += pickup.vy * dt;
       pickup.vx *= 0.98;
       pickup.vy *= 0.98;
-      if (pickup.life <= 0 || distance(pickup, this.player) < pickup.radius + 18) this.collectPickup(pickup);
+      if (pickup.life <= 0 || distance(pickup, this.player) < pickup.radius + HIT_RADIUS.pickupReach) this.collectPickup(pickup);
     }
     recycleWhere(this.pickups, (pickup) => pickup.value > 0, this.pickupPool);
   }
@@ -2859,7 +2883,7 @@ export class GameEngine {
       if (Number.isFinite(hazard.life)) hazard.life -= dt;
       if (hazard.kind === 'shock' && !hazard.triggered && expiredThisStep(previousLife, hazard.life)) {
         hazard.triggered = true;
-        if (shockHitsPlayer(hazard, hazard.radius, this.player, 13)) this.damagePlayer(hazard.damage, false);
+        if (shockHitsPlayer(hazard, hazard.radius, this.player, HIT_RADIUS.playerVsHostileShot)) this.damagePlayer(hazard.damage, false);
         this.burst(hazard.x, hazard.y, Math.round(28 * this.options.effects), '#050505', 280);
         this.shake = Math.max(this.shake, 11);
       }
@@ -3276,7 +3300,7 @@ export class GameEngine {
     });
     if (pending) offers.push(this.makeOffer(pending, 'awakening'));
 
-    const wanted = reason === 'boss' ? 4 : 3;
+    const wanted = reason === 'boss' ? DRAFT_SIZE.boss : DRAFT_SIZE.level;
     let guard = 0;
     while (offers.length < wanted && guard < 80) {
       guard += 1;
@@ -3407,6 +3431,7 @@ export class GameEngine {
       survivedSeconds: infinite ? this.elapsed : 0,
       bossKills: infinite ? this.infiniteBossKills : 0,
       scoreEligible: infinite ? this.scoreEligible : false,
+      rulesVersion: this.rules.version,
     };
   }
 
@@ -3511,6 +3536,7 @@ export class GameEngine {
       bossKills: this.infiniteBossKills,
       dangerRank: infiniteDifficulty?.rank ?? stageIndex(this.chapter, this.stage),
       scoreEligible: this.runMode === 'infinite' && this.scoreEligible,
+      rulesVersion: this.rules.version,
       bossName: boss?.boss?.name ? `${boss.boss.name} · PHASE ${boss.bossPhase ?? 1}${this.bossEnraged ? ' [광폭화]' : ''}` : undefined,
       bossMove: bossMove?.attackGrammar,
       bossHp: boss?.hp,

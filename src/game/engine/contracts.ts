@@ -3,7 +3,9 @@ import type { ChapterId, StageId } from '../../content/schema.ts';
 export const ENGINE_CONTRACT_VERSION = 1 as const;
 
 export type EngineRunState = 'idle' | 'running' | 'paused' | 'draft' | 'settled';
-export type EngineAction = 'moveUp' | 'moveDown' | 'moveLeft' | 'moveRight';
+/** G1: the only player input the simulation accepts is movement. Attacks and skills are always automatic. */
+export const ENGINE_ACTIONS = Object.freeze(['moveUp', 'moveDown', 'moveLeft', 'moveRight'] as const);
+export type EngineAction = (typeof ENGINE_ACTIONS)[number];
 
 export type EngineAddress = {
   chapter: ChapterId;
