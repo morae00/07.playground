@@ -95,6 +95,12 @@ export type RuleSet = Readonly<{
    * the module, so everything else about the map is unchanged; only the obstacle footprints differ.
    */
   kitProps: boolean;
+  /**
+   * SYS-06: obstacles are cover. An ordinary enemy shot stops at the first obstacle in its path, and a shooter only
+   * starts to aim when it has a clear line to the player; otherwise it circles to find one. Boss barrages are
+   * airborne and fly over obstacles, drawn above them with a ground shadow so that reads.
+   */
+  obstacleCover: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -123,6 +129,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   smoothCamera: false,
   rareHitStop: false,
   kitProps: false,
+  obstacleCover: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -151,6 +158,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   smoothCamera: true,
   rareHitStop: true,
   kitProps: true,
+  obstacleCover: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

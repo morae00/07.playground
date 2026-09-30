@@ -53,6 +53,8 @@ const HERO_ANIM_ID = -1;
 /** Damage numbers pop over this long when they appear or take a merged hit, and spread this far sideways (FX-07). */
 const NUMBER_POP_SECONDS = 0.12;
 const NUMBER_SPREAD = 24;
+/** How far below a boss shot its ground shadow falls, in world units (SYS-06: the shot is airborne). */
+const SHOT_SHADOW_DROP = 18;
 /** How far each ground tile reaches past its neighbours, in world units, to cover the seam between stamps (ART-05). */
 const GROUND_SEAM = 0.5;
 
@@ -194,6 +196,8 @@ export type RenderWorld = {
   readonly bossEnraged: boolean;
   /** Classic rules draw shake jitter every frame, as 0.1.0 did; remaster rules only while shaking. */
   readonly jitterEveryFrame: boolean;
+  /** SYS-06: boss shots are airborne (they fly over obstacles), so each gets a ground shadow. */
+  readonly airShots: boolean;
   /** The operating system's reduced-motion preference (the option lives in options.reducedFlash). */
   readonly reducedMotion: boolean;
   readonly options: Readonly<GameOptions>;
@@ -738,6 +742,7 @@ export class WorldRenderer {
   /** Marks on the floor under every body: foot shadows, the player's foot ring, and ranged-enemy rings. */
   private drawGroundMarks(ctx: CanvasRenderingContext2D) {
     this.drawFallingBodies(ctx);
+    if (this.world.airShots) this.drawShotShadows(ctx);
     for (const body of this.sortedBodies) {
       const enemy = body.enemy;
       if (!enemy) continue;
@@ -955,6 +960,24 @@ export class WorldRenderer {
         skillId: projectile.skillId,
       });
     }
+  }
+
+  /**
+   * SYS-06: a boss shot flies over obstacles, so its shadow on the floor, down and to the right like every cast shadow,
+   * shows it is airborne. The shadow lies under the bodies and the shot itself above them.
+   */
+  private drawShotShadows(ctx: CanvasRenderingContext2D) {
+    ctx.save();
+    ctx.fillStyle = rgba(NEUTRAL.ink, 0.22);
+    for (const projectile of this.world.bossProjectiles) {
+      if (projectile.kind === 'enemy' || projectile.fading) continue;
+      const point = this.interpolated(projectile);
+      if (!circleVisible(this.viewport, point.x, point.y + SHOT_SHADOW_DROP, projectile.radius * 2)) continue;
+      ctx.beginPath();
+      ctx.ellipse(point.x + SHOT_SHADOW_DROP * 0.4, point.y + SHOT_SHADOW_DROP, projectile.radius, projectile.radius * 0.45, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   private drawHostileProjectiles(ctx: CanvasRenderingContext2D) {

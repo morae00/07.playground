@@ -154,6 +154,16 @@ The same two random draws that sized a block now pick its module, so hazards and
 
 Each chapter's art lives in its own atlas pack. Only the common pack and the pack of the chapter on screen are resident: the menu loads the selected chapter's pack ahead of its run and releases the others (`SpriteAtlas.release`), so textures stay within budget as chapters are added.
 
+## Cover (SYS-06)
+
+Under the `obstacleCover` rule, obstacles are cover for both sides:
+- An ordinary enemy shot stops at the first obstacle it reaches before the player, with the same small ink burst as a friendly shot (`shot/blocked`).
+- A shooter only starts to aim with a clear line to the player (`clearShot`, the check the player's auto-aim already uses). Without one it circles the player, closing a little, until a line opens. A shot already aimed still fires and can hit the wall.
+- Boss barrages are airborne and fly over obstacles. The renderer draws each boss shot above the bodies, as before, and a ground shadow under them, offset down and to the right like every cast shadow, so a shot passing over a wall reads as passing over.
+- Terrain acting on enemies (fire, water, traps at half strength) is still an open A/B question for the team. It needs a terrain damage source in the kill and contribution path first, so it waits for UI-05's damage tally.
+
+Classic rules keep 0.1.0's behaviour: every hostile shot passes through obstacles and shooters fire regardless of walls.
+
 ## Camera (FX-04)
 
 The simulation camera stays hard-locked on the player, clamped to the world. Spawns, aim, and off-screen checks use it together with the logical frame (G14). Under the `smoothCamera` rule, the screen shows a separate view camera instead (`src/game/presentation/viewCamera.ts`):

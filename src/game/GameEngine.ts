@@ -2858,6 +2858,7 @@ export class GameEngine {
       }
 
       if (!enemy.isBoss && enemy.attackStyle === 'ranged') {
+        let seekingSight = false;
         enemy.rangedCooldown = Math.max(0, enemy.rangedCooldown - dt);
         const projectileSpeed = Math.min(360, 220 * (this.runMode === 'infinite'
           ? infiniteDifficultyAt(this.elapsed, this.infiniteBossKills).enemySpeedScale
@@ -2878,7 +2879,7 @@ export class GameEngine {
               'enemy',
             );
           }
-        } else if (enemy.rangedCooldown <= 0 && playerDistance <= 760) {
+        } else if (enemy.rangedCooldown <= 0 && playerDistance <= 760 && !(seekingSight = this.rules.obstacleCover && !this.clearShot(enemy, this.player, 7))) {
           // SYS-02: the telegraph line points where a moving player will be when the shot arrives.
           const aim = shooterLeadAim ? leadAim(enemy, this.player, playerVelocity, RANGED_ENEMY.telegraphSeconds, projectileSpeed) : this.player;
           enemy.patternX = aim.x;
@@ -2890,13 +2891,18 @@ export class GameEngine {
           enemy.rangedCooldown = (2.25 + this.gameplayRandom() * 0.75) / cadenceScale;
         }
 
-        if (playerDistance < 235) {
+        const strafe = this.rules.isolatedCosmeticIds
+          ? (enemy.variant % 2 === 0 ? 1 : -1)
+          : (enemy.id % 2 === 0 ? 1 : -1);
+        if (seekingSight) {
+          // SYS-06: no clear line, so it circles the player while closing a little until one opens.
+          const around = normalize(-dir.y * strafe + dir.x * 0.35, dir.x * strafe + dir.y * 0.35);
+          moveX = around.x;
+          moveY = around.y;
+        } else if (playerDistance < 235) {
           moveX = -dir.x;
           moveY = -dir.y;
         } else if (playerDistance <= 410) {
-          const strafe = this.rules.isolatedCosmeticIds
-            ? (enemy.variant % 2 === 0 ? 1 : -1)
-            : (enemy.id % 2 === 0 ? 1 : -1);
           moveX = -dir.y * strafe;
           moveY = dir.x * strafe;
         }
@@ -3712,7 +3718,24 @@ export class GameEngine {
       projectile.life -= dt;
       projectile.x += projectile.vx * dt;
       projectile.y += projectile.vy * dt;
-      if (!projectile.fading && segmentCircleHitTime(start, projectile, this.player, projectile.radius + HIT_RADIUS.playerVsHostileShot) !== null) {
+      if (projectile.fading) continue;
+      const hitsPlayer = segmentCircleHitTime(start, projectile, this.player, projectile.radius + HIT_RADIUS.playerVsHostileShot);
+      // SYS-06: an ordinary enemy shot stops at the first obstacle it reaches before the player; boss shots fly over.
+      if (this.rules.obstacleCover && projectile.kind === 'enemy') {
+        let blockedAt: number | null = null;
+        for (const obstacle of this.obstacles) {
+          const time = segmentRectHitTime(start, projectile, obstacle, projectile.radius);
+          if (time !== null && (blockedAt === null || time < blockedAt)) blockedAt = time;
+        }
+        if (blockedAt !== null && (hitsPlayer === null || blockedAt < hitsPlayer)) {
+          projectile.x = start.x + (projectile.x - start.x) * blockedAt;
+          projectile.y = start.y + (projectile.y - start.y) * blockedAt;
+          projectile.life = 0;
+          this.emit({ type: 'shot/blocked', x: projectile.x, y: projectile.y });
+          continue;
+        }
+      }
+      if (hitsPlayer !== null) {
         projectile.life = 0;
         this.damagePlayer(projectile.damage, true, projectile.kind === 'enemy' ? 'shot' : 'bossShot', projectile);
       }
@@ -4588,6 +4611,7 @@ export class GameEngine {
       paused: this.paused,
       bossEnraged: this.bossEnraged,
       jitterEveryFrame: !this.rules.isolatedCosmeticIds,
+      airShots: this.rules.obstacleCover,
       reducedMotion: this.systemReducedMotion || this.options.reducedMotion,
       options: this.options,
       camera: this.shownCamera(),

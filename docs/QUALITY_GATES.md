@@ -114,6 +114,21 @@ ART-08 does the same for Ch4 and Ch5. Piloted against its parent on six stages o
 
 The rate moved by 5 of 480 (71 flips), within seed noise. The timeout (5-10 `survivor`, boss at 96%) is the same persona artifact.
 
+SYS-06 (obstacles as cover, `obstacleCover` rule) was piloted against its parent (TEC-10) on 13 stages from every chapter (1-1, 1-5, 1-10, 2-3, 2-5, 2-10, 3-3, 3-5, 3-10, 4-5, 4-10, 5-5, 5-10) × 10 seeds × 4 personas:
+
+| | before | after (SYS-06) |
+|---|---:|---:|
+| clear, all 520 | 39.4% | 40.8% |
+| clears: striker / survivor / collector / fresh | 48 / 118 / 39 / 0 | 56 / 118 / 38 / 0 |
+| clear by chapter without fresh, Ch1 / 2 / 3 / 4 / 5 (%) | 31.1 / 52.2 / 42.2 / 66.7 / 86.7 | 30.0 / 52.2 / 50.0 / 65.0 / 90.0 |
+| deaths: contact / shots / boss | 282 / 8 / 21 | 282 / 8 / 14 |
+| boss stages, clear time p50 / max (s) | 233 / 1189 | 243 / 985 |
+
+- Cover makes the game a little easier: 7 more clears of 520 (39 flips), most of them in 3-3 (55 to 68%) and among `striker` runs.
+- Shot deaths did not move, because the personas never use cover on purpose. The gain comes from shots that happened to meet a wall.
+- Boss deaths fell from 21 to 14.
+- The three timeouts are the same `survivor` loops before and after.
+
 ## Game rules and grammar
 
 Gameplay changes ship behind the rule set in `src/game/rules.ts`. `classic` reproduces 0.1.0 exactly and `remaster` is the default. Infinite-mode records and replay fixtures are kept per rules version: the remaster rules (v2) may change freely until a build ships them, and after that the first change to seeded outcomes must raise `RULES_VERSION`. `test/grammarContracts.integration.test.mjs` pins the preserved game grammar (stage structure, draft sizes, radii, tier mix, deterministic replay) and one regression test per R0 gameplay fix.
