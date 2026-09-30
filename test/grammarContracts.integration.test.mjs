@@ -1,13 +1,20 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createHeadlessCanvas, installHeadlessPlatform } from '../scripts/lib/headless-engine.mjs';
+import { createHeadlessCanvas, holdDirection, installHeadlessPlatform } from '../scripts/lib/headless-engine.mjs';
 
 // Grammar contract (TEC-11): the real engine must keep the preserved game grammar. A failure here means a
 // change altered core rules; update the preserved-grammar list and RULES_VERSION together with the code.
+// Tests drive the engine only through public commands and the test probe (TEC-07, ARCHITECTURE rule 7).
 
 installHeadlessPlatform();
 Object.defineProperty(globalThis, 'performance', { value: { now: () => 0 }, configurable: true });
-const { GameEngine } = await import('/tmp/blackline-survivor-p0/App.mjs');
+const {
+  ProbedGameEngine,
+  createEngineHarness,
+  appendReplayCommand,
+  createReplayFixture,
+  runReplay,
+} = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
 
 const meta = () => ({
   gold: 120,
@@ -20,13 +27,22 @@ const meta = () => ({
 });
 const options = () => ({ healthBars: 'elite', volume: 0, effects: 0.9, damageNumbers: true, screenShake: false, reducedFlash: false, paceMode: 'standard' });
 
-function createEngine(onDraft = () => {}) {
-  return new GameEngine(createHeadlessCanvas(1440, 900), meta(), options(), {
+function createEngine({ onDraft = () => {}, viewport = [1440, 900], overrides = {} } = {}) {
+  return new ProbedGameEngine(createHeadlessCanvas(viewport[0], viewport[1]), meta(), { ...options(), ...overrides }, {
     onSnapshot() {},
     onDraft,
     onRoundClear() {},
     onGameOver() {},
   });
+}
+
+/** An isolated arena: nothing spawns, the player neither attacks nor dies, and the stage is empty. */
+function isolate(engine, ...keep) {
+  const parts = ['enemies', 'hazards', 'obstacles', 'pickups', 'projectiles', 'hostileShots', 'effects'].filter((part) => !keep.includes(part));
+  engine.probe.haltSpawns();
+  engine.probe.setSkills({});
+  engine.probe.setGodMode();
+  engine.probe.clear(...parts);
 }
 
 test('G7: Stage 5 is a mid boss, Stage 10 a chapter boss, the rest survival stages', () => {
@@ -35,7 +51,7 @@ test('G7: Stage 5 is a mid boss, Stage 10 a chapter boss, the rest survival stag
     const kinds = [];
     for (let stage = 1; stage <= 10; stage += 1) {
       engine.startRun(1, stage, 1000 + stage);
-      kinds.push(engine.kind);
+      kinds.push(engine.probe.read().kind);
     }
     assert.deepEqual(kinds, ['normal', 'normal', 'normal', 'normal', 'midBoss', 'normal', 'normal', 'normal', 'normal', 'finalBoss']);
   } finally {
@@ -45,13 +61,13 @@ test('G7: Stage 5 is a mid boss, Stage 10 a chapter boss, the rest survival stag
 
 test('G4: level-up drafts show three cards and boss rewards four', () => {
   const drafts = [];
-  const engine = createEngine((draft) => drafts.push(draft));
+  const engine = createEngine({ onDraft: (draft) => drafts.push(draft) });
   try {
     engine.startRun(1, 1, 42);
-    engine.openDraft('level', 'resume');
+    engine.probe.openDraft('level', 'resume');
     assert.equal(drafts.at(-1).cards.length, 3);
-    engine.completeDraft(drafts.at(-1).cards[0], drafts.at(-1).id);
-    engine.openDraft('boss', 'resume');
+    engine.dispatch({ type: 'draft/select', offerId: drafts.at(-1).cards[0].offerId });
+    engine.probe.openDraft('boss', 'resume');
     assert.equal(drafts.at(-1).cards.length, 4);
   } finally {
     engine.dispose();
@@ -65,9 +81,9 @@ test('G9/V4: spawned enemies keep their tier radii and the 58/30/12 tier mix', (
     const counts = { small: 0, medium: 0, large: 0 };
     const radii = { small: new Set(), medium: new Set(), large: new Set() };
     for (let index = 0; index < 6000; index += 1) {
-      engine.enemies = [];
-      engine.spawnEnemy(1);
-      const enemy = engine.enemies[0];
+      engine.probe.clear('enemies');
+      engine.probe.spawnEnemy({ tier: 'rolled' });
+      const [enemy] = engine.probe.read().enemies;
       counts[enemy.tier] += 1;
       radii[enemy.tier].add(enemy.radius);
     }
@@ -86,16 +102,19 @@ test('G8/G10: main bosses use radius 54, field bosses radius 38 and appear at th
   const engine = createEngine();
   try {
     engine.startRun(1, 5, 11);
-    assert.equal(engine.enemies.find((enemy) => enemy.isBoss).radius, 54);
+    assert.equal(engine.probe.read().enemies.find((enemy) => enemy.isBoss).radius, 54);
 
     engine.startRun(1, 2, 12);
-    engine.enemies = [];
-    engine.timeLeft = engine.duration * (1 - 0.35);
-    engine.spawnEnemies(1 / 60);
-    assert.equal(engine.enemies.some((enemy) => enemy.isBoss), false, 'no field boss before 36%');
-    engine.timeLeft = engine.duration * (1 - 0.361);
-    engine.spawnEnemies(1 / 60);
-    const fieldBoss = engine.enemies.find((enemy) => enemy.isBoss);
+    engine.probe.setSkills({});
+    engine.probe.setGodMode();
+    engine.probe.clear('enemies');
+    const { duration } = engine.probe.read();
+    engine.probe.setClock({ timeLeft: duration * (1 - 0.35) });
+    engine.probe.step(1);
+    assert.equal(engine.probe.read().enemies.some((enemy) => enemy.isBoss), false, 'no field boss before 36%');
+    engine.probe.setClock({ timeLeft: duration * (1 - 0.361) });
+    engine.probe.step(1);
+    const fieldBoss = engine.probe.read().enemies.find((enemy) => enemy.isBoss);
     assert.ok(fieldBoss, 'a field boss appears once progress passes 36%');
     assert.equal(fieldBoss.radius, 38);
     assert.equal(fieldBoss.boss.role, 'field');
@@ -113,7 +132,8 @@ test('G14: the same seed gives the same run under both rule sets when replayed',
         engine.setRuleSet(ruleSet);
         engine.startRun(1, 1, 0x5eed);
         for (let frame = 0; frame < 600; frame += 1) engine.advanceFrame(1 / 60, false);
-        snapshots.push(JSON.stringify({ player: engine.player, enemies: engine.enemies.map((enemy) => [enemy.x, enemy.y, enemy.hp]) }));
+        const world = engine.probe.read();
+        snapshots.push(JSON.stringify({ player: world.player, enemies: world.enemies.map((enemy) => [enemy.x, enemy.y, enemy.hp]) }));
       } finally {
         engine.dispose();
       }
@@ -122,37 +142,85 @@ test('G14: the same seed gives the same run under both rule sets when replayed',
   }
 });
 
-function runSteps({ ruleSet, options: overrides = {}, viewport = [1440, 900], hz = 60, chapter = 1, stage = 5, seed = 99, steps = 1800 }) {
-  let pendingDraft = null;
-  let executed = 0;
-  let captured = null;
-  const engine = new GameEngine(createHeadlessCanvas(viewport[0], viewport[1]), meta(), { ...options(), screenShake: true, ...overrides }, {
-    onSnapshot() {},
-    onDraft(draft) { pendingDraft = draft; },
-    onRoundClear() {},
-    onGameOver() {},
-  });
-  const directions = ['d', 's', 'a', 'w'];
-  const update = engine.update.bind(engine);
-  engine.update = (dt) => {
-    engine.keys.clear();
-    engine.keys.add(directions[Math.floor(executed / 180) % directions.length]);
-    update(dt);
-    executed += 1;
-    if (executed === steps) captured = JSON.stringify({ player: engine.player, enemies: engine.enemies.map((enemy) => [enemy.tier, enemy.x, enemy.y, enemy.hp]), kills: engine.stageKills });
+const START = { seed: 17, address: { chapter: 1, stage: 1 }, fixedStepHz: 60, paceMode: 'standard', rules: 'remaster' };
+
+/** Plays a scripted pilot for `ticks` fixed steps and returns the command log it produced (TEC-07). */
+function recordPilotRun({ ticks, start = START, viewport = [1440, 900], overrides = {} }) {
+  const harness = createEngineHarness((callbacks) => new ProbedGameEngine(createHeadlessCanvas(viewport[0], viewport[1]), meta(), { ...options(), ...overrides }, callbacks));
+  let replay = createReplayFixture('grammar-contract', start);
+  const send = (tick, command) => {
+    replay = appendReplayCommand(replay, tick, command);
+    harness.dispatch(command);
   };
+  const directions = ['moveRight', 'moveDown', 'moveLeft', 'moveUp'];
+  harness.reset(replay.start);
+  let held = null;
+  for (let tick = 0; tick < ticks; tick += 1) {
+    const draft = harness.openDraft;
+    if (draft) send(tick, { type: 'draft/select', offerId: draft.cards[0].offerId });
+    const wanted = directions[Math.floor(tick / 180) % directions.length];
+    if (wanted !== held) {
+      if (held) send(tick, { type: 'input/action', action: held, pressed: false });
+      send(tick, { type: 'input/action', action: wanted, pressed: true });
+      held = wanted;
+    }
+    harness.step(1);
+    harness.drainEvents();
+  }
+  const snapshot = harness.readSnapshot();
+  harness.dispose();
+  return { replay: { ...replay, durationTicks: ticks }, snapshot };
+}
+
+test('TEC-07/G14: a seed plus the command log reproduces the run, whatever the cosmetic options and window size', () => {
+  const recorded = recordPilotRun({ ticks: 2400 });
+  assert.ok(recorded.replay.commands.some((entry) => entry.command.type === 'draft/select'), 'the pilot picked at least one draft card');
+  assert.ok(recorded.snapshot.player[5] > 0, 'the pilot killed something');
+  const replayOn = (viewport, overrides) => {
+    const harness = createEngineHarness((callbacks) => new ProbedGameEngine(createHeadlessCanvas(viewport[0], viewport[1]), meta(), { ...options(), ...overrides }, callbacks));
+    try {
+      return runReplay(harness, recorded.replay);
+    } finally {
+      harness.dispose();
+    }
+  };
+  const reference = replayOn([1440, 900], {});
+  assert.deepEqual(reference.snapshot, recorded.snapshot, 'replaying the log lands on the recorded state');
+  for (const [label, viewport, overrides] of [
+    ['damage numbers off', [1440, 900], { damageNumbers: false }],
+    ['low effect density', [1440, 900], { effects: 0.3 }],
+    ['shake on, reduced flash', [1440, 900], { screenShake: true, reducedFlash: true }],
+    ['1024x720 window', [1024, 720], {}],
+    ['1920x1080 window', [1920, 1080], {}],
+  ]) {
+    assert.equal(replayOn(viewport, overrides).fingerprint, reference.fingerprint, label);
+  }
+});
+
+/** Runs a seeded stage at a given frame rate, steering and capturing per fixed step (not per frame). */
+function runSteps({ ruleSet, overrides = {}, viewport = [1440, 900], hz = 60, chapter = 1, stage = 5, seed = 99, steps = 1800 }) {
+  let pendingDraft = null;
+  let captured = null;
+  const engine = createEngine({ viewport, overrides: { screenShake: true, ...overrides }, onDraft: (draft) => { pendingDraft = draft; } });
+  const directions = ['d', 's', 'a', 'w'];
   try {
     engine.setRuleSet(ruleSet);
     engine.startRun(chapter, stage, seed);
-    for (let frame = 0; frame < steps * 4 && !captured && !engine.stageFinished; frame += 1) {
+    holdDirection(engine, directions[0]);
+    engine.probe.onStep((tick) => {
+      holdDirection(engine, directions[Math.floor(tick / 180) % directions.length]);
+      if (tick !== steps) return;
+      const world = engine.probe.read();
+      captured = JSON.stringify({ player: world.player, enemies: world.enemies.map((enemy) => [enemy.tier, enemy.x, enemy.y, enemy.hp]), kills: world.stageKills });
+    });
+    for (let frame = 0; frame < steps * 4 && !captured && !engine.probe.read().stageFinished; frame += 1) {
       if (pendingDraft) {
-        const draft = pendingDraft;
+        engine.dispatch({ type: 'draft/select', offerId: pendingDraft.cards[0].offerId });
         pendingDraft = null;
-        engine.completeDraft(draft.cards[0], draft.id);
       }
       engine.advanceFrame(1 / hz, true);
     }
-    return captured ?? `ended:${executed}:${JSON.stringify(engine.player)}`;
+    return captured ?? `ended:${JSON.stringify(engine.probe.read().player)}`;
   } finally {
     engine.dispose();
   }
@@ -160,26 +228,30 @@ function runSteps({ ruleSet, options: overrides = {}, viewport = [1440, 900], hz
 
 test('G14/BUG-08: cosmetic options and frame rate never change a seeded run under remaster rules', () => {
   const reference = runSteps({ ruleSet: 'remaster', stage: 1, seed: 17, steps: 2400 });
-  assert.equal(runSteps({ ruleSet: 'remaster', stage: 1, seed: 17, steps: 2400, options: { damageNumbers: false } }), reference, 'damage numbers');
-  assert.equal(runSteps({ ruleSet: 'remaster', stage: 1, seed: 17, steps: 2400, options: { effects: 0.3 } }), reference, 'effects density');
-  assert.equal(runSteps({ ruleSet: 'remaster', stage: 1, seed: 17, steps: 2400, options: { screenShake: false, reducedFlash: true } }), reference, 'shake and reduced motion');
+  assert.equal(runSteps({ ruleSet: 'remaster', stage: 1, seed: 17, steps: 2400, overrides: { damageNumbers: false } }), reference, 'damage numbers');
+  assert.equal(runSteps({ ruleSet: 'remaster', stage: 1, seed: 17, steps: 2400, overrides: { effects: 0.3 } }), reference, 'effects density');
+  assert.equal(runSteps({ ruleSet: 'remaster', stage: 1, seed: 17, steps: 2400, overrides: { screenShake: false, reducedFlash: true } }), reference, 'shake and reduced motion');
   assert.equal(runSteps({ ruleSet: 'remaster', stage: 1, seed: 17, steps: 2400, hz: 30 }), reference, '30 Hz frames');
+  assert.equal(runSteps({ ruleSet: 'remaster', stage: 1, seed: 17, steps: 2400, hz: 144 }), reference, '144 Hz frames');
 });
 
 test('BUG-08: the gameplay id stream ignores damage numbers and effect density (classic rules still leak)', () => {
   const idsAfter = (ruleSet, overrides) => {
-    const engine = new GameEngine(createHeadlessCanvas(1440, 900), meta(), { ...options(), ...overrides }, {
-      onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver() {},
-    });
+    let pending = null;
+    const engine = createEngine({ overrides, onDraft: (draft) => { pending = draft; } });
     try {
       engine.setRuleSet(ruleSet);
       engine.startRun(2, 4, 31337);
-      engine.cheatGodMode = true;
+      engine.probe.setGodMode();
       for (let frame = 0; frame < 900; frame += 1) {
-        if (engine.activeDraftId !== null) engine.completeDraft({ kind: 'bonus', bonus: 'heal', rarity: 'common', title: '', body: '', levelLine: '' }, engine.activeDraftId);
+        if (pending) {
+          engine.dispatch({ type: 'draft/select', offerId: pending.cards[0].offerId });
+          pending = null;
+        }
         engine.advanceFrame(1 / 60, false);
       }
-      return engine.idSeed;
+      const world = engine.probe.read();
+      return JSON.stringify([world.enemies.map((enemy) => enemy.id), world.projectiles.map((shot) => shot.id), world.pickups.map((pickup) => pickup.id)]);
     } finally {
       engine.dispose();
     }
@@ -194,31 +266,30 @@ test('BUG-10: the Ink Butcher winds up in place behind a lane telegraph, then da
   const engine = createEngine();
   try {
     engine.startRun(1, 5, 505);
-    engine.obstacles = [];
-    engine.hazards = [];
-    const boss = engine.enemies.find((enemy) => enemy.isBoss);
-    engine.enemies = [boss];
-    engine.cheatGodMode = true;
-    boss.x = engine.player.x - 500;
-    boss.y = engine.player.y;
-    boss.patternTimer = 0;
-    boss.patternPhase = 'idle';
-    engine.updateEnemies(1 / 60);
-    assert.equal(boss.patternPhase, 'warn');
-    assert.equal(engine.laneTelegraphs.length, 1, 'the windup shows a lane');
-    const lane = engine.laneTelegraphs[0];
-    assert.ok(Math.abs(lane.life - 0.62) < 1e-9, 'the lane lasts the whole windup');
-    const start = { x: boss.x, y: boss.y };
+    const bossId = engine.probe.read().enemies.find((enemy) => enemy.isBoss).id;
+    isolate(engine, 'enemies');
+    engine.probe.removeEnemies(engine.probe.read().enemies.filter((enemy) => enemy.id !== bossId).map((enemy) => enemy.id));
+    const { player } = engine.probe.read();
+    engine.probe.patchEnemy(bossId, { x: player.x - 500, y: player.y, patternTimer: 0, patternPhase: 'idle' });
+    engine.probe.step(1);
+    const bossOf = () => engine.probe.read().enemies.find((enemy) => enemy.id === bossId);
+    assert.equal(bossOf().patternPhase, 'warn');
+    const [lane, ...others] = engine.probe.read().laneTelegraphs;
+    assert.equal(others.length, 0, 'the windup shows one lane');
+    assert.ok(Math.abs(lane.maxLife - 0.62) < 1e-9, 'the lane lasts the whole windup');
+    const start = { x: bossOf().x, y: bossOf().y };
 
-    engine.player.y += 300;
+    engine.probe.setPlayer({ y: player.y + 300 });
     let drift = 0;
-    for (let step = 0; step < 45 && boss.patternPhase === 'warn'; step += 1) {
-      engine.updateEnemies(1 / 60);
+    for (let step = 0; step < 45 && bossOf().patternPhase === 'warn'; step += 1) {
+      engine.probe.step(1);
+      const boss = bossOf();
       if (boss.patternPhase === 'warn') drift = Math.max(drift, Math.hypot(boss.x - start.x, boss.y - start.y));
     }
     assert.ok(drift < 1e-6, `the boss holds still while winding up (drifted ${drift})`);
-    assert.equal(boss.patternPhase, 'dash');
-    while (boss.patternPhase === 'dash') engine.updateEnemies(1 / 60);
+    assert.equal(bossOf().patternPhase, 'dash');
+    while (bossOf().patternPhase === 'dash') engine.probe.step(1);
+    const boss = bossOf();
     const along = Math.hypot(boss.x - lane.x1, boss.y - lane.y1);
     const sideways = Math.abs((lane.y2 - lane.y1) * (boss.x - lane.x1) - (lane.x2 - lane.x1) * (boss.y - lane.y1)) / Math.hypot(lane.x2 - lane.x1, lane.y2 - lane.y1);
     assert.ok(sideways < 2, `the dash stays on the telegraphed line even though the player moved (off by ${sideways})`);
@@ -232,26 +303,24 @@ test('BUG-11: the eclipse wall enters from the view edge, reaches the player any
   const engine = createEngine();
   try {
     engine.startRun(5, 5, 707);
-    const boss = engine.enemies.find((enemy) => enemy.isBoss);
+    const boss = engine.probe.read().enemies.find((enemy) => enemy.isBoss);
     assert.equal(boss.boss.pattern, 'eclipse');
-    engine.enemies = [boss];
+    isolate(engine, 'enemies');
+    engine.probe.removeEnemies(engine.probe.read().enemies.filter((enemy) => enemy.id !== boss.id).map((enemy) => enemy.id));
     for (const [px, py] of [[3600, 1500], [2100, 2600], [600, 400]]) {
-      engine.player.x = px;
-      engine.player.y = py;
-      engine.bossProjectiles = [];
-      engine.pendingHostileShots = [];
-      engine.laneTelegraphs = [];
-      boss.x = px - 200;
-      boss.y = py;
-      boss.patternTimer = 0;
-      boss.bossPhaseFlash = 0;
-      engine.updateBossPattern(boss, 1 / 60);
-      assert.equal(engine.pendingHostileShots.length, 6, 'seven lanes minus one safe lane');
-      assert.equal(engine.laneTelegraphs.length, 6, 'each lane is telegraphed before the shots fly');
-      assert.equal(engine.bossProjectiles.length, 0, 'no shot flies during the 0.6 s lead');
-      engine.elapsed += 0.61;
-      engine.updateBossProjectiles(0);
-      const shots = engine.bossProjectiles.filter((shot) => shot.kind === 'eclipse');
+      engine.probe.clear('hostileShots', 'effects');
+      engine.probe.setPlayer({ x: px, y: py });
+      engine.probe.patchEnemy(boss.id, { x: px - 200, y: py, patternTimer: 0, bossPhaseFlash: 0, speed: 0 });
+      engine.probe.step(1);
+      const queued = engine.probe.read();
+      assert.equal(queued.pendingHostileShots.length, 6, 'seven lanes minus one safe lane');
+      assert.equal(queued.laneTelegraphs.length, 6, 'each lane is telegraphed before the shots fly');
+      assert.equal(queued.bossProjectiles.filter((shot) => shot.kind === 'eclipse').length, 0, 'no shot flies during the 0.6 s lead');
+      let shots = [];
+      for (let step = 0; step < 60 && shots.length === 0; step += 1) {
+        engine.probe.step(1);
+        shots = engine.probe.read().bossProjectiles.filter((shot) => shot.kind === 'eclipse');
+      }
       assert.equal(shots.length, 6);
       for (const shot of shots) {
         const vertical = shot.vx === 0;
@@ -268,23 +337,23 @@ test('BUG-13: a root zone binds once and then lets the player walk out; hazards 
   const engine = createEngine();
   try {
     engine.startRun(3, 10, 808);
-    engine.enemies = [];
-    engine.obstacles = [];
-    engine.hazards = [{ id: 1, kind: 'root', x: engine.player.x, y: engine.player.y, radius: 52, life: 7, maxLife: 7, damage: 0, slow: 1, triggered: false }];
-    const startX = engine.player.x;
-    engine.keys.add('d');
+    isolate(engine);
+    const startX = engine.probe.read().player.x;
+    const { player } = engine.probe.read();
+    engine.probe.addHazard({ kind: 'root', x: player.x, y: player.y, radius: 52, life: 7, maxLife: 7, damage: 0, slow: 1, triggered: false });
+    holdDirection(engine, 'd');
     let rootedSteps = 0;
-    for (let step = 0; step < 7 * 60 && engine.player.x - startX < 60; step += 1) {
-      engine.updatePlayer(1 / 60);
-      if (engine.player.root > 0) rootedSteps += 1;
+    for (let step = 0; step < 7 * 60 && engine.probe.read().player.x - startX < 60; step += 1) {
+      engine.probe.step(1);
+      if (engine.probe.read().player.root > 0) rootedSteps += 1;
     }
-    assert.ok(engine.player.x - startX >= 60, 'the player leaves the zone before it expires');
+    assert.ok(engine.probe.read().player.x - startX >= 60, 'the player leaves the zone before it expires');
     assert.ok(rootedSteps <= Math.ceil(0.65 * 60) + 1, `bound for one short window only (${rootedSteps} steps)`);
 
     for (let seed = 1; seed <= 25; seed += 1) {
       for (const chapter of [1, 3, 5]) {
         engine.startRun(chapter, 2, seed * 17 + chapter);
-        for (const hazard of engine.hazards) {
+        for (const hazard of engine.probe.read().hazards) {
           if (!Number.isFinite(hazard.life)) {
             const gap = Math.hypot(hazard.x - 2100, hazard.y - 1500) - hazard.radius;
             assert.ok(gap >= 420 - 1e-6, `static ${hazard.kind} hazard reaches ${gap.toFixed(0)} px from the start (Ch${chapter} seed ${seed})`);
@@ -303,20 +372,17 @@ test('BUG-16: skills do what their cards say, and the mirror clone awakening add
     const volley = (rules, awakened) => {
       engine.setRuleSet(rules);
       engine.startRun(3, 2, 909);
-      engine.obstacles = [];
-      engine.hazards = [];
-      engine.enemies = [];
-      engine.spawnEnemy(1, 'small');
-      const target = engine.enemies[0];
-      target.x = engine.player.x + 320;
-      target.y = engine.player.y + 40;
-      target.hp = target.maxHp = 1e9;
-      engine.rebuildEnemyIndex();
-      engine.skills = { mirrorClone: { level: 5, awakened } };
-      engine.skillCooldowns = {};
-      engine.projectiles.length = 0;
-      engine.updateMirrorClone(engine.skills.mirrorClone);
-      return { shots: engine.projectiles.filter((shot) => shot.skillId === 'mirrorClone'), target, card: engine.makeOffer('mirrorClone', 'awakening').body };
+      isolate(engine);
+      const { player } = engine.probe.read();
+      const targetId = engine.probe.spawnEnemy({ x: player.x + 320, y: player.y + 40, hp: 1e9 });
+      engine.probe.setSkills({ mirrorClone: { level: 5, awakened } });
+      engine.probe.cast('mirrorClone');
+      const world = engine.probe.read();
+      return {
+        shots: world.projectiles.filter((shot) => shot.skillId === 'mirrorClone'),
+        target: world.enemies.find((enemy) => enemy.id === targetId),
+        card: engine.probe.previewOffer('mirrorClone', 'awakening').body,
+      };
     };
 
     const plain = volley('remaster', false);
@@ -336,30 +402,21 @@ test('BUG-16: skills do what their cards say, and the mirror clone awakening add
 
     engine.setRuleSet('remaster');
     engine.startRun(3, 2, 910);
-    engine.enemies = [];
-    engine.spawnEnemy(1, 'small');
-    const target = engine.enemies[0];
-    engine.obstacles = [];
-    target.x = engine.player.x + 300;
-    target.y = engine.player.y;
-    target.hp = target.maxHp = 1e9;
-    engine.rebuildEnemyIndex();
-    engine.skills = { railSpear: { level: 3, awakened: false }, voidMine: { level: 3, awakened: false } };
-    const railCard = engine.makeOffer('railSpear', 'skill');
-    assert.equal(railCard.body, '폭 +12, 피해 +128%');
-    engine.skills.railSpear.level = 4;
-    engine.skillCooldowns = {};
-    engine.beams.length = 0;
-    engine.updateRailSpear(engine.skills.railSpear);
-    assert.equal(engine.beams.at(-1).width, 18 + 12, 'the Lv4 rail is as wide as its card says');
-    assert.equal(engine.makeOffer('railSpear', 'skill').title, '흑선 레일 Lv.5');
-    assert.doesNotMatch(engine.makeOffer('railSpear', 'skill').body, /충전/);
+    isolate(engine);
+    const { player } = engine.probe.read();
+    engine.probe.spawnEnemy({ x: player.x + 300, y: player.y, hp: 1e9 });
+    engine.probe.setSkills({ railSpear: { level: 3 }, voidMine: { level: 3 } });
+    assert.equal(engine.probe.previewOffer('railSpear', 'skill').body, '폭 +12, 피해 +128%');
+    engine.probe.setSkills({ railSpear: { level: 4 }, voidMine: { level: 3 } });
+    engine.probe.cast('railSpear');
+    assert.equal(engine.probe.read().beams.at(-1).width, 18 + 12, 'the Lv4 rail is as wide as its card says');
+    assert.equal(engine.probe.previewOffer('railSpear', 'skill').title, '흑선 레일 Lv.5');
+    assert.doesNotMatch(engine.probe.previewOffer('railSpear', 'skill').body, /충전/);
 
-    engine.hazards = [];
-    engine.updateVoidMine(engine.skills.voidMine);
-    assert.equal(engine.hazards.at(-1).pull, 74 + 3 * 14, 'void mine pull matches the +19% per level on its card');
+    engine.probe.cast('voidMine');
+    assert.equal(engine.probe.read().hazards.at(-1).pull, 74 + 3 * 14, 'void mine pull matches the +19% per level on its card');
 
-    const overdrive = engine.makeBonusOffers('level').find((offer) => offer.bonus === 'overdrive');
+    const overdrive = engine.probe.previewBonusOffers('level').find((offer) => offer.bonus === 'overdrive');
     assert.equal(overdrive.title, '과부하');
     assert.match(overdrive.body, /이번 런이 끝날 때까지/);
   } finally {

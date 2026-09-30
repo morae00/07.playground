@@ -18,11 +18,21 @@ export type EngineStartRequest = {
   address: EngineAddress;
   fixedStepHz: number;
   paceMode: 'standard' | 'showcase';
+  /** Simulation rule set; remaster when omitted. */
+  rules?: 'classic' | 'remaster';
 };
 
+/**
+ * Everything the simulation accepts from the outside world (TEC-07). Input adapters translate keyboard,
+ * pointer, and gamepad state into these commands, so a seed plus a command log reproduces a run.
+ */
 export type EngineCommand =
   | { type: 'input/action'; action: EngineAction; pressed: boolean }
   | { type: 'input/pointer'; active: boolean; worldX: number; worldY: number }
+  /** Analog movement (gamepad stick or D-pad), already dead-zoned; magnitude at most 1. Zero releases it. */
+  | { type: 'input/analog'; x: number; y: number }
+  /** Drops every held action, the pointer, and analog movement (focus loss). */
+  | { type: 'input/release' }
   | { type: 'draft/select'; offerId: string }
   | { type: 'control/pause' }
   | { type: 'control/resume' };

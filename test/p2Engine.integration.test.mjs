@@ -97,7 +97,7 @@ globalThis.requestAnimationFrame = () => 1;
 globalThis.cancelAnimationFrame = () => {};
 Object.defineProperty(globalThis, 'performance', { value: { now: () => 0 }, configurable: true });
 
-const { GameEngine } = await import('/tmp/blackline-survivor-p0/App.mjs');
+const { GameEngine, ProbedGameEngine } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
 
 const defaultMeta = () => ({
   gold: 120,
@@ -384,7 +384,7 @@ test('reduced motion draws orbit blades where they hit, and the walk cycle follo
     }
 
     engine.player.root = 5;
-    engine.keys.add('d');
+    engine.dispatch({ type: 'input/action', action: 'moveRight', pressed: true });
     engine.update(1 / 60);
     assert.equal(engine.playerMoved(), false, 'a rooted player holding a key does not walk');
     engine.player.root = 0;

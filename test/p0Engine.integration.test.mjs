@@ -64,7 +64,7 @@ globalThis.requestAnimationFrame = () => 1;
 globalThis.cancelAnimationFrame = () => {};
 Object.defineProperty(globalThis, 'performance', { value: { now: () => 0 }, configurable: true });
 
-const { GameEngine } = await import('/tmp/blackline-survivor-p0/App.mjs');
+const { ProbedGameEngine } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
 
 const defaultMeta = () => ({
   gold: 120,
@@ -113,15 +113,13 @@ const createCanvas = () => {
   };
 };
 
+// Tests reach the simulation only through public engine methods and the TEC-07 probe (docs/ARCHITECTURE.md rule 7).
 function createEngine() {
   const events = [];
   let latestDraft = null;
   let latestSettlement = null;
-  let latestSnapshot = null;
-  const engine = new GameEngine(createCanvas(), defaultMeta(), defaultOptions(), {
-    onSnapshot(snapshot) {
-      latestSnapshot = snapshot;
-    },
+  const engine = new ProbedGameEngine(createCanvas(), defaultMeta(), defaultOptions(), {
+    onSnapshot() {},
     onDraft(draft) {
       latestDraft = draft;
       events.push('draft');
@@ -137,35 +135,51 @@ function createEngine() {
   });
   return {
     engine,
+    probe: engine.probe,
     events,
     getDraft: () => latestDraft,
     getSettlement: () => latestSettlement,
-    getSnapshot: () => latestSnapshot,
   };
 }
 
+/** Empties the world so the test owns every entity: no director spawns, terrain, drops, shots, or skills. */
+function isolateWorld(probe, loadout = {}) {
+  probe.haltSpawns();
+  probe.clear('enemies', 'hazards', 'obstacles', 'pickups', 'projectiles', 'hostileShots', 'effects');
+  probe.setSkills(loadout);
+  return probe.read();
+}
+
+/** Stationary zero-damage melee enemy; callers keep it off the player's body so only the tested system acts on it. */
+const spawnDummy = (probe, x, y, hp) => probe.spawnEnemy({ x, y, hp, speed: 0, damage: 0, attackStyle: 'contact' });
+
+const enemyById = (world, id) => world.enemies.find((enemy) => enemy.id === id);
+
 function normalize(value) {
   return JSON.parse(JSON.stringify(value, (_key, item) => {
-    if (item instanceof Set) return [...item].sort((a, b) => a - b);
     if (typeof item === 'number') return Math.round(item * 1e9) / 1e9;
     return item;
   }));
 }
 
 function captureGameplay(engine) {
+  const world = engine.probe.read();
   return normalize({
-    timeLeft: engine.timeLeft,
-    elapsed: engine.elapsed,
-    spawnBudget: engine.spawnBudget,
-    player: engine.player,
-    enemies: engine.enemies,
-    projectiles: engine.projectiles,
-    bossProjectiles: engine.bossProjectiles,
-    pickups: engine.pickups,
-    hazards: engine.hazards,
-    skillCooldowns: engine.skillCooldowns,
-    stageKills: engine.stageKills,
-    stageCoinsEarned: engine.stageCoinsEarned,
+    timeLeft: world.timeLeft,
+    elapsed: world.elapsed,
+    spawnBudget: world.spawnBudget,
+    player: world.player,
+    enemies: world.enemies,
+    projectiles: world.projectiles.map((projectile) => ({
+      ...projectile,
+      hitEnemyIds: [...projectile.hitEnemyIds].sort((a, b) => a - b),
+    })),
+    bossProjectiles: world.bossProjectiles,
+    pickups: world.pickups,
+    hazards: world.hazards,
+    skillCooldowns: world.skillCooldowns,
+    stageKills: world.stageKills,
+    stageCoinsEarned: world.stageCoinsEarned,
   });
 }
 
@@ -173,7 +187,7 @@ function runFrames(engine, frames, timeScale) {
   engine.startRun(1, 1, 0x12345678);
   engine.setTimeScale(timeScale);
   for (let frame = 1; frame <= frames; frame += 1) {
-    engine.tick((frame * 1000) / 60);
+    engine.advanceFrame(1 / 60, true);
   }
   return captureGameplay(engine);
 }
@@ -187,10 +201,10 @@ test('actual GameEngine reaches the same gameplay state at 1x and 2x with the sa
 });
 
 test('actual draft queue emits settlement only after the active draft resolves', () => {
-  const { engine, events, getDraft } = createEngine();
+  const { engine, probe, events, getDraft } = createEngine();
   engine.startRun(1, 1, 77);
-  engine.openDraft('level', 'resume');
-  engine.requestRoundClear();
+  probe.openDraft('level', 'resume');
+  probe.requestRoundClear();
   assert.deepEqual(events, ['draft']);
   const draft = getDraft();
   const resolution = engine.completeDraft(draft.cards[0], draft.id);
@@ -200,16 +214,16 @@ test('actual draft queue emits settlement only after the active draft resolves',
 });
 
 test('campaign normal stages only clear when the survival countdown reaches zero', () => {
-  const { engine, events, getSettlement } = createEngine();
+  const { engine, probe, events, getSettlement } = createEngine();
   try {
     engine.startRun(1, 1, 78);
-    engine.stageKills = 99_999;
-    engine.timeLeft = 1;
-    engine.resolveRoundState();
+    probe.setStageKills(99_999);
+    probe.setClock({ timeLeft: 1 });
+    probe.resolveRound();
     assert.deepEqual(events, [], 'kill totals must never clear a survival stage');
 
-    engine.timeLeft = 0;
-    engine.resolveRoundState();
+    probe.setClock({ timeLeft: 0 });
+    probe.resolveRound();
     assert.deepEqual(events, ['roundClear']);
     assert.equal(getSettlement().cleared, true);
   } finally {
@@ -218,97 +232,82 @@ test('campaign normal stages only clear when the survival countdown reaches zero
 });
 
 test('campaign boss stages enter a single enrage phase when their countdown expires', () => {
-  const { engine, events } = createEngine();
+  const { engine, probe, events } = createEngine();
   try {
     engine.startRun(1, 5, 79);
-    const boss = engine.enemies.find((enemy) => enemy.isBoss && !enemy.legacyBoss);
+    const boss = probe.read().enemies.find((enemy) => enemy.isBoss && !enemy.legacyBoss);
     assert.ok(boss);
     const initialDamage = boss.damage;
     const initialSpeed = boss.speed;
-    engine.timeLeft = 0;
-    engine.resolveRoundState();
+    probe.setClock({ timeLeft: 0 });
+    probe.resolveRound();
     assert.deepEqual(events, []);
-    assert.equal(engine.bossEnraged, true);
-    assert.equal(boss.damage, initialDamage * 4.5);
-    assert.equal(boss.speed, initialSpeed * 1.35);
-    assert.ok(engine.hazards.some((hazard) => hazard.kind === 'null' && hazard.life === 8));
+    const enraged = probe.read();
+    assert.equal(enraged.bossEnraged, true);
+    const enragedBoss = enemyById(enraged, boss.id);
+    assert.equal(enragedBoss.damage, initialDamage * 4.5);
+    assert.equal(enragedBoss.speed, initialSpeed * 1.35);
+    assert.ok(enraged.hazards.some((hazard) => hazard.kind === 'null' && hazard.life === 8));
 
-    const enemyCount = engine.enemies.length;
-    engine.resolveRoundState();
-    assert.equal(engine.enemies.length, enemyCount, 'enrage reinforcements must only spawn once');
+    const enemyCount = enraged.enemies.length;
+    probe.resolveRound();
+    assert.equal(probe.read().enemies.length, enemyCount, 'enrage reinforcements must only spawn once');
   } finally {
     engine.dispose();
   }
 });
 
 test('simultaneous player and boss death emits only game over', () => {
-  const { engine, events } = createEngine();
+  const { engine, probe, events } = createEngine();
   engine.startRun(1, 1, 99);
-  engine.player.hp = 0;
-  engine.enemies = [{
-    id: 900,
-    x: engine.player.x,
-    y: engine.player.y,
-    vx: 0,
-    vy: 0,
-    radius: 30,
-    hp: 0,
-    maxHp: 100,
-    speed: 0,
-    damage: 0,
-    xp: 10,
-    coin: 1,
-    tier: 'boss',
-    variant: 0,
-    isBoss: true,
-    contactTimer: 0,
-    hitFlash: 0,
-    stun: 0,
-    root: 0,
-    patternTimer: 0,
-    patternPhase: 'idle',
-    patternX: 0,
-    patternY: 0,
-    damageCooldowns: {},
-  }];
-  engine.update(1 / 60);
+  const { player } = isolateWorld(probe);
+  const bossId = probe.spawnBoss('field', { x: player.x, y: player.y });
+  probe.patchEnemy(bossId, { hp: 0 });
+  probe.setPlayer({ hp: 0 });
+  probe.step(1);
   assert.deepEqual(events, ['gameOver']);
-  assert.equal(engine.stageKills, 1);
+  assert.equal(probe.read().stageKills, 1);
   engine.dispose();
 });
 
 test('shock expires against the player without damaging enemies', () => {
-  const { engine } = createEngine();
+  const { engine, probe } = createEngine();
   engine.startRun(1, 1, 101);
-  const startingHp = engine.player.hp;
-  engine.enemies = [{ id: 1, x: engine.player.x, y: engine.player.y, radius: 10, hp: 50 }];
-  engine.hazards = [{
-    id: 50,
+  const { player } = isolateWorld(probe);
+  const startingHp = player.hp;
+  // Inside the blast but off the player's body: a contact hit would grant invulnerability and block the shock.
+  const enemyId = spawnDummy(probe, player.x + 40, player.y, 50);
+  probe.addHazard({
     kind: 'shock',
-    x: engine.player.x,
-    y: engine.player.y,
+    x: player.x,
+    y: player.y,
     radius: 100,
     life: 0.01,
     maxLife: 0.52,
     damage: 20,
     slow: 1,
     triggered: false,
-  }];
-  engine.updateHazards(0.02);
-  assert.ok(engine.player.hp < startingHp);
-  assert.equal(engine.enemies[0].hp, 50);
+  });
+  probe.step(1);
+  const world = probe.read();
+  assert.ok(world.player.hp < startingHp);
+  assert.equal(enemyById(world, enemyId).hp, 50);
   engine.dispose();
 });
 
 test('vortex hazards snapshot independent source profiles', () => {
-  const { engine } = createEngine();
+  const { engine, probe } = createEngine();
   engine.startRun(1, 1, 202);
-  engine.hazards = [];
-  engine.enemies = [{ id: 3, x: engine.player.x + 50, y: engine.player.y, radius: 10, hp: 50, isBoss: false }];
-  engine.updateVoidMine({ level: 5, awakened: true });
-  engine.updateBlackSun({ level: 5, awakened: true });
-  const mine = engine.hazards.find((hazard) => hazard.sourceSkillId === 'voidMine');
-  const sun = engine.hazards.find((hazard) => hazard.sourceSkillId === 'blackSun');
+  const { player } = isolateWorld(probe, {
+    voidMine: { level: 5, awakened: true },
+    blackSun: { level: 5, awakened: true },
+  });
+  spawnDummy(probe, player.x + 50, player.y, 50);
+  probe.cast('voidMine');
+  probe.cast('blackSun');
+  const { hazards } = probe.read();
+  const mine = hazards.find((hazard) => hazard.sourceSkillId === 'voidMine');
+  const sun = hazards.find((hazard) => hazard.sourceSkillId === 'blackSun');
   assert.ok(mine);
   assert.ok(sun);
   assert.notEqual(mine.pull, sun.pull);
@@ -326,72 +325,30 @@ test('dispose closes the run audio context exactly once', async () => {
   assert.equal(audio.state, 'closed');
 });
 
-function combatEnemy(id, x, y, overrides = {}) {
-  return {
-    id,
-    x,
-    y,
-    prevX: x,
-    prevY: y,
-    vx: 0,
-    vy: 0,
-    radius: 14,
-    hp: 1_000,
-    maxHp: 1_000,
-    speed: 0,
-    damage: 0,
-    xp: 0,
-    coin: 0,
-    tier: 'small',
-    variant: 0,
-    isBoss: false,
-    contactTimer: 0,
-    hitFlash: 0,
-    stun: 0,
-    root: 0,
-    slowMultiplier: 1,
-    slowTimer: 0,
-    patternTimer: 0,
-    patternPhase: 'idle',
-    patternX: 0,
-    patternY: 0,
-    damageCooldowns: {},
-    bossPhase: 1,
-    bossPhaseFlash: 0,
-    ...overrides,
-  };
-}
-
 test('player aim tracks the nearest enemy without boss preference', () => {
-  const { engine } = createEngine();
+  const { engine, probe } = createEngine();
   try {
     engine.startRun(1, 1, 80);
-    const nearest = combatEnemy(1_001, engine.player.x + 120, engine.player.y);
-    const fartherBoss = combatEnemy(1_002, engine.player.x + 260, engine.player.y, {
-      tier: 'boss',
-      isBoss: true,
-    });
-    engine.enemies = [fartherBoss, nearest];
-    engine.rebuildEnemyIndex();
-    engine.updatePlayerAim();
-    assert.equal(engine.aimTargetId, nearest.id);
-    assert.equal(engine.playerAimAngle, 0);
+    const { player } = isolateWorld(probe);
+    const fartherBossId = probe.spawnBoss('field', { x: player.x + 260, y: player.y });
+    probe.patchEnemy(fartherBossId, { speed: 0 });
+    const nearestId = spawnDummy(probe, player.x + 120, player.y, 1_000);
+    probe.step(1);
+    const { aim } = probe.read();
+    assert.equal(aim.targetId, nearestId);
+    assert.equal(aim.angle, 0);
   } finally {
     engine.dispose();
   }
 });
 
 test('HUD snapshots expose timed buffs and debuffs as structured effects', () => {
-  const { engine, getSnapshot } = createEngine();
+  const { engine, probe } = createEngine();
   try {
     engine.startRun(1, 1, 81);
-    engine.player.shield = 0.3;
-    engine.player.root = 0.6;
-    engine.player.slow = 0.58;
-    engine.player.silence = 0.4;
-    engine.emitSnapshot(true);
+    probe.setPlayer({ shield: 0.3, root: 0.6, slow: 0.58, silence: 0.4 });
 
-    const effects = getSnapshot().activeEffects;
+    const effects = probe.hud().activeEffects;
     assert.deepEqual(effects.map((effect) => effect.id), ['shield', 'root', 'slow', 'silence']);
     assert.equal(effects.find((effect) => effect.id === 'shield').kind, 'buff');
     assert.equal(effects.find((effect) => effect.id === 'root').kind, 'debuff');
@@ -402,60 +359,58 @@ test('HUD snapshots expose timed buffs and debuffs as structured effects', () =>
 });
 
 test('P4 awakened skills retain their visible delayed and returning contracts', () => {
-  const { engine } = createEngine();
+  const { engine, probe } = createEngine();
   try {
     engine.startRun(5, 10, 404);
-    engine.player.hp = 1;
-    engine.updateEclipseStep({ level: 4, awakened: true });
-    const afterimage = engine.hazards.find((hazard) => hazard.sourceSkillId === 'eclipseStep');
+    isolateWorld(probe, { eclipseStep: { level: 4, awakened: true } });
+    probe.setPlayer({ hp: 1 });
+    probe.cast('eclipseStep');
+    const afterimage = probe.read().hazards.find((hazard) => hazard.sourceSkillId === 'eclipseStep');
     assert.ok(afterimage, 'awakened Eclipse Step must leave a delayed afterimage strike');
     assert.equal(afterimage.kind, 'warning');
     assert.equal(afterimage.life, 0.24);
     assert.ok(afterimage.skillDamage > 0);
 
-    engine.skills = { fanKnives: { level: 5, awakened: true } };
-    engine.projectiles = [{
-      id: 901,
-      x: engine.player.x + 180,
-      y: engine.player.y,
-      prevX: engine.player.x + 180,
-      prevY: engine.player.y,
-      vx: 680,
-      vy: 0,
-      radius: 5,
-      damage: 12,
-      life: 0.5,
-      maxLife: 1,
-      returning: false,
-      pierce: 0,
-      knockback: 0,
-      skillId: 'fanKnives',
-      blockedBySolid: false,
-      hitEnemyIds: new Set([1]),
-    }];
-    engine.updateProjectiles(1 / 60);
-    assert.equal(engine.projectiles[0].returning, true);
-    assert.ok(engine.projectiles[0].vx < 0, 'returning knife must head back toward the player');
-    assert.equal(engine.projectiles[0].hitEnemyIds.size, 0);
+    const { player } = isolateWorld(probe, { fanKnives: { level: 5, awakened: true } });
+    probe.setPlayer({ hp: player.stats.maxHp }); // the Eclipse Step check left the player at 1 hp
+    const targetId = spawnDummy(probe, player.x + 180, player.y, 1_000);
+    probe.cast('fanKnives');
+    const outgoing = probe.read().projectiles.filter((projectile) => projectile.skillId === 'fanKnives');
+    const volley = new Set(outgoing.map((knife) => knife.id));
+    assert.ok(volley.size > 0);
+    // Fly the volley out until it turns at half its life; it must have cut the target on the way out.
+    let knives = [];
+    let hitOnTheWayOut = false;
+    for (let tick = 0; tick < 240; tick += 1) {
+      probe.step(1);
+      knives = probe.read().projectiles.filter((projectile) => volley.has(projectile.id));
+      if (knives.some((knife) => knife.returning)) break;
+      hitOnTheWayOut ||= knives.some((knife) => knife.hitEnemyIds.includes(targetId));
+    }
+    assert.ok(hitOnTheWayOut, 'the outgoing volley must hit the target before it turns');
+    assert.ok(knives.length > 0);
+    for (const knife of knives) {
+      assert.equal(knife.returning, true);
+      assert.ok(knife.vx < 0, 'returning knife must head back toward the player');
+      assert.equal(knife.hitEnemyIds.length, 0);
+    }
   } finally {
     engine.dispose();
   }
 });
 
 test('P4 Black Sun collapse applies max-health damage and a timed slow', () => {
-  const { engine } = createEngine();
+  const { engine, probe } = createEngine();
   try {
     engine.startRun(4, 10, 505);
-    const enemy = combatEnemy(902, engine.player.x + 48, engine.player.y);
-    engine.enemies = [enemy];
-    engine.enemyIndex.clear();
-    engine.enemyIndex.insert(enemy);
-    engine.skills = { blackSun: { level: 5, awakened: true } };
-    engine.hazards = [{
-      id: 903,
+    const { player } = isolateWorld(probe, { blackSun: { level: 5, awakened: true } });
+    const enemyId = spawnDummy(probe, player.x + 48, player.y, 1_000);
+    // The collapse rule needs Black Sun equipped and awakened; silence keeps it from casting a vortex of its own.
+    probe.setPlayer({ silence: 1 });
+    probe.addHazard({
       kind: 'vortex',
-      x: enemy.x,
-      y: enemy.y,
+      x: player.x + 48,
+      y: player.y,
       radius: 120,
       life: 0.01,
       maxLife: 1,
@@ -466,8 +421,9 @@ test('P4 Black Sun collapse applies max-health damage and a timed slow', () => {
       pull: 0,
       skillDamage: 0,
       collapseDamage: 1,
-    }];
-    engine.updateHazards(0.02);
+    });
+    probe.step(1);
+    const enemy = enemyById(probe.read(), enemyId);
     assert.ok(enemy.hp <= 954, `expected 4.5% max-health collapse damage, got hp=${enemy.hp}`);
     assert.equal(enemy.slowMultiplier, 0.52);
     assert.equal(enemy.slowTimer, 3.5);
@@ -477,27 +433,39 @@ test('P4 Black Sun collapse applies max-health damage and a timed slow', () => {
 });
 
 test('infinite mode rewards each random boss and respawns a different boss without a clock limit', () => {
-  const { engine, getDraft } = createEngine();
+  const { engine, probe, getDraft } = createEngine();
   try {
     engine.startInfiniteRun(0x1f1f2026, true);
-    assert.equal(engine.runMode, 'infinite');
-    assert.equal(engine.duration, 0);
-    assert.equal(engine.timeLeft, 0);
-    const firstBoss = engine.enemies.find((enemy) => enemy.isBoss);
+    const start = probe.read();
+    assert.equal(start.runMode, 'infinite');
+    assert.equal(start.duration, 0);
+    assert.equal(start.timeLeft, 0);
+    const firstBoss = start.enemies.find((enemy) => enemy.isBoss);
     assert.ok(firstBoss);
 
-    firstBoss.hp = 0;
-    engine.flushDeadEnemies();
-    assert.equal(engine.infiniteBossKills, 1);
-    assert.ok(engine.infiniteEventScore >= 2_500);
+    // Spawns stay on because the director owns the boss respawn. With no skills and god mode, nothing else can
+    // die, level the player up, or end the run while the test waits.
+    probe.setSkills({});
+    probe.setGodMode();
+    probe.patchEnemy(firstBoss.id, { hp: 0 });
+    probe.step(1);
+    const afterKill = engine.getDiagnostics();
+    assert.equal(afterKill.bossKills, 1);
+    // One 1/60 s step earns no survival points (elapsed * 10 rounds down to 0), so the score is the kill bounty.
+    assert.ok(afterKill.score >= 2_500);
     const draft = getDraft();
     assert.equal(draft.reason, 'boss');
     assert.equal(draft.after, 'resume');
     assert.equal(engine.completeDraft(draft.cards[0], draft.id), 'resume');
 
-    engine.infiniteBossRespawnTimer = 0;
-    engine.spawnEnemies(1 / 60);
-    const secondBoss = engine.enemies.find((enemy) => enemy.isBoss);
+    // Drop whatever the reward equipped and the boss's XP, so no level-up draft pauses the 2.4 s respawn wait.
+    probe.setSkills({});
+    probe.clear('pickups');
+    let secondBoss;
+    for (let tick = 0; tick < 4 * 60 && !secondBoss; tick += 1) {
+      probe.step(1);
+      secondBoss = probe.read().enemies.find((enemy) => enemy.isBoss);
+    }
     assert.ok(secondBoss);
     assert.notEqual(secondBoss.boss.id, firstBoss.boss.id);
   } finally {
@@ -506,24 +474,23 @@ test('infinite mode rewards each random boss and respawns a different boss witho
 });
 
 test('infinite normal waves keep ranged enemies sparse and fire a telegraphed projectile', () => {
-  const { engine } = createEngine();
+  const { engine, probe } = createEngine();
   try {
     engine.startInfiniteRun(0x7072026, true);
-    engine.enemies = [];
-    for (let index = 0; index < 114; index += 1) engine.spawnEnemy(1.15);
-    const ranged = engine.enemies.filter((enemy) => enemy.attackStyle === 'ranged');
+    probe.clear('enemies');
+    for (let index = 0; index < 114; index += 1) probe.spawnEnemy({ difficulty: 1.15, tier: 'rolled' });
+    const ranged = probe.read().enemies.filter((enemy) => enemy.attackStyle === 'ranged');
     assert.ok(ranged.length > 0, 'seeded wave should contain a ranged enemy');
     assert.ok(ranged.length <= 2, `initial ranged cap must stay at two, received ${ranged.length}`);
 
-    const shooter = ranged[0];
-    shooter.x = engine.player.x + 320;
-    shooter.y = engine.player.y;
-    shooter.rangedCooldown = 0;
-    engine.enemies = [shooter];
-    engine.updateEnemies(0.01);
-    assert.ok(shooter.rangedTelegraph > 0);
-    engine.updateEnemies(0.5);
-    assert.equal(engine.bossProjectiles.at(-1)?.kind, 'enemy');
+    // A lone ranged enemy from the same spawner, in range with its cooldown spent.
+    const { player } = isolateWorld(probe);
+    const shooterId = probe.spawnEnemy({ x: player.x + 320, y: player.y, attackStyle: 'ranged' });
+    probe.patchEnemy(shooterId, { rangedCooldown: 0 });
+    probe.step(1);
+    assert.ok(enemyById(probe.read(), shooterId).rangedTelegraph > 0);
+    probe.step(30);
+    assert.equal(probe.read().bossProjectiles.at(-1)?.kind, 'enemy');
   } finally {
     engine.dispose();
   }

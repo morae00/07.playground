@@ -39,6 +39,11 @@ function validateCommand(command: EngineCommand, label: string, issues: string[]
       issues.push(`${label} pointer coordinates must be finite`);
     }
   }
+  if (command.type === 'input/analog') {
+    if (!Number.isFinite(command.x) || !Number.isFinite(command.y) || Math.hypot(command.x, command.y) > 1 + 1e-9) {
+      issues.push(`${label} analog movement must be finite with magnitude at most 1`);
+    }
+  }
   if (command.type === 'draft/select' && command.offerId.trim().length === 0) {
     issues.push(`${label} draft offerId is empty`);
   }

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { createHeadlessCanvas, installHeadlessPlatform, standardOptions } from './headless-engine.mjs';
+import { createHeadlessCanvas, holdDirection, installHeadlessPlatform, standardOptions } from './headless-engine.mjs';
 import { DEFAULT_SEEDS, DEFAULT_STAGE_ADDRESSES } from './balance-runner.mjs';
 
 export const DEFAULT_FULL_SEEDS = Object.freeze([
@@ -92,9 +92,8 @@ export function selectBalanceOffer(cards, persona, snapshot) {
 }
 
 function updateMovement(engine, frame, personaIndex, persona) {
-  engine.keys.clear();
   const directions = persona.id === 'survivor' ? ['a', 'w', 'd', 's'] : persona.id === 'collector' ? ['w', 'd', 's', 'a'] : ['d', 's', 'a', 'w'];
-  engine.keys.add(directions[(Math.floor(frame / persona.movePeriod) + personaIndex) % directions.length]);
+  holdDirection(engine, directions[(Math.floor(frame / persona.movePeriod) + personaIndex) % directions.length]);
 }
 
 function summarizeGroup(scenarios) {
@@ -161,7 +160,7 @@ export function createFullBalanceReport({ scenarios, seeds, stages, personas, ma
 }
 
 export async function runFullBalanceBatch({
-  bundlePath = '/tmp/blackline-survivor-p0/App.mjs',
+  bundlePath = '/tmp/blackline-survivor-p0/testing.mjs',
   seeds = DEFAULT_FULL_SEEDS,
   stages = DEFAULT_STAGE_ADDRESSES,
   personas = BALANCE_PERSONAS,
@@ -169,7 +168,7 @@ export async function runFullBalanceBatch({
   ruleSet = process.env.BALANCE_RULES ?? 'remaster',
 } = {}) {
   installHeadlessPlatform();
-  const { GameEngine } = await import(bundlePath);
+  const { ProbedGameEngine } = await import(bundlePath);
   const scenarios = [];
 
   for (const address of stages) {
@@ -180,7 +179,7 @@ export async function runFullBalanceBatch({
         let outcome = 'timeout';
         let latestSnapshot;
         let settlement;
-        engine = new GameEngine(createHeadlessCanvas(), progressionMeta(address.chapter, persona), standardOptions(), {
+        engine = new ProbedGameEngine(createHeadlessCanvas(), progressionMeta(address.chapter, persona), standardOptions(), {
           onSnapshot(snapshot) { latestSnapshot = snapshot; },
           onDraft(draft) {
             const offer = selectBalanceOffer(draft.cards, persona, latestSnapshot);
@@ -192,7 +191,7 @@ export async function runFullBalanceBatch({
         });
 
         const seed = scenarioSeed(address.chapter, address.stage, personaIndex, baseSeed);
-        engine.setRuleSet?.(ruleSet);
+        engine.setRuleSet(ruleSet);
         engine.startRun(address.chapter, address.stage, seed);
         let frame = 0;
         for (; frame < maxFrames && outcome === 'timeout'; frame += 1) {
@@ -200,7 +199,8 @@ export async function runFullBalanceBatch({
           engine.advanceFrame(1 / 60, false);
         }
         const diagnostics = engine.getDiagnostics();
-        const mainBoss = engine.enemies.find((enemy) => enemy.isBoss && !enemy.legacyBoss);
+        const world = engine.probe.read();
+        const mainBoss = world.enemies.find((enemy) => enemy.isBoss && !enemy.legacyBoss);
         const scenario = {
           chapter: address.chapter,
           stage: address.stage,
@@ -211,9 +211,9 @@ export async function runFullBalanceBatch({
           outcome,
           frames: frame,
           elapsed: round(diagnostics.elapsed),
-          kills: settlement?.kills ?? engine.player.kills,
-          coins: settlement?.coins ?? engine.player.coins,
-          hpRatio: round(engine.player.hp / Math.max(1, engine.player.stats.maxHp), 5),
+          kills: settlement?.kills ?? world.player.kills,
+          coins: settlement?.coins ?? world.player.coins,
+          hpRatio: round(world.player.hp / Math.max(1, world.player.stats.maxHp), 5),
           bossHpRatio: mainBoss ? round(mainBoss.hp / mainBoss.maxHp, 5) : null,
           skillCount: latestSnapshot ? Object.keys(latestSnapshot.skills).length : 0,
           skills: latestSnapshot ? Object.keys(latestSnapshot.skills).sort() : [],

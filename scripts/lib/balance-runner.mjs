@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { createHeadlessCanvas, installHeadlessPlatform, maxMeta, standardOptions } from './headless-engine.mjs';
+import { createHeadlessCanvas, holdDirection, installHeadlessPlatform, maxMeta, standardOptions } from './headless-engine.mjs';
 
 export const DEFAULT_STAGE_ADDRESSES = Object.freeze(
   Array.from({ length: 5 }, (_, index) => index + 1)
@@ -23,9 +23,8 @@ function scenarioSeed(chapter, stage, seed) {
 }
 
 function updateMovement(engine, frame) {
-  engine.keys.clear();
   const directions = ['d', 's', 'a', 'w'];
-  engine.keys.add(directions[Math.floor(frame / 180) % directions.length]);
+  holdDirection(engine, directions[Math.floor(frame / 180) % directions.length]);
 }
 
 function assertFiniteScenario(result) {
@@ -37,7 +36,7 @@ function assertFiniteScenario(result) {
 }
 
 export async function runBalanceBatch({
-  bundlePath = '/tmp/blackline-survivor-p0/App.mjs',
+  bundlePath = '/tmp/blackline-survivor-p0/testing.mjs',
   frames = 1_200,
   seeds = DEFAULT_SEEDS,
   stages = DEFAULT_STAGE_ADDRESSES,
@@ -47,7 +46,7 @@ export async function runBalanceBatch({
     throw new TypeError('seeds must be a non-empty integer array');
   }
   installHeadlessPlatform();
-  const { GameEngine } = await import(bundlePath);
+  const { ProbedGameEngine } = await import(bundlePath);
   const scenarios = [];
 
   for (const address of stages) {
@@ -56,7 +55,7 @@ export async function runBalanceBatch({
       let cleared = false;
       let gameOver = false;
       let latestSnapshot;
-      engine = new GameEngine(createHeadlessCanvas(), maxMeta(), standardOptions(), {
+      engine = new ProbedGameEngine(createHeadlessCanvas(), maxMeta(), standardOptions(), {
         onSnapshot(snapshot) { latestSnapshot = snapshot; },
         onDraft(draft) {
           const offer = draft.cards[0];
@@ -69,11 +68,8 @@ export async function runBalanceBatch({
 
       const seed = scenarioSeed(address.chapter, address.stage, baseSeed);
       engine.startRun(address.chapter, address.stage, seed);
-      engine.player.stats.maxHp = 1_000_000_000;
-      engine.player.stats.hpRegen = 0;
-      engine.player.hp = engine.player.stats.maxHp;
-      engine.player.nextXp = 1_000_000_000;
-      const initialHp = engine.player.hp;
+      engine.probe.setPlayer({ stats: { maxHp: 1_000_000_000, hpRegen: 0 }, hp: 1_000_000_000, nextXp: 1_000_000_000 });
+      const initialHp = engine.probe.read().player.hp;
       const highWater = { enemies: 0, projectiles: 0, bossProjectiles: 0, pickups: 0 };
 
       for (let frame = 0; frame < frames && !cleared && !gameOver; frame += 1) {
@@ -83,16 +79,17 @@ export async function runBalanceBatch({
         for (const key of Object.keys(highWater)) highWater[key] = Math.max(highWater[key], diagnostics[key]);
       }
 
-      const mainBoss = engine.enemies.find((enemy) => enemy.isBoss && !enemy.legacyBoss);
+      const world = engine.probe.read();
+      const mainBoss = world.enemies.find((enemy) => enemy.isBoss && !enemy.legacyBoss);
       const result = {
         chapter: address.chapter,
         stage: address.stage,
         kind: latestSnapshot?.stageKind ?? 'unknown',
         seed,
         elapsed: round(engine.getDiagnostics().elapsed),
-        kills: engine.player.kills,
-        coins: engine.player.coins,
-        damageTaken: round(initialHp - engine.player.hp),
+        kills: world.player.kills,
+        coins: world.player.coins,
+        damageTaken: round(initialHp - world.player.hp),
         bossHpRatio: mainBoss ? round(mainBoss.hp / mainBoss.maxHp, 5) : null,
         highWaterEnemies: highWater.enemies,
         highWaterProjectiles: highWater.projectiles,

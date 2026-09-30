@@ -1,0 +1,8 @@
+// Test bundle entry (TEC-07): the engine plus test-only probe, replay harness, and input adapter.
+// The app entry never imports this file, so production bundles do not ship the probe.
+export { GameEngine, SKILLS, SKILL_IDS } from '../game/GameEngine';
+export { ProbedGameEngine } from '../game/engine/probe';
+export { createEngineHarness, replaySnapshot } from '../game/engine/harness';
+export * from '../game/engine/replay';
+export { ENGINE_ACTIONS, ENGINE_CONTRACT_VERSION } from '../game/engine/contracts';
+export { InputAdapter, KEYBOARD_ACTIONS } from '../ui/inputAdapter';

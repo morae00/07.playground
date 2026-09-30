@@ -21,6 +21,7 @@ import {
 import { ModalDialog } from './ui/ModalDialog';
 import { ProgressBar } from './ui/ProgressBar';
 import { nextRovingId, type RovingKey } from './ui/inputContracts';
+import { InputAdapter } from './ui/inputAdapter';
 import { useGamepadNavigation } from './ui/useGamepadNavigation';
 import {
   CHAPTERS,
@@ -88,6 +89,9 @@ function StatGrid({ stats }: { stats: StatBlock }) {
 function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<GameEngine | null>(null);
+  // Keyboard, pointer, and gamepad reach the engine only as commands through this adapter (TEC-07).
+  const inputRef = useRef<InputAdapter | null>(null);
+  const pauseIntentRef = useRef<() => void>(() => undefined);
   const drawerToggleRef = useRef<HTMLButtonElement | null>(null);
   const runPausedRef = useRef(false);
   const phaseRef = useRef<'menu' | 'playing' | 'draft' | 'roundClear' | 'gameOver'>('menu');
@@ -135,7 +139,10 @@ function App() {
   }, [developerAccess, meta, selectedChapterId, selectedStageNo]);
 
   useEffect(() => {
-    return () => engineRef.current?.dispose();
+    return () => {
+      inputRef.current?.dispose();
+      engineRef.current?.dispose();
+    };
   }, []);
 
   useEffect(() => {
@@ -173,6 +180,7 @@ function App() {
   const toggleManualPause = useCallback(() => {
     setManualPause(!runPausedRef.current);
   }, [setManualPause]);
+  pauseIntentRef.current = toggleManualPause;
 
   useEffect(() => {
     // Losing the window should never leave enemies attacking an idle player (BUG-03).
@@ -290,9 +298,9 @@ function App() {
         recordInfiniteSettlement(result);
         setPhase('gameOver');
       },
-      onPauseIntent: () => toggleManualPause(),
+      onFrameStart: () => inputRef.current?.poll(),
     }),
-    [developerAccess, grantSettlement, recordInfiniteSettlement, toggleManualPause],
+    [developerAccess, grantSettlement, recordInfiniteSettlement],
   );
 
   const visibleStats = useMemo(() => buildStats(meta, makeRunUpgrades(), {}), [meta]);
@@ -306,9 +314,17 @@ function App() {
   const beginRun = useCallback((launch: (engine: GameEngine) => void) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    inputRef.current?.dispose();
     engineRef.current?.dispose();
     const engine = new GameEngine(canvas, meta, options, callbacks);
     engineRef.current = engine;
+    inputRef.current = new InputAdapter({
+      window,
+      document,
+      canvas,
+      target: engine,
+      onPauseIntent: () => pauseIntentRef.current(),
+    });
     setSettlement(null);
     setDraft(null);
     setSnapshot(null);
@@ -408,6 +424,8 @@ function App() {
   }, [draft, phase]);
 
   const toMenu = () => {
+    inputRef.current?.dispose();
+    inputRef.current = null;
     engineRef.current?.dispose();
     engineRef.current = null;
     setPhase('menu');

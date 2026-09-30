@@ -64,7 +64,7 @@ globalThis.requestAnimationFrame = () => 1;
 globalThis.cancelAnimationFrame = () => {};
 Object.defineProperty(globalThis, 'performance', { value: { now: () => 0 }, configurable: true });
 
-const { GameEngine } = await import('/tmp/blackline-survivor-p0/App.mjs');
+const { ProbedGameEngine } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
 
 const defaultMeta = () => ({
   gold: 120,
@@ -87,12 +87,13 @@ const defaultOptions = () => ({
 });
 
 function createCanvas(rect = { width: 1440, height: 900, left: 0, top: 0 }) {
+  const drawCalls = [];
   const context = new Proxy({
     measureText: () => ({ width: 0 }),
   }, {
     get(target, property) {
       if (property in target) return target[property];
-      return () => {};
+      return (...args) => { drawCalls.push({ name: property, args }); };
     },
     set(target, property, value) {
       target[property] = value;
@@ -103,6 +104,7 @@ function createCanvas(rect = { width: 1440, height: 900, left: 0, top: 0 }) {
   return {
     width: 0,
     height: 0,
+    drawCalls,
     getContext: () => context,
     getBoundingClientRect: () => ({ ...rect }),
     addEventListener() {},
@@ -115,7 +117,7 @@ function createCanvas(rect = { width: 1440, height: 900, left: 0, top: 0 }) {
 
 function createEngine({ canvas = createCanvas() } = {}) {
   let latestSnapshot = null;
-  const engine = new GameEngine(canvas, defaultMeta(), defaultOptions(), {
+  const engine = new ProbedGameEngine(canvas, defaultMeta(), defaultOptions(), {
     onSnapshot(snapshot) {
       latestSnapshot = snapshot;
     },
@@ -136,35 +138,37 @@ function assertFinitePoint(value, label) {
   assertFiniteNumber(value.y, `${label}.y`);
 }
 
-function assertFiniteCoordinates(engine, label) {
-  assertFinitePoint(engine.player, `${label}.player`);
-  assertFinitePoint(engine.camera, `${label}.camera`);
+function assertFiniteCoordinates(engine, world, label) {
+  assertFinitePoint(world.player, `${label}.player`);
+  assertFinitePoint(world.camera, `${label}.camera`);
 
   for (const [collectionName, collection] of [
-    ['enemies', engine.enemies],
-    ['projectiles', engine.projectiles],
-    ['bossProjectiles', engine.bossProjectiles],
-    ['pickups', engine.pickups],
-    ['hazards', engine.hazards],
+    ['enemies', world.enemies],
+    ['projectiles', world.projectiles],
+    ['bossProjectiles', world.bossProjectiles],
+    ['pickups', world.pickups],
+    ['hazards', world.hazards],
+    // TEC-07 gap: probe.read() has no particles or damage numbers (and render() culls non-finite ones), so these
+    // two cosmetic lists are still read directly.
     ['particles', engine.particles],
     ['damageNumbers', engine.damageNumbers],
   ]) {
     collection.forEach((item, index) => assertFinitePoint(item, `${label}.${collectionName}[${index}]`));
   }
 
-  engine.obstacles.forEach((obstacle, index) => {
+  world.obstacles.forEach((obstacle, index) => {
     assertFinitePoint(obstacle, `${label}.obstacles[${index}]`);
     assertFiniteNumber(obstacle.w, `${label}.obstacles[${index}].w`);
     assertFiniteNumber(obstacle.h, `${label}.obstacles[${index}].h`);
   });
 
-  engine.beams.forEach((beam, index) => {
+  world.beams.forEach((beam, index) => {
     for (const key of ['x1', 'y1', 'x2', 'y2']) {
       assertFiniteNumber(beam[key], `${label}.beams[${index}].${key}`);
     }
   });
 
-  engine.chains.forEach((chain, chainIndex) => {
+  world.chains.forEach((chain, chainIndex) => {
     chain.points.forEach((point, pointIndex) => {
       assertFinitePoint(point, `${label}.chains[${chainIndex}].points[${pointIndex}]`);
     });
@@ -191,13 +195,15 @@ test('all 50 chapter stages start and survive a fixed simulation step with finit
       const { engine, getSnapshot } = createEngine();
       try {
         engine.startRun(chapter, stage, chapter * 1000 + stage);
-        engine.update(1 / 60);
-        engine.emitSnapshot(true);
+        engine.probe.step(1);
 
-        assert.equal(engine.chapter, chapter, `${label} chapter must be retained`);
-        assert.equal(engine.stage, stage, `${label} stage must be retained`);
-        assertFiniteCoordinates(engine, label);
+        const world = engine.probe.read();
+        assert.equal(world.chapter, chapter, `${label} chapter must be retained`);
+        assert.equal(world.stage, stage, `${label} stage must be retained`);
+        assertFiniteCoordinates(engine, world, label);
+        // The engine emits a HUD snapshot on start and then every 0.12 s; the post-step HUD comes from the probe.
         assertFiniteSnapshot(getSnapshot(), `${label}.snapshot`);
+        assertFiniteSnapshot(engine.probe.hud(), `${label}.hud`);
       } finally {
         engine.dispose();
       }
@@ -215,16 +221,17 @@ test('every chapter has its required Stage 5 mid boss and Stage 10 final boss', 
       const { engine, getSnapshot } = createEngine();
       try {
         engine.startRun(chapter, stage, chapter * 10_000 + stage);
-        engine.update(1 / 60);
-        engine.emitSnapshot(true);
+        engine.probe.step(1);
 
-        const mainBosses = engine.enemies.filter((enemy) => enemy.isBoss && !enemy.legacyBoss);
-        assert.equal(engine.kind, expectedKind, `${label} must use ${expectedKind}`);
+        const world = engine.probe.read();
+        const mainBosses = world.enemies.filter((enemy) => enemy.isBoss && !enemy.legacyBoss);
+        assert.equal(world.kind, expectedKind, `${label} must use ${expectedKind}`);
         assert.equal(mainBosses.length, 1, `${label} must spawn exactly one main boss`);
         assert.ok(mainBosses[0].boss, `${label} boss definition must exist`);
         assert.equal(mainBosses[0].boss.chapter, chapter, `${label} boss must belong to its chapter`);
         assert.equal(mainBosses[0].boss.role, expectedRole, `${label} boss must have role ${expectedRole}`);
         assert.ok(getSnapshot()?.bossName, `${label} snapshot must expose the boss name`);
+        assert.ok(engine.probe.hud().bossName, `${label} HUD must still expose the boss name after the step`);
       } finally {
         engine.dispose();
       }
@@ -240,30 +247,50 @@ test('mobile canvas uses its CSS logical size, DPR backing store, and camera-sca
   const { engine } = createEngine({ canvas });
 
   try {
-    assert.equal(engine.viewW, 320, 'logical width must match the CSS canvas width');
-    assert.equal(engine.viewH, 568, 'logical height must match the CSS canvas height');
+    // An isolated run, so only the pointer can move the player below.
+    engine.startRun(1, 1, 1001);
+    engine.probe.haltSpawns();
+    engine.probe.clear('enemies', 'hazards', 'obstacles');
+    engine.probe.setSkills({});
+
+    // Every frame starts by clearing the whole logical viewport, so the cleared rectangle is the logical size.
+    canvas.drawCalls.length = 0;
+    engine.probe.render();
+    const clear = canvas.drawCalls.find((call) => call.name === 'clearRect');
+    assert.ok(clear, 'a rendered frame must clear the canvas');
+    assert.equal(clear.args[2], 320, 'logical width must match the CSS canvas width');
+    assert.equal(clear.args[3], 568, 'logical height must match the CSS canvas height');
     assert.equal(canvas.width, 640, 'backing width must include DPR');
     assert.equal(canvas.height, 1136, 'backing height must include DPR');
 
-    engine.camera = { x: 900, y: 500 };
-    engine.viewW = 640;
-    engine.viewH = 1136;
-    engine.setPointer({
-      clientX: rect.left + 160,
-      clientY: rect.top + 284,
-      isPrimary: true,
-      pointerId: 1,
-    });
+    // A 640×1136 logical canvas inside a 320×568 CSS box (the box shrank after the last resize), so screen
+    // points must scale CSS → canvas before the camera zoom.
+    Object.assign(rect, { width: 640, height: 1136 });
+    engine.probe.resize();
+    Object.assign(rect, { width: 320, height: 568 });
+    engine.probe.setCamera({ x: 900, y: 500 });
+    const pointer = engine.screenToWorld(rect.left + 160, rect.top + 284);
 
     // The camera shows 900 world units vertically (BUG-09), so screen pixels divide by the camera zoom.
-    const zoom = engine.viewH / 900;
-    assert.ok(Math.abs(engine.pointer.x - (900 + 320 / zoom)) < 1e-9, 'pointer x scales CSS → canvas → world before adding the camera');
-    assert.ok(Math.abs(engine.pointer.y - (500 + 568 / zoom)) < 1e-9, 'pointer y scales CSS → canvas → world before adding the camera');
+    const zoom = 1136 / 900;
+    assert.ok(Math.abs(pointer.x - (900 + 320 / zoom)) < 1e-9, 'pointer x scales CSS → canvas → world before adding the camera');
+    assert.ok(Math.abs(pointer.y - (500 + 568 / zoom)) < 1e-9, 'pointer y scales CSS → canvas → world before adding the camera');
 
+    // Dispatched as the input adapter does, the mapped point becomes the target the player walks toward.
+    const start = { x: pointer.x + 300, y: pointer.y + 400 };
+    engine.probe.setPlayer(start);
+    engine.dispatch({ type: 'input/pointer', active: true, worldX: pointer.x, worldY: pointer.y });
+    engine.probe.step(1);
+    const { player } = engine.probe.read();
+    assert.ok(Math.hypot(player.x - start.x, player.y - start.y) > 0, 'an active pointer must move the player');
+    const heading = Math.atan2(player.y - start.y, player.x - start.x);
+    assert.ok(Math.abs(heading - Math.atan2(pointer.y - start.y, pointer.x - start.x)) < 1e-9, 'the player must head for the dispatched world point');
+
+    engine.probe.setCamera({ x: 900, y: 500 });
     engine.setRuleSet('classic');
-    engine.setPointer({ clientX: rect.left + 160, clientY: rect.top + 284, isPrimary: true, pointerId: 1 });
-    assert.equal(engine.pointer.x, 900 + 320, 'classic rules keep the 1:1 pointer mapping');
-    assert.equal(engine.pointer.y, 500 + 568, 'classic rules keep the 1:1 pointer mapping');
+    const classicPointer = engine.screenToWorld(rect.left + 160, rect.top + 284);
+    assert.equal(classicPointer.x, 900 + 320, 'classic rules keep the 1:1 pointer mapping');
+    assert.equal(classicPointer.y, 500 + 568, 'classic rules keep the 1:1 pointer mapping');
   } finally {
     engine.dispose();
     window.devicePixelRatio = previousDpr;

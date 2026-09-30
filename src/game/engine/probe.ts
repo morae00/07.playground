@@ -1,0 +1,365 @@
+// Test and tooling access to the engine (TEC-07).
+// Tests and balance tools build worlds, step them, and read them through this typed API instead of writing
+// engine fields, so a refactor of the simulation only has to keep the probe working. The app never imports
+// this module; only the test bundle (src/testing/engine.ts) ships it.
+import { FIXED_TIMESTEP } from '../p0Core';
+import {
+  GameEngine,
+  type BeamEffect,
+  type BossProjectile,
+  type ChainEffect,
+  type DraftReason,
+  type DraftState,
+  type EnemyTier,
+  type Entity,
+  type Hazard,
+  type HudSnapshot,
+  type LaneTelegraph,
+  type Obstacle,
+  type PendingHostileShot,
+  type Pickup,
+  type Projectile,
+  type SkillId,
+  type SkillOffer,
+  type SkillState,
+  type StageKind,
+  type StatBlock,
+} from '../GameEngine';
+
+export type ProbeWorldPart = 'enemies' | 'hazards' | 'obstacles' | 'pickups' | 'projectiles' | 'hostileShots' | 'effects';
+
+export type ProbePlayer = {
+  x: number;
+  y: number;
+  prevX: number;
+  prevY: number;
+  hp: number;
+  level: number;
+  xp: number;
+  nextXp: number;
+  coins: number;
+  kills: number;
+  root: number;
+  slow: number;
+  invuln: number;
+  silence: number;
+  shield: number;
+  rootImmunity: number;
+  stats: StatBlock;
+};
+
+/** Plain-data copy of the simulation. Changing it changes nothing in the engine. */
+export type ProbeWorld = {
+  runMode: 'campaign' | 'infinite';
+  rules: 'classic' | 'remaster';
+  chapter: number;
+  stage: number;
+  kind: StageKind;
+  paused: boolean;
+  stageFinished: boolean;
+  bossEnraged: boolean;
+  timeLeft: number;
+  duration: number;
+  elapsed: number;
+  spawnBudget: number;
+  stageKills: number;
+  stageCoinsEarned: number;
+  hitStop: number;
+  player: ProbePlayer;
+  aim: { angle: number; targetId: number | null };
+  camera: { x: number; y: number };
+  skills: Partial<Record<SkillId, SkillState>>;
+  skillCooldowns: Partial<Record<SkillId, number>>;
+  enemies: Entity[];
+  projectiles: Array<Omit<Projectile, 'hitEnemyIds'> & { hitEnemyIds: number[] }>;
+  bossProjectiles: BossProjectile[];
+  pendingHostileShots: PendingHostileShot[];
+  pickups: Pickup[];
+  hazards: Hazard[];
+  obstacles: Obstacle[];
+  beams: BeamEffect[];
+  laneTelegraphs: LaneTelegraph[];
+  chains: ChainEffect[];
+};
+
+/** Moving the player also moves its previous position unless prevX/prevY are given (interpolation tests). */
+export type ProbePlayerPatch = Partial<Omit<ProbePlayer, 'stats'>> & { stats?: Partial<StatBlock> };
+
+export type ProbeEnemySpec = {
+  /** 'small' by default; 'rolled' uses the regular tier roll (58/30/12). */
+  tier?: EnemyTier | 'rolled';
+  /** Difficulty passed to the regular spawner (scales hp and damage); 1 by default. */
+  difficulty?: number;
+  x?: number;
+  y?: number;
+  /** Sets both hp and maxHp. */
+  hp?: number;
+  speed?: number;
+  damage?: number;
+  attackStyle?: Entity['attackStyle'];
+};
+
+export type ProbeBossRole = 'field' | 'mid' | 'final';
+
+export type ProbeLoadout = Partial<Record<SkillId, { level: number; awakened?: boolean }>>;
+
+export interface EngineProbe {
+  read(): ProbeWorld;
+  /** Advances exactly `ticks` fixed steps the way the frame loop does (hit-stop aware), without drawing. */
+  step(ticks?: number): void;
+  /** Stops the stage director from adding enemies; enemies already present keep acting. */
+  haltSpawns(halt?: boolean): void;
+  setGodMode(enabled?: boolean): void;
+  clear(...parts: ProbeWorldPart[]): void;
+  setPlayer(patch: ProbePlayerPatch): void;
+  setCamera(camera: { x: number; y: number; prevX?: number; prevY?: number }): void;
+  /** Replaces the whole loadout, clears cooldowns and pending awakenings, and recalculates stats. */
+  setSkills(loadout: ProbeLoadout): void;
+  /** Fires an equipped active skill now, ignoring its cooldown (its other trigger conditions still apply). */
+  cast(skillId: SkillId): void;
+  spawnEnemy(spec?: ProbeEnemySpec): number;
+  spawnBoss(role?: ProbeBossRole, spec?: Pick<ProbeEnemySpec, 'x' | 'y' | 'hp'>): number;
+  patchEnemy(id: number, patch: Partial<Omit<Entity, 'id'>>): void;
+  /** Takes enemies out of the world without killing them (no rewards, kills, or drafts). */
+  removeEnemies(ids: readonly number[]): void;
+  addHazard(spec: Omit<Hazard, 'id'> & { id?: number }): number;
+  /** Drops a pickup through the regular spawner (merging, caps, and lifetimes apply). */
+  spawnPickup(spec: { kind: Pickup['kind']; x: number; y: number; value: number; vx?: number; vy?: number; radius?: number }): void;
+  addObstacle(spec: Omit<Obstacle, 'id'> & { id?: number }): number;
+  setClock(patch: { timeLeft?: number; elapsed?: number }): void;
+  setStageKills(count: number): void;
+  /** Runs the round-state check now (timer expiry, enrage, clear, defeat). */
+  resolveRound(): void;
+  openDraft(reason: DraftReason, after: DraftState['after']): void;
+  requestRoundClear(): void;
+  previewOffer(skillId: SkillId, kind: 'skill' | 'awakening'): SkillOffer;
+  previewBonusOffers(reason: DraftReason): SkillOffer[];
+  hud(): HudSnapshot;
+  /** Draws one frame at the given interpolation alpha (renderer tests). */
+  render(alpha?: number): void;
+  /** Re-reads the canvas size as a window resize would. */
+  resize(): void;
+  /**
+   * Calls `watcher` after every fixed simulation step with the step count since the run started, whatever the
+   * frame rate. Commands dispatched inside apply from the next step. Returns an unsubscribe function.
+   */
+  onStep(watcher: (tick: number) => void): () => void;
+}
+
+const copy = <T>(value: T): T => structuredClone(value);
+
+export class ProbedGameEngine extends GameEngine {
+  readonly probe: EngineProbe = this.createProbe();
+  private stepCount = 0;
+  private readonly stepWatchers = new Set<(tick: number) => void>();
+
+  override startRun(chapter: number, stageNo: number, seed?: number) {
+    this.stepCount = 0;
+    super.startRun(chapter, stageNo, seed);
+  }
+
+  override startInfiniteRun(seed?: number, scoreEligible = true) {
+    this.stepCount = 0;
+    super.startInfiniteRun(seed, scoreEligible);
+  }
+
+  protected override update(dt: number) {
+    super.update(dt);
+    this.stepCount += 1;
+    for (const watcher of this.stepWatchers) watcher(this.stepCount);
+  }
+
+  private createProbe(): EngineProbe {
+    const findEnemy = (id: number) => {
+      const enemy = this.enemies.find((candidate) => candidate.id === id);
+      if (!enemy) throw new RangeError(`No enemy with id ${id}`);
+      return enemy;
+    };
+    const place = (enemy: Entity, spec: { x?: number; y?: number; hp?: number }) => {
+      if (spec.x !== undefined) enemy.x = enemy.prevX = spec.x;
+      if (spec.y !== undefined) enemy.y = enemy.prevY = spec.y;
+      if (spec.hp !== undefined) enemy.hp = enemy.maxHp = spec.hp;
+    };
+    const casters: Partial<Record<SkillId, (skill: SkillState) => void>> = {
+      needleStorm: (skill) => this.updateNeedleStorm(skill),
+      fanKnives: (skill) => this.updateFanKnives(skill),
+      chainSpark: (skill) => this.updateChainSpark(skill),
+      frostLine: (skill) => this.updateFrostLine(skill),
+      orbitScythes: (skill) => this.updateOrbitScythes(skill),
+      boneMortar: (skill) => this.updateBoneMortar(skill),
+      railSpear: (skill) => this.updateRailSpear(skill),
+      mirrorClone: (skill) => this.updateMirrorClone(skill),
+      voidMine: (skill) => this.updateVoidMine(skill),
+      blackSun: (skill) => this.updateBlackSun(skill),
+      eclipseStep: (skill) => this.updateEclipseStep(skill),
+    };
+
+    return {
+      read: () => ({
+        runMode: this.runMode,
+        rules: this.rules.id,
+        chapter: this.chapter,
+        stage: this.stage,
+        kind: this.kind,
+        paused: this.paused,
+        stageFinished: this.stageFinished,
+        bossEnraged: this.bossEnraged,
+        timeLeft: this.timeLeft,
+        duration: this.duration,
+        elapsed: this.elapsed,
+        spawnBudget: this.spawnBudget,
+        stageKills: this.stageKills,
+        stageCoinsEarned: this.stageCoinsEarned,
+        hitStop: this.hitStop,
+        player: copy(this.player),
+        aim: { angle: this.playerAimAngle, targetId: this.aimTargetId },
+        camera: { x: this.camera.x, y: this.camera.y },
+        skills: copy(this.skills),
+        skillCooldowns: copy(this.skillCooldowns),
+        enemies: copy(this.enemies),
+        projectiles: this.projectiles.map(({ hitEnemyIds, ...rest }) => ({ ...copy(rest), hitEnemyIds: [...hitEnemyIds] })),
+        bossProjectiles: copy(this.bossProjectiles),
+        pendingHostileShots: copy(this.pendingHostileShots),
+        pickups: copy(this.pickups),
+        hazards: copy(this.hazards),
+        obstacles: copy(this.obstacles),
+        beams: copy(this.beams),
+        laneTelegraphs: copy(this.laneTelegraphs),
+        chains: copy(this.chains),
+      }),
+      step: (ticks = 1) => {
+        const scale = this.timeScale;
+        this.timeScale = 1;
+        try {
+          for (let tick = 0; tick < ticks; tick += 1) this.advanceFrame(FIXED_TIMESTEP, false);
+        } finally {
+          this.timeScale = scale;
+        }
+      },
+      haltSpawns: (halt = true) => {
+        this.spawnsHalted = halt;
+      },
+      setGodMode: (enabled = true) => {
+        this.cheatGodMode = enabled;
+      },
+      clear: (...parts) => {
+        for (const part of parts) {
+          if (part === 'enemies') {
+            this.enemies = [];
+            this.enemyIndex.clear();
+          } else if (part === 'hazards') {
+            this.hazards = [];
+          } else if (part === 'obstacles') {
+            this.obstacles = [];
+          } else if (part === 'pickups') {
+            for (const pickup of this.pickups) this.pickupPool.release(pickup);
+            this.pickups = [];
+          } else if (part === 'projectiles') {
+            for (const projectile of this.projectiles) this.projectilePool.release(projectile);
+            this.projectiles = [];
+          } else if (part === 'hostileShots') {
+            for (const shot of this.bossProjectiles) this.bossProjectilePool.release(shot);
+            this.bossProjectiles = [];
+            this.pendingHostileShots = [];
+          } else {
+            this.beams = [];
+            this.laneTelegraphs = [];
+            this.chains = [];
+            this.impactRings = [];
+            for (const particle of this.particles) this.particlePool.release(particle);
+            this.particles = [];
+            for (const number of this.damageNumbers) this.damageNumberPool.release(number);
+            this.damageNumbers = [];
+          }
+        }
+      },
+      setPlayer: ({ stats, ...patch }) => {
+        Object.assign(this.player, patch);
+        if (patch.x !== undefined && patch.prevX === undefined) this.player.prevX = patch.x;
+        if (patch.y !== undefined && patch.prevY === undefined) this.player.prevY = patch.y;
+        if (stats) Object.assign(this.player.stats, stats);
+      },
+      setCamera: ({ x, y, prevX = x, prevY = y }) => {
+        this.camera = { x, y, prevX, prevY };
+      },
+      setSkills: (loadout) => {
+        this.skills = Object.fromEntries(
+          Object.entries(loadout).map(([id, state]) => [id, { level: state.level, awakened: state.awakened === true }]),
+        ) as Partial<Record<SkillId, SkillState>>;
+        this.skillCooldowns = {};
+        this.pendingAwakenings = [];
+        this.recalculateStats(false);
+      },
+      cast: (skillId) => {
+        const skill = this.skills[skillId];
+        if (!skill) throw new RangeError(`${skillId} is not equipped`);
+        const caster = casters[skillId];
+        if (!caster) throw new RangeError(`${skillId} is passive and cannot be cast`);
+        this.skillCooldowns[skillId] = 0;
+        this.rebuildEnemyIndex();
+        caster(skill);
+      },
+      spawnEnemy: (spec = {}) => {
+        this.spawnEnemy(spec.difficulty ?? 1, spec.tier === 'rolled' ? undefined : spec.tier ?? 'small');
+        const enemy = this.enemies[this.enemies.length - 1];
+        place(enemy, spec);
+        if (spec.speed !== undefined) enemy.speed = spec.speed;
+        if (spec.damage !== undefined) enemy.damage = spec.damage;
+        if (spec.attackStyle !== undefined) enemy.attackStyle = spec.attackStyle;
+        this.rebuildEnemyIndex();
+        return enemy.id;
+      },
+      spawnBoss: (role = 'mid', spec = {}) => {
+        this.spawnBoss(role === 'field' ? 'normal' : role === 'mid' ? 'midBoss' : 'finalBoss', false);
+        const boss = this.enemies[this.enemies.length - 1];
+        place(boss, spec);
+        this.rebuildEnemyIndex();
+        return boss.id;
+      },
+      removeEnemies: (ids) => {
+        const drop = new Set(ids);
+        this.enemies = this.enemies.filter((enemy) => !drop.has(enemy.id));
+        this.rebuildEnemyIndex();
+      },
+      patchEnemy: (id, patch) => {
+        const enemy = findEnemy(id);
+        Object.assign(enemy, patch);
+        if (patch.x !== undefined && patch.prevX === undefined) enemy.prevX = patch.x;
+        if (patch.y !== undefined && patch.prevY === undefined) enemy.prevY = patch.y;
+        this.rebuildEnemyIndex();
+      },
+      addHazard: ({ id, ...spec }) => {
+        const hazard: Hazard = { ...spec, id: id ?? this.nextId() };
+        this.hazards.push(hazard);
+        return hazard.id;
+      },
+      spawnPickup: ({ kind, x, y, value, vx = 0, vy = 0, radius = kind === 'xp' ? 5 : 6 }) => {
+        this.spawnPickup(kind, x, y, vx, vy, radius, value);
+      },
+      addObstacle: ({ id, ...spec }) => {
+        const obstacle: Obstacle = { ...spec, id: id ?? this.nextId() };
+        this.obstacles.push(obstacle);
+        return obstacle.id;
+      },
+      setClock: ({ timeLeft, elapsed }) => {
+        if (timeLeft !== undefined) this.timeLeft = timeLeft;
+        if (elapsed !== undefined) this.elapsed = elapsed;
+      },
+      setStageKills: (count) => {
+        this.stageKills = count;
+      },
+      resolveRound: () => this.resolveRoundState(),
+      openDraft: (reason, after) => this.openDraft(reason, after),
+      requestRoundClear: () => this.requestRoundClear(),
+      previewOffer: (skillId, kind) => this.makeOffer(skillId, kind),
+      previewBonusOffers: (reason) => this.makeBonusOffers(reason),
+      hud: () => this.buildHudSnapshot(),
+      render: (alpha = 1) => this.render(alpha),
+      resize: () => this.onResize(),
+      onStep: (watcher) => {
+        this.stepWatchers.add(watcher);
+        return () => this.stepWatchers.delete(watcher);
+      },
+    };
+  }
+}

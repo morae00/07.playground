@@ -95,7 +95,8 @@ import type {
   PassiveId,
 } from '../platform/save';
 import { DEVELOPER_UI_AVAILABLE } from '../platform/developerAccess';
-import { readGamepadIntent, watchReducedMotion } from '../ui/inputContracts';
+import { watchReducedMotion } from '../ui/inputContracts';
+import type { EngineAction, EngineCommand } from './engine/contracts';
 import {
   INFINITE_BASELINE,
   infiniteDifficultyAt,
@@ -191,12 +192,15 @@ export type SkillOffer =
       levelLine: string;
     };
 
+/** A draft card as presented; offerId ("<draft id>:<slot>") lets a command log pick it (TEC-07). */
+export type DraftCard = SkillOffer & { offerId: string };
+
 export type DraftState = {
   id: number;
   title: string;
   reason: DraftReason;
   after: 'resume' | 'roundClear';
-  cards: SkillOffer[];
+  cards: DraftCard[];
 };
 
 export type StageProgress = {
@@ -275,7 +279,8 @@ export type EngineCallbacks = {
   onDraft: (draft: DraftState) => void;
   onRoundClear: (settlement: Settlement) => void;
   onGameOver: (settlement: Settlement) => void;
-  onPauseIntent?: () => void;
+  /** Called at the start of every animation frame, before simulation; input adapters poll gamepads here. */
+  onFrameStart?: () => void;
 };
 
 export type EnemyTier = 'small' | 'medium' | 'large' | 'boss';
@@ -510,7 +515,7 @@ const ROOT_IMMUNITY_SECONDS = ROOT_BIND_SECONDS + 1.5;
 /** Nothing harmful is generated within this distance of the stage start (the world centre). */
 const START_SAFE_RADIUS = 420;
 
-type PendingHostileShot = {
+export type PendingHostileShot = {
   at: number;
   x: number;
   y: number;
@@ -993,75 +998,80 @@ export function buildStats(
   return stats;
 }
 
+// Members are protected rather than private so the test-only ProbedGameEngine (engine/probe.ts) can set up
+// and read worlds through a typed API; the app never imports it, so production bundles do not ship it (TEC-07).
 export class GameEngine {
-  private canvas: HTMLCanvasElement;
-  private ctx: CanvasRenderingContext2D;
-  private visualRenderer = new GameRenderer();
-  private callbacks: EngineCallbacks;
+  protected canvas: HTMLCanvasElement;
+  protected ctx: CanvasRenderingContext2D;
+  protected visualRenderer = new GameRenderer();
+  protected callbacks: EngineCallbacks;
 
-  private meta: MetaState;
-  private options: GameOptions;
-  private rules: RuleSet = REMASTER_RULES;
-  private raf = 0;
-  private lastTime = 0;
-  private accumulator = 0;
-  private running = false;
-  private paused = false;
-  private disposed = false;
-  private dpr = 1;
-  private viewW = 1280;
-  private viewH = 720;
-  private idSeed = 1;
+  protected meta: MetaState;
+  protected options: GameOptions;
+  protected rules: RuleSet = REMASTER_RULES;
+  protected raf = 0;
+  protected lastTime = 0;
+  protected accumulator = 0;
+  protected running = false;
+  protected paused = false;
+  protected disposed = false;
+  protected dpr = 1;
+  protected viewW = 1280;
+  protected viewH = 720;
+  protected idSeed = 1;
   /** Ids for particles and damage numbers; kept apart from gameplay ids so cosmetics never shift outcomes (BUG-08). */
-  private cosmeticIdSeed = 1;
-  private runSeed = 1;
-  private gameplayRandom = createSeededRandom(1);
-  private effectRandom = createSeededRandom(2);
-  private audio?: AudioContext;
-  private soundCooldown = 0;
-  private resizeObserver?: ResizeObserver;
+  protected cosmeticIdSeed = 1;
+  protected runSeed = 1;
+  protected gameplayRandom = createSeededRandom(1);
+  protected effectRandom = createSeededRandom(2);
+  protected audio?: AudioContext;
+  protected soundCooldown = 0;
+  protected resizeObserver?: ResizeObserver;
 
-  private chapter = 1;
-  private stage = 1;
-  private runMode: RunMode = 'campaign';
-  private kind: StageKind = 'normal';
-  private duration = 0;
-  private timeLeft = 0;
-  private timeScale = 1;
-  private spawnBudget = 0;
-  private fieldBossMarks = new Set<number>();
-  private stageFinished = false;
-  private rewardLock = false;
-  private bossEnraged = false;
-  private stageKills = 0;
-  private stageCoinsEarned = 0;
-  private infiniteEventScore = 0;
-  private infiniteBossKills = 0;
-  private infiniteBossRespawnTimer = 0;
-  private previousInfiniteBossId = '';
-  private scoreEligible = true;
-  private draftQueue: Array<{ reason: DraftReason; after: DraftState['after'] }> = [];
-  private activeDraftId: number | null = null;
-  private activeDraftAfter: DraftState['after'] | null = null;
-  private pendingRoundClear = false;
-  private objective = '';
-  private objectiveTarget = 0;
-  private cheatGodMode = false;
-  private snapshotTimer = 0;
-  private hitStop = 0;
-  private hitStopBudget = createHitStopBudget();
-  private shake = 0;
-  private elapsed = 0;
-  private coinFeverRushTimer = 0;
+  protected chapter = 1;
+  protected stage = 1;
+  protected runMode: RunMode = 'campaign';
+  protected kind: StageKind = 'normal';
+  protected duration = 0;
+  protected timeLeft = 0;
+  protected timeScale = 1;
+  protected spawnBudget = 0;
+  protected fieldBossMarks = new Set<number>();
+  protected stageFinished = false;
+  protected rewardLock = false;
+  protected bossEnraged = false;
+  protected stageKills = 0;
+  protected stageCoinsEarned = 0;
+  protected infiniteEventScore = 0;
+  protected infiniteBossKills = 0;
+  protected infiniteBossRespawnTimer = 0;
+  protected previousInfiniteBossId = '';
+  protected scoreEligible = true;
+  protected draftQueue: Array<{ reason: DraftReason; after: DraftState['after'] }> = [];
+  protected activeDraftId: number | null = null;
+  protected activeDraftAfter: DraftState['after'] | null = null;
+  protected activeDraftCards: DraftCard[] = [];
+  protected pendingRoundClear = false;
+  protected objective = '';
+  protected objectiveTarget = 0;
+  protected cheatGodMode = false;
+  /** Set only by probes: stops the stage director from adding enemies so a test controls the whole world. */
+  protected spawnsHalted = false;
+  protected snapshotTimer = 0;
+  protected hitStop = 0;
+  protected hitStopBudget = createHitStopBudget();
+  protected shake = 0;
+  protected elapsed = 0;
+  protected coinFeverRushTimer = 0;
 
-  private camera = { x: 0, y: 0, prevX: 0, prevY: 0 };
-  private keys = new Set<string>();
-  private pointer = { active: false, x: 0, y: 0 };
-  private gamepadIntent = { x: 0, y: 0, active: false };
-  private gamepadPauseHeld = false;
-  private pendingAwakenings: SkillId[] = [];
+  protected camera = { x: 0, y: 0, prevX: 0, prevY: 0 };
+  // Input arrives only as engine commands (TEC-07); adapters own keyboard, pointer, and gamepad devices.
+  protected heldActions = new Set<EngineAction>();
+  protected pointer = { active: false, x: 0, y: 0 };
+  protected analogMove = { x: 0, y: 0, active: false };
+  protected pendingAwakenings: SkillId[] = [];
 
-  private player = {
+  protected player = {
     x: WORLD_W / 2,
     y: WORLD_H / 2,
     prevX: WORLD_W / 2,
@@ -1081,57 +1091,57 @@ export class GameEngine {
     stats: { ...BASE_STATS },
   };
 
-  private skills: Partial<Record<SkillId, SkillState>> = {};
-  private runUpgrades = makeRunUpgrades();
-  private skillCooldowns: Partial<Record<SkillId, number>> = {};
-  private enemies: Entity[] = [];
-  private projectiles: Projectile[] = [];
-  private bossProjectiles: BossProjectile[] = [];
-  private pickups: Pickup[] = [];
-  private particles: Particle[] = [];
-  private damageNumbers: DamageNumber[] = [];
-  private hazards: Hazard[] = [];
-  private obstacles: Obstacle[] = [];
-  private beams: BeamEffect[] = [];
-  private laneTelegraphs: LaneTelegraph[] = [];
-  private pendingHostileShots: PendingHostileShot[] = [];
-  private chains: ChainEffect[] = [];
-  private impactRings: ImpactRing[] = [];
-  private enemyIndex = new SpatialIndex<Entity>(96);
-  private deadEnemyScratch: Entity[] = [];
-  private projectilePool = new ObjectPool<Projectile>(
+  protected skills: Partial<Record<SkillId, SkillState>> = {};
+  protected runUpgrades = makeRunUpgrades();
+  protected skillCooldowns: Partial<Record<SkillId, number>> = {};
+  protected enemies: Entity[] = [];
+  protected projectiles: Projectile[] = [];
+  protected bossProjectiles: BossProjectile[] = [];
+  protected pickups: Pickup[] = [];
+  protected particles: Particle[] = [];
+  protected damageNumbers: DamageNumber[] = [];
+  protected hazards: Hazard[] = [];
+  protected obstacles: Obstacle[] = [];
+  protected beams: BeamEffect[] = [];
+  protected laneTelegraphs: LaneTelegraph[] = [];
+  protected pendingHostileShots: PendingHostileShot[] = [];
+  protected chains: ChainEffect[] = [];
+  protected impactRings: ImpactRing[] = [];
+  protected enemyIndex = new SpatialIndex<Entity>(96);
+  protected deadEnemyScratch: Entity[] = [];
+  protected projectilePool = new ObjectPool<Projectile>(
     () => ({ id: 0, x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0, radius: 0, damage: 0, life: 0, maxLife: 0, returning: false, pierce: 0, knockback: 0, skillId: 'needleStorm', blockedBySolid: false, hitEnemyIds: new Set() }),
     (projectile) => { projectile.life = 0; projectile.hitEnemyIds.clear(); },
     384,
   );
-  private bossProjectilePool = new ObjectPool<BossProjectile>(
+  protected bossProjectilePool = new ObjectPool<BossProjectile>(
     () => ({ id: 0, x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0, radius: 0, damage: 0, life: 0, kind: 'ring' }),
     (projectile) => { projectile.life = 0; },
     320,
   );
-  private pickupPool = new ObjectPool<Pickup>(
+  protected pickupPool = new ObjectPool<Pickup>(
     () => ({ id: 0, x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0, radius: 0, kind: 'xp', value: 0, life: 0, maxLife: 0 }),
     (pickup) => { pickup.value = 0; pickup.life = 0; },
     PICKUP_HARD_CAP,
   );
-  private particlePool = new ObjectPool<Particle>(
+  protected particlePool = new ObjectPool<Particle>(
     () => ({ id: 0, x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 0, size: 0, color: '#000000' }),
     (particle) => { particle.life = 0; },
     520,
   );
-  private damageNumberPool = new ObjectPool<DamageNumber>(
+  protected damageNumberPool = new ObjectPool<DamageNumber>(
     () => ({ id: 0, x: 0, y: 0, value: 0, crit: false, life: 0, maxLife: 0, owner: 'player' as EffectOwner }),
     (number) => { number.life = 0; },
     160,
   );
-  private renderAlpha = 1;
-  private renderViewport: Viewport = makeViewport(0, 0, 1280, 720, 160);
-  private gridPattern?: CanvasPattern;
-  private gridCacheBuilds = 0;
-  private playerAimAngle = -Math.PI / 2;
-  private aimTargetId: number | null = null;
-  private systemReducedMotion = false;
-  private releaseReducedMotion?: () => void;
+  protected renderAlpha = 1;
+  protected renderViewport: Viewport = makeViewport(0, 0, 1280, 720, 160);
+  protected gridPattern?: CanvasPattern;
+  protected gridCacheBuilds = 0;
+  protected playerAimAngle = -Math.PI / 2;
+  protected aimTargetId: number | null = null;
+  protected systemReducedMotion = false;
+  protected releaseReducedMotion?: () => void;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -1155,21 +1165,7 @@ export class GameEngine {
     );
     this.onResize = this.onResize.bind(this);
     this.tick = this.tick.bind(this);
-    this.onKeyDown = this.onKeyDown.bind(this);
-    this.onKeyUp = this.onKeyUp.bind(this);
-    this.clearInput = this.clearInput.bind(this);
-    this.onPointerDown = this.onPointerDown.bind(this);
-    this.onPointerMove = this.onPointerMove.bind(this);
-    this.onPointerUp = this.onPointerUp.bind(this);
     window.addEventListener('resize', this.onResize);
-    window.addEventListener('keydown', this.onKeyDown);
-    window.addEventListener('keyup', this.onKeyUp);
-    window.addEventListener('blur', this.clearInput);
-    document.addEventListener('visibilitychange', this.clearInput);
-    canvas.addEventListener('pointerdown', this.onPointerDown);
-    canvas.addEventListener('pointermove', this.onPointerMove);
-    canvas.addEventListener('pointerup', this.onPointerUp);
-    canvas.addEventListener('pointercancel', this.onPointerUp);
     if (typeof ResizeObserver !== 'undefined') {
       this.resizeObserver = new ResizeObserver(this.onResize);
       this.resizeObserver.observe(canvas);
@@ -1185,20 +1181,12 @@ export class GameEngine {
     this.accumulator = 0;
     cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.onResize);
-    window.removeEventListener('keydown', this.onKeyDown);
-    window.removeEventListener('keyup', this.onKeyUp);
-    window.removeEventListener('blur', this.clearInput);
-    document.removeEventListener('visibilitychange', this.clearInput);
-    this.canvas.removeEventListener('pointerdown', this.onPointerDown);
-    this.canvas.removeEventListener('pointermove', this.onPointerMove);
-    this.canvas.removeEventListener('pointerup', this.onPointerUp);
-    this.canvas.removeEventListener('pointercancel', this.onPointerUp);
     this.resizeObserver?.disconnect();
     this.resizeObserver = undefined;
     this.releaseReducedMotion?.();
     this.releaseReducedMotion = undefined;
     this.gridPattern = undefined;
-    this.clearInput();
+    this.releaseInput();
     const audio = this.audio;
     this.audio = undefined;
     if (audio && audio.state !== 'closed') void audio.close().catch(() => undefined);
@@ -1244,7 +1232,7 @@ export class GameEngine {
     this.emitSnapshot(true);
   }
 
-  private startConfiguredRun(chapter: number, stageNo: number, seed: number | undefined, scoreEligible: boolean) {
+  protected startConfiguredRun(chapter: number, stageNo: number, seed: number | undefined, scoreEligible: boolean) {
     this.ensureAudio();
     const randomSeed = seed ?? globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
     this.runSeed = randomSeed || 1;
@@ -1267,6 +1255,7 @@ export class GameEngine {
     this.draftQueue = [];
     this.activeDraftId = null;
     this.activeDraftAfter = null;
+    this.activeDraftCards = [];
     this.pendingRoundClear = false;
     this.stageKills = 0;
     this.stageCoinsEarned = 0;
@@ -1394,6 +1383,7 @@ export class GameEngine {
     const activeAfter = this.activeDraftAfter;
     this.activeDraftId = null;
     this.activeDraftAfter = null;
+    this.activeDraftCards = [];
     this.applyOffer(offer);
 
     const transition = resolveDraftTransition(activeAfter, this.pendingRoundClear, this.draftQueue.length > 0);
@@ -1413,7 +1403,7 @@ export class GameEngine {
     return 'resume' as const;
   }
 
-  private applyOffer(offer: SkillOffer) {
+  protected applyOffer(offer: SkillOffer) {
     if (offer.kind === 'bonus') {
       this.chooseBonusOffer(offer);
       this.rewardLock = false;
@@ -1442,7 +1432,7 @@ export class GameEngine {
     this.emitSnapshot(true);
   }
 
-  private chooseBonusOffer(offer: Extract<SkillOffer, { kind: 'bonus' }>) {
+  protected chooseBonusOffer(offer: Extract<SkillOffer, { kind: 'bonus' }>) {
     if (offer.bonus === 'heal') {
       this.player.hp = Math.min(this.player.stats.maxHp, this.player.hp + this.player.stats.maxHp * 0.5);
       this.burst(this.player.x, this.player.y, 28, '#111111', 180);
@@ -1467,7 +1457,7 @@ export class GameEngine {
     this.playTone(130, 0.08, 'sawtooth');
   }
 
-  private onResize() {
+  protected onResize() {
     const rect = this.canvas.getBoundingClientRect();
     this.dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
     this.viewW = Math.max(1, Math.floor(rect.width));
@@ -1478,70 +1468,65 @@ export class GameEngine {
     this.gridPattern = undefined;
   }
 
-  private onKeyDown(event: KeyboardEvent) {
-    const target = event.target;
-    // Only text-entry controls own the keyboard. A focused HUD button must not freeze movement (BUG-04).
-    if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName))) {
-      return;
+  /** Applies one engine command (TEC-07). Commands are the only way input reaches the simulation. */
+  dispatch(command: EngineCommand) {
+    switch (command.type) {
+      case 'input/action':
+        if (command.pressed) this.heldActions.add(command.action);
+        else this.heldActions.delete(command.action);
+        return;
+      case 'input/pointer':
+        this.pointer.active = command.active;
+        this.pointer.x = command.worldX;
+        this.pointer.y = command.worldY;
+        return;
+      case 'input/analog': {
+        const x = Number.isFinite(command.x) ? clamp(command.x, -1, 1) : 0;
+        const y = Number.isFinite(command.y) ? clamp(command.y, -1, 1) : 0;
+        this.analogMove = { x, y, active: x !== 0 || y !== 0 };
+        return;
+      }
+      case 'input/release':
+        this.releaseInput();
+        return;
+      case 'draft/select':
+        this.selectOffer(command.offerId);
+        return;
+      case 'control/pause':
+        this.pause();
+        return;
+      case 'control/resume':
+        this.resume();
+        return;
     }
-    const key = event.key.toLowerCase();
-    const arrow = key === 'arrowup' || key === 'arrowdown' || key === 'arrowleft' || key === 'arrowright';
-    // Roving tab lists use arrow keys to change tabs; letting them also steer the player would do both at once.
-    if (arrow && target instanceof HTMLElement && target.getAttribute('role') === 'tab') return;
-    this.keys.add(key);
-    const onButton = target instanceof HTMLElement && target.tagName === 'BUTTON';
-    if (arrow || (key === ' ' && !onButton)) {
-      event.preventDefault();
-    }
   }
 
-  private onKeyUp(event: KeyboardEvent) {
-    this.keys.delete(event.key.toLowerCase());
-  }
-
-  private clearInput() {
-    this.keys.clear();
-    this.pointer.active = false;
-    this.gamepadIntent = { x: 0, y: 0, active: false };
-    this.gamepadPauseHeld = false;
-  }
-
-  private pollGamepadIntent() {
-    const pads = typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function'
-      ? Array.from(navigator.getGamepads())
-      : [];
-    const intent = readGamepadIntent(pads, this.gamepadPauseHeld);
-    this.gamepadIntent = { x: intent.x, y: intent.y, active: intent.active };
-    this.gamepadPauseHeld = intent.pauseHeld;
-    if (intent.pauseJustPressed) this.callbacks.onPauseIntent?.();
-  }
-
-  private onPointerDown(event: PointerEvent) {
-    this.canvas.setPointerCapture(event.pointerId);
-    this.pointer.active = true;
-    this.setPointer(event);
-  }
-
-  private onPointerMove(event: PointerEvent) {
-    if (this.pointer.active) this.setPointer(event);
-  }
-
-  private onPointerUp(event: PointerEvent) {
-    if (this.canvas.hasPointerCapture(event.pointerId)) this.canvas.releasePointerCapture(event.pointerId);
-    this.pointer.active = false;
-  }
-
-  private setPointer(event: PointerEvent) {
+  /** Maps a viewport point (CSS pixels) to world coordinates through the current view frame and camera. */
+  screenToWorld(clientX: number, clientY: number) {
     const rect = this.canvas.getBoundingClientRect();
-    if (rect.width <= 0 || rect.height <= 0) return;
+    if (rect.width <= 0 || rect.height <= 0) return null;
     const scaleX = this.viewW / rect.width;
     const scaleY = this.viewH / rect.height;
     const frame = this.viewFrame();
-    this.pointer.x = ((event.clientX - rect.left) * scaleX - frame.offsetX) / frame.zoom + this.camera.x;
-    this.pointer.y = ((event.clientY - rect.top) * scaleY) / frame.zoom + this.camera.y;
+    return {
+      x: ((clientX - rect.left) * scaleX - frame.offsetX) / frame.zoom + this.camera.x,
+      y: ((clientY - rect.top) * scaleY) / frame.zoom + this.camera.y,
+    };
   }
 
-  private tick(now: number) {
+  protected selectOffer(offerId: string) {
+    const card = this.activeDraftCards.find((candidate) => candidate.offerId === offerId);
+    if (!card || this.activeDraftId === null) return 'ignored' as const;
+    return this.completeDraft(card, this.activeDraftId);
+  }
+
+  protected releaseInput() {
+    this.heldActions.clear();
+    this.pointer.active = false;
+    this.analogMove = { x: 0, y: 0, active: false };
+  }
+
+  protected tick(now: number) {
     if (!this.running) return;
     const frameDt = Math.min(0.05, Math.max(0, (now - this.lastTime) / 1000));
     this.lastTime = now;
@@ -1551,7 +1536,7 @@ export class GameEngine {
 
   advanceFrame(frameDt: number, renderFrame = true) {
     const safeFrameDt = Math.min(0.05, Math.max(0, frameDt));
-    this.pollGamepadIntent();
+    this.callbacks.onFrameStart?.();
     this.soundCooldown = Math.max(0, this.soundCooldown - safeFrameDt);
     this.snapshotTimer -= safeFrameDt;
 
@@ -1607,7 +1592,7 @@ export class GameEngine {
     };
   }
 
-  private beginRound() {
+  protected beginRound() {
     this.releaseTransientObjects();
     this.kind = this.runMode === 'infinite' ? 'midBoss' : stageKind(this.stage);
     this.duration = this.runMode === 'infinite' ? 0 : stageDuration(this.kind, this.options.paceMode);
@@ -1624,6 +1609,7 @@ export class GameEngine {
     this.rewardLock = false;
     this.activeDraftId = null;
     this.activeDraftAfter = null;
+    this.activeDraftCards = [];
     this.pendingRoundClear = false;
     this.bossEnraged = false;
     this.stageKills = 0;
@@ -1655,7 +1641,7 @@ export class GameEngine {
     this.emitSnapshot(true);
   }
 
-  private releaseTransientObjects() {
+  protected releaseTransientObjects() {
     for (const projectile of this.projectiles) this.projectilePool.release(projectile);
     for (const projectile of this.bossProjectiles) this.bossProjectilePool.release(projectile);
     for (const pickup of this.pickups) this.pickupPool.release(pickup);
@@ -1668,7 +1654,7 @@ export class GameEngine {
     this.damageNumbers.length = 0;
   }
 
-  private generateMap() {
+  protected generateMap() {
     this.obstacles = [];
     this.hazards = [];
     const grammar = encounterGrammarForChapter(this.chapter as ChapterId);
@@ -1713,7 +1699,7 @@ export class GameEngine {
     if (landmark) this.addChapterLandmark(landmark.shape, landmark.obstacleDensity);
   }
 
-  private addChapterLandmark(shape: LandmarkShape, density: number) {
+  protected addChapterLandmark(shape: LandmarkShape, density: number) {
     const count = 4 + Math.round(density * 8);
     const centerX = WORLD_W / 2;
     const centerY = WORLD_H / 2;
@@ -1750,7 +1736,7 @@ export class GameEngine {
     }
   }
 
-  private addStaticHazard(kind: Hazard['kind'], x: number, y: number, radius: number) {
+  protected addStaticHazard(kind: Hazard['kind'], x: number, y: number, radius: number) {
     this.hazards.push({
       id: this.nextId(),
       kind,
@@ -1765,7 +1751,7 @@ export class GameEngine {
     });
   }
 
-  private update(dt: number) {
+  protected update(dt: number) {
     this.capturePreviousPositions();
     this.elapsed += dt;
     if (this.rules.hitStopBudget) this.hitStopBudget = tickHitStopBudget(this.hitStopBudget);
@@ -1811,7 +1797,7 @@ export class GameEngine {
     this.resolveRoundState();
   }
 
-  private capturePreviousPositions() {
+  protected capturePreviousPositions() {
     this.player.prevX = this.player.x;
     this.player.prevY = this.player.y;
     this.camera.prevX = this.camera.x;
@@ -1822,12 +1808,12 @@ export class GameEngine {
     for (const pickup of this.pickups) { pickup.prevX = pickup.x; pickup.prevY = pickup.y; }
   }
 
-  private endStepIfInterrupted() {
+  protected endStepIfInterrupted() {
     this.resolveRoundState();
     return this.paused || this.stageFinished;
   }
 
-  private resolveRoundState() {
+  protected resolveRoundState() {
     if (this.stageFinished) return;
     const stageShouldClear = this.runMode === 'campaign'
       && this.kind === 'normal'
@@ -1840,6 +1826,7 @@ export class GameEngine {
       this.rewardLock = false;
       this.activeDraftId = null;
       this.activeDraftAfter = null;
+      this.activeDraftCards = [];
       this.draftQueue = [];
       this.paused = true;
       this.callbacks.onGameOver(this.makeSettlement('정산', false));
@@ -1856,7 +1843,7 @@ export class GameEngine {
     }
   }
 
-  private requestRoundClear() {
+  protected requestRoundClear() {
     if (this.stageFinished) return;
     if (this.rewardLock || this.activeDraftAfter !== null || this.draftQueue.length > 0) {
       this.pendingRoundClear = true;
@@ -1865,12 +1852,13 @@ export class GameEngine {
     this.finalizeRound();
   }
 
-  private finalizeRound() {
+  protected finalizeRound() {
     if (this.stageFinished) return;
     this.pendingRoundClear = false;
     this.rewardLock = false;
     this.activeDraftId = null;
     this.activeDraftAfter = null;
+    this.activeDraftCards = [];
     this.draftQueue = [];
     this.stageFinished = true;
     this.paused = true;
@@ -1878,7 +1866,7 @@ export class GameEngine {
     this.callbacks.onRoundClear(this.makeSettlement(this.kind === 'normal' ? 'Stage 클리어' : 'Boss Stage 클리어', true));
   }
 
-  private updatePlayer(dt: number) {
+  protected updatePlayer(dt: number) {
     this.player.root = Math.max(0, this.player.root - dt);
     this.player.rootImmunity = Math.max(0, this.player.rootImmunity - dt);
     this.player.invuln = Math.max(0, this.player.invuln - dt);
@@ -1913,13 +1901,13 @@ export class GameEngine {
 
     let mx = 0;
     let my = 0;
-    if (this.keys.has('w') || this.keys.has('arrowup')) my -= 1;
-    if (this.keys.has('s') || this.keys.has('arrowdown')) my += 1;
-    if (this.keys.has('a') || this.keys.has('arrowleft')) mx -= 1;
-    if (this.keys.has('d') || this.keys.has('arrowright')) mx += 1;
-    if (mx === 0 && my === 0 && this.gamepadIntent.active) {
-      mx = this.gamepadIntent.x;
-      my = this.gamepadIntent.y;
+    if (this.heldActions.has('moveUp')) my -= 1;
+    if (this.heldActions.has('moveDown')) my += 1;
+    if (this.heldActions.has('moveLeft')) mx -= 1;
+    if (this.heldActions.has('moveRight')) mx += 1;
+    if (mx === 0 && my === 0 && this.analogMove.active) {
+      mx = this.analogMove.x;
+      my = this.analogMove.y;
     }
     if (mx === 0 && my === 0 && this.pointer.active) {
       const dx = this.pointer.x - this.player.x;
@@ -1956,17 +1944,17 @@ export class GameEngine {
   }
 
   /** Visible world frame: fixed 900-unit height with pillarboxing (remaster) or 1:1 canvas pixels (classic). */
-  private viewFrame(): ViewFrame {
+  protected viewFrame(): ViewFrame {
     return this.rules.logicalSpawnFrame ? logicalViewFrame(this.viewW, this.viewH) : classicViewFrame(this.viewW, this.viewH);
   }
 
-  private placeCamera() {
+  protected placeCamera() {
     const frame = this.viewFrame();
     this.camera.x = clamp(this.player.x - frame.width / 2, 0, Math.max(0, WORLD_W - frame.width));
     this.camera.y = clamp(this.player.y - frame.height / 2, 0, Math.max(0, WORLD_H - frame.height));
   }
 
-  private updateSkills(dt: number) {
+  protected updateSkills(dt: number) {
     if (this.player.silence > 0) return;
     for (const id of Object.keys(this.skillCooldowns) as SkillId[]) {
       this.skillCooldowns[id] = Math.max(0, (this.skillCooldowns[id] ?? 0) - dt);
@@ -2008,7 +1996,7 @@ export class GameEngine {
     if (this.skills.magnetSigil?.awakened) this.updateMagnetPulse();
   }
 
-  private updateNeedleStorm(skill: SkillState) {
+  protected updateNeedleStorm(skill: SkillState) {
     if ((this.skillCooldowns.needleStorm ?? 0) > 0) return;
     const target = this.findNearestEnemy(980);
     if (!target) return;
@@ -2025,7 +2013,7 @@ export class GameEngine {
     }
   }
 
-  private updateFanKnives(skill: SkillState) {
+  protected updateFanKnives(skill: SkillState) {
     if ((this.skillCooldowns.fanKnives ?? 0) > 0) return;
     const target = this.findNearestEnemy(760);
     if (!target) return;
@@ -2039,7 +2027,7 @@ export class GameEngine {
     this.playTone(390, 0.025, 'triangle');
   }
 
-  private updateChainSpark(skill: SkillState) {
+  protected updateChainSpark(skill: SkillState) {
     if ((this.skillCooldowns.chainSpark ?? 0) > 0) return;
     const first = this.findNearestEnemy(780);
     if (!first) return;
@@ -2063,7 +2051,7 @@ export class GameEngine {
     this.playTone(660, 0.025, 'square');
   }
 
-  private updateFrostLine(skill: SkillState) {
+  protected updateFrostLine(skill: SkillState) {
     if ((this.skillCooldowns.frostLine ?? 0) > 0) return;
     const target = this.findNearestEnemy(980, true);
     if (!target) return;
@@ -2091,7 +2079,7 @@ export class GameEngine {
     this.playTone(510, 0.04, 'sine');
   }
 
-  private updateRailSpear(skill: SkillState) {
+  protected updateRailSpear(skill: SkillState) {
     if ((this.skillCooldowns.railSpear ?? 0) > 0) return;
     const target = this.findNearestEnemy(1250, true);
     if (!target) return;
@@ -2122,7 +2110,7 @@ export class GameEngine {
     this.playTone(95, 0.055, 'sawtooth');
   }
 
-  private fireRailBeam(
+  protected fireRailBeam(
     x1: number,
     y1: number,
     angle: number,
@@ -2156,7 +2144,7 @@ export class GameEngine {
     }
   }
 
-  private updateBoneMortar(skill: SkillState) {
+  protected updateBoneMortar(skill: SkillState) {
     if ((this.skillCooldowns.boneMortar ?? 0) > 0) return;
     const target = this.findClusterTarget();
     if (!target) return;
@@ -2181,7 +2169,7 @@ export class GameEngine {
     this.playTone(120, 0.055, 'sawtooth');
   }
 
-  private updateMirrorClone(skill: SkillState) {
+  protected updateMirrorClone(skill: SkillState) {
     if ((this.skillCooldowns.mirrorClone ?? 0) > 0) return;
     const target = this.findNearestEnemy(1100, true);
     if (!target) return;
@@ -2210,7 +2198,7 @@ export class GameEngine {
     this.playTone(470, 0.035, 'square');
   }
 
-  private updateVoidMine(skill: SkillState) {
+  protected updateVoidMine(skill: SkillState) {
     if ((this.skillCooldowns.voidMine ?? 0) > 0) return;
     this.skillCooldowns.voidMine = Math.max(2.1, 4.1 / this.effectiveAttackSpeed() - skill.level * 0.12);
     const radius = scaleAt(SKILL_NUMBERS.voidMine.radius, skill.level, skill.awakened);
@@ -2235,7 +2223,7 @@ export class GameEngine {
     this.playTone(82, 0.055, 'sine');
   }
 
-  private updateBlackSun(skill: SkillState) {
+  protected updateBlackSun(skill: SkillState) {
     if ((this.skillCooldowns.blackSun ?? 0) > 0) return;
     const target = this.findClusterTarget();
     if (!target) return;
@@ -2263,7 +2251,7 @@ export class GameEngine {
     this.playTone(70, 0.06, 'sine');
   }
 
-  private updateEclipseStep(skill: SkillState) {
+  protected updateEclipseStep(skill: SkillState) {
     if ((this.skillCooldowns.eclipseStep ?? 0) > 0) return;
     const nearby = this.enemies.filter((enemy) => enemy.hp > 0 && distance(enemy, this.player) < 260).length;
     if (nearby < 3 && this.player.hp / this.player.stats.maxHp > 0.45) return;
@@ -2306,7 +2294,7 @@ export class GameEngine {
     this.shake = Math.max(this.shake, 12);
   }
 
-  private updateOrbitScythes(skill: SkillState) {
+  protected updateOrbitScythes(skill: SkillState) {
     const forwardBlades = scaleAt(SKILL_NUMBERS.orbitScythes.blades, skill.level);
     const blades = forwardBlades + (skill.awakened ? SKILL_NUMBERS.orbitScythes.awakenedOuterBlades : 0);
     const baseRadius = scaleAt(SKILL_NUMBERS.orbitScythes.radius, skill.level);
@@ -2329,7 +2317,7 @@ export class GameEngine {
     }
   }
 
-  private updateMagnetPulse() {
+  protected updateMagnetPulse() {
     if ((this.skillCooldowns.magnetSigil ?? 0) > 0) return;
     this.skillCooldowns.magnetSigil = SKILL_NUMBERS.magnetSigil.pulseSeconds / this.effectiveAttackSpeed();
     for (const pickup of this.pickups) {
@@ -2340,8 +2328,8 @@ export class GameEngine {
     this.burst(this.player.x, this.player.y, 16, '#111111', 130);
   }
 
-  private spawnEnemies(dt: number) {
-    if (this.stageFinished) return;
+  protected spawnEnemies(dt: number) {
+    if (this.stageFinished || this.spawnsHalted) return;
     if (this.runMode === 'infinite') {
       const difficulty = infiniteDifficultyAt(this.elapsed, this.infiniteBossKills);
       const cap = difficulty.enemyCap;
@@ -2392,12 +2380,12 @@ export class GameEngine {
     }
   }
 
-  private enemyCap() {
+  protected enemyCap() {
     if (this.runMode === 'infinite') return infiniteDifficultyAt(this.elapsed, this.infiniteBossKills).enemyCap;
     return 90 + this.chapter * 18 + (this.kind === 'normal' ? 0 : 24);
   }
 
-  private spawnEnemy(difficulty: number, forcedTier?: EnemyTier) {
+  protected spawnEnemy(difficulty: number, forcedTier?: EnemyTier) {
     const edge = Math.floor(this.gameplayRandom() * 4);
     // Remaster rules spawn from the fixed logical frame so window size never changes a seeded run (BUG-09).
     const spawnFrame = this.rules.logicalSpawnFrame
@@ -2486,7 +2474,7 @@ export class GameEngine {
     this.enemies.push(enemy);
   }
 
-  private spawnBoss(kind: StageKind | 'normal', legacy: boolean) {
+  protected spawnBoss(kind: StageKind | 'normal', legacy: boolean) {
     let def: BossDef;
     if (kind === 'normal') {
       if (legacy) {
@@ -2549,7 +2537,7 @@ export class GameEngine {
     this.burst(x, y, 24, '#111111', 190);
   }
 
-  private spawnInfiniteBoss() {
+  protected spawnInfiniteBoss() {
     const pool = BOSS_ROUND_BOSSES.filter((boss) => boss.id !== this.previousInfiniteBossId);
     const candidates = pool.length > 0 ? pool : BOSS_ROUND_BOSSES;
     const def = candidates[Math.floor(this.gameplayRandom() * candidates.length)];
@@ -2605,7 +2593,7 @@ export class GameEngine {
     this.shake = Math.max(this.shake, 8);
   }
 
-  private updateEnemies(dt: number) {
+  protected updateEnemies(dt: number) {
     for (const enemy of this.enemies) {
       if (enemy.hp <= 0) continue;
       enemy.hitFlash = Math.max(0, enemy.hitFlash - dt);
@@ -2695,7 +2683,7 @@ export class GameEngine {
 
   }
 
-  private flushDeadEnemies(suppressBossDraft = false) {
+  protected flushDeadEnemies(suppressBossDraft = false) {
     this.deadEnemyScratch.length = 0;
     let writeIndex = 0;
     for (const enemy of this.enemies) {
@@ -2712,7 +2700,7 @@ export class GameEngine {
     this.deadEnemyScratch.length = 0;
   }
 
-  private updateBossPattern(enemy: Entity, dt: number) {
+  protected updateBossPattern(enemy: Entity, dt: number) {
     const boss = enemy.boss!;
     const previousPhase = enemy.bossPhase ?? 1;
     const nextPhase = bossPhaseForHealth(enemy.hp, enemy.maxHp, enemy.bossPhase ?? 1);
@@ -2931,13 +2919,13 @@ export class GameEngine {
     }
   }
 
-  private activeBossPhaseMove(enemy: Entity) {
+  protected activeBossPhaseMove(enemy: Entity) {
     if (!enemy.boss || (enemy.bossPhase ?? 1) === 1) return undefined;
     const set = BOSS_PHASE_MOVE_SETS.find((candidate) => candidate.bossId === enemy.boss?.id);
     return set?.moves.find((move) => move.phase === enemy.bossPhase);
   }
 
-  private drawPhaseTransitionTelegraph(enemy: Entity, move: BossPhaseMove) {
+  protected drawPhaseTransitionTelegraph(enemy: Entity, move: BossPhaseMove) {
     const life = move.telegraph.previewSeconds + move.telegraph.imminentSeconds;
     if (move.telegraph.shape === 'circle' || move.telegraph.shape === 'ring') {
       this.impactRings.push({
@@ -2970,7 +2958,7 @@ export class GameEngine {
     }
   }
 
-  private updateProjectiles(dt: number) {
+  protected updateProjectiles(dt: number) {
     for (const projectile of this.projectiles) {
       const start = { x: projectile.x, y: projectile.y };
       projectile.life -= dt;
@@ -3033,7 +3021,7 @@ export class GameEngine {
     );
   }
 
-  private updateBossProjectiles(dt: number) {
+  protected updateBossProjectiles(dt: number) {
     if (this.pendingHostileShots.length > 0) {
       const due = this.pendingHostileShots.filter((shot) => shot.at <= this.elapsed);
       if (due.length > 0) {
@@ -3058,7 +3046,7 @@ export class GameEngine {
     );
   }
 
-  private updatePickups(dt: number) {
+  protected updatePickups(dt: number) {
     for (const pickup of this.pickups) {
       pickup.life -= dt;
       const d = distance(pickup, this.player);
@@ -3078,7 +3066,7 @@ export class GameEngine {
     recycleWhere(this.pickups, (pickup) => pickup.value > 0, this.pickupPool);
   }
 
-  private collectPickup(pickup: Pickup) {
+  protected collectPickup(pickup: Pickup) {
     if (pickup.value <= 0) return;
     if (pickup.kind === 'xp') {
       this.player.xp += pickup.value;
@@ -3097,7 +3085,7 @@ export class GameEngine {
     pickup.value = 0;
   }
 
-  private updateHazards(dt: number) {
+  protected updateHazards(dt: number) {
     const expiredVortexIds: number[] = [];
     for (const hazard of this.hazards) {
       const previousLife = hazard.life;
@@ -3164,7 +3152,7 @@ export class GameEngine {
     compactWhere(this.hazards, (hazard) => hazard.life > 0);
   }
 
-  private updateEffects(dt: number) {
+  protected updateEffects(dt: number) {
     for (const beam of this.beams) beam.life -= dt;
     for (const lane of this.laneTelegraphs) lane.life -= dt;
     for (const chain of this.chains) chain.life -= dt;
@@ -3180,7 +3168,7 @@ export class GameEngine {
     recycleWhere(this.damageNumbers, (number) => number.life > 0, this.damageNumberPool);
   }
 
-  private updateParticles(dt: number) {
+  protected updateParticles(dt: number) {
     for (const particle of this.particles) {
       particle.life -= dt;
       particle.x += particle.vx * dt;
@@ -3193,7 +3181,7 @@ export class GameEngine {
     while (this.particles.length > maxParticles) this.particlePool.release(this.particles.shift()!);
   }
 
-  private resolveEntityVsObstacles(entity: { x: number; y: number }, radius: number) {
+  protected resolveEntityVsObstacles(entity: { x: number; y: number }, radius: number) {
     for (const obstacle of this.obstacles) {
       const pushed = circleRectPush(entity.x, entity.y, radius, obstacle);
       entity.x = pushed.x;
@@ -3201,7 +3189,7 @@ export class GameEngine {
     }
   }
 
-  private spawnProjectile(
+  protected spawnProjectile(
     skillId: SkillId,
     x: number,
     y: number,
@@ -3237,7 +3225,7 @@ export class GameEngine {
     this.projectiles.push(projectile);
   }
 
-  private spawnBossProjectile(
+  protected spawnBossProjectile(
     x: number,
     y: number,
     vx: number,
@@ -3256,7 +3244,7 @@ export class GameEngine {
     this.bossProjectiles.push(projectile);
   }
 
-  private findNearestEnemy(maxDistance: number, preferBoss = false) {
+  protected findNearestEnemy(maxDistance: number, preferBoss = false) {
     let selected: Entity | undefined;
     let best = Number.POSITIVE_INFINITY;
     for (const enemy of this.enemyIndex.queryCircle(this.player.x, this.player.y, maxDistance)) {
@@ -3271,7 +3259,7 @@ export class GameEngine {
     return selected;
   }
 
-  private findNearestEnemyFrom(x: number, y: number, maxDistance: number, excluded: Set<number>) {
+  protected findNearestEnemyFrom(x: number, y: number, maxDistance: number, excluded: Set<number>) {
     let selected: Entity | undefined;
     let best = Number.POSITIVE_INFINITY;
     for (const enemy of this.enemyIndex.queryCircle(x, y, maxDistance)) {
@@ -3285,7 +3273,7 @@ export class GameEngine {
     return selected;
   }
 
-  private findClusterTarget() {
+  protected findClusterTarget() {
     let selected: Entity | undefined;
     let best = 0;
     for (const enemy of this.enemies) {
@@ -3304,7 +3292,7 @@ export class GameEngine {
     return selected;
   }
 
-  private dealDamage(enemy: Entity, rawDamage: number, skillId: SkillId, knockback: number, forceCrit: boolean) {
+  protected dealDamage(enemy: Entity, rawDamage: number, skillId: SkillId, knockback: number, forceCrit: boolean) {
     if (enemy.hp <= 0) return;
     const hpRatio = enemy.hp / enemy.maxHp;
     const execution = this.skills.executionMark?.awakened && enemy.isBoss ? 1 + (1 - hpRatio) * SKILL_NUMBERS.executionMark.lowHpBossBonus : 1;
@@ -3334,7 +3322,7 @@ export class GameEngine {
     this.playHit(impactTier);
   }
 
-  private requestHitStop(seconds: number) {
+  protected requestHitStop(seconds: number) {
     if (!this.rules.hitStopBudget) {
       this.hitStop = Math.max(this.hitStop, seconds);
       return;
@@ -3344,7 +3332,7 @@ export class GameEngine {
     if (grant.granted > 0) this.hitStop = Math.max(this.hitStop, grant.granted);
   }
 
-  private areaDamage(x: number, y: number, radius: number, damage: number, skillId: SkillId, knockback: number, forceCrit = false) {
+  protected areaDamage(x: number, y: number, radius: number, damage: number, skillId: SkillId, knockback: number, forceCrit = false) {
     for (const enemy of this.enemyIndex.queryCircle(x, y, radius)) {
       if (enemy.hp <= 0) continue;
       if (distance(enemy, { x, y }) <= radius + enemy.radius) {
@@ -3354,12 +3342,12 @@ export class GameEngine {
     this.burst(x, y, Math.round(22 * this.options.effects), '#050505', 230);
   }
 
-  private addImpactRing(x: number, y: number, radius: number, tier: 'heavy' | 'critical') {
+  protected addImpactRing(x: number, y: number, radius: number, tier: 'heavy' | 'critical') {
     if (this.impactRings.length >= 32) this.impactRings.shift();
     this.impactRings.push({ x, y, radius, life: 0.24, maxLife: 0.24, tier, owner: 'player' });
   }
 
-  private damagePlayer(rawDamage: number, physical: boolean) {
+  protected damagePlayer(rawDamage: number, physical: boolean) {
     if (this.cheatGodMode) {
       this.player.hp = this.player.stats.maxHp;
       return;
@@ -3378,7 +3366,7 @@ export class GameEngine {
     this.playTone(140, 0.025, 'triangle');
   }
 
-  private damagePlayerOverTime(damagePerSecond: number, dt: number) {
+  protected damagePlayerOverTime(damagePerSecond: number, dt: number) {
     if (this.cheatGodMode) {
       this.player.hp = this.player.stats.maxHp;
       return;
@@ -3387,7 +3375,7 @@ export class GameEngine {
     this.player.hp -= calculateFireDotDamage(damagePerSecond, dt, this.player.stats.defense);
   }
 
-  private pushEnemiesFromPlayer(radius: number) {
+  protected pushEnemiesFromPlayer(radius: number) {
     for (const enemy of this.enemyIndex.queryCircle(this.player.x, this.player.y, radius)) {
       if (enemy.hp <= 0 || enemy.isBoss) continue;
       const d = distance(enemy, this.player);
@@ -3400,7 +3388,7 @@ export class GameEngine {
     }
   }
 
-  private onEnemyKilled(enemy: Entity, suppressBossDraft = false) {
+  protected onEnemyKilled(enemy: Entity, suppressBossDraft = false) {
     this.player.kills += 1;
     this.stageKills += 1;
     if (this.runMode === 'infinite') {
@@ -3450,14 +3438,14 @@ export class GameEngine {
     }
   }
 
-  private rebuildEnemyIndex() {
+  protected rebuildEnemyIndex() {
     this.enemyIndex.clear();
     for (const enemy of this.enemies) {
       if (enemy.hp > 0) this.enemyIndex.insert(enemy);
     }
   }
 
-  private querySegmentEnemies(x1: number, y1: number, x2: number, y2: number, padding: number) {
+  protected querySegmentEnemies(x1: number, y1: number, x2: number, y2: number, padding: number) {
     return this.enemyIndex.queryRect(
       Math.min(x1, x2) - padding,
       Math.min(y1, y2) - padding,
@@ -3466,7 +3454,7 @@ export class GameEngine {
     );
   }
 
-  private updatePlayerAim() {
+  protected updatePlayerAim() {
     const target = this.findNearestEnemy(980);
     this.aimTargetId = target?.id ?? null;
     this.playerAimAngle = target
@@ -3474,7 +3462,7 @@ export class GameEngine {
       : -Math.PI / 2;
   }
 
-  private spawnPickup(kind: Pickup['kind'], x: number, y: number, vx: number, vy: number, radius: number, value: number) {
+  protected spawnPickup(kind: Pickup['kind'], x: number, y: number, vx: number, vy: number, radius: number, value: number) {
     const target = selectPickupMergeTarget(this.pickups, { x, y, kind });
     if (target) {
       mergePickupValue(target, value);
@@ -3492,7 +3480,7 @@ export class GameEngine {
     this.pickups.push(pickup);
   }
 
-  private emitDamageNumber(x: number, y: number, value: number, crit: boolean, life: number, owner: EffectOwner) {
+  protected emitDamageNumber(x: number, y: number, value: number, crit: boolean, life: number, owner: EffectOwner) {
     let number: DamageNumber | undefined;
     if (this.damageNumbers.length >= 160) {
       if (!crit) return;
@@ -3505,7 +3493,7 @@ export class GameEngine {
     this.damageNumbers.push(number);
   }
 
-  private openDraft(reason: DraftReason, after: DraftState['after']) {
+  protected openDraft(reason: DraftReason, after: DraftState['after']) {
     if (this.rewardLock) {
       this.draftQueue.push({ reason, after });
       return;
@@ -3513,13 +3501,15 @@ export class GameEngine {
     this.presentDraft(reason, after);
   }
 
-  private presentDraft(reason: DraftReason, after: DraftState['after']) {
+  protected presentDraft(reason: DraftReason, after: DraftState['after']) {
     this.rewardLock = true;
     this.activeDraftAfter = after;
     this.paused = true;
-    const cards = this.generateOffers(reason);
+    const offers = this.generateOffers(reason);
     const id = this.nextId();
+    const cards = offers.map((offer, slot): DraftCard => ({ ...offer, offerId: `${id}:${slot}` }));
     this.activeDraftId = id;
+    this.activeDraftCards = cards;
     this.callbacks.onDraft({
       id,
       title: reason === 'boss' ? '보스 보상' : `Lv.${this.player.level} 스킬 선택`,
@@ -3529,7 +3519,7 @@ export class GameEngine {
     });
   }
 
-  private generateOffers(reason: DraftReason) {
+  protected generateOffers(reason: DraftReason) {
     const offers: SkillOffer[] = [];
     const pending = this.pendingAwakenings.find((id) => {
       const skill = this.skills[id];
@@ -3555,7 +3545,7 @@ export class GameEngine {
     return offers;
   }
 
-  private weightedSkillPick() {
+  protected weightedSkillPick() {
     const luck = this.meta.passives.rareLuck;
     const difficultyBias = this.runMode === 'infinite'
       ? clamp(this.elapsed / 1_800, 0, 1)
@@ -3587,7 +3577,7 @@ export class GameEngine {
     return entries[0].id;
   }
 
-  private makeOffer(skillId: SkillId, kind: 'skill' | 'awakening'): SkillOffer {
+  protected makeOffer(skillId: SkillId, kind: 'skill' | 'awakening'): SkillOffer {
     const def = SKILLS[skillId];
     const state = this.skills[skillId];
     if (kind === 'awakening') {
@@ -3611,12 +3601,12 @@ export class GameEngine {
     };
   }
 
-  private awakeningText(skillId: SkillId) {
+  protected awakeningText(skillId: SkillId) {
     const classic = this.rules.mirrorAwakeningRework ? undefined : CLASSIC_AWAKENING_TEXT[skillId];
     return classic ?? SKILLS[skillId].awakeningText;
   }
 
-  private makeBonusOffers(reason: DraftReason): SkillOffer[] {
+  protected makeBonusOffers(reason: DraftReason): SkillOffer[] {
     const bonusRarity: Rarity = reason === 'boss' ? 'epic' : 'rare';
     return [
       {
@@ -3646,7 +3636,7 @@ export class GameEngine {
     ];
   }
 
-  private makeSettlement(title: string, cleared = this.stageFinished && this.player.hp > 0): Settlement {
+  protected makeSettlement(title: string, cleared = this.stageFinished && this.player.hp > 0): Settlement {
     const infinite = this.runMode === 'infinite';
     const base = cleared ? 40 : 16;
     const bossBonus = infinite
@@ -3678,7 +3668,7 @@ export class GameEngine {
     };
   }
 
-  private enrageBosses() {
+  protected enrageBosses() {
     this.bossEnraged = true;
     for (const enemy of this.enemies) {
       if (enemy.hp <= 0 || !enemy.isBoss) continue;
@@ -3709,7 +3699,7 @@ export class GameEngine {
     this.emitSnapshot(true);
   }
 
-  private recalculateStats(fullHeal: boolean) {
+  protected recalculateStats(fullHeal: boolean) {
     const previousMax = this.player.stats.maxHp;
     this.player.stats = buildStats(this.meta, this.runUpgrades, this.skills);
     if (fullHeal) {
@@ -3719,7 +3709,7 @@ export class GameEngine {
     }
   }
 
-  private effectiveAttackSpeed() {
+  protected effectiveAttackSpeed() {
     return effectiveCoinFeverAttackSpeed(
       this.player.stats.attackSpeed,
       this.skills.coinFever?.awakened === true,
@@ -3727,9 +3717,13 @@ export class GameEngine {
     );
   }
 
-  private emitSnapshot(force: boolean) {
+  protected emitSnapshot(force: boolean) {
     if (!force && this.snapshotTimer > 0) return;
     this.snapshotTimer = 0.12;
+    this.callbacks.onSnapshot(this.buildHudSnapshot());
+  }
+
+  protected buildHudSnapshot(): HudSnapshot {
     const boss = this.enemies.find((enemy) => enemy.isBoss && !enemy.legacyBoss && (this.kind !== 'normal' || enemy.boss?.role === 'field'));
     const bossMove = boss ? this.activeBossPhaseMove(boss) : undefined;
     const activeEffects: ActiveStatusEffect[] = [
@@ -3748,7 +3742,7 @@ export class GameEngine {
     const infiniteDifficulty = this.runMode === 'infinite'
       ? infiniteDifficultyAt(this.elapsed, this.infiniteBossKills)
       : null;
-    this.callbacks.onSnapshot({
+    return {
       runMode: this.runMode,
       seed: this.runSeed,
       chapter: this.chapter,
@@ -3789,10 +3783,10 @@ export class GameEngine {
       stats: { ...this.player.stats, attackSpeed: this.effectiveAttackSpeed() },
       activeEffects,
       cc,
-    });
+    };
   }
 
-  private interpolated(item: { x: number; y: number; prevX?: number; prevY?: number }) {
+  protected interpolated(item: { x: number; y: number; prevX?: number; prevY?: number }) {
     return interpolatePosition(
       { x: item.prevX ?? item.x, y: item.prevY ?? item.y },
       item,
@@ -3800,7 +3794,7 @@ export class GameEngine {
     );
   }
 
-  private render(alpha = 1) {
+  protected render(alpha = 1) {
     const ctx = this.ctx;
     this.renderAlpha = alpha;
     const camera = this.interpolated(this.camera);
@@ -3859,7 +3853,7 @@ export class GameEngine {
     }
   }
 
-  private drawWorld(ctx: CanvasRenderingContext2D) {
+  protected drawWorld(ctx: CanvasRenderingContext2D) {
     this.ensureGridPattern();
     const viewport = this.renderViewport;
     if (this.gridPattern) {
@@ -3895,7 +3889,7 @@ export class GameEngine {
     }
   }
 
-  private drawChapterMotif(ctx: CanvasRenderingContext2D) {
+  protected drawChapterMotif(ctx: CanvasRenderingContext2D) {
     const viewport = this.renderViewport;
     const visual = CHAPTER_VISUALS[this.chapter] ?? CHAPTER_VISUALS[1];
     const centerX = Math.round(((viewport.left + viewport.right) / 2) / 480) * 480;
@@ -3951,7 +3945,7 @@ export class GameEngine {
     ctx.restore();
   }
 
-  private ensureGridPattern() {
+  protected ensureGridPattern() {
     if (this.gridPattern || typeof document.createElement !== 'function') return;
     const tile = document.createElement('canvas');
     tile.width = 120;
@@ -3970,7 +3964,7 @@ export class GameEngine {
     if (this.gridPattern) this.gridCacheBuilds += 1;
   }
 
-  private drawHazards(ctx: CanvasRenderingContext2D) {
+  protected drawHazards(ctx: CanvasRenderingContext2D) {
     for (const hazard of this.hazards) {
       if (!circleVisible(this.renderViewport, hazard.x, hazard.y, hazard.radius * 1.25 + 8)) continue;
       const fadedRoot = hazard.kind === 'root' && this.player.rootImmunity > 0;
@@ -3978,21 +3972,21 @@ export class GameEngine {
     }
   }
 
-  private drawLaneTelegraphs(ctx: CanvasRenderingContext2D) {
+  protected drawLaneTelegraphs(ctx: CanvasRenderingContext2D) {
     for (const lane of this.laneTelegraphs) {
       if (!segmentVisible(this.renderViewport, lane.x1, lane.y1, lane.x2, lane.y2, lane.width + 40)) continue;
       this.visualRenderer.drawLaneTelegraph(ctx, lane);
     }
   }
 
-  private drawObstacles(ctx: CanvasRenderingContext2D) {
+  protected drawObstacles(ctx: CanvasRenderingContext2D) {
     for (const obstacle of this.obstacles) {
       if (!rectVisible(this.renderViewport, obstacle.x - 12, obstacle.y - 12, obstacle.w + 28, obstacle.h + 30)) continue;
       this.visualRenderer.drawObstacle(ctx, obstacle);
     }
   }
 
-  private drawPickups(ctx: CanvasRenderingContext2D) {
+  protected drawPickups(ctx: CanvasRenderingContext2D) {
     for (const pickup of this.pickups) {
       const point = this.interpolated(pickup);
       if (!circleVisible(this.renderViewport, point.x, point.y, pickup.radius + 10)) continue;
@@ -4000,12 +3994,12 @@ export class GameEngine {
     }
   }
 
-  private currentAimTarget() {
+  protected currentAimTarget() {
     if (this.aimTargetId === null) return undefined;
     return this.enemies.find((enemy) => enemy.id === this.aimTargetId && enemy.hp > 0);
   }
 
-  private drawTargetGuide(ctx: CanvasRenderingContext2D) {
+  protected drawTargetGuide(ctx: CanvasRenderingContext2D) {
     const target = this.currentAimTarget();
     if (!target) return;
     const player = this.interpolated(this.player);
@@ -4056,7 +4050,7 @@ export class GameEngine {
     ctx.restore();
   }
 
-  private drawTargetReticle(ctx: CanvasRenderingContext2D) {
+  protected drawTargetReticle(ctx: CanvasRenderingContext2D) {
     const target = this.currentAimTarget();
     if (!target) return;
     const point = this.interpolated(target);
@@ -4091,7 +4085,7 @@ export class GameEngine {
     ctx.restore();
   }
 
-  private drawBeams(ctx: CanvasRenderingContext2D) {
+  protected drawBeams(ctx: CanvasRenderingContext2D) {
     for (const beam of this.beams) {
       if (!segmentVisible(this.renderViewport, beam.x1, beam.y1, beam.x2, beam.y2, beam.width)) continue;
       this.visualRenderer.drawBeam(ctx, beam);
@@ -4103,7 +4097,7 @@ export class GameEngine {
     }
   }
 
-  private drawFriendlyProjectiles(ctx: CanvasRenderingContext2D) {
+  protected drawFriendlyProjectiles(ctx: CanvasRenderingContext2D) {
     for (const projectile of this.projectiles) {
       const point = this.interpolated(projectile);
       if (!circleVisible(this.renderViewport, point.x, point.y, projectile.radius * 8)) continue;
@@ -4121,7 +4115,7 @@ export class GameEngine {
     }
   }
 
-  private drawHostileProjectiles(ctx: CanvasRenderingContext2D) {
+  protected drawHostileProjectiles(ctx: CanvasRenderingContext2D) {
     for (const projectile of this.bossProjectiles) {
       const point = this.interpolated(projectile);
       if (!circleVisible(this.renderViewport, point.x, point.y, projectile.radius * 2.2)) continue;
@@ -4137,7 +4131,7 @@ export class GameEngine {
     }
   }
 
-  private drawEnemies(ctx: CanvasRenderingContext2D) {
+  protected drawEnemies(ctx: CanvasRenderingContext2D) {
     for (const enemy of this.enemies) {
       const point = this.interpolated(enemy);
       if (!circleVisible(this.renderViewport, point.x, point.y, enemy.radius + 24)) continue;
@@ -4193,14 +4187,14 @@ export class GameEngine {
     }
   }
 
-  private drawImpactRings(ctx: CanvasRenderingContext2D) {
+  protected drawImpactRings(ctx: CanvasRenderingContext2D) {
     for (const ring of this.impactRings) {
       if (!circleVisible(this.renderViewport, ring.x, ring.y, ring.radius * 1.5)) continue;
       this.visualRenderer.drawImpactRing(ctx, ring);
     }
   }
 
-  private drawOrbitScythes(ctx: CanvasRenderingContext2D) {
+  protected drawOrbitScythes(ctx: CanvasRenderingContext2D) {
     const skill = this.skills.orbitScythes;
     if (!skill) return;
     const forwardBlades = scaleAt(SKILL_NUMBERS.orbitScythes.blades, skill.level);
@@ -4219,7 +4213,7 @@ export class GameEngine {
     }
   }
 
-  private drawMirrorClone(ctx: CanvasRenderingContext2D) {
+  protected drawMirrorClone(ctx: CanvasRenderingContext2D) {
     const skill = this.skills.mirrorClone;
     if (!skill) return;
     const player = this.interpolated(this.player);
@@ -4245,11 +4239,11 @@ export class GameEngine {
   }
 
   /** Walk cycles follow actual movement (keys held while rooted or paused must not animate) (BUG-15). */
-  private playerMoved() {
+  protected playerMoved() {
     return !this.paused && Math.hypot(this.player.x - this.player.prevX, this.player.y - this.player.prevY) > 0.01;
   }
 
-  private drawPlayer(ctx: CanvasRenderingContext2D) {
+  protected drawPlayer(ctx: CanvasRenderingContext2D) {
     const moving = this.playerMoved();
     const player = this.interpolated(this.player);
     this.visualRenderer.drawPlayer(ctx, {
@@ -4262,7 +4256,7 @@ export class GameEngine {
     });
   }
 
-  private playerCovered() {
+  protected playerCovered() {
     for (const enemy of this.enemies) {
       if (enemy.hp <= 0 || !(enemy.isBoss || enemy.tier === 'large')) continue;
       if (distance(enemy, this.player) < enemy.radius + 34) return true;
@@ -4270,20 +4264,20 @@ export class GameEngine {
     return false;
   }
 
-  private drawPlayerXray(ctx: CanvasRenderingContext2D) {
+  protected drawPlayerXray(ctx: CanvasRenderingContext2D) {
     if (!this.playerCovered()) return;
     const player = this.interpolated(this.player);
     this.visualRenderer.drawPlayerXray(ctx, { x: player.x, y: player.y, hitRadius: HIT_RADIUS.playerContact });
   }
 
-  private drawParticles(ctx: CanvasRenderingContext2D) {
+  protected drawParticles(ctx: CanvasRenderingContext2D) {
     for (const particle of this.particles) {
       if (!circleVisible(this.renderViewport, particle.x, particle.y, particle.size)) continue;
       this.visualRenderer.drawParticle(ctx, particle);
     }
   }
 
-  private drawDamageNumbers(ctx: CanvasRenderingContext2D) {
+  protected drawDamageNumbers(ctx: CanvasRenderingContext2D) {
     if (!this.options.damageNumbers) return;
     for (const number of this.damageNumbers) {
       if (!circleVisible(this.renderViewport, number.x, number.y, 52)) continue;
@@ -4291,11 +4285,11 @@ export class GameEngine {
     }
   }
 
-  private drawHealthBar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, ratio: number) {
+  protected drawHealthBar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, ratio: number) {
     this.visualRenderer.drawHealthBar(ctx, x, y, w, h, ratio);
   }
 
-  private burst(x: number, y: number, count: number, color: string, speed: number) {
+  protected burst(x: number, y: number, count: number, color: string, speed: number) {
     const maxParticles = this.options.effects > 0.65 ? 520 : 260;
     const safeCount = Math.min(90, Math.max(0, Math.floor(count)), Math.max(0, maxParticles - this.particles.length));
     for (let i = 0; i < safeCount; i += 1) {
@@ -4318,14 +4312,14 @@ export class GameEngine {
     }
   }
 
-  private playHit(tier: 'light' | 'heavy' | 'critical') {
+  protected playHit(tier: 'light' | 'heavy' | 'critical') {
     if (this.soundCooldown > 0) return;
     const cue = impactCue(tier, this.effectRandom());
     this.soundCooldown = cue.cooldown;
     this.playTone(cue.frequency, cue.duration, cue.oscillator, cue.gain);
   }
 
-  private playTone(frequency: number, duration: number, type: OscillatorType, gainScale = 1) {
+  protected playTone(frequency: number, duration: number, type: OscillatorType, gainScale = 1) {
     if (this.disposed || this.options.volume <= 0.001) return;
     this.ensureAudio();
     if (!this.audio) return;
@@ -4346,7 +4340,7 @@ export class GameEngine {
     osc.stop(this.audio.currentTime + duration + 0.01);
   }
 
-  private ensureAudio() {
+  protected ensureAudio() {
     if (this.disposed) return;
     if (!this.audio) {
       try {
@@ -4358,12 +4352,12 @@ export class GameEngine {
     if (this.audio?.state === 'suspended') void this.audio.resume().catch(() => undefined);
   }
 
-  private nextId() {
+  protected nextId() {
     this.idSeed += 1;
     return this.idSeed;
   }
 
-  private nextCosmeticId() {
+  protected nextCosmeticId() {
     if (!this.rules.isolatedCosmeticIds) return this.nextId();
     this.cosmeticIdSeed += 1;
     return this.cosmeticIdSeed;

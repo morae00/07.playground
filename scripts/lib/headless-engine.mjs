@@ -64,6 +64,16 @@ export function installHeadlessPlatform() {
   globalThis.cancelAnimationFrame = noop;
 }
 
+const MOVE_ACTIONS = Object.freeze(['moveUp', 'moveDown', 'moveLeft', 'moveRight']);
+export const KEY_DIRECTIONS = Object.freeze({ w: 'moveUp', s: 'moveDown', a: 'moveLeft', d: 'moveRight' });
+
+/** Holds exactly one movement direction ('w' | 'a' | 's' | 'd') through engine commands, releasing the others. */
+export function holdDirection(engine, key) {
+  const held = KEY_DIRECTIONS[key];
+  if (!held) throw new RangeError(`Unknown direction key ${key}`);
+  for (const action of MOVE_ACTIONS) engine.dispatch({ type: 'input/action', action, pressed: action === held });
+}
+
 export function createHeadlessCanvas(width = 1280, height = 720) {
   const context = createContext();
   return {

@@ -1,4 +1,4 @@
-// Browser regression probes for input bugs (BUG-04, BUG-05, BUG-06) against the developer build.
+// Browser regression probes for input (BUG-04, BUG-05, BUG-06, TEC-07) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -132,6 +132,35 @@ try {
     await tap(0);
     const menuFocus = await page.evaluate(() => document.activeElement?.closest('.menuLayer') !== null);
     record('BUG-06 gamepad moves focus in the menu', menuFocus);
+    await page.close();
+  });
+
+  await probe('TEC-07', async () => {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await page.addInitScript(() => {
+      const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+      const pad = { connected: true, index: 0, id: 'probe-pad', axes: [0, 0, 0, 0], buttons, mapping: 'standard', timestamp: 0 };
+      window.__probePad = {
+        stick(x, y) { pad.axes = [x, y, 0, 0]; },
+        press(index) { buttons[index] = { pressed: true, value: 1 }; },
+        release(index) { buttons[index] = { pressed: false, value: 0 }; },
+      };
+      navigator.getGamepads = () => [pad, null, null, null];
+    });
+    await openStage(page);
+    await cheat(page, 'GOD');
+    await page.getByRole('button', { name: '런 패널 닫기' }).click();
+    const before = await diagnostics(page);
+    await page.evaluate(() => window.__probePad.stick(1, 0));
+    await page.waitForTimeout(600);
+    await page.evaluate(() => window.__probePad.stick(0, 0));
+    const after = await diagnostics(page);
+    record('TEC-07 gamepad stick moves the player through the input adapter', after.player.x - before.player.x > 40, `moved ${(after.player.x - before.player.x).toFixed(1)} units`);
+    await page.evaluate(() => window.__probePad.press(9));
+    await page.waitForTimeout(120);
+    await page.evaluate(() => window.__probePad.release(9));
+    await page.waitForTimeout(120);
+    record('TEC-07 gamepad Start pauses the run', (await diagnostics(page)).paused === true);
     await page.close();
   });
 } finally {

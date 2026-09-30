@@ -74,8 +74,8 @@ const canvas = {
   hasPointerCapture: () => false,
 };
 
-const bundlePath = process.env.BLACKLINE_ENGINE_BUNDLE ?? '/tmp/blackline-survivor-p0/App.mjs';
-const { GameEngine } = await import(bundlePath);
+const bundlePath = process.env.BLACKLINE_ENGINE_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs';
+const { ProbedGameEngine } = await import(bundlePath);
 const meta = {
   gold: 0,
   xp: 0,
@@ -96,7 +96,7 @@ const options = {
 };
 
 let engine;
-engine = new GameEngine(canvas, meta, options, {
+engine = new ProbedGameEngine(canvas, meta, options, {
   onSnapshot() {},
   onDraft(draft) {
     const offer = draft.cards[0];
@@ -117,28 +117,42 @@ function round(value, digits = 3) {
   return Math.round(value * scale) / scale;
 }
 
-function advanceSoakFrame() {
-  for (let substep = 0; substep < 2; substep += 1) {
-    let writeIndex = 0;
-    for (const hazard of engine.hazards) {
-      if (hazard.kind === 'null') continue;
-      engine.hazards[writeIndex] = hazard;
-      writeIndex += 1;
+/** Silence would switch every skill off, so null zones are dropped and silence cleared before every fixed step. */
+function neutralizeSilence() {
+  const { hazards } = engine.probe.read();
+  if (hazards.some((hazard) => hazard.kind === 'null')) {
+    engine.probe.clear('hazards');
+    // Keeping each id preserves hazard order, vortex cooldown keys, and the gameplay id stream.
+    for (const hazard of hazards) {
+      if (hazard.kind !== 'null') engine.probe.addHazard(hazard);
     }
-    engine.hazards.length = writeIndex;
-    engine.player.silence = 0;
-    engine.advanceFrame(FRAME_DELTA / 2, substep === 1);
   }
+  engine.probe.setPlayer({ silence: 0 });
+}
+
+/**
+ * Runs one 60 Hz frame as two 2x substeps (one fixed step each) and returns the engine's time for it.
+ * The probe read in neutralizeSilence copies the whole world, so that harness work stays out of the frame budget.
+ */
+function advanceSoakFrame() {
+  let engineMs = 0;
+  for (let substep = 0; substep < 2; substep += 1) {
+    neutralizeSilence();
+    const substepStart = performance.now();
+    engine.advanceFrame(FRAME_DELTA / 2, substep === 1);
+    engineMs += performance.now() - substepStart;
+  }
+  return engineMs;
 }
 
 engine.startRun(5, 10, 0x5010_2026);
 engine.setTimeScale(2);
-engine.skills = Object.fromEntries(SKILL_IDS.map((id) => [id, { level: 5, awakened: true }]));
-engine.recalculateStats(true);
-for (const enemy of engine.enemies) {
+engine.probe.setSkills(Object.fromEntries(SKILL_IDS.map((id) => [id, { level: 5, awakened: true }])));
+// setSkills recalculates stats without healing; start at the new maximum as a full-heal recalculation did.
+engine.probe.setPlayer({ hp: engine.probe.read().player.stats.maxHp });
+for (const enemy of engine.probe.read().enemies) {
   if (enemy.isBoss && !enemy.legacyBoss) {
-    enemy.hp = 1_000_000_000_000;
-    enemy.maxHp = enemy.hp;
+    engine.probe.patchEnemy(enemy.id, { hp: 1_000_000_000_000, maxHp: 1_000_000_000_000 });
   }
 }
 for (let frame = 0; frame < WARMUP_FRAME_COUNT; frame += 1) advanceSoakFrame();
@@ -157,9 +171,7 @@ const heapStart = process.memoryUsage().heapUsed;
 const wallStart = performance.now();
 
 for (let frame = 0; frame < FRAME_COUNT; frame += 1) {
-  const frameStart = performance.now();
-  advanceSoakFrame();
-  frameTimes[frame] = performance.now() - frameStart;
+  frameTimes[frame] = advanceSoakFrame();
 
   const diagnostics = engine.getDiagnostics();
   for (const key of Object.keys(highWater)) highWater[key] = Math.max(highWater[key], diagnostics[key]);
