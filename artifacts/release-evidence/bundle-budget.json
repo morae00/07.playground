@@ -7,13 +7,13 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 91347,
-      "kib": 89.21,
+      "bytes": 86017,
+      "kib": 84,
       "baselineBytes": 75381,
-      "growthRatio": 0.21180403549966176,
+      "growthRatio": 0.14109656279433813,
       "warningBytes": 86688,
       "failBytes": 94226,
-      "status": "warning",
+      "status": "passed",
       "passed": true
     },
     "vendorJs": {
@@ -35,30 +35,30 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 1443442,
-      "kib": 1409.61,
+      "bytes": 1489017,
+      "kib": 1454.12,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 11156135,
-      "kib": 10894.66,
+      "bytes": 11201710,
+      "kib": 10939.17,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
       "passed": true
     }
   },
-  "status": "warning",
+  "status": "passed",
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-C_SpJaWR.js",
+      "file": "assets/App-D-5EafYg.js",
       "category": "appJs",
-      "sourceBytes": 284003,
-      "gzipBytes": 88157
+      "sourceBytes": 277251,
+      "gzipBytes": 82463
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -79,16 +79,28 @@
       "gzipBytes": 1687
     },
     {
+      "file": "assets/content/strings/en.json",
+      "category": "data",
+      "sourceBytes": 21670,
+      "gzipBytes": 7069
+    },
+    {
+      "file": "assets/content/strings/ko.json",
+      "category": "data",
+      "sourceBytes": 23905,
+      "gzipBytes": 8259
+    },
+    {
       "file": "assets/hud-slots-BGSzYNHK.webp",
       "category": "image",
       "sourceBytes": 113542,
       "gzipBytes": 113032
     },
     {
-      "file": "assets/index-BgZrCAUu.js",
+      "file": "assets/index-BTGsCyjO.js",
       "category": "appJs",
-      "sourceBytes": 6698,
-      "gzipBytes": 3190
+      "sourceBytes": 7500,
+      "gzipBytes": 3554
     },
     {
       "file": "assets/index-D6pdznLt.css",

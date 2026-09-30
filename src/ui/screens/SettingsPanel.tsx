@@ -1,6 +1,8 @@
 // Settings (UI-04): one panel for the menu and the pause hub, grouped as sound, screen, accessibility, and game.
 // Every option saves through sanitizeOptions, so an older save loads with the newer options at their defaults (G17).
 import type { ChangeEvent, ReactNode } from 'react';
+import { t } from '../../i18n/strings';
+import type { StringKey } from '../../i18n/text';
 import { DEVELOPER_UI_AVAILABLE } from '../../platform/developerAccess';
 import type { GameOptions, PaceMode } from '../../platform/save';
 
@@ -8,60 +10,60 @@ type NumberOption = 'volume' | 'musicVolume' | 'sfxVolume' | 'effects' | 'uiScal
 type SwitchOption = 'damageNumbers' | 'screenShake' | 'reducedFlash' | 'reducedMotion' | 'autoPause';
 
 export function SettingsPanel({ options, setOptions, inRun = false, children }: { options: GameOptions; setOptions: (options: GameOptions) => void; inRun?: boolean; children?: ReactNode }) {
-  const slider = (key: NumberOption, label: string, min: number, max: number, step: number) => (
+  const slider = (key: NumberOption, label: StringKey, min: number, max: number, step: number) => (
     <label>
-      <span>{label}</span>
+      <span>{t(label)}</span>
       <input type="range" min={min} max={max} step={step} value={options[key]} onChange={(event: ChangeEvent<HTMLInputElement>) => setOptions({ ...options, [key]: Number(event.target.value) })} />
       <output>{Math.round(options[key] * 100)}%</output>
     </label>
   );
-  const toggle = (key: SwitchOption, label: string) => (
+  const toggle = (key: SwitchOption, label: StringKey) => (
     <label className="checkLine">
       <input type="checkbox" checked={options[key]} onChange={(event) => setOptions({ ...options, [key]: event.target.checked })} />
-      <span>{label}</span>
+      <span>{t(label)}</span>
     </label>
   );
   return (
     <div className="settingsPanel">
       <fieldset>
-        <legend>소리</legend>
-        {slider('volume', '전체 볼륨', 0, 1, 0.01)}
-        {slider('musicVolume', '음악', 0, 1, 0.01)}
-        {slider('sfxVolume', '효과음', 0, 1, 0.01)}
+        <legend>{t('settings.sound')}</legend>
+        {slider('volume', 'settings.volume', 0, 1, 0.01)}
+        {slider('musicVolume', 'settings.music', 0, 1, 0.01)}
+        {slider('sfxVolume', 'settings.sfx', 0, 1, 0.01)}
       </fieldset>
       <fieldset>
-        <legend>화면</legend>
+        <legend>{t('settings.screen')}</legend>
         <label>
-          <span>체력바</span>
+          <span>{t('settings.healthBars')}</span>
           <select value={options.healthBars} onChange={(event) => setOptions({ ...options, healthBars: event.target.value as GameOptions['healthBars'] })}>
-            <option value="elite">대형+</option>
-            <option value="all">전체</option>
-            <option value="off">끄기</option>
+            <option value="elite">{t('settings.healthBars.elite')}</option>
+            <option value="all">{t('settings.healthBars.all')}</option>
+            <option value="off">{t('settings.healthBars.off')}</option>
           </select>
         </label>
-        {slider('effects', '이펙트', 0.25, 1, 0.05)}
-        {slider('uiScale', 'HUD 크기', 0.8, 1.3, 0.05)}
-        {slider('hitReaction', '타격 반동', 0, 1, 0.05)}
-        {toggle('damageNumbers', '데미지 숫자')}
-        {toggle('screenShake', '화면 흔들림')}
+        {slider('effects', 'settings.effects', 0.25, 1, 0.05)}
+        {slider('uiScale', 'settings.uiScale', 0.8, 1.3, 0.05)}
+        {slider('hitReaction', 'settings.hitReaction', 0, 1, 0.05)}
+        {toggle('damageNumbers', 'settings.damageNumbers')}
+        {toggle('screenShake', 'settings.screenShake')}
       </fieldset>
       <fieldset>
-        <legend>접근성</legend>
-        {toggle('reducedFlash', '섬광 감소')}
-        {toggle('reducedMotion', '모션 감소 (시스템 설정과 관계없이)')}
+        <legend>{t('settings.access')}</legend>
+        {toggle('reducedFlash', 'settings.reducedFlash')}
+        {toggle('reducedMotion', 'settings.reducedMotion')}
       </fieldset>
       <fieldset>
-        <legend>게임</legend>
+        <legend>{t('settings.game')}</legend>
         <label>
-          <span>라운드 길이</span>
+          <span>{t('settings.pace')}</span>
           <select value={options.paceMode} onChange={(event) => setOptions({ ...options, paceMode: event.target.value as PaceMode })}>
-            <option value="standard">표준</option>
-            <option value="practice">연습 (짧은 Stage · 해금 없음 · 보상 30%)</option>
+            <option value="standard">{t('settings.pace.standard')}</option>
+            <option value="practice">{t('settings.pace.practice')}</option>
             {DEVELOPER_UI_AVAILABLE && <option value="showcase">쇼케이스</option>}
           </select>
         </label>
-        {inRun && <p className="settingsNote">라운드 길이는 다음 런부터 적용됩니다.</p>}
-        {toggle('autoPause', '창을 벗어나면 자동 일시정지')}
+        {inRun && <p className="settingsNote">{t('settings.pace.note')}</p>}
+        {toggle('autoPause', 'settings.autoPause')}
       </fieldset>
       {children}
     </div>

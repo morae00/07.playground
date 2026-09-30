@@ -1,5 +1,6 @@
 // World types shared by the simulation, the renderers, and the presentation layer (TEC-02).
 // Types only: nothing here runs, so any layer may import it without depending on the engine.
+import type { StringKey } from '../../i18n/text.ts';
 
 /** Which side an effect belongs to; signal colours follow ownership (BUG-14). */
 export type EffectOwner = 'player' | 'hostile';
@@ -45,7 +46,8 @@ export type BossPattern =
 
 export type BossDef = {
   id: string;
-  name: string;
+  /** The string key of its name (UI-10). */
+  name: StringKey;
   chapter: number;
   role: 'field' | 'mid' | 'final';
   pattern: BossPattern;

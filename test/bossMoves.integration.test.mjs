@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createHeadlessCanvas, installHeadlessPlatform, standardOptions } from '../scripts/lib/headless-engine.mjs';
+import { createHeadlessCanvas, installHeadlessPlatform, localeTable, standardOptions } from '../scripts/lib/headless-engine.mjs';
 
 // Boss phase moves (SYS-04): phases 2 and 3 run their attack grammar and movement mode instead of only speeding
 // up. Ch1: the Ink Butcher's tracked dash pair and crossing dash triple, the Bell-tower Warden's alternating ring
@@ -8,7 +8,8 @@ import { createHeadlessCanvas, installHeadlessPlatform, standardOptions } from '
 
 installHeadlessPlatform();
 Object.defineProperty(globalThis, 'performance', { value: { now: () => 0 }, configurable: true });
-const { ProbedGameEngine } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
+const { ProbedGameEngine, installStrings, t } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
+installStrings(localeTable('ko'));
 
 const STEP = 1 / 60;
 const meta = () => ({
@@ -70,7 +71,7 @@ test('the Ink Butcher dashes twice per cycle in phase 2, re-aiming the second da
     const aim = Math.atan2(secondDash.vy, secondDash.vx);
     const toPlayer = Math.atan2(secondWarn.player.y - secondWarn.y, secondWarn.player.x - secondWarn.x);
     assert.ok(Math.abs(Math.atan2(Math.sin(aim - toPlayer), Math.cos(aim - toPlayer))) < 0.05, 'the second dash is re-aimed at the player');
-    assert.equal(arena.probe.hud().bossMoveName, '먹물 돌진');
+    assert.equal(t(arena.probe.hud().bossMoveName), '먹물 돌진');
   } finally {
     arena.engine.dispose();
   }
@@ -97,7 +98,7 @@ test('in phase 3 the Ink Butcher shows three crossing lanes at once, then runs t
       const dashAngle = Math.atan2(dash.vy, dash.vx);
       assert.ok(Math.abs(Math.atan2(Math.sin(dashAngle - laneAngle), Math.cos(dashAngle - laneAngle))) < 0.05, `dash ${index + 2} follows its lane`);
     }
-    assert.equal(arena.probe.hud().bossMoveName, '골목 가르기');
+    assert.equal(t(arena.probe.hud().bossMoveName), '골목 가르기');
   } finally {
     arena.engine.dispose();
   }
@@ -133,7 +134,7 @@ test('in phase 2 the Bell-tower Warden leaves a ring gap that swaps sides each v
     };
     const turn = Math.abs(Math.atan2(Math.sin(gapOf(first) - gapOf(second)), Math.cos(gapOf(first) - gapOf(second))));
     assert.ok(turn > 2.4, `the gap swaps sides (${turn.toFixed(2)} rad)`);
-    assert.equal(arena.probe.hud().bossMoveName, '갈라진 종소리');
+    assert.equal(t(arena.probe.hud().bossMoveName), '갈라진 종소리');
   } finally {
     arena.engine.dispose();
   }
@@ -153,7 +154,7 @@ test('in phase 3 a ring wall closes in on the player with one gate, alternating 
     }
     const ring = nextVolley(arena);
     assert.equal(ring.length, 17, 'then a gapped ring');
-    assert.equal(arena.probe.hud().bossMoveName, '닫히는 골목문');
+    assert.equal(t(arena.probe.hud().bossMoveName), '닫히는 골목문');
   } finally {
     arena.engine.dispose();
   }

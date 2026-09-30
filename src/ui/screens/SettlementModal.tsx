@@ -7,7 +7,9 @@
 // Activation waits SETTLEMENT_INPUT_GUARD_MS after it opens (BUG-05), and Enter starts the next stage.
 import { useEffect, useRef, useState } from 'react';
 import { FINAL_CHAPTER } from '../../content/campaign';
-import { CHAPTERS, SKILLS, formatClock, type Settlement, type SkillId, type StageProgress } from '../../game/GameEngine';
+import { CHAPTERS, formatClock, type Settlement, type SkillId, type StageProgress } from '../../game/GameEngine';
+import { formatCount, t, tx } from '../../i18n/strings';
+import type { StringKey } from '../../i18n/text';
 import { ModalDialog } from '../ModalDialog';
 import type { SettlementNotes } from '../settlementNotes';
 import { SETTLEMENT_INPUT_GUARD_MS } from './constants';
@@ -29,12 +31,12 @@ export type SettlementModalProps = {
   onCopyInfiniteResult: () => void;
 };
 
-const GOLD_PARTS: readonly (readonly [keyof Settlement['goldParts'], string])[] = [
-  ['base', '기본'],
-  ['boss', '보스'],
-  ['kills', '처치'],
-  ['coins', '코인 환산'],
-  ['stage', 'Stage 보너스'],
+const GOLD_PARTS: readonly (readonly [keyof Settlement['goldParts'], StringKey])[] = [
+  ['base', 'settle.gold.base'],
+  ['boss', 'settle.gold.boss'],
+  ['kills', 'settle.gold.kills'],
+  ['coins', 'settle.gold.coins'],
+  ['stage', 'settle.gold.stage'],
 ];
 const COUNT_UP_MS = 700;
 /** Skills shown in the damage bars, most damage first. */
@@ -66,13 +68,13 @@ function DamageBars({ damage }: { damage: Settlement['damageBySkill'] }) {
   const total = rows.reduce((sum, [, value]) => sum + value, 0);
   if (total <= 0) return null;
   return (
-    <section className="settlementDamage" aria-label="스킬별 피해 비율">
-      <h3>피해 기여</h3>
+    <section className="settlementDamage" aria-label={t('settle.damage.label')}>
+      <h3>{t('settle.damage')}</h3>
       <ul>
         {rows.map(([id, value]) => (
           <li key={id}>
             <span className="artSlot" data-art={id} aria-hidden="true" />
-            <span className="settlementDamageName">{SKILLS[id].name}</span>
+            <span className="settlementDamageName">{t(`skill.${id}`)}</span>
             <span className="settlementDamageBar" aria-hidden="true"><i style={{ width: `${Math.round((value / rows[0][1]) * 100)}%` }} /></span>
             <b>{Math.round((value / total) * 100)}%</b>
           </li>
@@ -87,9 +89,12 @@ export function SettlementModal({ settlement, defeated, notes, reducedMotion, le
   const reduced = reducedMotion || (typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const gold = useCountUp(settlement.gold, reduced);
   const won = !defeated && settlement.cleared;
-  const heading = infinite ? '무한 기록' : settlement.gameComplete ? `${FINAL_CHAPTER}챕터 돌파` : won ? 'Stage 돌파' : '쓰러짐';
-  const place = infinite ? `생존 ${formatClock(settlement.survivedSeconds)}` : `Ch.${settlement.chapter} / St.${settlement.stage}`;
-  const objective = CHAPTERS[settlement.chapter - 1]?.stages[settlement.stage - 1]?.objective ?? '';
+  const heading = infinite
+    ? t('settle.heading.infinite')
+    : settlement.gameComplete ? t('settle.heading.complete', { chapter: FINAL_CHAPTER }) : t(won ? 'settle.heading.clear' : 'settle.heading.defeat');
+  const place = infinite ? t('settle.survived', { time: formatClock(settlement.survivedSeconds) }) : t('stage.address', { chapter: settlement.chapter, stage: settlement.stage });
+  const stageObjective = CHAPTERS[settlement.chapter - 1]?.stages[settlement.stage - 1]?.objective;
+  const objective = stageObjective ? tx(stageObjective) : '';
   const goNext = nextStage && nextStageOpen ? nextStage : null;
 
   // The app re-renders on every HUD snapshot, so the Enter listener reads the next stage through a ref and is set
@@ -114,67 +119,67 @@ export function SettlementModal({ settlement, defeated, notes, reducedMotion, le
       <header className="settlementHead">
         <span className="settlementFace" aria-hidden="true">
           <span className="artPortrait" data-art={won ? 'hero-victory' : 'hero-hurt'} />
-          {won && <span className="settlementSeal">돌파</span>}
+          {won && <span className="settlementSeal">{t('settle.seal')}</span>}
         </span>
         <div>
           <p>{place}</p>
           <h2 id="settlement-dialog-title">{heading}</h2>
-          {!infinite && <p className="settlementTitle">{settlement.practice ? `${objective} · 연습` : objective}</p>}
+          {!infinite && <p className="settlementTitle">{settlement.practice ? t('settle.practice', { objective }) : objective}</p>}
         </div>
       </header>
 
       {infinite ? (
         <div className="settlementGrid infiniteResultGrid">
-          <div className="scoreResult"><span>최종 점수</span><b>{settlement.score.toLocaleString('ko-KR')}</b></div>
-          <div><span>생존 시간</span><b>{formatClock(settlement.survivedSeconds)}</b></div>
-          <div><span>보스 처치</span><b>{settlement.bossKills}</b></div>
-          <div><span>전체 처치</span><b>{settlement.kills}</b></div>
-          <div><span>최고 레벨</span><b>{settlement.level}</b></div>
-          <div><span>받은 피해</span><b>{Math.round(settlement.damageTaken)}</b></div>
+          <div className="scoreResult"><span>{t('settle.score')}</span><b>{formatCount(settlement.score)}</b></div>
+          <div><span>{t('settle.time')}</span><b>{formatClock(settlement.survivedSeconds)}</b></div>
+          <div><span>{t('settle.bossKills')}</span><b>{settlement.bossKills}</b></div>
+          <div><span>{t('settle.allKills')}</span><b>{settlement.kills}</b></div>
+          <div><span>{t('settle.level')}</span><b>{settlement.level}</b></div>
+          <div><span>{t('settle.damageTaken')}</span><b>{Math.round(settlement.damageTaken)}</b></div>
         </div>
       ) : (
         <div className="settlementGrid">
-          <div><span>생존 시간</span><b>{formatClock(settlement.clearSeconds)}</b>{notes.newTime && <em className="recordBadge">최단 기록</em>}</div>
-          <div><span>처치</span><b>{settlement.kills}</b>{notes.newKills && <em className="recordBadge">처치 신기록</em>}</div>
-          <div><span>최고 레벨</span><b>{settlement.level}</b></div>
-          <div><span>받은 피해</span><b>{Math.round(settlement.damageTaken)}</b></div>
+          <div><span>{t('settle.time')}</span><b>{formatClock(settlement.clearSeconds)}</b>{notes.newTime && <em className="recordBadge">{t('settle.record.time')}</em>}</div>
+          <div><span>{t('settle.kills')}</span><b>{settlement.kills}</b>{notes.newKills && <em className="recordBadge">{t('settle.record.kills')}</em>}</div>
+          <div><span>{t('settle.level')}</span><b>{settlement.level}</b></div>
+          <div><span>{t('settle.damageTaken')}</span><b>{Math.round(settlement.damageTaken)}</b></div>
         </div>
       )}
 
-      <section className="settlementRewards" aria-label="보상">
+      <section className="settlementRewards" aria-label={t('settle.rewards')}>
         <div className="settlementGold">
-          <span>획득 골드</span>
+          <span>{t('settle.gold')}</span>
           <b aria-live="off">{gold}</b>
-          <ul aria-label="골드 산식">
-            {GOLD_PARTS.map(([key, label]) => settlement.goldParts[key] > 0 && <li key={key}>{label} {Math.floor(settlement.goldParts[key])}</li>)}
+          <ul aria-label={t('settle.gold.parts')}>
+            {GOLD_PARTS.map(([key, label]) => settlement.goldParts[key] > 0 && <li key={key}>{t(label)} {Math.floor(settlement.goldParts[key])}</li>)}
           </ul>
         </div>
         <div className="settlementXp">
-          <span>외부 XP</span>
+          <span>{t('settle.xp')}</span>
           <b>+{settlement.xp}</b>
-          {notes.levelUp && <p className="levelUpBanner" role="status">외부 레벨 {notes.levelUp} 달성 · 패시브 포인트 +{notes.passivePoints}</p>}
+          {notes.levelUp && <p className="levelUpBanner" role="status">{t('settle.levelUp', { level: notes.levelUp, points: notes.passivePoints })}</p>}
         </div>
       </section>
 
       {notes.unlocked && (
         <p className="unlockBanner" role="status">
-          {notes.unlocked.stage === 1 ? `Chapter ${notes.unlocked.chapter} 해금` : `Ch.${notes.unlocked.chapter} / St.${notes.unlocked.stage} 해금`}
+          {t(notes.unlocked.stage === 1 ? 'settle.unlock.chapter' : 'settle.unlock.stage', notes.unlocked)}
         </p>
       )}
 
       <DamageBars damage={settlement.damageBySkill} />
 
-      {infinite && <div className={settlement.scoreEligible ? 'soonStrip recordSaved' : 'soonStrip recordRejected'}>{leaderboardStatus || (settlement.scoreEligible ? '경쟁 기록 판정 완료' : '연습 · 기록 제외')}</div>}
+      {infinite && <div className={settlement.scoreEligible ? 'soonStrip recordSaved' : 'soonStrip recordRejected'}>{leaderboardStatus || t(settlement.scoreEligible ? 'settle.recordChecked' : 'record.practice')}</div>}
       {infinite && seedCopyStatus && <p className="seedStatus" role="status" aria-live="polite">{seedCopyStatus}</p>}
-      {settlement.gameComplete && <div className="soonStrip">Chapter {FINAL_CHAPTER + 1} Coming Soon</div>}
-      {settlement.practice && <div className="soonStrip">연습 Stage는 해금에 반영되지 않고 보상은 30%입니다.</div>}
-      {!settlement.practice && settlement.cleared && !settlement.gameComplete && !goNext && <div className="soonStrip">다음 Stage는 Stage 선택에서 시작할 수 있습니다.</div>}
+      {settlement.gameComplete && <div className="soonStrip">{t('settle.comingSoon', { chapter: FINAL_CHAPTER + 1 })}</div>}
+      {settlement.practice && <div className="soonStrip">{t('settle.practiceNote')}</div>}
+      {!settlement.practice && settlement.cleared && !settlement.gameComplete && !goNext && <div className="soonStrip">{t('settle.nextFromMenu')}</div>}
 
       <div className="modalActions">
-        {goNext && <button className="primary" onClick={() => onNextStage(goNext)}>다음 Stage (Ch.{goNext.chapter} / St.{goNext.stage})<kbd aria-hidden="true">Enter</kbd></button>}
-        <button className="ghost" onClick={onRetry}>다시 도전</button>
-        <button className={goNext ? 'ghost' : 'primary'} onClick={onMenu}>메뉴로</button>
-        {infinite && <button className="ghost" type="button" onClick={onCopyInfiniteResult}>결과 복사</button>}
+        {goNext && <button className="primary" onClick={() => onNextStage(goNext)}>{t('settle.next', goNext)}<kbd aria-hidden="true">Enter</kbd></button>}
+        <button className="ghost" onClick={onRetry}>{t('settle.retry')}</button>
+        <button className={goNext ? 'ghost' : 'primary'} onClick={onMenu}>{t('common.menu')}</button>
+        {infinite && <button className="ghost" type="button" onClick={onCopyInfiniteResult}>{t('settle.copy')}</button>}
       </div>
     </ModalDialog>
   );

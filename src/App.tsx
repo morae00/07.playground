@@ -23,6 +23,7 @@ import {
 import { DraftModal } from './ui/screens/DraftModal';
 import { SettlementModal } from './ui/screens/SettlementModal';
 import { NO_SETTLEMENT_NOTES, settlementNotes, type SettlementNotes } from './ui/settlementNotes';
+import { t } from './i18n/strings';
 import { FaultDialog, ResetDialog } from './ui/screens/RunDialogs';
 import { HudLayer } from './ui/screens/HudLayer';
 import { DevPanel } from './ui/screens/DevPanel';
@@ -303,7 +304,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const recordInfiniteSettlement = useCallback((result: Settlement) => {
     if (result.runMode !== 'infinite') return;
     if (!result.scoreEligible) {
-      setLeaderboardStatus('치트 또는 개발자 모드 사용으로 경쟁 기록에서 제외되었습니다.');
+      setLeaderboardStatus(t('board.status.excluded'));
       return;
     }
     const saved = addInfiniteScore(
@@ -322,8 +323,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     setInfiniteEntries(saved.entries);
     const ranked = saved.entries.some((entry) => entry.id === saved.entry.id);
     setLeaderboardStatus(saved.writable
-      ? ranked ? 'LOCAL TOP 10에 기록되었습니다.' : '기록을 저장했지만 TOP 10에는 들지 못했습니다.'
-      : '브라우저 저장소를 사용할 수 없어 기록을 저장하지 못했습니다.');
+      ? t(ranked ? 'board.status.ranked' : 'board.status.saved')
+      : t('board.status.noStorage'));
   }, [infinitePlayerName]);
 
   const callbacks = useMemo(
@@ -548,21 +549,19 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
       : phase;
     try {
       await copyErrorReport(errorLog, scene);
-      setErrorCopyStatus('오류 로그를 복사했습니다.');
+      setErrorCopyStatus(t('error.copied'));
     } catch {
-      setErrorCopyStatus('클립보드를 사용할 수 없어 로그를 복사하지 못했습니다.');
+      setErrorCopyStatus(t('error.copyFailed'));
     }
   };
 
   // In the menu the notice sits in the page flow so it never covers the start button; in play it floats.
   const noticeBanner = (placement: 'inline' | 'floating') => notice && (
     <div className={`noticeBanner ${placement}`} role="status" aria-live="polite">
-      <p>{notice === 'art'
-        ? '캐릭터 그림을 불러오지 못해 기본 도형으로 그립니다. 플레이에는 지장이 없습니다.'
-        : '오류가 나서 기록해 두었습니다. 문제가 계속되면 로그를 복사해 알려 주세요.'}</p>
+      <p>{t(notice === 'art' ? 'notice.art' : 'notice.error')}</p>
       <div className="noticeActions">
-        <button className="ghost" type="button" onClick={() => void copyErrorLog()}>로그 복사</button>
-        <button className="ghost" type="button" data-sound="cancel" onClick={() => { setNotice(null); setErrorCopyStatus(''); }}>닫기</button>
+        <button className="ghost" type="button" onClick={() => void copyErrorLog()}>{t('common.copyLog')}</button>
+        <button className="ghost" type="button" data-sound="cancel" onClick={() => { setNotice(null); setErrorCopyStatus(''); }}>{t('common.close')}</button>
       </div>
       {errorCopyStatus && <p className="seedStatus">{errorCopyStatus}</p>}
     </div>
@@ -583,9 +582,9 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     try {
       if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
       await navigator.clipboard.writeText(String(snapshot.seed));
-      setSeedCopyStatus('Seed를 복사했습니다');
+      setSeedCopyStatus(t('seed.copied'));
     } catch {
-      setSeedCopyStatus(`복사할 Seed: ${snapshot.seed}`);
+      setSeedCopyStatus(t('seed.manual', { seed: snapshot.seed }));
     }
   };
 
@@ -602,7 +601,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     try {
       if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
       await navigator.clipboard.writeText(summary);
-      setSeedCopyStatus('결과와 Challenge Seed를 복사했습니다.');
+      setSeedCopyStatus(t('seed.resultCopied'));
     } catch {
       setSeedCopyStatus(summary.replace(/\n/g, ' / '));
     }
@@ -675,13 +674,13 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         ref={canvasRef}
         className="gameCanvas"
         role="img"
-        aria-label="흑백 타격 생존전 플레이 영역"
+        aria-label={t('game.canvas')}
         aria-describedby={phase === 'playing' ? 'game-state-summary' : undefined}
         aria-hidden={phase !== 'playing'}
         aria-keyshortcuts="W A S D ArrowUp ArrowDown ArrowLeft ArrowRight P Escape"
         tabIndex={phase === 'playing' ? 0 : -1}
       >
-        이 브라우저는 Canvas 플레이 화면을 지원하지 않습니다.
+        {t('game.noCanvas')}
       </canvas>
       {phase !== 'menu' && snapshot && (
         <HudLayer

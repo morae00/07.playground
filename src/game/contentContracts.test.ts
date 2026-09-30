@@ -27,40 +27,30 @@ import {
 
 const chapters: ChapterContent[] = CHAPTER_ENCOUNTER_GRAMMARS.map((grammar) => ({
   id: grammar.chapter,
-  name: `Chapter ${grammar.chapter}`,
-  subtitle: '10 stages',
-  difficulty: `tier-${grammar.chapter}`,
   encounterGrammarId: grammar.id,
   stages: Array.from({ length: 10 }, (_, index) => {
     const id = (index + 1) as ChapterContent['stages'][number]['id'];
     return {
       id,
       kind: id === 5 ? 'midBoss' : id === 10 ? 'finalBoss' : 'normal',
-      objective: `Objective ${grammar.chapter}-${id}`,
+      objective: { key: 'objective.swarm' },
     };
   }),
 }));
 
 const skills: SkillContent[] = [{
   id: 'starter',
-  name: 'Starter',
-  shortName: 'Start',
   rarity: 'common',
   active: true,
   chapterMin: 1,
   maxLevel: 5,
-  copy: {
-    summary: 'Starter summary',
-    levelText: (level) => `Level ${level}`,
-    awakeningText: 'Starter awakening',
-  },
 }];
 
 const bosses: BossContent[] = [
-  { id: 'field-1', name: 'Field', chapter: 1, role: 'field', pattern: 'dash', hp: 10, damage: 2, speed: 5 },
+  { id: 'field-1', name: 'boss.field-shock', chapter: 1, role: 'field', pattern: 'dash', hp: 10, damage: 2, speed: 5 },
   ...BOSS_PHASE_MOVE_SETS.map((set) => ({
     id: set.bossId,
-    name: set.bossId,
+    name: 'boss.field-shock' as const,
     chapter: set.chapter,
     role: set.role,
     pattern: set.moves[0].attackGrammar,
@@ -77,7 +67,7 @@ const validCatalog = (): ContentCatalog => ({
   bosses,
 });
 
-test('typed content catalog validates campaign shape, copy, stats, and freezes one source', () => {
+test('typed content catalog validates campaign shape and stats, and freezes one source', () => {
   const catalog = defineContentCatalog(validCatalog());
   assert.deepEqual(validateContentCatalog(catalog), []);
   assert.equal(Object.isFrozen(catalog), true);
@@ -88,21 +78,20 @@ test('typed content catalog validates campaign shape, copy, stats, and freezes o
   }, TypeError);
 });
 
-test('content catalog reports structural and presentation failures together', () => {
+test('content catalog reports structural failures together', () => {
   const catalog = validCatalog();
   const invalid: ContentCatalog = {
     ...catalog,
     chapters: catalog.chapters.map((chapter) => chapter.id === 2
       ? { ...chapter, encounterGrammarId: '', stages: chapter.stages.slice(0, 9) }
       : chapter),
-    skills: [{ ...catalog.skills[0], maxLevel: 0, copy: { ...catalog.skills[0].copy, summary: '' } }],
+    skills: [{ ...catalog.skills[0], maxLevel: 0 }],
     bosses: catalog.bosses.map((boss, index) => index === 0 ? { ...boss, hp: Number.NaN } : boss),
   };
   const issues = validateContentCatalog(invalid);
   assert.ok(issues.some((issue) => issue.includes('chapter 2 expected 10 stages')));
   assert.ok(issues.some((issue) => issue.includes('encounterGrammarId is empty')));
   assert.ok(issues.some((issue) => issue.includes('maxLevel')));
-  assert.ok(issues.some((issue) => issue.includes('summary is empty')));
   assert.ok(issues.some((issue) => issue.includes('hp must be a positive finite number')));
   assert.throws(() => assertContentCatalog(invalid), ContentCatalogInvariantError);
 });

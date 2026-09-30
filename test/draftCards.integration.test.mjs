@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { createHeadlessCanvas, installHeadlessPlatform } from '../scripts/lib/headless-engine.mjs';
+import { createHeadlessCanvas, installHeadlessPlatform, localeTable } from '../scripts/lib/headless-engine.mjs';
 
 // Draft cards (UI-03): a card reads its level pips and change rows from the offer, and every card a draft can
 // show has baked art (ART-09).
 installHeadlessPlatform();
 Object.defineProperty(globalThis, 'performance', { value: { now: () => 0 }, configurable: true });
-const { ProbedGameEngine, SKILLS, SKILL_IDS } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
+const { ProbedGameEngine, SKILLS, SKILL_IDS, installStrings, tx } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
+// Offers carry string keys (UI-10); the Korean table resolves them.
+installStrings(localeTable('ko'));
 
 const meta = () => ({
   gold: 0,
@@ -35,10 +37,10 @@ test('UI-03: a skill card carries the level before the pick', () => {
     engine.probe.setSkills({ railSpear: { level: 3 } });
     const levelUp = engine.probe.previewOffer('railSpear', 'skill');
     assert.equal(levelUp.level, 3);
-    assert.equal(levelUp.levelLine, 'Lv.3 → 4');
+    assert.equal(tx(levelUp.levelLine), 'Lv.3 → 4');
     const fresh = engine.probe.previewOffer('chainSpark', 'skill');
     assert.equal(fresh.level, 0);
-    assert.equal(fresh.levelLine, '신규 · Lv.1');
+    assert.equal(tx(fresh.levelLine), '신규 · Lv.1');
     engine.probe.setSkills({ railSpear: { level: 5 } });
     assert.equal(engine.probe.previewOffer('railSpear', 'awakening').level, 5);
   });

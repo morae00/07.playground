@@ -73,7 +73,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         <RecoveryScreen
           log={this.props.log}
           title="화면을 그리다 문제가 생겼습니다"
-          body="진행 중이던 Run은 끝났지만 저장된 골드, 강화, 해금 진행도는 그대로입니다. 메뉴로 돌아가 다시 시작할 수 있습니다."
+          body="진행 중이던 런은 끝났지만 저장된 금, 강화, 해금 진행도는 그대로입니다. 메뉴로 돌아가 다시 시작할 수 있습니다."
           onReturn={() => this.setState((state) => ({ failed: false, generation: state.generation + 1 }))}
         />
       );

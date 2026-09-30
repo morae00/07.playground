@@ -8,7 +8,7 @@
 | 작성일 | 2026-09-30 (초안 v0.1) |
 | 확정 기한 | 주인공 이름·동기는 R0 3주차(CON-01 최종본). 문서 전체는 R0 종료 게이트에서 결정 문서로 커밋한다 |
 | 보존 | V1: 먹선과 종이 바탕, 챕터 재질 정체성, 보스 이름 15·스킬명 17·챕터명 5를 유지한다 |
-| 이름 출처 | 보스: `src/game/GameEngine.ts`의 `FIELD_BOSSES`·`BOSS_ROUND_BOSSES` / 챕터: `CHAPTER_THEME` / 스킬: `SKILLS` / 랜드마크: `src/content/encounters.ts`의 id와 스타일 바이블 v1.0 §11의 한글명 |
+| 이름 출처 | 보스·챕터·스킬: `public/assets/content/strings/ko.json`의 `boss.*`·`chapter.*`·`skill.*`(UI-10, [용어집](glossary.md)) / 랜드마크: `src/content/encounters.ts`의 id와 스타일 바이블 v1.0 §11의 한글명 |
 | 쓰이는 곳 | ART-02~08 캐릭터·보스 디자인, FX-05 보스 타이틀 카드, CON-03 랜드마크 이름 카드, CON-06 서사 연출, CON-07 도감, UI-10 용어집 |
 | 함께 읽을 문서 | `docs/art/style-bible.md`(스타일 바이블 v1), `artifacts/remaster/style-bible.md`(v1.0 §1·§8~§11), `artifacts/remaster/proposal-B.md` §1·§7·§9, `artifacts/remaster/concept-kit/API-hero.md` |
 
@@ -236,7 +236,7 @@ St3·St7에 입장할 때 붓글씨 이름 카드로 이름과 한 줄을 띄운
 
 ## 8. 표기 규칙
 - 한국어 단일 표기가 원칙이다. 영문은 로고와 작은 eyebrow에만 쓴다(스타일 바이블 v1.0 §13.1).
-- 세계 용어(원고, 먹선, 공백, 먹귀, 필경사, 여백, 지움)는 UI-10 용어집에 올린다. 게임 용어 정리(코인 → 엽전, 골드 → 금, 외부 레벨 → 계정 레벨)는 UI-01·UI-10을 따른다.
+- 세계 용어(원고, 먹선, 공백, 먹귀, 필경사, 여백, 지움)는 UI-10 [용어집](glossary.md)에 올렸다. 게임 용어 정리(코인 → 엽전, 골드 → 금, 외부 레벨 → 계정 레벨)도 UI-10에서 화면에 반영했다.
 - 영문명(UI-10 en 준비): 주인공은 제안 B 표기 'Gyeol'을 후보로 둔다. 보스 영문명은 컨셉 키트에 3종만 있다(INK BUTCHER, BELFRY GAOLER, FURNACE MAW). 나머지 12종은 미정이다.
 - 보스 타이틀 카드는 '칭호(작게) / 이름(크게) / 한 줄(작게)' 순서로 쓴다.
 

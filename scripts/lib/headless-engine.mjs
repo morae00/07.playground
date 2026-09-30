@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 const noop = () => {};
 
 class FakeAudioContext {
@@ -43,6 +44,11 @@ function createContext() {
       return true;
     },
   });
+}
+
+/** A locale's string table (UI-10), for tests that resolve the keys the engine hands out with the bundle's installStrings. */
+export function localeTable(locale = 'ko') {
+  return JSON.parse(readFileSync(new URL(`../../public/assets/content/strings/${locale}.json`, import.meta.url), 'utf8'));
 }
 
 export function installHeadlessPlatform() {

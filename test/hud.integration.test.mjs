@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createHeadlessCanvas, installHeadlessPlatform } from '../scripts/lib/headless-engine.mjs';
+import { createHeadlessCanvas, installHeadlessPlatform, localeTable } from '../scripts/lib/headless-engine.mjs';
 
 // In-run HUD (UI-02): what the HUD snapshot carries for the boss bar and the skill slots.
 installHeadlessPlatform();
 Object.defineProperty(globalThis, 'performance', { value: { now: () => 0 }, configurable: true });
-const { ProbedGameEngine } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
+const { ProbedGameEngine, installStrings, t } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
+installStrings(localeTable('ko'));
 
 const meta = () => ({
   gold: 0,
@@ -34,7 +35,8 @@ test('UI-02: the boss bar gets the boss id for its portrait, its phase, and its 
     engine.probe.step(30);
     const hud = engine.probe.hud();
     assert.equal(hud.bossId, 's1-mid-dash');
-    assert.equal(hud.bossName, '잉크 도살자', 'the name alone: phase and enrage are separate fields');
+    assert.equal(hud.bossName, 'boss.s1-mid-dash', 'the name is a string key (UI-10)');
+    assert.equal(t(hud.bossName), '잉크 도살자', 'the name alone: phase and enrage are separate fields');
     assert.equal(hud.bossPhase, 1);
     assert.equal(hud.bossEnrage, 0);
     assert.equal(hud.bossEnrageSteps, 4, 'stepped enrage under remaster rules');

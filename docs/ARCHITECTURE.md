@@ -20,6 +20,7 @@ platform -----------------------------------------------------------> applicatio
 5. Platform modules own persistence, packaging boundaries, and release metadata.
 6. Seeded gameplay randomness is isolated from cosmetic randomness so visual changes cannot alter outcomes.
 7. New integration tests use public commands, snapshots, and diagnostics. Direct private-field mutation is transitional and must not expand.
+8. Player-facing words live in the locale files, not in code (UI-10). Content and engine modules name strings by key; only the UI resolves them.
 
 ## Input and commands (TEC-07)
 
@@ -144,6 +145,18 @@ The settlement (UI-05, `SettlementModal.tsx`) shows the result first, then the n
 Two HUD marks live on the canvas, because they need the camera (UI-02):
 - Bosses and elites outside the view get a coral arrow on the screen edge. The arrow sits on the line from the screen centre toward the enemy and keeps clear of the HUD rows. Bosses come first; at most four arrows show.
 - Silence and root show as round timers over the hero's head. The renderer infers each debuff's length when it sees one start, and the ring empties as the debuff runs out. The DOM effect rack still announces both to screen readers but no longer shows them.
+
+## Strings (UI-10)
+
+Every player-facing string lives in a locale file: `public/assets/content/strings/ko.json` (Korean, the reference) and `en.json` (English, a complete draft players cannot select yet). Code names a string by its key.
+- `src/i18n/text.ts` types the keys: `StringKey` is the Korean table's keys, so code that names a key the table lacks does not compile. Template keys such as `` `skill.${id}.summary` `` are checked for every id.
+- The engine and the content data never build a sentence. They hand the UI a `Text`: a key and its parameters, where a parameter may itself be a `Text`. Draft cards, objectives, and HUD effect labels are `Text`; boss, phase move, and effect names are keys. `src/game/skillNumbers.ts` fills the skill templates (`skill.<id>.awakening`, `skill.levelStats`) with the numbers the skills use, so BUG-16's rule holds in every language.
+- The UI resolves text with `t(key, params)` and `tx(text)` (`src/i18n/strings.ts`). A missing key shows as itself. `formatCount` and `formatDate` format numbers and dates for the locale.
+- `main.tsx` loads the table together with the app module and renders only when both are ready. Shipped builds load Korean. Developer builds can preview English with `?lang=en`. The boot failure screen and the render recovery screen keep their own Korean words, since the table may be what failed.
+- Developer-only UI (the developer panel, cheats, the showcase pace) keeps its words in code: shipped builds drop it, and the production integrity check scans the tables too.
+- Unit tests (`src/i18n/strings.test.ts`) are the missing-translation gate. Both tables must have the same keys, no empty strings, English without Korean, and the same placeholders per key. Every key must be used by code. No Korean may be left in code outside a short allowlist (the recovery screens, developer UI, and internal descriptors no screen shows).
+- Terms follow the glossary (`docs/lore/glossary.md`): 계정 레벨 (was 외부 레벨), 금 (골드), 엽전 (코인), 런 (Run). English is used only in the logo and the small eyebrows.
+- Boss titles and lines (FX-05) are still Korean-only data in `boss-titles.json`. They move into the tables once the lore bible's names are final.
 
 ## Hit-stop in two layers (FX-02)
 

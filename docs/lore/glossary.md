@@ -1,0 +1,51 @@
+# 용어집 (UI-10)
+
+> 화면에 나오는 말을 한곳에 모은다. 게임 안의 문구는 모두 `public/assets/content/strings/ko.json`(기준)과 `en.json`(영문 틀)에 있고, 코드는 키로만 부른다(docs/ARCHITECTURE.md "Strings"). 용어를 바꿀 때는 이 표와 두 파일을 함께 고친다. **[팀 확인]** 표시는 아직 확정되지 않은 항목이다.
+
+## 1. 게임 용어
+
+| 쓰는 말 | 영문 | 뜻 | 바꾼 말 |
+|---|---|---|---|
+| 계정 레벨 | account level | 런 밖에서 쌓이는 레벨. 오르면 패시브 포인트를 준다 | 외부 레벨 |
+| 계정 XP | account XP | 계정 레벨을 올리는 경험치 | 외부 XP |
+| 금 | gold | 런 밖의 재화. 영구 강화를 산다. 값은 `금 35`로 쓴다 | 골드 |
+| 엽전 | coins | 런 안의 재화. 일시정지 허브에서 런 강화를 산다. 값은 `엽전 34`로 쓴다 | 코인 |
+| 런 | run | 한 번 출정해서 정산까지의 한 판 | Run |
+| 시드 | seed | 같은 전개를 다시 만드는 번호. 무한 경쟁에서는 '도전 시드' | Seed, Challenge Seed |
+| 런 레벨 | run level | 런 안에서 먹 조각으로 오르는 레벨. 오를 때마다 드래프트가 열린다 | |
+| 드래프트 | draft | 레벨 업이나 보스 처치 뒤 카드 3~4장 중 하나를 고르는 일 | |
+| 각성 | awakening | Lv.5 스킬의 다음 단계. 다음 드래프트 첫 칸에 나온다 | |
+| 광폭화 | enrage | 보스 Stage의 시간이 다 되면 보스가 4단계로 강해지는 것 | |
+| 연습 | practice | 짧은 Stage, 해금 없음, 보상 30% | |
+| 돌파 / 쓰러짐 | cleared / fallen | 정산 화면의 결과 | 정산(패배 제목) |
+
+- 'Stage', 'Chapter', 'Ch.1 / St.1', 'Lv.3'은 게임의 고유 표기로 그대로 쓴다. 문장 안에서는 '5챕터', '6장'처럼 한국어로도 쓴다. **[팀 확인]** 'Stage'를 '스테이지'로 바꿀지.
+- 영문은 로고(BLACKLINE SURVIVOR)와 작은 eyebrow(RUN PAUSED, ENDLESS SCORE ATTACK, LOCAL RECORDS, RUN INTERRUPTED, LOCAL SAVE RESET)에만 쓴다(로어 바이블 §8). 그 밖의 영어 전용 표기는 한국어로 바꿨다: 표 머리(RANK → 순위 등), 무한 경쟁 규칙(START → 시작, Random Respawn → 무작위 재등장, None → 없음), TOP 10 → 상위 10위, DANGER → 위험도, ACTIVE → 적용 중, Coming Soon → 준비 중.
+- 개발자 빌드 전용 문구(개발 도구, 치트, 쇼케이스)는 배포 빌드에 들어가지 않으므로 표에 올리지 않고 코드에 둔다.
+
+## 2. 세계 용어
+
+로어 바이블 §1.2의 용어다. 화면에는 아직 도감(CON-07)과 서사 연출(CON-06) 전이라 쓰이지 않는다.
+
+| 쓰는 말 | 영문(초안) | 뜻 |
+|---|---|---|
+| 원고 | the manuscript | 먹선으로 그려진 세계 전체 |
+| 먹선 | blackline | 형태를 붙잡는 선. 끊기면 형태가 풀린다 |
+| 공백 | the null | 원고 가장자리에서 번지는 백지 |
+| 먹귀 | ink wraith | 선을 잃은 먹이 형체를 얻은 것 |
+| 필경사 | scribe | 원고를 베껴 쓰는 사람. 주인공 결 |
+| 여백 | margin | 그림을 살리는 빈 곳 |
+| 지움 | erasure | 공백이 선을 없애는 일 |
+
+## 3. 이름
+
+챕터 5, 보스 15, 스킬 17의 한국어 이름은 게임 데이터 그대로다(V1). 영문명은 `en.json`에 초안으로 넣었다. **[팀 확인]** 컨셉 키트에 있는 3종(Ink Butcher, Belfry Gaoler, Furnace Maw)을 뺀 보스 12종과 챕터·스킬 영문명은 초안이다(로어 바이블 Q-9).
+
+| 키 | 한국어 | 영문(초안) |
+|---|---|---|
+| chapter.1~5 | 먹선 골목 · 철문 예배당 · 무채 운하 · 시계 무덤 · 일식 관문 | Inkline Alley · Iron Gate Chapel · Colourless Canal · Clock Grave · Eclipse Gate |
+| boss.s1-mid-dash · s1-final-rings · s2-final-flame | 잉크 도살자 · 종탑 간수 · 용광의 입 | Ink Butcher · Belfry Gaoler · Furnace Maw (키트) |
+| 나머지 보스 12종 | `ko.json`의 boss.* | `en.json`의 boss.* |
+| 스킬 17종 | `ko.json`의 skill.* | `en.json`의 skill.* |
+
+보스 칭호와 한 줄(FX-05, `public/assets/content/boss-titles.json`)은 로어 바이블 초안에서 나오므로 아직 한국어만 있다. 영문은 Q-7·Q-9가 정해진 뒤 같은 방식으로 나눈다.

@@ -9,6 +9,7 @@ import type { CSSProperties } from 'react';
 import { RARITY, SKILLS, SKILL_IDS, type DraftCard, type DraftState, type HudSnapshot, type Rarity, type SkillOffer } from '../../game/GameEngine';
 import { MAX_SKILL_LEVEL } from '../../game/grammar';
 import { SKILL_LEVEL_STATS } from '../../game/skillNumbers';
+import { t, tp, tx } from '../../i18n/strings';
 import { ModalDialog } from '../ModalDialog';
 import { DIALOG_INPUT_GUARD_MS } from './constants';
 
@@ -29,7 +30,9 @@ function Card({ offer, index, onPick }: { offer: DraftCard; index: number; onPic
   const next = offer.kind === 'skill' ? level + 1 : 0;
   const stats = offer.kind === 'skill' && level > 0 ? SKILL_LEVEL_STATS[offer.skillId] : undefined;
   const after = stats?.(next);
-  const tags = def ? [def.active ? '액티브' : '패시브', ...(offer.kind === 'awakening' ? ['각성'] : def.tags)] : ['보너스'];
+  const tags = def
+    ? [t(def.active ? 'tag.active' : 'tag.passive'), ...(offer.kind === 'awakening' ? [t('tag.awakening')] : def.tags.map((tag) => t(`tag.${tag}`)))]
+    : [t('tag.bonus')];
   return (
     <button
       className="draftCard"
@@ -47,29 +50,29 @@ function Card({ offer, index, onPick }: { offer: DraftCard; index: number; onPic
         aria-hidden="true"
       />
       <span className="cardRank">
-        {RARITY[offer.rarity].label} <i aria-hidden="true">{'◆'.repeat(RANKS.indexOf(offer.rarity) + 1)}</i>
+        {t(`rarity.${offer.rarity}`)} <i aria-hidden="true">{'◆'.repeat(RANKS.indexOf(offer.rarity) + 1)}</i>
       </span>
-      <strong className="cardName">{offer.kind === 'skill' ? def!.name : offer.title}</strong>
+      <strong className="cardName">{offer.kind === 'skill' ? t(`skill.${offer.skillId}`) : tx(offer.title)}</strong>
       <span className="cardTags">{tags.map((tag) => <i key={tag}>{tag}</i>)}</span>
       <span className="cardLevel">
         {def && <LevelPips level={level} next={next} />}
-        {offer.levelLine}
+        {tx(offer.levelLine)}
       </span>
       {stats && after ? (
         <span className="cardDelta">
           {stats(level).map(([label, before], row) => (
             <span key={label}>
-              <b>{label}</b>
-              <span>{before} → <em>{after[row][1]}</em></span>
+              <b>{t(label)}</b>
+              <span>{tp(before)} → <em>{tp(after[row][1])}</em></span>
             </span>
           ))}
         </span>
       ) : (
-        <span className="cardBody">{offer.body}</span>
+        <span className="cardBody">{tx(offer.body)}</span>
       )}
       {offer.kind === 'skill' && (
         <small className="cardHint">
-          {next < MAX_SKILL_LEVEL ? `★ Lv.${MAX_SKILL_LEVEL} 달성 시 각성` : '★ 다음 드래프트 첫 칸에 각성 카드'}
+          {next < MAX_SKILL_LEVEL ? t('draft.hint.awaken', { level: MAX_SKILL_LEVEL }) : t('draft.hint.next')}
         </small>
       )}
     </button>
@@ -82,9 +85,9 @@ export function DraftModal({ draft, skills, onPick }: { draft: DraftState; skill
     <ModalDialog className="draftBox" labelledBy="draft-dialog-title" describedBy="draft-dialog-description draft-dialog-keys" inputGuardMs={DIALOG_INPUT_GUARD_MS}>
       {draft.reason === 'level' && <i className="draftBurst" aria-hidden="true" />}
       <div className="modalHead">
-        <p className={draft.reason === 'level' ? 'levelBanner' : undefined}>{draft.reason === 'boss' ? '확정 보상' : '레벨 업!'}</p>
-        <h2 id="draft-dialog-title">{draft.title}</h2>
-        <p className="modalLead" id="draft-dialog-description">보상 하나를 고르세요. 고를 때까지 전투는 멈춰 있습니다.</p>
+        <p className={draft.reason === 'level' ? 'levelBanner' : undefined}>{t(draft.reason === 'boss' ? 'draft.kicker.boss' : 'draft.kicker.level')}</p>
+        <h2 id="draft-dialog-title">{tx(draft.title)}</h2>
+        <p className="modalLead" id="draft-dialog-description">{t('draft.lead')}</p>
       </div>
       <div className="draftGrid">
         {draft.cards.map((offer, index) => (
@@ -92,17 +95,17 @@ export function DraftModal({ draft, skills, onPick }: { draft: DraftState; skill
         ))}
       </div>
       <div className="buildStrip">
-        <span className="buildLabel">현재 빌드</span>
+        <span className="buildLabel">{t('draft.build')}</span>
         <ul className="buildSlots">
           {owned.map((id) => (
-            <li className="buildSlot" key={id} aria-label={`${SKILLS[id].name} Lv.${skills[id]!.level}${skills[id]!.awakened ? ' 각성' : ''}`}>
+            <li className="buildSlot" key={id} aria-label={t(skills[id]!.awakened ? 'skill.slot.awakened' : 'skill.slot', { skill: t(`skill.${id}`), level: skills[id]!.level })}>
               <span className="artSlot" data-art={skills[id]!.awakened ? `${id}-awakened` : id} />
               <LevelPips level={skills[id]!.level} />
             </li>
           ))}
-          {owned.length === 0 && <li className="emptyText">아직 스킬이 없습니다</li>}
+          {owned.length === 0 && <li className="emptyText">{t('draft.noSkills')}</li>}
         </ul>
-        <span className="buildKeys" id="draft-dialog-keys">숫자 1–{draft.cards.length} 선택 · 방향키 이동 · Enter 또는 패드 A 확정</span>
+        <span className="buildKeys" id="draft-dialog-keys">{t('draft.keys', { count: draft.cards.length })}</span>
       </div>
     </ModalDialog>
   );

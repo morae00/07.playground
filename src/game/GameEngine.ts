@@ -32,13 +32,14 @@ import { CAMPAIGN_CHAPTER_COUNT, FINAL_CHAPTER, FINAL_STAGE, STAGES_PER_CHAPTER 
 import {
   CLASSIC_AWAKENING_TEXT,
   SKILL_AWAKENING_TEXT,
-  SKILL_LEVEL_TEXT,
   SKILL_NUMBERS,
   frostLineSlow,
   mirrorCloneVolley,
   needleCount,
   scaleAt,
+  skillLevelText,
 } from './skillNumbers';
+import { text, type StringKey, type Text } from '../i18n/text';
 import { REMASTER_RULES, ruleSetFor, type RuleSet, type RuleSetId } from './rules';
 import { EncounterDirector, type SpawnEdge } from './encounterDirector';
 import { CHECK_CONTENT_AT_LOAD } from '../content/checks';
@@ -179,18 +180,20 @@ export type StatBlock = {
   coinGain: number;
 };
 
+/** Draft card chips (UI-03); each shows as the string tag.<id>. */
+export type SkillTag =
+  | 'projectile' | 'single' | 'fan' | 'chain' | 'instant' | 'line' | 'slow' | 'melee' | 'sustained' | 'area'
+  | 'explosive' | 'pierce' | 'clone' | 'zone' | 'pull' | 'gravity' | 'crowdControl' | 'defense' | 'health'
+  | 'pickup' | 'coin' | 'invulnerable' | 'recovery' | 'magnet' | 'attackSpeed' | 'crit' | 'boss';
+
+/** A skill's rules. Its name and summary are the strings skill.<id> and skill.<id>.summary (UI-10). */
 export type SkillDef = {
   id: SkillId;
-  name: string;
-  shortName: string;
   rarity: Rarity;
   active: boolean;
   chapterMin: number;
-  summary: string;
-  /** Draft card chips after 액티브/패시브 (UI-03). */
-  tags: readonly string[];
-  levelText: (level: number) => string;
-  awakeningText: string;
+  /** Draft card chips after the active or passive chip (UI-03). */
+  tags: readonly SkillTag[];
 };
 
 export type SkillOffer =
@@ -198,9 +201,9 @@ export type SkillOffer =
       kind: 'skill' | 'awakening';
       skillId: SkillId;
       rarity: Rarity;
-      title: string;
-      body: string;
-      levelLine: string;
+      title: Text;
+      body: Text;
+      levelLine: Text;
       /** The skill's level before the pick: 0 for a new skill. */
       level: number;
     }
@@ -208,9 +211,9 @@ export type SkillOffer =
       kind: 'bonus';
       bonus: 'heal' | 'coins' | 'overdrive';
       rarity: Rarity;
-      title: string;
-      body: string;
-      levelLine: string;
+      title: Text;
+      body: Text;
+      levelLine: Text;
     };
 
 /** A draft card as presented; offerId ("<draft id>:<slot>") lets a command log pick it (TEC-07). */
@@ -218,7 +221,7 @@ export type DraftCard = SkillOffer & { offerId: string };
 
 export type DraftState = {
   id: number;
-  title: string;
+  title: Text;
   reason: DraftReason;
   after: 'resume' | 'roundClear';
   cards: DraftCard[];
@@ -232,7 +235,7 @@ export type StageProgress = {
 export type ActiveStatusEffect = {
   id: string;
   kind: 'buff' | 'debuff';
-  label: string;
+  label: StringKey;
   value?: string;
   remaining?: number;
 };
@@ -243,7 +246,7 @@ export type HudSnapshot = {
   chapter: number;
   stage: number;
   stageKind: StageKind;
-  objective: string;
+  objective: Text;
   objectiveProgress: number;
   objectiveTarget: number;
   timeLeft: number;
@@ -265,7 +268,7 @@ export type HudSnapshot = {
   rulesVersion: number;
   practice: boolean;
   /** The boss the HUD shows (UI-02): its name, id (the portrait key), phase, and enrage steps taken (0 while calm). */
-  bossName?: string;
+  bossName?: StringKey;
   bossId?: string;
   bossPhase?: number;
   bossEnrage?: number;
@@ -273,7 +276,7 @@ export type HudSnapshot = {
   bossEnrageSteps?: number;
   bossMove?: string;
   /** SYS-04: the name of the boss's current phase move, shown under the boss bar. */
-  bossMoveName?: string;
+  bossMoveName?: StringKey;
   bossHp?: number;
   bossMaxHp?: number;
   skills: Partial<Record<SkillId, SkillState>>;
@@ -285,7 +288,6 @@ export type HudSnapshot = {
   runUpgrades: Record<RunUpgradeId, number>;
   stats: StatBlock;
   activeEffects: ActiveStatusEffect[];
-  cc: string;
 };
 
 export type Settlement = {
@@ -293,7 +295,6 @@ export type Settlement = {
   seed: number;
   chapter: number;
   stage: number;
-  title: string;
   kills: number;
   coins: number;
   /** Coins earned during the stage; settlement gold converts these at ×0.28. */
@@ -335,16 +336,14 @@ export type EngineCallbacks = {
   onFault?: (error: unknown) => void;
 };
 
+/** A chapter. Its name, subtitle, and difficulty are the strings chapter.<id>, chapter.subtitle, and chapter.<id>.difficulty. */
 export type StageDef = {
   id: number;
-  name: string;
-  subtitle: string;
-  difficulty: string;
   encounterGrammarId: string;
   stages: Array<{
     id: number;
     kind: StageKind;
-    objective: string;
+    objective: Text;
   }>;
 };
 
@@ -429,12 +428,13 @@ const AIM_MAX_LEAD_SECONDS = 1.2;
 /** Nothing harmful is generated within this distance of the stage start (the world centre). */
 const START_SAFE_RADIUS = 420;
 
-export const RARITY: Record<Rarity, { label: string; weight: number; className: string }> = {
-  common: { label: '일반', weight: RARITY_WEIGHTS.common, className: 'rarityCommon' },
-  rare: { label: '희귀', weight: RARITY_WEIGHTS.rare, className: 'rarityRare' },
-  epic: { label: '영웅', weight: RARITY_WEIGHTS.epic, className: 'rarityEpic' },
-  legendary: { label: '전설', weight: RARITY_WEIGHTS.legendary, className: 'rarityLegendary' },
-  mythic: { label: '신화', weight: RARITY_WEIGHTS.mythic, className: 'rarityMythic' },
+/** Draft weights per rarity; each shows as the string rarity.<id>. */
+export const RARITY: Record<Rarity, { weight: number; className: string }> = {
+  common: { weight: RARITY_WEIGHTS.common, className: 'rarityCommon' },
+  rare: { weight: RARITY_WEIGHTS.rare, className: 'rarityRare' },
+  epic: { weight: RARITY_WEIGHTS.epic, className: 'rarityEpic' },
+  legendary: { weight: RARITY_WEIGHTS.legendary, className: 'rarityLegendary' },
+  mythic: { weight: RARITY_WEIGHTS.mythic, className: 'rarityMythic' },
 };
 
 export const BASE_STATS: StatBlock = {
@@ -452,263 +452,60 @@ export const BASE_STATS: StatBlock = {
 };
 
 export const SKILLS: Record<SkillId, SkillDef> = {
-  needleStorm: {
-    id: 'needleStorm',
-    name: '먹선 바늘',
-    shortName: '바늘',
-    rarity: 'common',
-    active: true,
-    chapterMin: 1,
-    summary: '가장 가까운 적에게 벽에 막히는 고속 투사체를 발사합니다.',
-    tags: ['투사체', '단일'],
-    levelText: SKILL_LEVEL_TEXT.needleStorm,
-    awakeningText: SKILL_AWAKENING_TEXT.needleStorm,
-  },
-  fanKnives: {
-    id: 'fanKnives',
-    name: '부채 단검',
-    shortName: '단검',
-    rarity: 'common',
-    active: true,
-    chapterMin: 1,
-    summary: '전방 부채꼴로 얇은 단검을 흩뿌립니다.',
-    tags: ['투사체', '부채꼴'],
-    levelText: SKILL_LEVEL_TEXT.fanKnives,
-    awakeningText: SKILL_AWAKENING_TEXT.fanKnives,
-  },
-  chainSpark: {
-    id: 'chainSpark',
-    name: '백색 연쇄',
-    shortName: '연쇄',
-    rarity: 'rare',
-    active: true,
-    chapterMin: 1,
-    summary: '적 사이를 튀는 번개선을 즉시 꽂습니다.',
-    tags: ['연쇄', '즉발'],
-    levelText: SKILL_LEVEL_TEXT.chainSpark,
-    awakeningText: SKILL_AWAKENING_TEXT.chainSpark,
-  },
-  frostLine: {
-    id: 'frostLine',
-    name: '백묵 절단',
-    shortName: '백묵',
-    rarity: 'rare',
-    active: true,
-    chapterMin: 1,
-    summary: '가장 가까운 적 방향으로 감속 절단선을 긋습니다.',
-    tags: ['직선', '감속'],
-    levelText: SKILL_LEVEL_TEXT.frostLine,
-    awakeningText: SKILL_AWAKENING_TEXT.frostLine,
-  },
-  orbitScythes: {
-    id: 'orbitScythes',
-    name: '초승 궤도',
-    shortName: '궤도',
-    rarity: 'epic',
-    active: true,
-    chapterMin: 2,
-    summary: '몸 주위를 도는 날이 근접한 적을 계속 갈아냅니다.',
-    tags: ['근접', '지속'],
-    levelText: SKILL_LEVEL_TEXT.orbitScythes,
-    awakeningText: SKILL_AWAKENING_TEXT.orbitScythes,
-  },
-  boneMortar: {
-    id: 'boneMortar',
-    name: '골분 박격',
-    shortName: '박격',
-    rarity: 'epic',
-    active: true,
-    chapterMin: 2,
-    summary: '적이 가장 많이 몰린 지점에 묵직한 낙하 폭발을 일으킵니다.',
-    tags: ['광역', '폭발'],
-    levelText: SKILL_LEVEL_TEXT.boneMortar,
-    awakeningText: SKILL_AWAKENING_TEXT.boneMortar,
-  },
-  railSpear: {
-    id: 'railSpear',
-    name: '흑선 레일',
-    shortName: '레일',
-    rarity: 'legendary',
-    active: true,
-    chapterMin: 3,
-    summary: '화면을 가르는 관통 직선을 즉시 발사합니다.',
-    tags: ['직선', '관통'],
-    levelText: SKILL_LEVEL_TEXT.railSpear,
-    awakeningText: SKILL_AWAKENING_TEXT.railSpear,
-  },
-  mirrorClone: {
-    id: 'mirrorClone',
-    name: '거울 분신',
-    shortName: '분신',
-    rarity: 'legendary',
-    active: true,
-    chapterMin: 3,
-    summary: '좌우 잔상이 보조 사격을 합니다.',
-    tags: ['분신', '투사체'],
-    levelText: SKILL_LEVEL_TEXT.mirrorClone,
-    awakeningText: SKILL_AWAKENING_TEXT.mirrorClone,
-  },
-  voidMine: {
-    id: 'voidMine',
-    name: '무음 지뢰',
-    shortName: '지뢰',
-    rarity: 'epic',
-    active: true,
-    chapterMin: 3,
-    summary: '발밑에 끌어당기는 지뢰장을 남깁니다.',
-    tags: ['장판', '흡입'],
-    levelText: SKILL_LEVEL_TEXT.voidMine,
-    awakeningText: SKILL_AWAKENING_TEXT.voidMine,
-  },
-  blackSun: {
-    id: 'blackSun',
-    name: '검은 태양',
-    shortName: '태양',
-    rarity: 'mythic',
-    active: true,
-    chapterMin: 4,
-    summary: '적 밀집 지점에 끌어당기는 중력장을 엽니다.',
-    tags: ['중력장', '군중 제어'],
-    levelText: SKILL_LEVEL_TEXT.blackSun,
-    awakeningText: SKILL_AWAKENING_TEXT.blackSun,
-  },
-  ironFrame: {
-    id: 'ironFrame',
-    name: '철골 프레임',
-    shortName: '철골',
-    rarity: 'common',
-    active: false,
-    chapterMin: 1,
-    summary: '방어력과 최대 체력을 올립니다.',
-    tags: ['방어', '체력'],
-    levelText: SKILL_LEVEL_TEXT.ironFrame,
-    awakeningText: SKILL_AWAKENING_TEXT.ironFrame,
-  },
-  magnetSigil: {
-    id: 'magnetSigil',
-    name: '수거 자석',
-    shortName: '자석',
-    rarity: 'common',
-    active: false,
-    chapterMin: 1,
-    summary: '경험치와 코인을 더 먼 거리에서 끌어옵니다.',
-    tags: ['획득', '코인'],
-    levelText: SKILL_LEVEL_TEXT.magnetSigil,
-    awakeningText: SKILL_AWAKENING_TEXT.magnetSigil,
-  },
-  paperWard: {
-    id: 'paperWard',
-    name: '종이 갑주',
-    shortName: '갑주',
-    rarity: 'rare',
-    active: false,
-    chapterMin: 2,
-    summary: '방어력과 피격 후 무적 시간을 올립니다.',
-    tags: ['방어', '무적'],
-    levelText: SKILL_LEVEL_TEXT.paperWard,
-    awakeningText: SKILL_AWAKENING_TEXT.paperWard,
-  },
-  recoveryThread: {
-    id: 'recoveryThread',
-    name: '회복 실',
-    shortName: '회복',
-    rarity: 'rare',
-    active: false,
-    chapterMin: 1,
-    summary: '체력 회복과 획득 반경을 올립니다.',
-    tags: ['회복', '자석'],
-    levelText: SKILL_LEVEL_TEXT.recoveryThread,
-    awakeningText: SKILL_AWAKENING_TEXT.recoveryThread,
-  },
-  coinFever: {
-    id: 'coinFever',
-    name: '동전 열병',
-    shortName: '열병',
-    rarity: 'rare',
-    active: false,
-    chapterMin: 4,
-    summary: '코인 획득량과 공격속도를 함께 올립니다.',
-    tags: ['코인', '공격속도'],
-    levelText: SKILL_LEVEL_TEXT.coinFever,
-    awakeningText: SKILL_AWAKENING_TEXT.coinFever,
-  },
-  eclipseStep: {
-    id: 'eclipseStep',
-    name: '일식 보법',
-    shortName: '보법',
-    rarity: 'mythic',
-    active: true,
-    chapterMin: 5,
-    summary: '위협이 몰릴 때 순간적으로 그림자 베기를 펼칩니다.',
-    tags: ['광역', '무적'],
-    levelText: SKILL_LEVEL_TEXT.eclipseStep,
-    awakeningText: SKILL_AWAKENING_TEXT.eclipseStep,
-  },
-  executionMark: {
-    id: 'executionMark',
-    name: '집행 표식',
-    shortName: '집행',
-    rarity: 'legendary',
-    active: false,
-    chapterMin: 2,
-    summary: '치명타와 보스 피해량을 올립니다.',
-    tags: ['치명타', '보스'],
-    levelText: SKILL_LEVEL_TEXT.executionMark,
-    awakeningText: SKILL_AWAKENING_TEXT.executionMark,
-  },
+  needleStorm: { id: 'needleStorm', rarity: 'common', active: true, chapterMin: 1, tags: ['projectile', 'single'] },
+  fanKnives: { id: 'fanKnives', rarity: 'common', active: true, chapterMin: 1, tags: ['projectile', 'fan'] },
+  chainSpark: { id: 'chainSpark', rarity: 'rare', active: true, chapterMin: 1, tags: ['chain', 'instant'] },
+  frostLine: { id: 'frostLine', rarity: 'rare', active: true, chapterMin: 1, tags: ['line', 'slow'] },
+  orbitScythes: { id: 'orbitScythes', rarity: 'epic', active: true, chapterMin: 2, tags: ['melee', 'sustained'] },
+  boneMortar: { id: 'boneMortar', rarity: 'epic', active: true, chapterMin: 2, tags: ['area', 'explosive'] },
+  railSpear: { id: 'railSpear', rarity: 'legendary', active: true, chapterMin: 3, tags: ['line', 'pierce'] },
+  mirrorClone: { id: 'mirrorClone', rarity: 'legendary', active: true, chapterMin: 3, tags: ['clone', 'projectile'] },
+  voidMine: { id: 'voidMine', rarity: 'epic', active: true, chapterMin: 3, tags: ['zone', 'pull'] },
+  blackSun: { id: 'blackSun', rarity: 'mythic', active: true, chapterMin: 4, tags: ['gravity', 'crowdControl'] },
+  ironFrame: { id: 'ironFrame', rarity: 'common', active: false, chapterMin: 1, tags: ['defense', 'health'] },
+  magnetSigil: { id: 'magnetSigil', rarity: 'common', active: false, chapterMin: 1, tags: ['pickup', 'coin'] },
+  paperWard: { id: 'paperWard', rarity: 'rare', active: false, chapterMin: 2, tags: ['defense', 'invulnerable'] },
+  recoveryThread: { id: 'recoveryThread', rarity: 'rare', active: false, chapterMin: 1, tags: ['recovery', 'magnet'] },
+  coinFever: { id: 'coinFever', rarity: 'rare', active: false, chapterMin: 4, tags: ['coin', 'attackSpeed'] },
+  eclipseStep: { id: 'eclipseStep', rarity: 'mythic', active: true, chapterMin: 5, tags: ['area', 'invulnerable'] },
+  executionMark: { id: 'executionMark', rarity: 'legendary', active: false, chapterMin: 2, tags: ['crit', 'boss'] },
 };
 
 export const SKILL_IDS = Object.keys(SKILLS) as SkillId[];
 
-export const META_UPGRADES: Record<
-  MetaUpgradeId,
-  { label: string; max: number; baseCost: number; growth: number; line: string }
-> = {
-  attack: { label: '공격 훈련', max: 30, baseCost: 35, growth: 1.22, line: '공격력' },
-  defense: { label: '방어 자세', max: 25, baseCost: 30, growth: 1.2, line: '방어력' },
-  maxHp: { label: '체력 단련', max: 30, baseCost: 32, growth: 1.21, line: '체력' },
-  moveSpeed: { label: '이동 보폭', max: 20, baseCost: 40, growth: 1.24, line: '이동속도' },
-  crit: { label: '치명 감각', max: 20, baseCost: 48, growth: 1.26, line: '치명타' },
-  regen: { label: '회복 호흡', max: 20, baseCost: 36, growth: 1.23, line: '회복속도' },
-  magnet: { label: '자석 코어', max: 25, baseCost: 34, growth: 1.2, line: '획득 반경' },
+/** Permanent upgrades; each shows as the strings upgrade.<id> and upgrade.<id>.line. */
+export const META_UPGRADES: Record<MetaUpgradeId, { max: number; baseCost: number; growth: number }> = {
+  attack: { max: 30, baseCost: 35, growth: 1.22 },
+  defense: { max: 25, baseCost: 30, growth: 1.2 },
+  maxHp: { max: 30, baseCost: 32, growth: 1.21 },
+  moveSpeed: { max: 20, baseCost: 40, growth: 1.24 },
+  crit: { max: 20, baseCost: 48, growth: 1.26 },
+  regen: { max: 20, baseCost: 36, growth: 1.23 },
+  magnet: { max: 25, baseCost: 34, growth: 1.2 },
 };
 
-export const META_PASSIVES: Record<PassiveId, { label: string; max: number; line: string }> = {
-  rareLuck: { label: '희귀 감각', max: 5, line: '고등급 스킬 등장률' },
-  bossHunter: { label: '보스 사냥꾼', max: 5, line: '보스 피해량' },
-  coinMagnet: { label: '동전 회수', max: 5, line: '코인 획득량과 자석' },
+/** Account-level passives; each shows as the strings passive.<id> and passive.<id>.line. */
+export const META_PASSIVES: Record<PassiveId, { max: number }> = {
+  rareLuck: { max: 5 },
+  bossHunter: { max: 5 },
+  coinMagnet: { max: 5 },
 };
 
-export const RUN_UPGRADES: Record<RunUpgradeId, { label: string; baseCost: number; line: string }> = {
-  attack: { label: '공격력', baseCost: 34, line: '+12%' },
-  maxHp: { label: '체력', baseCost: 28, line: '+20' },
-  moveSpeed: { label: '속도', baseCost: 30, line: '+6%' },
-  attackSpeed: { label: '공속', baseCost: 38, line: '+8%' },
-  magnet: { label: '자석', baseCost: 24, line: '+36' },
+/** Run shop upgrades; each shows as the string runUpgrade.<id>, and `line` is the gain per level. */
+export const RUN_UPGRADES: Record<RunUpgradeId, { baseCost: number; line: string }> = {
+  attack: { baseCost: 34, line: '+12%' },
+  maxHp: { baseCost: 28, line: '+20' },
+  moveSpeed: { baseCost: 30, line: '+6%' },
+  attackSpeed: { baseCost: 38, line: '+8%' },
+  magnet: { baseCost: 24, line: '+36' },
 };
-
-export const CHAPTER_THEME = [
-  '먹선 골목',
-  '철문 예배당',
-  '무채 운하',
-  '시계 무덤',
-  '일식 관문',
-];
 
 export const CHAPTER_COUNT = CAMPAIGN_CHAPTER_COUNT;
 export { STAGES_PER_CHAPTER };
 export const TOTAL_STAGE_COUNT = CHAPTER_COUNT * STAGES_PER_CHAPTER;
 
-export const OBJECTIVE_POOL = [
-  '소형 무리 압박전',
-  '중형 경계선 유지',
-  '지형 함정 구역',
-  '정예 추격전',
-  '자원 회수 압박전',
-  '대형 개체 회피전',
-  '투사체 포위망',
-  '보스 전초 압박전',
-];
+/** Survival stage goals, in rotation; each shows as the string objective.<id>. */
+export const OBJECTIVE_POOL = ['swarm', 'holdLine', 'traps', 'elites', 'salvage', 'giants', 'crossfire', 'vanguard'] as const;
 
 export function stageKind(stageNo: number): StageKind {
   if (stageNo === 5) return 'midBoss';
@@ -716,11 +513,11 @@ export function stageKind(stageNo: number): StageKind {
   return 'normal';
 }
 
-export function objectiveFor(chapter: number, stageNo: number) {
+export function objectiveFor(chapter: number, stageNo: number): Text {
   const kind = stageKind(stageNo);
-  if (kind === 'midBoss') return `${chapter}챕터 중간보스 처치 · 시간 종료 시 광폭화`;
-  if (kind === 'finalBoss') return `${chapter}챕터 보스 처치 · 시간 종료 시 광폭화`;
-  return `제한시간 생존 · ${OBJECTIVE_POOL[(stageNo + chapter - 2) % OBJECTIVE_POOL.length]}`;
+  if (kind === 'midBoss') return text('objective.midBoss', { chapter });
+  if (kind === 'finalBoss') return text('objective.finalBoss', { chapter });
+  return text('objective.survive', { goal: text(`objective.${OBJECTIVE_POOL[(stageNo + chapter - 2) % OBJECTIVE_POOL.length]}`) });
 }
 
 export function stageIndex(chapter: number, stageNo: number) {
@@ -743,15 +540,10 @@ export function isStageUnlocked(meta: MetaState, chapter: number, stageNo: numbe
   return stageIndex(chapter, stageNo) <= stageIndex(meta.progress.chapter, meta.progress.stage);
 }
 
-export const CHAPTERS: StageDef[] = CHAPTER_THEME.map((theme, index) => {
+export const CHAPTERS: StageDef[] = CHAPTER_ENCOUNTER_GRAMMARS.map((grammar, index) => {
   const chapter = index + 1;
-  const grammar = CHAPTER_ENCOUNTER_GRAMMARS[index];
-  const labels = ['입문', '보통', '위험', '고난', '최종'];
   return {
     id: chapter,
-    name: `Chapter ${chapter}: ${theme}`,
-    subtitle: '10개 Stage · St5 중간보스 · St10 챕터보스',
-    difficulty: labels[index],
     encounterGrammarId: grammar.id,
     stages: Array.from({ length: 10 }, (_, stageIndex) => {
       const stageNo = stageIndex + 1;
@@ -765,24 +557,24 @@ export const CHAPTERS: StageDef[] = CHAPTER_THEME.map((theme, index) => {
 });
 
 export const FIELD_BOSSES: BossDef[] = [
-  { id: 'field-shock', name: '균열 장교', chapter: 1, role: 'field', pattern: 'shock', hp: 720, damage: 15, speed: 92 },
-  { id: 'field-rings', name: '백환 관리자', chapter: 2, role: 'field', pattern: 'rings', hp: 980, damage: 17, speed: 78 },
-  { id: 'field-trap', name: '덫 설계자', chapter: 3, role: 'field', pattern: 'traps', hp: 1260, damage: 19, speed: 88 },
-  { id: 'field-clock', name: '초침 집행관', chapter: 4, role: 'field', pattern: 'clock', hp: 1580, damage: 22, speed: 92 },
-  { id: 'field-null', name: '무음 심판관', chapter: 5, role: 'field', pattern: 'null', hp: 1960, damage: 24, speed: 82 },
+  { id: 'field-shock', name: 'boss.field-shock', chapter: 1, role: 'field', pattern: 'shock', hp: 720, damage: 15, speed: 92 },
+  { id: 'field-rings', name: 'boss.field-rings', chapter: 2, role: 'field', pattern: 'rings', hp: 980, damage: 17, speed: 78 },
+  { id: 'field-trap', name: 'boss.field-trap', chapter: 3, role: 'field', pattern: 'traps', hp: 1260, damage: 19, speed: 88 },
+  { id: 'field-clock', name: 'boss.field-clock', chapter: 4, role: 'field', pattern: 'clock', hp: 1580, damage: 22, speed: 92 },
+  { id: 'field-null', name: 'boss.field-null', chapter: 5, role: 'field', pattern: 'null', hp: 1960, damage: 24, speed: 82 },
 ];
 
 export const BOSS_ROUND_BOSSES: BossDef[] = [
-  { id: 's1-mid-dash', name: '잉크 도살자', chapter: 1, role: 'mid', pattern: 'dash', hp: 2400, damage: 20, speed: 112 },
-  { id: 's1-final-rings', name: '종탑 간수', chapter: 1, role: 'final', pattern: 'rings', hp: 3600, damage: 24, speed: 74 },
-  { id: 's2-mid-clones', name: '유리 주교', chapter: 2, role: 'mid', pattern: 'clones', hp: 4200, damage: 27, speed: 82 },
-  { id: 's2-final-flame', name: '용광의 입', chapter: 2, role: 'final', pattern: 'flame', hp: 5800, damage: 31, speed: 78 },
-  { id: 's3-mid-tide', name: '무채 조수왕', chapter: 3, role: 'mid', pattern: 'tide', hp: 6700, damage: 34, speed: 86 },
-  { id: 's3-final-traps', name: '걸쇠 여제', chapter: 3, role: 'final', pattern: 'traps', hp: 8300, damage: 38, speed: 94 },
-  { id: 's4-mid-clock', name: '시계 폭군', chapter: 4, role: 'mid', pattern: 'clock', hp: 9400, damage: 42, speed: 100 },
-  { id: 's4-final-saw', name: '톱니 전령', chapter: 4, role: 'final', pattern: 'saw', hp: 11600, damage: 46, speed: 104 },
-  { id: 's5-mid-eclipse', name: '일식 원장', chapter: 5, role: 'mid', pattern: 'eclipse', hp: 13200, damage: 50, speed: 92 },
-  { id: 's5-final-null', name: '공백 천칭', chapter: 5, role: 'final', pattern: 'null', hp: 17000, damage: 56, speed: 98 },
+  { id: 's1-mid-dash', name: 'boss.s1-mid-dash', chapter: 1, role: 'mid', pattern: 'dash', hp: 2400, damage: 20, speed: 112 },
+  { id: 's1-final-rings', name: 'boss.s1-final-rings', chapter: 1, role: 'final', pattern: 'rings', hp: 3600, damage: 24, speed: 74 },
+  { id: 's2-mid-clones', name: 'boss.s2-mid-clones', chapter: 2, role: 'mid', pattern: 'clones', hp: 4200, damage: 27, speed: 82 },
+  { id: 's2-final-flame', name: 'boss.s2-final-flame', chapter: 2, role: 'final', pattern: 'flame', hp: 5800, damage: 31, speed: 78 },
+  { id: 's3-mid-tide', name: 'boss.s3-mid-tide', chapter: 3, role: 'mid', pattern: 'tide', hp: 6700, damage: 34, speed: 86 },
+  { id: 's3-final-traps', name: 'boss.s3-final-traps', chapter: 3, role: 'final', pattern: 'traps', hp: 8300, damage: 38, speed: 94 },
+  { id: 's4-mid-clock', name: 'boss.s4-mid-clock', chapter: 4, role: 'mid', pattern: 'clock', hp: 9400, damage: 42, speed: 100 },
+  { id: 's4-final-saw', name: 'boss.s4-final-saw', chapter: 4, role: 'final', pattern: 'saw', hp: 11600, damage: 46, speed: 104 },
+  { id: 's5-mid-eclipse', name: 'boss.s5-mid-eclipse', chapter: 5, role: 'mid', pattern: 'eclipse', hp: 13200, damage: 50, speed: 92 },
+  { id: 's5-final-null', name: 'boss.s5-final-null', chapter: 5, role: 'final', pattern: 'null', hp: 17000, damage: 56, speed: 98 },
 ];
 
 assertCampaignContent({
@@ -810,11 +602,6 @@ export const GAME_CONTENT_CATALOG = defineContentCatalog({
     ...SKILLS[id],
     chapterMin: SKILLS[id].chapterMin as ChapterId,
     maxLevel: 5,
-    copy: {
-      summary: SKILLS[id].summary,
-      levelText: SKILLS[id].levelText,
-      awakeningText: SKILLS[id].awakeningText,
-    },
   })),
 });
 
@@ -997,7 +784,7 @@ export class GameEngine {
   protected activeDraftAfter: DraftState['after'] | null = null;
   protected activeDraftCards: DraftCard[] = [];
   protected pendingRoundClear = false;
-  protected objective = '';
+  protected objective: Text = text('objective.infinite');
   protected objectiveTarget = 0;
   protected cheatGodMode = false;
   /** This round runs at practice pace: no unlock and reduced rewards (CON-02). */
@@ -1639,7 +1426,7 @@ export class GameEngine {
       ? 0
       : stageDuration(this.kind, this.options.paceMode, { chapter: this.chapter, stage: this.stage, pacing: this.rules.pacing });
     this.practiceRun = this.runMode === 'campaign' && this.rules.pacing && this.options.paceMode === 'practice';
-    this.objective = this.runMode === 'infinite' ? '랜덤 보스 연속 처치' : objectiveFor(this.chapter, this.stage);
+    this.objective = this.runMode === 'infinite' ? text('objective.infinite') : objectiveFor(this.chapter, this.stage);
     this.objectiveTarget = this.runMode === 'infinite'
       ? 1
       : this.kind === 'normal'
@@ -1903,7 +1690,7 @@ export class GameEngine {
       this.draftQueue = [];
       this.paused = true;
       this.emit({ type: 'player/died', source: this.lastDamageSource, bossEnraged: this.bossEnraged });
-      this.callbacks.onGameOver(this.makeSettlement('정산', false));
+      this.callbacks.onGameOver(this.makeSettlement(false));
       return;
     }
 
@@ -1970,7 +1757,7 @@ export class GameEngine {
     this.stageFinished = true;
     this.paused = true;
     this.accumulator = 0;
-    this.callbacks.onRoundClear(this.makeSettlement(this.kind === 'normal' ? 'Stage 클리어' : 'Boss Stage 클리어', true));
+    this.callbacks.onRoundClear(this.makeSettlement(true));
   }
 
   protected updatePlayer(dt: number) {
@@ -4304,7 +4091,7 @@ export class GameEngine {
     this.emit({ type: 'draft/opened', reason, highlight: cards.some((card) => card.kind === 'awakening' || card.rarity === 'legendary' || card.rarity === 'mythic') });
     this.callbacks.onDraft({
       id,
-      title: reason === 'boss' ? '보스 보상' : `Lv.${this.player.level} 스킬 선택`,
+      title: reason === 'boss' ? text('draft.title.boss') : text('draft.title.level', { level: this.player.level }),
       reason,
       after,
       cards,
@@ -4372,14 +4159,15 @@ export class GameEngine {
   protected makeOffer(skillId: SkillId, kind: 'skill' | 'awakening'): SkillOffer {
     const def = SKILLS[skillId];
     const state = this.skills[skillId];
+    const name = text(`skill.${skillId}`);
     if (kind === 'awakening') {
       return {
         kind,
         skillId,
         rarity: def.rarity,
-        title: `${def.name} 각성`,
+        title: text('draft.awakening', { skill: name }),
         body: this.awakeningText(skillId),
-        levelLine: 'Lv.5 이후 확정 등장',
+        levelLine: text('draft.awakening.line'),
         level: state?.level ?? 0,
       };
     }
@@ -4388,49 +4176,28 @@ export class GameEngine {
       kind,
       skillId,
       rarity: def.rarity,
-      title: state ? `${def.name} Lv.${nextLevel}` : def.name,
-      body: state ? def.levelText(nextLevel) : def.summary,
-      levelLine: state ? `Lv.${state.level} → ${nextLevel}` : '신규 · Lv.1',
+      title: state ? text('draft.skillLevel', { skill: name, level: nextLevel }) : name,
+      body: state ? skillLevelText(skillId, nextLevel) : text(`skill.${skillId}.summary`),
+      levelLine: state ? text('draft.levelLine', { from: state.level, to: nextLevel }) : text('draft.newSkill'),
       level: state?.level ?? 0,
     };
   }
 
-  protected awakeningText(skillId: SkillId) {
+  protected awakeningText(skillId: SkillId): Text {
     const classic = this.rules.mirrorAwakeningRework ? undefined : CLASSIC_AWAKENING_TEXT[skillId];
-    return classic ?? SKILLS[skillId].awakeningText;
+    return classic ?? SKILL_AWAKENING_TEXT[skillId];
   }
 
   protected makeBonusOffers(reason: DraftReason): SkillOffer[] {
     const bonusRarity: Rarity = reason === 'boss' ? 'epic' : 'rare';
     return [
-      {
-        kind: 'bonus',
-        bonus: 'overdrive',
-        rarity: bonusRarity,
-        title: '과부하',
-        body: '공격력과 공격속도 런 강화가 즉시 1단계씩 오르고, 이번 런이 끝날 때까지 유지됩니다.',
-        levelLine: '스킬 풀이 모두 막혔을 때 등장',
-      },
-      {
-        kind: 'bonus',
-        bonus: 'coins',
-        rarity: 'rare',
-        title: '압축 코인 상자',
-        body: '즉시 코인을 획득합니다. 획득량은 현재 단계와 라운드에 따라 증가합니다.',
-        levelLine: '라운드 내 강화 재료',
-      },
-      {
-        kind: 'bonus',
-        bonus: 'heal',
-        rarity: 'common',
-        title: '응급 봉합',
-        body: '최대 체력의 50%를 즉시 회복합니다.',
-        levelLine: '생존 보정 보상',
-      },
+      { kind: 'bonus', bonus: 'overdrive', rarity: bonusRarity, title: text('bonus.overdrive'), body: text('bonus.overdrive.body'), levelLine: text('bonus.overdrive.line') },
+      { kind: 'bonus', bonus: 'coins', rarity: 'rare', title: text('bonus.coins'), body: text('bonus.coins.body'), levelLine: text('bonus.coins.line') },
+      { kind: 'bonus', bonus: 'heal', rarity: 'common', title: text('bonus.heal'), body: text('bonus.heal.body'), levelLine: text('bonus.heal.line') },
     ];
   }
 
-  protected makeSettlement(title: string, cleared = this.stageFinished && this.player.hp > 0): Settlement {
+  protected makeSettlement(cleared = this.stageFinished && this.player.hp > 0): Settlement {
     const infinite = this.runMode === 'infinite';
     const base = cleared ? 40 : 16;
     const bossBonus = infinite
@@ -4454,7 +4221,6 @@ export class GameEngine {
       seed: this.runSeed,
       chapter: this.chapter,
       stage: this.stage,
-      title: infinite ? '무한 기록 정산' : title,
       kills: this.stageKills,
       coins: this.player.coins,
       coinsEarned: this.stageCoinsEarned,
@@ -4547,18 +4313,14 @@ export class GameEngine {
     const boss = this.enemies.find((enemy) => enemy.isBoss && !enemy.legacyBoss && (this.kind !== 'normal' || enemy.boss?.role === 'field'));
     const bossMove = boss ? this.activeBossPhaseMove(boss) : undefined;
     const activeEffects: ActiveStatusEffect[] = [
-      ...(this.player.invuln > 0 ? [{ id: 'invulnerable', kind: 'buff' as const, label: '피격 무적', remaining: this.player.invuln }] : []),
-      ...(this.player.shield > 0 ? [{ id: 'shield', kind: 'buff' as const, label: '보호막', remaining: this.player.shield }] : []),
-      ...(this.coinFeverRushTimer > 0 ? [{ id: 'coin-fever', kind: 'buff' as const, label: '공격속도 폭주', remaining: this.coinFeverRushTimer }] : []),
-      ...(this.cheatGodMode ? [{ id: 'god', kind: 'buff' as const, label: 'GOD', value: 'ON' }] : []),
-      ...(this.player.root > 0 ? [{ id: 'root', kind: 'debuff' as const, label: '이동 불가', remaining: this.player.root }] : []),
-      ...(this.player.slow < 0.99 ? [{ id: 'slow', kind: 'debuff' as const, label: '감속', value: `-${Math.round((1 - this.player.slow) * 100)}%` }] : []),
-      ...(this.player.silence > 0 ? [{ id: 'silence', kind: 'debuff' as const, label: '스킬 침묵', remaining: this.player.silence }] : []),
+      ...(this.player.invuln > 0 ? [{ id: 'invulnerable', kind: 'buff' as const, label: 'effect.invulnerable' as const, remaining: this.player.invuln }] : []),
+      ...(this.player.shield > 0 ? [{ id: 'shield', kind: 'buff' as const, label: 'effect.shield' as const, remaining: this.player.shield }] : []),
+      ...(this.coinFeverRushTimer > 0 ? [{ id: 'coin-fever', kind: 'buff' as const, label: 'effect.coinFever' as const, remaining: this.coinFeverRushTimer }] : []),
+      ...(this.cheatGodMode ? [{ id: 'god', kind: 'buff' as const, label: 'effect.god' as const, value: 'ON' }] : []),
+      ...(this.player.root > 0 ? [{ id: 'root', kind: 'debuff' as const, label: 'effect.root' as const, remaining: this.player.root }] : []),
+      ...(this.player.slow < 0.99 ? [{ id: 'slow', kind: 'debuff' as const, label: 'effect.slow' as const, value: `-${Math.round((1 - this.player.slow) * 100)}%` }] : []),
+      ...(this.player.silence > 0 ? [{ id: 'silence', kind: 'debuff' as const, label: 'effect.silence' as const, remaining: this.player.silence }] : []),
     ];
-    const cc = [
-      ...activeEffects.map((effect) => effect.label),
-      this.runMode === 'infinite' && !this.scoreEligible ? '기록 제외' : '',
-    ].filter(Boolean).join(' / ');
     const infiniteDifficulty = this.runMode === 'infinite'
       ? infiniteDifficultyAt(this.elapsed, this.infiniteBossKills)
       : null;
@@ -4609,7 +4371,6 @@ export class GameEngine {
       runUpgrades: { ...this.runUpgrades },
       stats: { ...this.player.stats, attackSpeed: this.effectiveAttackSpeed() },
       activeEffects,
-      cc,
     };
   }
 

@@ -249,7 +249,7 @@ try {
     await page.getByRole('button', { name: '개발 패널 닫기' }).click();
     await page.waitForTimeout(300);
     await cheat(page, 'FAULT');
-    const faultDialog = page.getByRole('dialog', { name: '오류로 Run을 멈췄습니다' });
+    const faultDialog = page.getByRole('dialog', { name: '오류로 런을 멈췄습니다' });
     await faultDialog.waitFor({ timeout: 3000 });
     const atFault = await diagnostics(page);
     await page.waitForTimeout(400);

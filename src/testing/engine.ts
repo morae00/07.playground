@@ -11,4 +11,5 @@ export { ATLAS_MANIFEST } from '../game/render/assets/atlasManifest.generated';
 export { DISABLED_SLOTS } from '../game/render/assets/slots';
 export { OBSTACLE_CATALOGUE } from '../game/obstacleCatalogue';
 export { settlementNotes } from '../ui/settlementNotes';
+export { installStrings, t, tp, tx } from '../i18n/strings';
 export { WORLD_LAYERS, XRAY_COVERAGE } from '../game/render/worldRenderer';

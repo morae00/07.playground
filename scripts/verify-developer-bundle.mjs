@@ -13,6 +13,7 @@ const REQUIRED_DEVELOPER_MARKERS = Object.freeze([
   'MAGNET +5',
   'DRAFT OPEN',
   'OBJECTIVE CLEARED',
+  // Player-facing controls live in the string table (UI-10), which the scan reads too.
   'ENDLESS SCORE ATTACK',
   '무한 모드 시작',
   '연습 · 기록 제외',
@@ -27,7 +28,7 @@ async function collectText(root) {
     for (const entry of await readdir(current, { withFileTypes: true })) {
       const target = path.join(current, entry.name);
       if (entry.isDirectory()) await visit(target);
-      if (entry.isFile() && /\.(?:css|html|js|mjs)$/.test(entry.name)) {
+      if (entry.isFile() && /\.(?:css|html|js|mjs|json)$/.test(entry.name)) {
         contents.push(await readFile(target, 'utf8'));
       }
     }

@@ -1,4 +1,5 @@
 import { CHECK_CONTENT_AT_LOAD } from './checks.ts';
+import type { StringKey, Text } from '../i18n/text.ts';
 import {
   validateCampaignContent,
   type BossRole,
@@ -14,41 +15,31 @@ export type ChapterId = (typeof CAMPAIGN_CHAPTER_IDS)[number];
 export type StageId = (typeof CAMPAIGN_STAGE_IDS)[number];
 export type SkillRarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
 
+// Player-facing words are not content data: chapters, skills, and bosses name their strings by key, and the
+// locale files hold the words (UI-10; the string tests check every key has them).
 export type StageContent = {
   id: StageId;
   kind: StageKind;
-  objective: string;
+  objective: Text;
 };
 
 export type ChapterContent = {
   id: ChapterId;
-  name: string;
-  subtitle: string;
-  difficulty: string;
   encounterGrammarId: string;
   stages: readonly StageContent[];
 };
 
-export type SkillCopy = {
-  summary: string;
-  levelText: (level: number) => string;
-  awakeningText: string;
-};
-
 export type SkillContent<SkillId extends string = string> = {
   id: SkillId;
-  name: string;
-  shortName: string;
   rarity: SkillRarity;
   active: boolean;
   chapterMin: ChapterId;
   maxLevel: number;
-  copy: SkillCopy;
 };
 
 export type BossContent<BossId extends string = string, PatternId extends string = string> = {
   id: BossId;
-  name: string;
+  name: StringKey;
   chapter: ChapterId;
   role: BossRole;
   pattern: PatternId;
@@ -114,37 +105,16 @@ export function validateContentCatalog(catalog: ContentCatalog) {
   if (grammarIds.length > 0) issues.push(`duplicate encounter grammar ids: ${grammarIds.join(', ')}`);
 
   for (const chapter of catalog.chapters) {
-    if (!isNonEmpty(chapter.name)) issues.push(`chapter ${chapter.id} name is empty`);
-    if (!isNonEmpty(chapter.subtitle)) issues.push(`chapter ${chapter.id} subtitle is empty`);
-    if (!isNonEmpty(chapter.difficulty)) issues.push(`chapter ${chapter.id} difficulty is empty`);
     if (!isNonEmpty(chapter.encounterGrammarId)) {
       issues.push(`chapter ${chapter.id} encounterGrammarId is empty`);
-    }
-    for (const stage of chapter.stages) {
-      if (!isNonEmpty(stage.objective)) issues.push(`chapter ${chapter.id} stage ${stage.id} objective is empty`);
     }
   }
 
   for (const skill of catalog.skills) {
-    if (!isNonEmpty(skill.name)) issues.push(`skill ${skill.id} name is empty`);
-    if (!isNonEmpty(skill.shortName)) issues.push(`skill ${skill.id} shortName is empty`);
     if (!SKILL_RARITIES.has(skill.rarity)) issues.push(`skill ${skill.id} rarity is invalid`);
     if (typeof skill.active !== 'boolean') issues.push(`skill ${skill.id} active must be boolean`);
     if (!Number.isInteger(skill.maxLevel) || skill.maxLevel < 1 || skill.maxLevel > 10) {
       issues.push(`skill ${skill.id} maxLevel must be an integer within 1..10`);
-    }
-    if (!isNonEmpty(skill.copy.summary)) issues.push(`skill ${skill.id} summary is empty`);
-    if (!isNonEmpty(skill.copy.awakeningText)) issues.push(`skill ${skill.id} awakeningText is empty`);
-    if (Number.isInteger(skill.maxLevel) && skill.maxLevel >= 1 && skill.maxLevel <= 10) {
-      for (let level = 1; level <= skill.maxLevel; level += 1) {
-        try {
-          if (!isNonEmpty(skill.copy.levelText(level))) {
-            issues.push(`skill ${skill.id} levelText(${level}) is empty`);
-          }
-        } catch {
-          issues.push(`skill ${skill.id} levelText(${level}) threw`);
-        }
-      }
     }
   }
 

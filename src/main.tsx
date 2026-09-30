@@ -1,5 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { DEFAULT_LOCALE, loadStrings, type Locale } from './i18n/strings';
+import { DEVELOPER_UI_AVAILABLE } from './platform/developerAccess';
 import { ErrorLog, crashLogLine, installGlobalErrorHandlers } from './platform/errorReport';
 import { ErrorBoundary, RecoveryScreen } from './ui/ErrorBoundary';
 import './ui/art/uiArt.generated.css';
@@ -12,9 +14,14 @@ installGlobalErrorHandlers(window, errorLog);
 // The desktop app copies these console lines into a log file in its own data folder (electron/crashLog.cjs).
 errorLog.subscribe((entry) => console.error(crashLogLine(entry)));
 
+// The string table loads with the app module (UI-10). Korean ships; developer builds can preview another locale
+// with ?lang=en. The boot failure screen below keeps its own words, since the table may be what failed.
+const requested = new URLSearchParams(window.location.search).get('lang');
+const locale: Locale = DEVELOPER_UI_AVAILABLE && requested === 'en' ? 'en' : DEFAULT_LOCALE;
+document.documentElement.lang = locale;
 const root = createRoot(document.getElementById('root')!);
-import('./App').then(
-  ({ default: App }) => {
+Promise.all([import('./App'), loadStrings(locale)]).then(
+  ([{ default: App }]) => {
     root.render(
       <StrictMode>
         <ErrorBoundary log={errorLog}>

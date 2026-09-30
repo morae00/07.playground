@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createHeadlessCanvas, holdDirection, installHeadlessPlatform } from '../scripts/lib/headless-engine.mjs';
+import { createHeadlessCanvas, holdDirection, installHeadlessPlatform, localeTable } from '../scripts/lib/headless-engine.mjs';
 
 // Grammar contract (TEC-11): the real engine must keep the preserved game grammar. A failure here means a
 // change altered core rules; update the preserved-grammar list and RULES_VERSION together with the code.
@@ -14,7 +14,11 @@ const {
   appendReplayCommand,
   createReplayFixture,
   runReplay,
+  installStrings,
+  tx,
 } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
+// Card copy is keys and numbers (UI-10); the Korean table resolves it for the assertions below.
+installStrings(localeTable('ko'));
 
 const meta = () => ({
   gold: 120,
@@ -381,7 +385,7 @@ test('BUG-16: skills do what their cards say, and the mirror clone awakening add
       return {
         shots: world.projectiles.filter((shot) => shot.skillId === 'mirrorClone'),
         target: world.enemies.find((enemy) => enemy.id === targetId),
-        card: engine.probe.previewOffer('mirrorClone', 'awakening').body,
+        card: tx(engine.probe.previewOffer('mirrorClone', 'awakening').body),
       };
     };
 
@@ -406,19 +410,19 @@ test('BUG-16: skills do what their cards say, and the mirror clone awakening add
     const { player } = engine.probe.read();
     engine.probe.spawnEnemy({ x: player.x + 300, y: player.y, hp: 1e9 });
     engine.probe.setSkills({ railSpear: { level: 3 }, voidMine: { level: 3 } });
-    assert.equal(engine.probe.previewOffer('railSpear', 'skill').body, '폭 +12, 피해 +128%');
+    assert.equal(tx(engine.probe.previewOffer('railSpear', 'skill').body), '폭 +12, 피해 +128%');
     engine.probe.setSkills({ railSpear: { level: 4 }, voidMine: { level: 3 } });
     engine.probe.cast('railSpear');
     assert.equal(engine.probe.read().beams.at(-1).width, 18 + 12, 'the Lv4 rail is as wide as its card says');
-    assert.equal(engine.probe.previewOffer('railSpear', 'skill').title, '흑선 레일 Lv.5');
-    assert.doesNotMatch(engine.probe.previewOffer('railSpear', 'skill').body, /충전/);
+    assert.equal(tx(engine.probe.previewOffer('railSpear', 'skill').title), '흑선 레일 Lv.5');
+    assert.doesNotMatch(tx(engine.probe.previewOffer('railSpear', 'skill').body), /충전/);
 
     engine.probe.cast('voidMine');
     assert.equal(engine.probe.read().hazards.at(-1).pull, 74 + 3 * 14, 'void mine pull matches the +19% per level on its card');
 
     const overdrive = engine.probe.previewBonusOffers('level').find((offer) => offer.bonus === 'overdrive');
-    assert.equal(overdrive.title, '과부하');
-    assert.match(overdrive.body, /이번 런이 끝날 때까지/);
+    assert.equal(tx(overdrive.title), '과부하');
+    assert.match(tx(overdrive.body), /이번 런이 끝날 때까지/);
   } finally {
     engine.dispose();
   }
