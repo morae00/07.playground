@@ -189,3 +189,41 @@ test('BUG-08: the gameplay id stream ignores damage numbers and effect density (
   assert.equal(idsAfter('remaster', { damageNumbers: true, effects: 0.25 }), remaster);
   assert.notEqual(idsAfter('classic', { damageNumbers: false, effects: 1 }), idsAfter('classic', { damageNumbers: true, effects: 1 }), 'classic rules keep the 0.1.0 coupling for A/B runs');
 });
+
+test('BUG-10: the Ink Butcher winds up in place behind a lane telegraph, then dashes exactly along it', () => {
+  const engine = createEngine();
+  try {
+    engine.startRun(1, 5, 505);
+    engine.obstacles = [];
+    engine.hazards = [];
+    const boss = engine.enemies.find((enemy) => enemy.isBoss);
+    engine.enemies = [boss];
+    engine.cheatGodMode = true;
+    boss.x = engine.player.x - 500;
+    boss.y = engine.player.y;
+    boss.patternTimer = 0;
+    boss.patternPhase = 'idle';
+    engine.updateEnemies(1 / 60);
+    assert.equal(boss.patternPhase, 'warn');
+    assert.equal(engine.laneTelegraphs.length, 1, 'the windup shows a lane');
+    const lane = engine.laneTelegraphs[0];
+    assert.ok(Math.abs(lane.life - 0.62) < 1e-9, 'the lane lasts the whole windup');
+    const start = { x: boss.x, y: boss.y };
+
+    engine.player.y += 300;
+    let drift = 0;
+    for (let step = 0; step < 45 && boss.patternPhase === 'warn'; step += 1) {
+      engine.updateEnemies(1 / 60);
+      if (boss.patternPhase === 'warn') drift = Math.max(drift, Math.hypot(boss.x - start.x, boss.y - start.y));
+    }
+    assert.ok(drift < 1e-6, `the boss holds still while winding up (drifted ${drift})`);
+    assert.equal(boss.patternPhase, 'dash');
+    while (boss.patternPhase === 'dash') engine.updateEnemies(1 / 60);
+    const along = Math.hypot(boss.x - lane.x1, boss.y - lane.y1);
+    const sideways = Math.abs((lane.y2 - lane.y1) * (boss.x - lane.x1) - (lane.x2 - lane.x1) * (boss.y - lane.y1)) / Math.hypot(lane.x2 - lane.x1, lane.y2 - lane.y1);
+    assert.ok(sideways < 2, `the dash stays on the telegraphed line even though the player moved (off by ${sideways})`);
+    assert.ok(Math.abs(along - Math.hypot(lane.x2 - lane.x1, lane.y2 - lane.y1)) < boss.radius, 'the dash ends where the lane ends');
+  } finally {
+    engine.dispose();
+  }
+});

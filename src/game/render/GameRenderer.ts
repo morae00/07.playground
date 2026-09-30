@@ -54,6 +54,8 @@ export type EnemyVisualInput = {
   bossPattern?: BossPattern;
   bossPhase: 1 | 2 | 3;
   legacyBoss: boolean;
+  /** Boss attack state; 'warn' is a windup that must be visible before the attack lands (BUG-10). */
+  patternPhase?: string;
 };
 
 export type FriendlyProjectileVisualInput = {
@@ -360,6 +362,74 @@ export class GameRenderer {
       this.drawBoss(ctx, input);
     } else {
       this.drawMob(ctx, input);
+    }
+    ctx.restore();
+    if (input.isBoss && input.patternPhase === 'warn') this.drawWindupMarker(ctx, input.x, input.y - input.radius * 1.55);
+  }
+
+  /** Amber "!" above a boss whose windup has started (style bible §10.1 rule 3). */
+  private drawWindupMarker(ctx: CanvasRenderingContext2D, x: number, y: number) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = SIGNAL.warn;
+    ctx.strokeStyle = VISUAL_PALETTE.ink;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-5, -16);
+    ctx.lineTo(5, -16);
+    ctx.lineTo(3, 4);
+    ctx.lineTo(-3, 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 11, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /**
+   * Hostile lane telegraph (BUG-10): an amber hatched rectangle along the exact path an attack will take.
+   * During preview the brush draws the lane out to its end; at imminent (65%) the rim thickens and the far
+   * end gains an arrow head, so progress is readable without colour alone.
+   */
+  drawLaneTelegraph(
+    ctx: CanvasRenderingContext2D,
+    lane: { x1: number; y1: number; x2: number; y2: number; width: number; life: number; maxLife: number },
+  ) {
+    const phase = telegraphPhase(lane.life, lane.maxLife);
+    const progress = clamp(1 - lane.life / Math.max(0.001, lane.maxLife), 0, 1);
+    const length = Math.hypot(lane.x2 - lane.x1, lane.y2 - lane.y1);
+    const drawn = length * clamp(progress / 0.65, 0, 1);
+    const half = lane.width / 2;
+    ctx.save();
+    ctx.translate(lane.x1, lane.y1);
+    ctx.rotate(Math.atan2(lane.y2 - lane.y1, lane.x2 - lane.x1));
+    ctx.globalAlpha = phase === 'imminent' ? 0.34 : 0.2;
+    ctx.fillStyle = SIGNAL.warnGlow;
+    ctx.fillRect(0, -half, length, lane.width);
+    ctx.globalAlpha = 0.92;
+    ctx.strokeStyle = SIGNAL.warn;
+    ctx.lineWidth = phase === 'imminent' ? 4.5 : 2.5;
+    if (phase === 'preview') ctx.setLineDash([12, 8]);
+    ctx.strokeRect(0, -half, drawn, lane.width);
+    ctx.setLineDash([]);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let x = 0; x + half < drawn; x += 22) {
+      ctx.moveTo(x, half);
+      ctx.lineTo(x + half, -half);
+    }
+    ctx.stroke();
+    if (phase === 'imminent') {
+      ctx.fillStyle = SIGNAL.warn;
+      ctx.beginPath();
+      ctx.moveTo(length + 18, 0);
+      ctx.lineTo(length - 6, -half * 0.55);
+      ctx.lineTo(length - 6, half * 0.55);
+      ctx.closePath();
+      ctx.fill();
     }
     ctx.restore();
   }

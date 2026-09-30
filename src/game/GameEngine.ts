@@ -455,6 +455,18 @@ export type BeamEffect = {
   owner: EffectOwner;
 };
 
+/** A hostile area the player can read before it activates (lane = rectangle from start to end). */
+export type LaneTelegraph = {
+  id: number;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  width: number;
+  life: number;
+  maxLife: number;
+};
+
 export type ChainEffect = {
   id: number;
   points: Array<{ x: number; y: number }>;
@@ -475,6 +487,10 @@ export type ImpactRing = {
 export const WORLD_W = 4200;
 export const WORLD_H = 3000;
 const BOSS_PROJECTILE_HARD_CAP = 320;
+/** Telegraphed boss dash (BUG-10): windup, straight-line travel time, and speed multiple. */
+const DASH_WINDUP_SECONDS = 0.62;
+const DASH_TRAVEL_SECONDS = 0.55;
+const DASH_SPEED_MULTIPLE = 4.2;
 const TARGET_COLOR = SIGNAL.allyDeep;
 
 export const RARITY: Record<Rarity, { label: string; weight: number; className: string }> = {
@@ -1047,6 +1063,7 @@ export class GameEngine {
   private hazards: Hazard[] = [];
   private obstacles: Obstacle[] = [];
   private beams: BeamEffect[] = [];
+  private laneTelegraphs: LaneTelegraph[] = [];
   private chains: ChainEffect[] = [];
   private impactRings: ImpactRing[] = [];
   private enemyIndex = new SpatialIndex<Entity>(96);
@@ -1584,6 +1601,7 @@ export class GameEngine {
     this.enemies = [];
     this.enemyIndex.clear();
     this.beams = [];
+    this.laneTelegraphs = [];
     this.chains = [];
     this.impactRings = [];
     this.player.x = WORLD_W / 2;
@@ -2591,8 +2609,17 @@ export class GameEngine {
         }
       }
 
-      enemy.vx = enemy.vx * 0.82 + moveX * speed * 0.18;
-      enemy.vy = enemy.vy * 0.82 + moveY * speed * 0.18;
+      const telegraphedDash = this.rules.telegraphedDash && enemy.isBoss && enemy.boss?.pattern === 'dash';
+      if (telegraphedDash && enemy.patternPhase === 'warn') {
+        enemy.vx = 0;
+        enemy.vy = 0;
+      } else if (telegraphedDash && enemy.patternPhase === 'dash') {
+        enemy.vx = enemy.patternX;
+        enemy.vy = enemy.patternY;
+      } else {
+        enemy.vx = enemy.vx * 0.82 + moveX * speed * 0.18;
+        enemy.vy = enemy.vy * 0.82 + moveY * speed * 0.18;
+      }
       enemy.x += enemy.vx * dt;
       enemy.y += enemy.vy * dt;
       enemy.x = clamp(enemy.x, -90, WORLD_W + 90);
@@ -2647,7 +2674,43 @@ export class GameEngine {
     const phaseMove = this.activeBossPhaseMove(enemy);
     const cadenceMultiplier = phaseMove ? 1 / phaseMove.cadenceScale : 1 + ((enemy.bossPhase ?? 1) - 1) * 0.22;
     enemy.patternTimer -= dt * cadenceMultiplier;
-    if (boss.pattern === 'dash') {
+    if (boss.pattern === 'dash' && this.rules.telegraphedDash) {
+      if (enemy.patternPhase === 'warn' && enemy.patternTimer <= 0) {
+        // Launch along the direction locked when the windup began; no homing, so the lane shows the real path.
+        enemy.patternPhase = 'dash';
+        enemy.patternTimer = DASH_TRAVEL_SECONDS / cadenceMultiplier;
+        enemy.vx = enemy.patternX;
+        enemy.vy = enemy.patternY;
+      } else if (enemy.patternPhase === 'dash' && enemy.patternTimer <= 0) {
+        enemy.patternPhase = 'idle';
+        enemy.patternTimer = 2.4;
+        enemy.vx *= 0.2;
+        enemy.vy *= 0.2;
+      } else if (enemy.patternPhase !== 'dash' && enemy.patternPhase !== 'warn' && enemy.patternTimer <= 0) {
+        const dir = normalize(this.player.x - enemy.x, this.player.y - enemy.y);
+        const phaseMove = this.activeBossPhaseMove(enemy);
+        const phaseSpeed = phaseMove?.movement.speedScale ?? 1 + ((enemy.bossPhase ?? 1) - 1) * 0.1;
+        const dashSpeed = enemy.speed * phaseSpeed * (enemy.slowMultiplier ?? 1) * DASH_SPEED_MULTIPLE;
+        const windup = DASH_WINDUP_SECONDS / cadenceMultiplier;
+        const travel = dashSpeed * (DASH_TRAVEL_SECONDS / cadenceMultiplier);
+        enemy.patternPhase = 'warn';
+        enemy.patternTimer = windup;
+        enemy.patternX = dir.x * dashSpeed;
+        enemy.patternY = dir.y * dashSpeed;
+        enemy.vx = 0;
+        enemy.vy = 0;
+        this.laneTelegraphs.push({
+          id: this.nextId(),
+          x1: enemy.x,
+          y1: enemy.y,
+          x2: enemy.x + dir.x * travel,
+          y2: enemy.y + dir.y * travel,
+          width: enemy.radius * 2,
+          life: windup,
+          maxLife: windup,
+        });
+      }
+    } else if (boss.pattern === 'dash') {
       if (enemy.patternPhase === 'warn' && enemy.patternTimer <= 0) {
         const dir = normalize(this.player.x - enemy.x, this.player.y - enemy.y);
         enemy.vx = dir.x * enemy.speed * (enemy.slowMultiplier ?? 1) * 4.6;
@@ -3003,6 +3066,7 @@ export class GameEngine {
 
   private updateEffects(dt: number) {
     for (const beam of this.beams) beam.life -= dt;
+    for (const lane of this.laneTelegraphs) lane.life -= dt;
     for (const chain of this.chains) chain.life -= dt;
     for (const ring of this.impactRings) ring.life -= dt;
     for (const number of this.damageNumbers) {
@@ -3010,6 +3074,7 @@ export class GameEngine {
       number.y -= dt * 38;
     }
     compactWhere(this.beams, (beam) => beam.life > 0);
+    compactWhere(this.laneTelegraphs, (lane) => lane.life > 0);
     compactWhere(this.chains, (chain) => chain.life > 0);
     compactWhere(this.impactRings, (ring) => ring.life > 0);
     recycleWhere(this.damageNumbers, (number) => number.life > 0, this.damageNumberPool);
@@ -3665,6 +3730,7 @@ export class GameEngine {
     this.drawWorld(ctx);
     this.drawHazards(ctx);
     this.drawObstacles(ctx);
+    this.drawLaneTelegraphs(ctx);
     this.drawTargetGuide(ctx);
     this.drawPickups(ctx);
     this.drawBeams(ctx);
@@ -3803,6 +3869,13 @@ export class GameEngine {
     for (const hazard of this.hazards) {
       if (!circleVisible(this.renderViewport, hazard.x, hazard.y, hazard.radius * 1.25 + 8)) continue;
       this.visualRenderer.drawHazard(ctx, hazard);
+    }
+  }
+
+  private drawLaneTelegraphs(ctx: CanvasRenderingContext2D) {
+    for (const lane of this.laneTelegraphs) {
+      if (!segmentVisible(this.renderViewport, lane.x1, lane.y1, lane.x2, lane.y2, lane.width + 40)) continue;
+      this.visualRenderer.drawLaneTelegraph(ctx, lane);
     }
   }
 
@@ -3978,6 +4051,7 @@ export class GameEngine {
         bossPattern: enemy.boss?.pattern,
         bossPhase: enemy.bossPhase,
         legacyBoss: enemy.legacyBoss === true,
+        patternPhase: enemy.patternPhase,
       });
 
       if (!enemy.isBoss && enemy.attackStyle === 'ranged') {
