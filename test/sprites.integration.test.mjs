@@ -85,7 +85,10 @@ test('Ch1 enemies and round bosses draw from the chapter pack; field bosses and 
     ch1.engine.probe.spawnEnemy({ tier: 'large', x: player.x - 180, y: player.y, speed: 0, damage: 0 });
     ch1.engine.probe.spawnEnemy({ tier: 'medium', x: player.x, y: player.y + 160, speed: 0, damage: 0, attackStyle: 'ranged' });
     ch1.engine.probe.render(1);
-    const enemyBlits = ch1.images.filter((draw) => draw.image.url === 'assets/packs/chapter-01/atlas-0.png');
+    // Pack pages hold more than enemies (ART-05 modules); count the blits whose source is an enemy frame.
+    const pack = ATLAS_MANIFEST.packs['chapter-01'];
+    const enemyFrames = Object.entries(pack.frames).filter(([key]) => key.startsWith('enemy/1/')).map(([, frame]) => `${pack.pages[frame[0]]}:${frame[1]},${frame[2]}`);
+    const enemyBlits = ch1.images.filter((draw) => enemyFrames.includes(`${draw.image.url}:${draw.sx},${draw.sy}`));
     assert.equal(enemyBlits.length, 3, 'stalker, warden, and shooter blits');
     const shooterFrame = ATLAS_MANIFEST.packs['chapter-01'].frames['enemy/1/shooter/idle/0'];
     assert.ok(enemyBlits.some((draw) => draw.sw === shooterFrame[3] && Math.abs(draw.dw - shooterFrame[3] / 2 * 1.26) < 1e-9), 'the medium shooter is drawn at x1.26');
@@ -98,7 +101,8 @@ test('Ch1 enemies and round bosses draw from the chapter pack; field bosses and 
     boss.engine.probe.spawnBoss('mid');
     boss.engine.probe.render(1);
     const butcher = ATLAS_MANIFEST.packs['chapter-01'].frames['boss/1/butcher/phase1/0'];
-    assert.ok(boss.images.some((draw) => draw.image.url === 'assets/packs/chapter-01/atlas-0.png' && draw.sx === butcher[1] && draw.sy === butcher[2]), 'the Ink Butcher draws its phase 1 art');
+    const butcherPage = ATLAS_MANIFEST.packs['chapter-01'].pages[butcher[0]];
+    assert.ok(boss.images.some((draw) => draw.image.url === butcherPage && draw.sx === butcher[1] && draw.sy === butcher[2]), 'the Ink Butcher draws its phase 1 art');
     const id = boss.engine.probe.read().enemies.find((enemy) => enemy.isBoss).id;
     boss.engine.probe.patchEnemy(id, { bossPhase: 3, patternPhase: 'warn' });
     boss.images.length = 0;

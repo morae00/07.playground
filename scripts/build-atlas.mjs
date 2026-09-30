@@ -4,11 +4,11 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { ATLAS_SCALE, BAKE_MARGIN, COLOR_MAP, ENEMY_ROLES, FRAME_PADDING, HERO_STATES, PACKS, PAGE_SIZE } from '../art/atlas-spec.mjs';
+import { ATLAS_SCALE, BAKE_MARGIN, COLOR_MAP, ENEMY_ROLES, FRAME_PADDING, GROUND_TILE, HERO_STATES, PACKS, PAGE_SIZE } from '../art/atlas-spec.mjs';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const kitDir = path.join(root, 'art/concept-kit');
-const KIT_FILES = ['lib.js', 'k-hero.js', 'k-enemies.js', 'k-bosses1.js', 'k-icons.js'];
+const KIT_FILES = ['lib.js', 'k-hero.js', 'k-enemies.js', 'k-bosses1.js', 'k-icons.js', 'k-env.js'];
 
 const browser = await chromium.launch();
 try {
@@ -34,6 +34,12 @@ try {
       for (const item of sheet.placed) table[item.key] = [pageIndex, item.x, item.y, item.w, item.h, item.ax, item.ay];
     });
     manifest.packs[packName] = { pages: pagePaths, frames: Object.fromEntries(Object.entries(table).sort(([a], [b]) => a.localeCompare(b))) };
+    if (pack.ground) {
+      // The chapter's seamless ground tile (ART-05), drawn as a repeating pattern in world space.
+      const webp = await page.evaluate(renderGround, { call: pack.ground.call, size: GROUND_TILE, scale: ATLAS_SCALE, colorMap: COLOR_MAP });
+      writeFileSync(path.join(root, 'public', pack.ground.file), Buffer.from(webp.split(',')[1], 'base64'));
+      manifest.packs[packName].ground = { file: pack.ground.file, size: GROUND_TILE };
+    }
     for (const item of frames) if (item.animation) manifest.animations[item.animation.key] = item.animation.spec;
     // Pack animations add states to a slot (the Ch1 death and decal poses) rather than replace it.
     for (const [slot, states] of Object.entries(pack.animations ?? {})) manifest.animations[slot] = { ...manifest.animations[slot], ...states };
@@ -121,6 +127,8 @@ async function renderFrames({ frames, scale, margin, colorMap, roles }) {
     const [fnPath, ...args] = frame.call;
     const fn = fnPath.split('.').reduce((owner, key) => owner[key], window);
     let markup = fn(...args);
+    // Drawings made around their own pivot (kit props) are moved onto the box.
+    if (frame.translate) markup = `<g transform="translate(${frame.translate[0]} ${frame.translate[1]})">${markup}</g>`;
     for (const [from, to] of colorMap) markup = markup.replace(new RegExp(from, 'gi'), to);
     const pxPerUnit = frame.scale * scale;
     const pad = margin / pxPerUnit;
@@ -164,6 +172,22 @@ async function renderFrames({ frames, scale, margin, colorMap, roles }) {
     out.push({ key: frame.key, w, h, ax, ay, png: trimmed.toDataURL('image/png'), animation: frame.animation });
   }
   return out;
+}
+
+async function renderGround({ call, size, scale, colorMap }) {
+  const [fnPath, ...args] = call;
+  const fn = fnPath.split('.').reduce((owner, key) => owner[key], window);
+  let markup = fn(...args);
+  for (const [from, to] of colorMap) markup = markup.replace(new RegExp(from, 'gi'), to);
+  const pixels = size * scale;
+  const image = new Image();
+  image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${pixels}" height="${pixels}" viewBox="0 0 ${size} ${size}">${markup}</svg>`)}`;
+  await image.decode();
+  const canvas = document.createElement('canvas');
+  canvas.width = pixels;
+  canvas.height = pixels;
+  canvas.getContext('2d').drawImage(image, 0, 0);
+  return canvas.toDataURL('image/webp', 0.85);
 }
 
 async function composePage({ placed, width, height }) {

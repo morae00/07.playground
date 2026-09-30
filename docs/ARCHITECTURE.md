@@ -143,6 +143,15 @@ Two HUD marks live on the canvas, because they need the camera (UI-02):
 - **Global layer (`rareHitStop` rule):** a hit-stop of the whole simulation is kept for rare events only: the rail spear (0.045 s), a boss kill (0.09 s), and an awakening (0.06 s). These still spend the BUG-07 budget, and ordinary heavy and critical hits no longer ask for one, so a strong build does not make the game sticky.
 - Classic rules keep 0.1.0's hit-stop on every heavy hit.
 
+## Chapter environments (ART-05)
+
+Under the `kitProps` rule, a chapter with an obstacle catalogue (`src/game/obstacleCatalogue.ts`, Ch1 now) builds its map from kit modules:
+- walls in three sizes;
+- pillar props in three;
+- the landmark corridor post.
+
+The same two random draws that sized a block now pick its module, so hazards and positions do not move; only the footprints differ. An obstacle records its module in `art`. The renderer draws that module from the chapter pack on the footprint's centre, mirrored by id, and the module carries its own cast shadow. The ground is the pack's tile as a world-space pattern, and the kit's edge strip replaces the ink border. `obstacleCatalogue.test.ts` keeps the engine footprints equal to the baked ones. Classic rules and chapters without a catalogue keep random blocks on the grid.
+
 ## Camera (FX-04)
 
 The simulation camera stays hard-locked on the player, clamped to the world. Spawns, aim, and off-screen checks use it together with the logical frame (G14). Under the `smoothCamera` rule, the screen shows a separate view camera instead (`src/game/presentation/viewCamera.ts`):

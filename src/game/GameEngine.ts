@@ -89,6 +89,7 @@ import type { EngineAction, EngineCommand } from './engine/contracts';
 import type { GameEvent, GameEventListener, PlayerDamageSource } from './engine/events';
 import { Presentation } from './presentation/presentation';
 import { ViewCamera } from './presentation/viewCamera';
+import { OBSTACLE_CATALOGUE } from './obstacleCatalogue';
 import type { SoundOutput } from './audioPolicy';
 import {
   INFINITE_BASELINE,
@@ -1705,9 +1706,18 @@ export class GameEngine {
         y = 240 + this.gameplayRandom() * (WORLD_H - 520);
         if (!centerSafe(x, y)) break;
       }
-      const w = 90 + this.gameplayRandom() * 220;
-      const h = 50 + this.gameplayRandom() * 160;
-      this.obstacles.push({ id: this.nextId(), x, y, w, h, kind: i % 4 === 0 ? 'pillar' : 'solid' });
+      const kind = i % 4 === 0 ? 'pillar' : 'solid';
+      const rollW = this.gameplayRandom();
+      const rollH = this.gameplayRandom();
+      // ART-05: the same two draws pick a kit module, so every other part of the map stays where it was.
+      const modules = this.rules.kitProps ? OBSTACLE_CATALOGUE[this.chapter]?.[kind] : undefined;
+      if (modules) {
+        const variant = Math.min(modules.length - 1, Math.floor(rollW * modules.length));
+        const [w, h] = modules[variant];
+        this.obstacles.push({ id: this.nextId(), x, y, w, h, kind, art: `${kind}${variant}` });
+      } else {
+        this.obstacles.push({ id: this.nextId(), x, y, w: 90 + rollW * 220, h: 50 + rollH * 160, kind });
+      }
     }
 
     const hazardCount = 8 + Math.floor(this.chapter * 2.4);
@@ -1760,6 +1770,8 @@ export class GameEngine {
         height = 54;
       }
 
+      const post = this.rules.kitProps ? OBSTACLE_CATALOGUE[this.chapter]?.landmark[0] : undefined;
+      if (post) [width, height] = post;
       this.obstacles.push({
         id: this.nextId(),
         x: clamp(x - width / 2, 120, WORLD_W - width - 120),
@@ -1767,6 +1779,7 @@ export class GameEngine {
         w: width,
         h: height,
         kind: index % 3 === 0 ? 'pillar' : 'solid',
+        ...(post ? { art: 'landmark0' } : {}),
       });
     }
   }

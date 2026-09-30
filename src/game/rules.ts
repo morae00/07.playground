@@ -89,6 +89,12 @@ export type RuleSet = Readonly<{
    * an awakening) and still spends the BUG-07 budget, so a strong build no longer makes the game sticky.
    */
   rareHitStop: boolean;
+  /**
+   * ART-05: maps of chapters with an obstacle catalogue are built from its kit modules: solid walls in three sizes,
+   * pillar props in three, and the landmark corridor post. The same random draws pick the module, so everything
+   * else about the map is unchanged; only the obstacle footprints differ.
+   */
+  kitProps: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -116,6 +122,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   bossMoves: false,
   smoothCamera: false,
   rareHitStop: false,
+  kitProps: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -143,6 +150,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   bossMoves: true,
   smoothCamera: true,
   rareHitStop: true,
+  kitProps: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

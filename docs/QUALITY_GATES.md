@@ -65,6 +65,19 @@ FX-02 (two-layer hit-stop, `rareHitStop` rule) changes seeded outcomes, so it wa
 
 Per-hit global hit-stop slowed the simulation while the budgeted stage and enrage clocks kept running (BUG-07). Players lost up to 8% of their acting time, and boss stages lost the most (1-10, 2-5, 3-10). FX-02 gives that time back. **[Team check]** either accept the easier boss stages, or fold the change into the CON-02 and SYS-07 tuning, for example with enrage timers. A full rebaseline (2,000 scenarios) is due at the end of R1, together with ART-05's obstacle catalogue.
 
+ART-05 (Ch1 environment kit, `kitProps` rule) takes obstacle footprints from the kit's prop catalogue instead of random ranges. Positions stay where they were, but every footprint changes. It was piloted against its parent (FX-02) on six Ch1 stages × 10 seeds × 4 personas:
+
+| | before (FX-02) | after (ART-05) |
+|---|---:|---:|
+| clear, all 240 | 20.8% | 20.4% |
+| clears: striker / survivor / collector / fresh | 1 / 49 / 0 / 0 | 1 / 48 / 0 / 0 |
+| clear by stage: 1-1 / 1-3 / 1-5 / 1-7 / 1-8 / 1-10 | 28 / 18 / 25 / 13 / 25 / 18% | 28 / 20 / 23 / 10 / 23 / 20% |
+| deaths: contact / shots / boss | 175 / 8 / 5 | 173 / 6 / 10 |
+| boss stages, clear time p50 / max (s) | 394 / 933 | 394 / 488 |
+| fresh in 1-1, death p50 (s) | 73 | 68 |
+
+11 of 240 outcomes flipped, in both directions, and the clear rate moved by one scenario, which is within seed noise. Walls keep the old average footprint (200×130), while pillars shrink to prop size (a pole, a jar pile, a cart), leaving more open ground. In 1-10, fewer runs died to the crowd (28 to 23), and more reached the boss and died to its shots (5 to 9), which pass over props.
+
 ## Game rules and grammar
 
 Gameplay changes ship behind the rule set in `src/game/rules.ts`. `classic` reproduces 0.1.0 exactly and `remaster` is the default. Infinite-mode records and replay fixtures are kept per rules version: the remaster rules (v2) may change freely until a build ships them, and after that the first change to seeded outcomes must raise `RULES_VERSION`. `test/grammarContracts.integration.test.mjs` pins the preserved game grammar (stage structure, draft sizes, radii, tier mix, deterministic replay) and one regression test per R0 gameplay fix.

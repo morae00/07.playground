@@ -9,7 +9,11 @@ export type AtlasFrame = readonly [number, number, number, number, number, numbe
 export type AtlasPackManifest = Readonly<{
   pages: readonly string[];
   frames: Readonly<Record<string, AtlasFrame>>;
+  /** ART-05: a seamless ground tile for the chapter, `size` world units square. */
+  ground?: Readonly<{ file: string; size: number }>;
 }>;
+
+export type GroundTile = Readonly<{ image: SpriteImage; size: number }>;
 
 export type AnimationSpec = Readonly<{ frames: number; fps: number }>;
 
@@ -68,6 +72,7 @@ export class SpriteAtlas {
   private manifest: AtlasManifest | null = null;
   private manifestLoad: Promise<AtlasManifest> | null = null;
   private readonly pages = new Map<string, SpriteImage[]>();
+  private readonly grounds = new Map<string, GroundTile>();
   private readonly statuses = new Map<string, PackStatus>();
   private readonly failures = new Map<string, unknown>();
   private readonly options: Required<SpriteAtlasOptions>;
@@ -102,8 +107,12 @@ export class SpriteAtlas {
       this.manifest = manifest;
       const entry = manifest.packs[pack];
       if (!entry) throw new Error(`unknown atlas pack ${pack}`);
-      const images = await Promise.all(entry.pages.map((url) => this.options.loadImage(url)));
+      const [images, ground] = await Promise.all([
+        Promise.all(entry.pages.map((url) => this.options.loadImage(url))),
+        entry.ground ? this.options.loadImage(entry.ground.file) : undefined,
+      ]);
       this.pages.set(pack, images);
+      if (ground && entry.ground) this.grounds.set(pack, { image: ground, size: entry.ground.size });
       this.statuses.set(pack, 'ready');
     } catch (error) {
       this.statuses.set(pack, 'failed');
@@ -117,6 +126,11 @@ export class SpriteAtlas {
   onChange(listener: () => void) {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  }
+
+  /** The pack's ground tile once the pack is ready. */
+  ground(pack: string): GroundTile | undefined {
+    return this.grounds.get(pack);
   }
 
   animation(slot: string, state: string): AnimationSpec | undefined {

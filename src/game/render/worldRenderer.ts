@@ -28,7 +28,7 @@ import { clamp, distance } from '../worldMath.ts';
 import { CORPSE_FALL_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HURT_VIGNETTE_SECONDS, STAIN_DRY_SECONDS, STAIN_FADE_SECONDS, STAIN_SECONDS } from '../presentation/presentation.ts';
 import { WARDEN_SHIELD } from '../enemyBehaviors.ts';
 import { AnimationBook, SPAWN_SECONDS, enemyPoses, heroPoses, poseFrame, stepBossAnim, stepEnemyAnim, stepPlayerAnim, type AnimState, type EnemyAnim } from './animation.ts';
-import { phaseFor, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
+import { phaseFor, type SpriteAtlas, type SpriteFrame, type SpriteImage } from './assets/spriteAtlas.ts';
 import { BOSS_SLOTS, CHAPTER_PACKS, COMMON_PACK, FX_SLOT, HERO_SLOT, PICKUP_SLOT, bossState, enemyDrawScale, enemySlot, frameKey, pickupState, slotEnabled } from './assets/slots.ts';
 import { GameRenderer } from './GameRenderer.ts';
 import { NumberGlyphs, type NumberStyle } from './numberGlyphs.ts';
@@ -216,6 +216,7 @@ export class WorldRenderer {
   /** How many times the grid tile was built; stays at one until the canvas is resized. */
   gridCacheBuilds = 0;
   private gridPattern?: CanvasPattern;
+  private ground?: { image: SpriteImage; pattern: CanvasPattern };
   private viewport: Viewport = makeViewport(0, 0, 1280, 720, 160);
   private world!: RenderWorld;
   /** Baked character art (TEC-03); null or not yet loaded means every slot draws with vectors. */
@@ -337,7 +338,8 @@ export class WorldRenderer {
         this.drawTargetGuide(ctx);
         return;
       case 'obstacleShadows':
-        for (const body of this.sortedBodies) if (body.obstacle) this.visual.drawObstacleShadow(ctx, body.obstacle);
+        // A kit module carries its own cast shadow (ART-05); only vector blocks need one drawn.
+        for (const body of this.sortedBodies) if (body.obstacle && !this.obstacleFrame(body.obstacle)) this.visual.drawObstacleShadow(ctx, body.obstacle);
         return;
       case 'bodies':
         for (const body of this.sortedBodies) this.drawBody(ctx, body);
@@ -483,7 +485,11 @@ export class WorldRenderer {
 
   private drawBody(ctx: CanvasRenderingContext2D, body: BodyDraw) {
     if (body.obstacle) {
-      this.visual.drawObstacleBlock(ctx, body.obstacle);
+      const frame = this.obstacleFrame(body.obstacle);
+      const { x, y, w, h, id } = body.obstacle;
+      // Kit modules are drawn on the footprint's centre, mirrored by id for variety (the footprint is symmetric).
+      if (frame) this.blit(ctx, frame, x + w / 2, y + h / 2, id % 2 === 0 ? 1 : -1, 1);
+      else this.visual.drawObstacleBlock(ctx, body.obstacle);
       return;
     }
     if (body.enemy) {
@@ -497,9 +503,62 @@ export class WorldRenderer {
     this.drawPlayerBody(ctx, body);
   }
 
+  /** The baked kit module for a catalogue obstacle (ART-05), once its chapter pack is ready. */
+  private obstacleFrame(obstacle: Readonly<Obstacle>) {
+    const pack = CHAPTER_PACKS[this.world.chapter];
+    const slot = `env/${this.world.chapter}`;
+    if (!obstacle.art || !pack || this.sprites?.status(pack) !== 'ready' || !slotEnabled(slot)) return undefined;
+    return this.sprites.frame(frameKey(slot, obstacle.art, 0));
+  }
+
+  /** The chapter's kit ground as a world-space pattern (ART-05); undefined until its pack is ready. */
+  private groundPattern(ctx: CanvasRenderingContext2D) {
+    const pack = CHAPTER_PACKS[this.world.chapter];
+    const tile = pack && this.sprites?.status(pack) === 'ready' && slotEnabled(`env/${this.world.chapter}`) ? this.sprites.ground(pack) : undefined;
+    if (!tile) return undefined;
+    if (this.ground?.image !== tile.image) {
+      const pattern = ctx.createPattern(tile.image, 'repeat');
+      if (!pattern) return undefined;
+      // The tile is baked at the atlas scale; the pattern repeats every `size` world units.
+      if (typeof DOMMatrix === 'function') pattern.setTransform(new DOMMatrix().scale(tile.size / tile.image.width));
+      this.ground = { image: tile.image, pattern };
+    }
+    return this.ground.pattern;
+  }
+
+  /** The kit's edge strip along all four world edges, turned to face out on each (ART-05). */
+  private drawBoundary(ctx: CanvasRenderingContext2D) {
+    const slot = `env/${this.world.chapter}`;
+    const frame = this.sprites?.frame(frameKey(slot, 'boundary', 0));
+    if (!frame) return false;
+    const { width, height } = this.world.worldSize;
+    const length = frame.sw / frame.scale;
+    for (const [edge, span, angle, ox, oy] of [[0, width, 0, 0, 0], [1, height, Math.PI / 2, width, 0], [2, width, Math.PI, width, height], [3, height, -Math.PI / 2, 0, height]] as const) {
+      for (let along = 0; along < span; along += length) {
+        const x = ox + (edge === 0 ? along : edge === 2 ? -along : 0);
+        const y = oy + (edge === 1 ? along : edge === 3 ? -along : 0);
+        if (!circleVisible(this.viewport, x, y, length)) continue;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        this.blit(ctx, frame, 0, 0, 1, 1);
+        ctx.restore();
+      }
+    }
+    return true;
+  }
+
   private drawWorld(ctx: CanvasRenderingContext2D) {
-    this.ensureGridPattern(ctx);
     const viewport = this.viewport;
+    const ground = this.groundPattern(ctx);
+    if (ground) {
+      ctx.fillStyle = ground;
+      ctx.fillRect(Math.max(0, viewport.left), Math.max(0, viewport.top), Math.min(this.world.worldSize.width, viewport.right) - Math.max(0, viewport.left), Math.min(this.world.worldSize.height, viewport.bottom) - Math.max(0, viewport.top));
+      // The kit ground carries its own motif; the edge strip replaces the old ink line when it is baked.
+      if (!this.drawBoundary(ctx)) this.drawWorldEdge(ctx);
+      return;
+    }
+    this.ensureGridPattern(ctx);
     if (this.gridPattern) {
       ctx.fillStyle = this.gridPattern;
       ctx.fillRect(viewport.left, viewport.top, viewport.right - viewport.left, viewport.bottom - viewport.top);
@@ -526,11 +585,14 @@ export class WorldRenderer {
       }
     }
     this.drawChapterMotif(ctx);
-    if (rectVisible(viewport, -4, -4, this.world.worldSize.width + 8, this.world.worldSize.height + 8)) {
-      ctx.strokeStyle = '#111111';
-      ctx.lineWidth = 8;
-      ctx.strokeRect(0, 0, this.world.worldSize.width, this.world.worldSize.height);
-    }
+    this.drawWorldEdge(ctx);
+  }
+
+  private drawWorldEdge(ctx: CanvasRenderingContext2D) {
+    if (!rectVisible(this.viewport, -4, -4, this.world.worldSize.width + 8, this.world.worldSize.height + 8)) return;
+    ctx.strokeStyle = '#111111';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(0, 0, this.world.worldSize.width, this.world.worldSize.height);
   }
 
   private drawChapterMotif(ctx: CanvasRenderingContext2D) {

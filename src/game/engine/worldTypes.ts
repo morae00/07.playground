@@ -283,6 +283,8 @@ export type Obstacle = {
   w: number;
   h: number;
   kind: 'solid' | 'pillar';
+  /** ART-05: the catalogue module drawn for it (`solid1`, `landmark0`, ...); absent for a random block. */
+  art?: string;
 };
 
 export type BeamEffect = {

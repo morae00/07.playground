@@ -106,7 +106,8 @@ test('a Ch1 shooter keeps its windup pose for a moment after the shot leaves', a
     const id = probe.spawnEnemy({ tier: 'small', attackStyle: 'ranged', x: player.x + 380, y: player.y, speed: 0, damage: 0, hp: 1e6 });
     probe.patchEnemy(id, { rangedCooldown: 0.05 });
     const windup = ATLAS_MANIFEST.packs['chapter-01'].frames['enemy/1/shooter/windup/0'];
-    const shooterBlit = () => images.find((draw) => draw.url === 'assets/packs/chapter-01/atlas-0.png');
+    const shooterPage = ATLAS_MANIFEST.packs['chapter-01'].pages[windup[0]];
+    const shooterBlit = () => images.find((draw) => draw.url === shooterPage);
     let fired = false;
     for (let step = 0; step < 120 && !fired; step += 1) {
       const aiming = probe.read().enemies.find((enemy) => enemy.id === id).rangedTelegraph > 0;

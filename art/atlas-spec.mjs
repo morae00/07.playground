@@ -175,6 +175,61 @@ function fxAnimations(chapter) {
   ]));
 }
 
+/**
+ * Chapter environments (ART-05, API-env): the obstacle catalogue, each module baked at its exact footprint with the
+ * pivot on the footprint's centre, which is the collision rect's centre. Solid obstacles are walls in three sizes;
+ * pillars are a pole, a jar pile, and a cart. Remaster rules build maps from these footprints (rules.ts kitProps),
+ * so outline and hit box agree. The kit draws props at 1x: the top face rises H (≤ 28) above the footprint.
+ */
+export const OBSTACLE_CATALOGUE = Object.freeze({
+  1: Object.freeze({
+    solid: Object.freeze([['wall', 120, 70], ['wall', 200, 130], ['wall', 280, 190]]),
+    pillar: Object.freeze([['pole', 34, 34], ['jars', 92, 60], ['cart', 124, 60]]),
+    // The corridor posts of the Ch1 landmark stages (St3 poster crossing, St7 ink blockade).
+    landmark: Object.freeze([['wall', 70, 132]]),
+  }),
+});
+
+/** The world edge strip (API-env boundary): edge line at y = 0, outside above it; drawn along every edge. */
+export const BOUNDARY_WIDTH = 300;
+
+/** Seamless ground tile per chapter (API-env ground, tile: true), in world units; baked at ATLAS_SCALE as WebP. */
+export const GROUND_TILE = 512;
+
+function envFrames(chapter) {
+  const frames = [];
+  for (const [kind, modules] of Object.entries(OBSTACLE_CATALOGUE[chapter] ?? {})) {
+    modules.forEach(([prop, w, d], index) => {
+      frames.push({
+        key: `env/${chapter}/${kind}${index}/0`,
+        call: ['PN.env.prop', chapter, prop, { w, d, seed: index + 1 }],
+        // Room for the raised top face and the lower-right cast shadow; the pivot sits at `translate`.
+        box: [w + 120, d + 140],
+        translate: [w / 2 + 50, d / 2 + 80],
+        anchor: [w / 2 + 50, d / 2 + 80],
+        scale: 1,
+      });
+    });
+  }
+  return frames;
+}
+
+function boundaryFrame(chapter) {
+  return {
+    key: `env/${chapter}/boundary/0`,
+    call: ['PN.env.boundary', chapter, BOUNDARY_WIDTH],
+    box: [BOUNDARY_WIDTH, 120],
+    translate: [0, 90],
+    anchor: [0, 90],
+    scale: 1,
+  };
+}
+
+function envAnimations(chapter) {
+  const states = Object.entries(OBSTACLE_CATALOGUE[chapter] ?? {}).flatMap(([kind, modules]) => modules.map((_, index) => `${kind}${index}`));
+  return { [`env/${chapter}`]: Object.fromEntries([...states, 'boundary'].map((state) => [state, { frames: 1, fps: 1 }])) };
+}
+
 /** Filled from the kit's own metadata at bake time (box, pivot, feet, displayScale, walk frame count). */
 function enemyFrames(chapter) {
   return Object.entries(ENEMY_ROLES).map(([role, { fit }]) => ({
@@ -185,5 +240,10 @@ function enemyFrames(chapter) {
 
 export const PACKS = Object.freeze({
   common: { page: 'assets/atlas/common', frames: [...heroFrames(), ...hitFrames(), ...pickupFrames()], animations: fxAnimations() },
-  'chapter-01': { page: 'assets/packs/chapter-01/atlas', frames: [...enemyFrames(1), ...bossFrames(), ...killFrames(1)], animations: { ...bossAnimations(), ...fxAnimations(1) } },
+  'chapter-01': {
+    page: 'assets/packs/chapter-01/atlas',
+    frames: [...enemyFrames(1), ...bossFrames(), ...killFrames(1), ...envFrames(1), boundaryFrame(1)],
+    animations: { ...bossAnimations(), ...fxAnimations(1), ...envAnimations(1) },
+    ground: { call: ['PN.env.ground', 1, GROUND_TILE, GROUND_TILE, 3, { tile: true }], file: 'assets/packs/chapter-01/ground-0.webp' },
+  },
 });
