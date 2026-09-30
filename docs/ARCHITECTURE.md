@@ -77,6 +77,17 @@ Enemy feedback (FX-03):
 - Stains are capped at 48, or 24 at reduced effect density, and skipped at minimal detail (style bible P6).
 - A new enemy rises out of an ink bloom during its 0.25 s spawn state. Hit and contact rules do not change meanwhile.
 
+Damage numbers (FX-07) follow the kit's styles (`PN.vfx.damageNumber`):
+
+- dealt: ink numerals with a paper outline;
+- crit: paper numerals on a jagged ink tag, ending in "!";
+- taken: coral numerals with an ink outline, starting with "−".
+
+`src/game/render/numberGlyphs.ts` draws each style's characters once into an offscreen canvas, and numbers are stamped glyph by glyph instead of stroking text every frame. The face is the kit's bold condensed stack, taken from system fonts until an OFL face is bundled.
+
+- A number pops for 0.12 s when it appears (not under reduced motion) and spreads sideways by its id.
+- Under remaster rules, hits on one enemy within 0.3 s add into its number, which pops again over the enemy. Classic rules keep one number per hit, because their cosmetic ids feed gameplay ids.
+
 Player feedback (FX-03):
 
 - `player/hurt` carries where the hit came from, and a coral glow rises on that side of the screen for 0.35 s.

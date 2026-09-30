@@ -242,6 +242,10 @@ export type DamageNumber = {
   life: number;
   maxLife: number;
   owner: EffectOwner;
+  /** The enemy the number belongs to, or -1 (FX-07: hits on one target merge into one number). */
+  target: number;
+  /** life when the number last popped (it pops again when a hit merges into it). */
+  popAt: number;
 };
 
 export type Hazard = {

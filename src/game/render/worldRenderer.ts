@@ -30,6 +30,7 @@ import { AnimationBook, SPAWN_SECONDS, enemyPoses, heroPoses, poseFrame, stepBos
 import { phaseFor, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
 import { BOSS_SLOTS, CHAPTER_PACKS, COMMON_PACK, FX_SLOT, HERO_SLOT, bossState, enemyDrawScale, enemySlot, frameKey, slotEnabled } from './assets/slots.ts';
 import { GameRenderer } from './GameRenderer.ts';
+import { NumberGlyphs, type NumberStyle } from './numberGlyphs.ts';
 import { NEUTRAL, SIGNAL, rgba } from './palette.ts';
 import { createRenderFrameSnapshot } from './renderSnapshot.ts';
 import { CHAPTER_VISUALS, enemyRoleFor, type VisualDetail } from './visualRegistry.ts';
@@ -46,6 +47,10 @@ import {
 const TARGET_COLOR = SIGNAL.allyDeep;
 /** Enemy ids start at 1, so the hero's animation state never collides with one. */
 const HERO_ANIM_ID = -1;
+
+/** Damage numbers pop over this long when they appear or take a merged hit, and spread this far sideways (FX-07). */
+const NUMBER_POP_SECONDS = 0.12;
+const NUMBER_SPREAD = 24;
 
 /** Decal stage ages in seconds, as baked (art/atlas-spec.mjs DECAL_AGES). */
 const DECAL_STAGE_AGES = Object.freeze([0, 1, 1.5, 3, 15]);
@@ -207,6 +212,8 @@ export class WorldRenderer {
   private heroAnim: AnimState | null = null;
   /** White cut-outs of sprite frames for the hit flash (FX-03), built once per frame on first use. */
   private readonly silhouettes = new Map<SpriteFrame, SpriteFrame | null>();
+  /** Damage number glyphs (FX-07), drawn once per style. */
+  private readonly glyphs = new NumberGlyphs();
   private readonly bodyPool: BodyDraw[] = [];
   private readonly sortedBodies: BodyDraw[] = [];
   private bodyCount = 0;
@@ -1366,12 +1373,52 @@ export class WorldRenderer {
     }
   }
 
+  /**
+   * Damage numbers (FX-07) in the kit's styles, stamped from the glyph cache. A number pops when it appears and
+   * again when a hit merges into it (not under reduced motion), and spreads sideways by its id so a burst of hits
+   * does not stack in one column. Without an offscreen canvas the vector text stands in.
+   */
   private drawDamageNumbers(ctx: CanvasRenderingContext2D) {
     if (!this.world.options.damageNumbers) return;
+    const reduced = motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion).reduced;
     for (const number of this.world.effects.damageNumbers) {
-      if (!circleVisible(this.viewport, number.x, number.y, 52)) continue;
-      this.visual.drawDamageNumber(ctx, number);
+      const x = number.x + (phaseFor(number.id) - 0.5) * NUMBER_SPREAD;
+      if (!circleVisible(this.viewport, x, number.y, 52)) continue;
+      const style: NumberStyle = number.owner === 'hostile' ? 'taken' : number.crit ? 'crit' : 'dealt';
+      const value = Math.round(number.value);
+      const text = style === 'taken' ? `\u2212${value}` : style === 'crit' ? `${value}!` : `${value}`;
+      const pop = reduced ? 1 : clamp((number.popAt - number.life) / NUMBER_POP_SECONDS, 0, 1);
+      const scale = 1 + (style === 'crit' ? 0.6 : 0.35) * (1 - pop) * (1 - pop);
+      ctx.save();
+      ctx.globalAlpha *= clamp(number.life / Math.max(0.001, number.maxLife), 0, 1);
+      if (style === 'crit') this.drawCritTag(ctx, x, number.y, text.length, value, scale);
+      const stamped = this.glyphs.draw(ctx, text, x, number.y, style, scale);
+      ctx.restore();
+      if (!stamped) this.visual.drawDamageNumber(ctx, { ...number, x });
     }
+  }
+
+  /** The kit's inverted jagged ink tag behind a crit, sized to the text; its edge is jittered by the value. */
+  private drawCritTag(ctx: CanvasRenderingContext2D, x: number, y: number, length: number, value: number, scale: number) {
+    const width = length * 9 + 16;
+    const jitter = (index: number) => ((((Math.imul(value * 31 + index, 2654435761) >>> 0) % 1000) / 1000) - 0.5) * 3;
+    const trace = (dx: number, dy: number) => {
+      ctx.beginPath();
+      for (let index = 0; index <= 8; index += 1) ctx.lineTo(x + dx + (-width / 2 + (width * index) / 8) * scale, y + dy + (-17 + jitter(index)) * scale);
+      ctx.lineTo(x + dx + (width / 2 + 4) * scale, y + dy - 6 * scale);
+      for (let index = 8; index >= 0; index -= 1) ctx.lineTo(x + dx + (-width / 2 + (width * index) / 8 + 2) * scale, y + dy + (5 + jitter(index + 9)) * scale);
+      ctx.lineTo(x + dx + (-width / 2 - 3) * scale, y + dy - 7 * scale);
+      ctx.closePath();
+    };
+    ctx.fillStyle = NEUTRAL.ink;
+    trace(1.5 * scale, 2 * scale);
+    ctx.fill();
+    trace(0, 0);
+    ctx.fill();
+    ctx.strokeStyle = NEUTRAL.paperBright;
+    ctx.lineWidth = 1.4;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
   }
 
   private drawHealthBar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, ratio: number) {

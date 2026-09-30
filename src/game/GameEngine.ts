@@ -3989,7 +3989,7 @@ export class GameEngine {
       enemy.y += dir.y * knockback * 0.035;
     }
     const travel = normalize(enemy.x - source.x, enemy.y - source.y);
-    this.emit({ type: 'enemy/hit', x: enemy.x, y: enemy.y, radius: enemy.radius, damage, crit, tier: impactTier, dx: travel.x, dy: travel.y });
+    this.emit({ type: 'enemy/hit', id: enemy.id, x: enemy.x, y: enemy.y, radius: enemy.radius, damage, crit, tier: impactTier, dx: travel.x, dy: travel.y });
     if (impactTier !== 'light') this.requestHitStop(impactTier === 'critical' ? 0.035 : 0.025);
   }
 

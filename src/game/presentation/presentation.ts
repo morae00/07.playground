@@ -22,6 +22,8 @@ export type PresentationHost = {
 const PARTICLE_CAP_FULL = 520;
 const PARTICLE_CAP_REDUCED = 260;
 const DAMAGE_NUMBER_CAP = 160;
+/** Hits on one enemy within this long add into its number instead of stacking new ones (FX-07). */
+export const NUMBER_MERGE_SECONDS = 0.3;
 const IMPACT_RING_CAP = 32;
 /** Ink stains on the floor (style bible P6): 48 at full effects, 24 at reduced; the renderer drops them at minimal detail. */
 const CORPSE_CAP_FULL = 48;
@@ -102,7 +104,7 @@ export class Presentation {
     CORPSE_CAP_FULL,
   );
   readonly damageNumberPool = new ObjectPool<DamageNumber>(
-    () => ({ id: 0, x: 0, y: 0, value: 0, crit: false, life: 0, maxLife: 0, owner: 'player' as EffectOwner }),
+    () => ({ id: 0, x: 0, y: 0, value: 0, crit: false, life: 0, maxLife: 0, owner: 'player' as EffectOwner, target: -1, popAt: 0 }),
     (number) => { number.life = 0; },
     DAMAGE_NUMBER_CAP,
   );
@@ -110,8 +112,9 @@ export class Presentation {
   private sound: SoundOutput | null = null;
   private disposed = false;
   /**
-   * Classic rules only: 0.1.0 drew each hit sound's pitch from the cosmetic stream, at most once per hit spacing in
-   * wall time. Classic particle ids feed gameplay ids, so that draw is kept to stay bit-identical.
+   * Classic rules only: cosmetic ids and draws feed gameplay ids, so 0.1.0's cosmetic behaviour stays. Each hit sound
+   * drew its pitch from the cosmetic stream, at most once per hit spacing in wall time, and every hit made its own
+   * damage number.
    */
   private legacyHitDraws = false;
   private legacyHitWait = 0;
@@ -182,7 +185,7 @@ export class Presentation {
       }
       case 'enemy/hit': {
         if (this.host.options().damageNumbers) {
-          this.addDamageNumber(event.x, event.y - event.radius, event.damage, event.crit, event.crit ? 0.9 : 0.62, 'player');
+          this.addDamageNumber(event.x, event.y - event.radius, event.damage, event.crit, event.crit ? 0.9 : 0.62, 'player', event.id);
         }
         const count = event.tier === 'critical' ? 14 : event.tier === 'heavy' ? 8 : 4;
         // Ink sprays out of the far side of the hit (FX-03).
@@ -357,7 +360,22 @@ export class Presentation {
     }
   }
 
-  addDamageNumber(x: number, y: number, value: number, crit: boolean, life: number, owner: EffectOwner) {
+  addDamageNumber(x: number, y: number, value: number, crit: boolean, life: number, owner: EffectOwner, target = -1) {
+    if (target >= 0 && !this.legacyHitDraws) {
+      for (const recent of this.damageNumbers) {
+        if (recent.target !== target || recent.owner !== owner || recent.maxLife - recent.life >= NUMBER_MERGE_SECONDS) continue;
+        // Another hit on the same enemy: the number adds up, takes the crit look if either was one, and pops again
+        // where the enemy is now, so a stream of hits does not float away from its target.
+        recent.value += value;
+        recent.x = x;
+        recent.y = y;
+        recent.crit ||= crit;
+        recent.life = Math.max(recent.life, life);
+        recent.maxLife = Math.max(recent.maxLife, life);
+        recent.popAt = recent.life;
+        return;
+      }
+    }
     let number: DamageNumber | undefined;
     if (this.damageNumbers.length >= DAMAGE_NUMBER_CAP) {
       if (!crit) return;
@@ -366,7 +384,7 @@ export class Presentation {
       number = this.damageNumbers.splice(replaceIndex, 1)[0];
     }
     number ??= this.damageNumberPool.acquire();
-    Object.assign(number, { id: this.host.nextId(), x, y, value, crit, life, maxLife: life, owner });
+    Object.assign(number, { id: this.host.nextId(), x, y, value, crit, life, maxLife: life, owner, target, popAt: life });
     this.damageNumbers.push(number);
   }
 

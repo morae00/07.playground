@@ -13,7 +13,7 @@ export type GameEvent =
   | { type: 'draft/applied'; kind: AppliedOfferKind; x: number; y: number }
   | { type: 'skill/cast'; skillId: SkillId; x: number; y: number }
   /** A skill hit an enemy; x/y are the enemy position after knockback, dx/dy the unit direction the hit travelled. */
-  | { type: 'enemy/hit'; x: number; y: number; radius: number; damage: number; crit: boolean; tier: ImpactTier; dx: number; dy: number }
+  | { type: 'enemy/hit'; id: number; x: number; y: number; radius: number; damage: number; crit: boolean; tier: ImpactTier; dx: number; dy: number }
   /** dx/dy point from the player to the body (FX-03 corpses fall away from the player). */
   | { type: 'enemy/killed'; x: number; y: number; isBoss: boolean; radius: number; tier: EnemyTier; attackStyle: 'contact' | 'ranged'; dx: number; dy: number }
   | { type: 'enemy/contact'; isBoss: boolean }

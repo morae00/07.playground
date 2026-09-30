@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { CueId, SoundOutput } from '../audioPolicy.ts';
 import { createDefaultOptions } from '../../platform/save.ts';
-import { CORPSE_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HIT_STAMP_SECONDS, HURT_VIGNETTE_SECONDS, Presentation } from './presentation.ts';
+import { CORPSE_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HIT_STAMP_SECONDS, HURT_VIGNETTE_SECONDS, NUMBER_MERGE_SECONDS, Presentation } from './presentation.ts';
 
 function setup(overrides: Partial<ReturnType<typeof createDefaultOptions>> = {}) {
   let id = 0;
@@ -54,12 +54,12 @@ test('hit rings are capped at 32 but boss telegraph rings are never dropped', ()
 
 test('events map to their effects: enemy hits respect the damage-number option and tiers', () => {
   const quiet = setup({ damageNumbers: false });
-  quiet.presentation.handle({ type: 'enemy/hit', x: 10, y: 20, radius: 12, damage: 30, crit: true, tier: 'critical', dx: 1, dy: 0 });
+  quiet.presentation.handle({ type: 'enemy/hit', id: 1, x: 10, y: 20, radius: 12, damage: 30, crit: true, tier: 'critical', dx: 1, dy: 0 });
   assert.equal(quiet.presentation.damageNumbers.length, 0);
   assert.equal(quiet.presentation.impactRings.length, 1);
   assert.equal(quiet.presentation.shake, 4);
   const shown = setup({ damageNumbers: true, effects: 1 });
-  shown.presentation.handle({ type: 'enemy/hit', x: 10, y: 20, radius: 12, damage: 30, crit: false, tier: 'light', dx: 1, dy: 0 });
+  shown.presentation.handle({ type: 'enemy/hit', id: 1, x: 10, y: 20, radius: 12, damage: 30, crit: false, tier: 'light', dx: 1, dy: 0 });
   assert.equal(shown.presentation.damageNumbers[0].y, 8, 'numbers float above the enemy');
   assert.equal(shown.presentation.particles.length, 4);
   assert.equal(shown.presentation.impactRings.length, 0, 'light hits leave no ring');
@@ -100,7 +100,7 @@ test('events play their cues on the mixer, panned by screen position', () => {
   const { sound, played, unlocks } = recorder();
   presentation.setSound(sound);
   presentation.unlockSound();
-  presentation.handle({ type: 'enemy/hit', x: 750, y: 0, radius: 12, damage: 30, crit: true, tier: 'critical', dx: 1, dy: 0 });
+  presentation.handle({ type: 'enemy/hit', id: 1, x: 750, y: 0, radius: 12, damage: 30, crit: true, tier: 'critical', dx: 1, dy: 0 });
   presentation.handle({ type: 'enemy/killed', x: 0, y: 0, isBoss: false, radius: 14, tier: 'small', attackStyle: 'contact', dx: 1, dy: 0 });
   presentation.handle({ type: 'enemy/killed', x: 500, y: 0, isBoss: true, radius: 14, tier: 'boss', attackStyle: 'contact', dx: 1, dy: 0 });
   presentation.handle({ type: 'skill/cast', skillId: 'railSpear', x: 500, y: 0 });
@@ -124,7 +124,7 @@ test('events play their cues on the mixer, panned by screen position', () => {
 });
 
 test('classic rules keep 0.1.0 drawing a hit pitch from the cosmetic stream, once per hit spacing', () => {
-  const hit = { type: 'enemy/hit', x: 0, y: 0, radius: 12, damage: 5, crit: false, tier: 'heavy', dx: 1, dy: 0 } as const;
+  const hit = { type: 'enemy/hit', id: 1, x: 0, y: 0, radius: 12, damage: 5, crit: false, tier: 'heavy', dx: 1, dy: 0 } as const;
   const classic = setup({ effects: 1 }).presentation;
   classic.reseed(1234, true);
   // Heavy hits are 44 ms apart: the first and fourth hits draw; the others fall inside the spacing.
@@ -148,7 +148,7 @@ test('classic rules keep 0.1.0 drawing a hit pitch from the cosmetic stream, onc
 
 test('hit ink sprays out of the far side of the hit', () => {
   const { presentation } = setup({ effects: 1 });
-  presentation.handle({ type: 'enemy/hit', x: 0, y: 0, radius: 12, damage: 30, crit: true, tier: 'critical', dx: 0, dy: -1 });
+  presentation.handle({ type: 'enemy/hit', id: 1, x: 0, y: 0, radius: 12, damage: 30, crit: true, tier: 'critical', dx: 0, dy: -1 });
   assert.equal(presentation.particles.length, 14);
   assert.ok(presentation.particles.every((particle) => particle.vy < 0), 'every drop flies up, the way the hit travelled');
 });
@@ -224,25 +224,47 @@ test('the death moment plays the fall, and ink drifts in slow motion while the e
 
 test('hits leave a star facing the blow; light hits skip it at reduced density, and the oldest goes at the cap', () => {
   const full = setup({ effects: 1 }).presentation;
-  full.handle({ type: 'enemy/hit', x: 5, y: 6, radius: 12, damage: 3, crit: false, tier: 'light', dx: 0, dy: 1 });
+  full.handle({ type: 'enemy/hit', id: 1, x: 5, y: 6, radius: 12, damage: 3, crit: false, tier: 'light', dx: 0, dy: 1 });
   assert.equal(full.hitStamps.length, 1);
   assert.ok(Math.abs(full.hitStamps[0].angle - Math.PI / 2) < 1e-9);
   full.step(HIT_STAMP_SECONDS);
   assert.equal(full.hitStamps.length, 0, 'the star is over after four frames');
-  for (let index = 0; index < 40; index += 1) full.handle({ type: 'enemy/hit', x: index, y: 0, radius: 12, damage: 3, crit: true, tier: 'critical', dx: 1, dy: 0 });
+  for (let index = 0; index < 40; index += 1) full.handle({ type: 'enemy/hit', id: index + 1, x: index, y: 0, radius: 12, damage: 3, crit: true, tier: 'critical', dx: 1, dy: 0 });
   assert.equal(full.hitStamps.length, 32);
   assert.equal(full.hitStamps[0].x, 8);
   const reduced = setup({ effects: 0.4 }).presentation;
-  reduced.handle({ type: 'enemy/hit', x: 0, y: 0, radius: 12, damage: 3, crit: false, tier: 'light', dx: 1, dy: 0 });
-  reduced.handle({ type: 'enemy/hit', x: 0, y: 0, radius: 12, damage: 9, crit: false, tier: 'heavy', dx: 1, dy: 0 });
+  reduced.handle({ type: 'enemy/hit', id: 1, x: 0, y: 0, radius: 12, damage: 3, crit: false, tier: 'light', dx: 1, dy: 0 });
+  reduced.handle({ type: 'enemy/hit', id: 1, x: 0, y: 0, radius: 12, damage: 9, crit: false, tier: 'heavy', dx: 1, dy: 0 });
   assert.equal(reduced.hitStamps.length, 1, 'only the heavy hit');
+});
+
+test('hits on one enemy within 0.3 s add into its number and pop it again; classic rules keep one number a hit', () => {
+  const hit = (id: number, damage: number, crit = false) => ({ type: 'enemy/hit', id, x: 0, y: 40, radius: 12, damage, crit, tier: crit ? 'critical' : 'light', dx: 1, dy: 0 }) as const;
+  const { presentation } = setup({ damageNumbers: true });
+  presentation.handle(hit(7, 10));
+  presentation.step(0.1);
+  presentation.handle(hit(7, 15, true));
+  presentation.handle(hit(8, 4));
+  assert.equal(presentation.damageNumbers.length, 2);
+  const [merged] = presentation.damageNumbers;
+  assert.deepEqual([merged.value, merged.crit, merged.target], [25, true, 7]);
+  assert.ok(Math.abs(merged.popAt - merged.life) < 1e-9, 'it pops again');
+  assert.equal(merged.y, 40 - 12, 'back over the enemy');
+  presentation.step(NUMBER_MERGE_SECONDS + 0.01);
+  presentation.handle(hit(7, 5));
+  assert.equal(presentation.damageNumbers.length, 3, 'too late to merge');
+  const classic = setup({ damageNumbers: true }).presentation;
+  classic.reseed(1234, true);
+  classic.handle(hit(7, 10));
+  classic.handle(hit(7, 15));
+  assert.equal(classic.damageNumbers.length, 2);
 });
 
 test('sound never draws from the cosmetic stream that places particles', () => {
   const hits = (withSound: boolean) => {
     const { presentation } = setup({ effects: 1 });
     if (withSound) presentation.setSound(recorder().sound);
-    for (let index = 0; index < 12; index += 1) presentation.handle({ type: 'enemy/hit', x: index * 40, y: 0, radius: 12, damage: 5, crit: false, tier: 'heavy', dx: 1, dy: 0 });
+    for (let index = 0; index < 12; index += 1) presentation.handle({ type: 'enemy/hit', id: index + 1, x: index * 40, y: 0, radius: 12, damage: 5, crit: false, tier: 'heavy', dx: 1, dy: 0 });
     return presentation.particles.map((particle) => [particle.vx, particle.vy]);
   };
   assert.deepEqual(hits(true), hits(false));

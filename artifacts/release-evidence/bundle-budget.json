@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 83513,
-      "kib": 81.56,
+      "bytes": 84626,
+      "kib": 82.64,
       "baselineBytes": 75381,
-      "growthRatio": 0.10787864315941675,
+      "growthRatio": 0.12264363699075354,
       "warningBytes": 86688,
       "failBytes": 94226,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-_nTwBU5J.js",
+      "file": "assets/App-C69ttJoI.js",
       "category": "appJs",
-      "sourceBytes": 258371,
-      "gzipBytes": 78407
+      "sourceBytes": 261247,
+      "gzipBytes": 79520
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -73,16 +73,16 @@
       "gzipBytes": 1912
     },
     {
-      "file": "assets/index-Cq9P-KPo.js",
-      "category": "appJs",
-      "sourceBytes": 6705,
-      "gzipBytes": 3194
-    },
-    {
       "file": "assets/index-D9MICx1w.css",
       "category": "css",
       "sourceBytes": 23592,
       "gzipBytes": 5785
+    },
+    {
+      "file": "assets/index-adPh36W2.js",
+      "category": "appJs",
+      "sourceBytes": 6705,
+      "gzipBytes": 3194
     },
     {
       "file": "assets/packs/chapter-01/atlas-0.png",

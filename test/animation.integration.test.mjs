@@ -228,3 +228,26 @@ test('the player hears where hits come from and when health runs low (FX-03)', (
     engine.dispose();
   }
 });
+
+test('damage numbers stamp cached glyphs, one sheet per style, and hits on one enemy share a number (FX-07)', () => {
+  const { engine, probe, images } = arena(1, 2);
+  try {
+    engine.setOptions({ ...standardOptions(), reducedFlash: false, damageNumbers: true });
+    const { player } = probe.read();
+    probe.spawnEnemy({ tier: 'large', x: player.x + 200, y: player.y, speed: 0, damage: 0, hp: 1e6 });
+    probe.setPlayer({ stats: { critChance: 0 } });
+    probe.setSkills({ railSpear: { level: 1 } });
+    probe.cast('railSpear');
+    probe.step(2);
+    probe.cast('railSpear');
+    const numbers = probe.effects().damageNumbers;
+    assert.equal(numbers.length, 1, 'two rail hits within 0.3 s show one number');
+    images.length = 0;
+    probe.render(1);
+    const stamps = images.filter((draw) => draw.url === undefined);
+    assert.ok(stamps.length >= String(Math.round(numbers[0].value)).length, `one stamp per digit (${stamps.length})`);
+    assert.equal(new Set(stamps.map((draw) => draw.sy)).size, 1, 'all from the top row of one sheet');
+  } finally {
+    engine.dispose();
+  }
+});
