@@ -67,7 +67,7 @@ export class AudioMixer implements SoundOutput {
     if (context?.state === 'suspended') void context.resume().catch(() => undefined);
   }
 
-  play(cueId: CueId, pan = 0) {
+  play(cueId: CueId, pan = 0, pitch = 1) {
     const spec = CUES[cueId];
     const { context } = this;
     const bus = this.buses.get(spec.bus);
@@ -75,7 +75,7 @@ export class AudioMixer implements SoundOutput {
     const now = context.currentTime;
     const variants = this.samples.get(cueId);
     const buffer = variants?.[Math.floor(this.random() * variants.length)];
-    const rate = buffer ? 1 + (this.random() * 2 - 1) * SAMPLE_PITCH_JITTER : 1;
+    const rate = (buffer ? 1 + (this.random() * 2 - 1) * SAMPLE_PITCH_JITTER : 1) * pitch;
     const duration = buffer ? buffer.duration / rate : spec.synth.duration + 0.01;
     const admitted = this.ledger.request(cueId, now, duration);
     if (!admitted) return;
@@ -92,7 +92,7 @@ export class AudioMixer implements SoundOutput {
       const { frequency, spread, oscillator, duration: length, gain: level } = spec.synth;
       const tone = context.createOscillator();
       tone.type = oscillator;
-      tone.frequency.value = frequency + this.random() * spread;
+      tone.frequency.value = (frequency + this.random() * spread) * pitch;
       gain.gain.value = 0.0001;
       gain.gain.exponentialRampToValueAtTime(SYNTH_PEAK * level, now + 0.004);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + length);

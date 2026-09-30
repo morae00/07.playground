@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { CueId, SoundOutput } from '../audioPolicy.ts';
 import { createDefaultOptions } from '../../platform/save.ts';
-import { CORPSE_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HIT_STAMP_SECONDS, HURT_VIGNETTE_SECONDS, NUMBER_MERGE_SECONDS, Presentation } from './presentation.ts';
+import { CORPSE_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HIT_STAMP_SECONDS, HURT_VIGNETTE_SECONDS, NUMBER_MERGE_SECONDS, PICKUP_COMBO_MAX, PICKUP_COMBO_SECONDS, PICKUP_COMBO_STEP, Presentation } from './presentation.ts';
 
 function setup(overrides: Partial<ReturnType<typeof createDefaultOptions>> = {}) {
   let id = 0;
@@ -14,11 +14,11 @@ function setup(overrides: Partial<ReturnType<typeof createDefaultOptions>> = {})
 }
 
 function recorder() {
-  const played: { cue: CueId; pan: number }[] = [];
+  const played: { cue: CueId; pan: number; pitch?: number }[] = [];
   let unlocks = 0;
   const sound: SoundOutput = {
     unlock: () => { unlocks += 1; },
-    play: (cue, pan = 0) => { played.push({ cue, pan }); },
+    play: (cue, pan = 0, pitch = 1) => { played.push(pitch === 1 ? { cue, pan } : { cue, pan, pitch }); },
   };
   return { sound, played, unlocks: () => unlocks };
 }
@@ -268,4 +268,35 @@ test('sound never draws from the cosmetic stream that places particles', () => {
     return presentation.particles.map((particle) => [particle.vx, particle.vy]);
   };
   assert.deepEqual(hits(true), hits(false));
+});
+
+test('pickups tick higher in a quick run of pickups and glint; classic rules add no glint (FX-05)', () => {
+  const { presentation } = setup();
+  const { sound, played } = recorder();
+  presentation.setSound(sound);
+  for (let index = 0; index < PICKUP_COMBO_MAX + 3; index += 1) presentation.handle({ type: 'pickup/collected', kind: 'xp', x: 500, y: 0 });
+  const pitches = played.map((call) => call.pitch ?? 1);
+  assert.equal(pitches[0], 1, 'the first pickup plays as authored');
+  assert.ok(Math.abs(pitches[1] - (1 + PICKUP_COMBO_STEP)) < 1e-9, 'each quick pickup steps the pitch up');
+  assert.ok(Math.abs(pitches.at(-1)! - (1 + PICKUP_COMBO_MAX * PICKUP_COMBO_STEP)) < 1e-9, 'the combo stops rising at its cap');
+  assert.ok(played.every((call) => call.cue === 'pickup.xp'));
+  assert.equal(presentation.particles.length, 4 * (PICKUP_COMBO_MAX + 3), 'four glint flecks a pickup');
+  presentation.beginFrame(PICKUP_COMBO_SECONDS + 0.01, false);
+  played.length = 0;
+  presentation.handle({ type: 'pickup/collected', kind: 'coin', x: 500, y: 0 });
+  assert.deepEqual(played, [{ cue: 'pickup.coin', pan: 0 }], 'a pause between pickups starts the combo over');
+
+  const classic = setup();
+  classic.presentation.reseed(1234, true);
+  classic.presentation.handle({ type: 'pickup/collected', kind: 'xp', x: 0, y: 0 });
+  assert.equal(classic.presentation.particles.length, 0, 'no new cosmetic draws under classic rules');
+});
+
+test('a level-up draft plays its sound, and a draft with a legendary, mythic, or awakening card adds a sting (FX-05)', () => {
+  const { presentation } = setup();
+  const { sound, played } = recorder();
+  presentation.setSound(sound);
+  presentation.handle({ type: 'draft/opened', reason: 'level', highlight: false });
+  presentation.handle({ type: 'draft/opened', reason: 'boss', highlight: true });
+  assert.deepEqual(played.map((call) => call.cue), ['run.levelUp', 'draft.sting']);
 });

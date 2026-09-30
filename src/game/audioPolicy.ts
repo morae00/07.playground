@@ -61,6 +61,12 @@ export const CUES = {
   'draft.coins': cue('sfx', 3, 1, 0, [360, 0.05, 'triangle']),
   'draft.overdrive': cue('sfx', 3, 1, 0, [130, 0.08, 'sawtooth']),
   'run.upgrade': cue('ui', 3, 2, 0, [180, 0.03, 'triangle']),
+  // FX-05 events, placeholders until the SFX library (AUD-02). Pickup ticks rise in pitch with the combo.
+  'pickup.xp': cue('sfx', 1, 3, 0.03, [880, 0.03, 'sine', 0.6], 'pickup'),
+  'pickup.coin': cue('sfx', 1, 3, 0.03, [1320, 0.028, 'triangle', 0.55], 'pickup'),
+  'run.levelUp': cue('sfx', 4, 1, 0, [520, 0.22, 'triangle', 1.2]),
+  'draft.sting': cue('sfx', 4, 1, 0, [196, 0.3, 'sawtooth', 1.1]),
+  'boss.intro': cue('sfx', 5, 1, 0, [55, 0.5, 'sawtooth', 1.4]),
   // Placeholder UI ticks until the SFX library (AUD-02) brings recorded ones.
   'ui.confirm': cue('ui', 3, 2, 0.03, [740, 0.02, 'triangle', 0.5]),
   'ui.cancel': cue('ui', 3, 2, 0.03, [440, 0.024, 'triangle', 0.5]),
@@ -102,8 +108,8 @@ export function mixLevels(options: { volume: number; musicVolume: number; sfxVol
 export interface SoundOutput {
   /** Called from user gestures and run starts: browsers only start audio after a gesture. */
   unlock(): void;
-  /** pan runs from -1 (left edge of the screen) to 1 (right edge). */
-  play(cue: CueId, pan?: number): void;
+  /** pan runs from -1 (left edge of the screen) to 1 (right edge); pitch scales the frequency (1 = as authored). */
+  play(cue: CueId, pan?: number, pitch?: number): void;
 }
 
 export type VoiceSlot = { id: number; cue: CueId; priority: number; endsAt: number };

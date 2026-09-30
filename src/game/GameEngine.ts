@@ -3708,7 +3708,9 @@ export class GameEngine {
       pickup.y += pickup.vy * dt;
       pickup.vx *= 0.98;
       pickup.vy *= 0.98;
-      if (pickup.life <= 0 || distance(pickup, this.player) < pickup.radius + HIT_RADIUS.pickupReach) this.collectPickup(pickup);
+      const reached = distance(pickup, this.player) < pickup.radius + HIT_RADIUS.pickupReach;
+      if (reached && pickup.value > 0) this.emit({ type: 'pickup/collected', kind: pickup.kind, x: pickup.x, y: pickup.y });
+      if (pickup.life <= 0 || reached) this.collectPickup(pickup);
     }
     recycleWhere(this.pickups, (pickup) => pickup.value > 0, this.pickupPool);
   }
@@ -4219,6 +4221,7 @@ export class GameEngine {
     const cards = offers.map((offer, slot): DraftCard => ({ ...offer, offerId: `${id}:${slot}` }));
     this.activeDraftId = id;
     this.activeDraftCards = cards;
+    this.emit({ type: 'draft/opened', reason, highlight: cards.some((card) => card.kind === 'awakening' || card.rarity === 'legendary' || card.rarity === 'mythic') });
     this.callbacks.onDraft({
       id,
       title: reason === 'boss' ? '보스 보상' : `Lv.${this.player.level} 스킬 선택`,

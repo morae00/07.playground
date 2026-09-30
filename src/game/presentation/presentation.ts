@@ -52,6 +52,11 @@ const DEATH_SLOWMO_RATE = 0.25;
  * Pose lengths for the hero (FX-01): the hurt flash (3 frames at 12 fps), the throw (4 frames at 16 fps), and the
  * longer burst for the big actives and awakenings.
  */
+/** FX-05: pickups within this long of the last one raise the tick's pitch a step, up to PICKUP_COMBO_MAX steps. */
+export const PICKUP_COMBO_SECONDS = 0.6;
+export const PICKUP_COMBO_STEP = 0.04;
+export const PICKUP_COMBO_MAX = 12;
+
 export const PLAYER_HURT_POSE_SECONDS = 0.25;
 export const PLAYER_CAST_POSE_SECONDS = 0.25;
 export const PLAYER_BURST_POSE_SECONDS = 0.4;
@@ -118,6 +123,8 @@ export class Presentation {
    */
   private legacyHitDraws = false;
   private legacyHitWait = 0;
+  private pickupCombo = 0;
+  private pickupComboWait = 0;
 
   constructor(host: PresentationHost) {
     this.host = host;
@@ -133,6 +140,8 @@ export class Presentation {
     this.random = createSeededRandom(runSeed ^ 0x9e3779b9);
     this.legacyHitDraws = legacyHitDraws;
     this.legacyHitWait = 0;
+    this.pickupCombo = 0;
+    this.pickupComboWait = 0;
   }
 
   /** A new round: drop particles and damage numbers (rings clear with the round's other effects). */
@@ -159,6 +168,17 @@ export class Presentation {
     switch (event.type) {
       case 'run/upgradeBought':
         this.play('run.upgrade');
+        return;
+      case 'pickup/collected':
+        this.pickupCombo = this.pickupComboWait > 0 ? Math.min(PICKUP_COMBO_MAX, this.pickupCombo + 1) : 0;
+        this.pickupComboWait = PICKUP_COMBO_SECONDS;
+        this.play(event.kind === 'xp' ? 'pickup.xp' : 'pickup.coin', event.x, 1 + this.pickupCombo * PICKUP_COMBO_STEP);
+        // The glint is new cosmetic work: classic rules draw nothing new, because their cosmetic draws feed gameplay ids.
+        if (!this.legacyHitDraws) this.burst(event.x, event.y, 4, event.kind === 'xp' ? '#86b82d' : '#111111', 90);
+        return;
+      case 'draft/opened':
+        if (event.reason === 'level') this.play('run.levelUp');
+        if (event.highlight) this.play('draft.sting');
         return;
       case 'draft/applied':
         if (event.kind === 'awakening') {
@@ -261,6 +281,7 @@ export class Presentation {
         this.burst(event.x, event.y, 16, '#111111', 130);
         return;
       case 'boss/spawned':
+        this.play('boss.intro', event.x);
         if (event.infinite) {
           this.burst(event.x, event.y, 28, '#111111', 210);
           this.addShake(8);
@@ -295,6 +316,7 @@ export class Presentation {
     this.legacyHitWait = Math.max(0, this.legacyHitWait - frameDt);
     this.deathMoment = Math.max(0, this.deathMoment - frameDt);
     if (paused) return;
+    this.pickupComboWait = Math.max(0, this.pickupComboWait - frameDt);
     this.shake = Math.max(0, this.shake - frameDt * 12);
   }
 
@@ -456,8 +478,8 @@ export class Presentation {
    * Sends a cue to the mixer, panned by where x sits on screen. Pitch variation and voice limits live in the mixer,
    * so sound never draws from the cosmetic stream that places particles.
    */
-  private play(cue: CueId, x?: number) {
+  private play(cue: CueId, x?: number, pitch = 1) {
     if (this.disposed || !this.sound) return;
-    this.sound.play(cue, x === undefined ? 0 : this.host.pan(x));
+    this.sound.play(cue, x === undefined ? 0 : this.host.pan(x), pitch);
   }
 }

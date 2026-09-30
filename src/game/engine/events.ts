@@ -10,6 +10,10 @@ export type AppliedOfferKind = 'skill' | 'awakening' | 'heal' | 'coins' | 'overd
 
 export type GameEvent =
   | { type: 'run/upgradeBought' }
+  /** FX-05: a pickup reached the player (not one that expired into the total). */
+  | { type: 'pickup/collected'; kind: 'xp' | 'coin'; x: number; y: number }
+  /** FX-05: a draft opened; highlight when it offers a legendary, mythic, or awakening card. */
+  | { type: 'draft/opened'; reason: 'level' | 'boss'; highlight: boolean }
   | { type: 'draft/applied'; kind: AppliedOfferKind; x: number; y: number }
   | { type: 'skill/cast'; skillId: SkillId; x: number; y: number }
   /** A skill hit an enemy; x/y are the enemy position after knockback, dx/dy the unit direction the hit travelled. */

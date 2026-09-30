@@ -3,6 +3,9 @@
 // never carries it alone. A card lists the skill's tags, its level pips, and each number the pick changes; the strip
 // under the cards shows the build so far. Picking is guarded for DIALOG_INPUT_GUARD_MS (BUG-05); 1-4, the arrows
 // and Enter, and the pad's D-pad and A all pick (App, useGamepadNavigation).
+// A level-up opens with a 0.6 s sequence (FX-05): an ink ring bursts, the banner lands, and the cards turn in 80 ms
+// apart. The engine stopped at the step the XP filled, so no simulated time passes (G15); reduced motion skips it.
+import type { CSSProperties } from 'react';
 import { RARITY, SKILLS, SKILL_IDS, type DraftCard, type DraftState, type HudSnapshot, type Rarity, type SkillOffer } from '../../game/GameEngine';
 import { MAX_SKILL_LEVEL } from '../../game/grammar';
 import { SKILL_LEVEL_STATS } from '../../game/skillNumbers';
@@ -35,6 +38,7 @@ function Card({ offer, index, onPick }: { offer: DraftCard; index: number; onPic
       data-sound="none"
       onClick={() => onPick(offer)}
       aria-keyshortcuts={`${index + 1}`}
+      style={{ '--card': index } as CSSProperties}
     >
       <b className="cardShortcut" aria-hidden="true">{index + 1}</b>
       <span
@@ -76,8 +80,9 @@ export function DraftModal({ draft, skills, onPick }: { draft: DraftState; skill
   const owned = SKILL_IDS.filter((id) => skills[id]);
   return (
     <ModalDialog className="draftBox" labelledBy="draft-dialog-title" describedBy="draft-dialog-description draft-dialog-keys" inputGuardMs={DIALOG_INPUT_GUARD_MS}>
+      {draft.reason === 'level' && <i className="draftBurst" aria-hidden="true" />}
       <div className="modalHead">
-        <p>{draft.reason === 'boss' ? '확정 보상' : '레벨 업!'}</p>
+        <p className={draft.reason === 'level' ? 'levelBanner' : undefined}>{draft.reason === 'boss' ? '확정 보상' : '레벨 업!'}</p>
         <h2 id="draft-dialog-title">{draft.title}</h2>
         <p className="modalLead" id="draft-dialog-description">보상 하나를 고르세요. 고를 때까지 전투는 멈춰 있습니다.</p>
       </div>

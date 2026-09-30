@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 
 import { DEVELOPER_UI_AVAILABLE } from '../../platform/developerAccess';
 import { LOW_HEALTH_RATIO, SKILLS, SKILL_IDS, formatClock, type HudSnapshot } from '../../game/GameEngine';
 import { MAX_SKILL_LEVEL } from '../../game/grammar';
+import { loadBossTitles, type BossTitle } from '../bossTitles';
 import { ProgressBar } from '../ProgressBar';
 
 export type HudLayerProps = {
@@ -25,6 +26,8 @@ export type HudLayerProps = {
 
 /** How long the portrait winces after the hero loses health. */
 const HURT_FACE_MS = 500;
+/** A boss's title card shows this long when it appears, outside the centre 40% of the screen (FX-05). */
+const BOSS_INTRO_MS = 1200;
 
 const STAGE_KIND = { normal: '생존', midBoss: '중간 보스', finalBoss: '챕터 보스' } as const;
 
@@ -86,6 +89,22 @@ export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen,
     if (snapshot.hp < lastHp.current - 0.5) setHurtAt(performance.now());
     lastHp.current = snapshot.hp;
   }, [snapshot.hp]);
+  const [intro, setIntro] = useState<Partial<BossTitle> & { name: string } | null>(null);
+  const bossId = snapshot.bossId;
+  useEffect(() => {
+    if (!bossId) return undefined;
+    let live = true;
+    const name = snapshot.bossName ?? '';
+    setIntro({ name });
+    void loadBossTitles().then((titles) => { if (live && titles[bossId]) setIntro({ ...titles[bossId], name }); });
+    const timer = window.setTimeout(() => setIntro(null), BOSS_INTRO_MS);
+    return () => {
+      live = false;
+      window.clearTimeout(timer);
+      setIntro(null);
+    };
+    // Only a new boss id brings a new card; its name comes with it.
+  }, [bossId]);
   const low = snapshot.hp > 0 && snapshot.hp <= snapshot.maxHp * LOW_HEALTH_RATIO;
   const face = performance.now() - hurtAt < HURT_FACE_MS
     ? 'hurt'
@@ -138,7 +157,8 @@ export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen,
           {infinite && <div className={snapshot.scoreEligible ? 'recordState eligible' : 'recordState practice'}>{snapshot.scoreEligible ? '경쟁 기록' : '연습 · 기록 제외'}</div>}
         </section>
         <section className="hudChips">
-          <span className="hudChip" title="코인"><i className="artPickup" data-art="coin" aria-hidden="true" /><span className="srOnly">코인</span>{snapshot.coins}</span>
+          {/* Keyed on the count, so the chip pulses again whenever it changes (FX-05). */}
+          <span className="hudChip pulse" key={`coins-${snapshot.coins}`} title="코인"><i className="artPickup" data-art="coin" aria-hidden="true" /><span className="srOnly">코인</span>{snapshot.coins}</span>
           <span className="hudChip" title={infinite ? '보스 처치' : '처치'}><i className="killMark" aria-hidden="true" /><span className="srOnly">{infinite ? '보스 처치' : '처치'}</span>{infinite ? snapshot.bossKills : snapshot.kills}</span>
           {DEVELOPER_UI_AVAILABLE && <span className="hudChip devOnly" title="적">적 {snapshot.enemyCount}</span>}
           <button className={snapshot.timeScale === 2 ? 'primary small iconButton active' : 'primary small iconButton'} onClick={onToggleSpeed} aria-pressed={snapshot.timeScale === 2} aria-label={`게임 속도 ${snapshot.timeScale === 2 ? '1배속' : '2배속'}으로 변경`} title="게임 속도">
@@ -153,6 +173,13 @@ export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen,
         </section>
       </div>
       {snapshot.bossName && <BossBar snapshot={snapshot} />}
+      {intro && (
+        <div className="bossIntro" role="status" aria-live="polite">
+          {intro.title && <span>{intro.title}</span>}
+          <strong>{intro.name}</strong>
+          {intro.line && <p>{intro.line}</p>}
+        </div>
+      )}
       {snapshot.activeEffects.length > 0 && (
         <div className="effectRack" role="status" aria-live="polite" aria-label="현재 버프와 디버프">
           {snapshot.activeEffects.map((effect) => (

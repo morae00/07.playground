@@ -124,6 +124,13 @@ Two HUD marks live on the canvas, because they need the camera (UI-02):
 - Bosses and elites outside the view get a coral arrow on the screen edge. The arrow sits on the line from the screen centre toward the enemy and keeps clear of the HUD rows. Bosses come first; at most four arrows show.
 - Silence and root show as round timers over the hero's head. The renderer infers each debuff's length when it sees one start, and the ring empties as the debuff runs out. The DOM effect rack still announces both to screen readers but no longer shows them.
 
+## Event staging (FX-05)
+
+- **Level-up:** the engine stops at the step the XP fills and opens the draft, so no simulated time passes (G15). The draft modal then plays a 0.6 s sequence: an ink ring bursts, the "레벨 업!" banner lands, and the cards turn in 80 ms apart. Reduced motion cuts every animation to nothing.
+- **Draft sounds:** `draft/opened` plays the level-up sound, and a sting when a card is an awakening, legendary, or mythic.
+- **Pickups:** `pickup/collected` fires only when a pickup reaches the player; a pickup that expires into the total stays silent. It plays a tick that rises one step per pickup within 0.6 s of the last, up to +48%, and leaves a four-fleck glint. Classic rules skip the glint, because their cosmetic draws feed gameplay ids. The coin chip pulses when the count changes.
+- **Boss title card:** when a boss appears, the HUD shows its title card for 1.2 s, above the centre band, without stopping play. The card holds the boss's title, name, and one line, and a warning sound plays. The text is data (`public/assets/content/boss-titles.json`), copied from the lore bible's boss tables; `bossTitles.test.ts` keeps the two in step.
+
 ## Test access (TEC-07)
 
 Tests, balance runners, and soak tools use `ProbedGameEngine` (`src/game/engine/probe.ts`), a test-only subclass whose `probe` API sets up worlds (spawn, place, patch, clear, halt spawns, set skills, cast), steps fixed ticks, observes every step (`onStep`), and reads a plain-data copy of the world (`read`). `createEngineHarness` (`src/game/engine/harness.ts`) implements the replay contract on the real engine: a seed plus a command log reproduces the same snapshot and fingerprint. The test bundle entry is `src/testing/engine.ts` (`npm run build:test-bundles`); the app entry never imports it, so production bundles do not ship the probe. Engine members are `protected` only so the probe subclass can reach them; nothing else subclasses the engine.

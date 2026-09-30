@@ -146,7 +146,8 @@ export interface EngineProbe {
   /** Removes every hazard of the given kinds, keeping the others in order. */
   removeHazards(kinds: readonly Hazard['kind'][]): void;
   /** Drops a pickup through the regular spawner (merging, caps, and lifetimes apply). */
-  spawnPickup(spec: { kind: Pickup['kind']; x: number; y: number; value: number; vx?: number; vy?: number; radius?: number }): void;
+  /** `life` shortens the pickup's lifetime, to reach its expiry without waiting for it. */
+  spawnPickup(spec: { kind: Pickup['kind']; x: number; y: number; value: number; vx?: number; vy?: number; radius?: number; life?: number }): void;
   /** Adds a hostile shot directly (render benchmarks, TEC-04). */
   spawnHostileShot(spec: { x: number; y: number; vx?: number; vy?: number; radius?: number; damage?: number; life?: number; kind?: BossProjectile['kind'] }): void;
   /** Adds cosmetic particles and damage numbers through the presentation layer (render benchmarks, TEC-04). */
@@ -375,8 +376,9 @@ export class ProbedGameEngine extends GameEngine {
         this.hazards.push(hazard);
         return hazard.id;
       },
-      spawnPickup: ({ kind, x, y, value, vx = 0, vy = 0, radius = kind === 'xp' ? 5 : 6 }) => {
+      spawnPickup: ({ kind, x, y, value, vx = 0, vy = 0, radius = kind === 'xp' ? 5 : 6, life }) => {
         this.spawnPickup(kind, x, y, vx, vy, radius, value);
+        if (life !== undefined) this.pickups.at(-1)!.life = life;
       },
       spawnHostileShot: ({ x, y, vx = 0, vy = 0, radius = 7, damage = 0, life = 4, kind = 'enemy' }) => {
         this.spawnBossProjectile(x, y, vx, vy, radius, damage, life, kind);

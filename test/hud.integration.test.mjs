@@ -132,3 +132,43 @@ test('UI-02: silence and root sit over the hero as timers that run down', () => 
     engine.dispose();
   }
 });
+
+test('FX-05: a pickup that reaches the player reports it, one that expires into the total does not', () => {
+  const engine = arena(markCanvas());
+  try {
+    const events = [];
+    engine.subscribe((event) => { if (event.type === 'pickup/collected' || event.type === 'draft/opened') events.push(event); });
+    const { player } = engine.probe.read();
+    engine.probe.spawnPickup({ kind: 'coin', x: player.x + 4, y: player.y, value: 1 });
+    engine.probe.spawnPickup({ kind: 'xp', x: player.x + 3000, y: player.y, value: 1, life: 0.01 });
+    engine.probe.step(2);
+    assert.deepEqual(events.map((event) => [event.type, event.kind]), [['pickup/collected', 'coin']]);
+  } finally {
+    engine.dispose();
+  }
+});
+
+test('FX-05: a draft reports when it opens, and flags awakening, legendary, and mythic cards for the sting', () => {
+  const drafts = [];
+  const fixture = markCanvas();
+  const engine = new ProbedGameEngine(fixture.canvas, meta(), options, { onSnapshot() {}, onDraft: (draft) => drafts.push(draft), onRoundClear() {}, onGameOver() {} });
+  try {
+    engine.startRun(3, 4, 7070);
+    engine.probe.haltSpawns();
+    engine.probe.setGodMode();
+    const opened = [];
+    engine.subscribe((event) => { if (event.type === 'draft/opened') opened.push(event); });
+    for (let round = 0; round < 12; round += 1) {
+      engine.probe.openDraft(round % 3 === 0 ? 'boss' : 'level', 'resume');
+      engine.dispatch({ type: 'draft/select', offerId: drafts.at(-1).cards[0].offerId });
+    }
+    assert.equal(opened.length, 12);
+    opened.forEach((event, index) => {
+      const cards = drafts[index].cards;
+      assert.equal(event.reason, drafts[index].reason);
+      assert.equal(event.highlight, cards.some((card) => card.kind === 'awakening' || card.rarity === 'legendary' || card.rarity === 'mythic'), `draft ${index}`);
+    });
+  } finally {
+    engine.dispose();
+  }
+});
