@@ -22,10 +22,11 @@ const CONFIGS = [
   { name: 'stress DPR2 1.5 sprites', scene: 'stress', dpr: 2, scale: 1.5, sprites: true },
   { name: 'stress DPR2 2.0 vectors', scene: 'stress', dpr: 2, scale: 2, sprites: false },
   { name: 'stress DPR1 1.0 vectors', scene: 'stress', dpr: 1, scale: 1, sprites: false },
-  { name: 'C1S10 DPR2 2.0 sprites', scene: 'game', chapter: 1, stage: 10, dpr: 2, scale: 2, sprites: true, warmup: 20 },
-  { name: 'C1S10 DPR1 1.0 sprites', scene: 'game', chapter: 1, stage: 10, dpr: 1, scale: 1, sprites: true, warmup: 20 },
-  { name: 'C5S10 DPR2 2.0', scene: 'game', chapter: 5, stage: 10, dpr: 2, scale: 2, sprites: true, warmup: 20 },
-  { name: 'C5S10 DPR1 1.0', scene: 'game', chapter: 5, stage: 10, dpr: 1, scale: 1, sprites: true, warmup: 20 },
+  // One final boss stage per chapter, each with its chapter pack (the R2 chapter gate).
+  ...[1, 2, 3, 4, 5].flatMap((chapter) => [
+    { name: `C${chapter}S10 DPR2 2.0 sprites`, scene: 'game', chapter, stage: 10, dpr: 2, scale: 2, sprites: true, warmup: 20 },
+    { name: `C${chapter}S10 DPR1 1.0 sprites`, scene: 'game', chapter, stage: 10, dpr: 1, scale: 1, sprites: true, warmup: 20 },
+  ]),
   // Frame rate unlocked (no vsync): intervals show the whole frame cost, GPU included, i.e. the headroom that a
   // 60 Hz vsync hides.
   { name: 'unlocked stress DPR2 2.0 sprites', scene: 'stress', dpr: 2, scale: 2, sprites: true, unlocked: true },
