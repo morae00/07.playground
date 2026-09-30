@@ -56,23 +56,34 @@ test('reduced-motion listener receives changes and is removed on cleanup', () =>
   assert.equal(removed, true);
 });
 
-test('gamepad navigation edges: D-pad moves focus with hold repeat, A confirms, B goes back', async () => {
-  const { INITIAL_GAMEPAD_NAV_STATE, readGamepadNavigation } = await import('../src/ui/inputContracts.ts');
+test('gamepad navigation edges: D-pad and stick move focus four ways with hold repeat, A confirms, B goes back, LB/RB switch tabs', async () => {
+  const { INITIAL_GAMEPAD_NAV_STATE, padActive, readGamepadNavigation } = await import('../src/ui/inputContracts.ts');
   const pad = (pressed = {}, axes = [0, 0]) => ({ connected: true, axes, buttons: Array.from({ length: 16 }, (_, index) => button(Boolean(pressed[index]))) });
   let result = readGamepadNavigation([pad({ 15: true })], INITIAL_GAMEPAD_NAV_STATE, 0);
-  assert.deepEqual(result.actions, ['next']);
+  assert.deepEqual(result.actions, ['right']);
   result = readGamepadNavigation([pad({ 15: true })], result.state, 100);
   assert.deepEqual(result.actions, [], 'holding does not repeat before the delay');
   result = readGamepadNavigation([pad({ 15: true })], result.state, 400);
-  assert.deepEqual(result.actions, ['next'], 'holding repeats after the delay');
+  assert.deepEqual(result.actions, ['right'], 'holding repeats after the delay');
   result = readGamepadNavigation([pad({}, [-0.9, 0])], result.state, 420);
-  assert.deepEqual(result.actions, ['previous'], 'the stick navigates too');
+  assert.deepEqual(result.actions, ['left'], 'the stick navigates too');
+  result = readGamepadNavigation([pad({}, [0.5, 0.8])], result.state, 440);
+  assert.deepEqual(result.actions, ['down'], 'a diagonal stick takes its stronger axis');
+  result = readGamepadNavigation([pad({ 12: true }, [0.9, 0])], result.state, 460);
+  assert.deepEqual(result.actions, ['up'], 'the D-pad wins over the stick');
   result = readGamepadNavigation([pad({ 0: true })], result.state, 500);
   assert.deepEqual(result.actions, ['confirm']);
   result = readGamepadNavigation([pad({ 0: true })], result.state, 520);
   assert.deepEqual(result.actions, [], 'A fires once per press');
   result = readGamepadNavigation([pad({ 1: true })], result.state, 540);
   assert.deepEqual(result.actions, ['back']);
-  result = readGamepadNavigation([], result.state, 560);
+  result = readGamepadNavigation([pad({ 5: true })], result.state, 560);
+  assert.deepEqual(result.actions, ['tabNext'], 'RB switches to the next tab');
+  result = readGamepadNavigation([pad({ 4: true })], result.state, 580);
+  assert.deepEqual(result.actions, ['tabPrevious'], 'LB switches to the previous tab');
+  result = readGamepadNavigation([], result.state, 600);
   assert.deepEqual(result.actions, []);
+  assert.equal(padActive(pad()), false, 'a resting pad is not in use');
+  assert.equal(padActive(pad({}, [0.4, 0])), true);
+  assert.equal(padActive(pad({ 9: true })), true);
 });

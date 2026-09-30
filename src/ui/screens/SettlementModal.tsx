@@ -10,6 +10,7 @@ import { FINAL_CHAPTER } from '../../content/campaign';
 import { CHAPTERS, formatClock, type Settlement, type SkillId, type StageProgress } from '../../game/GameEngine';
 import { formatCount, t, tx } from '../../i18n/strings';
 import type { StringKey } from '../../i18n/text';
+import { Glyph } from '../Glyph';
 import { ModalDialog } from '../ModalDialog';
 import type { SettlementNotes } from '../settlementNotes';
 import { SETTLEMENT_INPUT_GUARD_MS } from './constants';
@@ -177,7 +178,7 @@ export function SettlementModal({ settlement, defeated, notes, reducedMotion, le
       {!settlement.practice && settlement.cleared && !settlement.gameComplete && !goNext && <div className="soonStrip">{t('settle.nextFromMenu')}</div>}
 
       <div className="modalActions">
-        {goNext && <button className="primary" onClick={() => onNextStage(goNext)}>{t('settle.next', goNext)}<kbd aria-hidden="true">Enter</kbd></button>}
+        {goNext && <button className="primary" onClick={() => onNextStage(goNext)}>{t('settle.next', goNext)}<Glyph action="confirm" /></button>}
         <button className="ghost" onClick={onRetry}>{t('settle.retry')}</button>
         <button className={goNext ? 'ghost' : 'primary'} onClick={onMenu}>{t('common.menu')}</button>
         {infinite && <button className="ghost" type="button" onClick={onCopyInfiniteResult}>{t('settle.copy')}</button>}

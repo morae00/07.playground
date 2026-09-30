@@ -2,7 +2,7 @@
 // rarity by shape (frame lines, corner diamonds, knots, foil) and the ribbon repeats it as a count of ◆, so colour
 // never carries it alone. A card lists the skill's tags, its level pips, and each number the pick changes; the strip
 // under the cards shows the build so far. Picking is guarded for DIALOG_INPUT_GUARD_MS (BUG-05); 1-4, the arrows
-// and Enter, and the pad's D-pad and A all pick (App, useGamepadNavigation).
+// and Enter, and the pad's D-pad and A all pick (App, useGamepadNavigation), and the key line names the device in use.
 // A level-up opens with a 0.6 s sequence (FX-05): an ink ring bursts, the banner lands, and the cards turn in 80 ms
 // apart. The engine stopped at the step the XP filled, so no simulated time passes (G15); reduced motion skips it.
 import type { CSSProperties } from 'react';
@@ -10,6 +10,8 @@ import { RARITY, SKILLS, SKILL_IDS, type DraftCard, type DraftState, type HudSna
 import { MAX_SKILL_LEVEL } from '../../game/grammar';
 import { SKILL_LEVEL_STATS } from '../../game/skillNumbers';
 import { t, tp, tx } from '../../i18n/strings';
+import { glyphs } from '../Glyph';
+import { useInputDevice } from '../inputDevice';
 import { ModalDialog } from '../ModalDialog';
 import { DIALOG_INPUT_GUARD_MS } from './constants';
 
@@ -81,6 +83,7 @@ function Card({ offer, index, onPick }: { offer: DraftCard; index: number; onPic
 
 export function DraftModal({ draft, skills, onPick }: { draft: DraftState; skills: HudSnapshot['skills']; onPick: (offer: SkillOffer) => void }) {
   const owned = SKILL_IDS.filter((id) => skills[id]);
+  const device = useInputDevice();
   return (
     <ModalDialog className="draftBox" labelledBy="draft-dialog-title" describedBy="draft-dialog-description draft-dialog-keys" inputGuardMs={DIALOG_INPUT_GUARD_MS}>
       {draft.reason === 'level' && <i className="draftBurst" aria-hidden="true" />}
@@ -105,7 +108,9 @@ export function DraftModal({ draft, skills, onPick }: { draft: DraftState; skill
           ))}
           {owned.length === 0 && <li className="emptyText">{t('draft.noSkills')}</li>}
         </ul>
-        <span className="buildKeys" id="draft-dialog-keys">{t('draft.keys', { count: draft.cards.length })}</span>
+        <span className="buildKeys" id="draft-dialog-keys">
+          {device === 'keyboard' ? t('draft.keys.keyboard', { count: draft.cards.length }) : t('draft.keys.pad', glyphs(device))}
+        </span>
       </div>
     </ModalDialog>
   );

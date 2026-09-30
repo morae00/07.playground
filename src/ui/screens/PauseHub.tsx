@@ -4,6 +4,8 @@
 import type { KeyboardEvent } from 'react';
 import { PAUSED_HEAL_SECONDS, RUN_UPGRADES, SKILL_IDS, runUpgradeCost, type HudSnapshot, type RunUpgradeId } from '../../game/GameEngine';
 import { t } from '../../i18n/strings';
+import { glyphs } from '../Glyph';
+import { useInputDevice } from '../inputDevice';
 import type { GameOptions } from '../../platform/save';
 import { nextRovingId, type RovingKey } from '../inputContracts';
 import { ModalDialog } from '../ModalDialog';
@@ -13,7 +15,7 @@ export type PauseTab = 'build' | 'shop' | 'settings' | 'controls';
 
 const TABS: readonly PauseTab[] = ['build', 'shop', 'settings', 'controls'];
 
-const CONTROLS = ['move', 'pause', 'draft', 'speed', 'skills'] as const;
+const CONTROLS = ['move', 'pause', 'menu', 'tabs', 'draft', 'speed', 'skills'] as const;
 
 export type PauseHubProps = {
   snapshot: HudSnapshot;
@@ -40,6 +42,8 @@ export function PauseHub({ snapshot, tab, setTab, confirmingAbandon, onResume, o
     requestAnimationFrame(() => document.getElementById(`pause-tab-${next}`)?.focus());
   };
   const { stats } = snapshot;
+  const device = useInputDevice();
+  const keys = glyphs(device);
   return (
     <ModalDialog className="settlementBox pauseBox" labelledBy="pause-dialog-title" describedBy="pause-dialog-description" onEscape={confirmingAbandon ? onCancelAbandon : onResume}>
       <div className="modalHead">
@@ -58,7 +62,7 @@ export function PauseHub({ snapshot, tab, setTab, confirmingAbandon, onResume, o
         </>
       ) : (
         <>
-          <p className="modalLead" id="pause-dialog-description">{t('pause.lead')}</p>
+          <p className="modalLead" id="pause-dialog-description">{device === 'keyboard' ? t('pause.lead.keyboard') : t('pause.lead.pad', keys)}</p>
           <div className="hubTabs" role="tablist" aria-label={t('pause.tabs')}>
             {TABS.map((id) => (
               <button id={`pause-tab-${id}`} className={tab === id ? 'menuTab active' : 'menuTab'} role="tab" aria-selected={tab === id} aria-controls={`pause-panel-${id}`} tabIndex={tab === id ? 0 : -1} onClick={() => setTab(id)} onKeyDown={onTabKey} key={id}>
@@ -117,9 +121,19 @@ export function PauseHub({ snapshot, tab, setTab, confirmingAbandon, onResume, o
             )}
             {tab === 'settings' && <SettingsPanel options={options} setOptions={setOptions} inRun />}
             {tab === 'controls' && (
-              <dl className="hubControls">
-                {CONTROLS.map((action) => <div key={action}><dt>{t(`controls.${action}`)}</dt><dd>{t(`controls.${action}.keys`)}</dd></div>)}
-              </dl>
+              <table className="hubControls">
+                <thead><tr><th /><th>{t('controls.keyboard')}</th><th>{t('controls.pad')}</th></tr></thead>
+                <tbody>
+                  {CONTROLS.map((action) => (
+                    <tr key={action}>
+                      <th scope="row">{t(`controls.${action}`)}</th>
+                      <td>{t(`controls.${action}.keyboard`)}</td>
+                      {/* The pad column names the family in use, or the Xbox layout while on the keyboard. */}
+                      <td>{t(`controls.${action}.pad`, glyphs(device === 'keyboard' ? 'xbox' : device))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </section>
           <div className="modalActions">

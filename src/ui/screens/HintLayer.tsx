@@ -1,13 +1,21 @@
 // Onboarding hints (UI-09): context hints that never stop play, each shown once per save (profile.hintsSeen).
 // In 1-1: moving is all it takes because attacks are automatic, ink shards level you up, and coins buy upgrades in
-// the pause hub. At the first boss: read the telegraph and step out. Keyboard glyphs only until UI-07 brings
-// per-device glyphs. The hint sits above the boss bar, clear of the centre 40% of the screen.
+// the pause hub. At the first boss: read the telegraph and step out. Keys are named for the device in use (UI-07).
+// The hint sits above the boss bar, clear of the centre 40% of the screen.
 import { useEffect, useState } from 'react';
 import type { HudSnapshot } from '../../game/GameEngine';
 import { t } from '../../i18n/strings';
+import { glyphs } from '../Glyph';
+import { useInputDevice, type InputDevice } from '../inputDevice';
 
-/** Each shows as the string hint.<id>. */
+/** Each shows as the string hint.<id>; the move hint has one wording per device. */
 export type HintId = 'move' | 'xp' | 'shop' | 'telegraph';
+
+function hintText(id: HintId, device: InputDevice) {
+  const keys = glyphs(device);
+  if (id === 'move') return device === 'keyboard' ? t('hint.move.keyboard') : t('hint.move.pad', keys);
+  return t(`hint.${id}`, keys);
+}
 
 /** How long a hint stays up. */
 export const HINT_MS = 6000;
@@ -28,6 +36,7 @@ export function dueHint(snapshot: HudSnapshot, seen: readonly string[]): HintId 
 
 export function HintLayer({ snapshot, seen, onSeen }: { snapshot: HudSnapshot; seen: readonly string[]; onSeen: (id: HintId) => void }) {
   const [shown, setShown] = useState<HintId | null>(null);
+  const device = useInputDevice();
   const due = shown ? null : dueHint(snapshot, seen);
   useEffect(() => {
     if (!due) return;
@@ -40,5 +49,5 @@ export function HintLayer({ snapshot, seen, onSeen }: { snapshot: HudSnapshot; s
     const timer = window.setTimeout(() => setShown(null), HINT_MS);
     return () => window.clearTimeout(timer);
   }, [shown]);
-  return shown ? <div className="hintToast" role="status" aria-live="polite">{t(`hint.${shown}`)}</div> : null;
+  return shown ? <div className="hintToast" role="status" aria-live="polite">{hintText(shown, device)}</div> : null;
 }

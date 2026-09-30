@@ -900,18 +900,36 @@ h2 {
 }
 
 .hubStats,
+/* The controls tab (UI-07): one row per action, the keyboard and the gamepad side by side. */
 .hubControls {
-  margin: 0;
-  display: grid;
-  gap: 4px;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.hubControls th,
+.hubControls td {
+  border-bottom: 1px dashed var(--line);
+  padding: 5px 8px 5px 0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.hubControls thead th {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.hubControls tbody th {
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .hubStats {
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
 }
 
-.hubStats div,
-.hubControls div {
+.hubStats div {
   display: flex;
   justify-content: space-between;
   gap: 10px;
@@ -920,13 +938,11 @@ h2 {
   font-size: 13px;
 }
 
-.hubStats dt,
-.hubControls dt {
+.hubStats dt {
   font-weight: 800;
 }
 
-.hubStats dd,
-.hubControls dd {
+.hubStats dd {
   margin: 0;
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -2199,12 +2215,25 @@ h2 {
   font-variant-numeric: tabular-nums;
 }
 
-.modalActions kbd {
-  margin-left: 8px;
+/* A button glyph for the device in use (UI-07): Enter, A, or ✕. */
+.glyph {
+  display: inline-block;
+  min-width: 1.6em;
   border: 1px solid currentColor;
+  border-radius: 3px;
   padding: 0 4px;
   font: inherit;
   font-size: 13px;
+  text-align: center;
+}
+
+.glyph[data-device="xbox"],
+.glyph[data-device="ps"] {
+  border-radius: 999px;
+}
+
+.modalActions .glyph {
+  margin-left: 8px;
 }
 
 .infiniteResultGrid .scoreResult {

@@ -1,4 +1,4 @@
-// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, TEC-15, CON-02, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-05, UI-09) against the developer build.
+// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, TEC-15, CON-02, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-05, UI-07, UI-09) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -136,8 +136,8 @@ try {
     const backToMenu = await page.getByRole('heading', { name: '흑백 타격 생존전' }).count();
     record('BUG-06 gamepad B leaves the settlement for the menu', settlementOpen === 1 && backToMenu === 1);
 
+    // The first press lands on the start button (UI-07).
     await tap(15);
-    await tap(0);
     const menuFocus = await page.evaluate(() => document.activeElement?.closest('.menuLayer') !== null);
     record('BUG-06 gamepad moves focus in the menu', menuFocus);
     await page.close();
@@ -565,6 +565,94 @@ try {
       await page.close();
     }
   });
+  await probe('UI-07', async () => {
+    // A virtual pad drives the whole loop: start 1-1, move, pick a draft card, use the pause hub and its tabs, and
+    // take the settlement to 1-2. Only the draft and the stage end are forced, by the developer cheats.
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await page.addInitScript(() => {
+      const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+      const pad = { connected: true, index: 0, id: 'Xbox Wireless Controller (STANDARD GAMEPAD Vendor: 045e)', axes: [0, 0, 0, 0], buttons, mapping: 'standard', timestamp: 0 };
+      window.__probePad = {
+        press(index) { buttons[index] = { pressed: true, value: 1 }; },
+        release(index) { buttons[index] = { pressed: false, value: 0 }; },
+        stick(x, y) { pad.axes[0] = x; pad.axes[1] = y; },
+        rename(id) { pad.id = id; },
+      };
+      navigator.getGamepads = () => [pad, null, null, null];
+    });
+    const tap = async (index) => {
+      await page.evaluate((button) => window.__probePad.press(button), index);
+      await page.waitForTimeout(80);
+      await page.evaluate((button) => window.__probePad.release(button), index);
+      await page.waitForTimeout(100);
+    };
+    const [A, B, LB, RB, START, RIGHT] = [0, 1, 4, 5, 9, 15];
+    await page.goto('http://127.0.0.1:5177/');
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    await tap(A);
+    const focusedStart = await page.evaluate(() => document.activeElement?.textContent ?? '');
+    await tap(A);
+    await page.waitForTimeout(400);
+    const badge = async () => (await page.locator('.heroLine strong').textContent().catch(() => '')) ?? '';
+    const started = (await badge()).startsWith('Ch.1 / St.1 ');
+    record('UI-07 A lands on the start button, then starts 1-1', focusedStart.includes('Ch.1 / St.1') && started, `focus "${focusedStart.trim()}", badge ${await badge()}`);
+
+    const before = (await diagnostics(page)).player.x;
+    await page.evaluate(() => window.__probePad.stick(1, 0));
+    await page.waitForTimeout(700);
+    await page.evaluate(() => window.__probePad.stick(0, 0));
+    record('UI-07 the stick moves the hero in play', (await diagnostics(page)).player.x > before + 20);
+
+    // Typing the cheat hands the glyphs to the keyboard; the first pad press takes them back.
+    await cheat(page, 'DRAFT');
+    await page.waitForTimeout(450);
+    await tap(RIGHT);
+    await tap(RIGHT);
+    const keysLine = await page.locator('#draft-dialog-keys').textContent();
+    const secondCard = await page.evaluate(() => [...document.querySelectorAll('.draftCard')].indexOf(document.activeElement));
+    await tap(A);
+    await page.waitForTimeout(150);
+    const draftClosed = (await page.locator('.draftGrid').count()) === 0;
+    record('UI-07 the D-pad walks the draft cards and A picks one', secondCard === 1 && draftClosed, `card ${secondCard}`);
+    record('UI-07 the draft names the pad glyphs', Boolean(keysLine?.includes('D-pad') && keysLine.includes('A')), keysLine ?? '');
+
+    await tap(START);
+    await page.waitForTimeout(200);
+    const hub = page.getByRole('dialog', { name: '일시정지' });
+    const hubOpen = (await hub.count()) === 1;
+    await tap(RB);
+    const afterRb = await hub.getByRole('tab', { selected: true }).textContent();
+    await tap(LB);
+    const afterLb = await hub.getByRole('tab', { selected: true }).textContent();
+    await tap(B);
+    await page.waitForTimeout(200);
+    const resumed = (await hub.count()) === 0;
+    record('UI-07 Start opens the pause hub, RB and LB switch its tabs, B resumes', hubOpen && afterRb === '강화' && afterLb === '빌드' && resumed, `${afterRb} / ${afterLb}`);
+
+    await cheat(page, 'CLEAR');
+    await page.getByRole('dialog', { name: 'Stage 돌파' }).waitFor({ timeout: 3000 });
+    await page.waitForTimeout(900);
+    // A small stick nudge uses the pad without navigating, so the glyphs follow it.
+    const nudge = async () => {
+      await page.evaluate(() => window.__probePad.stick(0.4, 0));
+      await page.waitForTimeout(80);
+      await page.evaluate(() => window.__probePad.stick(0, 0));
+      await page.waitForTimeout(80);
+    };
+    await nudge();
+    const glyphText = await page.locator('.modalActions .glyph').textContent();
+    await page.evaluate(() => window.__probePad.rename('DualSense Wireless Controller (Vendor: 054c)'));
+    await nudge();
+    const psGlyph = await page.locator('.modalActions .glyph').textContent();
+    await tap(A);
+    const focusedNext = await page.evaluate(() => document.activeElement?.textContent ?? '');
+    await tap(A);
+    await page.waitForTimeout(400);
+    record('UI-07 the settlement shows the pad glyph (A, then ✕ on a PlayStation pad)', glyphText === 'A' && psGlyph === '✕', `${glyphText} / ${psGlyph}`);
+    record('UI-07 A reaches the next stage from the settlement', focusedNext.startsWith('다음 Stage') && (await badge()).startsWith('Ch.1 / St.2 '), `badge ${await badge()}`);
+    await page.close();
+  });
+
 } finally {
   await browser.close();
   await server.close();

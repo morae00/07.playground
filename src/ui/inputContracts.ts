@@ -5,6 +5,8 @@ export type GamepadButtonLike = {
 
 export type GamepadLike = {
   connected?: boolean;
+  /** The browser's pad name; it tells the PlayStation family apart (UI-07 glyphs). */
+  id?: string;
   axes: readonly number[];
   buttons: readonly GamepadButtonLike[];
 };
@@ -71,30 +73,55 @@ export function readGamepadIntent(
   };
 }
 
-export type GamepadNavAction = 'previous' | 'next' | 'confirm' | 'back';
+export type NavDirection = 'up' | 'down' | 'left' | 'right';
+export type GamepadNavAction = NavDirection | 'confirm' | 'back' | 'tabPrevious' | 'tabNext';
 
 export type GamepadNavState = {
   confirmHeld: boolean;
   backHeld: boolean;
-  direction: -1 | 0 | 1;
+  tabPreviousHeld: boolean;
+  tabNextHeld: boolean;
+  direction: NavDirection | null;
   nextRepeatAt: number;
 };
 
 export const INITIAL_GAMEPAD_NAV_STATE: GamepadNavState = Object.freeze({
   confirmHeld: false,
   backHeld: false,
-  direction: 0,
+  tabPreviousHeld: false,
+  tabNextHeld: false,
+  direction: null,
   nextRepeatAt: 0,
 });
 
 const NAV_AXIS_THRESHOLD = 0.6;
 const NAV_REPEAT_DELAY_MS = 380;
 const NAV_REPEAT_INTERVAL_MS = 160;
+/** A stick past this, or any pressed button, counts as using the pad (UI-07 glyphs). */
+const PAD_ACTIVITY_AXIS = 0.3;
+
+/** Which way the D-pad or the left stick points (the D-pad wins), when it clearly points one way. */
+function navDirection(pad: GamepadLike): NavDirection | null {
+  if (buttonPressed(pad.buttons[12])) return 'up';
+  if (buttonPressed(pad.buttons[13])) return 'down';
+  if (buttonPressed(pad.buttons[14])) return 'left';
+  if (buttonPressed(pad.buttons[15])) return 'right';
+  const x = pad.axes[0] ?? 0;
+  const y = pad.axes[1] ?? 0;
+  if (Math.max(Math.abs(x), Math.abs(y)) < NAV_AXIS_THRESHOLD) return null;
+  if (Math.abs(x) > Math.abs(y)) return x < 0 ? 'left' : 'right';
+  return y < 0 ? 'up' : 'down';
+}
+
+/** Whether a pad is being used at all: a pressed button or a stick off centre. */
+export function padActive(pad: GamepadLike) {
+  return pad.buttons.some((button) => buttonPressed(button)) || pad.axes.some((axis) => Math.abs(axis) > PAD_ACTIVITY_AXIS);
+}
 
 /**
- * Reads UI navigation from a gamepad (BUG-06): D-pad or left stick moves focus (up/left = previous,
- * down/right = next, with hold-to-repeat), A (button 0) confirms, B (button 1) goes back. Start stays with
- * the engine's pause handling, and none of these buttons are ever mapped to attacks (G1).
+ * Reads UI navigation from a gamepad (BUG-06, UI-07): the D-pad or left stick moves focus in four directions, with
+ * hold-to-repeat; A (button 0) confirms, B (button 1) goes back, and LB / RB (buttons 4 and 5) switch tabs. Start
+ * stays with the pause handling, and none of these buttons are ever mapped to attacks (G1).
  */
 export function readGamepadNavigation(
   gamepads: readonly (GamepadLike | null | undefined)[],
@@ -105,27 +132,26 @@ export function readGamepadNavigation(
   if (!pad) return { actions: [], state: { ...INITIAL_GAMEPAD_NAV_STATE } };
   const actions: GamepadNavAction[] = [];
 
-  const axisX = pad.axes[0] ?? 0;
-  const axisY = pad.axes[1] ?? 0;
-  let direction: -1 | 0 | 1 = 0;
-  if (buttonPressed(pad.buttons[12]) || buttonPressed(pad.buttons[14]) || axisY <= -NAV_AXIS_THRESHOLD || axisX <= -NAV_AXIS_THRESHOLD) direction = -1;
-  if (buttonPressed(pad.buttons[13]) || buttonPressed(pad.buttons[15]) || axisY >= NAV_AXIS_THRESHOLD || axisX >= NAV_AXIS_THRESHOLD) direction = 1;
-
+  const direction = navDirection(pad);
   let nextRepeatAt = previous.nextRepeatAt;
-  if (direction !== 0 && direction !== previous.direction) {
-    actions.push(direction < 0 ? 'previous' : 'next');
+  if (direction && direction !== previous.direction) {
+    actions.push(direction);
     nextRepeatAt = now + NAV_REPEAT_DELAY_MS;
-  } else if (direction !== 0 && now >= previous.nextRepeatAt) {
-    actions.push(direction < 0 ? 'previous' : 'next');
+  } else if (direction && now >= previous.nextRepeatAt) {
+    actions.push(direction);
     nextRepeatAt = now + NAV_REPEAT_INTERVAL_MS;
   }
 
   const confirmHeld = buttonPressed(pad.buttons[0]);
   const backHeld = buttonPressed(pad.buttons[1]);
+  const tabPreviousHeld = buttonPressed(pad.buttons[4]);
+  const tabNextHeld = buttonPressed(pad.buttons[5]);
   if (confirmHeld && !previous.confirmHeld) actions.push('confirm');
   if (backHeld && !previous.backHeld) actions.push('back');
+  if (tabPreviousHeld && !previous.tabPreviousHeld) actions.push('tabPrevious');
+  if (tabNextHeld && !previous.tabNextHeld) actions.push('tabNext');
 
-  return { actions, state: { confirmHeld, backHeld, direction, nextRepeatAt } };
+  return { actions, state: { confirmHeld, backHeld, tabPreviousHeld, tabNextHeld, direction, nextRepeatAt } };
 }
 
 export function nextRovingId<T extends string>(ids: readonly T[], current: T, key: RovingKey) {

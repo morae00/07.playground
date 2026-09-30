@@ -8,6 +8,8 @@ import { DEVELOPER_UI_AVAILABLE } from '../../platform/developerAccess';
 import { LOW_HEALTH_RATIO, SKILLS, SKILL_IDS, formatClock, type HudSnapshot } from '../../game/GameEngine';
 import { MAX_SKILL_LEVEL } from '../../game/grammar';
 import { formatCount, t, tx } from '../../i18n/strings';
+import { glyph } from '../Glyph';
+import { useInputDevice } from '../inputDevice';
 import { loadBossTitles, type BossTitle } from '../bossTitles';
 import { ProgressBar } from '../ProgressBar';
 
@@ -85,6 +87,7 @@ function BossBar({ snapshot, name }: { snapshot: HudSnapshot; name: string }) {
 
 export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen, devToggleRef, onToggleSpeed, onToggleDevPanel, onTogglePause }: HudLayerProps) {
   const infinite = snapshot.runMode === 'infinite';
+  const device = useInputDevice();
   const lastHp = useRef(snapshot.hp);
   const [hurtAt, setHurtAt] = useState(-Infinity);
   useEffect(() => {
@@ -174,7 +177,7 @@ export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen,
               <span aria-hidden="true">{devPanelOpen ? '×' : '⚙'}</span>
             </button>
           )}
-          <button className="ghost small iconButton" onClick={onTogglePause} aria-pressed={runPaused} aria-label={t(runPaused ? 'hud.resume' : 'hud.pause')} title={t('hud.pauseTitle')}><span aria-hidden="true">{runPaused ? '▶' : 'Ⅱ'}</span></button>
+          <button className="ghost small iconButton" onClick={onTogglePause} aria-pressed={runPaused} aria-label={t(runPaused ? 'hud.resume' : 'hud.pause')} title={t('hud.pauseTitle', { pause: device === 'keyboard' ? 'P / Esc' : glyph(device, 'pause') })}><span aria-hidden="true">{runPaused ? '▶' : 'Ⅱ'}</span></button>
         </section>
       </div>
       {bossName && <BossBar snapshot={snapshot} name={bossName} />}
