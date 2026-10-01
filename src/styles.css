@@ -228,6 +228,45 @@ button:disabled {
   background-color: var(--ink);
 }
 
+/* CON-07: portrait frames, drawn over the portrait's own ring; the portrait and its level seal stay as they are. */
+.heroFace[data-frame]::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.heroFace[data-frame="frame-double"]::after {
+  border: 6px double var(--ink);
+}
+
+.heroFace[data-frame="frame-dashed"]::after {
+  border: 3px dashed var(--ink);
+}
+
+.heroFace[data-frame="frame-knot"]::after {
+  border: 3px dotted var(--ink);
+  outline: 2px solid var(--paper);
+  outline-offset: -6px;
+}
+
+.heroFace[data-frame="frame-brush"]::after {
+  border: 5px solid var(--ink);
+  border-left-color: transparent;
+  transform: rotate(-20deg);
+}
+
+.heroFace[data-frame="frame-seal"]::after {
+  border: 4px solid var(--ink);
+  border-radius: 18%;
+}
+
+.heroFace[data-frame="frame-ink-gold"]::after {
+  border: 4px solid #b49a5a;
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
 .levelSeal {
   position: absolute;
   right: -6px;
@@ -1009,6 +1048,42 @@ h2 {
   }
 }
 
+/* CON-07: the achievements list: goal, progress or the day it was met, and the reward to wear or to buy. */
+.achievementList {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+  list-style: none;
+}
+
+.achievementList li {
+  border: 2px solid var(--ink);
+  padding: 8px 10px;
+  display: grid;
+  gap: 3px;
+  background: var(--paper);
+  font-size: 13px;
+}
+
+.achievementList li.done {
+  background: #fff;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.achievementList b {
+  font-size: 15px;
+}
+
+.achievementList button {
+  justify-self: start;
+}
+
+.achievementReward {
+  font-weight: 700;
+}
+
 /* Save export and import (TEC-15). */
 .saveTransfer textarea {
   width: 100%;
@@ -1215,6 +1290,13 @@ h2 {
   border: 2px solid #111;
   padding: 12px;
   background: #fff;
+}
+
+/* CON-07: the title worn, under the account level. */
+.walletTitle {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .wallet span,

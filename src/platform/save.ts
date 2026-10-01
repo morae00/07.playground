@@ -92,6 +92,8 @@ export type ProfileData = {
   /** Onboarding hints already shown (UI-09); each shows once per save. */
   hintsSeen: string[];
   stats: CareerStats;
+  /** CON-07: cosmetics owned (unlocked by achievements or bought with gold) and the one worn of each kind. */
+  cosmetics: { owned: string[]; outline: string | null; trail: string | null; frame: string | null; title: string | null };
 };
 
 export type SaveData = {
@@ -168,6 +170,7 @@ export const createDefaultProfile = (): ProfileData => ({
   runSuspend: null,
   hintsSeen: [],
   stats: { runs: 0, clears: 0, kills: 0, bossKills: 0, playSeconds: 0 },
+  cosmetics: { owned: [], outline: null, trail: null, frame: null, title: null },
 });
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -293,7 +296,16 @@ export function sanitizeProfile(value: unknown): ProfileData {
     runSuspend,
     hintsSeen: stringList(value.hintsSeen, 64),
     stats: sanitizeStats(value.stats, stageRecords),
+    cosmetics: sanitizeCosmetics(value.cosmetics),
   };
+}
+
+/** CON-07: only an owned cosmetic can be worn. */
+function sanitizeCosmetics(value: unknown): ProfileData['cosmetics'] {
+  const cosmetics = isRecord(value) ? value : {};
+  const owned = stringList(cosmetics.owned, 128);
+  const worn = (field: unknown) => (typeof field === 'string' && owned.includes(field) ? field : null);
+  return { owned, outline: worn(cosmetics.outline), trail: worn(cosmetics.trail), frame: worn(cosmetics.frame), title: worn(cosmetics.title) };
 }
 
 /**

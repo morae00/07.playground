@@ -312,6 +312,9 @@ The save had a clear count, the best kills, and the best time per stage, and not
 - An entry not found yet is an ink silhouette that says how to find it. A found one shows its art, name, and lore line. The lines are draft data outside the app JS (`public/assets/content/codex.json`, and the boss titles), fetched when the codex opens. Skill pages add the skill's summary, so the codex doubles as the manual (UI-09).
 - A codex saved before CON-07 (it has no chapter list) gets what its stage records show, once (G17): every chapter played, the four enemies of a chapter with kills, the boss of every boss stage cleared, and the needles.
 - The terrain icons are the kit's hazard circles, baked like the other UI art (`art/ui-art-spec.mjs`, `terrain` sheet).
+- Achievements (`src/content/data/achievements.ts`, `src/ui/achievements.ts`): 30 goals over the save: clears, chapters, the account level, stars, three-star stages, career totals, a no-hit clear, swift boss stages, the codex, and one endless run's length. They are worked out from the save alone, after every settlement and as a save loads, so an older save earns what it already did (G17). The menu says which were just met.
+- Each achievement unlocks a cosmetic (`src/content/data/cosmetics.ts`): an outline round the hero, an ink trail, a portrait frame, or a title under the account level. A cosmetic not earned yet can be bought for its gold price, a sink for finished builds. Owned and worn cosmetics live in `profile.cosmetics`; only an owned one can be worn.
+- Cosmetics are looks only. The engine passes the outline and trail to the renderer (`setCosmetics`); the simulation never reads them. Outline and trail colours are paper and ink tones, never the five signal colours (V2). The outline is the hero's cut-out in its colour, nudged out on four sides behind the sprite; the trail is a mark every 22 units of movement, fading over 0.9 s of play.
 
 ## Camera (FX-04)
 

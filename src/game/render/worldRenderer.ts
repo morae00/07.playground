@@ -50,6 +50,10 @@ import {
 const TARGET_COLOR = SIGNAL.allyDeep;
 /** Enemy ids start at 1, so the hero's animation state never collides with one. */
 const HERO_ANIM_ID = -1;
+/** CON-07: how far (world units) the outline cosmetic's cut-out sits out on each side, and the ink trail's spacing and life. */
+const OUTLINE_NUDGES = Object.freeze([[-1.6, 0], [1.6, 0], [0, -1.6], [0, 1.6]] as const);
+const TRAIL_STEP = 22;
+const TRAIL_SECONDS = 0.9;
 
 /** Damage numbers pop over this long when they appear or take a merged hit, and spread this far sideways (FX-07). */
 const NUMBER_POP_SECONDS = 0.12;
@@ -218,6 +222,8 @@ export type RenderWorld = {
   /** CON-03: the zone to hold or the cache to recover, when the stage's bonus goal has one. */
   readonly objectiveMarks: readonly ObjectiveMark[];
   readonly effects: RenderEffects;
+  /** CON-07: the cosmetics the hero wears in play: an outline colour and an ink trail (null for none). Looks only. */
+  readonly cosmetics: Readonly<{ outline: string | null; trail: Readonly<{ id: string; color: string }> | null }>;
 };
 
 export class WorldRenderer {
@@ -234,6 +240,11 @@ export class WorldRenderer {
   private heroAnim: AnimState | null = null;
   /** White cut-outs of sprite frames for the hit flash (FX-03), built once per frame on first use. */
   private readonly silhouettes = new Map<SpriteFrame, SpriteFrame | null>();
+  /** CON-07: cut-outs in the hero's outline colour, rebuilt when the colour changes. */
+  private readonly outlines = new Map<SpriteFrame, SpriteFrame | null>();
+  private outlineColor: string | null = null;
+  /** CON-07: where the hero's ink trail was laid, oldest first, with the time each was laid. */
+  private readonly trail: { x: number; y: number; at: number }[] = [];
   /** Damage number glyphs (FX-07), drawn once per style. */
   private readonly glyphs = new NumberGlyphs();
   private readonly bodyPool: BodyDraw[] = [];
@@ -784,6 +795,7 @@ export class WorldRenderer {
     }
     const player = this.playerBody;
     if (!player) return;
+    this.drawHeroTrail(ctx, player);
     if (this.hero) this.drawHeroGround(ctx, player.x, player.y);
     else this.visual.drawPlayerGround(ctx, this.playerInput(player));
   }
@@ -1153,6 +1165,7 @@ export class WorldRenderer {
         this.blitTilted(ctx, this.hero, body.x, body.y, tilt, 1);
         return;
       }
+      this.drawHeroOutline(ctx, this.hero, body.x, body.y, this.heroAnim?.facing ?? 1);
       this.blit(ctx, this.hero, body.x, body.y, this.heroAnim?.facing ?? 1, 1);
       this.drawHeroMarks(ctx, body.x, body.y, this.hero);
       return;
@@ -1567,8 +1580,8 @@ export class WorldRenderer {
   }
 
   /** A frame's white cut-out (source-in fill), cached; null where no offscreen canvas can be made. */
-  private silhouette(frame: SpriteFrame): SpriteFrame | null {
-    let cutout = this.silhouettes.get(frame);
+  private silhouette(frame: SpriteFrame, color: string = NEUTRAL.paperBright, cache = this.silhouettes): SpriteFrame | null {
+    let cutout = cache.get(frame);
     if (cutout === undefined) {
       cutout = null;
       const canvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
@@ -1578,13 +1591,59 @@ export class WorldRenderer {
         canvas.height = frame.sh;
         context.drawImage(frame.image, frame.sx, frame.sy, frame.sw, frame.sh, 0, 0, frame.sw, frame.sh);
         context.globalCompositeOperation = 'source-in';
-        context.fillStyle = NEUTRAL.paperBright;
+        context.fillStyle = color;
         context.fillRect(0, 0, frame.sw, frame.sh);
         cutout = { ...frame, image: canvas, sx: 0, sy: 0 };
       }
-      this.silhouettes.set(frame, cutout);
+      cache.set(frame, cutout);
     }
     return cutout;
+  }
+
+  /** CON-07: the outline cosmetic: the hero's cut-out in its colour, nudged out on four sides behind the hero. */
+  private drawHeroOutline(ctx: CanvasRenderingContext2D, frame: SpriteFrame, x: number, y: number, facing: 1 | -1) {
+    const color = this.world.cosmetics.outline;
+    if (color !== this.outlineColor) {
+      this.outlines.clear();
+      this.outlineColor = color;
+    }
+    const cutout = color ? this.silhouette(frame, color, this.outlines) : null;
+    if (!cutout) return;
+    for (const [dx, dy] of OUTLINE_NUDGES) this.blit(ctx, cutout, x + dx, y + dy, facing, 1);
+  }
+
+  /**
+   * CON-07: the trail cosmetic: a mark every TRAIL_STEP units the hero moves, fading over TRAIL_SECONDS of play,
+   * drawn on the ground under everyone. A paused run keeps its trail still.
+   */
+  private drawHeroTrail(ctx: CanvasRenderingContext2D, player: Readonly<{ x: number; y: number }>) {
+    const trail = this.world.cosmetics.trail;
+    const now = this.world.elapsed;
+    if (!trail) {
+      this.trail.length = 0;
+      return;
+    }
+    const last = this.trail.at(-1);
+    if (!last || last.at > now || Math.hypot(player.x - last.x, player.y - last.y) >= TRAIL_STEP) this.trail.push({ x: player.x, y: player.y, at: now });
+    while (this.trail.length > 0 && (now - this.trail[0].at > TRAIL_SECONDS || this.trail.length > 32)) this.trail.shift();
+    ctx.save();
+    ctx.fillStyle = trail.color;
+    ctx.strokeStyle = trail.color;
+    for (const mark of this.trail) {
+      const fade = 1 - (now - mark.at) / TRAIL_SECONDS;
+      ctx.globalAlpha = 0.55 * fade;
+      ctx.beginPath();
+      if (trail.id === 'trail-brush' || trail.id === 'trail-thread') {
+        ctx.lineWidth = trail.id === 'trail-thread' ? 1.5 : 4 * fade + 1;
+        ctx.moveTo(mark.x - 7, mark.y + 3);
+        ctx.lineTo(mark.x + 7, mark.y - 3);
+        ctx.stroke();
+      } else {
+        ctx.arc(mark.x, mark.y, (trail.id === 'trail-dots' ? 4 : 2.5) * (0.5 + fade / 2), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
   }
 
   /** Draws an atlas frame with its anchor on (x, y); scale multiplies the baked size, facing -1 mirrors it. */

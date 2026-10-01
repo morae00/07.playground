@@ -25,6 +25,9 @@ import {
 import { DraftModal } from './ui/screens/DraftModal';
 import { SettlementModal } from './ui/screens/SettlementModal';
 import { NO_SETTLEMENT_NOTES, settlementNotes, type SettlementNotes } from './ui/settlementNotes';
+import { newlyMet, unlockAchievements } from './ui/achievements';
+import type { AchievementId } from './content/data/achievements';
+import COSMETICS, { type CosmeticId } from './content/data/cosmetics';
 import { t } from './i18n/strings';
 import { FaultDialog, ResetDialog } from './ui/screens/RunDialogs';
 import { HudLayer } from './ui/screens/HudLayer';
@@ -81,6 +84,16 @@ void fetch('assets/packs/sfx-common/pack.json')
 /** The death moment (FX-03): the canvas shows the fall this long before the settlement opens. */
 const DEATH_MOMENT_MS = 700;
 
+/** CON-07: the longest endless run on the local board, in seconds. */
+const longestRun = (entries: readonly InfiniteScoreEntry[]) => entries.reduce((best, entry) => Math.max(best, entry.survivedSeconds), 0);
+
+/** CON-07: the cosmetics the hero wears in play, as the renderer draws them. */
+function wornLooks(cosmetics: ProfileData['cosmetics']) {
+  const color = (id: string | null) => (id ? COSMETICS.cosmetics[id as CosmeticId]?.color ?? null : null);
+  const trail = color(cosmetics.trail);
+  return { outline: color(cosmetics.outline), trail: cosmetics.trail && trail ? { id: cosmetics.trail, color: trail } : null };
+}
+
 /** A result folds into the stage record (campaign) and the career totals (CON-07). */
 function recordResult(profile: ProfileData, result: Settlement) {
   const recorded = recordCareer(
@@ -112,7 +125,10 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const [initialInfiniteLeaderboard] = useState(() => loadInfiniteLeaderboard(window.localStorage));
   const [meta, setMeta] = useState<MetaState>(() => initialSave.data.meta);
   const [options, setOptions] = useState<GameOptions>(() => initialSave.data.options);
-  const [profile, setProfile] = useState<ProfileData>(() => initialSave.data.profile);
+  // CON-07: a save from before achievements earns what its records already show as it loads, so the first write
+  // carries them (G17); later goals are met after settlements (below).
+  const [initialAchievements] = useState(() => newlyMet(initialSave.data.profile, initialSave.data.meta, longestRun(initialInfiniteLeaderboard.entries)));
+  const [profile, setProfile] = useState<ProfileData>(() => unlockAchievements(initialSave.data.profile, initialAchievements, Date.now()));
   const [phase, setPhase] = useState<'menu' | 'playing' | 'draft' | 'roundClear' | 'gameOver'>('menu');
   /** The chapter of the run on screen; the menu shows the selected chapter instead (atlas packs follow it). */
   const [runChapter, setRunChapter] = useState(1);
@@ -145,6 +161,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const [notice, setNotice] = useState<'art' | 'error' | null>(null);
   /** CON-04: what a suspended run the rules no longer replay was paid; shown once. */
   const [suspendPaid, setSuspendPaid] = useState<{ gold: number; xp: number } | null>(null);
+  /** CON-07: achievements met since the menu last said so. */
+  const [achievementNotice, setAchievementNotice] = useState<AchievementId[]>(initialAchievements);
   const [resuming, setResuming] = useState(false);
   const [errorCopyStatus, setErrorCopyStatus] = useState('');
   const [uiFault, setUiFault] = useState(false);
@@ -234,6 +252,27 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const closeDevPanel = useCallback((restoreFocus = true) => {
     setDevPanelOpen(false);
     if (restoreFocus) requestAnimationFrame(() => devToggleRef.current?.focus());
+  }, []);
+
+  // CON-07: goals the save meets after a settlement (an endless run's length shows on the local board).
+  const bestInfiniteSeconds = useMemo(() => longestRun(infiniteEntries), [infiniteEntries]);
+  useEffect(() => {
+    const met = newlyMet(profile, meta, bestInfiniteSeconds);
+    if (met.length === 0) return;
+    setProfile((previous) => unlockAchievements(previous, newlyMet(previous, meta, bestInfiniteSeconds), Date.now()));
+    setAchievementNotice((previous) => [...previous, ...met.filter((id) => !previous.includes(id))]);
+  }, [profile, meta, bestInfiniteSeconds]);
+
+  /** CON-07: a cosmetic not earned yet costs its price in gold (a gold sink for finished builds). */
+  const buyCosmetic = useCallback((id: CosmeticId) => {
+    const price = COSMETICS.cosmetics[id]?.price ?? Number.POSITIVE_INFINITY;
+    if (profileRef.current.cosmetics.owned.includes(id) || metaRef.current.gold < price) return;
+    setMeta((previous) => ({ ...previous, gold: previous.gold - price }));
+    setProfile((previous) => ({ ...previous, cosmetics: { ...previous.cosmetics, owned: [...previous.cosmetics.owned, id] } }));
+  }, []);
+  const wearCosmetic = useCallback((id: CosmeticId, wear: boolean) => {
+    const { kind } = COSMETICS.cosmetics[id];
+    setProfile((previous) => (previous.cosmetics.owned.includes(id) ? { ...previous, cosmetics: { ...previous.cosmetics, [kind]: wear ? id : null } } : previous));
   }, []);
 
   // CON-04: the run in play is kept as a suspended run, every 10 s and whenever it pauses (focus loss included), so a
@@ -446,6 +485,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     releaseReducedMotionRef.current?.();
     engineRef.current?.dispose();
     const engine = new GameEngine(canvas, meta, options, callbacks);
+    engine.setCosmetics(wornLooks(profileRef.current.cosmetics));
     if (DEVELOPER_UI_AVAILABLE && depthExperimentRef.current) engine.setExperiment('buildDepth');
     engineRef.current = engine;
     engine.setSprites(spriteAtlas);
@@ -628,6 +668,14 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   };
 
   // In the menu the notice sits in the page flow so it never covers the start button; in play it floats.
+  const achievementBanner = achievementNotice.length > 0 && (
+    <div className="noticeBanner inline" role="status" aria-live="polite">
+      <p>{t('notice.achievements', { names: achievementNotice.map((id) => t(`achievement.${id}`)).join(' · ') })}</p>
+      <div className="noticeActions">
+        <button className="ghost" type="button" data-sound="cancel" onClick={() => setAchievementNotice([])}>{t('common.close')}</button>
+      </div>
+    </div>
+  );
   const suspendBanner = suspendPaid && (
     <div className="noticeBanner inline" role="status" aria-live="polite">
       <p>{t('notice.suspendPaid', suspendPaid)}</p>
@@ -781,6 +829,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
           onToggleSpeed={toggleSpeed}
           onToggleDevPanel={() => { if (devPanelOpen) closeDevPanel(false); else setDevPanelOpen(true); }}
           onTogglePause={toggleManualPause}
+          frame={profile.cosmetics.frame}
         />
       )}
 
@@ -795,9 +844,11 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         <MenuScreen
           meta={meta}
           records={profile.stageRecords}
-          codex={profile.codex}
-          stats={profile.stats}
-          inlineNotice={<>{suspendBanner}{noticeBanner('inline')}</>}
+          profile={profile}
+          bestInfiniteSeconds={bestInfiniteSeconds}
+          onBuyCosmetic={buyCosmetic}
+          onWearCosmetic={wearCosmetic}
+          inlineNotice={<>{achievementBanner}{suspendBanner}{noticeBanner('inline')}</>}
           suspended={asSuspendedRun(profile.runSuspend?.state)}
           onResumeSuspended={resumeSuspended}
           onDiscardSuspended={discardSuspended}

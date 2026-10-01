@@ -566,6 +566,16 @@ try {
     record('CON-07 the codex counts found entries, and a found enemy opens its page', /발견 \d+\/66/.test(nav) && found === 4 && unknown === 16 && page1.includes('벽보 들개'), `${nav}, ${found} found, ${unknown} unknown, ${page1.split('\n')[0]}`);
     const career = (await panel.locator('.careerStats').innerText()).replace(/\s+/g, ' ');
     record('CON-07 the codex shows the career totals', career.includes('출정 3') && career.includes('0시간 7분'), career);
+
+    // Achievements: the older save has already met two goals; their titles and trails can be worn.
+    const notice = await page.getByRole('status').filter({ hasText: '업적 달성' }).innerText().catch(() => '');
+    record('CON-07 an older save earns the achievements its records show', notice.includes('첫 돌파') && notice.includes('흠 없는 한 장'), notice || 'no notice');
+    await panel.getByRole('button', { name: /^업적/ }).click();
+    const first = panel.locator('.achievementList li').first();
+    await first.getByRole('button', { name: '착용' }).click();
+    const title = await page.locator('.walletTitle').innerText().catch(() => '');
+    const buy = await panel.locator('.achievementList li').nth(1).getByRole('button').getAttribute('aria-disabled');
+    record('CON-07 a title earned can be worn, and a reward not earned is for sale', title === '먹선 필경사' && buy === 'true', `title ${title || 'none'}, buy disabled ${buy}`);
     await page.close();
   });
 

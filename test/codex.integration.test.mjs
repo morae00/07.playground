@@ -45,3 +45,37 @@ test('CON-07: a settlement lists the skills taken, the enemies and bosses defeat
     engine.dispose();
   }
 });
+
+test('CON-07: the trail cosmetic leaves fading ink marks behind the moving hero, and nothing without it', () => {
+  const marksDrawn = (trail) => {
+    const fills = [];
+    // A canvas whose context records the colours it fills with; everything else is a no-op.
+    const context = new Proxy({}, {
+      get: (target, property) => (property in target ? target[property] : property === 'measureText' ? () => ({ width: 0 }) : property.startsWith('create') ? () => ({ addColorStop() {}, setTransform() {} }) : () => {}),
+      set: (target, property, value) => {
+        target[property] = value;
+        if (property === 'fillStyle' && value === '#123456') fills.push(value);
+        return true;
+      },
+    });
+    const canvas = { ...createHeadlessCanvas(1440, 900), getContext: () => context };
+    const engine = new ProbedGameEngine(canvas, maxMeta(), standardOptions(), { onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver() {} });
+    try {
+      engine.setRuleSet('remaster');
+      engine.setCosmetics({ outline: null, trail });
+      engine.startRun(1, 2, 9);
+      engine.probe.haltSpawns();
+      engine.probe.clear('enemies');
+      engine.dispatch({ type: 'input/action', action: 'moveRight', pressed: true });
+      for (let frame = 0; frame < 90; frame += 1) {
+        engine.probe.step(1);
+        engine.probe.render(1);
+      }
+    } finally {
+      engine.dispose();
+    }
+    return fills.length;
+  };
+  assert.ok(marksDrawn({ id: 'trail-dots', color: '#123456' }) > 30, 'marks are drawn as the hero walks');
+  assert.equal(marksDrawn(null), 0);
+});

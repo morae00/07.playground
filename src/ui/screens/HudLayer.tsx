@@ -25,6 +25,8 @@ export type HudLayerProps = {
   onToggleSpeed: () => void;
   onToggleDevPanel: () => void;
   onTogglePause: () => void;
+  /** CON-07: the portrait frame worn, or null. */
+  frame?: string | null;
 };
 
 /** How long the portrait winces after the hero loses health. */
@@ -87,7 +89,7 @@ function BossBar({ snapshot, name }: { snapshot: HudSnapshot; name: string }) {
   );
 }
 
-export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen, devToggleRef, onToggleSpeed, onToggleDevPanel, onTogglePause }: HudLayerProps) {
+export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen, devToggleRef, onToggleSpeed, onToggleDevPanel, onTogglePause, frame }: HudLayerProps) {
   const infinite = snapshot.runMode === 'infinite';
   const device = useInputDevice();
   const lastHp = useRef(snapshot.hp);
@@ -152,7 +154,7 @@ export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen,
       <ProgressBar label={t('hud.runXp')} value={snapshot.xp} max={snapshot.nextXp} className="xpStrip" valueText={`Lv.${snapshot.level} ${Math.floor(snapshot.xp)} / ${snapshot.nextXp}`} />
       <div className="gameHud">
         <section className="hudHero" aria-label={t('hud.hero')}>
-          <div className="heroFace">
+          <div className="heroFace" data-frame={frame ?? undefined}>
             <span className="artPortrait" data-art={`hero-${face}`} aria-hidden="true" />
             <b className="levelSeal" aria-label={t('hud.level', { level: snapshot.level })}>{snapshot.level}</b>
           </div>

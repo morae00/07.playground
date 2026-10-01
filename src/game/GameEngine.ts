@@ -860,6 +860,8 @@ export class GameEngine {
   protected scoreEligible = true;
   /** SYS-07: assists were on at some point of this run. */
   protected assistedRun = false;
+  /** CON-07: the cosmetics the hero wears (presentation only: the simulation never reads them). */
+  protected cosmetics: RenderWorld['cosmetics'] = { outline: null, trail: null };
   /** CON-07: bosses defeated this run (field, round, and legacy bosses), for the career totals. */
   protected bossesDefeated = 0;
   /** CON-07: codex entries this run found: enemies ("<chapter>-<role>") and bosses defeated, terrain stood in or cast. */
@@ -1242,6 +1244,11 @@ export class GameEngine {
     this.emit({ type: 'run/upgradeBought' });
     this.emitSnapshot(true);
     return true;
+  }
+
+  /** CON-07: what the hero wears in play: an outline colour and an ink trail. Looks only. */
+  setCosmetics(cosmetics: RenderWorld['cosmetics']) {
+    this.cosmetics = cosmetics;
   }
 
   /** Developer builds: turns an undecided experiment's rule flag on for the runs this engine starts (playtest A/Bs). */
@@ -5135,6 +5142,7 @@ export class GameEngine {
       chains: this.chains,
       objectiveMarks: this.stageObjective?.marks() ?? NO_MARKS,
       effects: this.presentation,
+      cosmetics: this.cosmetics,
     };
   }
 

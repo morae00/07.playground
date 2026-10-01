@@ -1,18 +1,60 @@
 // Codex (CON-07): every skill, enemy, boss, terrain kind, and chapter, found in play, and the career totals. An entry
 // not found yet shows as an ink silhouette with how to find it; a found one shows its art, its name, and its line from
 // the lore drafts (src/ui/codexText.ts). The codex is the manual too: skill entries carry their summary (UI-09).
+// The achievements tab lists the 30 goals with their progress and reward. An owned cosmetic can be worn; one not
+// earned yet can be bought with gold.
 import { useEffect, useState } from 'react';
+import ACHIEVEMENTS from '../../content/data/achievements';
 import CODEX from '../../content/data/codex';
+import COSMETICS, { type CosmeticId } from '../../content/data/cosmetics';
 import { SKILLS } from '../../game/GameEngine';
 import { BOSS_SLOTS } from '../../game/render/assets/slots';
 import type { ChapterId } from '../../content/schema';
-import { formatCount, t } from '../../i18n/strings';
-import type { CareerStats, ProfileData } from '../../platform/save';
+import { formatCount, formatDate, t } from '../../i18n/strings';
+import type { MetaState, ProfileData } from '../../platform/save';
+import { ACHIEVEMENT_IDS, achievementProgress } from '../achievements';
 import { loadBossTitles, type BossTitle } from '../bossTitles';
 import { loadCodexText, type CodexText } from '../codexText';
 
 type Part = keyof ProfileData['codex'];
-const PARTS: readonly Part[] = ['skills', 'enemies', 'bosses', 'terrain', 'chapters'];
+const PARTS: readonly (Part | 'achievements')[] = ['skills', 'enemies', 'bosses', 'terrain', 'chapters', 'achievements'];
+
+type CodexProps = {
+  profile: ProfileData;
+  meta: MetaState;
+  bestInfiniteSeconds: number;
+  onBuyCosmetic: (id: CosmeticId) => void;
+  onWearCosmetic: (id: CosmeticId, wear: boolean) => void;
+};
+
+/** The 30 goals: progress, the date one was met, and its cosmetic, to wear or to buy. */
+function Achievements({ profile, meta, bestInfiniteSeconds, onBuyCosmetic, onWearCosmetic }: CodexProps) {
+  return (
+    <ul className="achievementList">
+      {ACHIEVEMENT_IDS.map((id) => {
+        const def = ACHIEVEMENTS.achievements[id];
+        const { value, goal } = achievementProgress(def, profile, meta, bestInfiniteSeconds);
+        const done = profile.achievements[id];
+        const reward = COSMETICS.cosmetics[def.reward];
+        const name = t(`cosmetic.${def.reward}`);
+        const worn = profile.cosmetics[reward.kind] === def.reward;
+        const goalText = def.kind === 'codex' && !def.part
+          ? t('achievement.goal.codexAll', { n: def.n })
+          : t(`achievement.goal.${def.kind}`, { n: def.n, m: Math.round(def.n / 60), part: def.part ? t(`codex.part.${def.part}`) : '' });
+        return (
+          <li className={done ? 'done' : undefined} key={id}>
+            <b>{t(`achievement.${id}`)}</b>
+            <span>{goalText} · {done ? t('codex.doneAt', { date: formatDate(done.unlockedAt) }) : t('codex.count', { found: formatCount(value), total: formatCount(goal) })}</span>
+            <span className="achievementReward">{t('codex.reward', { kind: t(`cosmetic.kind.${reward.kind}`), name })}</span>
+            {profile.cosmetics.owned.includes(def.reward)
+              ? <button className="ghost small" type="button" aria-pressed={worn} onClick={() => onWearCosmetic(def.reward, !worn)}>{t(worn ? 'codex.unwear' : 'codex.wear')}</button>
+              : <button className="ghost small" type="button" aria-label={t('codex.buyLabel', { name, price: formatCount(reward.price) })} aria-disabled={meta.gold < reward.price} onClick={() => { if (meta.gold >= reward.price) onBuyCosmetic(def.reward); }}>{t('codex.buy', { price: formatCount(reward.price) })}</button>}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 /** The entry's art: the HUD skill slot, the enemy icon, the boss portrait (a disc with its chapter where the kit has none), the terrain icon, or the chapter's landmark. */
 function Art({ part, id }: { part: Part; id: string }) {
@@ -64,8 +106,9 @@ function EntryDetail({ part, id, text, bossTitles }: { part: Part; id: string; t
   );
 }
 
-export function CodexView({ codex, stats }: { codex: ProfileData['codex']; stats: CareerStats }) {
-  const [part, setPart] = useState<Part>('skills');
+export function CodexView(props: CodexProps) {
+  const { codex, stats } = props.profile;
+  const [part, setPart] = useState<Part | 'achievements'>('skills');
   const [selected, setSelected] = useState<string | null>(null);
   const [text, setText] = useState<CodexText | null>(null);
   const [bossTitles, setBossTitles] = useState<Record<string, BossTitle>>({});
@@ -75,8 +118,11 @@ export function CodexView({ codex, stats }: { codex: ProfileData['codex']; stats
     void loadBossTitles().then((loaded) => { if (live) setBossTitles(loaded); });
     return () => { live = false; };
   }, []);
-  const found = new Set(codex[part]);
+  const found = new Set(part === 'achievements' ? [] : codex[part]);
   const shown = selected && found.has(selected) ? selected : null;
+  const count = (item: Part | 'achievements') => item === 'achievements'
+    ? { found: ACHIEVEMENT_IDS.filter((id) => props.profile.achievements[id]).length, total: ACHIEVEMENT_IDS.length }
+    : { found: codex[item].filter((id) => (CODEX[item] as readonly string[]).includes(id)).length, total: CODEX[item].length };
   return (
     <section className="codexView" aria-labelledby="codex-title">
       <header className="codexHead">
@@ -98,10 +144,11 @@ export function CodexView({ codex, stats }: { codex: ProfileData['codex']; stats
             key={item}
             onClick={() => { setPart(item); setSelected(null); }}
           >
-            {t(`codex.part.${item}`)} <small>{t('codex.count', { found: codex[item].filter((id) => (CODEX[item] as readonly string[]).includes(id)).length, total: CODEX[item].length })}</small>
+            {t(`codex.part.${item}`)} <small>{t('codex.count', count(item))}</small>
           </button>
         ))}
       </div>
+      {part === 'achievements' ? <Achievements {...props} /> : (
       <div className="codexBody">
         <ul className="codexGrid">
           {CODEX[part].map((id) => {
@@ -127,6 +174,7 @@ export function CodexView({ codex, stats }: { codex: ProfileData['codex']; stats
             : <p className="emptyText">{selected ? t(`codex.hint.${part}`) : t('codex.pick')}</p>}
         </aside>
       </div>
+      )}
     </section>
   );
 }

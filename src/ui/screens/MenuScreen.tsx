@@ -11,7 +11,8 @@ import { DEVELOPER_UI_AVAILABLE, DEVELOPER_UI_DEFAULT_ENABLED } from '../../plat
 import { RULES_VERSION } from '../../game/rules';
 import { BOSS_SLOTS } from '../../game/render/assets/slots';
 import type { InfiniteScoreEntry } from '../../platform/infiniteLeaderboard';
-import { stageStars, type CareerStats, type GameOptions, type MetaState, type MetaUpgradeId, type PassiveId, type ProfileData, type StageRecord } from '../../platform/save';
+import type { CosmeticId } from '../../content/data/cosmetics';
+import { stageStars, type GameOptions, type MetaState, type MetaUpgradeId, type PassiveId, type ProfileData, type StageRecord } from '../../platform/save';
 import CODEX from '../../content/data/codex';
 import {
   CHAPTERS,
@@ -47,9 +48,11 @@ export const chapterName = (id: number) => t('chapter.name', { n: id, theme: t(`
 export type MenuScreenProps = {
   meta: MetaState;
   records: Readonly<Record<string, StageRecord>>;
-  /** CON-07: the codex and the career totals. */
-  codex: ProfileData['codex'];
-  stats: CareerStats;
+  /** CON-07: the save's profile for the codex, its achievements, and the cosmetics worn or bought. */
+  profile: ProfileData;
+  bestInfiniteSeconds: number;
+  onBuyCosmetic: (id: CosmeticId) => void;
+  onWearCosmetic: (id: CosmeticId, wear: boolean) => void;
   inlineNotice: ReactNode;
   /** CON-04: a run left in play, offered first so a crash or a quit never loses it. */
   suspended: SuspendedRun | null;
@@ -464,7 +467,7 @@ export function MenuScreen(props: MenuScreenProps) {
               <small>
                 {view === 'growth' && meta.passivePoints > 0
                   ? t('menu.nav.growth.points', { n: meta.passivePoints })
-                  : view === 'codex' ? t('menu.nav.codex.note', { found: codexFound(props.codex), total: CODEX_TOTAL }) : t(`menu.nav.${view}.note`)}
+                  : view === 'codex' ? t('menu.nav.codex.note', { found: codexFound(props.profile.codex), total: CODEX_TOTAL }) : t(`menu.nav.${view}.note`)}
               </small>
             </button>
           ))}
@@ -480,6 +483,7 @@ export function MenuScreen(props: MenuScreenProps) {
           </div>
           <div className="accountChip">
             <span>{t('wallet.level', { level: meta.level })}</span>
+            {props.profile.cosmetics.title && <small className="walletTitle">{t(`cosmetic.${props.profile.cosmetics.title as CosmeticId}`)}</small>}
             <ProgressBar label={t('menu.levelXp')} value={meta.xp} max={xpForMetaLevel(meta.level)} className="xpBar" valueText={`${meta.xp} / ${xpForMetaLevel(meta.level)}`} />
             {meta.passivePoints > 0 && <b className="pointBadge">{t('wallet.points', { n: meta.passivePoints })}</b>}
           </div>
@@ -510,7 +514,7 @@ export function MenuScreen(props: MenuScreenProps) {
           <GrowthView {...props} />
         </div>
         <div className="menuPanel codexColumn" id="menu-panel-codex" role="tabpanel" aria-labelledby="menu-tab-codex" hidden={menuView !== 'codex'}>
-          {menuView === 'codex' && <CodexView codex={props.codex} stats={props.stats} />}
+          {menuView === 'codex' && <CodexView profile={props.profile} meta={meta} bestInfiniteSeconds={props.bestInfiniteSeconds} onBuyCosmetic={props.onBuyCosmetic} onWearCosmetic={props.onWearCosmetic} />}
         </div>
         <div className="menuPanel settingsColumn" id="menu-panel-settings" role="tabpanel" aria-labelledby="menu-tab-settings" hidden={menuView !== 'settings'}>
           <h2>{t('menu.nav.settings')}</h2>
