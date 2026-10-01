@@ -53,6 +53,8 @@ const HERO_ANIM_ID = -1;
 /** CON-07: how far (world units) the outline cosmetic's cut-out sits out on each side, and the ink trail's spacing and life. */
 const OUTLINE_NUDGES = Object.freeze([[-1.6, 0], [1.6, 0], [0, -1.6], [0, 1.6]] as const);
 const TRAIL_STEP = 22;
+/** SYS-10: how far (world units) an elite's purple cut-out sits out on each side. */
+const ELITE_NUDGES = Object.freeze([[-2, 0], [2, 0], [0, -2], [0, 2]] as const);
 const TRAIL_SECONDS = 0.9;
 
 /** Damage numbers pop over this long when they appear or take a merged hit, and spread this far sideways (FX-07). */
@@ -240,6 +242,8 @@ export class WorldRenderer {
   private heroAnim: AnimState | null = null;
   /** White cut-outs of sprite frames for the hit flash (FX-03), built once per frame on first use. */
   private readonly silhouettes = new Map<SpriteFrame, SpriteFrame | null>();
+  /** SYS-10: elite purple cut-outs of enemy frames, built once per frame on first use. */
+  private readonly eliteCutouts = new Map<SpriteFrame, SpriteFrame | null>();
   /** CON-07: cut-outs in the hero's outline colour, rebuilt when the colour changes. */
   private readonly outlines = new Map<SpriteFrame, SpriteFrame | null>();
   private outlineColor: string | null = null;
@@ -265,6 +269,8 @@ export class WorldRenderer {
     this.sprites = atlas;
     this.anims.clear();
     this.silhouettes.clear();
+    this.eliteCutouts.clear();
+    this.outlines.clear();
   }
 
   /** Forget cached patterns (the canvas was resized or its context reset). */
@@ -857,9 +863,12 @@ export class WorldRenderer {
         ctx.fill();
         ctx.restore();
       }
-      const showHealth = bars === 'all' || (bars === 'elite' && (enemy.isBoss || enemy.tier === 'large'));
+      // SYS-10: an elite's bar shows unless bars are off, and its mark sits over the bar.
+      const showHealth = bars === 'all' || (bars !== 'off' && enemy.elite !== undefined) || (bars === 'elite' && (enemy.isBoss || enemy.tier === 'large'));
       if (showHealth) this.drawHealthBar(ctx, body.x, body.top - 14, enemy.radius * 2.1, 6, enemy.hp / enemy.maxHp);
-      if (enemy.stun > 0 && !enemy.isBoss) this.drawStunMark(ctx, body.x, body.top - (showHealth ? 26 : 12), enemy.id);
+      const over = body.top - (showHealth ? 26 : 12);
+      if (enemy.elite) this.drawEliteMark(ctx, enemy.elite, body.x, over);
+      if (enemy.stun > 0 && !enemy.isBoss) this.drawStunMark(ctx, body.x, enemy.elite ? over - 14 : over, enemy.id);
     }
   }
 
@@ -1062,6 +1071,9 @@ export class WorldRenderer {
     const y = body.y + (recoil ? recoil.dy * push : 0);
     if (body.sprite) {
       const { frame, facing, scale } = body.sprite;
+      // SYS-10: an elite wears the elite purple round its own silhouette (V2, V6).
+      const outline = enemy.elite ? this.silhouette(frame, SIGNAL.elite, this.eliteCutouts) : null;
+      if (outline) for (const [dx, dy] of ELITE_NUDGES) this.blit(ctx, outline, x + dx, y + dy, facing, scale, rise);
       this.blit(ctx, frame, x, y, facing, scale, rise);
       const flash = hitFlashAlpha(enemy.hitFlash);
       const silhouette = flash > 0 ? this.silhouette(frame) : null;
@@ -1073,7 +1085,46 @@ export class WorldRenderer {
       ctx.globalAlpha *= rise;
     }
     this.drawVectorEnemy(ctx, enemy, { ...body, x, y });
+    if (enemy.elite) {
+      ctx.save();
+      ctx.strokeStyle = SIGNAL.elite;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(x, y, enemy.radius + 4, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
     if (rise < 1) ctx.restore();
+  }
+
+  /** SYS-10: an elite's affix over its head in the elite purple: haste chevrons, split pair, shield ring, drain drop. */
+  private drawEliteMark(ctx: CanvasRenderingContext2D, affix: NonNullable<Entity['elite']>, x: number, y: number) {
+    ctx.save();
+    ctx.fillStyle = SIGNAL.elite;
+    ctx.strokeStyle = SIGNAL.elite;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    if (affix === 'haste') {
+      for (const dx of [-5, 2]) {
+        ctx.moveTo(x + dx - 3, y - 5);
+        ctx.lineTo(x + dx + 2, y);
+        ctx.lineTo(x + dx - 3, y + 5);
+      }
+      ctx.stroke();
+    } else if (affix === 'split') {
+      ctx.arc(x - 4, y, 3.5, 0, Math.PI * 2);
+      ctx.arc(x + 5, y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (affix === 'shield') {
+      ctx.arc(x, y, 5.5, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      ctx.moveTo(x, y - 6);
+      ctx.quadraticCurveTo(x + 6, y + 2, x, y + 5);
+      ctx.quadraticCurveTo(x - 6, y + 2, x, y - 6);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   private drawVectorEnemy(ctx: CanvasRenderingContext2D, enemy: Readonly<Entity>, body: BodyDraw) {
@@ -1421,7 +1472,7 @@ export class WorldRenderer {
     const marks: Array<{ boss: boolean; x: number; y: number; distance: number }> = [];
     for (const enemy of this.world.enemies) {
       const boss = enemy.isBoss && !enemy.legacyBoss;
-      if (enemy.hp <= 0 || (!boss && enemy.tier !== 'large')) continue;
+      if (enemy.hp <= 0 || (!boss && enemy.tier !== 'large' && !enemy.elite)) continue;
       const point = this.interpolated(enemy);
       const x = left + (point.x - camera.x) * frame.zoom;
       const y = (point.y - camera.y) * frame.zoom;

@@ -16,6 +16,7 @@ import type { BossDef } from '../game/engine/worldTypes';
 import { objectiveIdFor } from '../game/GameEngine';
 import { bonusGoal, bonusTarget, objectiveDef, rangedCapFor } from '../game/stageObjective';
 import { text, type StringKey, type Text } from '../i18n/text';
+import { REMASTER_RULES } from '../game/rules';
 import type { MetaState, MetaUpgradeId, PassiveId } from '../platform/save';
 
 export type StageStatus = 'cleared' | 'current' | 'open' | 'locked';
@@ -46,9 +47,12 @@ export function stageRewardFloor(chapter: number, stage: number, practice: boole
  */
 export function stageObjective(chapter: number, stage: number): { goal: Text; changes: Text[] } | null {
   if (stageKind(stage) !== 'normal') return null;
-  const def = objectiveDef(objectiveIdFor(chapter, stage));
+  // The menu describes the stage as the shipped rules play it (SYS-10 elites on).
+  const id = objectiveIdFor(chapter, stage);
+  const def = objectiveDef(id, REMASTER_RULES.eliteAffixes);
   const changes: Text[] = [];
   if (!(chapter === 1 && stage === 1)) {
+    if (def.bonus !== objectiveDef(id).bonus) changes.push(text('objective.mod.elites'));
     if (def.mix?.small) changes.push(text('objective.mod.small', { n: Math.round(def.mix.small * 100) }));
     if (def.mix?.large) changes.push(text('objective.mod.large', { n: Math.round(def.mix.large * 100) }));
     if (def.spawnRate) changes.push(text('objective.mod.spawnRate', { x: def.spawnRate }));

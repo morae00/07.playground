@@ -47,6 +47,7 @@ import { StageObjective, bonusGold, type BonusState, type ObjectiveId, type Obje
 import { CHECK_CONTENT_AT_LOAD } from '../content/checks';
 import CATALOG from '../content/data/catalog';
 import BUILD_DEPTH, { type FusionId } from '../content/data/buildDepth';
+import ELITES from '../content/data/elites';
 import { CHARGER, STALKER_FLOCK, SeparationGrid, WARDEN_SHIELD, enemyRole, flockSteer, leadAim, shieldCovers, turnToward } from './enemyBehaviors';
 import { LOGICAL_VIEW, SPAWN_MARGIN, classicViewFrame, logicalViewFrame, spawnFrameOrigin, type ViewFrame } from './viewPolicy';
 import {
@@ -251,6 +252,17 @@ const LOG_CODES = {
   x: ['run/assists', 'damage', 'enemySpeed'],
 } as const satisfies Record<string, readonly [RunCommand['type'], ...string[]]>;
 type LogCode = keyof typeof LOG_CODES;
+/** Each tier's base health, speed, contact damage, XP, and coins (spawnEnemy; SYS-10's split elites read them too). */
+type MobTier = 'small' | 'medium' | 'large';
+const TIER_STATS: Readonly<Record<'hp' | 'speed' | 'damage' | 'xp' | 'coin', Readonly<Record<MobTier, number>>>> = Object.freeze({
+  hp: { small: 22, medium: 62, large: 150 },
+  speed: { small: 128, medium: 96, large: 62 },
+  damage: { small: 8, medium: 14, large: 22 },
+  xp: { small: 4, medium: 10, large: 22 },
+  coin: { small: 1, medium: 3, large: 7 },
+});
+/** A spawned enemy's tier for its stats: anything bigger than medium spawns with the large tier's. */
+const mobTier = (tier: EnemyTier): MobTier => (tier === 'small' || tier === 'medium' ? tier : 'large');
 const LOG_CODE = Object.fromEntries(Object.entries(LOG_CODES).map(([code, [type]]) => [type, code])) as Record<RunCommand['type'], LogCode>;
 export type RunLogEntry = readonly [tick: number, code: LogCode, ...values: (string | number | boolean)[]];
 /** More entries than a 10-minute boss stage changing its input every step: such a run is not kept, so the save stays small. */
@@ -1735,6 +1747,7 @@ export class GameEngine {
         createSeededRandom(((this.runSeed ^ 0x0b1ec7a5) >>> 0) || 1),
         !(this.chapter === 1 && this.stage === 1),
         !this.practiceRun,
+        this.rules.eliteAffixes,
       )
       : null;
     this.playerHeading = { x: 1, y: 0 };
@@ -1929,6 +1942,7 @@ export class GameEngine {
     this.spawnEnemies(dt);
     this.updateEnemies(dt);
     this.rebuildEnemyIndex();
+    if (this.rules.eliteAffixes) this.updateElites(dt);
     this.updatePlayerAim();
     this.flushDeadEnemies();
     if (this.endStepIfInterrupted()) return;
@@ -2756,9 +2770,9 @@ export class GameEngine {
     const effectiveDifficulty = infiniteDifficulty
       ? INFINITE_BASELINE.mobDifficulty * infiniteDifficulty.enemyHealthScale
       : difficulty;
-    const hpBase = tier === 'small' ? 22 : tier === 'medium' ? 62 : 150;
+    const hpBase = TIER_STATS.hp[mobTier(tier)];
     const radius = tier === 'small' ? ENEMY_RADIUS.small : tier === 'medium' ? ENEMY_RADIUS.medium : ENEMY_RADIUS.large;
-    const speed = (tier === 'small' ? 128 : tier === 'medium' ? 96 : 62)
+    const speed = TIER_STATS.speed[mobTier(tier)]
       * (0.9 + this.gameplayRandom() * 0.22)
       * (infiniteDifficulty?.enemySpeedScale ?? 1);
     const rangedCount = this.enemies.reduce((count, candidate) => count + (candidate.attackStyle === 'ranged' ? 1 : 0), 0);
@@ -2769,7 +2783,7 @@ export class GameEngine {
       : 'contact';
     // Breathers pay more for each kill (SYS-03).
     const rewardScale = director ? director.rewardScale(stageTime) : 1;
-    const baseDamage = (tier === 'small' ? 8 : tier === 'medium' ? 14 : 22)
+    const baseDamage = TIER_STATS.damage[mobTier(tier)]
       * (0.8 + (infiniteDifficulty ? INFINITE_BASELINE.mobDifficulty : difficulty) * 0.14)
       // SYS-07: later chapters hit harder, so a maxed build still feels Ch5.
       * (this.rules.difficultyCurve && !infiniteDifficulty ? 1 + (this.chapter - 1) * CATALOG.difficulty.damageChapter : 1);
@@ -2786,8 +2800,8 @@ export class GameEngine {
       maxHp: hpBase * effectiveDifficulty,
       speed,
       damage: baseDamage * (infiniteDifficulty?.enemyDamageScale ?? 1),
-      xp: Math.round((tier === 'small' ? 4 : tier === 'medium' ? 10 : 22) * rewardScale),
-      coin: Math.round((tier === 'small' ? 1 : tier === 'medium' ? 3 : 7) * rewardScale),
+      xp: Math.round(TIER_STATS.xp[mobTier(tier)] * rewardScale),
+      coin: Math.round(TIER_STATS.coin[mobTier(tier)] * rewardScale),
       tier,
       variant: Math.floor(this.gameplayRandom() * 5),
       isBoss: false,
@@ -2808,7 +2822,70 @@ export class GameEngine {
       bossPhase: 1,
       bossPhaseFlash: 0,
     };
+    if (this.rules.eliteAffixes) this.promoteElite(enemy, stageTime);
     this.enemies.push(enemy);
+  }
+
+  /** SYS-10: an elite beat's spawn, or any spawn on an elite hunt, may come as an elite, up to ELITES.maxAlive at once. */
+  protected promoteElite(enemy: Entity, stageTime: number) {
+    const chance = (this.director?.beatAt(stageTime).kind === 'elite' ? ELITES.beatChance : 0) + (this.stageObjective?.eliteHunt ? ELITES.objectiveChance : 0);
+    if (chance <= 0 || this.enemies.filter((other) => other.elite && other.hp > 0).length >= ELITES.maxAlive || this.gameplayRandom() >= chance) return;
+    const affix = ELITES.affixes[Math.floor(this.gameplayRandom() * ELITES.affixes.length)];
+    enemy.elite = affix;
+    enemy.hp *= ELITES.hp;
+    enemy.maxHp *= ELITES.hp;
+    enemy.xp = Math.round(enemy.xp * ELITES.xp);
+    if (affix === 'haste') enemy.speed *= ELITES.haste.speed;
+    if (affix === 'shield') {
+      enemy.eliteShield = enemy.maxHp * ELITES.shield.share;
+      enemy.eliteHitAt = this.elapsed;
+    }
+  }
+
+  /** SYS-10: a fallen elite drops a coin chest, and a split one breaks into smaller enemies of the next tier down. */
+  protected eliteFalls(enemy: Entity) {
+    this.spawnPickup('coin', enemy.x, enemy.y, 0, 0, 9, Math.ceil(enemy.coin * ELITES.chest));
+    if (enemy.elite !== 'split') return;
+    const tier: MobTier = enemy.tier === 'large' ? 'medium' : 'small';
+    const ratio = (stat: Readonly<Record<MobTier, number>>) => stat[tier] / stat[mobTier(enemy.tier)];
+    const maxHp = (enemy.maxHp / ELITES.hp) * ratio(TIER_STATS.hp) * ELITES.split.childHp;
+    for (let index = 0; index < ELITES.split.children; index += 1) {
+      const side = index % 2 === 0 ? -1 : 1;
+      const x = enemy.x + side * enemy.radius;
+      this.enemies.push({
+        ...enemy,
+        id: this.nextId(),
+        x,
+        prevX: x,
+        prevY: enemy.y,
+        vx: 0,
+        vy: 0,
+        tier,
+        radius: ENEMY_RADIUS[tier],
+        hp: maxHp,
+        maxHp,
+        speed: enemy.speed * ratio(TIER_STATS.speed),
+        damage: enemy.damage * ratio(TIER_STATS.damage),
+        xp: TIER_STATS.xp[tier],
+        coin: TIER_STATS.coin[tier],
+        attackStyle: 'contact',
+        elite: undefined,
+        eliteShield: undefined,
+        damageCooldowns: {},
+      });
+    }
+  }
+
+  /** SYS-10: shields come back after a while untouched, and drain auras heal the enemies round them. */
+  protected updateElites(dt: number) {
+    for (const elite of this.enemies) {
+      if (!elite.elite || elite.hp <= 0) continue;
+      if (elite.elite === 'shield' && this.elapsed - (elite.eliteHitAt ?? 0) >= ELITES.shield.regenSeconds) elite.eliteShield = elite.maxHp * ELITES.shield.share;
+      if (elite.elite !== 'drain') continue;
+      for (const other of this.enemyIndex.queryCircle(elite.x, elite.y, ELITES.drain.radius)) {
+        if (other !== elite && other.hp > 0 && !other.isBoss) other.hp = Math.min(other.maxHp, other.hp + other.maxHp * ELITES.drain.healShare * dt);
+      }
+    }
   }
 
   /**
@@ -4500,6 +4577,14 @@ export class GameEngine {
         y: enemy.y + Math.sin(enemy.shieldAngle) * enemy.radius,
       });
     }
+    // SYS-10: an elite's shield takes the hit first.
+    const shown = damage;
+    if (enemy.eliteShield) {
+      const absorbed = Math.min(enemy.eliteShield, damage);
+      enemy.eliteShield -= absorbed;
+      damage -= absorbed;
+      enemy.eliteHitAt = this.elapsed;
+    }
     // SYS-08 집행 바늘비: a needle finishes an enemy it leaves under the threshold, unless it is a boss.
     if (skillId === 'needleStorm' && this.fusions.executionRain && !enemy.isBoss && enemy.hp - damage < enemy.maxHp * BUILD_DEPTH.executionRain.executeBelow) damage = Math.max(damage, enemy.hp);
     // UI-05: the health this hit actually took, for the settlement's damage bars (presentation only).
@@ -4516,7 +4601,7 @@ export class GameEngine {
       enemy.y += dir.y * knockback * 0.035;
     }
     const travel = normalize(enemy.x - source.x, enemy.y - source.y);
-    this.emit({ type: 'enemy/hit', id: enemy.id, x: enemy.x, y: enemy.y, radius: enemy.radius, damage, crit, tier: impactTier, dx: travel.x, dy: travel.y });
+    this.emit({ type: 'enemy/hit', id: enemy.id, x: enemy.x, y: enemy.y, radius: enemy.radius, damage: shown, crit, tier: impactTier, dx: travel.x, dy: travel.y });
     if (impactTier !== 'light' && !this.rules.rareHitStop) this.requestHitStop(impactTier === 'critical' ? 0.035 : 0.025);
   }
 
@@ -4601,7 +4686,8 @@ export class GameEngine {
     if (enemy.isBoss) this.bossesDefeated += 1;
     if (enemy.boss) this.found.bosses.add(enemy.boss.id);
     else if (!enemy.isBoss) this.found.enemies.add(`${this.chapter}-${enemyRole(enemy.tier, enemy.attackStyle)}`);
-    this.stageObjective?.onKill({ tier: enemy.tier, ranged: enemy.attackStyle === 'ranged', fieldBoss: enemy.isBoss && enemy.boss?.role === 'field' && !enemy.legacyBoss });
+    this.stageObjective?.onKill({ tier: enemy.tier, ranged: enemy.attackStyle === 'ranged', fieldBoss: enemy.isBoss && enemy.boss?.role === 'field' && !enemy.legacyBoss, elite: enemy.elite !== undefined });
+    if (enemy.elite) this.eliteFalls(enemy);
     if (this.runMode === 'infinite') {
       this.infiniteEventScore += infiniteKillScore(enemy.tier, this.elapsed, this.infiniteBossKills);
       if (enemy.isBoss) {

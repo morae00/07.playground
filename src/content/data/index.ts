@@ -8,12 +8,13 @@ import buildDepth from './buildDepth.ts';
 import catalog from './catalog.ts';
 import codex from './codex.ts';
 import cosmetics from './cosmetics.ts';
+import elites from './elites.ts';
 import encounterGrammars from './encounterGrammars.ts';
 import objectives from './objectives.ts';
 import skillNumbers from './skillNumbers.ts';
 import soundCues from './soundCues.ts';
 
-const CONTENT_TABLES = { achievements, bossPhaseMoves, buildDepth, catalog, codex, cosmetics, encounterGrammars, objectives, skillNumbers, soundCues };
+const CONTENT_TABLES = { achievements, bossPhaseMoves, buildDepth, catalog, codex, cosmetics, elites, encounterGrammars, objectives, skillNumbers, soundCues };
 
 export type ContentTables = typeof CONTENT_TABLES;
 export default CONTENT_TABLES;

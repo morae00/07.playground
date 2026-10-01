@@ -92,6 +92,10 @@ export type Entity = {
   damageCooldowns: Record<string, number>;
   bossPhase: 1 | 2 | 3;
   bossPhaseFlash: number;
+  /** SYS-10: an elite's affix; its shield, and when it was last hit (the shield comes back after a while untouched). */
+  elite?: 'haste' | 'split' | 'shield' | 'drain';
+  eliteShield?: number;
+  eliteHitAt?: number;
   /** SYS-01: consecutive aimed shots that missed this enemy, and when the last one missed. */
   aimMisses?: number;
   aimMissedAt?: number;

@@ -233,6 +233,21 @@ SYS-07 (difficulty curve, `difficultyCurve` rule) was tuned with three pilot set
   - a lower damage floor and gentler tide slows: they did not move the Ch3 spike.
 - `scripts/lib/full-balance-runner.mjs` now records each run's lowest health, hits, and minimum hits, and offers the `maxed` persona.
 
+SYS-10 (elites, `eliteAffixes` rule) was measured on the same sets, against fa5eb0f:
+
+| | without elites | elites (chosen: 12% of elite beats, ×2.5 health) | gentler (8%, ×2.0) |
+|---|---:|---:|---:|
+| team clears, all (%) | 43.2 | 41.3 | 40.8 |
+| normal stage clears by chapter, team (%) | 33 / 53 / 33 / 49 / 42 | 29 / 51 / 24 / 47 / 44 | 29 / 53 / 27 / 44 / 38 |
+| adjacent chapter differences (points) | +20 / -20 / +16 / -7 | +22 / -27 / +22 / -2 | +24 / -27 / +18 / -7 |
+| boss stage clears by chapter, team (%) | 30 / 50 / 30 / 47 / 67 | the same | the same |
+| maxed in Ch5: clears, lowest health p50 | 88%, 0.68 | 83%, 0.60 | 90%, 0.66 |
+| novice 1-1 clears | 50% | 50% | 50% |
+
+- Elites cost the team about two points overall. Boss stages have no beats, so they do not change.
+- Ch3 is the bots' valley again: its normal stages lose 6-9 points either way, and the Ch2-3 step reaches -27, past the ±25 gate. With 45 runs a chapter, a chapter moves about ±7 points by chance, and the gentler numbers did no better, so the chosen numbers stay. Ch3 needs the playtest look SYS-07 asked for **[Team decision]**.
+- Elites keep a maxed build under pressure: its lowest health median falls from 0.68 to 0.60.
+
 CON-07's passive tree gives each account passive ten points instead of five. The `maxed` persona now holds all thirty (it held 5 / 5 / 5). Its second nodes started stronger; this is what each setting did to maxed Ch5 (six stages × 10 seeds):
 
 | second nodes (per point) | clears | lowest health p50 |

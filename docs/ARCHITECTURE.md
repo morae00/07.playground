@@ -165,7 +165,7 @@ The settlement (UI-05, `SettlementModal.tsx`) shows the result first, then the n
 - Enter starts the next stage once the 0.8 s input guard has passed. A focused button keeps its own Enter.
 
 Two HUD marks live on the canvas, because they need the camera (UI-02):
-- Bosses and elites outside the view get a coral arrow on the screen edge. The arrow sits on the line from the screen centre toward the enemy and keeps clear of the HUD rows. Bosses come first; at most four arrows show.
+- Bosses, large enemies, and elites (SYS-10) outside the view get a coral arrow on the screen edge. The arrow sits on the line from the screen centre toward the enemy and keeps clear of the HUD rows. Bosses come first; at most four arrows show.
 - Silence and root show as round timers over the hero's head. The renderer infers each debuff's length when it sees one start, and the ring empties as the debuff runs out. The DOM effect rack still announces both to screen readers but no longer shows them.
 
 ## Strings (UI-10)
@@ -246,7 +246,7 @@ A normal stage keeps its survival clock. Under the `stageObjectives` rule its ob
 | 소형 무리 압박전 (swarm) | small share +15 points, spawns ×1.2 | defeat 280 small enemies |
 | 중형 경계선 유지 (holdLine) | — | hold a marked zone for 30 s; it moves on every 10 s held |
 | 지형 함정 구역 (traps) | twice the terrain | spend at most 20 s in hazards |
-| 정예 추격전 (elites) | field bosses with ×1.5 health and ×1.2 damage | defeat both field bosses |
+| 정예 추격전 (elites) | elites in every beat (SYS-10); without elites, field bosses with ×1.5 health and ×1.2 damage | defeat 10 elites; without elites, both field bosses |
 | 자원 회수 압박전 (salvage) | — | recover 5 ink caches, one after another, by standing on each for 1.5 s |
 | 대형 개체 회피전 (giants) | large share +15 points | defeat 45 large enemies |
 | 투사체 포위망 (crossfire) | three times the ranged cap, up to 6 | defeat 14 ranged enemies |
@@ -258,6 +258,14 @@ A normal stage keeps its survival clock. Under the `stageObjectives` rule its ob
 - The zone and the caches draw from the objective's own random stream, so the rest of the stage keeps its draws. The world renderer draws them on the ground in the player's colours: the zone as an ally ring, a cache as a reward ring round an ink packet. The solid arc fills as the player stands in it.
 - The HUD shows the goal under the objective, counting, met, or missed. A goal met on a clear pays half the stage's floor gold (the settlement's 보너스 목표 part). It also stars the stage record (`profile.stageRecords[…].bonus`), and the stage map and card show the star.
 - Landmark stages (St3, St7) open with the landmark's name card: the name and a line from the lore bible's draft table (§5.1), in `public/assets/content/landmark-titles.json`, like the boss titles.
+
+## Elites (SYS-10)
+
+The elite purple had nothing to mark, and the 정예 추격전 objective only strengthened field bosses. The `eliteAffixes` rule (remaster on, classic off) adds elites, with the numbers in `src/content/data/elites.ts`:
+- An elite is an ordinary enemy of any tier with one affix. Its radius, tier, and role stay the tier's (G9, V4, V6). It has 2.5 times the health and pays 3 times the XP.
+- 가속 (haste) moves 1.5 times as fast. 분열 (split) breaks into two enemies of the next tier down at half their usual health when it falls. 보호막 (shield) carries a barrier worth 60% of its max health that takes hits first and comes back after 4 s untouched. 흡수 오라 (drain) heals the enemies within 150 by 4% of their max health a second.
+- Elite beats (SYS-03) promote 12% of their spawns. On the elite hunt objective (CON-03) 6% of every spawn comes as an elite, and its bonus goal becomes ten elite kills in every chapter; the field bosses keep their usual strength. At most three elites are alive at once. A fallen elite drops a coin chest worth 12 times its coins.
+- The renderer outlines an elite in the elite purple (its sprite's cut-out nudged out, or a ring round a vector body) and marks its affix over its head. Its health bar shows unless health bars are off.
 
 ## Assists (SYS-07)
 

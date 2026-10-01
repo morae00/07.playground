@@ -8,7 +8,7 @@
 import { deepFreeze } from '../deepFreeze.ts';
 
 export type ObjectiveBonus =
-  | { kind: 'kills'; tier: 'small' | 'large' | 'ranged'; count: number }
+  | { kind: 'kills'; tier: 'small' | 'large' | 'ranged' | 'elite'; count: number }
   | { kind: 'hold'; seconds: number; radius: number; moveEvery: number }
   | { kind: 'terrain'; seconds: number }
   | { kind: 'fieldBosses' }
@@ -22,13 +22,15 @@ export type ObjectiveDef = {
   fieldBoss?: { hp: number; damage: number };
   extraFieldBossMarks?: number[];
   bonus: ObjectiveBonus;
+  /** SYS-10: with elites in play (eliteAffixes rule), the objective brings elites and asks for them instead. */
+  eliteHunt?: { bonus: ObjectiveBonus };
 };
 
 const objectives = {
   swarm: { mix: { small: 0.15 }, spawnRate: 1.2, bonus: { kind: 'kills', tier: 'small', count: 280 } },
   holdLine: { bonus: { kind: 'hold', seconds: 30, radius: 150, moveEvery: 10 } },
   traps: { terrain: 2, bonus: { kind: 'terrain', seconds: 20 } },
-  elites: { fieldBoss: { hp: 1.5, damage: 1.2 }, bonus: { kind: 'fieldBosses' } },
+  elites: { fieldBoss: { hp: 1.5, damage: 1.2 }, bonus: { kind: 'fieldBosses' }, eliteHunt: { bonus: { kind: 'kills', tier: 'elite', count: 10 } } },
   salvage: { bonus: { kind: 'salvage', count: 5, radius: 70, seconds: 1.5 } },
   giants: { mix: { large: 0.15 }, bonus: { kind: 'kills', tier: 'large', count: 45 } },
   crossfire: { rangedCap: 3, bonus: { kind: 'kills', tier: 'ranged', count: 14 } },

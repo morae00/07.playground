@@ -33,8 +33,13 @@ export function shiftedTierRoll(mix: ObjectiveDef['mix']) {
   return { small: shares.small, medium: shares.small + shares.medium };
 }
 
-export function objectiveDef(id: ObjectiveId): ObjectiveDef {
-  return OBJECTIVE_TABLE.objectives[id];
+/**
+ * An objective as a stage plays it. With elites in play (SYS-10), the elite hunt brings elites and asks for elite
+ * kills instead of strengthening the field bosses.
+ */
+export function objectiveDef(id: ObjectiveId, elites = false): ObjectiveDef {
+  const def = OBJECTIVE_TABLE.objectives[id];
+  return elites && def.eliteHunt ? { ...def, fieldBoss: undefined, bonus: def.eliteHunt.bonus } : def;
 }
 
 /** Ranged enemies alive at once on a chapter's stage (G9: 1-3), raised by the objective up to its maximum. */
@@ -45,7 +50,8 @@ export function rangedCapFor(def: ObjectiveDef | undefined, chapter: number) {
 
 /** The goal's target on a stage: kills scale by chapter; field boss goals count the stage's field bosses. */
 export function bonusTarget(bonus: ObjectiveBonus, chapter: number, def: ObjectiveDef) {
-  if (bonus.kind === 'kills') return Math.round(bonus.count * (OBJECTIVE_TABLE.killScale[chapter - 1] ?? 1));
+  // Elites come a few at a time in every chapter, so an elite goal does not grow with the crowds.
+  if (bonus.kind === 'kills') return Math.round(bonus.count * (bonus.tier === 'elite' ? 1 : OBJECTIVE_TABLE.killScale[chapter - 1] ?? 1));
   if (bonus.kind === 'hold') return bonus.seconds;
   if (bonus.kind === 'salvage') return bonus.count;
   if (bonus.kind === 'fieldBosses') return FIELD_BOSS_MARKS.length + (def.extraFieldBossMarks?.length ?? 0);
@@ -69,6 +75,8 @@ export class StageObjective {
   readonly target: number;
   readonly goal: Text;
   readonly fieldBossMarks: readonly number[];
+  /** SYS-10: the stage brings elites in every beat (ELITES.objectiveChance). */
+  readonly eliteHunt: boolean;
   private progress = 0;
   private failed = false;
   private mark: { kind: ObjectiveMark['kind']; x: number; y: number; radius: number; progress: number } | null = null;
@@ -86,8 +94,10 @@ export class StageObjective {
     private readonly random: () => number,
     readonly modifiers = true,
     readonly bonus = true,
+    elites = false,
   ) {
-    this.def = objectiveDef(id);
+    this.def = objectiveDef(id, elites);
+    this.eliteHunt = modifiers && elites && objectiveDef(id).eliteHunt !== undefined;
     this.tierRoll = modifiers ? shiftedTierRoll(this.def.mix) : { small: TIER_ROLL.small, medium: TIER_ROLL.medium };
     this.target = bonusTarget(this.def.bonus, chapter, this.def);
     this.goal = bonusGoal(this.def.bonus, this.target);
@@ -110,10 +120,11 @@ export class StageObjective {
     return this.modifiers ? this.def.fieldBoss : undefined;
   }
 
-  onKill(kill: Readonly<{ tier: string; ranged: boolean; fieldBoss: boolean }>) {
+  onKill(kill: Readonly<{ tier: string; ranged: boolean; fieldBoss: boolean; elite?: boolean }>) {
     const bonus = this.def.bonus;
     if (!this.bonus || this.status !== 'active') return;
-    if (bonus.kind === 'kills' && (bonus.tier === 'ranged' ? kill.ranged : kill.tier === bonus.tier && !kill.fieldBoss)) this.progress += 1;
+    const counts = bonus.kind === 'kills' && (bonus.tier === 'ranged' ? kill.ranged : bonus.tier === 'elite' ? kill.elite === true : kill.tier === bonus.tier && !kill.fieldBoss);
+    if (counts) this.progress += 1;
     if (bonus.kind === 'fieldBosses' && kill.fieldBoss) this.progress += 1;
   }
 

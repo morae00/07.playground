@@ -10,7 +10,7 @@ Object.defineProperty(globalThis, 'performance', { value: { now: () => 0 }, conf
 const { ProbedGameEngine, installStrings, tx } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
 installStrings(localeTable('ko'));
 
-function stageRun(chapter, stage, { rules = 'remaster', seed = 4711, options = {} } = {}) {
+function stageRun(chapter, stage, { rules = 'remaster', seed = 4711, options = {}, patch = null } = {}) {
   const settlements = [];
   const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), maxMeta(), { ...standardOptions(), ...options }, {
     onSnapshot() {},
@@ -19,6 +19,7 @@ function stageRun(chapter, stage, { rules = 'remaster', seed = 4711, options = {
     onGameOver(result) { settlements.push(result); },
   });
   engine.setRuleSet(rules);
+  if (patch) engine.probe.patchRules(patch);
   engine.startRun(chapter, stage, seed);
   const { probe } = engine;
   probe.setGodMode();
@@ -102,7 +103,7 @@ test('CON-03: the crossfire objective raises the ranged cap to 6 on a Ch1 stage 
   }
 });
 
-test('CON-03: the vanguard objective calls a third field boss at 18%, and the elite hunt strengthens both of its field bosses', () => {
+test('CON-03: the vanguard objective calls a third field boss at 18%; without elites (SYS-10) the elite hunt strengthens its field bosses', () => {
   const vanguard = stageRun(1, 8);
   const plain = stageRun(1, 2);
   try {
@@ -121,9 +122,10 @@ test('CON-03: the vanguard objective calls a third field boss at 18%, and the el
     plain.engine.dispose();
   }
 
+  // With SYS-10's elites off, the elite hunt strengthens both field bosses instead of bringing elites.
   const hp = {};
   for (const [label, stage] of [['elites', 4], ['plain', 2]]) {
-    const run = stageRun(1, stage);
+    const run = stageRun(1, stage, { patch: { eliteAffixes: false } });
     run.probe.clear('enemies');
     run.probe.setClock({ timeLeft: run.probe.hud().duration * (1 - 0.37) });
     run.probe.step(2);

@@ -131,6 +131,13 @@ export type RuleSet = Readonly<{
    * at 20-28 drafts an 8-minute stage. Numbers in src/content/data/buildDepth.ts.
    */
   buildDepth: boolean;
+  /**
+   * SYS-10: elites. An elite beat's spawns, and every spawn on an elite hunt, may come as elites: an enemy with one
+   * affix (haste, split, shield, or drain), 2.5 times the health, an elite purple outline, its affix mark, and a coin
+   * chest when it falls. The elite hunt objective then asks for elite kills instead of strengthening field bosses.
+   * Numbers in src/content/data/elites.ts.
+   */
+  eliteAffixes: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -165,6 +172,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   stageObjectives: false,
   difficultyCurve: false,
   buildDepth: false,
+  eliteAffixes: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -199,6 +207,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   stageObjectives: true,
   difficultyCurve: true,
   buildDepth: false,
+  eliteAffixes: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {
