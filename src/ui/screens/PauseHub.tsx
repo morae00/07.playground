@@ -87,6 +87,12 @@ export function PauseHub({ snapshot, tab, setTab, confirmingAbandon, onResume, o
                       <span>{t(snapshot.skills[id]!.awakened ? 'pause.skillLevel.awakened' : 'pause.skillLevel', { level: snapshot.skills[id]!.level })}</span>
                     </li>
                   ))}
+                  {snapshot.fusions.map((id) => (
+                    <li key={id}>
+                      <b>{t(`fusion.${id}`)}</b>
+                      <span>{t('tag.fusion')}</span>
+                    </li>
+                  ))}
                 </ul>
                 <dl className="hubStats">
                   <div><dt>{t('stats.attack')}</dt><dd>{Math.round(stats.attack)}</dd></div>

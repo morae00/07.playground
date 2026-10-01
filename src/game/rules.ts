@@ -124,6 +124,13 @@ export type RuleSet = Readonly<{
    * crowds are 15% lighter. Numbers in src/content/data/catalog.ts (difficulty).
    */
   difficultyCurve: boolean;
+  /**
+   * SYS-08 A/B (off in both rule sets until the slot A/B decides): builds hold 6 active and 4 passive skills, owned
+   * skills weigh more in the draft, six fusion awakenings appear once both of their skills are awakened, account
+   * levels unlock up to two reroll-or-banish tokens a stage, chained drafts share one screen, and the XP curve aims
+   * at 20-28 drafts an 8-minute stage. Numbers in src/content/data/buildDepth.ts.
+   */
+  buildDepth: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -157,6 +164,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   patientPickups: false,
   stageObjectives: false,
   difficultyCurve: false,
+  buildDepth: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -190,6 +198,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   patientPickups: true,
   stageObjectives: true,
   difficultyCurve: true,
+  buildDepth: false,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

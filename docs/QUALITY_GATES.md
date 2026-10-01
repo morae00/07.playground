@@ -233,6 +233,43 @@ SYS-07 (difficulty curve, `difficultyCurve` rule) was tuned with three pilot set
   - a lower damage floor and gentler tide slows: they did not move the Ch3 spike.
 - `scripts/lib/full-balance-runner.mjs` now records each run's lowest health, hits, and minimum hits, and offers the `maxed` persona.
 
+SYS-08 (build depth, `buildDepth` rule) is an A/B experiment, off in both rule sets until the slot playtests decide. The bots measured it on the SYS-07 pilot sets, with the experiment off (today's rules) and on. The first set compares XP curves, before tokens (the personas had account level 1):
+
+| | off | slots and owned weight | + XP 0.6 / 0.1 | + XP 0.7 / 0.1 | + XP 0.8 / 0.08 |
+|---|---:|---:|---:|---:|---:|
+| team clears, all (%) | 43.2 | 42.4 | 42.4 | 38.9 | 40.5 |
+| normal stage clears by chapter, team (%) | 33 / 53 / 33 / 49 / 42 | 29 / 49 / 27 / 53 / 38 | 31 / 53 / 24 / 56 / 33 | 31 / 51 / 22 / 42 / 36 | 27 / 42 / 22 / 58 / 36 |
+| drafts on cleared 8-minute stages, p50 (p10-p90) | 34 (13-44) | 36 (16-44) | 27 (17-33) | 25 (13-32) | 26 (14-32) |
+| the same by chapter | 16 / 20 / 37 / 39 / 43 | 20 / 28 / 36 / 40 / 43 | 18 / 22 / 29 / 31 / 33 | 16 / 18 / 27 / 29 / 32 | 15 / 18 / 27 / 30 / 31 |
+| awakenings on those stages, p50 | 3 | 4 | 3 | 2 | 3 |
+| fusions taken in the 375 team runs | 0 | 36 | 23 | 9 | 19 |
+| maxed in Ch5: clears, lowest health p50 | 85%, 0.65 | 82%, 0.59 | 83%, 0.58 | 78%, 0.48 | 68%, 0.50 |
+| novice 1-1 clears | 50% | 60% | 65% | 70% | 55% |
+
+- The XP rows read "level L needs the usual XP × scale × (1 + growth × (L − 1))". 0.6 / 0.1 is the table's setting: drafts fall into the 20-28 band, 3 awakenings a stage, and clears stay level. Early levels get cheaper, so a new player's first drafts come sooner.
+- Its cost is a bumpier chapter curve. Ch3's normal stages fall to 24%, and the Ch2-3 and Ch3-4 steps pass the ±25-point gate (-29, +31). Ch3 was already the valley of the bots' fixed walk (SYS-07); slots alone took it from 33% to 27%.
+- In the second half of a stage, bonus cards are 0% of the cards offered in every set, off or on. Under the remaster rules, 8-minute stages never run out of skills; the 0.1.0 finding (every late card a bonus) came from 12-minute stages.
+
+The second set adds tokens and compares slot counts, all with XP 0.6 / 0.1. The personas now have an account level of 1 plus their passive points (one a level), so from Ch3 on they hold one or two tokens, and they redraw a draft that has no card in their plan:
+
+| | off | 6 + 4 slots | 5 + 3 slots | no slot limit |
+|---|---:|---:|---:|---:|
+| team clears, all (%) | 43.2 | 44.8 | 44.5 | 44.8 |
+| normal stage clears by chapter, team (%) | 33 / 53 / 33 / 49 / 42 | 31 / 53 / 29 / 58 / 47 | 31 / 51 / 29 / 58 / 42 | 31 / 53 / 29 / 58 / 47 |
+| adjacent chapter differences (points) | +20 / -20 / +16 / -7 | +22 / -24 / +29 / -11 | +20 / -22 / +29 / -16 | +22 / -24 / +29 / -11 |
+| boss stage clears by chapter, team (%) | 30 / 50 / 30 / 47 / 67 | 23 / 57 / 30 / 57 / 67 | 23 / 57 / 30 / 60 / 70 | 23 / 57 / 30 / 57 / 67 |
+| drafts on cleared 8-minute stages, p50 (p10-p90) | 34 (13-44) | 27 (17-34) | 27 (17-34) | 28 (17-34) |
+| awakenings on those stages, p50 | 3 | 3 | 3 | 3 |
+| fusions taken in the 375 team runs | 0 | 19 | 24 | 15 |
+| team runs that ended with ten skills | 87 | 21 | 0 (eight at most) | 31 |
+| maxed in Ch5: clears, lowest health p50 | 85%, 0.65 | 82%, 0.60 | 82%, 0.60 | 85%, 0.61 |
+| novice 1-1 clears | 50% | 65% | 65% | 65% |
+
+- Tokens add about two points of clears (42.4% to 44.8%).
+- The slot count barely moves the bots. In eight minutes they rarely fill ten slots, so a build with no limit plays almost the same. Players pick differently, so the slot count stays the playtests' call **[Team decision]**: 6 + 4 (the table's setting), 5 + 3, or no limit. Developer builds turn the experiment on with the cheat code `DEPTH` (docs/DEVELOPER_APP.md).
+- With the experiment on, the Ch3-4 step (+29) passes the R3 gate of ±25 points. Ch3 is the bots' valley either way. Turning the experiment on needs that step closed, or a playtest showing it is the walk and not the stage **[Team decision]**.
+- `scripts/lib/full-balance-runner.mjs` now records each run's awakenings, fusions, run level, and the cards and bonus cards offered in the stage's second half. The personas take fusion cards first.
+
 ## Game rules and grammar
 
 Gameplay changes ship behind the rule set in `src/game/rules.ts`. `classic` reproduces 0.1.0 exactly and `remaster` is the default. Infinite-mode records and replay fixtures are kept per rules version: the remaster rules (v2) may change freely until a build ships them, and after that the first change to seeded outcomes must raise `RULES_VERSION`. `test/grammarContracts.integration.test.mjs` pins the preserved game grammar (stage structure, draft sizes, radii, tier mix, deterministic replay) and one regression test per R0 gameplay fix.

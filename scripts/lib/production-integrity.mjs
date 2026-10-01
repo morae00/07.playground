@@ -22,6 +22,8 @@ export const PRODUCTION_BANNED_MARKERS = Object.freeze([
   '쇼케이스',
   // The death-moment probe's cheat (FX-03).
   'PLAYER DOWN',
+  // The SYS-08 build depth playtest switch.
+  'BUILD DEPTH ON',
   // Fault injection for the error-resilience probes (TEC-14).
   'LOOP FAULT ARMED',
   'UI FAULT ARMED',

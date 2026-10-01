@@ -22,7 +22,8 @@ const FOCUSABLE = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
-const ACTIVATION_KEYS = new Set(['Enter', ' ', 'Spacebar', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
+// R redraws a draft under the SYS-08 experiment, so it waits out the guard like a pick.
+const ACTIVATION_KEYS = new Set(['Enter', ' ', 'Spacebar', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'r', 'R']);
 
 export function ModalDialog({ className, labelledBy, describedBy, onEscape, inputGuardMs = 0, children }: ModalDialogProps) {
   const dialogRef = useRef<HTMLElement | null>(null);

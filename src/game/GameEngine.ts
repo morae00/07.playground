@@ -46,6 +46,7 @@ import { EncounterDirector, type SpawnEdge } from './encounterDirector';
 import { StageObjective, bonusGold, type BonusState, type ObjectiveId, type ObjectiveMark } from './stageObjective';
 import { CHECK_CONTENT_AT_LOAD } from '../content/checks';
 import CATALOG from '../content/data/catalog';
+import BUILD_DEPTH, { type FusionId } from '../content/data/buildDepth';
 import { CHARGER, STALKER_FLOCK, SeparationGrid, WARDEN_SHIELD, enemyRole, flockSteer, leadAim, shieldCovers, turnToward } from './enemyBehaviors';
 import { LOGICAL_VIEW, SPAWN_MARGIN, classicViewFrame, logicalViewFrame, spawnFrameOrigin, type ViewFrame } from './viewPolicy';
 import {
@@ -217,6 +218,15 @@ export type SkillOffer =
       title: Text;
       body: Text;
       levelLine: Text;
+    }
+  | {
+      /** SYS-08: a fusion awakening, offered once both of its skills are awakened. */
+      kind: 'fusion';
+      fusionId: FusionId;
+      rarity: Rarity;
+      title: Text;
+      body: Text;
+      levelLine: Text;
     };
 
 /**
@@ -235,6 +245,8 @@ const LOG_CODES = {
   s: ['input/analog', 'x', 'y'],
   r: ['input/release'],
   d: ['draft/select', 'offerId'],
+  g: ['draft/reroll'],
+  n: ['draft/banish', 'offerId'],
   b: ['run/buy', 'id', 'paused'],
   x: ['run/assists', 'damage', 'enemySpeed'],
 } as const satisfies Record<string, readonly [RunCommand['type'], ...string[]]>;
@@ -289,6 +301,11 @@ export type DraftState = {
   reason: DraftReason;
   after: 'resume' | 'roundClear';
   cards: DraftCard[];
+  /**
+   * SYS-08 (absent outside the experiment): reroll-or-banish tokens left, this draft's place among drafts opened
+   * together (one screen counts through them), and whether a token just drew it again.
+   */
+  depth?: { tokens: number; index: number; total: number; redraw: boolean };
 };
 
 export type StageProgress = {
@@ -348,6 +365,10 @@ export type HudSnapshot = {
   bossHp?: number;
   bossMaxHp?: number;
   skills: Partial<Record<SkillId, SkillState>>;
+  /** SYS-08: fusion awakenings taken, tokens left, and the slots a build has (null outside the experiment). */
+  fusions: FusionId[];
+  draftTokens: number;
+  slots: { active: number; passive: number } | null;
   /**
    * The share (0-1) of each active skill's current cooldown still to run, for the HUD slots (UI-02). Cooldowns
    * under half a second read 0: at the HUD's 8 Hz they would only flicker.
@@ -838,6 +859,8 @@ export class GameEngine {
   protected runStart: { meta: MetaState; options: GameOptions } | null = null;
   protected replaying = false;
   protected cheatsUsed = false;
+  /** Developer builds: an experiment's rule flag was turned on (setExperiment), so runs are not suspended. */
+  protected experimental = false;
   protected activeDraftReason: DraftReason = 'level';
   protected draftQueue: Array<{ reason: DraftReason; after: DraftState['after'] }> = [];
   protected activeDraftId: number | null = null;
@@ -886,6 +909,12 @@ export class GameEngine {
   protected pointer = { active: false, x: 0, y: 0 };
   protected analogMove = { x: 0, y: 0, active: false };
   protected pendingAwakenings: SkillId[] = [];
+  /** SYS-08: fusion awakenings taken, skills banished from this run's drafts, and reroll-or-banish tokens left. */
+  protected fusions: Partial<Record<FusionId, true>> = {};
+  protected banished = new Set<SkillId>();
+  protected draftTokens = 0;
+  /** SYS-08: the open draft's place among drafts opened together (0 while none is open). */
+  protected draftChain = { index: 0, total: 0 };
 
   protected player = {
     x: WORLD_W / 2,
@@ -1085,6 +1114,10 @@ export class GameEngine {
     this.runUpgrades = makeRunUpgrades();
     this.skillCooldowns = {};
     this.pendingAwakenings = [];
+    this.fusions = {};
+    this.banished = new Set();
+    this.draftTokens = this.rules.buildDepth ? BUILD_DEPTH.tokenLevels.filter((level) => this.meta.level >= level).length : 0;
+    this.draftChain = { index: 0, total: 0 };
     this.draftQueue = [];
     this.activeDraftId = null;
     this.activeDraftAfter = null;
@@ -1119,7 +1152,7 @@ export class GameEngine {
       hp: BASE_STATS.maxHp,
       level: 1,
       xp: 0,
-      nextXp: 28,
+      nextXp: this.xpToNext(1),
       coins: 0,
       kills: 0,
       root: 0,
@@ -1198,6 +1231,13 @@ export class GameEngine {
     this.emit({ type: 'run/upgradeBought' });
     this.emitSnapshot(true);
     return true;
+  }
+
+  /** Developer builds: turns an undecided experiment's rule flag on for the runs this engine starts (playtest A/Bs). */
+  setExperiment(flag: 'buildDepth' | 'terrainOnEnemies') {
+    if (!DEVELOPER_UI_AVAILABLE) return;
+    this.rules = Object.freeze({ ...this.rules, [flag]: true });
+    this.experimental = true;
   }
 
   applyCheat(code: string) {
@@ -1282,6 +1322,7 @@ export class GameEngine {
 
     const transition = resolveDraftTransition(activeAfter, this.pendingRoundClear, this.draftQueue.length > 0);
     this.pendingRoundClear = transition.pendingRoundClear;
+    if (transition.resolution !== 'draft') this.draftChain = { index: 0, total: 0 };
     if (transition.resolution === 'draft') {
       const next = this.draftQueue.shift();
       if (!next) return 'ignored' as const;
@@ -1300,6 +1341,14 @@ export class GameEngine {
   protected applyOffer(offer: SkillOffer) {
     if (offer.kind === 'bonus') {
       this.chooseBonusOffer(offer);
+      this.rewardLock = false;
+      this.emitSnapshot(true);
+      return;
+    }
+    if (offer.kind === 'fusion') {
+      this.fusions[offer.fusionId] = true;
+      this.emit({ type: 'draft/applied', kind: 'awakening', x: this.player.x, y: this.player.y });
+      if (this.rules.rareHitStop) this.requestHitStop(RARE_HIT_STOP.awakening);
       this.rewardLock = false;
       this.emitSnapshot(true);
       return;
@@ -1370,7 +1419,7 @@ export class GameEngine {
 
   /** CON-04: the run so far, to save and replay; null when there is no live run to suspend. */
   suspendState(): SuspendedRun | null {
-    if (!this.running || this.stageFinished || this.player.hp <= 0 || !this.runStart || this.cheatsUsed || this.runLog.length > MAX_RUN_LOG) return null;
+    if (!this.running || this.stageFinished || this.player.hp <= 0 || !this.runStart || this.cheatsUsed || this.experimental || this.runLog.length > MAX_RUN_LOG) return null;
     return {
       version: 1,
       rulesVersion: this.rules.version,
@@ -1421,10 +1470,7 @@ export class GameEngine {
     this.paused = true;
     this.accumulator = 0;
     this.emitSnapshot(true);
-    if (this.activeDraftId !== null && this.activeDraftAfter !== null) {
-      const reason = this.activeDraftReason;
-      this.callbacks.onDraft({ id: this.activeDraftId, title: reason === 'boss' ? text('draft.title.boss') : text('draft.title.level', { level: this.player.level }), reason, after: this.activeDraftAfter, cards: this.activeDraftCards });
-    }
+    if (this.activeDraftId !== null && this.activeDraftAfter !== null) this.callbacks.onDraft(this.draftState());
   }
 
   /** CON-04: leaving a run settles it as a defeat, never better than dying would have (BUG-17). */
@@ -1508,6 +1554,12 @@ export class GameEngine {
         return;
       case 'draft/select':
         this.selectOffer(command.offerId);
+        return;
+      case 'draft/reroll':
+        this.rerollDraft();
+        return;
+      case 'draft/banish':
+        this.banishOffer(command.offerId);
         return;
       case 'control/pause':
         this.pause();
@@ -2203,7 +2255,7 @@ export class GameEngine {
     if (!target) return;
     const baseCooldown = 0.72 / this.effectiveAttackSpeed();
     this.skillCooldowns.needleStorm = Math.max(0.16, baseCooldown - skill.level * 0.035);
-    const count = needleCount(skill.level, skill.awakened);
+    const count = needleCount(skill.level, skill.awakened) + (this.fusions.executionRain ? BUILD_DEPTH.executionRain.extraNeedles : 0);
     const baseAngle = Math.atan2(target.y - this.player.y, target.x - this.player.x);
     const spread = skill.awakened ? 0.34 : 0.18;
     for (let i = 0; i < count; i += 1) {
@@ -2249,7 +2301,10 @@ export class GameEngine {
         current.stun = Math.max(current.stun, SKILL_NUMBERS.chainSpark.stunSeconds);
         this.areaDamage(current.x, current.y, 78, damage * 0.7, 'chainSpark', 90);
       }
+      const struck: Entity = current;
       current = this.findNearestEnemyFrom(current.x, current.y, 330, hit);
+      // SYS-08 빙결 연쇄: every jump chills, and the chain's last target is rooted.
+      if (this.fusions.frostChain) this.chill(struck, this.skills.frostLine?.level ?? 1, !current || i === jumps - 1);
     }
     this.chains.push({ id: this.nextId(), points, life: 0.18, maxLife: 0.18 });
     this.emit({ type: 'skill/cast', skillId: 'chainSpark', x: this.player.x, y: this.player.y });
@@ -2270,17 +2325,18 @@ export class GameEngine {
       if (enemy.hp <= 0) continue;
       if (distancePointToSegment(enemy.x, enemy.y, this.player.x, this.player.y, x2, y2) < enemy.radius + width) {
         this.dealDamage(enemy, damage, 'frostLine', 110, false);
-        const slow = applyTimedSlow(
-          { multiplier: enemy.slowMultiplier ?? 1, remaining: enemy.slowTimer ?? 0 },
-          1 - frostLineSlow(skill.level),
-          1.25,
-        );
-        enemy.slowMultiplier = slow.multiplier;
-        enemy.slowTimer = slow.remaining;
-        if (skill.awakened) enemy.root = Math.max(enemy.root, SKILL_NUMBERS.frostLine.rootSeconds);
+        this.chill(enemy, skill.level, skill.awakened);
       }
     }
     this.emit({ type: 'skill/cast', skillId: 'frostLine', x: this.player.x, y: this.player.y });
+  }
+
+  /** The chalk cut's slow at the given level, and its root when `root` (its awakening, or the frost chain's last jump). */
+  protected chill(enemy: Entity, level: number, root: boolean) {
+    const slow = applyTimedSlow({ multiplier: enemy.slowMultiplier ?? 1, remaining: enemy.slowTimer ?? 0 }, 1 - frostLineSlow(level), 1.25);
+    enemy.slowMultiplier = slow.multiplier;
+    enemy.slowTimer = slow.remaining;
+    if (root) enemy.root = Math.max(enemy.root, SKILL_NUMBERS.frostLine.rootSeconds);
   }
 
   protected updateRailSpear(skill: SkillState) {
@@ -2291,7 +2347,7 @@ export class GameEngine {
     const angle = Math.atan2(target.y - this.player.y, target.x - this.player.x);
     const width = scaleAt(SKILL_NUMBERS.railSpear.width, skill.level, skill.awakened);
     const damage = this.player.stats.attack * scaleAt(SKILL_NUMBERS.railSpear.damage, skill.level, skill.awakened);
-    const mirrorsRail = this.skills.mirrorClone?.awakened === true && this.gameplayRandom() < SKILL_NUMBERS.mirrorClone.railCopyChance;
+    const mirrorsRail = this.fusions.mirrorRail === true || (this.skills.mirrorClone?.awakened === true && this.gameplayRandom() < SKILL_NUMBERS.mirrorClone.railCopyChance);
     this.fireRailBeam(this.player.x, this.player.y, angle, width, damage, 'railSpear', 180, skill.awakened);
     if (mirrorsRail) {
       const sideX = Math.cos(angle + Math.PI / 2);
@@ -2369,6 +2425,8 @@ export class GameEngine {
       skillDamage: damage,
       collapseDamage: skill.awakened ? damage * SKILL_NUMBERS.boneMortar.aftershockDamage : 0,
     });
+    const mine = this.skills.voidMine;
+    if (this.fusions.voidMortar && mine) this.pushVoidMine(target.x, target.y, mine, radius * BUILD_DEPTH.voidMortar.radius, BUILD_DEPTH.voidMortar.seconds);
     this.emit({ type: 'skill/cast', skillId: 'boneMortar', x: this.player.x, y: this.player.y });
   }
 
@@ -2404,14 +2462,17 @@ export class GameEngine {
   protected updateVoidMine(skill: SkillState) {
     if ((this.skillCooldowns.voidMine ?? 0) > 0) return;
     this.skillCooldowns.voidMine = Math.max(2.1, 4.1 / this.effectiveAttackSpeed() - skill.level * 0.12);
-    const radius = scaleAt(SKILL_NUMBERS.voidMine.radius, skill.level, skill.awakened);
-    const life = scaleAt(SKILL_NUMBERS.voidMine.duration, skill.level, skill.awakened);
+    this.pushVoidMine(this.player.x, this.player.y, skill, scaleAt(SKILL_NUMBERS.voidMine.radius, skill.level, skill.awakened), scaleAt(SKILL_NUMBERS.voidMine.duration, skill.level, skill.awakened));
+    this.emit({ type: 'skill/cast', skillId: 'voidMine', x: this.player.x, y: this.player.y });
+  }
+
+  protected pushVoidMine(x: number, y: number, skill: SkillState, radius: number, life: number) {
     const profile = createVortexProfile('voidMine', skill.level, skill.awakened);
     this.hazards.push({
       id: this.nextId(),
       kind: 'vortex',
-      x: this.player.x,
-      y: this.player.y,
+      x,
+      y,
       radius,
       life,
       maxLife: life,
@@ -2423,7 +2484,6 @@ export class GameEngine {
       pull: profile.pull,
       collapseDamage: this.player.stats.attack * profile.collapseDamageMultiplier,
     });
-    this.emit({ type: 'skill/cast', skillId: 'voidMine', x: this.player.x, y: this.player.y });
   }
 
   protected updateBlackSun(skill: SkillState) {
@@ -2431,14 +2491,20 @@ export class GameEngine {
     const target = this.findClusterTarget();
     if (!target) return;
     this.skillCooldowns.blackSun = Math.max(2.6, 6.3 / this.effectiveAttackSpeed() - skill.level * 0.18);
-    const radius = scaleAt(SKILL_NUMBERS.blackSun.radius, skill.level, skill.awakened);
-    const life = scaleAt(SKILL_NUMBERS.blackSun.duration, skill.level, skill.awakened);
+    this.pushBlackSun(target.x, target.y, skill, 1);
+    this.emit({ type: 'skill/cast', skillId: 'blackSun', x: target.x, y: target.y });
+  }
+
+  /** A black sun at `scale` of its radius and duration (1 for the skill's own). */
+  protected pushBlackSun(x: number, y: number, skill: SkillState, scale: number) {
+    const radius = scaleAt(SKILL_NUMBERS.blackSun.radius, skill.level, skill.awakened) * scale;
+    const life = scaleAt(SKILL_NUMBERS.blackSun.duration, skill.level, skill.awakened) * scale;
     const profile = createVortexProfile('blackSun', skill.level, skill.awakened);
     this.hazards.push({
       id: this.nextId(),
       kind: 'vortex',
-      x: target.x,
-      y: target.y,
+      x,
+      y,
       radius,
       life,
       maxLife: life,
@@ -2450,7 +2516,6 @@ export class GameEngine {
       pull: profile.pull,
       collapseDamage: this.player.stats.attack * profile.collapseDamageMultiplier,
     });
-    this.emit({ type: 'skill/cast', skillId: 'blackSun', x: target.x, y: target.y });
   }
 
   protected updateEclipseStep(skill: SkillState) {
@@ -2493,6 +2558,8 @@ export class GameEngine {
         skillDamage: damage * SKILL_NUMBERS.eclipseStep.afterimageDamage,
       });
     }
+    const sun = this.skills.blackSun;
+    if (this.fusions.eclipseSun && sun) this.pushBlackSun(this.player.x, this.player.y, sun, BUILD_DEPTH.eclipseSun.scale);
     this.emit({ type: 'skill/cast', skillId: 'eclipseStep', x: this.player.x, y: this.player.y });
   }
 
@@ -4074,6 +4141,12 @@ export class GameEngine {
     recycleWhere(this.pickups, (pickup) => pickup.value > 0, this.pickupPool);
   }
 
+  /** XP the given level needs to fill; SYS-08's curve scales it (buildDepth). */
+  protected xpToNext(level: number) {
+    const xp = level <= 1 ? 28 : 28 + level * 13 + level ** 1.35 * 4;
+    return Math.floor(this.rules.buildDepth ? xp * BUILD_DEPTH.xpScale * (1 + BUILD_DEPTH.xpGrowth * (level - 1)) : xp);
+  }
+
   protected collectPickup(pickup: Pickup) {
     if (pickup.value <= 0) return;
     if (pickup.kind === 'xp') {
@@ -4081,7 +4154,7 @@ export class GameEngine {
       while (this.player.xp >= this.player.nextXp) {
         this.player.xp -= this.player.nextXp;
         this.player.level += 1;
-        this.player.nextXp = Math.floor(28 + this.player.level * 13 + this.player.level ** 1.35 * 4);
+        this.player.nextXp = this.xpToNext(this.player.level);
         this.openDraft('level', 'resume');
       }
     } else {
@@ -4396,6 +4469,8 @@ export class GameEngine {
         y: enemy.y + Math.sin(enemy.shieldAngle) * enemy.radius,
       });
     }
+    // SYS-08 집행 바늘비: a needle finishes an enemy it leaves under the threshold, unless it is a boss.
+    if (skillId === 'needleStorm' && this.fusions.executionRain && !enemy.isBoss && enemy.hp - damage < enemy.maxHp * BUILD_DEPTH.executionRain.executeBelow) damage = Math.max(damage, enemy.hp);
     // UI-05: the health this hit actually took, for the settlement's damage bars (presentation only).
     this.damageBySkill[skillId] = (this.damageBySkill[skillId] ?? 0) + Math.min(damage, enemy.hp);
     enemy.hp -= damage;
@@ -4449,6 +4524,12 @@ export class GameEngine {
     const paperWard = this.skills.paperWard;
     this.player.invuln = paperWardDirectHitInvulnerability(paperWard?.level ?? 0);
     if (this.skills.ironFrame?.awakened) this.player.shield = SKILL_NUMBERS.ironFrame.shieldSeconds;
+    if (this.fusions.ironWard) {
+      for (const enemy of this.enemyIndex.queryCircle(this.player.x, this.player.y, SKILL_NUMBERS.paperWard.pushRadius)) {
+        if (!enemy.isBoss) enemy.stun = Math.max(enemy.stun, BUILD_DEPTH.ironWard.stunSeconds);
+      }
+      this.areaDamage(this.player.x, this.player.y, SKILL_NUMBERS.paperWard.pushRadius, this.player.stats.attack * BUILD_DEPTH.ironWard.damage, 'paperWard', 0);
+    }
     if (paperWard?.awakened) this.pushEnemiesFromPlayer(SKILL_NUMBERS.paperWard.pushRadius);
     this.lastDamageSource = source;
     this.emit({ type: 'player/hurt', x: this.player.x, y: this.player.y, damage: taken, source, fromX: from.x, fromY: from.y });
@@ -4581,30 +4662,75 @@ export class GameEngine {
   protected openDraft(reason: DraftReason, after: DraftState['after']) {
     if (this.rewardLock) {
       this.draftQueue.push({ reason, after });
+      // SYS-08: the open draft's screen counts the drafts queued behind it.
+      if (this.rules.buildDepth && this.activeDraftId !== null) {
+        this.draftChain = { index: this.draftChain.index, total: Math.max(this.draftChain.total, this.draftChain.index + this.draftQueue.length) };
+        if (!this.replaying) this.callbacks.onDraft(this.draftState());
+      }
       return;
     }
     this.presentDraft(reason, after);
   }
 
-  protected presentDraft(reason: DraftReason, after: DraftState['after']) {
+  protected presentDraft(reason: DraftReason, after: DraftState['after'], offers = this.generateOffers(reason)) {
+    const redraw = this.activeDraftId !== null;
     this.activeDraftReason = reason;
     this.rewardLock = true;
     this.activeDraftAfter = after;
     this.paused = true;
-    const offers = this.generateOffers(reason);
+    // SYS-08: drafts opened together count through one screen; a reroll keeps its place.
+    if (!redraw) {
+      const index = this.draftChain.index + 1;
+      this.draftChain = { index, total: Math.max(this.draftChain.total, index + this.draftQueue.length) };
+    }
     const id = this.nextId();
     const cards = offers.map((offer, slot): DraftCard => ({ ...offer, offerId: `${id}:${slot}` }));
     this.activeDraftId = id;
     this.activeDraftCards = cards;
-    this.emit({ type: 'draft/opened', reason, highlight: cards.some((card) => card.kind === 'awakening' || card.rarity === 'legendary' || card.rarity === 'mythic') });
-    if (this.replaying) return;
-    this.callbacks.onDraft({
-      id,
+    if (!redraw) this.emit({ type: 'draft/opened', reason, highlight: cards.some((card) => card.kind === 'awakening' || card.kind === 'fusion' || card.rarity === 'legendary' || card.rarity === 'mythic') });
+    if (!this.replaying) this.callbacks.onDraft(this.draftState(redraw));
+  }
+
+  /** The open draft as the UI shows it. */
+  protected draftState(redraw = false): DraftState {
+    const reason = this.activeDraftReason;
+    return {
+      id: this.activeDraftId ?? 0,
       title: reason === 'boss' ? text('draft.title.boss') : text('draft.title.level', { level: this.player.level }),
       reason,
-      after,
-      cards,
-    });
+      after: this.activeDraftAfter ?? 'resume',
+      cards: this.activeDraftCards,
+      ...(this.rules.buildDepth ? { depth: { tokens: this.draftTokens, ...this.draftChain, redraw } } : {}),
+    };
+  }
+
+  /** SYS-08: spends a token to draw the open draft again; the awakening card keeps the first place. */
+  rerollDraft() {
+    if (!this.rules.buildDepth || this.draftTokens <= 0 || this.activeDraftId === null || this.activeDraftAfter === null) return false;
+    this.draftTokens -= 1;
+    this.logCommand({ type: 'draft/reroll' });
+    this.presentDraft(this.activeDraftReason, this.activeDraftAfter);
+    return true;
+  }
+
+  /** SYS-08: spends a token to drop a skill card's skill from this run's drafts; another card takes its place. */
+  banishOffer(offerId: string) {
+    const index = this.activeDraftCards.findIndex((card) => card.offerId === offerId);
+    const card = this.activeDraftCards[index];
+    if (!this.rules.buildDepth || this.draftTokens <= 0 || this.activeDraftAfter === null || card?.kind !== 'skill') return false;
+    this.banished.add(card.skillId);
+    const offers: SkillOffer[] = [...this.activeDraftCards];
+    const replacement = this.drawSkillOffers(1, offers)[0]
+      ?? this.makeBonusOffers(this.activeDraftReason).find((bonus) => bonus.kind === 'bonus' && !offers.some((offer) => offer.kind === 'bonus' && offer.bonus === bonus.bonus));
+    if (!replacement) {
+      this.banished.delete(card.skillId);
+      return false;
+    }
+    offers[index] = replacement;
+    this.draftTokens -= 1;
+    this.logCommand({ type: 'draft/banish', offerId });
+    this.presentDraft(this.activeDraftReason, this.activeDraftAfter, offers);
+    return true;
   }
 
   protected generateOffers(reason: DraftReason) {
@@ -4616,11 +4742,33 @@ export class GameEngine {
     if (pending) offers.push(this.makeOffer(pending, 'awakening'));
 
     const wanted = reason === 'boss' ? DRAFT_SIZE.boss : DRAFT_SIZE.level;
+    if (this.rules.buildDepth) {
+      // SYS-08: a fusion whose skills are both awakened takes the last place until it is picked.
+      const fusion = (Object.keys(BUILD_DEPTH.fusions) as FusionId[]).find((id) => !this.fusions[id] && BUILD_DEPTH.fusions[id].materials.every((skill) => this.skills[skill]?.awakened));
+      const places = wanted - (fusion ? 1 : 0);
+      offers.push(...this.drawSkillOffers(places - offers.length, offers));
+      for (const offer of this.makeBonusOffers(reason)) {
+        if (offers.length >= places) break;
+        offers.push(offer);
+      }
+      if (fusion) {
+        const [a, b] = BUILD_DEPTH.fusions[fusion].materials;
+        offers.push({
+          kind: 'fusion',
+          fusionId: fusion,
+          rarity: BUILD_DEPTH.fusions[fusion].rarity,
+          title: text(`fusion.${fusion}`),
+          body: text(`fusion.${fusion}.body`),
+          levelLine: text('draft.fusion.line', { a: text(`skill.${a}`), b: text(`skill.${b}`) }),
+        });
+      }
+      return offers;
+    }
     let guard = 0;
     while (offers.length < wanted && guard < 80) {
       guard += 1;
-      const id = this.weightedSkillPick();
-      if (offers.some((offer) => offer.kind !== 'bonus' && offer.skillId === id)) continue;
+      const id = this.weightedSkillPick()!;
+      if (offers.some((offer) => (offer.kind === 'skill' || offer.kind === 'awakening') && offer.skillId === id)) continue;
       const state = this.skills[id];
       if (state?.awakened) continue;
       if (state && state.level >= 5) continue;
@@ -4633,7 +4781,28 @@ export class GameEngine {
     return offers;
   }
 
-  protected weightedSkillPick() {
+  /**
+   * SYS-08: up to `count` skill cards a build can still take: not offered already, not banished, below Lv5, and new
+   * only while the build has a free slot of the skill's kind. Owned skills weigh BUILD_DEPTH.ownedWeight times more.
+   */
+  protected drawSkillOffers(count: number, offered: readonly SkillOffer[]) {
+    const drawn: SkillOffer[] = [];
+    const owned = (SKILL_IDS as SkillId[]).filter((id) => this.skills[id]);
+    const free = (active: boolean) => owned.filter((id) => SKILLS[id].active === active).length < BUILD_DEPTH.slots[active ? 'active' : 'passive'];
+    for (let place = 0; place < count; place += 1) {
+      const id = this.weightedSkillPick((skill) => {
+        const state = this.skills[skill];
+        return !this.banished.has(skill)
+          && ![...offered, ...drawn].some((offer) => (offer.kind === 'skill' || offer.kind === 'awakening') && offer.skillId === skill)
+          && (state ? !state.awakened && state.level < MAX_SKILL_LEVEL : free(SKILLS[skill].active));
+      });
+      if (!id) break;
+      drawn.push(this.makeOffer(id, 'skill'));
+    }
+    return drawn;
+  }
+
+  protected weightedSkillPick(eligible?: (id: SkillId) => boolean) {
     const luck = this.meta.passives.rareLuck;
     const difficultyBias = this.runMode === 'infinite'
       ? clamp(this.elapsed / 1_800, 0, 1)
@@ -4654,15 +4823,15 @@ export class GameEngine {
         rarity === 'legendary' ? difficultyBias * 1.4 :
         rarity === 'mythic' ? difficultyBias * 1.8 :
         -difficultyBias;
-      return { id, weight: Math.max(1, RARITY[rarity].weight + luckBonus + difficultyBonus) };
-    });
+      return { id, weight: Math.max(1, RARITY[rarity].weight + luckBonus + difficultyBonus) * (eligible && this.skills[id] ? BUILD_DEPTH.ownedWeight : 1) };
+    }).filter(({ id }) => !eligible || eligible(id));
     const total = entries.reduce((sum, entry) => sum + entry.weight, 0);
     let roll = this.gameplayRandom() * total;
     for (const entry of entries) {
       roll -= entry.weight;
       if (roll <= 0) return entry.id;
     }
-    return entries[0].id;
+    return entries[0]?.id;
   }
 
   protected makeOffer(skillId: SkillId, kind: 'skill' | 'awakening'): SkillOffer {
@@ -4884,6 +5053,9 @@ export class GameEngine {
       bossHp: boss?.hp,
       bossMaxHp: boss?.maxHp,
       skills: { ...this.skills },
+      fusions: Object.keys(this.fusions) as FusionId[],
+      draftTokens: this.draftTokens,
+      slots: this.rules.buildDepth ? BUILD_DEPTH.slots : null,
       cooldowns: this.hudCooldowns(),
       runUpgrades: { ...this.runUpgrades },
       stats: { ...this.player.stats, attackSpeed: this.effectiveAttackSpeed() },

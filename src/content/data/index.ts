@@ -3,13 +3,14 @@
 // assets/content/tables.json, and swaps each module for a read of that file (src/content/tableRuntime.ts). Tests,
 // tools, and the dev server import the modules directly. Each module holds one default export of plain JSON data.
 import bossPhaseMoves from './bossPhaseMoves.ts';
+import buildDepth from './buildDepth.ts';
 import catalog from './catalog.ts';
 import encounterGrammars from './encounterGrammars.ts';
 import objectives from './objectives.ts';
 import skillNumbers from './skillNumbers.ts';
 import soundCues from './soundCues.ts';
 
-const CONTENT_TABLES = { bossPhaseMoves, catalog, encounterGrammars, objectives, skillNumbers, soundCues };
+const CONTENT_TABLES = { bossPhaseMoves, buildDepth, catalog, encounterGrammars, objectives, skillNumbers, soundCues };
 
 export type ContentTables = typeof CONTENT_TABLES;
 export default CONTENT_TABLES;

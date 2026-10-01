@@ -2459,6 +2459,52 @@ h2 {
   font-size: 13px;
 }
 
+/* SYS-08 (build depth experiment): the slot count under the build label, fusions in the build, a fusion card's two
+   awakened skills, the chain count beside the kicker, and the token row under the cards. */
+.buildLabel small {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.buildFusion {
+  align-self: center;
+  border: 2px solid var(--ink);
+  padding: 2px 8px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.fusionArt {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.draftCard .fusionArt .artTile {
+  width: min(96px, 46%);
+  margin: -2px 0 0;
+}
+
+.draftChain {
+  margin-left: 10px;
+  border: 2px solid currentColor;
+  padding: 0 8px;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.draftTokens {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 
 .cardShortcut {
   position: absolute;

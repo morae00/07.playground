@@ -67,7 +67,16 @@ function scenarioSeed(chapter, stage, personaIndex, baseSeed) {
   return ((((chapter * 100_000) + (stage * 1_000) + (personaIndex + 1) * 97 + baseSeed) >>> 0) || 1);
 }
 
+/** The account level a meta's passives imply: one passive point a level (SYS-08 tokens unlock at 8 and 16). */
+function withAccountLevel(meta) {
+  return { ...meta, level: 1 + Object.values(meta.passives).reduce((sum, points) => sum + points, 0) };
+}
+
 function progressionMeta(chapter, persona) {
+  return withAccountLevel(progressionBase(chapter, persona));
+}
+
+function progressionBase(chapter, persona) {
   if (persona.maxedMeta) {
     return {
       gold: 0,
@@ -117,24 +126,27 @@ function progressionMeta(chapter, persona) {
   };
 }
 
+/** How much a persona wants a card: lower is better. A fusion awakening (SYS-08) comes first. */
+function offerRank(card, persona) {
+  if (card.kind === 'fusion') return -1;
+  if (card.kind === 'bonus') return persona.id === 'survivor' && card.bonus === 'heal' ? 2 : 100;
+  const index = persona.skillPriority.indexOf(card.skillId);
+  return index < 0 ? 80 : index;
+}
+
 export function selectBalanceOffer(cards, persona, snapshot) {
   const ownedActiveSkills = Object.keys(snapshot?.skills ?? {}).filter((skillId) => ACTIVE_SKILLS.has(skillId));
   const viableCards = ownedActiveSkills.length < 3
     ? cards.filter((card) => card.kind !== 'bonus' && ACTIVE_SKILLS.has(card.skillId))
     : cards;
   const candidates = viableCards.length > 0 ? viableCards : cards;
-  const ranked = [...candidates].sort((left, right) => {
-    const leftIndex = left.kind === 'bonus'
-      ? persona.id === 'survivor' && left.bonus === 'heal' ? 2 : 100
-      : persona.skillPriority.indexOf(left.skillId);
-    const rightIndex = right.kind === 'bonus'
-      ? persona.id === 'survivor' && right.bonus === 'heal' ? 2 : 100
-      : persona.skillPriority.indexOf(right.skillId);
-    const safeLeft = leftIndex < 0 ? 80 : leftIndex;
-    const safeRight = rightIndex < 0 ? 80 : rightIndex;
-    return safeLeft - safeRight;
-  });
+  const ranked = [...candidates].sort((left, right) => offerRank(left, persona) - offerRank(right, persona));
   return ranked[0];
+}
+
+/** SYS-08: a persona spends a token to redraw a draft whose best card is outside its plan. */
+function wantsRedraw(cards, persona) {
+  return Math.min(...cards.map((card) => offerRank(card, persona))) >= 80;
 }
 
 function updateMovement(engine, frame, personaIndex, persona, context) {
@@ -228,6 +240,9 @@ function summarizeGroup(scenarios) {
       p90: round(percentile(scenarios.map((item) => item.realSeconds), 0.9)),
     },
     drafts: { p50: percentile(scenarios.map((item) => item.drafts), 0.5) },
+    // SYS-08: awakenings reached, and the share of bonus cards among the cards offered in the stage's second half.
+    awakenings: { p50: percentile(scenarios.map((item) => item.awakenings), 0.5) },
+    lateBonusShare: round(scenarios.reduce((sum, item) => sum + item.lateBonus, 0) / Math.max(1, scenarios.reduce((sum, item) => sum + item.lateCards, 0)), 4),
     deathCauses: Object.fromEntries(Object.entries(deathCauses).sort((left, right) => right[1] - left[1])),
   };
 }
@@ -291,6 +306,9 @@ export async function runFullBalanceBatch({
         let latestSnapshot;
         let settlement;
         let drafts = 0;
+        // SYS-08: cards offered in the second half of the stage clock, and how many of them were bonus cards.
+        let lateCards = 0;
+        let lateBonus = 0;
         let death = null;
         // SYS-07: the lowest health the run reached, and how many hits landed at the minimum 1.
         let lowestHp = 1;
@@ -302,7 +320,16 @@ export async function runFullBalanceBatch({
             lowestHp = Math.min(lowestHp, snapshot.hp / Math.max(1, snapshot.maxHp));
           },
           onDraft(draft) {
-            drafts += 1;
+            // SYS-08: a redraw is the same draft again, so it is not counted twice.
+            if (!draft.depth?.redraw) {
+              drafts += 1;
+              const { timeLeft, duration } = engine.probe.hud();
+              if (duration > 0 && timeLeft <= duration / 2) {
+                lateCards += draft.cards.length;
+                lateBonus += draft.cards.filter((card) => card.kind === 'bonus').length;
+              }
+            }
+            if (draft.depth?.tokens > 0 && wantsRedraw(draft.cards, persona) && engine.rerollDraft()) return;
             const offer = selectBalanceOffer(draft.cards, persona, latestSnapshot);
             if (!offer) throw new Error(`Draft ${draft.id} contained no offer`);
             engine.completeDraft(offer, draft.id);
@@ -358,6 +385,11 @@ export async function runFullBalanceBatch({
           hits,
           minimumHits,
           skillCount: latestSnapshot ? Object.keys(latestSnapshot.skills).length : 0,
+          awakenings: latestSnapshot ? Object.values(latestSnapshot.skills).filter((skill) => skill?.awakened).length : 0,
+          fusions: latestSnapshot?.fusions?.length ?? 0,
+          level: latestSnapshot?.level ?? 1,
+          lateCards,
+          lateBonus,
           skills: latestSnapshot ? Object.keys(latestSnapshot.skills).sort() : [],
         };
         for (const [key, value] of Object.entries(scenario)) {

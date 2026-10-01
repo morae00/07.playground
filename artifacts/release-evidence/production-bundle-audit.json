@@ -2,21 +2,21 @@
   "version": 1,
   "root": "/Users/kyuukkang/CT_AX/07.playground/dist",
   "files": [
-    "assets/App-yPlz3pZH.js",
+    "assets/App-BBKGui1B.js",
     "assets/atlas/manifest.json",
     "assets/content/boss-titles.json",
     "assets/content/landmark-titles.json",
     "assets/content/strings/en.json",
     "assets/content/strings/ko.json",
     "assets/content/tables.json",
-    "assets/index-CCXcVgsh.js",
-    "assets/index-M_CmTQth.css",
+    "assets/index-DY1hQ_Yw.js",
+    "assets/index-DZN37Gnz.css",
     "assets/packs/sfx-common/pack.json",
     "assets/vendor-sXpfDjey.js",
     "index.html",
     "storage-bridge.html"
   ],
-  "markersChecked": 23,
+  "markersChecked": 24,
   "findings": [],
   "passed": true
 }

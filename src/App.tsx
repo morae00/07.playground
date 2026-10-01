@@ -114,6 +114,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const [pauseTab, setPauseTab] = useState<PauseTab>('build');
   const [cheatCode, setCheatCode] = useState('');
   const [cheatMessage, setCheatMessage] = useState('');
+  // Developer builds: the SYS-08 build depth A/B for the runs that start next (cheat code DEPTH).
+  const depthExperimentRef = useRef(false);
   const [snapshot, setSnapshot] = useState<HudSnapshot | null>(null);
   const [draft, setDraft] = useState<DraftState | null>(null);
   const [settlement, setSettlement] = useState<Settlement | null>(null);
@@ -433,6 +435,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     releaseReducedMotionRef.current?.();
     engineRef.current?.dispose();
     const engine = new GameEngine(canvas, meta, options, callbacks);
+    if (DEVELOPER_UI_AVAILABLE && depthExperimentRef.current) engine.setExperiment('buildDepth');
     engineRef.current = engine;
     engine.setSprites(spriteAtlas);
     engine.setSound(appMixer);
@@ -558,6 +561,12 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         return;
       }
       if (event.repeat) return;
+      // SYS-08: R spends a token to redraw the cards.
+      if (event.key.toLowerCase() === 'r' && draft.depth?.tokens) {
+        event.preventDefault();
+        engineRef.current?.rerollDraft();
+        return;
+      }
       const index = Number(event.key) - 1;
       const offer = draft.cards[index];
       if (!offer) return;
@@ -714,6 +723,12 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
       return;
     }
 
+    if (code === 'DEPTH') {
+      depthExperimentRef.current = !depthExperimentRef.current;
+      setCheatMessage(depthExperimentRef.current ? 'BUILD DEPTH ON (next run)' : 'BUILD DEPTH OFF (next run)');
+      return;
+    }
+
     if (code === 'DEV') {
       const next = !developerMode;
       setDeveloperMode(next);
@@ -841,7 +856,16 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         />
       )}
 
-      {!loopFault && phase === 'draft' && draft && <DraftModal key={draft.id} draft={draft} skills={snapshot?.skills ?? {}} onPick={handleOffer} />}
+      {!loopFault && phase === 'draft' && draft && (
+        <DraftModal
+          key={draft.id}
+          draft={draft}
+          build={snapshot ?? { skills: {}, fusions: [], slots: null }}
+          onPick={handleOffer}
+          onReroll={() => engineRef.current?.rerollDraft()}
+          onBanish={(offerId) => engineRef.current?.banishOffer(offerId)}
+        />
+      )}
 
       {!loopFault && (phase === 'roundClear' || phase === 'gameOver') && settlement && (
         <SettlementModal

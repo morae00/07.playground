@@ -1,4 +1,4 @@
-// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, TEC-15, CON-02, CON-04, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-05, UI-07, UI-09) against the developer build.
+// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, TEC-15, CON-02, CON-04, SYS-08, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-05, UI-07, UI-09) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -521,6 +521,43 @@ try {
     const after = await diagnostics(page);
     const same = before && after && before.elapsed === after.elapsed && before.player.x === after.player.x && before.player.y === after.player.y && before.player.hp === after.player.hp && before.enemies === after.enemies;
     record('CON-04 resuming lands on the same state, paused', Boolean(same) && after.paused, `elapsed ${before?.elapsed} -> ${after?.elapsed}, player ${before?.player.x.toFixed(1)},${before?.player.y.toFixed(1)} -> ${after?.player.x.toFixed(1)},${after?.player.y.toFixed(1)}, enemies ${before?.enemies} -> ${after?.enemies}`);
+    await page.close();
+  });
+
+  await probe('SYS-08', async () => {
+    // The build depth experiment for playtests: DEPTH in the menu's cheat input turns it on for the next run. An
+    // account at level 16 has two tokens a stage.
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await page.goto('http://127.0.0.1:5177/');
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    await page.evaluate(() => {
+      const key = 'blackline-survivor-save-v2';
+      const save = JSON.parse(localStorage.getItem(key));
+      save.meta.level = 16;
+      localStorage.setItem(key, JSON.stringify(save));
+    });
+    await page.reload();
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    const devToggle = page.getByRole('checkbox', { name: '개발자 모드: 모든 Stage 접근' });
+    if (!(await devToggle.isChecked())) await devToggle.check();
+    const menuCheat = page.getByLabel('Cheat code');
+    await menuCheat.fill('DEPTH');
+    await menuCheat.press('Enter');
+    record('SYS-08 DEPTH turns the experiment on for the next run', (await page.getByText('BUILD DEPTH ON (next run)').count()) === 1);
+    await page.getByRole('button', { name: 'Ch.1 / St.1 출정' }).click();
+    await page.waitForTimeout(300);
+    await cheat(page, 'DRAFT');
+    const dialog = page.getByRole('dialog');
+    await dialog.waitFor();
+    const slots = await dialog.locator('.buildLabel small').innerText();
+    const tokens = await dialog.locator('.draftTokens').innerText();
+    record('SYS-08 the draft counts the slots and offers two tokens', slots.includes('액티브 1/6') && tokens.includes('교체권 2'), `${slots} | ${tokens.split('\n')[0]}`);
+    // Past the draft's input guard, R redraws the cards (a new draft, counted by the tokens left).
+    await page.waitForTimeout(400);
+    await page.keyboard.press('r');
+    await page.waitForTimeout(450);
+    const left = await page.getByRole('dialog').locator('.draftTokens').innerText();
+    record('SYS-08 R redraws the cards and spends a token', left.includes('교체권 1'), left.split('\n')[0]);
     await page.close();
   });
 

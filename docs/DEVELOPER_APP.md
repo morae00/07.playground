@@ -46,6 +46,7 @@ The regular `npm run build` pipeline still audits `dist` for forbidden developer
 - Developer mode starts enabled in the packaged developer app.
 - Chapter 1-5 stages are selectable immediately.
 - Menu and in-run cheat inputs are available. In a run, the HUD's ⚙ button (developer mode on) opens the developer panel with the cheat input; the run keeps going while it is open.
+- `DEPTH` switches the SYS-08 build depth experiment on or off for the runs that start next (slots, fusion awakenings, draft tokens, shared draft screens, and its XP curve), for the slot A/B playtests. Runs with it on are not suspended (CON-04).
 - Chapter 6 remains unavailable.
 - Developer-mode clears do not advance normal Stage unlock progress.
 - The checkbox can temporarily disable developer access for comparison testing.

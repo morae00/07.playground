@@ -35,6 +35,9 @@ export type EngineCommand =
   /** Drops every held action, the pointer, and analog movement (focus loss). */
   | { type: 'input/release' }
   | { type: 'draft/select'; offerId: string }
+  /** SYS-08: spend a draft token to draw the open draft again, or to banish one skill card's skill from the run. */
+  | { type: 'draft/reroll' }
+  | { type: 'draft/banish'; offerId: string }
   | { type: 'control/pause' }
   | { type: 'control/resume' };
 
