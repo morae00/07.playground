@@ -45,6 +45,14 @@ function isButton(target: EventTarget | null) {
   return typeof HTMLElement !== 'undefined' && target instanceof HTMLElement && target.tagName === 'BUTTON';
 }
 
+/**
+ * CON-04: a suspended run logs every input change, so the stick moves in 1/32 steps and the pointer on a 2-unit grid.
+ * A held stick's jitter then sends nothing, and the log stays short. Movement only uses the direction.
+ */
+function snap(value: number, step: number) {
+  return Math.round(value / step) * step || 0;
+}
+
 function defaultGamepads() {
   return typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function'
     ? Array.from(navigator.getGamepads())
@@ -84,9 +92,11 @@ export class InputAdapter {
     if (this.disposed) return;
     const intent = readGamepadIntent((this.options.getGamepads ?? defaultGamepads)(), this.pauseHeld);
     this.pauseHeld = intent.pauseHeld;
-    if (intent.x !== this.analog.x || intent.y !== this.analog.y) {
-      this.analog = { x: intent.x, y: intent.y };
-      this.options.target.dispatch({ type: 'input/analog', x: intent.x, y: intent.y });
+    const x = snap(intent.x, 1 / 32);
+    const y = snap(intent.y, 1 / 32);
+    if (x !== this.analog.x || y !== this.analog.y) {
+      this.analog = { x, y };
+      this.options.target.dispatch({ type: 'input/analog', x, y });
     }
     if (intent.pauseJustPressed) this.options.onPauseIntent?.();
   }
@@ -165,7 +175,7 @@ export class InputAdapter {
 
   private sendPointer(event: PointerEvent) {
     const world = this.options.target.screenToWorld(event.clientX, event.clientY);
-    if (world) this.pointerWorld = world;
+    if (world) this.pointerWorld = { x: snap(world.x, 2), y: snap(world.y, 2) };
     this.options.target.dispatch({ type: 'input/pointer', active: true, worldX: this.pointerWorld.x, worldY: this.pointerWorld.y });
   }
 }

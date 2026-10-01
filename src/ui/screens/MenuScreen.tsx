@@ -23,6 +23,7 @@ import {
   stageDuration,
   xpForMetaLevel,
   type StatBlock,
+  type SuspendedRun,
 } from '../../game/GameEngine';
 import { Glyph } from '../Glyph';
 import { ProgressBar } from '../ProgressBar';
@@ -45,6 +46,10 @@ export type MenuScreenProps = {
   meta: MetaState;
   records: Readonly<Record<string, StageRecord>>;
   inlineNotice: ReactNode;
+  /** CON-04: a run left in play, offered first so a crash or a quit never loses it. */
+  suspended: SuspendedRun | null;
+  onResumeSuspended: () => void;
+  onDiscardSuspended: () => void;
   menuView: MenuView;
   setMenuView: (view: MenuView) => void;
   handleMenuTabKey: (event: KeyboardEvent<HTMLButtonElement>) => void;
@@ -387,7 +392,7 @@ function InfiniteView({ developerAccess, infinitePlayerName, setInfinitePlayerNa
 }
 
 export function MenuScreen(props: MenuScreenProps) {
-  const { meta, inlineNotice, menuView, setMenuView, handleMenuTabKey, options, setOptions, resetMeta, selectedStageLocked, startRun } = props;
+  const { meta, inlineNotice, menuView, setMenuView, handleMenuTabKey, options, setOptions, resetMeta, selectedStageLocked, startRun, suspended, onResumeSuspended, onDiscardSuspended } = props;
 
   useEffect(() => {
     if (menuView !== 'play') return undefined;
@@ -453,6 +458,19 @@ export function MenuScreen(props: MenuScreenProps) {
         </div>
 
         {inlineNotice}
+
+        {suspended && (
+          <section className="resumeStrip" aria-labelledby="resume-title">
+            <h3 id="resume-title">{t('resume.title')}</h3>
+            <p>
+              {suspended.mode === 'infinite'
+                ? t('resume.infinite', { time: formatClock(suspended.elapsed) })
+                : t('resume.campaign', { address: t('stage.address', { chapter: suspended.chapter, stage: suspended.stage }), time: formatClock(suspended.elapsed) })}
+            </p>
+            <button className="primary" type="button" onClick={onResumeSuspended}>{t('resume.go')}</button>
+            <button className="ghost" type="button" data-sound="cancel" onClick={onDiscardSuspended}>{t('resume.discard')}</button>
+          </section>
+        )}
 
         <div className="menuPanel playPanel" id="menu-panel-play" role="tabpanel" aria-labelledby="menu-tab-play" hidden={menuView !== 'play'}>
           <PlayView {...props} />

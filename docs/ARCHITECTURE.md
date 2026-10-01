@@ -275,6 +275,19 @@ The 0.1.0 curve was inverted: a new build hit a wall in Ch1, and a strong one fo
 - Boss stages scale their crowds by 0.85. Without the saturated defence, a tank no longer outlasts a boss stage's crowd for free; Ch3's mid boss stage went from 47% to 0% without it.
 - Stage and chapter steps stay 0.2 and 0.45. The pilots that flattened them deepened the Ch3 valley instead.
 
+## Run suspension (CON-04)
+
+A run in play is kept in the save as a suspended run (`profile.runSuspend`), so a crash, a closed window, or a quit costs a few seconds at most.
+- What is kept (`GameEngine.suspendState`): the seed, the meta and options the run started with, and every command that changed the simulation, stamped with the tick it took effect. That covers keys, the stick, the pointer, focus loss, draft choices, purchases (with whether the run was paused), and assist changes. Kills, coins earned, and time are kept for a settlement.
+- The log is JSON. Each entry is `[tick, code, ...values]`: `a` key, `p` pointer, `s` stick, `r` focus loss, `d` draft, `b` purchase, `x` assists. A step keeps only its last pointer and stick position, and repeated values are not logged. The input adapter sends the stick in 1/32 steps and the pointer on a 2-unit grid, so a held stick that jitters logs nothing. The engine keeps whatever it is sent exactly, apart from -0, which JSON cannot hold, so test drivers and bots play as before.
+- A log over 36,000 entries (a 10-minute boss stage that changes its input every step) is not saved, which keeps the save well inside browser storage. The last save that fit stays.
+- The app saves it every 10 s of play and whenever the run pauses, which includes focus loss. A settlement clears it.
+- The menu offers it first. 이어하기 replays it in a new engine (`resumeRun`): the run starts again from its seed, and the commands are applied tick by tick, 1,800 ticks a slice, with no sound or UI meanwhile. It comes back paused in the pause hub, or in the draft it was saved in. A resumed infinite run is practice (G15).
+- A suspended run from another rules version is not replayed. It is settled for what it reached, as a defeat (`suspendedRunReward`), and dropped (G14).
+- Giving up in the pause hub settles the run as a defeat (`forfeit`), never better than dying would have been. It used to pay nothing (BUG-17).
+- Time scale is a view setting, so a resumed run starts at 1x. A run where a developer cheat was used cannot be suspended.
+- `test/suspend.integration.test.mjs` plays 2,400 uneven frames with keys, the stick, the pointer, drafts, a paused purchase, and an assist change. It saves the run as JSON and replays it in a new engine. The state is identical at the saved tick and stays identical as both play on. The UI probe reloads the page mid-run and resumes to the same state.
+
 ## Camera (FX-04)
 
 The simulation camera stays hard-locked on the player, clamped to the world. Spawns, aim, and off-screen checks use it together with the logical frame (G14). Under the `smoothCamera` rule, the screen shows a separate view camera instead (`src/game/presentation/viewCamera.ts`):

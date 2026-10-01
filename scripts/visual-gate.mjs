@@ -394,7 +394,12 @@ async function runScenario(page, viewport, dpr, motion) {
   await settle(page, 40);
   await (await unique(page.getByRole('button', { name: 'Stage 메뉴' }), 'return to Stage menu')).click();
   await settle(page, 40);
-  await (await unique(page.getByRole('button', { name: '포기하고 메뉴로' }), 'confirm abandoning the run')).click();
+  await (await unique(page.getByRole('button', { name: '포기하고 정산' }), 'confirm abandoning the run')).click();
+  // Giving up settles the run as a defeat (CON-04): past the death moment and the settlement's input guard, the
+  // settlement leads back to the menu.
+  await settle(page, 800);
+  await settle(page, 1000);
+  await (await unique(page.getByRole('button', { name: '메뉴로' }), 'leave the settlement for the menu')).click();
   await settle(page, 80);
   await (await unique(page.getByRole('tab', { name: '출정' }), 'campaign menu tab')).click();
   await settle(page, 40);

@@ -219,6 +219,67 @@ export type SkillOffer =
       levelLine: Text;
     };
 
+/**
+ * CON-04: what a suspended run keeps. The run is replayed from its seed: the meta and options it started with, then
+ * every command that changed the simulation, at the tick it took effect. Kills, coins, and time are kept too, so a run
+ * the next build cannot replay (another rules version) can still be settled.
+ */
+export type RunCommand =
+  | Exclude<EngineCommand, { type: 'control/pause' | 'control/resume' }>
+  | { type: 'run/buy'; id: RunUpgradeId; paused: boolean }
+  | { type: 'run/assists'; damage: number; enemySpeed: number };
+/** A log entry is [tick, code, ...the command's values in this order]; short entries keep a long run's log small. */
+const LOG_CODES = {
+  a: ['input/action', 'action', 'pressed'],
+  p: ['input/pointer', 'active', 'worldX', 'worldY'],
+  s: ['input/analog', 'x', 'y'],
+  r: ['input/release'],
+  d: ['draft/select', 'offerId'],
+  b: ['run/buy', 'id', 'paused'],
+  x: ['run/assists', 'damage', 'enemySpeed'],
+} as const satisfies Record<string, readonly [RunCommand['type'], ...string[]]>;
+type LogCode = keyof typeof LOG_CODES;
+const LOG_CODE = Object.fromEntries(Object.entries(LOG_CODES).map(([code, [type]]) => [type, code])) as Record<RunCommand['type'], LogCode>;
+export type RunLogEntry = readonly [tick: number, code: LogCode, ...values: (string | number | boolean)[]];
+/** More entries than a 10-minute boss stage changing its input every step: such a run is not kept, so the save stays small. */
+const MAX_RUN_LOG = 36_000;
+export type SuspendedRun = Readonly<{
+  version: 1;
+  rulesVersion: number;
+  mode: RunMode;
+  chapter: number;
+  stage: number;
+  seed: number;
+  meta: MetaState;
+  options: GameOptions;
+  ticks: number;
+  log: readonly RunLogEntry[];
+  kills: number;
+  coinsEarned: number;
+  elapsed: number;
+}>;
+
+/** CON-04: a stored run as the save holds it (unknown data from storage), or null if it is not one. */
+export function asSuspendedRun(value: unknown): SuspendedRun | null {
+  const run = value as Partial<SuspendedRun> | null;
+  const whole = (n: unknown) => typeof n === 'number' && Number.isInteger(n) && n >= 0;
+  if (!run || typeof run !== 'object' || run.version !== 1 || (run.mode !== 'campaign' && run.mode !== 'infinite')) return null;
+  if (![run.rulesVersion, run.chapter, run.stage, run.seed, run.ticks, run.kills, run.coinsEarned].every(whole)) return null;
+  if (!Array.isArray(run.log) || !run.meta || !run.options) return null;
+  if (!run.log.every((entry) => Array.isArray(entry) && whole(entry[0]) && Object.hasOwn(LOG_CODES, entry[1]))) return null;
+  return run as SuspendedRun;
+}
+
+/** CON-04: gold and XP for a suspended run that cannot be replayed, paid like a defeat (makeSettlement's terms). */
+export function suspendedRunReward(run: Pick<SuspendedRun, 'mode' | 'chapter' | 'stage' | 'kills' | 'coinsEarned'>) {
+  const stage = run.mode === 'infinite' ? 5 : run.stage;
+  const chapter = run.mode === 'infinite' ? 1 : run.chapter;
+  return {
+    gold: Math.floor(16 + run.kills * 0.9 + run.coinsEarned * 0.28 + chapter * 18 + stage * 8),
+    xp: Math.floor(70 + run.kills * 1.1 + chapter * 24),
+  };
+}
+
 /** A draft card as presented; offerId ("<draft id>:<slot>") lets a command log pick it (TEC-07). */
 export type DraftCard = SkillOffer & { offerId: string };
 
@@ -771,6 +832,13 @@ export class GameEngine {
   protected scoreEligible = true;
   /** SYS-07: assists were on at some point of this run. */
   protected assistedRun = false;
+  /** CON-04: simulation steps this run, the commands that changed it, and what it started from. */
+  protected ticks = 0;
+  protected runLog: RunLogEntry[] = [];
+  protected runStart: { meta: MetaState; options: GameOptions } | null = null;
+  protected replaying = false;
+  protected cheatsUsed = false;
+  protected activeDraftReason: DraftReason = 'level';
   protected draftQueue: Array<{ reason: DraftReason; after: DraftState['after'] }> = [];
   protected activeDraftId: number | null = null;
   protected activeDraftAfter: DraftState['after'] | null = null;
@@ -936,8 +1004,11 @@ export class GameEngine {
   }
 
   setOptions(options: GameOptions) {
+    const before = this.assist();
     this.options = options;
     if (options.reducedMotion) this.presentation.shake = 0;
+    const after = this.assist();
+    if (after.damage !== before.damage || after.enemySpeed !== before.enemySpeed) this.logCommand({ type: 'run/assists', damage: after.damage, enemySpeed: after.enemySpeed });
     this.noteAssists();
   }
 
@@ -1062,6 +1133,10 @@ export class GameEngine {
     this.recalculateStats(true);
     this.player.hp = this.player.stats.maxHp;
     this.assistedRun = false;
+    this.ticks = 0;
+    this.runLog = [];
+    this.runStart = { meta: this.meta, options: this.options };
+    this.cheatsUsed = false;
     this.beginRound();
     this.running = true;
     this.noteAssists();
@@ -1108,6 +1183,7 @@ export class GameEngine {
     const level = this.runUpgrades[id];
     const cost = runUpgradeCost(id, level);
     if (this.player.coins < cost) return false;
+    this.logCommand({ type: 'run/buy', id, paused: this.paused });
     this.player.coins -= cost;
     this.runUpgrades[id] += 1;
     const oldMax = this.player.stats.maxHp;
@@ -1126,6 +1202,8 @@ export class GameEngine {
 
   applyCheat(code: string) {
     if (!DEVELOPER_UI_AVAILABLE) return 'DISABLED';
+    // A cheat changes the run outside the command log, so it can no longer be suspended (CON-04).
+    this.cheatsUsed = true;
     if (code === 'FAULT') {
       this.faultInjection = true;
       return 'LOOP FAULT ARMED';
@@ -1194,6 +1272,8 @@ export class GameEngine {
 
   completeDraft(offer: SkillOffer, draftId: number) {
     if (!this.rewardLock || this.activeDraftAfter === null || this.activeDraftId !== draftId) return 'ignored' as const;
+    const offerId = (offer as Partial<DraftCard>).offerId;
+    if (offerId) this.logCommand({ type: 'draft/select', offerId });
     const activeAfter = this.activeDraftAfter;
     this.activeDraftId = null;
     this.activeDraftAfter = null;
@@ -1288,26 +1368,143 @@ export class GameEngine {
     this.worldRenderer.invalidateGrid();
   }
 
+  /** CON-04: the run so far, to save and replay; null when there is no live run to suspend. */
+  suspendState(): SuspendedRun | null {
+    if (!this.running || this.stageFinished || this.player.hp <= 0 || !this.runStart || this.cheatsUsed || this.runLog.length > MAX_RUN_LOG) return null;
+    return {
+      version: 1,
+      rulesVersion: this.rules.version,
+      mode: this.runMode,
+      chapter: this.chapter,
+      stage: this.stage,
+      seed: this.runSeed,
+      meta: this.runStart.meta,
+      options: this.runStart.options,
+      ticks: this.ticks,
+      log: this.runLog.slice(),
+      kills: this.stageKills,
+      coinsEarned: this.stageCoinsEarned,
+      elapsed: this.elapsed,
+    };
+  }
+
+  /**
+   * CON-04: starts the run again from its seed and replays its commands to the tick it was saved at, in slices so the
+   * page stays responsive. Nothing plays or shows while it replays. The run comes back paused; an infinite run comes
+   * back as practice, so a resumed run never ranks.
+   */
+  async resumeRun(run: SuspendedRun, slice = 1800) {
+    this.setMeta(run.meta);
+    this.setOptions(run.options);
+    if (run.mode === 'infinite') this.startInfiniteRun(run.seed, false);
+    else this.startRun(run.chapter, run.stage, run.seed);
+    // Steps run as in play, paused only while a draft waits for its choice; the frame loop stays out meanwhile.
+    this.replaying = true;
+    this.paused = false;
+    try {
+      let next = 0;
+      for (;;) {
+        for (let budget = slice; budget > 0; budget -= 1) {
+          while (next < run.log.length && run.log[next][0] <= this.ticks) this.replayCommand(run.log[next++]);
+          if (this.ticks >= run.ticks || this.paused) break;
+          const step = consumeHitStopStep(this.hitStop);
+          this.hitStop = step.hitStop;
+          this.update(step.simulationDelta);
+        }
+        const waiting = this.paused && (next >= run.log.length || run.log[next][0] > this.ticks);
+        if ((this.ticks >= run.ticks && next >= run.log.length) || waiting || this.disposed) break;
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+    } finally {
+      this.replaying = false;
+    }
+    this.paused = true;
+    this.accumulator = 0;
+    this.emitSnapshot(true);
+    if (this.activeDraftId !== null && this.activeDraftAfter !== null) {
+      const reason = this.activeDraftReason;
+      this.callbacks.onDraft({ id: this.activeDraftId, title: reason === 'boss' ? text('draft.title.boss') : text('draft.title.level', { level: this.player.level }), reason, after: this.activeDraftAfter, cards: this.activeDraftCards });
+    }
+  }
+
+  /** CON-04: leaving a run settles it as a defeat, never better than dying would have (BUG-17). */
+  forfeit() {
+    if (!this.running || this.stageFinished) return;
+    this.stageFinished = true;
+    this.rewardLock = false;
+    this.activeDraftId = null;
+    this.activeDraftAfter = null;
+    this.activeDraftCards = [];
+    this.draftQueue = [];
+    this.paused = true;
+    this.callbacks.onGameOver(this.makeSettlement(false));
+  }
+
+  /** A draft is open and waits for a card. */
+  get awaitingDraft() {
+    return this.activeDraftId !== null;
+  }
+
+  protected replayCommand([, code, ...values]: RunLogEntry) {
+    const [type, ...fields] = LOG_CODES[code];
+    const command = Object.fromEntries([['type', type], ...fields.map((field, index) => [field, values[index]])]) as RunCommand;
+    if (command.type === 'run/buy') {
+      const paused = this.paused;
+      this.paused = command.paused;
+      this.buyRunUpgrade(command.id);
+      this.paused = paused;
+    } else if (command.type === 'run/assists') {
+      this.setOptions({ ...this.options, assistDamage: command.damage, assistEnemySpeed: command.enemySpeed });
+    } else {
+      this.dispatch(command);
+    }
+  }
+
+  /** CON-04: notes a command that changed the simulation, at the tick it takes effect. */
+  protected logCommand(command: RunCommand) {
+    if (!this.running) return;
+    const code = LOG_CODE[command.type];
+    const [, ...fields] = LOG_CODES[code];
+    const entry: RunLogEntry = [this.ticks, code, ...fields.map((field) => (command as Record<string, string | number | boolean>)[field])];
+    // Only the last pointer or stick position before a step matters, so a step keeps one of each.
+    const last = this.runLog.at(-1);
+    if (last && last[0] === this.ticks && last[1] === code && (code === 'p' || code === 's')) this.runLog[this.runLog.length - 1] = entry;
+    else this.runLog.push(entry);
+  }
+
   /** Applies one engine command (TEC-07). Commands are the only way input reaches the simulation. */
   dispatch(command: EngineCommand) {
     switch (command.type) {
       case 'input/action':
+        if (command.pressed === this.heldActions.has(command.action)) return;
         if (command.pressed) this.heldActions.add(command.action);
         else this.heldActions.delete(command.action);
+        this.logCommand(command);
         return;
-      case 'input/pointer':
+      case 'input/pointer': {
+        // The log is JSON, which keeps neither -0 nor a number that is not finite, so the simulation keeps neither
+        // (CON-04). Repeats change nothing and are not logged.
+        if (!Number.isFinite(command.worldX) || !Number.isFinite(command.worldY)) return;
+        const worldX = command.worldX || 0;
+        const worldY = command.worldY || 0;
+        if (command.active === this.pointer.active && worldX === this.pointer.x && worldY === this.pointer.y) return;
         this.pointer.active = command.active;
-        this.pointer.x = command.worldX;
-        this.pointer.y = command.worldY;
+        this.pointer.x = worldX;
+        this.pointer.y = worldY;
+        this.logCommand({ type: 'input/pointer', active: command.active, worldX, worldY });
         return;
+      }
       case 'input/analog': {
-        const x = Number.isFinite(command.x) ? clamp(command.x, -1, 1) : 0;
-        const y = Number.isFinite(command.y) ? clamp(command.y, -1, 1) : 0;
+        const x = Number.isFinite(command.x) ? clamp(command.x, -1, 1) || 0 : 0;
+        const y = Number.isFinite(command.y) ? clamp(command.y, -1, 1) || 0 : 0;
+        if (x === this.analogMove.x && y === this.analogMove.y) return;
         this.analogMove = { x, y, active: x !== 0 || y !== 0 };
+        this.logCommand({ type: 'input/analog', x, y });
         return;
       }
       case 'input/release':
         this.releaseInput();
+        this.logCommand(command);
         return;
       case 'draft/select':
         this.selectOffer(command.offerId);
@@ -1384,7 +1581,7 @@ export class GameEngine {
     this.presentation.beginFrame(safeFrameDt, this.paused);
     this.snapshotTimer -= safeFrameDt;
 
-    if (!this.paused) {
+    if (!this.paused && !this.replaying) {
       const plan = planFixedSteps(this.accumulator, safeFrameDt, this.timeScale * this.assist().gameSpeed);
       this.accumulator = plan.remainder;
       for (let step = 0; step < plan.steps; step += 1) {
@@ -1627,6 +1824,7 @@ export class GameEngine {
   }
 
   protected update(dt: number) {
+    this.ticks += 1;
     this.capturePreviousPositions();
     this.elapsed += dt;
     if (this.rules.hitStopBudget) this.hitStopBudget = tickHitStopBudget(this.hitStopBudget);
@@ -4389,6 +4587,7 @@ export class GameEngine {
   }
 
   protected presentDraft(reason: DraftReason, after: DraftState['after']) {
+    this.activeDraftReason = reason;
     this.rewardLock = true;
     this.activeDraftAfter = after;
     this.paused = true;
@@ -4398,6 +4597,7 @@ export class GameEngine {
     this.activeDraftId = id;
     this.activeDraftCards = cards;
     this.emit({ type: 'draft/opened', reason, highlight: cards.some((card) => card.kind === 'awakening' || card.rarity === 'legendary' || card.rarity === 'mythic') });
+    if (this.replaying) return;
     this.callbacks.onDraft({
       id,
       title: reason === 'boss' ? text('draft.title.boss') : text('draft.title.level', { level: this.player.level }),
@@ -4619,7 +4819,7 @@ export class GameEngine {
   }
 
   protected emitSnapshot(force: boolean) {
-    if (!force && this.snapshotTimer > 0) return;
+    if (this.replaying || (!force && this.snapshotTimer > 0)) return;
     this.snapshotTimer = 0.12;
     this.callbacks.onSnapshot(this.buildHudSnapshot());
   }
@@ -4743,6 +4943,7 @@ export class GameEngine {
 
   /** Reports a game event to presentation and subscribers; events never change the simulation. */
   protected emit(event: GameEvent) {
+    if (this.replaying) return;
     this.presentation.handle(event);
     for (const listener of this.eventListeners) listener(event);
   }

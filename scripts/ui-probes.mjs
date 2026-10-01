@@ -1,4 +1,4 @@
-// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, TEC-15, CON-02, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-05, UI-07, UI-09) against the developer build.
+// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, TEC-15, CON-02, CON-04, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-05, UI-07, UI-09) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -365,7 +365,12 @@ try {
     record('AUD-01 a button click plays a ui cue', (await diagnostics(page)).audio.started > beforeClick);
     const pauseDialog = page.getByRole('dialog', { name: '일시정지' });
     await pauseDialog.getByRole('button', { name: 'Stage 메뉴' }).click();
-    await page.getByRole('button', { name: '포기하고 메뉴로' }).click();
+    // Giving up settles the run as a defeat (CON-04); the settlement then leads back to the menu.
+    await page.getByRole('button', { name: '포기하고 정산' }).click();
+    // Past the death moment and the settlement's input guard, which ignores clicks at first.
+    await page.getByRole('dialog').getByRole('button', { name: '메뉴로' }).waitFor();
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: '메뉴로' }).click();
     await page.getByRole('button', { name: 'Ch.1 / St.1 출정' }).click();
     await page.waitForTimeout(500);
     const second = await diagnostics(page);
@@ -480,11 +485,42 @@ try {
     record('UI-09 the hint stays out of the centre 40% of the screen', Boolean(box) && box.y >= 900 * 0.7, box ? `top ${box.y.toFixed(0)} px` : 'no hint');
     await page.keyboard.press('p');
     await page.getByRole('dialog', { name: '일시정지' }).getByRole('button', { name: 'Stage 메뉴' }).click();
-    await page.getByRole('button', { name: '포기하고 메뉴로' }).click();
+    await page.getByRole('button', { name: '포기하고 정산' }).click();
+    // Past the death moment and the settlement's input guard, which ignores clicks at first.
+    await page.getByRole('dialog').getByRole('button', { name: '메뉴로' }).waitFor();
+    await page.waitForTimeout(1000);
+    await page.getByRole('button', { name: '메뉴로' }).click();
     await page.getByRole('button', { name: 'Ch.1 / St.1 출정' }).click();
     await page.waitForTimeout(700);
     const again = (await hint.count()) ? await hint.textContent() : '';
     record('UI-09 a hint shows once per save', !again?.includes('공격은 자동'), again || 'no hint');
+    await page.close();
+  });
+
+  await probe('CON-04', async () => {
+    // A run saved as it pauses survives a reload: the menu offers it, and resuming lands on the very same state.
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await openStage(page);
+    await page.keyboard.down('d');
+    await page.waitForTimeout(900);
+    await page.keyboard.up('d');
+    await page.keyboard.down('s');
+    await page.waitForTimeout(700);
+    await page.keyboard.up('s');
+    await settleDrafts(page);
+    await page.keyboard.press('p');
+    await page.getByRole('dialog', { name: '일시정지' }).waitFor();
+    await page.waitForTimeout(300);
+    const before = await diagnostics(page);
+    await page.reload();
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    const strip = page.getByRole('region', { name: '중단한 런' });
+    record('CON-04 after a reload the menu offers the run left in play', (await strip.count()) === 1, (await strip.count()) ? await strip.innerText() : 'no strip');
+    await strip.getByRole('button', { name: '이어하기' }).click();
+    await page.getByRole('dialog', { name: '일시정지' }).waitFor({ timeout: 20000 });
+    const after = await diagnostics(page);
+    const same = before && after && before.elapsed === after.elapsed && before.player.x === after.player.x && before.player.y === after.player.y && before.player.hp === after.player.hp && before.enemies === after.enemies;
+    record('CON-04 resuming lands on the same state, paused', Boolean(same) && after.paused, `elapsed ${before?.elapsed} -> ${after?.elapsed}, player ${before?.player.x.toFixed(1)},${before?.player.y.toFixed(1)} -> ${after?.player.x.toFixed(1)},${after?.player.y.toFixed(1)}, enemies ${before?.enemies} -> ${after?.enemies}`);
     await page.close();
   });
 

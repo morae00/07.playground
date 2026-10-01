@@ -151,6 +151,19 @@ test('gamepad polling sends analog movement on change and Start as a pause inten
   input.adapter.dispose();
 });
 
+test('CON-04: the stick moves in 1/32 steps and the pointer on a 2-unit grid, so a held stick that jitters sends nothing', () => {
+  const input = setup();
+  const buttons = Array.from({ length: 17 }, () => ({ pressed: false }));
+  for (const axes of [[0.6, -0.4], [0.6005, -0.4003], [0.5995, -0.3998]]) {
+    input.setPads([{ connected: true, axes, buttons }]);
+    input.adapter.poll();
+  }
+  assert.deepEqual(input.commands, [{ type: 'input/analog', x: 0.5, y: -0.28125 }]);
+  input.canvas.fire('pointerdown', { pointerId: 3, clientX: 10.3, clientY: 20.7 });
+  assert.deepEqual(input.commands.at(-1), { type: 'input/pointer', active: true, worldX: 20, worldY: 42 });
+  input.adapter.dispose();
+});
+
 test('dispose releases input and detaches every listener', () => {
   const input = setup();
   input.key('keydown', 's');

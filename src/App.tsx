@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { DEVELOPER_UI_AVAILABLE, DEVELOPER_UI_DEFAULT_ENABLED } from './platform/developerAccess';
-import { rulesLabel } from './game/rules';
+import { RULES_VERSION, rulesLabel } from './game/rules';
 import {
   addInfiniteScore,
   loadInfiniteLeaderboard,
@@ -45,6 +45,7 @@ import {
   GameEngine,
   META_PASSIVES,
   META_UPGRADES,
+  asSuspendedRun,
   buildStats,
   formatClock,
   isStageUnlocked,
@@ -52,6 +53,7 @@ import {
   metaUpgradeCost,
   nextStageProgress,
   stageIndex,
+  suspendedRunReward,
   xpForMetaLevel,
   type DraftState,
   type HudSnapshot,
@@ -128,6 +130,9 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   // TEC-14: a frame that threw stops the loop, and the run waits paused behind this dialog.
   const [loopFault, setLoopFault] = useState<{ message: string; count: number } | null>(null);
   const [notice, setNotice] = useState<'art' | 'error' | null>(null);
+  /** CON-04: what a suspended run the rules no longer replay was paid; shown once. */
+  const [suspendPaid, setSuspendPaid] = useState<{ gold: number; xp: number } | null>(null);
+  const [resuming, setResuming] = useState(false);
   const [errorCopyStatus, setErrorCopyStatus] = useState('');
   const [uiFault, setUiFault] = useState(false);
   const infiniteEntriesRef = useRef(infiniteEntries);
@@ -218,6 +223,35 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     if (restoreFocus) requestAnimationFrame(() => devToggleRef.current?.focus());
   }, []);
 
+  // CON-04: the run in play is kept as a suspended run, every 10 s and whenever it pauses (focus loss included), so a
+  // crash or a quit costs a few seconds at most. A settlement clears it.
+  const suspendRun = useCallback(() => {
+    const state = engineRef.current?.suspendState();
+    if (state) setProfile((previous) => ({ ...previous, runSuspend: { savedAt: Date.now(), rulesVersion: state.rulesVersion, state } }));
+  }, []);
+  useEffect(() => {
+    if (phase !== 'playing' && phase !== 'draft') return undefined;
+    const timer = window.setInterval(suspendRun, 10_000);
+    return () => window.clearInterval(timer);
+  }, [phase, suspendRun]);
+  useEffect(() => {
+    if (runPaused) suspendRun();
+  }, [runPaused, suspendRun]);
+  // A run this build's rules cannot replay is settled as a defeat for what it reached, then dropped (G14).
+  useEffect(() => {
+    const suspended = profileRef.current.runSuspend;
+    if (!suspended) return;
+    const run = asSuspendedRun(suspended.state);
+    if (run && suspended.rulesVersion === RULES_VERSION) return;
+    if (run) {
+      const reward = suspendedRunReward(run);
+      grantSettlement({ ...reward, cleared: false, chapter: run.chapter, stage: run.stage }, false);
+      setSuspendPaid(reward);
+    }
+    setProfile((previous) => ({ ...previous, runSuspend: null }));
+    // On start only.
+  }, []);
+
   const setManualPause = useCallback((paused: boolean) => {
     const engine = engineRef.current;
     if (!engine || phaseRef.current !== 'playing' || deathMomentRef.current !== null) return;
@@ -276,7 +310,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     return () => window.removeEventListener('keydown', onPauseShortcut);
   }, [closeDevPanel, devPanelOpen, phase, toggleManualPause]);
 
-  const grantSettlement = useCallback((result: Settlement, unlockProgress: boolean) => {
+  const grantSettlement = useCallback((result: Pick<Settlement, 'gold' | 'xp' | 'cleared' | 'chapter' | 'stage'>, unlockProgress: boolean) => {
     setMeta((prev) => {
       const next: MetaState = {
         ...prev,
@@ -344,7 +378,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         const unlockProgress = !developerAccess && !result.practice;
         setNotes(settlementNotes(result, profileRef.current.stageRecords[`${result.chapter}-${result.stage}`], metaRef.current, unlockProgress));
         setSettlement(result);
-        if (result.runMode === 'campaign') setProfile((prev) => recordStageResult(prev, { ...result, bonus: result.bonus?.met ?? false, assisted: result.assisted }));
+        setProfile((prev) => ({ ...(result.runMode === 'campaign' ? recordStageResult(prev, { ...result, bonus: result.bonus?.met ?? false, assisted: result.assisted }) : prev), runSuspend: null }));
         grantSettlement(result, unlockProgress);
         setPhase('roundClear');
       },
@@ -353,7 +387,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         setRunPaused(false);
         setNotes(settlementNotes(result, profileRef.current.stageRecords[`${result.chapter}-${result.stage}`], metaRef.current, false));
         setSettlement(result);
-        if (result.runMode === 'campaign') setProfile((prev) => recordStageResult(prev, { ...result, bonus: result.bonus?.met ?? false, assisted: result.assisted }));
+        setProfile((prev) => ({ ...(result.runMode === 'campaign' ? recordStageResult(prev, { ...result, bonus: result.bonus?.met ?? false, assisted: result.assisted }) : prev), runSuspend: null }));
         if (result.runMode === 'infinite') setInfiniteSeed(String(result.seed));
         grantSettlement(result, false);
         recordInfiniteSettlement(result);
@@ -431,6 +465,21 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     if (selectedStageLocked) return;
     beginRun(selectedChapter.id, (engine) => engine.startRun(selectedChapter.id, selectedStage.id));
   }, [beginRun, selectedChapter.id, selectedStage.id, selectedStageLocked]);
+
+  /** CON-04: replays the suspended run in a new engine, then opens the pause hub (or the draft it was saved in). */
+  const resumeSuspended = useCallback(() => {
+    const run = asSuspendedRun(profileRef.current.runSuspend?.state);
+    if (!run) return;
+    setResuming(true);
+    beginRun(run.mode === 'infinite' ? INFINITE_BASELINE.chapter : run.chapter, (engine) => {
+      void engine.resumeRun(run).then(() => {
+        if (engineRef.current !== engine) return;
+        setResuming(false);
+        if (!engine.awaitingDraft) setManualPause(true);
+      });
+    });
+  }, [beginRun, setManualPause]);
+  const discardSuspended = useCallback(() => setProfile((previous) => ({ ...previous, runSuspend: null })), []);
 
   /** Settlement's primary action: go straight on to the next stage (CON-02). */
   const startStage = useCallback((address: { chapter: number; stage: number }) => {
@@ -559,6 +608,14 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   };
 
   // In the menu the notice sits in the page flow so it never covers the start button; in play it floats.
+  const suspendBanner = suspendPaid && (
+    <div className="noticeBanner inline" role="status" aria-live="polite">
+      <p>{t('notice.suspendPaid', suspendPaid)}</p>
+      <div className="noticeActions">
+        <button className="ghost" type="button" data-sound="cancel" onClick={() => setSuspendPaid(null)}>{t('common.close')}</button>
+      </div>
+    </div>
+  );
   const noticeBanner = (placement: 'inline' | 'floating') => notice && (
     <div className={`noticeBanner ${placement}`} role="status" aria-live="polite">
       <p>{t(notice === 'art' ? 'notice.art' : 'notice.error')}</p>
@@ -701,6 +758,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         />
       )}
 
+      {resuming && <div className="resumeOverlay" role="status" aria-live="polite">{t('resume.loading')}</div>}
       {phase === 'playing' && !runPaused && snapshot && <HintLayer snapshot={snapshot} seen={profile.hintsSeen} onSeen={markHintSeen} />}
 
       {DEVELOPER_UI_AVAILABLE && developerAccess && phase !== 'menu' && devPanelOpen && (
@@ -711,7 +769,10 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         <MenuScreen
           meta={meta}
           records={profile.stageRecords}
-          inlineNotice={noticeBanner('inline')}
+          inlineNotice={<>{suspendBanner}{noticeBanner('inline')}</>}
+          suspended={asSuspendedRun(profile.runSuspend?.state)}
+          onResumeSuspended={resumeSuspended}
+          onDiscardSuspended={discardSuspended}
           menuView={menuView}
           setMenuView={setMenuView}
           handleMenuTabKey={handleMenuTabKey}
@@ -768,7 +829,10 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
           onResume={() => setManualPause(false)}
           onAskAbandon={() => setAbandonConfirmOpen(true)}
           onCancelAbandon={() => setAbandonConfirmOpen(false)}
-          onAbandon={toMenu}
+          onAbandon={() => {
+            setAbandonConfirmOpen(false);
+            engineRef.current?.forfeit();
+          }}
           onBuyRunUpgrade={buyRunUpgrade}
           options={options}
           setOptions={setOptions}
