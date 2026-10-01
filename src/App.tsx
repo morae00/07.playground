@@ -13,6 +13,7 @@ import {
   createDefaultProfile,
   loadGameSave,
   recordCareer,
+  recordCodex,
   recordStageResult,
   saveGameSave,
   type GameOptions,
@@ -30,7 +31,7 @@ import { HudLayer } from './ui/screens/HudLayer';
 import { DevPanel } from './ui/screens/DevPanel';
 import { PauseHub, type PauseTab } from './ui/screens/PauseHub';
 import { HintLayer, type HintId } from './ui/screens/HintLayer';
-import { MenuScreen, type MenuView } from './ui/screens/MenuScreen';
+import { NAV as MENU_NAV, MenuScreen, type MenuView } from './ui/screens/MenuScreen';
 import { nextRovingId, watchReducedMotion, type RovingKey } from './ui/inputContracts';
 import { InputAdapter } from './ui/inputAdapter';
 import { SpriteAtlas } from './game/render/assets/spriteAtlas';
@@ -82,10 +83,11 @@ const DEATH_MOMENT_MS = 700;
 
 /** A result folds into the stage record (campaign) and the career totals (CON-07). */
 function recordResult(profile: ProfileData, result: Settlement) {
-  return recordCareer(
+  const recorded = recordCareer(
     result.runMode === 'campaign' ? recordStageResult(profile, { ...result, bonus: result.bonus?.met ?? false, assisted: result.assisted }) : profile,
     { ...result, bossKills: result.bossesDefeated },
   );
+  return recordCodex(recorded, { ...result.found, chapters: [String(result.chapter)] });
 }
 
 function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
@@ -690,7 +692,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     const key = event.key === 'ArrowUp' ? 'ArrowLeft' : event.key === 'ArrowDown' ? 'ArrowRight' : event.key;
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(key)) return;
     event.preventDefault();
-    const next = nextRovingId(['play', 'infinite', 'growth', 'settings'] as const, menuView, key as RovingKey);
+    const next = nextRovingId(MENU_NAV, menuView, key as RovingKey);
     setMenuView(next);
     requestAnimationFrame(() => document.getElementById(`menu-tab-${next}`)?.focus());
   };
@@ -793,6 +795,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         <MenuScreen
           meta={meta}
           records={profile.stageRecords}
+          codex={profile.codex}
+          stats={profile.stats}
           inlineNotice={<>{suspendBanner}{noticeBanner('inline')}</>}
           suspended={asSuspendedRun(profile.runSuspend?.state)}
           onResumeSuspended={resumeSuspended}

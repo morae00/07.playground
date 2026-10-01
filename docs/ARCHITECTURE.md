@@ -301,13 +301,17 @@ A run in play is kept in the save as a suspended run (`profile.runSuspend`), so 
 - The desktop app flushes localStorage to disk every second, so a force-quit keeps the run saved at the last pause (docs/ELECTRON_HARDENING.md).
 - `test/suspend.integration.test.mjs` plays 2,400 uneven frames with keys, the stick, the pointer, drafts, a paused purchase, and an assist change. It saves the run as JSON and replays it in a new engine. The state is identical at the saved tick and stays identical as both play on. The UI probe reloads the page mid-run and resumes to the same state. The Electron smoke resumes a run after a renderer crash, after a quit, and after a force-quit.
 
-## Records and stars (CON-07)
+## Records, stars, and the codex (CON-07)
 
 The save had a clear count, the best kills, and the best time per stage, and nothing over all runs. CON-07 adds to the v3 profile, with defaults for older saves (G17):
 - Each stage record (`StageRecord`) keeps its longest run (`bestSurvivalSeconds`, shown for stages not yet cleared), a clear with no damage (`noHit`), a clear with less damage than the hero's max health (`lowDamage`), and a boss stage cleared before its boss enraged (`swift`).
 - A stage has three stars (`stageStars`): the clear, its second star, and the low-damage clear. A normal stage's second star is its bonus goal (CON-03); a boss stage's is the swift clear. Stage nodes show the stars, the stage detail names them, and the settlement shows the stars after the result, with how many it added (`settlementNotes`).
 - Career totals (`profile.stats`): runs, clears, kills, bosses defeated, and simulated seconds played, over every run, campaign and infinite (`recordCareer`). A save from before them starts from what its stage records show.
 - Settlements carry what these need: the stage kind, the hero's max health at the end, whether a boss enraged, and every boss defeated.
+- The codex (menu 도감, `src/ui/screens/CodexView.tsx`) lists 66 entries, one to one with the illustration slots: 17 skills, 20 enemies (each chapter's four roles), 15 bosses, nine terrain kinds, and five chapters (`src/content/data/codex.ts`). A run reports what it found (`settlement.found`): the skills it held, the enemies and bosses it defeated, and the terrain the hero stood in or cast. The app adds that and the chapter to `profile.codex` (`recordCodex`).
+- An entry not found yet is an ink silhouette that says how to find it. A found one shows its art, name, and lore line. The lines are draft data outside the app JS (`public/assets/content/codex.json`, and the boss titles), fetched when the codex opens. Skill pages add the skill's summary, so the codex doubles as the manual (UI-09).
+- A codex saved before CON-07 (it has no chapter list) gets what its stage records show, once (G17): every chapter played, the four enemies of a chapter with kills, the boss of every boss stage cleared, and the needles.
+- The terrain icons are the kit's hazard circles, baked like the other UI art (`art/ui-art-spec.mjs`, `terrain` sheet).
 
 ## Camera (FX-04)
 

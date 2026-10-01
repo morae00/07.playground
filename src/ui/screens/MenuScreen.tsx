@@ -11,7 +11,8 @@ import { DEVELOPER_UI_AVAILABLE, DEVELOPER_UI_DEFAULT_ENABLED } from '../../plat
 import { RULES_VERSION } from '../../game/rules';
 import { BOSS_SLOTS } from '../../game/render/assets/slots';
 import type { InfiniteScoreEntry } from '../../platform/infiniteLeaderboard';
-import { stageStars, type GameOptions, type MetaState, type MetaUpgradeId, type PassiveId, type StageRecord } from '../../platform/save';
+import { stageStars, type CareerStats, type GameOptions, type MetaState, type MetaUpgradeId, type PassiveId, type ProfileData, type StageRecord } from '../../platform/save';
+import CODEX from '../../content/data/codex';
 import {
   CHAPTERS,
   META_PASSIVES,
@@ -28,6 +29,7 @@ import {
 import { Glyph } from '../Glyph';
 import { ProgressBar } from '../ProgressBar';
 import { STAGE_PATH, chapterCleared, passiveEffect, smoothPath, stageBoss, stageObjective, stageRewardFloor, stageStatus, upgradeEffect } from '../menuStage';
+import { CodexView } from './CodexView';
 import { SaveTransfer } from './SaveTransfer';
 import { SettingsPanel } from './SettingsPanel';
 import { StatGrid } from './StatGrid';
@@ -37,7 +39,7 @@ const ENEMY_ROLES = ['stalker', 'charger', 'shooter', 'warden'] as const;
 /** The chapter still to come, shown small after the five (lore bible §7). */
 const NEXT_CHAPTER = CHAPTERS.length + 1;
 
-export type MenuView = 'play' | 'infinite' | 'growth' | 'settings';
+export type MenuView = 'play' | 'infinite' | 'growth' | 'settings' | 'codex';
 
 /** "Chapter 1: 먹선 골목" from the chapter's strings (UI-10). */
 export const chapterName = (id: number) => t('chapter.name', { n: id, theme: t(`chapter.${id as ChapterId}`) });
@@ -45,6 +47,9 @@ export const chapterName = (id: number) => t('chapter.name', { n: id, theme: t(`
 export type MenuScreenProps = {
   meta: MetaState;
   records: Readonly<Record<string, StageRecord>>;
+  /** CON-07: the codex and the career totals. */
+  codex: ProfileData['codex'];
+  stats: CareerStats;
   inlineNotice: ReactNode;
   /** CON-04: a run left in play, offered first so a crash or a quit never loses it. */
   suspended: SuspendedRun | null;
@@ -85,9 +90,13 @@ export type MenuScreenProps = {
   buyPassive: (id: PassiveId) => void;
 };
 
-const NAV: readonly MenuView[] = ['play', 'infinite', 'growth', 'settings'];
+export const NAV: readonly MenuView[] = ['play', 'infinite', 'growth', 'settings', 'codex'];
 
 type PlayProps = Pick<MenuScreenProps, 'meta' | 'records' | 'developerAccess' | 'developerMode' | 'setDeveloperMode' | 'options' | 'selectedChapterId' | 'setSelectedChapterId' | 'selectedStageNo' | 'setSelectedStageNo' | 'selectedChapter' | 'selectedStage' | 'selectedStageLocked' | 'visibleStats' | 'startRun' | 'setMenuView' | 'cheatCode' | 'setCheatCode' | 'cheatMessage' | 'applyCheat'>;
+
+const CODEX_TOTAL = Object.values(CODEX).reduce((sum, ids) => sum + ids.length, 0);
+/** Codex entries found, counting only ids the codex lists. */
+const codexFound = (codex: ProfileData['codex']) => (Object.keys(CODEX) as (keyof typeof CODEX)[]).reduce((sum, part) => sum + codex[part].filter((id) => (CODEX[part] as readonly string[]).includes(id)).length, 0);
 
 /** CON-07: the stars' names: the clear, a normal stage's bonus goal, the low-damage clear, and a boss stage's swift clear. */
 const STAR_LABELS = ['star.clear', 'star.bonus', 'star.lowDamage', 'star.swift'] as const;
@@ -452,13 +461,13 @@ export function MenuScreen(props: MenuScreenProps) {
               key={view}
             >
               <b>{t(`menu.nav.${view}`)}</b>
-              <small>{view === 'growth' && meta.passivePoints > 0 ? t('menu.nav.growth.points', { n: meta.passivePoints }) : t(`menu.nav.${view}.note`)}</small>
+              <small>
+                {view === 'growth' && meta.passivePoints > 0
+                  ? t('menu.nav.growth.points', { n: meta.passivePoints })
+                  : view === 'codex' ? t('menu.nav.codex.note', { found: codexFound(props.codex), total: CODEX_TOTAL }) : t(`menu.nav.${view}.note`)}
+              </small>
             </button>
           ))}
-          <span className="menuNavItem soon" aria-disabled="true">
-            <b>{t('menu.nav.codex')}</b>
-            <small>{t('menu.nav.codex.note')}</small>
-          </span>
         </nav>
         <div className="menuKeyart" aria-hidden="true"><span className="artKeyart" data-art="hero" /></div>
       </aside>
@@ -499,6 +508,9 @@ export function MenuScreen(props: MenuScreenProps) {
         </div>
         <div className="menuPanel upgradeColumn" id="menu-panel-growth" role="tabpanel" aria-labelledby="menu-tab-growth" hidden={menuView !== 'growth'}>
           <GrowthView {...props} />
+        </div>
+        <div className="menuPanel codexColumn" id="menu-panel-codex" role="tabpanel" aria-labelledby="menu-tab-codex" hidden={menuView !== 'codex'}>
+          {menuView === 'codex' && <CodexView codex={props.codex} stats={props.stats} />}
         </div>
         <div className="menuPanel settingsColumn" id="menu-panel-settings" role="tabpanel" aria-labelledby="menu-tab-settings" hidden={menuView !== 'settings'}>
           <h2>{t('menu.nav.settings')}</h2>

@@ -171,3 +171,19 @@
 .artEnemy[data-art="5-charger"] { background-position: 77.7778% 100%; }
 .artEnemy[data-art="5-shooter"] { background-position: 88.8889% 100%; }
 .artEnemy[data-art="5-warden"] { background-position: 100% 100%; }
+
+.artTerrain {
+  aspect-ratio: 64 / 64;
+  background-image: url("./terrain-icons.webp");
+  background-repeat: no-repeat;
+  background-size: 900% 100%;
+}
+.artTerrain[data-art="water"] { background-position: 0% 0%; }
+.artTerrain[data-art="trap"] { background-position: 12.5% 0%; }
+.artTerrain[data-art="fire"] { background-position: 25% 0%; }
+.artTerrain[data-art="slow"] { background-position: 37.5% 0%; }
+.artTerrain[data-art="root"] { background-position: 50% 0%; }
+.artTerrain[data-art="null"] { background-position: 62.5% 0%; }
+.artTerrain[data-art="shock"] { background-position: 75% 0%; }
+.artTerrain[data-art="warning"] { background-position: 87.5% 0%; }
+.artTerrain[data-art="vortex"] { background-position: 100% 0%; }

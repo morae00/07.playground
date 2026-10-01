@@ -85,7 +85,8 @@ export type CareerStats = { runs: number; clears: number; kills: number; bossKil
 export type ProfileData = {
   stageRecords: Record<string, StageRecord>;
   characters: { selected: string; unlocked: string[] };
-  codex: { enemies: string[]; bosses: string[]; skills: string[] };
+  /** CON-07: codex entries found (src/content/data/codex.ts ids). */
+  codex: { enemies: string[]; bosses: string[]; skills: string[]; terrain: string[]; chapters: string[] };
   achievements: Record<string, { unlockedAt: number }>;
   runSuspend: null | { savedAt: number; rulesVersion: number; state: unknown };
   /** Onboarding hints already shown (UI-09); each shows once per save. */
@@ -162,7 +163,7 @@ export const assistsOn = (options: GameOptions) => options.assistDamage < 1 || o
 export const createDefaultProfile = (): ProfileData => ({
   stageRecords: {},
   characters: { selected: DEFAULT_CHARACTER, unlocked: [DEFAULT_CHARACTER] },
-  codex: { enemies: [], bosses: [], skills: [] },
+  codex: { enemies: [], bosses: [], skills: [], terrain: [], chapters: [] },
   achievements: {},
   runSuspend: null,
   hintsSeen: [],
@@ -287,12 +288,58 @@ export function sanitizeProfile(value: unknown): ProfileData {
   return {
     stageRecords,
     characters: { selected, unlocked },
-    codex: { enemies: stringList(codex.enemies), bosses: stringList(codex.bosses), skills: stringList(codex.skills) },
+    codex: sanitizeCodex(codex, stageRecords),
     achievements,
     runSuspend,
     hintsSeen: stringList(value.hintsSeen, 64),
     stats: sanitizeStats(value.stats, stageRecords),
   };
+}
+
+/**
+ * CON-07: the codex as saved. A codex from before CON-07 (it has no chapters list) is given what its stage records
+ * show, once (G17): every chapter played, the four enemy roles of a chapter with kills, the boss of every boss stage
+ * cleared, and the needles every run starts with.
+ */
+function sanitizeCodex(codex: Record<string, unknown>, records: Record<string, StageRecord>): ProfileData['codex'] {
+  const found = { enemies: stringList(codex.enemies), bosses: stringList(codex.bosses), skills: stringList(codex.skills), terrain: stringList(codex.terrain), chapters: stringList(codex.chapters) };
+  if (Array.isArray(codex.chapters)) return found;
+  const played = Object.entries(records).filter(([, record]) => record.attempts > 0);
+  const retro = {
+    chapters: played.map(([key]) => key.split('-')[0]),
+    enemies: played.filter(([, record]) => record.bestKills > 0).flatMap(([key]) => ['stalker', 'charger', 'shooter', 'warden'].map((role) => `${key.split('-')[0]}-${role}`)),
+    bosses: played.filter(([key, record]) => record.clears > 0 && (key.endsWith('-5') || key.endsWith('-10'))).map(([key]) => stageBossId(key)),
+    skills: played.length > 0 ? ['needleStorm'] : [],
+    terrain: [],
+  };
+  return mergeCodex(found, retro);
+}
+
+/** The round boss of a boss stage key ("<chapter>-5" or "<chapter>-10"), as the catalog names them (roundBosses; save.test.ts checks). */
+export function stageBossId(key: string) {
+  const [chapter, stage] = key.split('-');
+  return `s${chapter}-${stage === '5' ? 'mid' : 'final'}-${ROUND_BOSS_PATTERNS[`${chapter}-${stage}`] ?? ''}`;
+}
+
+const ROUND_BOSS_PATTERNS: Record<string, string> = {
+  '1-5': 'dash', '1-10': 'rings', '2-5': 'clones', '2-10': 'flame', '3-5': 'tide',
+  '3-10': 'traps', '4-5': 'clock', '4-10': 'saw', '5-5': 'eclipse', '5-10': 'null',
+};
+
+type CodexFinds = Partial<Record<keyof ProfileData['codex'], readonly string[]>>;
+
+function mergeCodex(codex: ProfileData['codex'], found: CodexFinds): ProfileData['codex'] {
+  const merged = { ...codex };
+  for (const part of ['enemies', 'bosses', 'skills', 'terrain', 'chapters'] as const) {
+    const more = (found[part] ?? []).filter((id, index, all) => !merged[part].includes(id) && all.indexOf(id) === index);
+    if (more.length > 0) merged[part] = [...merged[part], ...more];
+  }
+  return merged;
+}
+
+/** CON-07: adds what a run found to the codex. */
+export function recordCodex(profile: ProfileData, found: CodexFinds): ProfileData {
+  return { ...profile, codex: mergeCodex(profile.codex, found) };
 }
 
 /** CON-07: a save from before the career totals starts from what its stage records show (G17). */

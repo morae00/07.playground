@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import CATALOG from '../content/data/catalog.ts';
 import {
   LEGACY_META_KEY,
   SAVE_BACKUP_KEY,
@@ -10,7 +11,9 @@ import {
   createDefaultProfile,
   loadGameSave,
   recordCareer,
+  recordCodex,
   recordStageResult,
+  stageBossId,
   stageStars,
   sanitizeOptions,
   sanitizeProfile,
@@ -166,7 +169,8 @@ test('the v3 profile round-trips and rejects impossible records', () => {
   assert.deepEqual(Object.keys(clean.stageRecords), ['1-1']);
   assert.equal(clean.stageRecords['1-1'].clears, 3, 'clears never exceed attempts');
   assert.deepEqual(clean.characters, { selected: 'gyeol', unlocked: ['gyeol', 'other'] });
-  assert.deepEqual(clean.codex, { enemies: ['a'], bosses: [], skills: ['needleStorm'] });
+  // A codex from before CON-07 also gets what the 1-1 record shows (G17): its chapter and that chapter's enemies.
+  assert.deepEqual(clean.codex, { enemies: ['a', '1-stalker', '1-charger', '1-shooter', '1-warden'], bosses: [], skills: ['needleStorm'], terrain: [], chapters: ['1'] });
   assert.deepEqual(clean.achievements, { first: { unlockedAt: 5 } });
   assert.deepEqual(clean.runSuspend, { savedAt: 1, rulesVersion: 2, state: { tick: 9 } });
   const storage = createStorage();
@@ -239,4 +243,25 @@ test('a bonus goal met on a clear stars the stage for good; a defeat or a later 
   const loaded = sanitizeProfile({ stageRecords: { '2-4': { attempts: 1, clears: 0, bestKills: 5, bestClearSeconds: null, bonus: true }, '2-3': profile.stageRecords['2-3'] } });
   assert.equal(loaded.stageRecords['2-4'].bonus, false);
   assert.equal(loaded.stageRecords['2-3'].bonus, true);
+});
+
+test('the codex keeps what runs found, and an older save finds what its records show once (CON-07, G17)', () => {
+  const records = {
+    '1-5': { attempts: 2, clears: 1, bestKills: 150, bestClearSeconds: 600 },
+    '2-10': { attempts: 1, clears: 1, bestKills: 400, bestClearSeconds: 610 },
+    '3-2': { attempts: 1, clears: 0, bestKills: 0, bestClearSeconds: null },
+  };
+  const older = sanitizeProfile({ stageRecords: records, codex: { skills: ['fanKnives'] } });
+  assert.deepEqual(older.codex.chapters, ['1', '2', '3']);
+  assert.deepEqual(older.codex.bosses, ['s1-mid-dash', 's2-final-flame']);
+  assert.equal(older.codex.enemies.length, 8, 'the two chapters with kills; 3-2 had none');
+  assert.deepEqual(older.codex.skills, ['fanKnives', 'needleStorm']);
+  const later = sanitizeProfile({ stageRecords: records, codex: { ...older.codex, enemies: ['1-stalker'] } });
+  assert.deepEqual(later.codex.enemies, ['1-stalker'], 'a codex from CON-07 on is kept as saved');
+  const found = recordCodex(later, { enemies: ['1-stalker', '2-warden', '2-warden'], terrain: ['fire'] });
+  assert.deepEqual([found.codex.enemies, found.codex.terrain], [['1-stalker', '2-warden'], ['fire']]);
+});
+
+test('boss stage keys name the catalog\'s round bosses (CON-07)', () => {
+  for (const boss of CATALOG.roundBosses) assert.equal(stageBossId(`${boss.chapter}-${boss.role === 'mid' ? 5 : 10}`), boss.id);
 });

@@ -416,6 +416,8 @@ export type Settlement = {
   maxHp: number;
   enraged: boolean;
   bossesDefeated: number;
+  /** CON-07: what the run found for the codex (src/content/data/codex.ts ids). */
+  found: Readonly<{ skills: string[]; enemies: string[]; bosses: string[]; terrain: string[] }>;
   /** UI-05: health each skill took off enemies. A presentation tally: the simulation never reads it. */
   damageBySkill: Readonly<Partial<Record<SkillId, number>>>;
 };
@@ -860,6 +862,8 @@ export class GameEngine {
   protected assistedRun = false;
   /** CON-07: bosses defeated this run (field, round, and legacy bosses), for the career totals. */
   protected bossesDefeated = 0;
+  /** CON-07: codex entries this run found: enemies ("<chapter>-<role>") and bosses defeated, terrain stood in or cast. */
+  protected found = { enemies: new Set<string>(), bosses: new Set<string>(), terrain: new Set<string>() };
   /** CON-04: simulation steps this run, the commands that changed it, and what it started from. */
   protected ticks = 0;
   protected runLog: RunLogEntry[] = [];
@@ -1735,6 +1739,7 @@ export class GameEngine {
     this.stageCoinsEarned = 0;
     this.damageTakenTotal = 0;
     this.bossesDefeated = 0;
+    this.found = { enemies: new Set(), bosses: new Set(), terrain: new Set() };
     this.damageBySkill = {};
     this.draftQueue = [];
     this.elapsed = 0;
@@ -2056,6 +2061,7 @@ export class GameEngine {
     let inTerrain = false;
     for (const hazard of this.hazards) {
       if (distance(this.player, hazard) > hazard.radius) continue;
+      this.found.terrain.add(hazard.kind);
       if (TERRAIN_KINDS.has(hazard.kind)) inTerrain = true;
       if (hazard.kind === 'water' || hazard.kind === 'slow') this.player.slow = Math.min(this.player.slow, hazard.slow);
       if (hazard.kind === 'trap' && !hazard.triggered) {
@@ -2433,6 +2439,7 @@ export class GameEngine {
       skillDamage: damage,
       collapseDamage: skill.awakened ? damage * SKILL_NUMBERS.boneMortar.aftershockDamage : 0,
     });
+    this.found.terrain.add('warning');
     const mine = this.skills.voidMine;
     if (this.fusions.voidMortar && mine) this.pushVoidMine(target.x, target.y, mine, radius * BUILD_DEPTH.voidMortar.radius, BUILD_DEPTH.voidMortar.seconds);
     this.emit({ type: 'skill/cast', skillId: 'boneMortar', x: this.player.x, y: this.player.y });
@@ -2475,6 +2482,7 @@ export class GameEngine {
   }
 
   protected pushVoidMine(x: number, y: number, skill: SkillState, radius: number, life: number) {
+    this.found.terrain.add('vortex');
     const profile = createVortexProfile('voidMine', skill.level, skill.awakened);
     this.hazards.push({
       id: this.nextId(),
@@ -2505,6 +2513,7 @@ export class GameEngine {
 
   /** A black sun at `scale` of its radius and duration (1 for the skill's own). */
   protected pushBlackSun(x: number, y: number, skill: SkillState, scale: number) {
+    this.found.terrain.add('vortex');
     const radius = scaleAt(SKILL_NUMBERS.blackSun.radius, skill.level, skill.awakened) * scale;
     const life = scaleAt(SKILL_NUMBERS.blackSun.duration, skill.level, skill.awakened) * scale;
     const profile = createVortexProfile('blackSun', skill.level, skill.awakened);
@@ -4576,6 +4585,8 @@ export class GameEngine {
     this.player.kills += 1;
     this.stageKills += 1;
     if (enemy.isBoss) this.bossesDefeated += 1;
+    if (enemy.boss) this.found.bosses.add(enemy.boss.id);
+    else if (!enemy.isBoss) this.found.enemies.add(`${this.chapter}-${enemyRole(enemy.tier, enemy.attackStyle)}`);
     this.stageObjective?.onKill({ tier: enemy.tier, ranged: enemy.attackStyle === 'ranged', fieldBoss: enemy.isBoss && enemy.boss?.role === 'field' && !enemy.legacyBoss });
     if (this.runMode === 'infinite') {
       this.infiniteEventScore += infiniteKillScore(enemy.tier, this.elapsed, this.infiniteBossKills);
@@ -4935,6 +4946,7 @@ export class GameEngine {
       maxHp: this.player.stats.maxHp,
       enraged: this.bossEnraged,
       bossesDefeated: this.bossesDefeated,
+      found: { skills: Object.keys(this.skills), enemies: [...this.found.enemies], bosses: [...this.found.bosses], terrain: [...this.found.terrain] },
       damageBySkill: { ...this.damageBySkill },
     };
   }

@@ -533,6 +533,9 @@ try {
       const key = 'blackline-survivor-save-v2';
       const save = JSON.parse(localStorage.getItem(key));
       save.meta.progress = { chapter: 1, stage: 6 };
+      // As a save from before CON-07: no codex chapters and no career totals, so both start from the records.
+      save.profile.codex = { enemies: [], bosses: [], skills: [] };
+      delete save.profile.stats;
       save.profile.stageRecords = {
         '1-4': { attempts: 2, clears: 1, bestKills: 300, bestClearSeconds: 470, bonus: true, assisted: false, bestSurvivalSeconds: 480, noHit: false, lowDamage: true, swift: false },
         '1-5': { attempts: 1, clears: 0, bestKills: 120, bestClearSeconds: null, bonus: false, assisted: false, bestSurvivalSeconds: 192, noHit: false, lowDamage: false, swift: false },
@@ -550,6 +553,19 @@ try {
     record('CON-07 a stage not yet cleared shows its longest run', best.includes('최고 생존 03:12'), best.split('\n').find((line) => line.includes('최고')) ?? 'none');
     const fits = await page.evaluate(() => document.scrollingElement.scrollHeight <= window.innerHeight + 1);
     record('CON-07 the menu still fits 1024x720 without scrolling', fits);
+
+    // The codex: the nav counts what was found, found entries open their page, the rest stay silhouettes.
+    const nav = await page.getByRole('tab', { name: /도감/ }).textContent();
+    await page.getByRole('tab', { name: /도감/ }).click();
+    const panel = page.locator('#menu-panel-codex');
+    await panel.getByRole('button', { name: /먹귀/ }).click();
+    const found = await panel.locator('.codexEntry.found').count();
+    const unknown = await panel.locator('.codexEntry.unknown').count();
+    await panel.locator('.codexEntry.found').first().click();
+    const page1 = await panel.locator('.codexDetail').innerText();
+    record('CON-07 the codex counts found entries, and a found enemy opens its page', /발견 \d+\/66/.test(nav) && found === 4 && unknown === 16 && page1.includes('벽보 들개'), `${nav}, ${found} found, ${unknown} unknown, ${page1.split('\n')[0]}`);
+    const career = (await panel.locator('.careerStats').innerText()).replace(/\s+/g, ' ');
+    record('CON-07 the codex shows the career totals', career.includes('출정 3') && career.includes('0시간 7분'), career);
     await page.close();
   });
 

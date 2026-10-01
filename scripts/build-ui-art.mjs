@@ -121,6 +121,8 @@ async function renderSheet({ sheet, density, quality, colorMap }) {
     keyart: (pose) => `<g transform="scale(0.9)">${PN.heroKit.full(pose, { scaleHint: 0.9, ground: false })}</g>`,
     landmark: (ch) => `<g transform="scale(0.6)">${PN.env.landmark(ch)}</g>`,
     // Enemies draw in role boxes whose horns and tails reach past the box, so they are fitted by their drawn bounds.
+    // Shock's burst spikes reach past its circle, so it draws smaller.
+    hazard: (kind) => PN.env.hazard(kind, 'static', { r: kind === 'shock' ? 16 : 22 }),
     enemyIcon: (ch, role) => {
       const markup = PN.enemies.draw(ch, role, { lod: 'game', halo: false, shadow: false });
       const box = bounds(markup);
