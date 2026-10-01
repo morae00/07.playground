@@ -35,6 +35,8 @@
 | 먹 꾸러미 | ink cache | 회수 목표의 물건. 위에 서서 1.5초 버티면 회수된다 | 먹병 |
 | 정예 | elite | 어픽스 하나를 단 먹귀. 보라 외곽선과 머리 위 문양으로 보인다(SYS-10) | |
 | 가속 · 분열 · 보호막 · 흡수 오라 | haste · split · shield · drain | 정예의 어픽스 네 가지 | |
+| 챕터 순환 | chapter rotation | 무한 경쟁에서 한 장이 5분을 넘긴 뒤 라운드 보스를 쓰러뜨리면 다음 장의 모습으로 넘어가는 것. 5장 다음은 1장이다(CON-08) | |
+| 오늘의 시드 · 이번 주 시드 | today's seed · this week's seed | 날짜로 정해지는 도전 시드. 같은 날(같은 주)에는 누구나 같은 판을 받는다. 순위표에는 '오늘', '이번 주'로 표시한다(CON-08) | 일일·주간 시드 |
 
 - 'Stage', 'Chapter', 'Ch.1 / St.1', 'Lv.3'은 게임의 고유 표기로 그대로 쓴다. 문장 안에서는 '5챕터', '6장'처럼 한국어로도 쓴다. **[팀 확인]** 'Stage'를 '스테이지'로 바꿀지.
 - 영문은 로고(BLACKLINE SURVIVOR)와 작은 eyebrow(RUN PAUSED, ENDLESS SCORE ATTACK, LOCAL RECORDS, RUN INTERRUPTED, LOCAL SAVE RESET)에만 쓴다(로어 바이블 §8). 그 밖의 영어 전용 표기는 한국어로 바꿨다: 표 머리(RANK → 순위 등), 무한 경쟁 규칙(START → 시작, Random Respawn → 무작위 재등장, None → 없음), TOP 10 → 상위 10위, DANGER → 위험도, ACTIVE → 적용 중, Coming Soon → 준비 중.

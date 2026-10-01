@@ -186,6 +186,7 @@ export class AudioMixer implements SoundOutput {
       voices: this.ledger.voices.length,
       nodes: this.live.size,
       samples: this.samples.size,
+      ambience: this.ambienceCue,
       ...this.ledger.counts,
     };
   }

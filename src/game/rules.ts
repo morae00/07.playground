@@ -138,6 +138,14 @@ export type RuleSet = Readonly<{
    * Numbers in src/content/data/elites.ts.
    */
   eliteAffixes: boolean;
+  /**
+   * CON-08: the infinite run turns through the five chapters (5 wraps to 1). Once a chapter has lasted five minutes,
+   * the next round boss to fall turns the run to the next one: its ground, obstacle kit, enemies, and ambience. The
+   * map is not rebuilt; blocks keep their footprints and pillars take the new chapter's about their centres. Round
+   * bosses come from the chapter on screen (still random, never the same one twice running, back 2.4 s after a kill),
+   * and 150 s into each chapter its field boss joins them. Numbers in src/game/infiniteMode.ts (INFINITE_ROTATION).
+   */
+  infiniteRotation: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -173,6 +181,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   difficultyCurve: false,
   buildDepth: false,
   eliteAffixes: false,
+  infiniteRotation: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -208,6 +217,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   difficultyCurve: true,
   buildDepth: false,
   eliteAffixes: true,
+  infiniteRotation: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

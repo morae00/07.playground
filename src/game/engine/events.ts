@@ -40,6 +40,8 @@ export type GameEvent =
   | { type: 'enemy/stunned'; x: number; y: number }
   | { type: 'magnet/pulse'; x: number; y: number }
   | { type: 'boss/spawned'; x: number; y: number; infinite: boolean }
+  /** CON-08: an infinite run turned to the next chapter's look. */
+  | { type: 'chapter/turned'; chapter: number }
   | { type: 'boss/phase'; x: number; y: number; phase: number; chapter: number }
   | { type: 'boss/ringFired'; x: number; y: number }
   /** AUD-04: a boss pattern fired (the telegraphed patterns, dashes, shocks, and eclipse walls). */

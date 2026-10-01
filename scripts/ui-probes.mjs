@@ -1,4 +1,4 @@
-// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, TEC-15, CON-02, CON-04, CON-07, SYS-08, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-05, UI-07, UI-09) against the developer build.
+// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, TEC-15, CON-02, CON-04, CON-07, CON-08, SYS-08, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-05, UI-07, UI-09) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -582,6 +582,50 @@ try {
     await page.getByRole('tab', { name: /수련/ }).click();
     const branch = (await page.locator('#menu-panel-growth .passiveGrid .upgradeButton').first().innerText()).replace(/\s+/g, ' ');
     record('CON-07 a passive past five points shows its second node, out of ten', branch.includes('희귀 감각 → 결정적 감각') && branch.includes('Lv.6/10'), branch);
+    await page.close();
+  });
+
+  await probe('CON-08', async () => {
+    // The endless menu names the chapter rotation, and today's and this week's seeds fill the seed field.
+    const page = await browser.newPage({ viewport: { width: 1024, height: 720 } });
+    await page.goto('http://127.0.0.1:5177/');
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    const devToggle = page.getByRole('checkbox', { name: '개발자 모드: 모든 Stage 접근' });
+    if (!(await devToggle.isChecked())) await devToggle.check();
+    await page.getByRole('tab', { name: '무한 경쟁' }).click();
+    await page.getByRole('heading', { name: '무한 경쟁' }).waitFor();
+    const facts = (await page.getByLabel('무한 모드 규칙').innerText()).replace(/\s+/g, ' ');
+    record('CON-08 the endless rules name the chapter rotation', facts.includes('5분마다 다음 장'), facts);
+    const seedField = page.getByRole('textbox', { name: '도전 시드' });
+    const daily = page.getByRole('button', { name: /^오늘의 시드/ });
+    const weekly = page.getByRole('button', { name: /^이번 주 시드/ });
+    await weekly.click();
+    const weeklySeed = await seedField.inputValue();
+    await daily.click();
+    const dailySeed = await seedField.inputValue();
+    const pressed = `${await daily.getAttribute('aria-pressed')},${await weekly.getAttribute('aria-pressed')}`;
+    record("CON-08 today's and this week's seeds fill the seed field", /^\d{1,10}$/.test(dailySeed) && /^\d{1,10}$/.test(weeklySeed) && dailySeed !== weeklySeed && pressed === 'true,false', `${dailySeed} / ${weeklySeed}, pressed ${pressed}`);
+    record('CON-08 the endless menu fits 1024x720', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+
+    // A run on today's seed starts in the first chapter. TURN fells its round boss; after the boss draft the run turns
+    // to the second chapter: the HUD line and the name card say so, and its art and ambience follow.
+    await page.getByRole('button', { name: '무한 모드 시작' }).click();
+    const line = page.locator('.heroLine strong');
+    await line.waitFor();
+    const first = await line.innerText();
+    await cheat(page, 'TURN');
+    let card = '';
+    for (let tries = 0; tries < 30 && !card; tries += 1) {
+      await settleDrafts(page);
+      const shown = page.locator('.landmarkIntro');
+      if (await shown.count()) card = (await shown.innerText()).replace(/\s+/g, ' ');
+      else await page.waitForTimeout(100);
+    }
+    await page.waitForFunction(() => document.documentElement.dataset.sprites !== undefined, undefined, { timeout: 5000 });
+    const sprites = await page.evaluate(() => document.documentElement.dataset.sprites);
+    const ambience = (await diagnostics(page))?.audio.ambience;
+    const second = await line.innerText();
+    record('CON-08 TURN brings the second chapter: HUD line, name card, art, and ambience', first.includes('1장') && second.includes('2장') && card.includes('철문 예배당') && sprites === 'ready' && ambience === 'ambience.ch2', `${first} -> ${second}, card "${card}", sprites ${sprites}, ambience ${ambience}`);
     await page.close();
   });
 

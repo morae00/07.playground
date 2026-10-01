@@ -1357,7 +1357,7 @@ h2 {
 
 .infiniteModeFacts {
   display: grid;
-  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  grid-template-columns: repeat(4, minmax(104px, 1fr));
   border: 2px solid var(--ink);
   background: var(--paper-raised);
 }
@@ -1411,6 +1411,35 @@ h2 {
 
 .infiniteControls .launch {
   min-height: 42px;
+}
+
+/* CON-08: today's and this week's challenge seeds. */
+.seedPresets {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 8px;
+}
+
+.seedPresets > span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.seedPresets small {
+  margin-left: 6px;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.seedTag {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
 }
 
 .recordWarning,

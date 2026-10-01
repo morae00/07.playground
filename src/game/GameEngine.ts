@@ -99,6 +99,7 @@ import { OBSTACLE_CATALOGUE } from './obstacleCatalogue';
 import type { SoundOutput } from './audioPolicy';
 import {
   INFINITE_BASELINE,
+  INFINITE_ROTATION,
   infiniteDifficultyAt,
   infiniteKillScore,
   infiniteScoreWithSurvival,
@@ -337,6 +338,9 @@ export type HudSnapshot = {
   runMode: RunMode;
   seed: number;
   chapter: number;
+  /** CON-08: the chapter the run looks like (an infinite run turns through all five), and the next one when due soon. */
+  lookChapter: number;
+  nextLookChapter: number | null;
   stage: number;
   stageKind: StageKind;
   objective: Text;
@@ -429,7 +433,7 @@ export type Settlement = {
   enraged: boolean;
   bossesDefeated: number;
   /** CON-07: what the run found for the codex (src/content/data/codex.ts ids). */
-  found: Readonly<{ skills: string[]; enemies: string[]; bosses: string[]; terrain: string[] }>;
+  found: Readonly<{ skills: string[]; enemies: string[]; bosses: string[]; terrain: string[]; chapters: string[] }>;
   /** UI-05: health each skill took off enemies. A presentation tally: the simulation never reads it. */
   damageBySkill: Readonly<Partial<Record<SkillId, number>>>;
 };
@@ -883,8 +887,15 @@ export class GameEngine {
   protected cosmetics: RenderWorld['cosmetics'] = { outline: null, trail: null };
   /** CON-07: bosses defeated this run (field, round, and legacy bosses), for the career totals. */
   protected bossesDefeated = 0;
-  /** CON-07: codex entries this run found: enemies ("<chapter>-<role>") and bosses defeated, terrain stood in or cast. */
-  protected found = { enemies: new Set<string>(), bosses: new Set<string>(), terrain: new Set<string>() };
+  /**
+   * CON-07: codex entries this run found: enemies ("<chapter>-<role>") and bosses defeated, terrain stood in or cast,
+   * and the chapters it was played in (CON-08: an infinite run finds every chapter it turns to).
+   */
+  protected found = { enemies: new Set<string>(), bosses: new Set<string>(), terrain: new Set<string>(), chapters: new Set<number>() };
+  /** CON-08: the chapter the run looks like, when it turned to it, and how many turns the run has taken. */
+  protected shownChapter = 1;
+  protected chapterShownAt = 0;
+  protected chapterTurns = 0;
   /** CON-04: simulation steps this run, the commands that changed it, and what it started from. */
   protected ticks = 0;
   protected runLog: RunLogEntry[] = [];
@@ -1001,7 +1012,7 @@ export class GameEngine {
     PICKUP_HARD_CAP,
   );
   /** Cosmetic state (particles, damage numbers, rings, shake, sound) lives here and only consumes events (TEC-02). */
-  protected presentation = new Presentation({ nextId: () => this.nextCosmeticId(), options: () => this.options, pan: (x) => this.screenPan(x), chapter: () => this.chapter });
+  protected presentation = new Presentation({ nextId: () => this.nextCosmeticId(), options: () => this.options, pan: (x) => this.screenPan(x), chapter: () => this.shownChapter });
   protected eventListeners = new Set<GameEventListener>();
   protected playerAimAngle = -Math.PI / 2;
   protected aimTargetId: number | null = null;
@@ -1285,7 +1296,7 @@ export class GameEngine {
       this.faultInjection = true;
       return 'LOOP FAULT ARMED';
     }
-    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO'].includes(code)) {
+    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO', 'TURN'].includes(code)) {
       this.invalidateInfiniteScore();
     }
     if (code === 'GOD') {
@@ -1320,6 +1331,13 @@ export class GameEngine {
     if (code === 'DRAFT') {
       this.openDraft('level', 'resume');
       return 'DRAFT OPEN';
+    }
+
+    // CON-08: makes the infinite run's turn due and fells its round boss, so the next chapter comes after its draft.
+    if (code === 'TURN' && this.runMode === 'infinite' && this.rules.infiniteRotation) {
+      this.chapterShownAt = this.elapsed - INFINITE_ROTATION.chapterSeconds;
+      for (const enemy of this.enemies) if (enemy.isBoss && enemy.boss?.role !== 'field') enemy.hp = 0;
+      return 'CHAPTER TURN';
     }
 
     // FX-03: ends the run as a defeat on the next step, to check the death moment.
@@ -1766,7 +1784,10 @@ export class GameEngine {
     this.stageCoinsEarned = 0;
     this.damageTakenTotal = 0;
     this.bossesDefeated = 0;
-    this.found = { enemies: new Set(), bosses: new Set(), terrain: new Set() };
+    this.found = { enemies: new Set(), bosses: new Set(), terrain: new Set(), chapters: new Set([this.chapter]) };
+    this.shownChapter = this.chapter;
+    this.chapterShownAt = 0;
+    this.chapterTurns = 0;
     this.damageBySkill = {};
     this.draftQueue = [];
     this.elapsed = 0;
@@ -2655,10 +2676,18 @@ export class GameEngine {
         }
       }
 
-      const activeBoss = this.enemies.some((enemy) => enemy.isBoss && enemy.hp > 0);
+      // A field boss is not a round boss: the round bosses keep coming while it lives (CON-08).
+      const activeBoss = this.enemies.some((enemy) => enemy.isBoss && enemy.hp > 0 && enemy.boss?.role !== 'field');
+      const rotation = this.rules.infiniteRotation;
       if (!activeBoss) {
+        // CON-08: a chapter that has lasted its time turns as its round boss falls, before the next one comes.
+        if (rotation && this.elapsed - this.chapterShownAt >= INFINITE_ROTATION.chapterSeconds) this.turnChapter();
         this.infiniteBossRespawnTimer = Math.max(0, this.infiniteBossRespawnTimer - dt);
         if (this.infiniteBossRespawnTimer <= 0) this.spawnInfiniteBoss();
+      }
+      if (rotation && this.elapsed - this.chapterShownAt >= INFINITE_ROTATION.fieldBossAt && !this.fieldBossMarks.has(this.chapterTurns)) {
+        this.fieldBossMarks.add(this.chapterTurns);
+        if (!this.enemies.some((enemy) => enemy.hp > 0 && enemy.boss?.role === 'field')) this.spawnInfiniteBoss(true);
       }
       return;
     }
@@ -2989,15 +3018,46 @@ export class GameEngine {
     this.emit({ type: 'boss/spawned', x, y, infinite: false });
   }
 
-  protected spawnInfiniteBoss() {
-    const pool = BOSS_ROUND_BOSSES.filter((boss) => boss.id !== this.previousInfiniteBossId);
-    const candidates = pool.length > 0 ? pool : BOSS_ROUND_BOSSES;
-    const def = candidates[Math.floor(this.gameplayRandom() * candidates.length)];
+  /**
+   * CON-08: turns the infinite run to the next chapter's look. The map stays where it is: blocks have the same
+   * footprints in every chapter, and pillars take the new chapter's about their centres, so outline and hit box agree.
+   */
+  protected turnChapter() {
+    this.shownChapter = (this.shownChapter % INFINITE_ROTATION.chapters) + 1;
+    this.chapterShownAt = this.elapsed;
+    this.chapterTurns += 1;
+    this.found.chapters.add(this.shownChapter);
+    const pillars = OBSTACLE_CATALOGUE[this.shownChapter]?.pillar;
+    for (const obstacle of this.obstacles) {
+      const size = pillars && obstacle.art?.startsWith('pillar') ? pillars[Number(obstacle.art.slice(6))] : undefined;
+      if (!size) continue;
+      obstacle.x += (obstacle.w - size[0]) / 2;
+      obstacle.y += (obstacle.h - size[1]) / 2;
+      [obstacle.w, obstacle.h] = size;
+    }
+    this.emit({ type: 'chapter/turned', chapter: this.shownChapter });
+    this.emitSnapshot(true);
+  }
+
+  /**
+   * The next round boss of an infinite run, or (CON-08) the field boss of the chapter on screen. With the rotation, the
+   * round bosses come from that chapter; a field boss stands at a share of a round boss before the boss-kill pressure.
+   */
+  protected spawnInfiniteBoss(field = false) {
+    let def: BossDef;
+    if (field) {
+      def = FIELD_BOSSES.find((boss) => boss.chapter === this.shownChapter) ?? FIELD_BOSSES[0];
+    } else {
+      const roster = this.rules.infiniteRotation ? BOSS_ROUND_BOSSES.filter((boss) => boss.chapter === this.shownChapter) : BOSS_ROUND_BOSSES;
+      const pool = roster.filter((boss) => boss.id !== this.previousInfiniteBossId);
+      const candidates = pool.length > 0 ? pool : roster;
+      def = candidates[Math.floor(this.gameplayRandom() * candidates.length)];
+    }
     const difficulty = infiniteDifficultyAt(this.elapsed, this.infiniteBossKills);
     const { x, y } = this.bossSpawnPoint(this.gameplayRandom() * Math.PI * 2);
     const patternHealth = 1 + (def.role === 'final' ? 0.12 : 0) + (def.chapter - 1) * 0.025;
     const patternDamage = 1 + (def.role === 'final' ? 0.08 : 0) + (def.chapter - 1) * 0.015;
-    const hp = INFINITE_BASELINE.bossHp * difficulty.bossHealthScale * patternHealth;
+    const hp = INFINITE_BASELINE.bossHp * (field ? difficulty.enemyHealthScale * INFINITE_ROTATION.fieldBossHp : difficulty.bossHealthScale) * patternHealth;
     const boss: Entity = {
       id: this.nextId(),
       x,
@@ -3006,13 +3066,13 @@ export class GameEngine {
       prevY: y,
       vx: 0,
       vy: 0,
-      radius: ENEMY_RADIUS.boss,
+      radius: field ? ENEMY_RADIUS.fieldBoss : ENEMY_RADIUS.boss,
       hp,
       maxHp: hp,
       speed: Math.min(178, def.speed * difficulty.enemySpeedScale),
-      damage: INFINITE_BASELINE.bossDamage * difficulty.bossDamageScale * patternDamage,
-      xp: 220 + this.infiniteBossKills * 18,
-      coin: 80 + this.infiniteBossKills * 6,
+      damage: INFINITE_BASELINE.bossDamage * (field ? difficulty.enemyDamageScale * INFINITE_ROTATION.fieldBossDamage : difficulty.bossDamageScale) * patternDamage,
+      xp: field ? 90 : 220 + this.infiniteBossKills * 18,
+      coin: field ? 24 + this.chapterTurns * 5 : 80 + this.infiniteBossKills * 6,
       tier: 'boss',
       variant: Math.floor(this.gameplayRandom() * 5),
       isBoss: true,
@@ -3035,8 +3095,10 @@ export class GameEngine {
       bossPhase: 1,
       bossPhaseFlash: 0,
     };
-    this.previousInfiniteBossId = def.id;
-    this.objectiveTarget = this.infiniteBossKills + 1;
+    if (!field) {
+      this.previousInfiniteBossId = def.id;
+      this.objectiveTarget = this.infiniteBossKills + 1;
+    }
     this.enemies.push(boss);
     this.emit({ type: 'boss/spawned', x, y, infinite: true });
   }
@@ -4685,12 +4747,14 @@ export class GameEngine {
     this.stageKills += 1;
     if (enemy.isBoss) this.bossesDefeated += 1;
     if (enemy.boss) this.found.bosses.add(enemy.boss.id);
-    else if (!enemy.isBoss) this.found.enemies.add(`${this.chapter}-${enemyRole(enemy.tier, enemy.attackStyle)}`);
+    else if (!enemy.isBoss) this.found.enemies.add(`${this.shownChapter}-${enemyRole(enemy.tier, enemy.attackStyle)}`);
     this.stageObjective?.onKill({ tier: enemy.tier, ranged: enemy.attackStyle === 'ranged', fieldBoss: enemy.isBoss && enemy.boss?.role === 'field' && !enemy.legacyBoss, elite: enemy.elite !== undefined });
     if (enemy.elite) this.eliteFalls(enemy);
     if (this.runMode === 'infinite') {
-      this.infiniteEventScore += infiniteKillScore(enemy.tier, this.elapsed, this.infiniteBossKills);
-      if (enemy.isBoss) {
+      // CON-08: a field boss scores on its own, without the round bosses' streak, and does not count as one.
+      const fieldBoss = enemy.boss?.role === 'field';
+      this.infiniteEventScore += infiniteKillScore(fieldBoss ? 'fieldBoss' : enemy.tier, this.elapsed, this.infiniteBossKills);
+      if (enemy.isBoss && !fieldBoss) {
         this.infiniteBossKills += 1;
         this.infiniteBossRespawnTimer = 2.4;
         this.objectiveTarget = this.infiniteBossKills + 1;
@@ -5046,7 +5110,7 @@ export class GameEngine {
       maxHp: this.player.stats.maxHp,
       enraged: this.bossEnraged,
       bossesDefeated: this.bossesDefeated,
-      found: { skills: Object.keys(this.skills), enemies: [...this.found.enemies], bosses: [...this.found.bosses], terrain: [...this.found.terrain] },
+      found: { skills: Object.keys(this.skills), enemies: [...this.found.enemies], bosses: [...this.found.bosses], terrain: [...this.found.terrain], chapters: [...this.found.chapters].map(String) },
       damageBySkill: { ...this.damageBySkill },
     };
   }
@@ -5119,7 +5183,9 @@ export class GameEngine {
   }
 
   protected buildHudSnapshot(): HudSnapshot {
-    const boss = this.enemies.find((enemy) => enemy.isBoss && !enemy.legacyBoss && (this.kind !== 'normal' || enemy.boss?.role === 'field'));
+    // The bar shows the stage's boss; an infinite run's round boss before a field boss beside it (CON-08).
+    const boss = (this.runMode === 'infinite' ? this.enemies.find((enemy) => enemy.isBoss && enemy.boss?.role !== 'field') : undefined)
+      ?? this.enemies.find((enemy) => enemy.isBoss && !enemy.legacyBoss && (this.kind !== 'normal' || enemy.boss?.role === 'field'));
     const bossMove = boss ? this.activeBossPhaseMove(boss) : undefined;
     const activeEffects: ActiveStatusEffect[] = [
       ...(this.player.invuln > 0 ? [{ id: 'invulnerable', kind: 'buff' as const, label: 'effect.invulnerable' as const, remaining: this.player.invuln }] : []),
@@ -5133,10 +5199,14 @@ export class GameEngine {
     const infiniteDifficulty = this.runMode === 'infinite'
       ? infiniteDifficultyAt(this.elapsed, this.infiniteBossKills)
       : null;
+    const turnDue = this.runMode === 'infinite' && this.rules.infiniteRotation
+      && this.elapsed - this.chapterShownAt >= INFINITE_ROTATION.chapterSeconds - INFINITE_ROTATION.preloadSeconds;
     return {
       runMode: this.runMode,
       seed: this.runSeed,
       chapter: this.chapter,
+      lookChapter: this.shownChapter,
+      nextLookChapter: turnDue ? (this.shownChapter % INFINITE_ROTATION.chapters) + 1 : null,
       stage: this.stage,
       stageKind: this.kind,
       objective: this.objective,
@@ -5212,7 +5282,7 @@ export class GameEngine {
       alpha,
       view: { width: this.viewW, height: this.viewH, dpr: this.dpr, frame: this.viewFrame() },
       worldSize: WORLD_SIZE,
-      chapter: this.chapter,
+      chapter: this.shownChapter,
       elapsed: this.elapsed,
       paused: this.paused,
       bossEnraged: this.bossEnraged,

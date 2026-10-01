@@ -3,11 +3,15 @@ import test from 'node:test';
 import {
   INFINITE_BALANCE_TARGET,
   INFINITE_BOSS_KILL_PRESSURE,
+  dailySeed,
+  dailySeedKey,
   estimateBossExposureSeconds,
   infiniteDifficultyAt,
   infiniteKillScore,
   infiniteScoreWithSurvival,
   logarithmicBossKillBonus,
+  weeklySeed,
+  weeklySeedKey,
 } from './infiniteMode.ts';
 
 test('infinite difficulty starts at the stage 5 mid-boss baseline and rises monotonically', () => {
@@ -55,4 +59,20 @@ test('infinite score rewards survival, enemy weight, time pressure, and boss str
   assert.ok(infiniteKillScore('medium', 0) > infiniteKillScore('small', 0));
   assert.ok(infiniteKillScore('boss', 1_800, 4) > infiniteKillScore('boss', 0, 0));
   assert.equal(infiniteScoreWithSurvival(2_500, 30), 2_800);
+  // CON-08: a field boss pays less than a round boss and has no streak.
+  assert.equal(infiniteKillScore('fieldBoss', 0, 9), 900);
+  assert.ok(infiniteKillScore('fieldBoss', 900) < infiniteKillScore('boss', 900));
+});
+
+test('the date seeds follow the local calendar day and the ISO week', () => {
+  assert.equal(dailySeedKey(new Date(2026, 9, 1, 23, 59)), '2026-10-01');
+  for (const [[year, month, day], week] of [
+    [[2026, 9, 1], '2026-W40'], [[2026, 8, 28], '2026-W40'], [[2026, 9, 4], '2026-W40'], [[2026, 9, 5], '2026-W41'],
+    [[2027, 0, 1], '2026-W53'], [[2021, 0, 3], '2020-W53'], [[2021, 0, 4], '2021-W01'], [[2024, 11, 30], '2025-W01'],
+  ] as const) {
+    assert.equal(weeklySeedKey(new Date(year, month, day)), week, `${year}-${month + 1}-${day}`);
+  }
+  const seeds = [dailySeed(new Date(2026, 9, 1)), dailySeed(new Date(2026, 9, 2)), weeklySeed(new Date(2026, 9, 1))];
+  assert.equal(new Set(seeds).size, 3);
+  assert.ok(seeds.every((seed) => Number.isInteger(seed) && seed > 0 && seed <= 0xffff_ffff));
 });

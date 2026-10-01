@@ -24,6 +24,8 @@ export const PRODUCTION_BANNED_MARKERS = Object.freeze([
   'PLAYER DOWN',
   // The SYS-08 build depth playtest switch.
   'BUILD DEPTH ON',
+  // The CON-08 chapter turn for endless playtests.
+  'CHAPTER TURN',
   // Fault injection for the error-resilience probes (TEC-14).
   'LOOP FAULT ARMED',
   'UI FAULT ARMED',

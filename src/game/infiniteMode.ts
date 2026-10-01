@@ -1,4 +1,4 @@
-export type InfiniteEnemyTier = 'small' | 'medium' | 'large' | 'boss';
+export type InfiniteEnemyTier = 'small' | 'medium' | 'large' | 'boss' | 'fieldBoss';
 
 export type InfiniteDifficulty = {
   minute: number;
@@ -34,6 +34,23 @@ export const INFINITE_BOSS_KILL_PRESSURE = Object.freeze({
   curve: 0.004,
   maxHealthBonus: 10,
   maxDamageBonus: 5,
+});
+
+/**
+ * CON-08 (infiniteRotation rule): the infinite run's turn through the chapters. Once a chapter has lasted
+ * `chapterSeconds`, the next round boss to fall turns the run to the next chapter. `fieldBossAt` seconds into each
+ * chapter its field boss comes, with `fieldBossHp` of a round boss's health and `fieldBossDamage` of its damage at
+ * that minute, before the boss-kill pressure (a campaign field boss is about that share of its stage's round boss).
+ * It is not a round boss: the round bosses keep coming while it lives, and its kill scores without the boss streak.
+ * The app loads the next chapter's art `preloadSeconds` before the turn is due.
+ */
+export const INFINITE_ROTATION = Object.freeze({
+  chapters: 5,
+  chapterSeconds: 300,
+  fieldBossAt: 150,
+  fieldBossHp: 0.45,
+  fieldBossDamage: 0.87,
+  preloadSeconds: 20,
 });
 
 function finiteNonNegative(value: number) {
@@ -79,7 +96,7 @@ export function infiniteDifficultyAt(elapsedSeconds: number, bossKills = 0): Inf
 }
 
 export function infiniteKillScore(tier: InfiniteEnemyTier, elapsedSeconds: number, bossKillsBefore = 0) {
-  const base = tier === 'small' ? 30 : tier === 'medium' ? 75 : tier === 'large' ? 180 : 2_500;
+  const base = tier === 'small' ? 30 : tier === 'medium' ? 75 : tier === 'large' ? 180 : tier === 'fieldBoss' ? 900 : 2_500;
   const timeMultiplier = 1 + Math.min(2.5, finiteNonNegative(elapsedSeconds) / 1_800);
   const streak = tier === 'boss' ? Math.floor(finiteNonNegative(bossKillsBefore)) * 225 : 0;
   return Math.floor(base * timeMultiplier + streak);
@@ -100,3 +117,32 @@ export function estimateBossExposureSeconds(
   const hitsToDefeat = Math.ceil(finiteNonNegative(hp) / effectiveHit);
   return hitsToDefeat * INFINITE_BALANCE_TARGET.directHitInvulnerability;
 }
+
+/** FNV-1a over a text: a 32-bit seed, never 0. */
+function textSeed(value: string) {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) hash = Math.imul(hash ^ value.charCodeAt(index), 0x01000193) >>> 0;
+  return hash || 1;
+}
+
+const pad = (value: number) => String(value).padStart(2, '0');
+
+/** CON-08: the local calendar day a date falls on, as 2026-10-01. */
+export function dailySeedKey(date: Date) {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/** CON-08: the ISO week (Monday first, week 1 holds 4 January) a local date falls in, as 2026-W40. */
+export function weeklySeedKey(date: Date) {
+  const thursday = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 3 - ((date.getDay() + 6) % 7));
+  const firstWeek = new Date(thursday.getFullYear(), 0, 4);
+  const week = 1 + Math.round(((thursday.getTime() - firstWeek.getTime()) / 86_400_000 - 3 + ((firstWeek.getDay() + 6) % 7)) / 7);
+  return `${thursday.getFullYear()}-W${pad(week)}`;
+}
+
+/**
+ * CON-08: the challenge seeds of the day and of the week, worked out from the date alone, so every player gets the
+ * same run on the same day without a server. Their outcomes are pinned by test/rotation.integration.test.mjs (G14).
+ */
+export const dailySeed = (date: Date) => textSeed(`blackline:daily:${dailySeedKey(date)}`);
+export const weeklySeed = (date: Date) => textSeed(`blackline:weekly:${weeklySeedKey(date)}`);

@@ -100,7 +100,7 @@ function recordResult(profile: ProfileData, result: Settlement) {
     result.runMode === 'campaign' ? recordStageResult(profile, { ...result, bonus: result.bonus?.met ?? false, assisted: result.assisted }) : profile,
     { ...result, bossKills: result.bossesDefeated },
   );
-  return recordCodex(recorded, { ...result.found, chapters: [String(result.chapter)] });
+  return recordCodex(recorded, result.found);
 }
 
 function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
@@ -196,14 +196,23 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   // Atlas packs (ART-07): the common pack and the pack of the chapter on screen stay resident, and the other chapters
   // are released, so textures keep to their budget. The menu loads the selected chapter ahead of its run.
   const artChapter = phase === 'menu' ? selectedChapterId : runChapter;
+  // CON-08: an infinite run turns through the chapters; the next one's pack loads as its turn comes due.
+  const lookChapter = phase === 'menu' ? null : snapshot?.lookChapter ?? null;
+  const nextArtChapter = phase === 'menu' ? null : snapshot?.nextLookChapter ?? null;
   const reportedPacks = useRef(new Set<string>());
+  useEffect(() => {
+    if (lookChapter === null) return;
+    setRunChapter(lookChapter);
+    appMixer.ambience(`ambience.ch${Math.min(5, Math.max(1, lookChapter)) as 1 | 2 | 3 | 4 | 5}`);
+  }, [lookChapter]);
   useEffect(() => {
     let cancelled = false;
     // Cleared while the packs load, so checks that wait for ready or fallback wait for this chapter's packs.
     delete document.documentElement.dataset.sprites;
     const chapterPack = CHAPTER_PACKS[artChapter];
-    for (const pack of Object.values(CHAPTER_PACKS)) if (pack !== chapterPack) spriteAtlas.release(pack);
-    const packs = chapterPack ? [COMMON_PACK, chapterPack] : [COMMON_PACK];
+    const nextPack = nextArtChapter === null ? undefined : CHAPTER_PACKS[nextArtChapter];
+    for (const pack of Object.values(CHAPTER_PACKS)) if (pack !== chapterPack && pack !== nextPack) spriteAtlas.release(pack);
+    const packs = [COMMON_PACK, chapterPack, nextPack].filter((pack): pack is string => pack !== undefined);
     void Promise.all(packs.map((pack) => spriteAtlas.load(pack))).then((loaded) => {
       if (cancelled) return;
       const ready = loaded.every(Boolean);
@@ -219,7 +228,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     return () => {
       cancelled = true;
     };
-  }, [artChapter, errorLog, spriteAtlas]);
+  }, [artChapter, nextArtChapter, errorLog, spriteAtlas]);
 
   useEffect(() => errorLog.subscribe((entry) => {
     if (entry.source === 'window' || entry.source === 'promise') setNotice('error');

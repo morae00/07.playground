@@ -130,6 +130,20 @@ export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen,
     };
     // A card per landmark stage started; the stage key brings it back on a retry.
   }, [landmark, stageKey]);
+  // CON-08: an infinite run's turn to the next chapter shows the chapter's name card.
+  const [chapterCard, setChapterCard] = useState<number | null>(null);
+  const lookChapter = snapshot.lookChapter;
+  const lastLook = useRef(lookChapter);
+  useEffect(() => {
+    if (lastLook.current === lookChapter) return undefined;
+    lastLook.current = lookChapter;
+    setChapterCard(lookChapter);
+    const timer = window.setTimeout(() => setChapterCard(null), LANDMARK_CARD_MS);
+    return () => {
+      window.clearTimeout(timer);
+      setChapterCard(null);
+    };
+  }, [lookChapter]);
   const bonus = snapshot.bonus;
   const low = snapshot.hp > 0 && snapshot.hp <= snapshot.maxHp * LOW_HEALTH_RATIO;
   const face = performance.now() - hurtAt < HURT_FACE_MS
@@ -145,7 +159,7 @@ export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen,
       {playing && (
         <p className="srOnly" id="game-state-summary">
           {infinite
-            ? t('hud.summary.infinite', { time: formatClock(snapshot.elapsed), score: snapshot.score, bosses: snapshot.bossKills })
+            ? t('hud.summary.infinite', { chapter: lookChapter, time: formatClock(snapshot.elapsed), score: snapshot.score, bosses: snapshot.bossKills })
             : t('hud.summary.campaign', { chapter: snapshot.chapter, stage: snapshot.stage, time: formatClock(snapshot.timeLeft) })}
           {' '}{t('hud.summary.health', { hp: Math.ceil(snapshot.hp), max: Math.ceil(snapshot.maxHp) })}
           {' '}{t('hud.summary.pause')} {runPaused ? t('hud.summary.paused') : ''}
@@ -161,7 +175,7 @@ export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen,
           <div className="heroBody">
             <div className="heroLine">
               <strong>{infinite
-                ? t('hud.infiniteLine', { rank: snapshot.dangerRank })
+                ? t('hud.infiniteLine', { chapter: lookChapter, rank: snapshot.dangerRank })
                 : `${t('stage.address', { chapter: snapshot.chapter, stage: snapshot.stage })} · ${t(`hud.kind.${snapshot.stageKind}`)}${snapshot.practice ? ` · ${t('hud.practice')}` : ''}`}</strong>
               <span>{t('hud.nextLevel', { pct: Math.floor((snapshot.xp / Math.max(1, snapshot.nextXp)) * 100) })}</span>
             </div>
@@ -210,6 +224,12 @@ export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen,
         </section>
       </div>
       {bossName && <BossBar snapshot={snapshot} name={bossName} />}
+      {chapterCard && !intro && (
+        <div className="bossIntro landmarkIntro" role="status" aria-live="polite">
+          <strong>{t('chapter.name', { n: chapterCard, theme: t(`chapter.${chapterCard as 1 | 2 | 3 | 4 | 5}`) })}</strong>
+          <p>{t('hud.chapterTurn')}</p>
+        </div>
+      )}
       {landmarkCard && !intro && (
         <div className="bossIntro landmarkIntro" role="status" aria-live="polite">
           <strong>{landmarkCard.name}</strong>

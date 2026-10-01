@@ -11,6 +11,7 @@ export { SpriteAtlas } from '../game/render/assets/spriteAtlas';
 export { ATLAS_MANIFEST } from '../game/render/assets/atlasManifest.generated';
 export { DISABLED_SLOTS } from '../game/render/assets/slots';
 export { OBSTACLE_CATALOGUE } from '../game/obstacleCatalogue';
+export { INFINITE_ROTATION, dailySeed, infiniteKillScore, weeklySeed } from '../game/infiniteMode';
 export { settlementNotes } from '../ui/settlementNotes';
 export { installStrings, t, tp, tx } from '../i18n/strings';
 export { STAGE_PATH, chapterCleared, passiveEffect, smoothPath, stageBoss, stageRewardFloor, stageStatus, upgradeEffect } from '../ui/menuStage';

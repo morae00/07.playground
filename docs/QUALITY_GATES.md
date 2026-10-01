@@ -296,9 +296,24 @@ The second set adds tokens and compares slot counts, all with XP 0.6 / 0.1. The 
 - With the experiment on, the Ch3-4 step (+29) passes the R3 gate of ±25 points. Ch3 is the bots' valley either way. Turning the experiment on needs that step closed, or a playtest showing it is the walk and not the stage **[Team decision]**.
 - `scripts/lib/full-balance-runner.mjs` now records each run's awakenings, fusions, run level, and the cards and bonus cards offered in the stage's second half. The personas take fusion cards first.
 
+CON-08 (the endless rotation, `infiniteRotation` rule) was measured with `npm run test:balance:infinite`: the striker's picks and square walk, six seeds, at most 30 minutes of frames. `max` is the test fixture's full build (passives 5 / 5 / 5) and `mid` has half its upgrades and passives. The rotation off is `BALANCE_RULE_PATCH='{"infiniteRotation":false}'`:
+
+| | max, off | max, rotation | mid, off | mid, rotation |
+|---|---:|---:|---:|---:|
+| survival p50 (simulated s) | 1,758 | 1,750 | 1,487 | 1,574 |
+| runs that died before the cap | 1 of 6 | 2 of 6 | 5 of 6 | 5 of 6 |
+| round bosses defeated p50 | 162 | 196 | 76 | 84 |
+| score p50 | 4,568,976 | 6,019,020 | 1,627,937 | 1,915,807 |
+| chapter turns, field bosses per run | 0, 0 | 5, 6 | 0, 0 | 3-5, 3-6 |
+
+- Survival barely moves. Round bosses fall 11-21% more often, so scores rise 18-32%: each chapter's first minutes bring its own two bosses instead of any of the ten, and Ch1's fall fastest. The board keeps v2 records apart from v1, so the shift never mixes with old records.
+- Every field boss fell. They add a side target and a bounty, not a wall.
+
 ## Game rules and grammar
 
 Gameplay changes ship behind the rule set in `src/game/rules.ts`. `classic` reproduces 0.1.0 exactly and `remaster` is the default. Infinite-mode records and replay fixtures are kept per rules version: the remaster rules (v2) may change freely until a build ships them, and after that the first change to seeded outcomes must raise `RULES_VERSION`. `test/grammarContracts.integration.test.mjs` pins the preserved game grammar (stage structure, draft sizes, radii, tier mix, deterministic replay) and one regression test per R0 gameplay fix.
+
+CON-08 changes the remaster infinite run's seeded outcomes, under v2 because no build has shipped it. `test/rotation.integration.test.mjs` pins the daily and weekly seeds of 2026-10-01, so a later build cannot hand players a different day's run, and replays a scripted daily run (a field boss and a chapter turn) in another window and with other options to the same state (G14). Classic fingerprints, the remaster campaign fingerprints, and every draw fingerprint stayed the same; the remaster infinite fingerprint changed, because its first round boss now comes from Ch1.
 
 The stage objectives (CON-03) are G9's one stage exception: a stage may move one tier's share by 15 points at most, and the crossfire stages raise the ranged cap up to 6. The stage card states every change, and `test/objectives.integration.test.mjs` pins the moved mixes, the cap, and the field boss marks (G8).
 

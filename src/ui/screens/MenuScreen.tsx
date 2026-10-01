@@ -9,6 +9,7 @@ import type { ChapterId } from '../../content/schema';
 import { formatCount, formatDate, t, tx } from '../../i18n/strings';
 import { DEVELOPER_UI_AVAILABLE, DEVELOPER_UI_DEFAULT_ENABLED } from '../../platform/developerAccess';
 import { RULES_VERSION } from '../../game/rules';
+import { dailySeed, dailySeedKey, weeklySeed, weeklySeedKey } from '../../game/infiniteMode';
 import { BOSS_SLOTS } from '../../game/render/assets/slots';
 import type { InfiniteScoreEntry } from '../../platform/infiniteLeaderboard';
 import type { CosmeticId } from '../../content/data/cosmetics';
@@ -355,6 +356,12 @@ function GrowthView({ meta, visibleStats, buyMetaUpgrade, buyPassive }: Pick<Men
 type InfiniteProps = Pick<MenuScreenProps, 'developerAccess' | 'infinitePlayerName' | 'setInfinitePlayerName' | 'onPlayerNameBlur' | 'infiniteSeed' | 'setInfiniteSeed' | 'startInfiniteRun' | 'leaderboardStatus' | 'infiniteEntries' | 'legacyEntries'>;
 
 function InfiniteView({ developerAccess, infinitePlayerName, setInfinitePlayerName, onPlayerNameBlur, infiniteSeed, setInfiniteSeed, startInfiniteRun, leaderboardStatus, infiniteEntries, legacyEntries }: InfiniteProps) {
+  // CON-08: the challenge seeds of today and of this week, from the local date alone.
+  const today = new Date();
+  const presets = [
+    { label: t('infinite.daily'), key: dailySeedKey(today), seed: dailySeed(today), tag: t('board.daily') },
+    { label: t('infinite.weekly'), key: weeklySeedKey(today), seed: weeklySeed(today), tag: t('board.weekly') },
+  ];
   return (
     <>
       <header className="infiniteHeader">
@@ -365,6 +372,7 @@ function InfiniteView({ developerAccess, infinitePlayerName, setInfinitePlayerNa
         <div className="infiniteModeFacts" aria-label={t('infinite.rules')}>
           <div><span>{t('infinite.start')}</span><b>{t('infinite.startValue')}</b></div>
           <div><span>{t('infinite.boss')}</span><b>{t('infinite.bossValue')}</b></div>
+          <div><span>{t('infinite.rotation')}</span><b>{t('infinite.rotationValue')}</b></div>
           <div><span>{t('infinite.limit')}</span><b>{t('infinite.limitValue')}</b></div>
         </div>
       </header>
@@ -379,6 +387,14 @@ function InfiniteView({ developerAccess, infinitePlayerName, setInfinitePlayerNa
           <input value={infiniteSeed} inputMode="numeric" maxLength={10} placeholder={t('infinite.seedEmpty')} onChange={(event) => setInfiniteSeed(event.target.value.replace(/\D/g, '').slice(0, 10))} />
         </label>
         <button className="primary launch" type="button" onClick={startInfiniteRun}>{t('infinite.go')}</button>
+        <div className="seedPresets" role="group" aria-label={t('infinite.presets')}>
+          <span>{t('infinite.presets')}</span>
+          {presets.map((preset) => (
+            <button className="ghost small" type="button" aria-pressed={infiniteSeed === String(preset.seed)} onClick={() => setInfiniteSeed(String(preset.seed))} key={preset.key}>
+              {preset.label}<small>{preset.key}</small>
+            </button>
+          ))}
+        </div>
       </div>
       {DEVELOPER_UI_AVAILABLE && developerAccess && <div className="recordWarning">개발자 모드 Run은 경쟁 기록에서 제외됩니다.</div>}
       {leaderboardStatus && <div className="leaderboardStatus" role="status" aria-live="polite">{leaderboardStatus}</div>}
@@ -405,7 +421,10 @@ function InfiniteView({ developerAccess, infinitePlayerName, setInfinitePlayerNa
                     <td><b>{formatCount(entry.score)}</b></td>
                     <td>{formatClock(entry.survivedSeconds)}</td>
                     <td>{entry.bosses}</td>
-                    <td><button className="ghost small seedChallenge" type="button" aria-label={t('board.challenge', { seed: entry.seed })} onClick={() => setInfiniteSeed(String(entry.seed))}>{entry.seed}</button></td>
+                    <td>
+                      <button className="ghost small seedChallenge" type="button" aria-label={t('board.challenge', { seed: entry.seed })} onClick={() => setInfiniteSeed(String(entry.seed))}>{entry.seed}</button>
+                      {presets.filter((preset) => preset.seed === entry.seed).slice(0, 1).map((preset) => <small className="seedTag" key={preset.key}>{preset.tag}</small>)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
