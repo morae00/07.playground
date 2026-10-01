@@ -11,7 +11,7 @@ import { DEVELOPER_UI_AVAILABLE, DEVELOPER_UI_DEFAULT_ENABLED } from '../../plat
 import { RULES_VERSION } from '../../game/rules';
 import { BOSS_SLOTS } from '../../game/render/assets/slots';
 import type { InfiniteScoreEntry } from '../../platform/infiniteLeaderboard';
-import type { GameOptions, MetaState, MetaUpgradeId, PassiveId, StageRecord } from '../../platform/save';
+import { stageStars, type GameOptions, type MetaState, type MetaUpgradeId, type PassiveId, type StageRecord } from '../../platform/save';
 import {
   CHAPTERS,
   META_PASSIVES,
@@ -88,6 +88,10 @@ export type MenuScreenProps = {
 const NAV: readonly MenuView[] = ['play', 'infinite', 'growth', 'settings'];
 
 type PlayProps = Pick<MenuScreenProps, 'meta' | 'records' | 'developerAccess' | 'developerMode' | 'setDeveloperMode' | 'options' | 'selectedChapterId' | 'setSelectedChapterId' | 'selectedStageNo' | 'setSelectedStageNo' | 'selectedChapter' | 'selectedStage' | 'selectedStageLocked' | 'visibleStats' | 'startRun' | 'setMenuView' | 'cheatCode' | 'setCheatCode' | 'cheatMessage' | 'applyCheat'>;
+
+/** CON-07: the stars' names: the clear, a normal stage's bonus goal, the low-damage clear, and a boss stage's swift clear. */
+const STAR_LABELS = ['star.clear', 'star.bonus', 'star.lowDamage', 'star.swift'] as const;
+const starCount = (record: StageRecord | undefined) => stageStars(record).filter(Boolean).length;
 
 function PlayView({ meta, records, developerAccess, developerMode, setDeveloperMode, options, selectedChapterId, setSelectedChapterId, selectedStageNo, setSelectedStageNo, selectedChapter, selectedStage, selectedStageLocked, visibleStats, startRun, setMenuView, cheatCode, setCheatCode, cheatMessage, applyCheat }: PlayProps) {
   const chapter = selectedChapter.id;
@@ -176,7 +180,7 @@ function PlayView({ meta, records, developerAccess, developerMode, setDeveloperM
               {stageBossDef && <em className="nodeCaption">{t('menu.bossNode', { n: item.id, boss: t(stageBossDef.name) })}</em>}
               {status === 'current' && <em className="nodeCaption nowCaption">{t('menu.current')}</em>}
               {status === 'cleared' && <i className="nodeSeal" aria-label={t('menu.cleared')} />}
-              {records[`${chapter}-${item.id}`]?.bonus && <i className="nodeStar" role="img" aria-label={t('menu.bonusMet')}>★</i>}
+              {starCount(records[`${chapter}-${item.id}`]) > 0 && <i className="nodeStar" role="img" aria-label={t('menu.starsLabel', { n: starCount(records[`${chapter}-${item.id}`]) })}>{'★'.repeat(starCount(records[`${chapter}-${item.id}`]))}</i>}
               {locked && <span className="srOnly" id={reasonId}>{t('menu.stageLocked')}</span>}
             </button>
           );
@@ -215,8 +219,23 @@ function PlayView({ meta, records, developerAccess, developerMode, setDeveloperM
               </div>
             )}
             <div>
+              <dt>{t('menu.stars')}</dt>
+              <dd className="stageStars">
+                {stageStars(record).map((on, index) => {
+                  const label = t(STAR_LABELS[index === 1 && selectedStage.kind !== 'normal' ? 3 : index]);
+                  return <span className={on ? 'on' : undefined} title={label} key={index}>{on ? '★' : '☆'}<span className="srOnly">{t(on ? 'menu.starOn' : 'menu.starOff', { star: label })}</span></span>;
+                })}
+              </dd>
+            </div>
+            <div>
               <dt>{t('menu.best')}</dt>
-              <dd>{record && record.bestClearSeconds !== null ? t('menu.bestValue', { time: formatClock(record.bestClearSeconds), kills: record.bestKills }) : '—'}{record?.assisted && <span className="assistTag">{t('menu.bestAssisted')}</span>}</dd>
+              <dd>
+                {record && record.bestClearSeconds !== null
+                  ? t('menu.bestValue', { time: formatClock(record.bestClearSeconds), kills: record.bestKills })
+                  : record ? t('menu.bestSurvival', { time: formatClock(record.bestSurvivalSeconds), kills: record.bestKills }) : '—'}
+                {record?.noHit && <span className="assistTag">{t('menu.noHit')}</span>}
+                {record?.assisted && <span className="assistTag">{t('menu.bestAssisted')}</span>}
+              </dd>
             </div>
           </dl>
           <div className="stageActions">

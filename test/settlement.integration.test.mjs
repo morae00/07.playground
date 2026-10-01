@@ -55,7 +55,7 @@ test('UI-05: a settlement carries the gold parts, the damage per skill, the leve
 test('UI-05: settlement notes flag new stage records, the stage a clear opens, and the account level the XP reaches', () => {
   const meta = { ...maxMeta(), level: 3, xp: 0, progress: { chapter: 1, stage: 3 } };
   const result = { runMode: 'campaign', practice: false, cleared: true, chapter: 1, stage: 3, kills: 90, clearSeconds: 280, xp: 10 };
-  assert.deepEqual(settlementNotes(result, undefined, meta, true), { newKills: false, newTime: false, unlocked: { chapter: 1, stage: 4 }, levelUp: null, passivePoints: 0 }, 'a first attempt has no record to beat, and its clear opens 1-4');
+  assert.deepEqual(settlementNotes(result, undefined, meta, true), { newKills: false, newTime: false, unlocked: { chapter: 1, stage: 4 }, levelUp: null, passivePoints: 0, stars: [true, false, false], newStars: 1 }, 'a first attempt has no record to beat, and its clear opens 1-4');
   const record = { attempts: 2, clears: 1, bestKills: 80, bestClearSeconds: 300 };
   const beaten = settlementNotes(result, record, meta, true);
   assert.equal(beaten.newKills, true);
@@ -68,4 +68,46 @@ test('UI-05: settlement notes flag new stage records, the stage a clear opens, a
   assert.deepEqual(settlementNotes({ ...result, stage: 10 }, record, { ...meta, progress: { chapter: 1, stage: 10 } }, true).unlocked, { chapter: 2, stage: 1 }, 'the last stage of a chapter opens the next chapter');
   const levelled = settlementNotes({ ...result, xp: 100_000 }, record, meta, true);
   assert.ok(levelled.levelUp > 3 && levelled.passivePoints === levelled.levelUp - 3, 'enough XP lifts the account level');
+  // CON-07: the stars the stage holds once the result counts, and how many it adds.
+  const starred = settlementNotes({ ...result, damageTaken: 10, maxHp: 300, bonus: { goal: { key: 'bonus.goal.small', params: { n: 1 } }, met: true } }, record, meta, true);
+  assert.deepEqual([starred.stars, starred.newStars], [[true, true, true], 2]);
+  assert.deepEqual([settlementNotes({ ...result, practice: true }, record, meta, true).stars, settlementNotes({ ...result, runMode: 'infinite' }, record, meta, true).newStars], [null, 0]);
+});
+
+test('CON-07: a settlement says the stage kind, the max health, whether a boss enraged, and how many bosses fell', async () => {
+  const { engine, settlement } = playedStage();
+  try {
+    assert.equal(settlement.stageKind, 'normal');
+    assert.ok(settlement.maxHp > 0);
+    assert.equal(settlement.enraged, false);
+    assert.equal(settlement.bossesDefeated, 0);
+  } finally {
+    engine.dispose();
+  }
+  const settlements = [];
+  // The boss's reward draft comes first; it is picked at once.
+  const boss = new ProbedGameEngine(createHeadlessCanvas(1440, 900), maxMeta(), standardOptions(), {
+    onSnapshot() {},
+    onDraft(draft) { queueMicrotask(() => boss.completeDraft(draft.cards[0], draft.id)); },
+    onRoundClear(result) { settlements.push(result); },
+    onGameOver(result) { settlements.push(result); },
+  });
+  try {
+    boss.setRuleSet('remaster');
+    boss.startRun(1, 5, 77);
+    boss.probe.setGodMode();
+    boss.probe.haltSpawns();
+    boss.probe.clear('enemies');
+    const id = boss.probe.spawnBoss('mid', { hp: 1 });
+    boss.probe.setSkills({ chainSpark: { level: 5 } });
+    for (let frame = 0; frame < 600 && settlements.length === 0; frame += 1) {
+      boss.probe.step(1);
+      await Promise.resolve();
+    }
+    const [result] = settlements;
+    assert.ok(result && result.cleared, `the mid boss stage clears (${id})`);
+    assert.deepEqual([result.stageKind, result.enraged, result.bossesDefeated], ['midBoss', false, 1]);
+  } finally {
+    boss.dispose();
+  }
 });

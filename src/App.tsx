@@ -12,6 +12,7 @@ import {
   createDefaultMeta,
   createDefaultProfile,
   loadGameSave,
+  recordCareer,
   recordStageResult,
   saveGameSave,
   type GameOptions,
@@ -78,6 +79,14 @@ void fetch('assets/packs/sfx-common/pack.json')
   .then((pack: SoundPack | null) => pack && appMixer.loadPack(pack), () => undefined);
 /** The death moment (FX-03): the canvas shows the fall this long before the settlement opens. */
 const DEATH_MOMENT_MS = 700;
+
+/** A result folds into the stage record (campaign) and the career totals (CON-07). */
+function recordResult(profile: ProfileData, result: Settlement) {
+  return recordCareer(
+    result.runMode === 'campaign' ? recordStageResult(profile, { ...result, bonus: result.bonus?.met ?? false, assisted: result.assisted }) : profile,
+    { ...result, bossKills: result.bossesDefeated },
+  );
+}
 
 function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -380,7 +389,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         const unlockProgress = !developerAccess && !result.practice;
         setNotes(settlementNotes(result, profileRef.current.stageRecords[`${result.chapter}-${result.stage}`], metaRef.current, unlockProgress));
         setSettlement(result);
-        setProfile((prev) => ({ ...(result.runMode === 'campaign' ? recordStageResult(prev, { ...result, bonus: result.bonus?.met ?? false, assisted: result.assisted }) : prev), runSuspend: null }));
+        setProfile((prev) => ({ ...recordResult(prev, result), runSuspend: null }));
         grantSettlement(result, unlockProgress);
         setPhase('roundClear');
       },
@@ -389,7 +398,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         setRunPaused(false);
         setNotes(settlementNotes(result, profileRef.current.stageRecords[`${result.chapter}-${result.stage}`], metaRef.current, false));
         setSettlement(result);
-        setProfile((prev) => ({ ...(result.runMode === 'campaign' ? recordStageResult(prev, { ...result, bonus: result.bonus?.met ?? false, assisted: result.assisted }) : prev), runSuspend: null }));
+        setProfile((prev) => ({ ...recordResult(prev, result), runSuspend: null }));
         if (result.runMode === 'infinite') setInfiniteSeed(String(result.seed));
         grantSettlement(result, false);
         recordInfiniteSettlement(result);

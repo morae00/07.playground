@@ -1,4 +1,4 @@
-// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, TEC-15, CON-02, CON-04, SYS-08, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-05, UI-07, UI-09) against the developer build.
+// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, TEC-15, CON-02, CON-04, CON-07, SYS-08, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-05, UI-07, UI-09) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -521,6 +521,35 @@ try {
     const after = await diagnostics(page);
     const same = before && after && before.elapsed === after.elapsed && before.player.x === after.player.x && before.player.y === after.player.y && before.player.hp === after.player.hp && before.enemies === after.enemies;
     record('CON-04 resuming lands on the same state, paused', Boolean(same) && after.paused, `elapsed ${before?.elapsed} -> ${after?.elapsed}, player ${before?.player.x.toFixed(1)},${before?.player.y.toFixed(1)} -> ${after?.player.x.toFixed(1)},${after?.player.y.toFixed(1)}, enemies ${before?.enemies} -> ${after?.enemies}`);
+    await page.close();
+  });
+
+  await probe('CON-07', async () => {
+    // Stage records: three stars on a node and in the stage detail, and the longest run of a stage not yet cleared.
+    const page = await browser.newPage({ viewport: { width: 1024, height: 720 } });
+    await page.goto('http://127.0.0.1:5177/');
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    await page.evaluate(() => {
+      const key = 'blackline-survivor-save-v2';
+      const save = JSON.parse(localStorage.getItem(key));
+      save.meta.progress = { chapter: 1, stage: 6 };
+      save.profile.stageRecords = {
+        '1-4': { attempts: 2, clears: 1, bestKills: 300, bestClearSeconds: 470, bonus: true, assisted: false, bestSurvivalSeconds: 480, noHit: false, lowDamage: true, swift: false },
+        '1-5': { attempts: 1, clears: 0, bestKills: 120, bestClearSeconds: null, bonus: false, assisted: false, bestSurvivalSeconds: 192, noHit: false, lowDamage: false, swift: false },
+      };
+      localStorage.setItem(key, JSON.stringify(save));
+    });
+    await page.reload();
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    const node = await page.locator('.stageNode').nth(3).locator('.nodeStar').innerText().catch(() => '');
+    await page.locator('.stageNode').nth(3).click();
+    const stars = await page.locator('.stageStars span.on').count();
+    record('CON-07 a stage with all three stars shows them on its node and in its detail', node === '★★★' && stars === 3, `node ${node || 'none'}, detail ${stars}`);
+    await page.locator('.stageNode').nth(4).click();
+    const best = await page.locator('.stageFacts').innerText();
+    record('CON-07 a stage not yet cleared shows its longest run', best.includes('최고 생존 03:12'), best.split('\n').find((line) => line.includes('최고')) ?? 'none');
+    const fits = await page.evaluate(() => document.scrollingElement.scrollHeight <= window.innerHeight + 1);
+    record('CON-07 the menu still fits 1024x720 without scrolling', fits);
     await page.close();
   });
 

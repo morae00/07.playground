@@ -411,6 +411,11 @@ export type Settlement = {
   bonus: Readonly<{ goal: Text; met: boolean }> | null;
   /** SYS-07: assists were on at some point of the run (G16). */
   assisted: boolean;
+  /** CON-07: the stage's kind, the hero's max health at the end, whether a boss had enraged, and every boss defeated. */
+  stageKind: StageKind;
+  maxHp: number;
+  enraged: boolean;
+  bossesDefeated: number;
   /** UI-05: health each skill took off enemies. A presentation tally: the simulation never reads it. */
   damageBySkill: Readonly<Partial<Record<SkillId, number>>>;
 };
@@ -853,6 +858,8 @@ export class GameEngine {
   protected scoreEligible = true;
   /** SYS-07: assists were on at some point of this run. */
   protected assistedRun = false;
+  /** CON-07: bosses defeated this run (field, round, and legacy bosses), for the career totals. */
+  protected bossesDefeated = 0;
   /** CON-04: simulation steps this run, the commands that changed it, and what it started from. */
   protected ticks = 0;
   protected runLog: RunLogEntry[] = [];
@@ -1727,6 +1734,7 @@ export class GameEngine {
     this.stageKills = 0;
     this.stageCoinsEarned = 0;
     this.damageTakenTotal = 0;
+    this.bossesDefeated = 0;
     this.damageBySkill = {};
     this.draftQueue = [];
     this.elapsed = 0;
@@ -4567,6 +4575,7 @@ export class GameEngine {
   protected onEnemyKilled(enemy: Entity, suppressBossDraft = false) {
     this.player.kills += 1;
     this.stageKills += 1;
+    if (enemy.isBoss) this.bossesDefeated += 1;
     this.stageObjective?.onKill({ tier: enemy.tier, ranged: enemy.attackStyle === 'ranged', fieldBoss: enemy.isBoss && enemy.boss?.role === 'field' && !enemy.legacyBoss });
     if (this.runMode === 'infinite') {
       this.infiniteEventScore += infiniteKillScore(enemy.tier, this.elapsed, this.infiniteBossKills);
@@ -4922,6 +4931,10 @@ export class GameEngine {
       goldParts,
       bonus: bonusState ? { goal: bonusState.goal, met: bonusMet } : null,
       assisted: this.assistedRun,
+      stageKind: this.kind,
+      maxHp: this.player.stats.maxHp,
+      enraged: this.bossEnraged,
+      bossesDefeated: this.bossesDefeated,
       damageBySkill: { ...this.damageBySkill },
     };
   }

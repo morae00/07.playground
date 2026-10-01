@@ -127,6 +127,12 @@ export function SettlementModal({ settlement, defeated, notes, reducedMotion, le
           <p>{place}</p>
           <h2 id="settlement-dialog-title">{heading}</h2>
           {!infinite && <p className="settlementTitle">{settlement.practice ? t('settle.practice', { objective }) : objective}{settlement.assisted && <span className="assistTag">{t('settle.assisted')}</span>}</p>}
+          {notes.stars && (
+            <p className="settlementStars" role="img" aria-label={t('menu.starsLabel', { n: notes.stars.filter(Boolean).length })}>
+              {notes.stars.map((on, index) => <span className={on ? 'on' : undefined} aria-hidden="true" key={index}>{on ? '★' : '☆'}</span>)}
+              {notes.newStars > 0 && <em className="recordBadge">{t('settle.newStars', { n: notes.newStars })}</em>}
+            </p>
+          )}
         </div>
       </header>
 

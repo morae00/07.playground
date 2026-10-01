@@ -1710,7 +1710,8 @@ h2 {
   bottom: -10px;
   right: -8px;
   color: var(--ink);
-  font-size: 18px;
+  font-size: 14px;
+  letter-spacing: -1px;
   font-style: normal;
   line-height: 1;
   text-shadow: 0 0 0 var(--paper), 1px 1px 0 var(--paper), -1px -1px 0 var(--paper);
@@ -2705,6 +2706,30 @@ h2 {
 .bonusStar {
   margin-right: 6px;
   font-weight: 900;
+}
+
+/* CON-07: a stage's three stars, earned ones in solid ink. */
+.stageStars span,
+.settlementStars span {
+  font-size: 18px;
+  font-weight: 900;
+  color: #5f5f5a;
+}
+
+.stageStars span.on,
+.settlementStars span.on {
+  color: var(--ink);
+}
+
+.settlementStars {
+  margin: 2px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.settlementStars .recordBadge {
+  margin: 0 0 0 8px;
 }
 
 .unlockBanner {

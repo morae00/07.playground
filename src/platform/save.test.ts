@@ -9,7 +9,9 @@ import {
   createDefaultOptions,
   createDefaultProfile,
   loadGameSave,
+  recordCareer,
   recordStageResult,
+  stageStars,
   sanitizeOptions,
   sanitizeProfile,
   saveGameSave,
@@ -179,7 +181,37 @@ test('stage results fold into records; practice runs are not recorded', () => {
   profile = recordStageResult(profile, { chapter: 1, stage: 2, cleared: true, kills: 90, clearSeconds: 470, practice: false });
   const unchanged = recordStageResult(profile, { chapter: 1, stage: 2, cleared: true, kills: 999, clearSeconds: 150, practice: true });
   assert.equal(unchanged, profile);
-  assert.deepEqual(profile.stageRecords['1-2'], { attempts: 3, clears: 2, bestKills: 90, bestClearSeconds: 470, bonus: false, assisted: false });
+  assert.deepEqual(profile.stageRecords['1-2'], { attempts: 3, clears: 2, bestKills: 90, bestClearSeconds: 470, bonus: false, assisted: false, bestSurvivalSeconds: 480, noHit: false, lowDamage: false, swift: false });
+});
+
+test('a stage keeps three stars: the clear, its bonus goal or a swift boss, and a clear under max health in damage (CON-07)', () => {
+  let profile = createDefaultProfile();
+  assert.deepEqual(stageStars(profile.stageRecords['1-5']), [false, false, false]);
+  const bossRun = { chapter: 1, stage: 5, kills: 200, clearSeconds: 400, practice: false, stageKind: 'midBoss', maxHp: 300 } as const;
+  profile = recordStageResult(profile, { ...bossRun, cleared: false, damageTaken: 0, enraged: false });
+  assert.deepEqual(stageStars(profile.stageRecords['1-5']), [false, false, false], 'a defeat earns nothing, however clean');
+  assert.equal(profile.stageRecords['1-5'].bestSurvivalSeconds, 400);
+  profile = recordStageResult(profile, { ...bossRun, cleared: true, damageTaken: 420, enraged: true });
+  assert.deepEqual(stageStars(profile.stageRecords['1-5']), [true, false, false]);
+  profile = recordStageResult(profile, { ...bossRun, cleared: true, damageTaken: 120, enraged: false });
+  assert.deepEqual(stageStars(profile.stageRecords['1-5']), [true, true, true], 'beaten before it enraged, with less damage than max health');
+  assert.equal(profile.stageRecords['1-5'].noHit, false);
+  profile = recordStageResult(profile, { ...bossRun, cleared: true, damageTaken: 0, enraged: true });
+  assert.equal(profile.stageRecords['1-5'].noHit, true, 'a clear without a hit');
+  // A normal stage's second star is its bonus goal; a swift flag does not apply to it.
+  profile = recordStageResult(profile, { chapter: 1, stage: 4, cleared: true, kills: 300, clearSeconds: 480, practice: false, stageKind: 'normal', enraged: false, damageTaken: 50, maxHp: 300 });
+  assert.deepEqual(stageStars(profile.stageRecords['1-4']), [true, false, true]);
+});
+
+test('career totals add up every run, and a save from before them starts from its stage records (CON-07, G17)', () => {
+  let profile = createDefaultProfile();
+  profile = recordCareer(profile, { cleared: true, kills: 300, bossKills: 2, clearSeconds: 480.6 });
+  profile = recordCareer(profile, { cleared: false, kills: 40, bossKills: 0, clearSeconds: 61 });
+  assert.deepEqual(profile.stats, { runs: 2, clears: 1, kills: 340, bossKills: 2, playSeconds: 541 });
+  const older = sanitizeProfile({ stageRecords: { '1-4': { attempts: 3, clears: 2, bestKills: 210, bestClearSeconds: 470 }, '1-5': { attempts: 2, clears: 1, bestKills: 150, bestClearSeconds: 600 } } });
+  assert.deepEqual(older.stats, { runs: 5, clears: 3, kills: 360, bossKills: 1, playSeconds: 1540 });
+  assert.equal(older.stageRecords['1-4'].bestSurvivalSeconds, 470, 'a clear lasted at least its best time');
+  assert.deepEqual(sanitizeProfile({ ...older, stats: { runs: 9, clears: -1, kills: 'x' } }).stats, { runs: 9, clears: 0, kills: 0, bossKills: 0, playSeconds: 0 });
 });
 
 test('assists load clamped and off by default, and an assisted run marks its stage record (SYS-07, G16)', () => {

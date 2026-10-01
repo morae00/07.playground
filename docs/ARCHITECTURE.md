@@ -301,6 +301,14 @@ A run in play is kept in the save as a suspended run (`profile.runSuspend`), so 
 - The desktop app flushes localStorage to disk every second, so a force-quit keeps the run saved at the last pause (docs/ELECTRON_HARDENING.md).
 - `test/suspend.integration.test.mjs` plays 2,400 uneven frames with keys, the stick, the pointer, drafts, a paused purchase, and an assist change. It saves the run as JSON and replays it in a new engine. The state is identical at the saved tick and stays identical as both play on. The UI probe reloads the page mid-run and resumes to the same state. The Electron smoke resumes a run after a renderer crash, after a quit, and after a force-quit.
 
+## Records and stars (CON-07)
+
+The save had a clear count, the best kills, and the best time per stage, and nothing over all runs. CON-07 adds to the v3 profile, with defaults for older saves (G17):
+- Each stage record (`StageRecord`) keeps its longest run (`bestSurvivalSeconds`, shown for stages not yet cleared), a clear with no damage (`noHit`), a clear with less damage than the hero's max health (`lowDamage`), and a boss stage cleared before its boss enraged (`swift`).
+- A stage has three stars (`stageStars`): the clear, its second star, and the low-damage clear. A normal stage's second star is its bonus goal (CON-03); a boss stage's is the swift clear. Stage nodes show the stars, the stage detail names them, and the settlement shows the stars after the result, with how many it added (`settlementNotes`).
+- Career totals (`profile.stats`): runs, clears, kills, bosses defeated, and simulated seconds played, over every run, campaign and infinite (`recordCareer`). A save from before them starts from what its stage records show.
+- Settlements carry what these need: the stage kind, the hero's max health at the end, whether a boss enraged, and every boss defeated.
+
 ## Camera (FX-04)
 
 The simulation camera stays hard-locked on the player, clamped to the world. Spawns, aim, and off-screen checks use it together with the logical frame (G14). Under the `smoothCamera` rule, the screen shows a separate view camera instead (`src/game/presentation/viewCamera.ts`):

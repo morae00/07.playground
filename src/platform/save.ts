@@ -60,7 +60,23 @@ export type StageRecord = {
   bonus: boolean;
   /** A recorded run of this stage had assists on (SYS-07, G16); the record says so. */
   assisted: boolean;
+  /** CON-07: the longest any attempt lasted, in simulated seconds. */
+  bestSurvivalSeconds: number;
+  /** CON-07: a clear that took no damage at all. */
+  noHit: boolean;
+  /** CON-07: a clear that took less damage than the hero's max health (the third star). */
+  lowDamage: boolean;
+  /** CON-07: a boss stage cleared before the boss enraged (a boss stage's second star, where a normal stage has its bonus goal). */
+  swift: boolean;
 };
+
+/** CON-07: a stage's three stars: the clear, its bonus goal (a boss stage: the boss beaten before it enraged), and a clear that took less damage than max health. */
+export function stageStars(record: StageRecord | undefined): readonly [boolean, boolean, boolean] {
+  return record ? [record.clears > 0, record.bonus || record.swift, record.lowDamage] : [false, false, false];
+}
+
+/** CON-07: totals over every run, campaign and infinite. Saves from before CON-07 start from their stage records. */
+export type CareerStats = { runs: number; clears: number; kills: number; bossKills: number; playSeconds: number };
 
 /**
  * Save v3 profile (TEC-08): room for the systems R3 adds (characters, codex, achievements, run suspension),
@@ -74,6 +90,7 @@ export type ProfileData = {
   runSuspend: null | { savedAt: number; rulesVersion: number; state: unknown };
   /** Onboarding hints already shown (UI-09); each shows once per save. */
   hintsSeen: string[];
+  stats: CareerStats;
 };
 
 export type SaveData = {
@@ -149,6 +166,7 @@ export const createDefaultProfile = (): ProfileData => ({
   achievements: {},
   runSuspend: null,
   hintsSeen: [],
+  stats: { runs: 0, clears: 0, kills: 0, bossKills: 0, playSeconds: 0 },
 });
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -234,13 +252,19 @@ export function sanitizeProfile(value: unknown): ProfileData {
       const attempts = finiteNumber(record.attempts, 0, 0, Number.MAX_SAFE_INTEGER, true);
       const clears = Math.min(attempts, finiteNumber(record.clears, 0, 0, Number.MAX_SAFE_INTEGER, true));
       const best = record.bestClearSeconds;
+      const bestClearSeconds = clears > 0 && typeof best === 'number' && Number.isFinite(best) && best > 0 ? best : null;
       stageRecords[key] = {
         attempts,
         clears,
         bestKills: finiteNumber(record.bestKills, 0, 0, Number.MAX_SAFE_INTEGER, true),
-        bestClearSeconds: clears > 0 && typeof best === 'number' && Number.isFinite(best) && best > 0 ? best : null,
+        bestClearSeconds,
         bonus: clears > 0 && record.bonus === true,
         assisted: record.assisted === true,
+        // A clear lasted at least its best time, for records from before CON-07.
+        bestSurvivalSeconds: finiteNumber(record.bestSurvivalSeconds, bestClearSeconds ?? 0, 0, 86_400),
+        noHit: clears > 0 && record.noHit === true,
+        lowDamage: clears > 0 && record.lowDamage === true,
+        swift: clears > 0 && record.swift === true,
       };
     }
   }
@@ -267,20 +291,51 @@ export function sanitizeProfile(value: unknown): ProfileData {
     achievements,
     runSuspend,
     hintsSeen: stringList(value.hintsSeen, 64),
+    stats: sanitizeStats(value.stats, stageRecords),
+  };
+}
+
+/** CON-07: a save from before the career totals starts from what its stage records show (G17). */
+function sanitizeStats(value: unknown, records: Record<string, StageRecord>): CareerStats {
+  const count = (field: unknown) => finiteNumber(field, 0, 0, Number.MAX_SAFE_INTEGER, true);
+  if (isRecord(value)) return { runs: count(value.runs), clears: count(value.clears), kills: count(value.kills), bossKills: count(value.bossKills), playSeconds: count(value.playSeconds) };
+  const all = Object.entries(records);
+  return {
+    runs: all.reduce((sum, [, record]) => sum + record.attempts, 0),
+    clears: all.reduce((sum, [, record]) => sum + record.clears, 0),
+    kills: all.reduce((sum, [, record]) => sum + record.bestKills, 0),
+    bossKills: all.reduce((sum, [key, record]) => sum + (key.endsWith('-5') || key.endsWith('-10') ? record.clears : 0), 0),
+    playSeconds: Math.floor(all.reduce((sum, [, record]) => sum + (record.bestClearSeconds ?? 0) * record.clears, 0)),
   };
 }
 
 /** Folds one campaign result into the stage records. Practice runs leave the records alone (CON-02). */
-export function recordStageResult(
-  profile: ProfileData,
-  result: { chapter: number; stage: number; cleared: boolean; kills: number; clearSeconds: number; practice: boolean; bonus?: boolean; assisted?: boolean },
-): ProfileData {
+export type StageResult = {
+  chapter: number;
+  stage: number;
+  cleared: boolean;
+  kills: number;
+  clearSeconds: number;
+  practice: boolean;
+  bonus?: boolean;
+  assisted?: boolean;
+  /** CON-07: for the no-hit and low-damage marks and a boss stage's swift clear. */
+  damageTaken?: number;
+  maxHp?: number;
+  stageKind?: 'normal' | 'midBoss' | 'finalBoss';
+  enraged?: boolean;
+};
+
+const EMPTY_RECORD: StageRecord = { attempts: 0, clears: 0, bestKills: 0, bestClearSeconds: null, bonus: false, assisted: false, bestSurvivalSeconds: 0, noHit: false, lowDamage: false, swift: false };
+
+export function recordStageResult(profile: ProfileData, result: StageResult): ProfileData {
   if (result.practice) return profile;
   const key = `${result.chapter}-${result.stage}`;
-  const previous = profile.stageRecords[key] ?? { attempts: 0, clears: 0, bestKills: 0, bestClearSeconds: null, bonus: false, assisted: false };
+  const previous = { ...EMPTY_RECORD, ...profile.stageRecords[key] };
   const bestClearSeconds = result.cleared
     ? Math.min(previous.bestClearSeconds ?? Number.POSITIVE_INFINITY, result.clearSeconds)
     : previous.bestClearSeconds;
+  const taken = result.damageTaken ?? Number.POSITIVE_INFINITY;
   return {
     ...profile,
     stageRecords: {
@@ -292,7 +347,26 @@ export function recordStageResult(
         bestClearSeconds: Number.isFinite(bestClearSeconds ?? Number.NaN) ? bestClearSeconds : null,
         bonus: previous.bonus || (result.cleared && result.bonus === true),
         assisted: previous.assisted || result.assisted === true,
+        bestSurvivalSeconds: Math.max(previous.bestSurvivalSeconds, result.clearSeconds),
+        noHit: previous.noHit || (result.cleared && taken === 0),
+        lowDamage: previous.lowDamage || (result.cleared && taken < (result.maxHp ?? 0)),
+        swift: previous.swift || (result.cleared && result.stageKind !== undefined && result.stageKind !== 'normal' && result.enraged === false),
       },
+    },
+  };
+}
+
+/** CON-07: adds a run to the career totals, whatever its mode. */
+export function recordCareer(profile: ProfileData, result: { cleared: boolean; kills: number; bossKills: number; clearSeconds: number }): ProfileData {
+  const { stats } = profile;
+  return {
+    ...profile,
+    stats: {
+      runs: stats.runs + 1,
+      clears: stats.clears + (result.cleared ? 1 : 0),
+      kills: stats.kills + result.kills,
+      bossKills: stats.bossKills + result.bossKills,
+      playSeconds: stats.playSeconds + Math.floor(result.clearSeconds),
     },
   };
 }
