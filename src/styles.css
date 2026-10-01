@@ -2610,6 +2610,15 @@ h2 {
   border-left-color: var(--ink);
 }
 
+/* SYS-07: a record or a result made with assists on (G16). */
+.assistTag {
+  margin-left: 6px;
+  border: 1px solid currentColor;
+  padding: 0 5px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .bonusStar {
   margin-right: 6px;
   font-weight: 900;

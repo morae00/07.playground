@@ -126,7 +126,7 @@ export function SettlementModal({ settlement, defeated, notes, reducedMotion, le
         <div>
           <p>{place}</p>
           <h2 id="settlement-dialog-title">{heading}</h2>
-          {!infinite && <p className="settlementTitle">{settlement.practice ? t('settle.practice', { objective }) : objective}</p>}
+          {!infinite && <p className="settlementTitle">{settlement.practice ? t('settle.practice', { objective }) : objective}{settlement.assisted && <span className="assistTag">{t('settle.assisted')}</span>}</p>}
         </div>
       </header>
 

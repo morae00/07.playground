@@ -211,7 +211,7 @@ function PlayView({ meta, records, developerAccess, developerMode, setDeveloperM
             )}
             <div>
               <dt>{t('menu.best')}</dt>
-              <dd>{record && record.bestClearSeconds !== null ? t('menu.bestValue', { time: formatClock(record.bestClearSeconds), kills: record.bestKills }) : '—'}</dd>
+              <dd>{record && record.bestClearSeconds !== null ? t('menu.bestValue', { time: formatClock(record.bestClearSeconds), kills: record.bestKills }) : '—'}{record?.assisted && <span className="assistTag">{t('menu.bestAssisted')}</span>}</dd>
             </div>
           </dl>
           <div className="stageActions">

@@ -33,7 +33,7 @@ function playedStorage() {
   meta.upgrades.attack = 5;
   meta.passives.bossHunter = 2;
   const options = { ...createDefaultOptions(), volume: 0.5, uiScale: 1.2, reducedMotion: true };
-  const profile = { ...createDefaultProfile(), stageRecords: { '1-1': { attempts: 3, clears: 2, bestKills: 210, bestClearSeconds: 301, bonus: false } }, hintsSeen: ['move'] };
+  const profile = { ...createDefaultProfile(), stageRecords: { '1-1': { attempts: 3, clears: 2, bestKills: 210, bestClearSeconds: 301, bonus: false, assisted: false } }, hintsSeen: ['move'] };
   saveGameSave(storage, { meta, options, profile });
   saveGameSave(storage, { meta: { ...meta, gold: 4400 }, options, profile });
   storage.setItem(INFINITE_LEADERBOARD_KEY, JSON.stringify({ version: 1, entries: [{ name: 'KANG', score: 991 }] }));

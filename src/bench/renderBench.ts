@@ -62,6 +62,7 @@ const meta: MetaState = {
 const options: GameOptions = {
   healthBars: 'elite', volume: 0, effects: 1, damageNumbers: true, screenShake: false, reducedFlash: false, paceMode: 'standard',
   autoPause: false, musicVolume: 0, sfxVolume: 0, uiScale: 1, reducedMotion: false, hitReaction: 1,
+  assistDamage: 1, assistEnemySpeed: 1, assistSlowGame: false,
 };
 
 function setUpStressScene(probe: ProbedGameEngine['probe']) {

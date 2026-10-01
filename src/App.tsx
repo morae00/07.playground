@@ -344,7 +344,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         const unlockProgress = !developerAccess && !result.practice;
         setNotes(settlementNotes(result, profileRef.current.stageRecords[`${result.chapter}-${result.stage}`], metaRef.current, unlockProgress));
         setSettlement(result);
-        if (result.runMode === 'campaign') setProfile((prev) => recordStageResult(prev, { ...result, bonus: result.bonus?.met ?? false }));
+        if (result.runMode === 'campaign') setProfile((prev) => recordStageResult(prev, { ...result, bonus: result.bonus?.met ?? false, assisted: result.assisted }));
         grantSettlement(result, unlockProgress);
         setPhase('roundClear');
       },
@@ -353,7 +353,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         setRunPaused(false);
         setNotes(settlementNotes(result, profileRef.current.stageRecords[`${result.chapter}-${result.stage}`], metaRef.current, false));
         setSettlement(result);
-        if (result.runMode === 'campaign') setProfile((prev) => recordStageResult(prev, { ...result, bonus: result.bonus?.met ?? false }));
+        if (result.runMode === 'campaign') setProfile((prev) => recordStageResult(prev, { ...result, bonus: result.bonus?.met ?? false, assisted: result.assisted }));
         if (result.runMode === 'infinite') setInfiniteSeed(String(result.seed));
         grantSettlement(result, false);
         recordInfiniteSettlement(result);

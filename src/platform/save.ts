@@ -40,6 +40,13 @@ export type GameOptions = {
   reducedMotion: boolean;
   /** How far a struck body recoils, 0-1 (FX-02). Presentation only: it never changes the simulation. */
   hitReaction: number;
+  /**
+   * Assists (SYS-07): the share of damage the player takes (0.5-1), enemy speed (0.8-1), and a 0.8 game speed. They
+   * change the simulation, so an assisted run never counts on the infinite board and marks its stage record (G15, G16).
+   */
+  assistDamage: number;
+  assistEnemySpeed: number;
+  assistSlowGame: boolean;
 };
 
 /** Per-stage record, keyed "<chapter>-<stage>". Practice runs are not recorded. */
@@ -51,6 +58,8 @@ export type StageRecord = {
   bestClearSeconds: number | null;
   /** The stage's bonus goal was met on a clear (CON-03); the menu shows a star. */
   bonus: boolean;
+  /** A recorded run of this stage had assists on (SYS-07, G16); the record says so. */
+  assisted: boolean;
 };
 
 /**
@@ -125,7 +134,13 @@ export const createDefaultOptions = (): GameOptions => ({
   uiScale: 1,
   reducedMotion: false,
   hitReaction: 1,
+  assistDamage: 1,
+  assistEnemySpeed: 1,
+  assistSlowGame: false,
 });
+
+/** Any assist on (SYS-07). */
+export const assistsOn = (options: GameOptions) => options.assistDamage < 1 || options.assistEnemySpeed < 1 || options.assistSlowGame;
 
 export const createDefaultProfile = (): ProfileData => ({
   stageRecords: {},
@@ -193,6 +208,9 @@ export function sanitizeOptions(value: unknown, allowShowcase = DEVELOPER_UI_AVA
     uiScale: finiteNumber(value.uiScale, fallback.uiScale, 0.8, 1.3),
     reducedMotion: booleanValue(value.reducedMotion, fallback.reducedMotion),
     hitReaction: finiteNumber(value.hitReaction, fallback.hitReaction, 0, 1),
+    assistDamage: finiteNumber(value.assistDamage, fallback.assistDamage, 0.5, 1),
+    assistEnemySpeed: finiteNumber(value.assistEnemySpeed, fallback.assistEnemySpeed, 0.8, 1),
+    assistSlowGame: booleanValue(value.assistSlowGame, fallback.assistSlowGame),
   };
 }
 
@@ -222,6 +240,7 @@ export function sanitizeProfile(value: unknown): ProfileData {
         bestKills: finiteNumber(record.bestKills, 0, 0, Number.MAX_SAFE_INTEGER, true),
         bestClearSeconds: clears > 0 && typeof best === 'number' && Number.isFinite(best) && best > 0 ? best : null,
         bonus: clears > 0 && record.bonus === true,
+        assisted: record.assisted === true,
       };
     }
   }
@@ -254,11 +273,11 @@ export function sanitizeProfile(value: unknown): ProfileData {
 /** Folds one campaign result into the stage records. Practice runs leave the records alone (CON-02). */
 export function recordStageResult(
   profile: ProfileData,
-  result: { chapter: number; stage: number; cleared: boolean; kills: number; clearSeconds: number; practice: boolean; bonus?: boolean },
+  result: { chapter: number; stage: number; cleared: boolean; kills: number; clearSeconds: number; practice: boolean; bonus?: boolean; assisted?: boolean },
 ): ProfileData {
   if (result.practice) return profile;
   const key = `${result.chapter}-${result.stage}`;
-  const previous = profile.stageRecords[key] ?? { attempts: 0, clears: 0, bestKills: 0, bestClearSeconds: null, bonus: false };
+  const previous = profile.stageRecords[key] ?? { attempts: 0, clears: 0, bestKills: 0, bestClearSeconds: null, bonus: false, assisted: false };
   const bestClearSeconds = result.cleared
     ? Math.min(previous.bestClearSeconds ?? Number.POSITIVE_INFINITY, result.clearSeconds)
     : previous.bestClearSeconds;
@@ -272,6 +291,7 @@ export function recordStageResult(
         bestKills: Math.max(previous.bestKills, result.kills),
         bestClearSeconds: Number.isFinite(bestClearSeconds ?? Number.NaN) ? bestClearSeconds : null,
         bonus: previous.bonus || (result.cleared && result.bonus === true),
+        assisted: previous.assisted || result.assisted === true,
       },
     },
   };

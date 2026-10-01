@@ -1,4 +1,5 @@
-// Settings (UI-04): one panel for the menu and the pause hub, grouped as sound, screen, accessibility, and game.
+// Settings (UI-04): one panel for the menu and the pause hub, grouped as sound, screen, accessibility, game, and
+// assists (SYS-07).
 // Every option saves through sanitizeOptions, so an older save loads with the newer options at their defaults (G17).
 import type { ChangeEvent, ReactNode } from 'react';
 import { t } from '../../i18n/strings';
@@ -6,8 +7,8 @@ import type { StringKey } from '../../i18n/text';
 import { DEVELOPER_UI_AVAILABLE } from '../../platform/developerAccess';
 import type { GameOptions, PaceMode } from '../../platform/save';
 
-type NumberOption = 'volume' | 'musicVolume' | 'sfxVolume' | 'effects' | 'uiScale' | 'hitReaction';
-type SwitchOption = 'damageNumbers' | 'screenShake' | 'reducedFlash' | 'reducedMotion' | 'autoPause';
+type NumberOption = 'volume' | 'musicVolume' | 'sfxVolume' | 'effects' | 'uiScale' | 'hitReaction' | 'assistDamage' | 'assistEnemySpeed';
+type SwitchOption = 'damageNumbers' | 'screenShake' | 'reducedFlash' | 'reducedMotion' | 'autoPause' | 'assistSlowGame';
 
 export function SettingsPanel({ options, setOptions, inRun = false, children }: { options: GameOptions; setOptions: (options: GameOptions) => void; inRun?: boolean; children?: ReactNode }) {
   const slider = (key: NumberOption, label: StringKey, min: number, max: number, step: number) => (
@@ -64,6 +65,13 @@ export function SettingsPanel({ options, setOptions, inRun = false, children }: 
         </label>
         {inRun && <p className="settingsNote">{t('settings.pace.note')}</p>}
         {toggle('autoPause', 'settings.autoPause')}
+      </fieldset>
+      <fieldset>
+        <legend>{t('settings.assist')}</legend>
+        {slider('assistDamage', 'settings.assistDamage', 0.5, 1, 0.05)}
+        {slider('assistEnemySpeed', 'settings.assistEnemySpeed', 0.8, 1, 0.05)}
+        {toggle('assistSlowGame', 'settings.assistSlowGame')}
+        <p className="settingsNote">{t('settings.assistNote')}</p>
       </fieldset>
       {children}
     </div>

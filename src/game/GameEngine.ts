@@ -326,6 +326,8 @@ export type Settlement = {
   goldParts: Readonly<{ base: number; boss: number; kills: number; coins: number; stage: number; bonus: number }>;
   /** CON-03: the stage's bonus goal and whether the run met it (only a clear can). */
   bonus: Readonly<{ goal: Text; met: boolean }> | null;
+  /** SYS-07: assists were on at some point of the run (G16). */
+  assisted: boolean;
   /** UI-05: health each skill took off enemies. A presentation tally: the simulation never reads it. */
   damageBySkill: Readonly<Partial<Record<SkillId, number>>>;
 };
@@ -766,6 +768,8 @@ export class GameEngine {
   protected infiniteBossRespawnTimer = 0;
   protected previousInfiniteBossId = '';
   protected scoreEligible = true;
+  /** SYS-07: assists were on at some point of this run. */
+  protected assistedRun = false;
   protected draftQueue: Array<{ reason: DraftReason; after: DraftState['after'] }> = [];
   protected activeDraftId: number | null = null;
   protected activeDraftAfter: DraftState['after'] | null = null;
@@ -933,6 +937,24 @@ export class GameEngine {
   setOptions(options: GameOptions) {
     this.options = options;
     if (options.reducedMotion) this.presentation.shake = 0;
+    this.noteAssists();
+  }
+
+  /** SYS-07 assists from the options; tools that pass partial options get none. */
+  protected assist() {
+    return {
+      damage: this.options.assistDamage ?? 1,
+      enemySpeed: this.options.assistEnemySpeed ?? 1,
+      gameSpeed: this.options.assistSlowGame ? 0.8 : 1,
+    };
+  }
+
+  /** A run with any assist on, even for a moment, is an assisted run: it leaves the infinite board (G15, G16). */
+  protected noteAssists() {
+    const { damage, enemySpeed, gameSpeed } = this.assist();
+    if (!this.running || (damage >= 1 && enemySpeed >= 1 && gameSpeed >= 1)) return;
+    this.assistedRun = true;
+    this.invalidateInfiniteScore();
   }
 
   setMeta(meta: MetaState) {
@@ -1038,8 +1060,10 @@ export class GameEngine {
     };
     this.recalculateStats(true);
     this.player.hp = this.player.stats.maxHp;
+    this.assistedRun = false;
     this.beginRound();
     this.running = true;
+    this.noteAssists();
     this.paused = false;
     this.faulted = false;
     this.accumulator = 0;
@@ -1360,7 +1384,7 @@ export class GameEngine {
     this.snapshotTimer -= safeFrameDt;
 
     if (!this.paused) {
-      const plan = planFixedSteps(this.accumulator, safeFrameDt, this.timeScale);
+      const plan = planFixedSteps(this.accumulator, safeFrameDt, this.timeScale * this.assist().gameSpeed);
       this.accumulator = plan.remainder;
       for (let step = 0; step < plan.steps; step += 1) {
         const hitStopStep = consumeHitStopStep(this.hitStop);
@@ -2675,7 +2699,7 @@ export class GameEngine {
       }
       const phaseMove = enemy.isBoss ? this.activeBossPhaseMove(enemy) : undefined;
       const phaseSpeed = enemy.isBoss ? phaseMove?.movement.speedScale ?? 1 + ((enemy.bossPhase ?? 1) - 1) * 0.1 : 1;
-      const speed = enemy.speed * phaseSpeed * (enemy.slowMultiplier ?? 1) * (enemy.patternPhase === 'dash' ? 3.8 : 1);
+      const speed = enemy.speed * phaseSpeed * (enemy.slowMultiplier ?? 1) * (enemy.patternPhase === 'dash' ? 3.8 : 1) * this.assist().enemySpeed;
       let moveX = dir.x;
       let moveY = dir.y;
       const anchored = enemy.isBoss && enemy.anchorX !== undefined && enemy.anchorY !== undefined && this.bossGrammar(enemy)?.movement.mode === 'anchor';
@@ -4213,14 +4237,15 @@ export class GameEngine {
     }
     if (this.player.invuln > 0 || this.player.shield > 0) return;
     const reduced = Math.max(1, rawDamage - this.player.stats.defense * (physical ? 0.72 : 0.42));
-    this.damageTakenTotal += Math.min(reduced, Math.max(0, this.player.hp));
-    this.player.hp -= reduced;
+    const taken = reduced * this.assist().damage;
+    this.damageTakenTotal += Math.min(taken, Math.max(0, this.player.hp));
+    this.player.hp -= taken;
     const paperWard = this.skills.paperWard;
     this.player.invuln = paperWardDirectHitInvulnerability(paperWard?.level ?? 0);
     if (this.skills.ironFrame?.awakened) this.player.shield = SKILL_NUMBERS.ironFrame.shieldSeconds;
     if (paperWard?.awakened) this.pushEnemiesFromPlayer(SKILL_NUMBERS.paperWard.pushRadius);
     this.lastDamageSource = source;
-    this.emit({ type: 'player/hurt', x: this.player.x, y: this.player.y, damage: reduced, source, fromX: from.x, fromY: from.y });
+    this.emit({ type: 'player/hurt', x: this.player.x, y: this.player.y, damage: taken, source, fromX: from.x, fromY: from.y });
     if (this.rules.smoothCamera) {
       const blow = normalize(this.player.x - from.x, this.player.y - from.y);
       this.viewCamera.kick(blow.x, blow.y);
@@ -4233,7 +4258,7 @@ export class GameEngine {
       return;
     }
     if (this.player.shield > 0) return;
-    const burn = calculateFireDotDamage(damagePerSecond, dt, this.player.stats.defense);
+    const burn = calculateFireDotDamage(damagePerSecond, dt, this.player.stats.defense) * this.assist().damage;
     this.damageTakenTotal += Math.min(burn, Math.max(0, this.player.hp));
     this.player.hp -= burn;
     this.lastDamageSource = source;
@@ -4519,6 +4544,7 @@ export class GameEngine {
       damageTaken: this.damageTakenTotal,
       goldParts,
       bonus: bonusState ? { goal: bonusState.goal, met: bonusMet } : null,
+      assisted: this.assistedRun,
       damageBySkill: { ...this.damageBySkill },
     };
   }

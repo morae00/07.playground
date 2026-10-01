@@ -179,7 +179,21 @@ test('stage results fold into records; practice runs are not recorded', () => {
   profile = recordStageResult(profile, { chapter: 1, stage: 2, cleared: true, kills: 90, clearSeconds: 470, practice: false });
   const unchanged = recordStageResult(profile, { chapter: 1, stage: 2, cleared: true, kills: 999, clearSeconds: 150, practice: true });
   assert.equal(unchanged, profile);
-  assert.deepEqual(profile.stageRecords['1-2'], { attempts: 3, clears: 2, bestKills: 90, bestClearSeconds: 470, bonus: false });
+  assert.deepEqual(profile.stageRecords['1-2'], { attempts: 3, clears: 2, bestKills: 90, bestClearSeconds: 470, bonus: false, assisted: false });
+});
+
+test('assists load clamped and off by default, and an assisted run marks its stage record (SYS-07, G16)', () => {
+  assert.deepEqual(
+    [createDefaultOptions().assistDamage, createDefaultOptions().assistEnemySpeed, createDefaultOptions().assistSlowGame],
+    [1, 1, false],
+  );
+  const loaded = sanitizeOptions({ assistDamage: 0.1, assistEnemySpeed: 2, assistSlowGame: 'yes' });
+  assert.deepEqual([loaded.assistDamage, loaded.assistEnemySpeed, loaded.assistSlowGame], [0.5, 1, false]);
+  let profile = recordStageResult(createDefaultProfile(), { chapter: 1, stage: 2, cleared: true, kills: 10, clearSeconds: 300, practice: false });
+  assert.equal(profile.stageRecords['1-2'].assisted, false);
+  profile = recordStageResult(profile, { chapter: 1, stage: 2, cleared: false, kills: 5, clearSeconds: 60, practice: false, assisted: true });
+  profile = recordStageResult(profile, { chapter: 1, stage: 2, cleared: true, kills: 20, clearSeconds: 280, practice: false });
+  assert.equal(profile.stageRecords['1-2'].assisted, true, 'the record keeps saying an assisted run is in it');
 });
 
 test('a bonus goal met on a clear stars the stage for good; a defeat or a later miss never takes it away (CON-03)', () => {

@@ -259,6 +259,14 @@ A normal stage keeps its survival clock. Under the `stageObjectives` rule its ob
 - The HUD shows the goal under the objective, counting, met, or missed. A goal met on a clear pays half the stage's floor gold (the settlement's 보너스 목표 part). It also stars the stage record (`profile.stageRecords[…].bonus`), and the stage map and card show the star.
 - Landmark stages (St3, St7) open with the landmark's name card: the name and a line from the lore bible's draft table (§5.1), in `public/assets/content/landmark-titles.json`, like the boss titles.
 
+## Assists (SYS-07)
+
+The settings (menu and pause hub) have three assists: the share of damage the player takes (50-100%), enemy speed (80-100%), and a game speed of 80%.
+- They live in the options (`assistDamage`, `assistEnemySpeed`, `assistSlowGame`), off by default. `GameEngine.assist()` applies them: hits and burns scale, enemies move slower, and the frame loop runs the simulation at 0.8 of real time.
+- They change the simulation, so a run with any assist on, even for a moment, is an assisted run (`assistedRun`). An infinite run then stops counting for the board, as cheats do (G15). Turning the assist off again does not restore it.
+- A campaign settlement reports `assisted`, and the stage record keeps an `assisted` mark that the menu shows next to the best record (G16).
+- Tools that pass partial options get no assists.
+
 ## Camera (FX-04)
 
 The simulation camera stays hard-locked on the player, clamped to the world. Spawns, aim, and off-screen checks use it together with the logical frame (G14). Under the `smoothCamera` rule, the screen shows a separate view camera instead (`src/game/presentation/viewCamera.ts`):
