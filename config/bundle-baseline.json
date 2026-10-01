@@ -1,9 +1,9 @@
 {
   "version": 2,
-  "release": "remaster R1 interim (pending review)",
-  "recordedAt": "2026-09-30",
-  "reason": "Moved from the R0 milestone (60,407 B on 0e53a01) to an R1 interim point: 75,381 B measured on b762892 (after SYS-04c). Per-commit costs and the review items are in docs/decisions/TEC-05-app-js-baseline.md. History: 53,565 B pre-R0 (174eb99), 60,407 B R0 milestone. Needs team review at the R1 merge; setting appJsGzip back to 60407 restores the R0 baseline.",
-  "appJsGzip": 75381,
+  "release": "remaster R3 interim (user-approved 2026-10-01, team review pending)",
+  "recordedAt": "2026-10-01",
+  "reason": "Moved from the R1 interim point (75,381 B on b762892, user-approved 2026-09-30) to an R3 interim point: 92,420 B measured on 912414e (after CON-04), because the rest of R3 (SYS-08, SYS-10, CON-05..08) could not fit under the old 94,226 B fail line. Per-commit costs and the review items are in docs/decisions/TEC-05-app-js-baseline.md. History: 53,565 B pre-R0 (174eb99), 60,407 B R0 milestone (0e53a01), 75,381 B R1 interim (b762892). Needs team review; setting appJsGzip back to 75381 restores the R1 interim baseline.",
+  "appJsGzip": 92420,
   "vendorJsGzip": 60279,
   "policy": {
     "appJs": { "warningGrowth": 0.15, "failGrowth": 0.25 },
