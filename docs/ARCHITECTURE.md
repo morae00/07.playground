@@ -301,7 +301,7 @@ A run in play is kept in the save as a suspended run (`profile.runSuspend`), so 
 - The desktop app flushes localStorage to disk every second, so a force-quit keeps the run saved at the last pause (docs/ELECTRON_HARDENING.md).
 - `test/suspend.integration.test.mjs` plays 2,400 uneven frames with keys, the stick, the pointer, drafts, a paused purchase, and an assist change. It saves the run as JSON and replays it in a new engine. The state is identical at the saved tick and stays identical as both play on. The UI probe reloads the page mid-run and resumes to the same state. The Electron smoke resumes a run after a renderer crash, after a quit, and after a force-quit.
 
-## Records, stars, and the codex (CON-07)
+## The meta layer: records, stars, codex, achievements, and the passive tree (CON-07)
 
 The save had a clear count, the best kills, and the best time per stage, and nothing over all runs. CON-07 adds to the v3 profile, with defaults for older saves (G17):
 - Each stage record (`StageRecord`) keeps its longest run (`bestSurvivalSeconds`, shown for stages not yet cleared), a clear with no damage (`noHit`), a clear with less damage than the hero's max health (`lowDamage`), and a boss stage cleared before its boss enraged (`swift`).
@@ -314,6 +314,7 @@ The save had a clear count, the best kills, and the best time per stage, and not
 - The terrain icons are the kit's hazard circles, baked like the other UI art (`art/ui-art-spec.mjs`, `terrain` sheet).
 - Achievements (`src/content/data/achievements.ts`, `src/ui/achievements.ts`): 30 goals over the save: clears, chapters, the account level, stars, three-star stages, career totals, a no-hit clear, swift boss stages, the codex, and one endless run's length. They are worked out from the save alone, after every settlement and as a save loads, so an older save earns what it already did (G17). The menu says which were just met.
 - Each achievement unlocks a cosmetic (`src/content/data/cosmetics.ts`): an outline round the hero, an ink trail, a portrait frame, or a title under the account level. A cosmetic not earned yet can be bought for its gold price, a sink for finished builds. Owned and worn cosmetics live in `profile.cosmetics`; only an owned one can be worn.
+- The account passives are a tree of three branches with ten points each (`catalog.ts` `metaPassives`). A passive's first five points are its own effect (rare cards, boss damage, coins and magnet). Points six to ten grow its branch's second node: critical damage +0.02, critical chance +0.4%, and coin gain +3% a point. Account levels give a point each, so the tree fills at level 31. The values were cut until a maxed build with the whole tree stayed inside the R3 gate (QUALITY_GATES).
 - Cosmetics are looks only. The engine passes the outline and trail to the renderer (`setCosmetics`); the simulation never reads them. Outline and trail colours are paper and ink tones, never the five signal colours (V2). The outline is the hero's cut-out in its colour, nudged out on four sides behind the sprite; the trail is a mark every 22 units of movement, fading over 0.9 s of play.
 
 ## Camera (FX-04)

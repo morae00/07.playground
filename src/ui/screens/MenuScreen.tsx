@@ -328,8 +328,9 @@ function GrowthView({ meta, visibleStats, buyMetaUpgrade, buyPassive }: Pick<Men
             const next = passiveEffect(meta, id);
             return (
               <button className="upgradeButton" aria-disabled={Boolean(reason)} aria-describedby={reason ? reasonId : undefined} title={reason ?? t(`passive.${id}.line`)} onClick={() => buyPassive(id)} key={id}>
-                <span>{t(`passive.${id}`)}</span>
-                <em>{t('menu.upgradeLine', { line: t(`passive.${id}.line`), level, max: def.max })}</em>
+                {/* CON-07: past its first points a passive grows its branch's second node. */}
+                <span>{level >= def.tier ? t('menu.passiveBranch', { first: t(`passive.${id}`), second: t(`passive.${id}.tier2`) }) : t(`passive.${id}`)}</span>
+                <em>{t('menu.upgradeLine', { line: t(level >= def.tier ? `passive.${id}.tier2.line` : `passive.${id}.line`), level, max: def.max })}</em>
                 {!maxed && (
                   <small className="upgradeNext">
                     {next ? t('menu.upgradeEffect', { stat: t(next.stat), from: next.from, to: next.to }) : t('menu.passiveLevel', { from: level, to: level + 1 })}

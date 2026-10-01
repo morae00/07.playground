@@ -588,7 +588,8 @@ export const SKILL_IDS = Object.keys(SKILLS) as SkillId[];
 export const META_UPGRADES: Record<MetaUpgradeId, { max: number; baseCost: number; growth: number }> = CATALOG.metaUpgrades;
 
 /** Account-level passives; each shows as the strings passive.<id> and passive.<id>.line. */
-export const META_PASSIVES: Record<PassiveId, { max: number }> = CATALOG.metaPassives;
+export const META_PASSIVES = CATALOG.metaPassives;
+const PASSIVE_IDS = Object.keys(META_PASSIVES) as PassiveId[];
 
 /** Run shop upgrades; each shows as the string runUpgrade.<id>, and `line` is the gain per level. */
 export const RUN_UPGRADES: Record<RunUpgradeId, { baseCost: number; line: string }> = CATALOG.runUpgrades;
@@ -757,9 +758,15 @@ export function buildStats(
   stats.attackSpeed *= 1 + runUpgrades.attackSpeed * 0.08;
   stats.hpRegen += meta.upgrades.regen * 0.2;
   stats.magnet += meta.upgrades.magnet * 12 + runUpgrades.magnet * 36;
-  stats.bossDamage += meta.passives.bossHunter * 0.045;
-  stats.coinGain += meta.passives.coinMagnet * 0.08;
-  stats.magnet += meta.passives.coinMagnet * 18;
+  // A passive's first points are its own effect; the rest are its branch's second node (CON-07).
+  const own = (id: PassiveId) => Math.min(meta.passives[id], META_PASSIVES[id].tier);
+  stats.bossDamage += own('bossHunter') * 0.045;
+  stats.coinGain += own('coinMagnet') * 0.08;
+  stats.magnet += own('coinMagnet') * 18;
+  for (const id of PASSIVE_IDS) {
+    const { tier, next } = META_PASSIVES[id];
+    if (meta.passives[id] > tier) stats[next.stat] += (meta.passives[id] - tier) * next.perPoint;
+  }
 
   const ironFrame = skills.ironFrame;
   if (ironFrame) {
@@ -4830,7 +4837,7 @@ export class GameEngine {
   }
 
   protected weightedSkillPick(eligible?: (id: SkillId) => boolean) {
-    const luck = this.meta.passives.rareLuck;
+    const luck = Math.min(this.meta.passives.rareLuck, META_PASSIVES.rareLuck.tier);
     const difficultyBias = this.runMode === 'infinite'
       ? clamp(this.elapsed / 1_800, 0, 1)
       : (stageIndex(this.chapter, this.stage) - 1) / (TOTAL_STAGE_COUNT - 1);

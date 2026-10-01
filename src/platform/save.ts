@@ -124,10 +124,11 @@ const UPGRADE_LIMITS: Record<MetaUpgradeId, number> = {
   magnet: 25,
 };
 
+/** Ten points a branch since the CON-07 passive tree (catalog metaPassives). */
 const PASSIVE_LIMITS: Record<PassiveId, number> = {
-  rareLuck: 5,
-  bossHunter: 5,
-  coinMagnet: 5,
+  rareLuck: 10,
+  bossHunter: 10,
+  coinMagnet: 10,
 };
 
 export const createDefaultMeta = (): MetaState => ({

@@ -51,7 +51,7 @@ test('legacy raw meta migrates and invalid ranges are clamped', () => {
       passivePoints: 3,
       progress: { chapter: 99, stage: -2 },
       upgrades: { attack: 999 },
-      passives: { rareLuck: 9 },
+      passives: { rareLuck: 14 },
     }),
   });
   const loaded = loadGameSave(storage);
@@ -60,7 +60,7 @@ test('legacy raw meta migrates and invalid ranges are clamped', () => {
   assert.equal(loaded.data.meta.xp, 12);
   assert.deepEqual(loaded.data.meta.progress, { chapter: 5, stage: 1 });
   assert.equal(loaded.data.meta.upgrades.attack, 30);
-  assert.equal(loaded.data.meta.passives.rareLuck, 5);
+  assert.equal(loaded.data.meta.passives.rareLuck, 10, 'a branch of the passive tree holds ten points (CON-07)');
 });
 
 test('corrupt primary recovers from backup', () => {

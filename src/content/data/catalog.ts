@@ -50,11 +50,15 @@ const metaUpgrades: Record<MetaUpgradeId, { max: number; baseCost: number; growt
   magnet: { max: 25, baseCost: 34, growth: 1.2 },
 };
 
-/** Account-level passives; each shows as the strings passive.<id> and passive.<id>.line. */
-const metaPassives: Record<PassiveId, { max: number }> = {
-  rareLuck: { max: 5 },
-  bossHunter: { max: 5 },
-  coinMagnet: { max: 5 },
+/**
+ * Account-level passives, a tree of three branches (CON-07): the first `tier` points are the passive's own effect, and
+ * the points after it the branch's second node, which adds `perPoint` to a stat. Each shows as the strings
+ * passive.<id> and passive.<id>.line, its second node as passive.<id>.tier2 and passive.<id>.tier2.line.
+ */
+const metaPassives: Record<PassiveId, { max: number; tier: number; next: { stat: 'critDamage' | 'critChance' | 'coinGain'; perPoint: number } }> = {
+  rareLuck: { max: 10, tier: 5, next: { stat: 'critDamage', perPoint: 0.02 } },
+  bossHunter: { max: 10, tier: 5, next: { stat: 'critChance', perPoint: 0.004 } },
+  coinMagnet: { max: 10, tier: 5, next: { stat: 'coinGain', perPoint: 0.03 } },
 };
 
 /** Run shop upgrades; each shows as the string runUpgrade.<id>, and `line` is the gain per level. */

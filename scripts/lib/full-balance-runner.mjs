@@ -85,7 +85,8 @@ function progressionBase(chapter, persona) {
       passivePoints: 0,
       progress: { chapter: 5, stage: 10 },
       upgrades: { attack: 30, defense: 25, maxHp: 30, moveSpeed: 20, crit: 20, regen: 20, magnet: 25 },
-      passives: { rareLuck: 5, bossHunter: 5, coinMagnet: 5 },
+      // Every point of the CON-07 passive tree (ten a branch).
+      passives: { rareLuck: 10, bossHunter: 10, coinMagnet: 10 },
     };
   }
   if (persona.freshMeta) {

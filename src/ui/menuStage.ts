@@ -2,6 +2,7 @@
 // the stage's boss, the least a clear pays, how far a chapter is cleared, and what the next upgrade level gives.
 import {
   BOSS_ROUND_BOSSES,
+  META_PASSIVES,
   PRACTICE_REWARD_SCALE,
   STAGES_PER_CHAPTER,
   buildStats,
@@ -100,9 +101,20 @@ export function upgradeEffect(meta: MetaState, id: MetaUpgradeId): Effect {
   return effect(meta, { ...meta, upgrades: { ...meta.upgrades, [id]: meta.upgrades[id] + 1 } }, STAT_EFFECT[id]);
 }
 
-/** The same for a passive; the rare-skill luck has no stat, so it shows its level instead (null). */
+/** CON-07: the stats the passive tree's second nodes add to. */
+const SECOND_NODE_EFFECT: Record<(typeof META_PASSIVES)[PassiveId]['next']['stat'], readonly [StringKey, (stats: StatBlock) => string]> = {
+  critDamage: ['stats.critDamage', (stats) => `×${stats.critDamage.toFixed(2)}`],
+  critChance: ['stats.crit', (stats) => percent(stats.critChance)],
+  coinGain: ['stats.coinGain', (stats) => percent(stats.coinGain)],
+};
+
+/**
+ * The same for a passive: its own effect for its first points, then its branch's second node (CON-07). The rare-skill
+ * luck has no stat, so its first points show the level instead (null).
+ */
 export function passiveEffect(meta: MetaState, id: PassiveId): Effect | null {
-  const shown = PASSIVE_EFFECT[id];
+  const { tier, next } = META_PASSIVES[id];
+  const shown = meta.passives[id] >= tier ? SECOND_NODE_EFFECT[next.stat] : PASSIVE_EFFECT[id];
   return shown ? effect(meta, { ...meta, passives: { ...meta.passives, [id]: meta.passives[id] + 1 } }, shown) : null;
 }
 

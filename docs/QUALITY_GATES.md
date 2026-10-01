@@ -233,6 +233,17 @@ SYS-07 (difficulty curve, `difficultyCurve` rule) was tuned with three pilot set
   - a lower damage floor and gentler tide slows: they did not move the Ch3 spike.
 - `scripts/lib/full-balance-runner.mjs` now records each run's lowest health, hits, and minimum hits, and offers the `maxed` persona.
 
+CON-07's passive tree gives each account passive ten points instead of five. The `maxed` persona now holds all thirty (it held 5 / 5 / 5). Its second nodes started stronger; this is what each setting did to maxed Ch5 (six stages × 10 seeds):
+
+| second nodes (per point) | clears | lowest health p50 |
+|---|---:|---:|
+| the 5 / 5 / 5 build, no second nodes (SYS-07) | 85% | 0.65 |
+| crit damage +0.05, crit chance +1%, regen +0.15/s | 92% | 0.79 |
+| crit damage +0.02, crit chance +0.4%, regen +0.04/s | 88% | 0.71 |
+| crit damage +0.02, crit chance +0.4%, coin gain +3% (chosen) | 88% | 0.68 |
+
+The chosen nodes keep a full tree inside the R3 gate (lowest health median at most 70%). Regeneration was what lifted the lowest health, so the third node became coin gain.
+
 SYS-08 (build depth, `buildDepth` rule) is an A/B experiment, off in both rule sets until the slot playtests decide. The bots measured it on the SYS-07 pilot sets, with the experiment off (today's rules) and on. The first set compares XP curves, before tokens (the personas had account level 1):
 
 | | off | slots and owned weight | + XP 0.6 / 0.1 | + XP 0.7 / 0.1 | + XP 0.8 / 0.08 |

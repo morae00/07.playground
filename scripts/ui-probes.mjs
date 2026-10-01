@@ -533,6 +533,7 @@ try {
       const key = 'blackline-survivor-save-v2';
       const save = JSON.parse(localStorage.getItem(key));
       save.meta.progress = { chapter: 1, stage: 6 };
+      save.meta.passives = { rareLuck: 6, bossHunter: 0, coinMagnet: 0 };
       // As a save from before CON-07: no codex chapters and no career totals, so both start from the records.
       save.profile.codex = { enemies: [], bosses: [], skills: [] };
       delete save.profile.stats;
@@ -576,6 +577,11 @@ try {
     const title = await page.locator('.walletTitle').innerText().catch(() => '');
     const buy = await panel.locator('.achievementList li').nth(1).getByRole('button').getAttribute('aria-disabled');
     record('CON-07 a title earned can be worn, and a reward not earned is for sale', title === '먹선 필경사' && buy === 'true', `title ${title || 'none'}, buy disabled ${buy}`);
+
+    // The passive tree: past five points a passive grows its branch's second node, up to ten.
+    await page.getByRole('tab', { name: /수련/ }).click();
+    const branch = (await page.locator('#menu-panel-growth .passiveGrid .upgradeButton').first().innerText()).replace(/\s+/g, ' ');
+    record('CON-07 a passive past five points shows its second node, out of ten', branch.includes('희귀 감각 → 결정적 감각') && branch.includes('Lv.6/10'), branch);
     await page.close();
   });
 

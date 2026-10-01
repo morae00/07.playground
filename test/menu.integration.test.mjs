@@ -55,6 +55,17 @@ test('UI-06: an upgrade shows its stat now and after the next level', () => {
   assert.equal(passiveEffect(save, 'rareLuck'), null, 'luck has no stat, so the menu shows its level');
 });
 
+test('CON-07: past its first five points a passive grows its branch\'s second node', () => {
+  const at = (passives) => meta({ chapter: 1, stage: 1 }, { upgrades: { attack: 0, defense: 0, maxHp: 0, moveSpeed: 0, crit: 0, regen: 0, magnet: 0 }, passives });
+  assert.deepEqual(passiveEffect(at({ rareLuck: 5, bossHunter: 4, coinMagnet: 5 }), 'rareLuck'), { stat: 'stats.critDamage', from: '×1.65', to: '×1.67' });
+  assert.deepEqual(passiveEffect(at({ rareLuck: 0, bossHunter: 5, coinMagnet: 0 }), 'bossHunter'), { stat: 'stats.crit', from: '8%', to: '8.4%' });
+  assert.deepEqual(passiveEffect(at({ rareLuck: 0, bossHunter: 9, coinMagnet: 0 }), 'bossHunter'), { stat: 'stats.crit', from: '9.6%', to: '10%' });
+  assert.deepEqual(passiveEffect(at({ rareLuck: 0, bossHunter: 0, coinMagnet: 6 }), 'coinMagnet'), { stat: 'stats.coinGain', from: '143%', to: '146%' });
+  // The first nodes stop at five points: boss damage and coins stay where five points put them.
+  const ten = at({ rareLuck: 10, bossHunter: 10, coinMagnet: 10 });
+  assert.deepEqual(passiveEffect({ ...ten, passives: { ...ten.passives, bossHunter: 4 } }, 'bossHunter'), { stat: 'stats.bossDamage', from: '118%', to: '122.5%' });
+});
+
 test('UI-06: the path map runs through all ten stops', () => {
   assert.equal(STAGE_PATH.length, 10);
   const path = smoothPath(STAGE_PATH);
