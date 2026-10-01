@@ -5,10 +5,11 @@
 import bossPhaseMoves from './bossPhaseMoves.ts';
 import catalog from './catalog.ts';
 import encounterGrammars from './encounterGrammars.ts';
+import objectives from './objectives.ts';
 import skillNumbers from './skillNumbers.ts';
 import soundCues from './soundCues.ts';
 
-const CONTENT_TABLES = { bossPhaseMoves, catalog, encounterGrammars, skillNumbers, soundCues };
+const CONTENT_TABLES = { bossPhaseMoves, catalog, encounterGrammars, objectives, skillNumbers, soundCues };
 
 export type ContentTables = typeof CONTENT_TABLES;
 export default CONTENT_TABLES;

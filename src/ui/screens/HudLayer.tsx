@@ -10,7 +10,7 @@ import { MAX_SKILL_LEVEL } from '../../game/grammar';
 import { formatCount, t, tx } from '../../i18n/strings';
 import { glyph } from '../Glyph';
 import { useInputDevice } from '../inputDevice';
-import { loadBossTitles, type BossTitle } from '../bossTitles';
+import { loadBossTitles, loadLandmarkTitles, type BossTitle, type LandmarkTitle } from '../bossTitles';
 import { ProgressBar } from '../ProgressBar';
 
 export type HudLayerProps = {
@@ -31,6 +31,8 @@ export type HudLayerProps = {
 const HURT_FACE_MS = 500;
 /** A boss's title card shows this long when it appears, outside the centre 40% of the screen (FX-05). */
 const BOSS_INTRO_MS = 1200;
+/** CON-03: how long a landmark's name card stays as its stage begins (its CSS animation runs as long). */
+const LANDMARK_CARD_MS = 2800;
 
 
 function SkillSlots({ snapshot }: { snapshot: HudSnapshot }) {
@@ -111,6 +113,22 @@ export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen,
     };
     // Only a new boss id brings a new card; its name comes with it.
   }, [bossId]);
+  const [landmarkCard, setLandmarkCard] = useState<LandmarkTitle | null>(null);
+  const landmark = snapshot.landmark;
+  const stageKey = `${snapshot.seed}-${snapshot.chapter}-${snapshot.stage}`;
+  useEffect(() => {
+    if (!landmark) return undefined;
+    let live = true;
+    void loadLandmarkTitles().then((titles) => { if (live && titles[landmark]) setLandmarkCard(titles[landmark]); });
+    const timer = window.setTimeout(() => setLandmarkCard(null), LANDMARK_CARD_MS);
+    return () => {
+      live = false;
+      window.clearTimeout(timer);
+      setLandmarkCard(null);
+    };
+    // A card per landmark stage started; the stage key brings it back on a retry.
+  }, [landmark, stageKey]);
+  const bonus = snapshot.bonus;
   const low = snapshot.hp > 0 && snapshot.hp <= snapshot.maxHp * LOW_HEALTH_RATIO;
   const face = performance.now() - hurtAt < HURT_FACE_MS
     ? 'hurt'
@@ -162,6 +180,15 @@ export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen,
                 ? t('hud.bossGoal', { boss: bossName || t('hud.bossFallback'), progress: snapshot.objectiveProgress, target: snapshot.objectiveTarget })
                 : tx(snapshot.objective)}
           </div>
+          {bonus && (
+            <div className={`bonusChip ${bonus.status}`}>
+              {bonus.status === 'done'
+                ? t('hud.bonusDone', { goal: tx(bonus.goal) })
+                : bonus.status === 'failed'
+                  ? t('hud.bonusFailed', { goal: tx(bonus.goal) })
+                  : t('hud.bonus', { goal: tx(bonus.goal), progress: bonus.progress, target: bonus.target })}
+            </div>
+          )}
           {infinite && <div className={snapshot.scoreEligible ? 'recordState eligible' : 'recordState practice'}>{t(snapshot.scoreEligible ? 'record.ranked' : 'record.practice')}</div>}
         </section>
         <section className="hudChips">
@@ -181,6 +208,12 @@ export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen,
         </section>
       </div>
       {bossName && <BossBar snapshot={snapshot} name={bossName} />}
+      {landmarkCard && !intro && (
+        <div className="bossIntro landmarkIntro" role="status" aria-live="polite">
+          <strong>{landmarkCard.name}</strong>
+          <p>{landmarkCard.line}</p>
+        </div>
+      )}
       {intro && (
         <div className="bossIntro" role="status" aria-live="polite">
           {intro.title && <span>{intro.title}</span>}

@@ -1,0 +1,46 @@
+{
+ "version": 1,
+ "source": "docs/lore/lore-bible.md §5.1 (draft names and lines)",
+ "landmarks": {
+  "torn-poster-crossing": {
+   "name": "찢어진 포스터 교차로",
+   "line": "벽보마다 이름이 있었다. 지금은 찢긴 자리만 남았다."
+  },
+  "ink-blockade": {
+   "name": "잉크 봉쇄선",
+   "line": "엎어진 먹통이 골목을 막았다. 넘으면 돌아갈 길이 지워진다."
+  },
+  "ribbed-nave": {
+   "name": "리브 신랑",
+   "line": "기둥들이 한가운데를 가리킨다. 한가운데에는 아무도 없다."
+  },
+  "locked-rose-window": {
+   "name": "잠긴 장미창",
+   "line": "바닥에 누운 장미창을 쇠사슬이 묶었다. 빛은 더 들어오지 않는다."
+  },
+  "split-sluice": {
+   "name": "분할 수문",
+   "line": "수문 두 짝이 물길을 갈랐다. 위쪽 물은 아래로 내려가지 못한다."
+  },
+  "floodgate-basin": {
+   "name": "범람 수문 분지",
+   "line": "갇힌 물이 넘친다. 넘친 자리마다 먹빛이 옅어진다."
+  },
+  "broken-minute-dial": {
+   "name": "부러진 분침 다이얼",
+   "line": "분침이 부러진 뒤로 이 광장에는 다음 분이 오지 않았다."
+  },
+  "gear-ossuary": {
+   "name": "톱니 납골당",
+   "line": "멈춘 톱니를 벽감마다 모셨다. 돌지 않는 것은 여기서 잠든다."
+  },
+  "penumbra-ring": {
+   "name": "반영의 고리",
+   "line": "바닥의 고리가 빛 대신 그림자를 되비춘다."
+  },
+  "cracked-totality": {
+   "name": "갈라진 개기",
+   "line": "해를 가린 원반이 둘로 갈라졌다. 틈으로 백지가 보인다."
+  }
+ }
+}

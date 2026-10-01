@@ -39,7 +39,7 @@ test('UI-05: a settlement carries the gold parts, the damage per skill, the leve
   try {
     assert.ok(settlement, 'the stage settled');
     const parts = settlement.goldParts;
-    const sum = parts.base + parts.boss + parts.kills + parts.coins + parts.stage;
+    const sum = parts.base + parts.boss + parts.kills + parts.coins + parts.stage + parts.bonus;
     assert.equal(Math.floor(sum + 1e-9), settlement.gold, 'the parts add up to the gold');
     assert.ok(parts.kills > 0 && parts.stage > 0);
     assert.ok((settlement.damageBySkill.needleStorm ?? 0) > 0, 'the needles did damage');

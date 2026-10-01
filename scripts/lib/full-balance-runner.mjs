@@ -328,6 +328,8 @@ export async function runFullBalanceBatch({
           coins: settlement?.coins ?? world.player.coins,
           hpRatio: round(world.player.hp / Math.max(1, world.player.stats.maxHp), 5),
           bossHpRatio: mainBoss ? round(mainBoss.hp / mainBoss.maxHp, 5) : null,
+          // CON-03: whether the stage's bonus goal was met (null on stages without one).
+          bonus: settlement?.bonus ? settlement.bonus.met : null,
           skillCount: latestSnapshot ? Object.keys(latestSnapshot.skills).length : 0,
           skills: latestSnapshot ? Object.keys(latestSnapshot.skills).sort() : [],
         };

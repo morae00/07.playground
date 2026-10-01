@@ -112,6 +112,12 @@ export type RuleSet = Readonly<{
    * instead of 45. Nothing is ever lost, but a route past the drops pays sooner than waiting for them.
    */
   patientPickups: boolean;
+  /**
+   * CON-03: a normal stage's objective changes it and sets a bonus goal (src/content/data/objectives.ts): a tier mix
+   * moved by 15 points, more spawns or terrain, more ranged enemies at once, a strengthened or extra field boss. The
+   * campaign's first stage keeps its bonus goal without the modifiers. A goal met on a clear pays gold and a star.
+   */
+  stageObjectives: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -143,6 +149,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   obstacleCover: false,
   terrainOnEnemies: false,
   patientPickups: false,
+  stageObjectives: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -174,6 +181,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   obstacleCover: true,
   terrainOnEnemies: false,
   patientPickups: true,
+  stageObjectives: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

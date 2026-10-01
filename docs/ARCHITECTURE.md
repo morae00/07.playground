@@ -237,6 +237,28 @@ A campaign boss enters phase 2 at 66% health and phase 3 at 33%. Under the `boss
 - Every move leaves a way out (an aisle, a gap, a gate, an open lane, or the void itself) and warns for its whole preview. Scheduled terrain goes through `pendingHazards`, as delayed shots go through `pendingHostileShots`. Orbiting saws follow their boss and fall away when it dies.
 - Still waiting for their kit art: the Ch2-5 mid bosses (유리 주교, 무채 조수왕, 시계 폭군, 일식 원장), whose moves are authored in data but not built, and the field bosses' light phase-2 moves.
 
+## Stage objectives (CON-03)
+
+A normal stage keeps its survival clock. Under the `stageObjectives` rule its objective (`OBJECTIVE_POOL`, rotating by stage and chapter) also changes the stage and sets a bonus goal. The numbers are in `src/content/data/objectives.ts`, and `src/game/stageObjective.ts` runs them. The engine asks it for the modifiers and reports kills, field bosses, and time in terrain to it.
+
+| Objective | Changes | Bonus goal |
+|---|---|---|
+| 소형 무리 압박전 (swarm) | small share +15 points, spawns ×1.2 | defeat 280 small enemies |
+| 중형 경계선 유지 (holdLine) | — | hold a marked zone for 30 s; it moves on every 10 s held |
+| 지형 함정 구역 (traps) | twice the terrain | spend at most 20 s in hazards |
+| 정예 추격전 (elites) | field bosses with ×1.5 health and ×1.2 damage | defeat both field bosses |
+| 자원 회수 압박전 (salvage) | — | recover 5 ink caches, one after another, by standing on each for 1.5 s |
+| 대형 개체 회피전 (giants) | large share +15 points | defeat 45 large enemies |
+| 투사체 포위망 (crossfire) | three times the ranged cap, up to 6 | defeat 14 ranged enemies |
+| 보스 전초 압박전 (vanguard) | a third field boss at 18% | defeat all three field bosses |
+
+- Kill goals scale by chapter (×1, 1.6, 3.5, 4.5, 5.5): later chapters bring far more enemies.
+- G9's stage exception: a moved share takes 15 points at most, and the other two tiers split the rest in their 58:30:12 proportion. Hit radii and tier stats never change. The ranged cap (1-3) is raised on the crossfire stages only. Field bosses keep their 36% and 72% marks, and the vanguard adds one (G8). The stage card lists every change (`menuStage.ts` `stageObjective`).
+- The campaign's first stage teaches the game, so it keeps its bonus goal without the changes. Practice runs have no bonus goal: their clock is too short.
+- The zone and the caches draw from the objective's own random stream, so the rest of the stage keeps its draws. The world renderer draws them on the ground in the player's colours: the zone as an ally ring, a cache as a reward ring round an ink packet. The solid arc fills as the player stands in it.
+- The HUD shows the goal under the objective, counting, met, or missed. A goal met on a clear pays half the stage's floor gold (the settlement's 보너스 목표 part). It also stars the stage record (`profile.stageRecords[…].bonus`), and the stage map and card show the star.
+- Landmark stages (St3, St7) open with the landmark's name card: the name and a line from the lore bible's draft table (§5.1), in `public/assets/content/landmark-titles.json`, like the boss titles.
+
 ## Camera (FX-04)
 
 The simulation camera stays hard-locked on the player, clamped to the world. Spawns, aim, and off-screen checks use it together with the logical frame (G14). Under the `smoothCamera` rule, the screen shows a separate view camera instead (`src/game/presentation/viewCamera.ts`):

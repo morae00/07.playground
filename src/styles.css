@@ -436,6 +436,33 @@ button:disabled {
   font-weight: 800;
 }
 
+/* CON-03: the bonus goal under the objective: counting, met, or missed. */
+.bonusChip {
+  max-width: 34vw;
+  margin-top: 3px;
+  overflow: hidden;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 2px 10px;
+  color: var(--ink);
+  background: var(--paper);
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  text-shadow: none;
+  white-space: nowrap;
+}
+
+.bonusChip.done {
+  color: var(--paper);
+  background: var(--ink);
+}
+
+.bonusChip.failed {
+  border-style: dashed;
+  opacity: 0.7;
+}
+
 .objectiveChip {
   max-width: 34vw;
   margin-top: 4px;
@@ -1640,6 +1667,18 @@ h2 {
 }
 
 /* A cleared stage carries the ink seal. */
+/* CON-03: a stage whose bonus goal was met on a clear. */
+.nodeStar {
+  position: absolute;
+  bottom: -10px;
+  right: -8px;
+  color: var(--ink);
+  font-size: 18px;
+  font-style: normal;
+  line-height: 1;
+  text-shadow: 0 0 0 var(--paper), 1px 1px 0 var(--paper), -1px -1px 0 var(--paper);
+}
+
 .nodeSeal {
   position: absolute;
   top: -9px;
@@ -1699,6 +1738,20 @@ h2 {
 .stageBrief h3 {
   margin: 2px 0 4px;
   font-size: 26px;
+  font-weight: 900;
+}
+
+/* CON-03: what the stage's objective changes (G9 asks the card to say so). */
+.stageChanges {
+  margin: 4px 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.stageChanges span {
+  margin-right: 4px;
+  border: 1px solid var(--ink);
+  padding: 0 5px;
   font-weight: 900;
 }
 
@@ -2256,7 +2309,8 @@ h2 {
 .bossIntro {
   position: absolute;
   z-index: 4;
-  top: 132px;
+  /* Below the clock, the objective, and its bonus chip (CON-03). */
+  top: 160px;
   left: 0;
   right: 0;
   width: min(560px, calc(100% - 28px));
@@ -2285,6 +2339,13 @@ h2 {
 .bossIntro p {
   margin: 4px 0 0;
   font-size: 14px;
+}
+
+/* CON-03: a landmark's name card, paper instead of ink so it never reads as a boss. */
+.bossIntro.landmarkIntro {
+  color: var(--ink);
+  background: var(--paper);
+  animation-duration: 2.8s;
 }
 
 @keyframes bossIntro {
@@ -2533,6 +2594,25 @@ h2 {
   color: #fff;
   font-size: 13px;
   font-weight: 800;
+}
+
+/* CON-03: the settlement's bonus goal line, and the star beside a met goal elsewhere. */
+.bonusResult {
+  margin: 0 0 12px;
+  border-left: 6px solid var(--muted, #8c8579);
+  padding: 6px 10px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.bonusResult.met {
+  border-left-color: var(--ink);
+}
+
+.bonusStar {
+  margin-right: 6px;
+  font-weight: 900;
 }
 
 .unlockBanner {

@@ -38,6 +38,7 @@ const GOLD_PARTS: readonly (readonly [keyof Settlement['goldParts'], StringKey])
   ['kills', 'settle.gold.kills'],
   ['coins', 'settle.gold.coins'],
   ['stage', 'settle.gold.stage'],
+  ['bonus', 'settle.gold.bonus'],
 ];
 const COUNT_UP_MS = 700;
 /** Skills shown in the damage bars, most damage first. */
@@ -162,6 +163,13 @@ export function SettlementModal({ settlement, defeated, notes, reducedMotion, le
           {notes.levelUp && <p className="levelUpBanner" role="status">{t('settle.levelUp', { level: notes.levelUp, points: notes.passivePoints })}</p>}
         </div>
       </section>
+
+      {settlement.bonus && (
+        <p className={settlement.bonus.met ? 'bonusResult met' : 'bonusResult'}>
+          {settlement.bonus.met && <span className="bonusStar" aria-hidden="true">★</span>}
+          {t(settlement.bonus.met ? 'settle.bonus.met' : 'settle.bonus.missed', { goal: tx(settlement.bonus.goal) })}
+        </p>
+      )}
 
       {notes.unlocked && (
         <p className="unlockBanner" role="status">

@@ -179,5 +179,18 @@ test('stage results fold into records; practice runs are not recorded', () => {
   profile = recordStageResult(profile, { chapter: 1, stage: 2, cleared: true, kills: 90, clearSeconds: 470, practice: false });
   const unchanged = recordStageResult(profile, { chapter: 1, stage: 2, cleared: true, kills: 999, clearSeconds: 150, practice: true });
   assert.equal(unchanged, profile);
-  assert.deepEqual(profile.stageRecords['1-2'], { attempts: 3, clears: 2, bestKills: 90, bestClearSeconds: 470 });
+  assert.deepEqual(profile.stageRecords['1-2'], { attempts: 3, clears: 2, bestKills: 90, bestClearSeconds: 470, bonus: false });
+});
+
+test('a bonus goal met on a clear stars the stage for good; a defeat or a later miss never takes it away (CON-03)', () => {
+  let profile = createDefaultProfile();
+  profile = recordStageResult(profile, { chapter: 2, stage: 3, cleared: false, kills: 300, clearSeconds: 200, practice: false, bonus: true });
+  assert.equal(profile.stageRecords['2-3'].bonus, false, 'a defeat cannot star the stage');
+  profile = recordStageResult(profile, { chapter: 2, stage: 3, cleared: true, kills: 800, clearSeconds: 480, practice: false, bonus: true });
+  profile = recordStageResult(profile, { chapter: 2, stage: 3, cleared: true, kills: 700, clearSeconds: 480, practice: false, bonus: false });
+  assert.equal(profile.stageRecords['2-3'].bonus, true);
+  // A save that claims a star without a clear is sanitized.
+  const loaded = sanitizeProfile({ stageRecords: { '2-4': { attempts: 1, clears: 0, bestKills: 5, bestClearSeconds: null, bonus: true }, '2-3': profile.stageRecords['2-3'] } });
+  assert.equal(loaded.stageRecords['2-4'].bonus, false);
+  assert.equal(loaded.stageRecords['2-3'].bonus, true);
 });

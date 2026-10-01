@@ -22,6 +22,7 @@ import type {
 import type { GameOptions } from '../../platform/save.ts';
 import { HIT_RADIUS } from '../grammar.ts';
 import { SKILL_NUMBERS, scaleAt } from '../skillNumbers.ts';
+import type { ObjectiveMark } from '../stageObjective.ts';
 import type { ViewFrame } from '../viewPolicy.ts';
 import { motionPolicy } from '../visualContracts.ts';
 import { clamp, distance } from '../worldMath.ts';
@@ -214,6 +215,8 @@ export type RenderWorld = {
   readonly beams: readonly Readonly<BeamEffect>[];
   readonly laneTelegraphs: readonly Readonly<LaneTelegraph>[];
   readonly chains: readonly Readonly<ChainEffect>[];
+  /** CON-03: the zone to hold or the cache to recover, when the stage's bonus goal has one. */
+  readonly objectiveMarks: readonly ObjectiveMark[];
   readonly effects: RenderEffects;
 };
 
@@ -741,6 +744,7 @@ export class WorldRenderer {
 
   /** Marks on the floor under every body: foot shadows, the player's foot ring, and ranged-enemy rings. */
   private drawGroundMarks(ctx: CanvasRenderingContext2D) {
+    this.drawObjectiveMarks(ctx);
     this.drawFallingBodies(ctx);
     if (this.world.airShots) this.drawShotShadows(ctx);
     for (const body of this.sortedBodies) {
@@ -782,6 +786,45 @@ export class WorldRenderer {
     if (!player) return;
     if (this.hero) this.drawHeroGround(ctx, player.x, player.y);
     else this.visual.drawPlayerGround(ctx, this.playerInput(player));
+  }
+
+  /**
+   * CON-03: the bonus goal's place on the ground, in the player's colours. A zone to hold is an ally ring; a cache to
+   * recover is a reward ring round an ink packet. The solid arc fills as the player stands in it.
+   */
+  private drawObjectiveMarks(ctx: CanvasRenderingContext2D) {
+    for (const mark of this.world.objectiveMarks) {
+      const color = mark.kind === 'hold' ? SIGNAL.ally : SIGNAL.reward;
+      ctx.save();
+      ctx.fillStyle = rgba(color, 0.1);
+      ctx.beginPath();
+      ctx.arc(mark.x, mark.y, mark.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.setLineDash([14, 10]);
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = rgba(color, 0.75);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      if (mark.progress > 0) {
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.arc(mark.x, mark.y, mark.radius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clamp(mark.progress, 0, 1));
+        ctx.stroke();
+      }
+      if (mark.kind === 'cache') {
+        ctx.translate(mark.x, mark.y);
+        ctx.rotate(Math.PI / 4);
+        ctx.fillStyle = NEUTRAL.ink;
+        ctx.strokeStyle = NEUTRAL.paperBright;
+        ctx.lineWidth = 2;
+        ctx.fillRect(-9, -9, 18, 18);
+        ctx.strokeRect(-9, -9, 18, 18);
+        ctx.fillStyle = SIGNAL.reward;
+        ctx.fillRect(-3, -3, 6, 6);
+      }
+      ctx.restore();
+    }
   }
 
   /** Health bars and ranged markers for every body in one pass, so no body covers another's bar (TEC-12). */

@@ -42,6 +42,7 @@ import {
 import { text, type StringKey, type Text } from '../i18n/text';
 import { REMASTER_RULES, ruleSetFor, type RuleSet, type RuleSetId } from './rules';
 import { EncounterDirector, type SpawnEdge } from './encounterDirector';
+import { StageObjective, bonusGold, type BonusState, type ObjectiveId, type ObjectiveMark } from './stageObjective';
 import { CHECK_CONTENT_AT_LOAD } from '../content/checks';
 import CATALOG from '../content/data/catalog';
 import { CHARGER, STALKER_FLOCK, SeparationGrid, WARDEN_SHIELD, enemyRole, flockSteer, leadAim, shieldCovers, turnToward } from './enemyBehaviors';
@@ -250,6 +251,10 @@ export type HudSnapshot = {
   objective: Text;
   objectiveProgress: number;
   objectiveTarget: number;
+  /** CON-03: the stage's bonus goal and how far along it is; null when the stage has none. */
+  bonus: BonusState | null;
+  /** CON-03: the landmark of a landmark stage (St3, St7), for its name card. */
+  landmark: string | null;
   timeLeft: number;
   duration: number;
   timeScale: number;
@@ -318,7 +323,9 @@ export type Settlement = {
   /** UI-05: health the player lost over the run (hits and burns, after defence). */
   damageTaken: number;
   /** UI-05: the parts the gold is made of, in settlement order, after the practice scale; they sum to `gold` before its floor. */
-  goldParts: Readonly<{ base: number; boss: number; kills: number; coins: number; stage: number }>;
+  goldParts: Readonly<{ base: number; boss: number; kills: number; coins: number; stage: number; bonus: number }>;
+  /** CON-03: the stage's bonus goal and whether the run met it (only a clear can). */
+  bonus: Readonly<{ goal: Text; met: boolean }> | null;
   /** UI-05: health each skill took off enemies. A presentation tally: the simulation never reads it. */
   damageBySkill: Readonly<Partial<Record<SkillId, number>>>;
 };
@@ -456,6 +463,9 @@ const SAW_SPEED = 250;
 const SAW_LIFE = 3.6;
 /** Boss-made terrain kinds the encounter director budgets (SYS-03). */
 const DYNAMIC_TERRAIN: ReadonlySet<Hazard['kind']> = new Set(['fire', 'slow', 'root', 'null']);
+const NO_MARKS: readonly ObjectiveMark[] = [];
+/** CON-03: the ground the terrain goal counts time in. */
+const TERRAIN_KINDS: ReadonlySet<Hazard['kind']> = new Set(['water', 'slow', 'trap', 'root', 'fire', 'null']);
 /** SYS-11: after silence ends, ready skills fire one at a time this far apart instead of all at once. */
 const SILENCE_RELEASE_STAGGER_SECONDS = 0.1;
 
@@ -500,11 +510,16 @@ export const OBJECTIVE_POOL = ['swarm', 'holdLine', 'traps', 'elites', 'salvage'
 
 export { stageKind };
 
+/** The survival objective of a normal stage, in rotation. */
+export function objectiveIdFor(chapter: number, stageNo: number): ObjectiveId {
+  return OBJECTIVE_POOL[(stageNo + chapter - 2) % OBJECTIVE_POOL.length];
+}
+
 export function objectiveFor(chapter: number, stageNo: number): Text {
   const kind = stageKind(stageNo);
   if (kind === 'midBoss') return text('objective.midBoss', { chapter });
   if (kind === 'finalBoss') return text('objective.finalBoss', { chapter });
-  return text('objective.survive', { goal: text(`objective.${OBJECTIVE_POOL[(stageNo + chapter - 2) % OBJECTIVE_POOL.length]}`) });
+  return text('objective.survive', { goal: text(`objective.${objectiveIdFor(chapter, stageNo)}`) });
 }
 
 export function stageIndex(chapter: number, stageNo: number) {
@@ -729,6 +744,8 @@ export class GameEngine {
   protected timeScale = 1;
   protected spawnBudget = 0;
   protected fieldBossMarks = new Set<number>();
+  /** CON-03: the normal stage's objective, under the stageObjectives rule. */
+  protected stageObjective: StageObjective | null = null;
   protected stageFinished = false;
   protected rewardLock = false;
   protected bossEnraged = false;
@@ -1411,6 +1428,16 @@ export class GameEngine {
     this.director = this.rules.encounterDirector && this.runMode === 'campaign' && this.kind === 'normal'
       ? new EncounterDirector(encounterGrammarForChapter(this.chapter as ChapterId), this.duration, createSeededRandom(((this.runSeed ^ 0x5e03d1ec) >>> 0) || 1))
       : null;
+    // CON-03: its placements draw from their own stream as well. The first stage teaches, so it keeps only the goal.
+    this.stageObjective = this.rules.stageObjectives && this.runMode === 'campaign' && this.kind === 'normal'
+      ? new StageObjective(
+        objectiveIdFor(this.chapter, this.stage),
+        this.chapter,
+        createSeededRandom(((this.runSeed ^ 0x0b1ec7a5) >>> 0) || 1),
+        !(this.chapter === 1 && this.stage === 1),
+        !this.practiceRun,
+      )
+      : null;
     this.playerHeading = { x: 1, y: 0 };
     this.stageFinished = false;
     this.rewardLock = false;
@@ -1495,7 +1522,7 @@ export class GameEngine {
       }
     }
 
-    const hazardCount = 8 + Math.floor(this.chapter * 2.4);
+    const hazardCount = Math.round((8 + Math.floor(this.chapter * 2.4)) * (this.stageObjective?.terrainScale ?? 1));
     for (let i = 0; i < hazardCount; i += 1) {
       const authoredKind = grammar.hazards[i % grammar.hazards.length];
       const kind: Hazard['kind'] = authoredKind === 'null'
@@ -1592,6 +1619,7 @@ export class GameEngine {
     if (this.endStepIfInterrupted()) return;
     this.updatePlayer(dt);
     if (this.endStepIfInterrupted()) return;
+    this.stageObjective?.update(dt, this.player, (radius, random) => this.objectiveSpot(radius, random));
     this.rebuildEnemyIndex();
     this.updateSkills(dt);
     this.flushDeadEnemies();
@@ -1742,8 +1770,10 @@ export class GameEngine {
     this.coinFeverRushTimer = advanceCoinFeverFrenzy(this.coinFeverRushTimer, dt);
     this.player.slow = 1;
 
+    let inTerrain = false;
     for (const hazard of this.hazards) {
       if (distance(this.player, hazard) > hazard.radius) continue;
+      if (TERRAIN_KINDS.has(hazard.kind)) inTerrain = true;
       if (hazard.kind === 'water' || hazard.kind === 'slow') this.player.slow = Math.min(this.player.slow, hazard.slow);
       if (hazard.kind === 'trap' && !hazard.triggered) {
         hazard.triggered = true;
@@ -1765,6 +1795,7 @@ export class GameEngine {
       // Null zones only silence; they never slowed, so their slow stays 1 (BUG-16, SYS-11 keeps one penalty).
       if (hazard.kind === 'null') this.player.silence = Math.max(this.player.silence, 0.4);
     }
+    if (inTerrain) this.stageObjective?.onTerrainTime(dt);
 
     let mx = 0;
     let my = 0;
@@ -2308,7 +2339,7 @@ export class GameEngine {
       if (moved > 0.2) this.playerHeading = { x: (this.player.x - this.player.prevX) / moved, y: (this.player.y - this.player.prevY) / moved };
       const stageTime = this.duration - this.timeLeft;
       if (this.enemies.length < cap) {
-        this.spawnBudget += dt * 1.8 * difficulty * director.rateFactor(stageTime);
+        this.spawnBudget += dt * 1.8 * difficulty * director.rateFactor(stageTime) * (this.stageObjective?.spawnRate ?? 1);
         const burst = director.burstSize(stageTime);
         while (this.spawnBudget >= burst) {
           this.spawnBudget -= burst;
@@ -2325,7 +2356,7 @@ export class GameEngine {
     }
 
     if (this.kind === 'normal') {
-      FIELD_BOSS_MARKS.forEach((mark, index) => {
+      (this.stageObjective?.fieldBossMarks ?? FIELD_BOSS_MARKS).forEach((mark, index) => {
         if (progress >= mark && !this.fieldBossMarks.has(index)) {
           this.fieldBossMarks.add(index);
           this.spawnBoss('normal', false);
@@ -2350,7 +2381,7 @@ export class GameEngine {
     for (const hazard of this.hazards) {
       if (Number.isFinite(hazard.life) && DYNAMIC_TERRAIN.has(hazard.kind)) alive += 1;
     }
-    return alive < director.terrainCap(this.duration - this.timeLeft);
+    return alive < director.terrainCap(this.duration - this.timeLeft) * (this.stageObjective?.terrainScale ?? 1);
   }
 
   protected enemyCap() {
@@ -2393,7 +2424,8 @@ export class GameEngine {
     x = clamp(x, -80, WORLD_W + 80);
     y = clamp(y, -80, WORLD_H + 80);
     const roll = this.gameplayRandom();
-    const tier = forcedTier ?? (roll < TIER_ROLL.small ? 'small' : roll < TIER_ROLL.medium ? 'medium' : 'large');
+    const tierRoll = this.stageObjective?.tierRoll ?? TIER_ROLL;
+    const tier = forcedTier ?? (roll < tierRoll.small ? 'small' : roll < tierRoll.medium ? 'medium' : 'large');
     const infiniteDifficulty = this.runMode === 'infinite'
       ? infiniteDifficultyAt(this.elapsed, this.infiniteBossKills)
       : null;
@@ -2406,7 +2438,7 @@ export class GameEngine {
       * (0.9 + this.gameplayRandom() * 0.22)
       * (infiniteDifficulty?.enemySpeedScale ?? 1);
     const rangedCount = this.enemies.reduce((count, candidate) => count + (candidate.attackStyle === 'ranged' ? 1 : 0), 0);
-    const rangedCap = infiniteDifficulty?.rangedCap ?? Math.min(RANGED_ENEMY.maxConcurrent, 1 + Math.ceil(this.chapter / 2));
+    const rangedCap = infiniteDifficulty?.rangedCap ?? this.stageObjective?.rangedCap(this.chapter) ?? Math.min(RANGED_ENEMY.maxConcurrent, 1 + Math.ceil(this.chapter / 2));
     const rangedChance = infiniteDifficulty?.rangedChance ?? 0.035 + this.chapter * 0.004;
     const attackStyle = tier !== 'large' && rangedCount < rangedCap && this.gameplayRandom() < rangedChance
       ? 'ranged'
@@ -2471,6 +2503,27 @@ export class GameEngine {
     return first;
   }
 
+  protected landmarkId() {
+    return encounterGrammarForChapter(this.chapter as ChapterId).landmarks.find((landmark) => landmark.stage === this.stage)?.id ?? null;
+  }
+
+  /** CON-03: a spot 420-680 from the player for a zone or cache, inside the arena and clear of obstacles. */
+  protected objectiveSpot(radius: number, random: () => number) {
+    let spot = { x: this.player.x, y: this.player.y };
+    for (let tries = 0; tries < 12; tries += 1) {
+      const angle = random() * Math.PI * 2;
+      const reach = 420 + random() * 260;
+      spot = {
+        x: clamp(this.player.x + Math.cos(angle) * reach, 200, WORLD_W - 200),
+        y: clamp(this.player.y + Math.sin(angle) * reach, 200, WORLD_H - 200),
+      };
+      const blocked = this.obstacles.some((obstacle) => spot.x > obstacle.x - radius && spot.x < obstacle.x + obstacle.w + radius
+        && spot.y > obstacle.y - radius && spot.y < obstacle.y + obstacle.h + radius);
+      if (!blocked) return spot;
+    }
+    return spot;
+  }
+
   protected spawnBoss(kind: StageKind | 'normal', legacy: boolean) {
     let def: BossDef;
     if (kind === 'normal') {
@@ -2488,7 +2541,9 @@ export class GameEngine {
     }
 
     const { x, y } = this.bossSpawnPoint(this.gameplayRandom() * Math.PI * 2);
-    const scale = kind === 'normal' ? (legacy ? 0.42 : 0.34) : 0.72;
+    // CON-03: the elite hunt strengthens the stage's field bosses (not the legacy boss).
+    const hunted = kind === 'normal' && !legacy ? this.stageObjective?.fieldBossScale : undefined;
+    const scale = (kind === 'normal' ? (legacy ? 0.42 : 0.34) : 0.72) * (hunted?.hp ?? 1);
     const stageScale = kind === 'normal' ? 1 + (this.chapter - 1) * 0.18 + (this.stage - 1) * 0.08 : 1;
     const boss: Entity = {
       id: this.nextId(),
@@ -2502,7 +2557,7 @@ export class GameEngine {
       hp: def.hp * stageScale * scale,
       maxHp: def.hp * stageScale * scale,
       speed: def.speed * (kind === 'normal' ? 1.06 : 1),
-      damage: def.damage * stageScale * (kind === 'normal' ? 0.72 : 0.62),
+      damage: def.damage * stageScale * (kind === 'normal' ? 0.72 : 0.62) * (hunted?.damage ?? 1),
       xp: kind === 'normal' ? 90 : 220 + this.chapter * 45,
       coin: kind === 'normal' ? 24 + this.chapter * 5 : 80 + this.chapter * 18,
       tier: 'boss',
@@ -4200,6 +4255,7 @@ export class GameEngine {
   protected onEnemyKilled(enemy: Entity, suppressBossDraft = false) {
     this.player.kills += 1;
     this.stageKills += 1;
+    this.stageObjective?.onKill({ tier: enemy.tier, ranged: enemy.attackStyle === 'ranged', fieldBoss: enemy.isBoss && enemy.boss?.role === 'field' && !enemy.legacyBoss });
     if (this.runMode === 'infinite') {
       this.infiniteEventScore += infiniteKillScore(enemy.tier, this.elapsed, this.infiniteBossKills);
       if (enemy.isBoss) {
@@ -4426,13 +4482,17 @@ export class GameEngine {
         ? 0
         : 70 + this.chapter * 20;
     const rewardScale = this.practiceRun ? PRACTICE_REWARD_SCALE : 1;
-    const gold = Math.floor((base + bossBonus + this.stageKills * 0.9 + this.stageCoinsEarned * 0.28 + this.chapter * 18 + this.stage * 8) * rewardScale);
+    const bonusState = this.stageObjective?.state() ?? null;
+    const bonusMet = this.stageObjective?.met(cleared) ?? false;
+    const bonusPay = bonusMet ? bonusGold(this.chapter, this.stage) : 0;
+    const gold = Math.floor((base + bossBonus + this.stageKills * 0.9 + this.stageCoinsEarned * 0.28 + this.chapter * 18 + this.stage * 8 + bonusPay) * rewardScale);
     const goldParts = {
       base: base * rewardScale,
       boss: bossBonus * rewardScale,
       kills: this.stageKills * 0.9 * rewardScale,
       coins: this.stageCoinsEarned * 0.28 * rewardScale,
       stage: (this.chapter * 18 + this.stage * 8) * rewardScale,
+      bonus: bonusPay * rewardScale,
     };
     const xp = Math.floor((70 + this.stageKills * 1.1 + this.chapter * 24 + (infinite ? this.infiniteBossKills * 18 : this.kind === 'normal' ? 0 : 80)) * rewardScale);
     const gameComplete = !infinite && this.chapter === FINAL_CHAPTER && this.stage === FINAL_STAGE && cleared;
@@ -4458,6 +4518,7 @@ export class GameEngine {
       level: this.player.level,
       damageTaken: this.damageTakenTotal,
       goldParts,
+      bonus: bonusState ? { goal: bonusState.goal, met: bonusMet } : null,
       damageBySkill: { ...this.damageBySkill },
     };
   }
@@ -4559,6 +4620,8 @@ export class GameEngine {
             ? 0
             : 1,
       objectiveTarget: this.objectiveTarget,
+      bonus: this.stageObjective?.state() ?? null,
+      landmark: this.stageObjective ? this.landmarkId() : null,
       timeLeft: this.timeLeft,
       duration: this.duration,
       timeScale: this.timeScale,
@@ -4639,6 +4702,7 @@ export class GameEngine {
       beams: this.beams,
       laneTelegraphs: this.laneTelegraphs,
       chains: this.chains,
+      objectiveMarks: this.stageObjective?.marks() ?? NO_MARKS,
       effects: this.presentation,
     };
   }

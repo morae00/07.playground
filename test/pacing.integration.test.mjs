@@ -54,7 +54,10 @@ test('practice runs are marked and pay 30% of the standard reward', () => {
   assert.equal(standard.practice, false);
   assert.equal(practice.practice, true);
   assert.ok(practice.cleared);
-  assert.ok(practice.gold <= Math.ceil(standard.gold * 0.3) && practice.gold >= Math.floor(standard.gold * 0.3) - 1);
+  // A practice run has no bonus goal (CON-03), so it pays 30% of the standard reward without the bonus part.
+  assert.equal(practice.goldParts.bonus, 0);
+  const standardGold = standard.gold - standard.goldParts.bonus;
+  assert.ok(practice.gold <= Math.ceil(standardGold * 0.3) && practice.gold >= Math.floor(standardGold * 0.3) - 1);
   assert.ok(practice.xp <= Math.ceil(standard.xp * 0.3) && practice.xp >= Math.floor(standard.xp * 0.3) - 1);
 });
 

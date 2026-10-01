@@ -194,11 +194,29 @@ SYS-09 (pickups wait 60 s before flying home, `patientPickups` rule) was piloted
 - The pause-hub guardrail is covered by `test/economy.integration.test.mjs`: a max-health upgrade bought paused heals nothing while paused, then fills in over 3 s after resuming, never faster than its share.
 - The R3 exit's coin target (median balance at most 30% of the coins earned) is a player measure: the personas never shop, so it needs playtest telemetry.
 
+CON-03 (stage objectives, `stageObjectives` rule) was piloted with the flag on and off on two stages per objective (1-9, 3-7 swarm; 2-9, 4-7 hold; 1-3, 5-7 traps; 2-3, 4-9 elites; 2-4, 5-9 salvage; 1-6, 5-2 giants; 2-6, 4-4 crossfire; 3-6, 5-4 vanguard) × the baseline's 10 seeds × 4 personas:
+
+| Objective | clear without fresh, off / on (%) | bonus met on a clear |
+|---|---:|---:|
+| swarm (small +15 points, spawns ×1.2) | 31.7 / 33.3 | 16 of 20 |
+| holdLine | 50.0 / 50.0 | 1 of 30 |
+| traps (terrain ×2) | 51.7 / 41.7 | 9 of 25 |
+| elites (stronger field bosses) | 50.0 / 48.3 | 27 of 29 |
+| salvage | 55.0 / 55.0 | 0 of 33 |
+| giants (large +15 points) | 61.7 / 48.3 | 22 of 29 |
+| crossfire (ranged cap ×3) | 56.7 / 51.7 | 17 of 31 |
+| vanguard (third field boss) | 58.3 / 55.0 | 31 of 33 |
+
+- All 640 runs: clears 38.9% to 35.9%, 37 flips (9 to a clear, 28 to a death). The giants and traps changes are the hardest, at 13 and 10 points. SYS-07's curve work starts from these numbers.
+- The personas never walk to a zone or a cache, so the hold and salvage goals need playtests. The field boss goals are met on 93-94% of clears. SYS-10's elites will give the elite hunt its intended goal; the vanguard goal may want a time limit after playtests. **[Team decision]**
+
 ## Game rules and grammar
 
 Gameplay changes ship behind the rule set in `src/game/rules.ts`. `classic` reproduces 0.1.0 exactly and `remaster` is the default. Infinite-mode records and replay fixtures are kept per rules version: the remaster rules (v2) may change freely until a build ships them, and after that the first change to seeded outcomes must raise `RULES_VERSION`. `test/grammarContracts.integration.test.mjs` pins the preserved game grammar (stage structure, draft sizes, radii, tier mix, deterministic replay) and one regression test per R0 gameplay fix.
 
-Skill numbers live in `src/game/skillNumbers.ts`; the engine and the draft-card copy both read them. `src/game/skillNumbers.snapshot.json` records every number and every generated card line. After an intended balance change, review the diff and refresh it with `UPDATE_SKILL_SNAPSHOT=1 npm run test:unit`.
+The stage objectives (CON-03) are G9's one stage exception: a stage may move one tier's share by 15 points at most, and the crossfire stages raise the ranged cap up to 6. The stage card states every change, and `test/objectives.integration.test.mjs` pins the moved mixes, the cap, and the field boss marks (G8).
+
+Skill numbers live in `src/content/data/skillNumbers.ts` (a content table, TEC-05); the engine and the draft-card copy both read them through `src/game/skillNumbers.ts`. `src/game/skillNumbers.snapshot.json` records every number and every generated card line. After an intended balance change, review the diff and refresh it with `UPDATE_SKILL_SNAPSHOT=1 npm run test:unit`.
 
 ## Visual and accessibility
 

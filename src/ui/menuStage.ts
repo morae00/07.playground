@@ -12,8 +12,10 @@ import {
   type StatBlock,
 } from '../game/GameEngine';
 import type { BossDef } from '../game/engine/worldTypes';
+import { objectiveIdFor } from '../game/GameEngine';
+import { bonusGoal, bonusTarget, objectiveDef, rangedCapFor } from '../game/stageObjective';
+import { text, type StringKey, type Text } from '../i18n/text';
 import type { MetaState, MetaUpgradeId, PassiveId } from '../platform/save';
-import type { StringKey } from '../i18n/text';
 
 export type StageStatus = 'cleared' | 'current' | 'open' | 'locked';
 
@@ -35,6 +37,26 @@ export function stageRewardFloor(chapter: number, stage: number, practice: boole
     gold: Math.floor((40 + (boss ? 70 + chapter * 20 : 0) + chapter * 18 + stage * 8) * scale),
     xp: Math.floor((70 + chapter * 24 + (boss ? 80 : 0)) * scale),
   };
+}
+
+/**
+ * A normal stage's objective on its card (CON-03): what the stage changes, which G9 asks the card to say, and its
+ * bonus goal. The campaign's first stage keeps its goal without the changes (GameEngine.beginRound).
+ */
+export function stageObjective(chapter: number, stage: number): { goal: Text; changes: Text[] } | null {
+  if (stageKind(stage) !== 'normal') return null;
+  const def = objectiveDef(objectiveIdFor(chapter, stage));
+  const changes: Text[] = [];
+  if (!(chapter === 1 && stage === 1)) {
+    if (def.mix?.small) changes.push(text('objective.mod.small', { n: Math.round(def.mix.small * 100) }));
+    if (def.mix?.large) changes.push(text('objective.mod.large', { n: Math.round(def.mix.large * 100) }));
+    if (def.spawnRate) changes.push(text('objective.mod.spawnRate', { x: def.spawnRate }));
+    if (def.terrain) changes.push(text('objective.mod.terrain', { x: def.terrain }));
+    if (def.rangedCap) changes.push(text('objective.mod.rangedCap', { n: rangedCapFor(def, chapter) }));
+    if (def.fieldBoss) changes.push(text('objective.mod.fieldBoss', { x: def.fieldBoss.hp }));
+    if (def.extraFieldBossMarks?.length) changes.push(text('objective.mod.extraFieldBoss', { n: def.extraFieldBossMarks.length }));
+  }
+  return { goal: bonusGoal(def.bonus, bonusTarget(def.bonus, chapter, def)), changes };
 }
 
 /** A stage before the unlocked frontier is cleared; the frontier itself is the one to play next. */

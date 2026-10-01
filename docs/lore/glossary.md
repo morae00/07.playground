@@ -21,6 +21,10 @@
 | 출정 | campaign / go | 메뉴의 스테이지 선택과 시작 버튼 | Stage 선택, 시작 |
 | 수련 | training | 금과 패시브 포인트로 영구 강화를 사는 메뉴 | 영구 성장 |
 | 도감 | codex | 적·보스·스킬 도감(CON-07, 준비 중) | |
+| 보너스 목표 | bonus goal | 일반 Stage의 목표에 딸린 추가 과제. 돌파하며 달성하면 금을 더 주고 별을 남긴다(CON-03) | |
+| 달라지는 점 | changes | 목표가 Stage에 주는 변화(비중, 등장, 위험지형 등). Stage 카드에 적는다 | |
+| 점령 구역 | marked ground | 버티기 목표에서 서 있어야 하는 원. 10초마다 옮겨 간다 | |
+| 먹 꾸러미 | ink cache | 회수 목표의 물건. 위에 서서 1.5초 버티면 회수된다 | 먹병 |
 
 - 'Stage', 'Chapter', 'Ch.1 / St.1', 'Lv.3'은 게임의 고유 표기로 그대로 쓴다. 문장 안에서는 '5챕터', '6장'처럼 한국어로도 쓴다. **[팀 확인]** 'Stage'를 '스테이지'로 바꿀지.
 - 영문은 로고(BLACKLINE SURVIVOR)와 작은 eyebrow(RUN PAUSED, ENDLESS SCORE ATTACK, LOCAL RECORDS, RUN INTERRUPTED, LOCAL SAVE RESET)에만 쓴다(로어 바이블 §8). 그 밖의 영어 전용 표기는 한국어로 바꿨다: 표 머리(RANK → 순위 등), 무한 경쟁 규칙(START → 시작, Random Respawn → 무작위 재등장, None → 없음), TOP 10 → 상위 10위, DANGER → 위험도, ACTIVE → 적용 중, Coming Soon → 준비 중.

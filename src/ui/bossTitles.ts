@@ -13,3 +13,18 @@ export function loadBossTitles(): Promise<Record<string, BossTitle>> {
     .then((data: { bosses?: Record<string, BossTitle> }) => data.bosses ?? {}, () => ({}));
   return titles;
 }
+
+// Landmark name cards (CON-03): the name and one line of a St3 or St7 landmark, from the lore bible's draft table
+// (docs/lore §5.1), shown as the stage begins. Data outside the app JS like the boss titles; no card if it cannot load.
+export type LandmarkTitle = { name: string; line: string };
+
+export const LANDMARK_TITLES_URL = 'assets/content/landmark-titles.json';
+
+let landmarks: Promise<Record<string, LandmarkTitle>> | undefined;
+
+export function loadLandmarkTitles(): Promise<Record<string, LandmarkTitle>> {
+  landmarks ??= fetch(LANDMARK_TITLES_URL)
+    .then((response) => (response.ok ? response.json() : {}))
+    .then((data: { landmarks?: Record<string, LandmarkTitle> }) => data.landmarks ?? {}, () => ({}));
+  return landmarks;
+}

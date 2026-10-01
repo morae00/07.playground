@@ -49,6 +49,8 @@ export type StageRecord = {
   bestKills: number;
   /** Fastest clear in simulated seconds, or null before the first clear. */
   bestClearSeconds: number | null;
+  /** The stage's bonus goal was met on a clear (CON-03); the menu shows a star. */
+  bonus: boolean;
 };
 
 /**
@@ -219,6 +221,7 @@ export function sanitizeProfile(value: unknown): ProfileData {
         clears,
         bestKills: finiteNumber(record.bestKills, 0, 0, Number.MAX_SAFE_INTEGER, true),
         bestClearSeconds: clears > 0 && typeof best === 'number' && Number.isFinite(best) && best > 0 ? best : null,
+        bonus: clears > 0 && record.bonus === true,
       };
     }
   }
@@ -251,11 +254,11 @@ export function sanitizeProfile(value: unknown): ProfileData {
 /** Folds one campaign result into the stage records. Practice runs leave the records alone (CON-02). */
 export function recordStageResult(
   profile: ProfileData,
-  result: { chapter: number; stage: number; cleared: boolean; kills: number; clearSeconds: number; practice: boolean },
+  result: { chapter: number; stage: number; cleared: boolean; kills: number; clearSeconds: number; practice: boolean; bonus?: boolean },
 ): ProfileData {
   if (result.practice) return profile;
   const key = `${result.chapter}-${result.stage}`;
-  const previous = profile.stageRecords[key] ?? { attempts: 0, clears: 0, bestKills: 0, bestClearSeconds: null };
+  const previous = profile.stageRecords[key] ?? { attempts: 0, clears: 0, bestKills: 0, bestClearSeconds: null, bonus: false };
   const bestClearSeconds = result.cleared
     ? Math.min(previous.bestClearSeconds ?? Number.POSITIVE_INFINITY, result.clearSeconds)
     : previous.bestClearSeconds;
@@ -268,6 +271,7 @@ export function recordStageResult(
         clears: previous.clears + (result.cleared ? 1 : 0),
         bestKills: Math.max(previous.bestKills, result.kills),
         bestClearSeconds: Number.isFinite(bestClearSeconds ?? Number.NaN) ? bestClearSeconds : null,
+        bonus: previous.bonus || (result.cleared && result.bonus === true),
       },
     },
   };

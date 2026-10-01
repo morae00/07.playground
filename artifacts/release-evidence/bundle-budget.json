@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 87545,
-      "kib": 85.49,
+      "bytes": 89997,
+      "kib": 87.89,
       "baselineBytes": 75381,
-      "growthRatio": 0.16136692269935393,
+      "growthRatio": 0.1938950133322721,
       "warningBytes": 86688,
       "failBytes": 94226,
       "status": "warning",
@@ -27,24 +27,24 @@
       "passed": true
     },
     "css": {
-      "bytes": 14076,
-      "kib": 13.75,
+      "bytes": 14279,
+      "kib": 13.94,
       "warningBytes": 32768,
       "failBytes": 49152,
       "status": "passed",
       "passed": true
     },
     "initialAssets": {
-      "bytes": 1664832,
-      "kib": 1625.81,
+      "bytes": 1669504,
+      "kib": 1630.38,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 13788663,
-      "kib": 13465.49,
+      "bytes": 13793335,
+      "kib": 13470.05,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-DTCfUfWn.js",
+      "file": "assets/App-DzhwAANE.js",
       "category": "appJs",
-      "sourceBytes": 278665,
-      "gzipBytes": 83992
+      "sourceBytes": 286890,
+      "gzipBytes": 86444
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -85,22 +85,28 @@
       "gzipBytes": 1687
     },
     {
+      "file": "assets/content/landmark-titles.json",
+      "category": "data",
+      "sourceBytes": 1615,
+      "gzipBytes": 866
+    },
+    {
       "file": "assets/content/strings/en.json",
       "category": "data",
-      "sourceBytes": 24518,
-      "gzipBytes": 7871
+      "sourceBytes": 25635,
+      "gzipBytes": 8168
     },
     {
       "file": "assets/content/strings/ko.json",
       "category": "data",
-      "sourceBytes": 26834,
-      "gzipBytes": 9110
+      "sourceBytes": 28049,
+      "gzipBytes": 9439
     },
     {
       "file": "assets/content/tables.json",
       "category": "data",
-      "sourceBytes": 26812,
-      "gzipBytes": 5151
+      "sourceBytes": 27537,
+      "gzipBytes": 5411
     },
     {
       "file": "assets/enemy-icons-6Ab6rPqX.webp",
@@ -115,16 +121,16 @@
       "gzipBytes": 113032
     },
     {
-      "file": "assets/index-BnEVemdI.css",
-      "category": "css",
-      "sourceBytes": 51514,
-      "gzipBytes": 14076
-    },
-    {
-      "file": "assets/index-c7eaxJa-.js",
+      "file": "assets/index-BqCfvhKO.js",
       "category": "appJs",
       "sourceBytes": 7500,
       "gzipBytes": 3553
+    },
+    {
+      "file": "assets/index-gLWqMFKY.css",
+      "category": "css",
+      "sourceBytes": 52541,
+      "gzipBytes": 14279
     },
     {
       "file": "assets/keyart-eZyZ9LBc.webp",

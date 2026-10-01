@@ -26,7 +26,7 @@ import {
 } from '../../game/GameEngine';
 import { Glyph } from '../Glyph';
 import { ProgressBar } from '../ProgressBar';
-import { STAGE_PATH, chapterCleared, passiveEffect, smoothPath, stageBoss, stageRewardFloor, stageStatus, upgradeEffect } from '../menuStage';
+import { STAGE_PATH, chapterCleared, passiveEffect, smoothPath, stageBoss, stageObjective, stageRewardFloor, stageStatus, upgradeEffect } from '../menuStage';
 import { SaveTransfer } from './SaveTransfer';
 import { SettingsPanel } from './SettingsPanel';
 import { StatGrid } from './StatGrid';
@@ -93,6 +93,7 @@ function PlayView({ meta, records, developerAccess, developerMode, setDeveloperM
   const practice = options.paceMode === 'practice';
   const reward = stageRewardFloor(chapter, selectedStage.id, practice);
   const record = records[`${chapter}-${selectedStage.id}`];
+  const objectiveInfo = stageObjective(chapter, selectedStage.id);
   const duration = stageDuration(selectedStage.kind, options.paceMode, { chapter, stage: selectedStage.id });
   const statusOf = (stage: number) => stageStatus(meta, chapter, stage, developerAccess);
   const current = selectedChapter.stages.findIndex((item) => statusOf(item.id) === 'current');
@@ -170,6 +171,7 @@ function PlayView({ meta, records, developerAccess, developerMode, setDeveloperM
               {stageBossDef && <em className="nodeCaption">{t('menu.bossNode', { n: item.id, boss: t(stageBossDef.name) })}</em>}
               {status === 'current' && <em className="nodeCaption nowCaption">{t('menu.current')}</em>}
               {status === 'cleared' && <i className="nodeSeal" aria-label={t('menu.cleared')} />}
+              {records[`${chapter}-${item.id}`]?.bonus && <i className="nodeStar" role="img" aria-label={t('menu.bonusMet')}>★</i>}
               {locked && <span className="srOnly" id={reasonId}>{t('menu.stageLocked')}</span>}
             </button>
           );
@@ -187,6 +189,9 @@ function PlayView({ meta, records, developerAccess, developerMode, setDeveloperM
           <p className="eyebrow">{t('menu.stageEyebrow', { n: selectedStage.id, kind: t(`menu.kind.${selectedStage.kind}`) })}</p>
           <h3 id="stage-brief-title">{boss ? t(boss.name) : goal && typeof goal === 'object' ? tx(goal) : tx(selectedStage.objective)}</h3>
           <p className="stageLine">{boss ? tx(selectedStage.objective) : t('menu.surviveLine', { time: formatClock(duration) })}</p>
+          {objectiveInfo && objectiveInfo.changes.length > 0 && (
+            <p className="stageChanges"><span>{t('menu.changes')}</span> {objectiveInfo.changes.map((change) => tx(change)).join(' · ')}</p>
+          )}
           <dl className="stageFacts">
             <div>
               <dt>{t('menu.enemies')}</dt>
@@ -198,6 +203,12 @@ function PlayView({ meta, records, developerAccess, developerMode, setDeveloperM
               <dt>{t('menu.reward')}</dt>
               <dd>{t('menu.rewardValue', { gold: reward.gold, xp: reward.xp })}</dd>
             </div>
+            {objectiveInfo && (
+              <div>
+                <dt>{t('menu.bonus')}</dt>
+                <dd>{tx(objectiveInfo.goal)}{record?.bonus && <span className="bonusStar" role="img" aria-label={t('menu.bonusMet')}> ★</span>}</dd>
+              </div>
+            )}
             <div>
               <dt>{t('menu.best')}</dt>
               <dd>{record && record.bestClearSeconds !== null ? t('menu.bestValue', { time: formatClock(record.bestClearSeconds), kills: record.bestKills }) : '—'}</dd>
