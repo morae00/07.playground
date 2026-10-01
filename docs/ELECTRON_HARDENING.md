@@ -48,6 +48,10 @@ If the move cannot finish, the player can paste the backup file's text into ์ค์
 
 A player who goes back to a `file:` build after the move, and plays there, keeps that progress only on the old origin: the marker stops a second move. The manual export and import covers this case.
 
+## Writing saves to disk (CON-04)
+
+Chromium writes localStorage to disk seconds after a change. A normal quit writes everything, but a force-quit, or a crash of the whole app, lost the last few seconds of saves, including the run the game had just suspended at a pause. The main process now flushes storage to disk every second (`session.defaultSession.flushStorageData()`), so such an exit loses at most about a second. `npm run test:electron-smoke` force-quits the app 1.5 s after a pause and checks that the next launch resumes the run from that pause. Without the flush, the run came back from its previous save.
+
 ## Verification
 
 ```sh

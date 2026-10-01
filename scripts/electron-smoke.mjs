@@ -1,7 +1,8 @@
-// Desktop smoke check (TEC-01, TEC-03, TEC-14, TEC-15): launches the built app in Electron with a throwaway data
-// folder, so the player's own save is never touched. It checks the window's content size, the app:// origin, the
+// Desktop smoke check (TEC-01, TEC-03, TEC-14, TEC-15, CON-04): launches the built app in Electron with a throwaway
+// data folder, so the player's own save is never touched. It checks the window's content size, the app:// origin, the
 // first-launch move of file:// saves (seeded into that folder first), sprite loading, a short run, the local error
-// log, recovery after a renderer crash, and a second launch that keeps the moved saves.
+// log, recovery after a renderer crash, a second launch that keeps the moved saves, and a run that survives a crash, a
+// quit, and a force-quit.
 // Usage: npm run build && npm run test:electron-smoke
 import { mkdir, mkdtemp, readFile, readdir, realpath, rm } from 'node:fs/promises';
 import os from 'node:os';
@@ -73,6 +74,40 @@ const fileOriginStorage = {
 };
 const readStorage = (page) => page.evaluate(() => Object.fromEntries(Object.keys(localStorage).map((key) => [key, localStorage.getItem(key)])));
 const savedMeta = (storage) => JSON.parse(storage[SAVE_KEY] ?? '{}').meta ?? {};
+/** CON-04: the suspended run in the save, if any. */
+const savedRun = (storage) => JSON.parse(storage[SAVE_KEY] ?? '{}').profile?.runSuspend ?? null;
+const sameRun = (a, b) => Boolean(a && b) && a.state.ticks === b.state.ticks && JSON.stringify(a.state.log) === JSON.stringify(b.state.log);
+
+async function settleDrafts(page) {
+  for (let attempt = 0; attempt < 5 && (await page.getByRole('dialog').filter({ has: page.locator('.draftGrid') }).count()) > 0; attempt += 1) {
+    await page.waitForTimeout(450);
+    await page.keyboard.press('1');
+    await page.waitForTimeout(150);
+  }
+}
+
+/** Pauses the run and waits for the save to hold it, newer than `after` if given. */
+async function pauseAndSave(page, after = null) {
+  await settleDrafts(page);
+  await page.keyboard.press('p');
+  await page.getByRole('dialog', { name: '일시정지' }).waitFor({ timeout: 5_000 });
+  return until(async () => {
+    const run = savedRun(await readStorage(page));
+    return run && (!after || run.savedAt > after.savedAt) ? run : null;
+  }, 5_000);
+}
+
+/** Resumes the run the menu offers and waits for the save to hold the resumed run. */
+async function resumeOffered(page, saved) {
+  await page.getByRole('region', { name: '중단한 런' }).getByRole('button', { name: '이어하기' }).click({ timeout: 5_000 });
+  await page.getByRole('dialog', { name: '일시정지' }).waitFor({ timeout: 20_000 });
+  return until(async () => {
+    const run = savedRun(await readStorage(page));
+    return run && run.savedAt > saved.savedAt ? run : null;
+  }, 5_000);
+}
+let pausedRun = null;
+let killedRun = null;
 
 await mkdir(outputDir, { recursive: true });
 const app = await electron.launch({
@@ -136,6 +171,10 @@ try {
   record('a stage runs in the desktop window', startClock !== laterClock, `${startClock} -> ${laterClock}`);
   record('no console errors during start and play', consoleErrors.length === 0, consoleErrors.slice(0, 2).join(' | '));
 
+  // CON-04: a pause keeps the run in the save.
+  pausedRun = await pauseAndSave(page);
+  record('CON-04 pausing keeps the run in the save', Boolean(pausedRun), pausedRun ? `tick ${pausedRun.state.ticks}, ${pausedRun.state.log.length} commands` : 'no run saved');
+
   await page.evaluate(() => console.error('[blackline:error] {"source":"smoke","message":"electron smoke check"}'));
   const logged = await until(async () => (await readErrorLog()).includes('electron smoke check'), 5_000);
   record('TEC-14 renderer error lines reach the local error log', Boolean(logged), errorLogFile.replace(os.homedir(), '~'));
@@ -153,6 +192,8 @@ try {
   }), 20_000, 250);
   const crashLine = (await readErrorLog()).split('\n').find((line) => line.includes('renderer-gone'));
   record('TEC-14 a renderer crash is logged and the window reloads to the menu', Boolean(recovered) && Boolean(crashLine), crashLine?.split(' ').slice(1).join(' ') ?? 'not logged');
+  const offered = await until(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.executeJavaScript('document.getElementById("resume-title")?.textContent ?? ""')), 5_000, 250);
+  record('CON-04 after a renderer crash the menu offers the run', offered === '중단한 런', offered || 'not offered');
 } catch (error) {
   record('electron smoke (error)', false, error instanceof Error ? error.message.split('\n')[0] : String(error));
 } finally {
@@ -167,10 +208,39 @@ try {
   const gold = savedMeta(await readStorage(page)).gold;
   const windows = await again.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length);
   record('TEC-15 a second launch keeps the moved saves without moving again', gold === 4321 && windows === 1, `gold ${gold}, windows ${windows}`);
+
+  // CON-04: the run paused before the quit comes back at the tick it was saved at, with the same commands.
+  const resumed = await resumeOffered(page, pausedRun);
+  record('CON-04 after a quit the run resumes where it was saved', sameRun(pausedRun, resumed), `tick ${pausedRun?.state.ticks} -> ${resumed?.state.ticks}`);
+  // Play on, pause, and force-quit 1.5 s later. The app flushes storage to disk every second, so the pause's save is
+  // there to come back to.
+  await page.getByRole('button', { name: '계속하기' }).click();
+  await page.waitForTimeout(1_500);
+  killedRun = await pauseAndSave(page, resumed);
+  await page.waitForTimeout(1_500);
+  again.process().kill('SIGKILL');
 } catch (error) {
   record('electron smoke, second launch (error)', false, error instanceof Error ? error.message.split('\n')[0] : String(error));
 } finally {
-  await again.close().catch(() => undefined);
+  await withTimeout(again.close(), 10_000).catch(() => undefined);
+}
+
+// CON-04: after the force-quit, the next launch offers the run as it was at the last pause, and resumes it there.
+const third = await electron.launch({ args: [root, `--user-data-dir=${userDataDir}`], cwd: root });
+try {
+  const page = await gameWindow(third);
+  await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor({ timeout: 20_000 });
+  const kept = savedRun(await readStorage(page));
+  const resumed = kept && (await resumeOffered(page, kept));
+  record(
+    'CON-04 a force-quit keeps the run saved at the last pause, and it resumes there',
+    Boolean(killedRun) && sameRun(killedRun, kept) && sameRun(kept, resumed),
+    `tick ${killedRun?.state.ticks} -> kept ${kept?.state.ticks} -> resumed ${resumed?.state.ticks}`,
+  );
+} catch (error) {
+  record('electron smoke, third launch (error)', false, error instanceof Error ? error.message.split('\n')[0] : String(error));
+} finally {
+  await third.close().catch(() => undefined);
   await rm(userDataDir, { recursive: true, force: true });
 }
 

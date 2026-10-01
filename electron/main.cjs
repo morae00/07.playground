@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, crashReporter, net, protocol, shell } = require('electron');
+const { app, BrowserWindow, Menu, crashReporter, net, protocol, session, shell } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
@@ -20,6 +20,9 @@ const buildRoot = path.join(__dirname, '..', entryDirectory);
 registerAppScheme(protocol);
 const windowTitle = developerBuild ? 'Blackline Survivor Dev' : 'Blackline Survivor';
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
+// CON-04: the game keeps the run in play in localStorage, which Chromium writes to disk seconds later. Flushing every
+// second keeps a force-quit, or a crash of the whole app, from losing more than about a second of it.
+const STORAGE_FLUSH_MS = 1_000;
 
 // Error resilience (TEC-14): native crash dumps and the error log stay in this app's data folder. Nothing is
 // uploaded anywhere.
@@ -160,6 +163,7 @@ if (!hasSingleInstanceLock) {
     serveAppFiles(protocol, net, buildRoot, { 'Content-Security-Policy': CONTENT_SECURITY_POLICY });
     // The game window comes first, so it stays the app's first window; it loads once the saves are in place.
     const window = createWindow();
+    setInterval(() => session.defaultSession.flushStorageData(), STORAGE_FLUSH_MS);
     await migrateSaves();
     if (!window.isDestroyed()) void window.loadURL(APP_ENTRY);
 
