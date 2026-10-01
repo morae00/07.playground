@@ -336,6 +336,16 @@ The infinite run kept Ch1's look for good, had no field bosses, and had no daily
 - `test/rotation.integration.test.mjs` covers the turn, the pillars, the rosters, the field boss, the classic run, and the codex. It pins the date seeds for 2026-10-01 and replays a scripted daily run in another window and with other options to the same state (G14).
 - The result copy already names the rules version (`rulesLabel`). No build has shipped the remaster rules yet, so CON-08 stays under RULES_VERSION 2 (`src/game/rules.ts`), and the v1 records stay apart as legacy.
 
+## Story beats (CON-06)
+
+The campaign had no story on screen: clearing 5-10 showed a banner and nothing else. CON-06 adds the lore bible's drafts (docs/lore §7) as story beats, all skippable, none over play (G15):
+- The prologue (four panels) plays before the first run of the campaign; it ends on Ch1's name and the hero's first line, so it is Ch1's intro. Ch2-5 each have an intro panel before their first run. Each chapter has an outro panel after its final stage's first clear, before the settlement, and 5-10 follows its outro with the ending (seven panels, the last one looking ahead to the next chapter, 6장 준비 중). Practice clears play none.
+- `src/ui/story.ts` decides which beats are due (`beatsBeforeRun`, `beatsAfterClear`); `src/ui/screens/StoryPanels.tsx` plays them in a dialog. Enter, Space, →, a click, or A goes on; Esc, B, or 건너뛰기 skips the rest. The dialog's input guard (350 ms) keeps a key meant for the menu from skipping a panel unseen (BUG-05).
+- A beat plays once per save (`profile.storySeen`). A save from before CON-06 has seen what its records passed (G17): the intro of every chapter it played and the outro of every chapter it finished. The codex's chapter entries play a chapter's beats again.
+- The words are data outside the app JS (`public/assets/content/story.json`, Korean drafts like the codex and the boss titles). The art is 20 scenes composed from the kit (art/ui-art-spec.mjs `STORY_PANELS`: the landmark vignettes widened to 16:9, the hero's poses, the chapter's enemies, its fallen ruler, the void and the seam), baked by `node scripts/build-ui-art.mjs story` into `public/assets/packs/story/`, 1.1 MB in all and loaded only when a beat plays. Hand-drawn panels replace the files without code changes.
+- A round boss's second and third phase bring one narrated line over the boss bar for 3.6 s, outside the centre 40% (V3), from the same file (`phases`). The lines say what the phase changes, so they double as a reading aid for the phase moves (SYS-04, SYS-05). The fifteen boss title cards were FX-05's.
+- Developer builds get the `PHASE` cheat, which takes the stage's boss past its next phase.
+
 ## Camera (FX-04)
 
 The simulation camera stays hard-locked on the player, clamped to the world. Spawns, aim, and off-screen checks use it together with the logical frame (G14). Under the `smoothCamera` rule, the screen shows a separate view camera instead (`src/game/presentation/viewCamera.ts`):

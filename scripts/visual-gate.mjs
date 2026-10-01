@@ -11,7 +11,7 @@ const requireGoldens = process.env.VISUAL_REQUIRE_GOLDENS !== '0';
 const maxDiffRatio = Number.parseFloat(process.env.VISUAL_MAX_DIFF_RATIO ?? '0.005');
 const pixelTolerance = Number.parseInt(process.env.VISUAL_PIXEL_TOLERANCE ?? '24', 10);
 // The default matrix is the platform decision (TEC-01: minimum 1024x720, reference 1280x720 and 1440x900,
-// largest verified 1920x1080): 4 viewports x DPR 1/2 x 2 motion modes x 8 states = 128 captures. The small
+// largest verified 1920x1080): 4 viewports x DPR 1/2 x 2 motion modes x 9 states = 144 captures. The small
 // sizes stay selectable by name (VISUAL_VIEWPORTS) to check the responsive layout.
 const viewportCatalog = [
   { name: '320x568', width: 320, height: 568 },
@@ -22,7 +22,7 @@ const viewportCatalog = [
   { name: '1440x900', width: 1440, height: 900 },
   { name: '1920x1080', width: 1920, height: 1080 },
 ];
-const stateNames = ['menu', 'infinite-menu', 'infinite-playing', 'playing', 'paused', 'draft', 'settlement', 'boss'];
+const stateNames = ['menu', 'infinite-menu', 'infinite-playing', 'story', 'playing', 'paused', 'draft', 'settlement', 'boss'];
 
 const defaultViewports = ['1024x720', '1280x720', '1440x900', '1920x1080'];
 
@@ -406,6 +406,15 @@ async function runScenario(page, viewport, dpr, motion) {
 
   await openDeveloperMode(page);
   await (await unique(page.getByRole('button', { name: 'Ch.1 / St.1 출정' }), 'Stage 1 start')).click();
+  // CON-06: a new save plays the prologue before its first run; its first panel is captured once the art is in.
+  // The story's words arrive by fetch, so the dialog opens a moment after the click.
+  await page.locator('.storyPanels').waitFor({ timeout: 5000 });
+  const story = await unique(page.locator('.storyPanels'), 'prologue dialog');
+  await story.locator('img').evaluate((image) => (image.complete ? null : new Promise((resolve) => { image.onload = resolve; image.onerror = resolve; })));
+  await passInputGuard(page);
+  await captureEvidence(page, viewport, dpr, motion, 'story');
+  await page.keyboard.press('Escape');
+  await story.waitFor({ state: 'detached' });
   await settle(page, 180);
   await unique(page.getByRole('img', { name: '흑백 타격 생존전 플레이 영역' }), 'game canvas');
   await captureEvidence(page, viewport, dpr, motion, 'playing');

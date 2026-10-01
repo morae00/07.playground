@@ -1296,7 +1296,7 @@ export class GameEngine {
       this.faultInjection = true;
       return 'LOOP FAULT ARMED';
     }
-    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO', 'TURN'].includes(code)) {
+    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO', 'TURN', 'PHASE'].includes(code)) {
       this.invalidateInfiniteScore();
     }
     if (code === 'GOD') {
@@ -1331,6 +1331,14 @@ export class GameEngine {
     if (code === 'DRAFT') {
       this.openDraft('level', 'resume');
       return 'DRAFT OPEN';
+    }
+
+    // CON-06: takes the stage's boss to just past its next phase, to see its phase move and line.
+    if (code === 'PHASE') {
+      const boss = this.enemies.find((enemy) => enemy.isBoss && !enemy.legacyBoss && enemy.boss?.role !== 'field' && enemy.hp > 0);
+      if (!boss || (boss.bossPhase ?? 1) >= 3) return 'NO BOSS PHASE';
+      boss.hp = Math.min(boss.hp, boss.maxHp * ((boss.bossPhase ?? 1) === 1 ? 0.6 : 0.3));
+      return 'BOSS PHASE';
     }
 
     // CON-08: makes the infinite run's turn due and fells its round boss, so the next chapter comes after its draft.

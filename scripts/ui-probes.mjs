@@ -1,4 +1,4 @@
-// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, TEC-15, CON-02, CON-04, CON-07, CON-08, SYS-08, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-05, UI-07, UI-09) against the developer build.
+// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, TEC-15, CON-02, CON-04, CON-06, CON-07, CON-08, SYS-08, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-05, UI-07, UI-09) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -22,12 +22,30 @@ const record = (name, passed, detail = '') => {
   console.log(`${passed ? 'PASS' : 'FAIL'} ${name}${detail ? ` — ${detail}` : ''}`);
 };
 
+/**
+ * Skips a story beat if one opened (CON-06): a new save plays the prologue before its first run, and probes that only
+ * need the run press Esc, which ends the beat and starts the run it held. The run's HUD means no beat was due.
+ */
+async function skipStory(page) {
+  await page.locator('.storyPanels, .heroLine').first().waitFor({ timeout: 5000 });
+  if ((await page.locator('.storyPanels').count()) === 0) return false;
+  await page.keyboard.press('Escape');
+  await page.locator('.storyPanels').waitFor({ state: 'detached', timeout: 3000 });
+  return true;
+}
+
+/** Starts 1-1 from the menu, past the prologue. */
+async function launchFirstStage(page) {
+  await page.getByRole('button', { name: 'Ch.1 / St.1 출정' }).click();
+  await skipStory(page);
+}
+
 async function openStage(page) {
   await page.goto('http://127.0.0.1:5177/');
   await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
   const devToggle = page.getByRole('checkbox', { name: '개발자 모드: 모든 Stage 접근' });
   if (!(await devToggle.isChecked())) await devToggle.check();
-  await page.getByRole('button', { name: 'Ch.1 / St.1 출정' }).click();
+  await launchFirstStage(page);
   await page.waitForTimeout(300);
 }
 
@@ -288,7 +306,7 @@ try {
     record('TEC-14 a render error shows the recovery screen with its log', /render: Error: Injected render fault/.test(report));
     await recovery.getByRole('button', { name: '메뉴로 돌아가기' }).click();
     await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor({ timeout: 3000 });
-    await page.getByRole('button', { name: 'Ch.1 / St.1 출정' }).click();
+    await launchFirstStage(page);
     await page.waitForTimeout(500);
     const running = await diagnostics(page);
     record('TEC-14 returning to the menu remounts the app and a new run plays', running && !running.paused && running.elapsed > 0.2, running ? `clock ${running.elapsed.toFixed(2)}` : 'no engine');
@@ -371,7 +389,7 @@ try {
     await page.getByRole('dialog').getByRole('button', { name: '메뉴로' }).waitFor();
     await page.waitForTimeout(1000);
     await page.getByRole('button', { name: '메뉴로' }).click();
-    await page.getByRole('button', { name: 'Ch.1 / St.1 출정' }).click();
+    await launchFirstStage(page);
     await page.waitForTimeout(500);
     const second = await diagnostics(page);
     const constructed = await page.evaluate(() => window.__audioContexts);
@@ -490,7 +508,7 @@ try {
     await page.getByRole('dialog').getByRole('button', { name: '메뉴로' }).waitFor();
     await page.waitForTimeout(1000);
     await page.getByRole('button', { name: '메뉴로' }).click();
-    await page.getByRole('button', { name: 'Ch.1 / St.1 출정' }).click();
+    await launchFirstStage(page);
     await page.waitForTimeout(700);
     const again = (await hint.count()) ? await hint.textContent() : '';
     record('UI-09 a hint shows once per save', !again?.includes('공격은 자동'), again || 'no hint');
@@ -585,6 +603,111 @@ try {
     await page.close();
   });
 
+  await probe('CON-06', async () => {
+    // A new save plays the prologue before its first run: four panels, each with its art and words, Enter going on.
+    for (const [width, height] of [[1024, 720], [1440, 900]]) {
+      const page = await browser.newPage({ viewport: { width, height } });
+      await page.goto('http://127.0.0.1:5177/');
+      await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+      await page.getByRole('button', { name: 'Ch.1 / St.1 출정' }).click();
+      const story = page.locator('.storyPanels');
+      await story.waitFor();
+      const panels = [];
+      for (let index = 0; index < 4; index += 1) {
+        // The first panel waits out the dialog's input guard (BUG-05).
+        await page.waitForTimeout(index === 0 ? 450 : 150);
+        panels.push(await page.evaluate(async () => {
+          const box = document.querySelector('.storyPanels');
+          const image = box.querySelector('.storyFigure img');
+          await image.decode().catch(() => undefined);
+          const small = [...box.querySelectorAll('*')]
+            .filter((node) => [...node.childNodes].some((child) => child.nodeType === Node.TEXT_NODE && child.textContent.trim()))
+            .filter((node) => parseFloat(getComputedStyle(node).fontSize) < 13);
+          const rect = box.getBoundingClientRect();
+          return {
+            art: image.getAttribute('src').split('/').pop(),
+            loaded: image.naturalWidth,
+            count: box.querySelector('.storyCount')?.textContent ?? '',
+            quote: box.querySelector('.storyQuote')?.textContent ?? '',
+            small: small.length,
+            fits: rect.top >= 0 && rect.bottom <= innerHeight && box.scrollHeight <= box.clientHeight + 1,
+          };
+        }));
+        await page.keyboard.press('Enter');
+      }
+      await story.waitFor({ state: 'detached', timeout: 3000 });
+      await page.locator('.heroLine').waitFor({ timeout: 5000 });
+      const badge = (await page.locator('.heroLine strong').textContent()) ?? '';
+      const size = `${width}x${height}`;
+      record(`CON-06 ${size} the prologue's four panels show their art and words, and fit`, panels.every((panel) => panel.loaded > 0 && panel.small === 0 && panel.fits) && panels[3].quote.includes('다시 잇는다'), panels.map((panel) => `${panel.art} ${panel.count}${panel.fits ? '' : ' overflows'}`).join(', '));
+      record(`CON-06 ${size} Enter on the last panel starts the run`, badge.startsWith('Ch.1 / St.1 '), badge);
+      await page.close();
+    }
+
+    // Once a save; a boss's phase change narrates over the boss bar; a chapter's last stage plays its outro before
+    // the settlement; the codex plays a beat again.
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await page.goto('http://127.0.0.1:5177/');
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    const devToggle = page.getByRole('checkbox', { name: '개발자 모드: 모든 Stage 접근' });
+    if (!(await devToggle.isChecked())) await devToggle.check();
+    const toMenu = async () => {
+      await cheat(page, 'CLEAR');
+      await settleDrafts(page);
+      const menuButton = page.getByRole('dialog').getByRole('button', { name: '메뉴로' });
+      await menuButton.waitFor({ timeout: 5000 });
+      await page.waitForTimeout(1000);
+      await menuButton.click();
+      await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    };
+    await launchFirstStage(page);
+    await toMenu();
+    await page.getByRole('button', { name: 'Ch.1 / St.1 출정' }).click();
+    await page.locator('.heroLine').waitFor({ timeout: 5000 });
+    record('CON-06 the prologue plays once per save', (await page.locator('.storyPanels').count()) === 0);
+    await toMenu();
+
+    await page.locator('.stageNode').nth(9).click();
+    await page.getByRole('button', { name: 'Ch.1 / St.10 출정' }).click();
+    await page.locator('.heroLine').waitFor({ timeout: 5000 });
+    await page.waitForTimeout(400);
+    await cheat(page, 'PHASE');
+    const narration = page.locator('.bossNarration');
+    await narration.waitFor({ timeout: 3000 }).catch(() => undefined);
+    const line = (await narration.count()) ? await narration.evaluate((node) => {
+      const rect = node.getBoundingClientRect();
+      return { text: node.textContent, outside: rect.top >= innerHeight * 0.7 || rect.bottom <= innerHeight * 0.3 };
+    }) : { text: '', outside: false };
+    record("CON-06 a boss's second phase brings its line over the boss bar, outside the centre 40%", line.text.includes('종이 갈라져') && line.outside, line.text);
+
+    await cheat(page, 'CLEAR');
+    await settleDrafts(page);
+    const story = page.locator('.storyPanels');
+    await story.waitFor({ timeout: 5000 }).catch(() => undefined);
+    const outro = (await story.count()) ? (await story.innerText()).replace(/\s+/g, ' ') : '';
+    await page.keyboard.press('Escape');
+    const settled = await page.getByRole('dialog', { name: 'Stage 돌파' }).waitFor({ timeout: 5000 }).then(() => true, () => false);
+    record("CON-06 the chapter's last clear plays its outro, then the settlement", outro.includes('1장 · 맺으며') && outro.includes('종탑 간수') && settled, outro.slice(0, 80));
+    const menuButton = page.getByRole('dialog').getByRole('button', { name: '메뉴로' });
+    await page.waitForTimeout(1000);
+    await menuButton.click();
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+
+    await page.getByRole('tab', { name: /도감/ }).click();
+    const codex = page.locator('#menu-panel-codex');
+    await codex.getByRole('button', { name: /구역/ }).click();
+    await codex.locator('.codexEntry.found').first().click();
+    const replays = await codex.locator('.storyReplay button').allTextContents();
+    await codex.getByRole('button', { name: '프롤로그 다시 보기' }).click();
+    const replay = page.locator('.storyPanels');
+    const replayed = await replay.waitFor({ timeout: 3000 }).then(() => true, () => false);
+    const title = replayed ? await replay.locator('#story-beat').textContent() : '';
+    await page.keyboard.press('Escape');
+    await replay.waitFor({ state: 'detached', timeout: 3000 }).catch(() => undefined);
+    record("CON-06 the codex plays a chapter's beats again", replays.join(' | ') === '프롤로그 다시 보기 | 1장 · 맺으며 다시 보기' && title === '프롤로그' && (await page.locator('#menu-panel-codex').count()) === 1, replays.join(' | '));
+    await page.close();
+  });
+
   await probe('CON-08', async () => {
     // The endless menu names the chapter rotation, and today's and this week's seeds fill the seed field.
     const page = await browser.newPage({ viewport: { width: 1024, height: 720 } });
@@ -649,7 +772,7 @@ try {
     await menuCheat.fill('DEPTH');
     await menuCheat.press('Enter');
     record('SYS-08 DEPTH turns the experiment on for the next run', (await page.getByText('BUILD DEPTH ON (next run)').count()) === 1);
-    await page.getByRole('button', { name: 'Ch.1 / St.1 출정' }).click();
+    await launchFirstStage(page);
     await page.waitForTimeout(300);
     await cheat(page, 'DRAFT');
     const dialog = page.getByRole('dialog');
@@ -771,10 +894,14 @@ try {
     await tap(A);
     const focusedStart = await page.evaluate(() => document.activeElement?.textContent ?? '');
     await tap(A);
+    await page.waitForTimeout(450);
+    // CON-06: a new save plays the prologue first, and B skips it.
+    const prologue = (await page.locator('.storyPanels').count()) === 1;
+    await tap(B);
     await page.waitForTimeout(400);
     const badge = async () => (await page.locator('.heroLine strong').textContent().catch(() => '')) ?? '';
     const started = (await badge()).startsWith('Ch.1 / St.1 ');
-    record('UI-07 A lands on the start button, then starts 1-1', focusedStart.includes('Ch.1 / St.1') && started, `focus "${focusedStart.trim()}", badge ${await badge()}`);
+    record('UI-07 A lands on the start button, then starts 1-1 (B skips the prologue)', focusedStart.includes('Ch.1 / St.1') && prologue && started, `focus "${focusedStart.trim()}", prologue ${prologue}, badge ${await badge()}`);
 
     const before = (await diagnostics(page)).player.x;
     await page.evaluate(() => window.__probePad.stick(1, 0));

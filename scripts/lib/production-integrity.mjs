@@ -26,6 +26,8 @@ export const PRODUCTION_BANNED_MARKERS = Object.freeze([
   'BUILD DEPTH ON',
   // The CON-08 chapter turn for endless playtests.
   'CHAPTER TURN',
+  // The CON-06 boss phase skip for phase move and line checks.
+  'BOSS PHASE',
   // Fault injection for the error-resilience probes (TEC-14).
   'LOOP FAULT ARMED',
   'UI FAULT ARMED',

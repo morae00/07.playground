@@ -22,6 +22,7 @@ const REQUIRED_DEVELOPER_MARKERS = Object.freeze([
   'PLAYER DOWN',
   'BUILD DEPTH ON',
   'CHAPTER TURN',
+  'BOSS PHASE',
 ]);
 
 async function collectText(root) {

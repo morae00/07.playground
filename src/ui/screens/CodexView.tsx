@@ -15,6 +15,7 @@ import type { MetaState, ProfileData } from '../../platform/save';
 import { ACHIEVEMENT_IDS, achievementProgress } from '../achievements';
 import { loadBossTitles, type BossTitle } from '../bossTitles';
 import { loadCodexText, type CodexText } from '../codexText';
+import { beatTitle, chapterBeats, type StoryBeatId } from '../story';
 
 type Part = keyof ProfileData['codex'];
 const PARTS: readonly (Part | 'achievements')[] = ['skills', 'enemies', 'bosses', 'terrain', 'chapters', 'achievements'];
@@ -25,6 +26,8 @@ type CodexProps = {
   bestInfiniteSeconds: number;
   onBuyCosmetic: (id: CosmeticId) => void;
   onWearCosmetic: (id: CosmeticId, wear: boolean) => void;
+  /** CON-06: plays a story beat again. */
+  onPlayStory: (beats: StoryBeatId[]) => void;
 };
 
 /** The 30 goals: progress, the date one was met, and its cosmetic, to wear or to buy. */
@@ -73,6 +76,20 @@ function entryName(part: Part, id: string, text: CodexText | null) {
   if (part === 'bosses') return t(`boss.${id}` as Parameters<typeof t>[0]);
   if (part === 'terrain') return text?.terrain[id]?.name ?? id;
   return t(`chapter.${id as unknown as ChapterId}`);
+}
+
+/** CON-06: a chapter's story beats already played, to play again. */
+function StoryReplay({ chapter, seen, onPlay }: { chapter: number; seen: readonly string[]; onPlay: (beats: StoryBeatId[]) => void }) {
+  const beats = chapterBeats(chapter).filter((beat) => seen.includes(beat));
+  if (beats.length === 0) return null;
+  return (
+    <div className="storyReplay" role="group" aria-label={t('codex.story')}>
+      {beats.map((beat) => {
+        const { kind } = beatTitle(beat);
+        return <button className="ghost small" type="button" key={beat} onClick={() => onPlay([beat])}>{t('codex.replay', { beat: t(`story.beat.${kind}`, { chapter }) })}</button>;
+      })}
+    </div>
+  );
 }
 
 function EntryDetail({ part, id, text, bossTitles }: { part: Part; id: string; text: CodexText | null; bossTitles: Record<string, BossTitle> }) {
@@ -170,7 +187,7 @@ export function CodexView(props: CodexProps) {
         </ul>
         <aside className="codexDetail" aria-live="polite">
           {shown
-            ? <EntryDetail part={part} id={shown} text={text} bossTitles={bossTitles} />
+            ? <><EntryDetail part={part} id={shown} text={text} bossTitles={bossTitles} />{part === 'chapters' && <StoryReplay chapter={Number(shown)} seen={props.profile.storySeen} onPlay={props.onPlayStory} />}</>
             : <p className="emptyText">{selected ? t(`codex.hint.${part}`) : t('codex.pick')}</p>}
         </aside>
       </div>

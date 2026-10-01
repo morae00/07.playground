@@ -123,6 +123,16 @@ test('profiles saved before onboarding hints load with none seen (UI-09, G17)', 
   assert.deepEqual(sanitizeProfile({ ...legacy, hintsSeen: ['move', 'move', 7, 'xp'] }).hintsSeen, ['move', 'xp']);
 });
 
+test('profiles saved before the story have seen what their records passed, so a returning player is not stopped (CON-06, G17)', () => {
+  const record = (clears: number) => ({ attempts: Math.max(1, clears), clears, bestKills: 0, bestClearSeconds: clears ? 300 : null, bonus: false, assisted: false, bestSurvivalSeconds: 300, noHit: false, lowDamage: false, swift: false });
+  const legacy = { ...createDefaultProfile(), stageRecords: { '1-3': record(1), '1-10': record(1), '2-1': record(0) } } as Partial<ReturnType<typeof createDefaultProfile>>;
+  delete legacy.storySeen;
+  assert.deepEqual(sanitizeProfile(legacy).storySeen, ['prologue', 'outro-1', 'intro-2']);
+  assert.deepEqual(sanitizeProfile({ stageRecords: { '5-10': record(2) } }).storySeen, ['intro-5', 'outro-5', 'ending']);
+  assert.deepEqual(sanitizeProfile({}).storySeen, [], 'a new save plays the prologue');
+  assert.deepEqual(sanitizeProfile({ ...legacy, storySeen: ['prologue', 'prologue', 3] }).storySeen, ['prologue'], 'a save with the list keeps it');
+});
+
 test('showcase pacing from older saves maps to standard outside developer builds', () => {
   const options = { ...createDefaultOptions(), paceMode: 'showcase' };
   assert.equal(sanitizeOptions(options, false).paceMode, 'standard');

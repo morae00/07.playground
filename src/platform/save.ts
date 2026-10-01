@@ -91,6 +91,8 @@ export type ProfileData = {
   runSuspend: null | { savedAt: number; rulesVersion: number; state: unknown };
   /** Onboarding hints already shown (UI-09); each shows once per save. */
   hintsSeen: string[];
+  /** CON-06: story beats already played (src/ui/story.ts); each plays once per save, and the codex plays them again. */
+  storySeen: string[];
   stats: CareerStats;
   /** CON-07: cosmetics owned (unlocked by achievements or bought with gold) and the one worn of each kind. */
   cosmetics: { owned: string[]; outline: string | null; trail: string | null; frame: string | null; title: string | null };
@@ -170,6 +172,7 @@ export const createDefaultProfile = (): ProfileData => ({
   achievements: {},
   runSuspend: null,
   hintsSeen: [],
+  storySeen: [],
   stats: { runs: 0, clears: 0, kills: 0, bossKills: 0, playSeconds: 0 },
   cosmetics: { owned: [], outline: null, trail: null, frame: null, title: null },
 });
@@ -296,9 +299,24 @@ export function sanitizeProfile(value: unknown): ProfileData {
     achievements,
     runSuspend,
     hintsSeen: stringList(value.hintsSeen, 64),
+    storySeen: Array.isArray(value.storySeen) ? stringList(value.storySeen, 16) : passedStory(stageRecords),
     stats: sanitizeStats(value.stats, stageRecords),
     cosmetics: sanitizeCosmetics(value.cosmetics),
   };
+}
+
+/**
+ * CON-06: the story beats a save from before them has already passed, so a returning player is not stopped for them
+ * (G17): the intro of every chapter it played (the prologue for the first), and the outro of every chapter it finished
+ * (and the ending after the last). The codex can still play them.
+ */
+function passedStory(records: Record<string, StageRecord>) {
+  const passed: string[] = [];
+  for (let chapter = 1; chapter <= CAMPAIGN_CHAPTER_COUNT; chapter += 1) {
+    if (Object.keys(records).some((key) => key.startsWith(`${chapter}-`))) passed.push(chapter === 1 ? 'prologue' : `intro-${chapter}`);
+    if ((records[`${chapter}-${STAGES_PER_CHAPTER}`]?.clears ?? 0) > 0) passed.push(`outro-${chapter}`, ...(chapter === CAMPAIGN_CHAPTER_COUNT ? ['ending'] : []));
+  }
+  return passed;
 }
 
 /** CON-07: only an owned cosmetic can be worn. */

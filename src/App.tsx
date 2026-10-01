@@ -34,6 +34,8 @@ import { HudLayer } from './ui/screens/HudLayer';
 import { DevPanel } from './ui/screens/DevPanel';
 import { PauseHub, type PauseTab } from './ui/screens/PauseHub';
 import { HintLayer, type HintId } from './ui/screens/HintLayer';
+import { StoryPanels } from './ui/screens/StoryPanels';
+import { beatsAfterClear, beatsBeforeRun, type StoryBeatId } from './ui/story';
 import { NAV as MENU_NAV, MenuScreen, type MenuView } from './ui/screens/MenuScreen';
 import { nextRovingId, watchReducedMotion, type RovingKey } from './ui/inputContracts';
 import { InputAdapter } from './ui/inputAdapter';
@@ -144,6 +146,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   // Developer builds: the SYS-08 build depth A/B for the runs that start next (cheat code DEPTH).
   const depthExperimentRef = useRef(false);
   const [snapshot, setSnapshot] = useState<HudSnapshot | null>(null);
+  // CON-06: the story beats playing, if any, and what comes after them (a run to start, or nothing).
+  const [story, setStory] = useState<{ beats: StoryBeatId[]; then?: () => void } | null>(null);
   const [draft, setDraft] = useState<DraftState | null>(null);
   const [settlement, setSettlement] = useState<Settlement | null>(null);
   /** New records and level-ups of the settlement on screen, worked out before it is applied (UI-05). */
@@ -441,6 +445,9 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         setSettlement(result);
         setProfile((prev) => ({ ...recordResult(prev, result), runSuspend: null }));
         grantSettlement(result, unlockProgress);
+        // CON-06: a chapter's final clear plays its outro (and the last one the ending) before the settlement.
+        const beats = beatsAfterClear(profileRef.current.storySeen, result);
+        if (beats.length > 0) setStory({ beats });
         setPhase('roundClear');
       },
       onGameOver: (result: Settlement) => {
@@ -524,10 +531,23 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     launch(engine);
   }, [callbacks, meta, options, spriteAtlas]);
 
+  /** CON-06: plays the story beats due first, if any, then goes on. */
+  const afterStory = useCallback((beats: StoryBeatId[], then: () => void) => {
+    if (beats.length > 0) setStory({ beats, then });
+    else then();
+  }, []);
+  const finishStory = useCallback(() => {
+    if (!story) return;
+    setStory(null);
+    setProfile((previous) => ({ ...previous, storySeen: [...new Set([...previous.storySeen, ...story.beats])] }));
+    story.then?.();
+  }, [story]);
+
   const startRun = useCallback(() => {
     if (selectedStageLocked) return;
-    beginRun(selectedChapter.id, (engine) => engine.startRun(selectedChapter.id, selectedStage.id));
-  }, [beginRun, selectedChapter.id, selectedStage.id, selectedStageLocked]);
+    const [chapter, stage] = [selectedChapter.id, selectedStage.id];
+    afterStory(beatsBeforeRun(profileRef.current.storySeen, chapter), () => beginRun(chapter, (engine) => engine.startRun(chapter, stage)));
+  }, [afterStory, beginRun, selectedChapter.id, selectedStage.id, selectedStageLocked]);
 
   /** CON-04: replays the suspended run in a new engine, then opens the pause hub (or the draft it was saved in). */
   const resumeSuspended = useCallback(() => {
@@ -548,8 +568,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const startStage = useCallback((address: { chapter: number; stage: number }) => {
     setSelectedChapterId(address.chapter as typeof selectedChapterId);
     setSelectedStageNo(address.stage);
-    beginRun(address.chapter, (engine) => engine.startRun(address.chapter, address.stage));
-  }, [beginRun]);
+    afterStory(beatsBeforeRun(profileRef.current.storySeen, address.chapter), () => beginRun(address.chapter, (engine) => engine.startRun(address.chapter, address.stage)));
+  }, [afterStory, beginRun]);
 
   const startInfiniteRun = useCallback(() => {
     const normalizedName = normalizeInfinitePlayerName(infinitePlayerName);
@@ -857,6 +877,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
           bestInfiniteSeconds={bestInfiniteSeconds}
           onBuyCosmetic={buyCosmetic}
           onWearCosmetic={wearCosmetic}
+          onPlayStory={(beats) => setStory({ beats })}
           inlineNotice={<>{achievementBanner}{suspendBanner}{noticeBanner('inline')}</>}
           suspended={asSuspendedRun(profile.runSuspend?.state)}
           onResumeSuspended={resumeSuspended}
@@ -940,7 +961,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         />
       )}
 
-      {!loopFault && (phase === 'roundClear' || phase === 'gameOver') && settlement && (
+      {story && <StoryPanels beats={story.beats} onDone={finishStory} />}
+      {!loopFault && !story && (phase === 'roundClear' || phase === 'gameOver') && settlement && (
         <SettlementModal
           key={`${settlement.runMode}-${settlement.seed}-${phase}`}
           settlement={settlement}

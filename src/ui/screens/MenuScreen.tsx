@@ -32,6 +32,7 @@ import { Glyph } from '../Glyph';
 import { ProgressBar } from '../ProgressBar';
 import { STAGE_PATH, chapterCleared, passiveEffect, smoothPath, stageBoss, stageObjective, stageRewardFloor, stageStatus, upgradeEffect } from '../menuStage';
 import { CodexView } from './CodexView';
+import type { StoryBeatId } from '../story';
 import { SaveTransfer } from './SaveTransfer';
 import { SettingsPanel } from './SettingsPanel';
 import { StatGrid } from './StatGrid';
@@ -54,6 +55,8 @@ export type MenuScreenProps = {
   bestInfiniteSeconds: number;
   onBuyCosmetic: (id: CosmeticId) => void;
   onWearCosmetic: (id: CosmeticId, wear: boolean) => void;
+  /** CON-06: plays story beats again from the codex. */
+  onPlayStory: (beats: StoryBeatId[]) => void;
   inlineNotice: ReactNode;
   /** CON-04: a run left in play, offered first so a crash or a quit never loses it. */
   suspended: SuspendedRun | null;
@@ -452,6 +455,8 @@ export function MenuScreen(props: MenuScreenProps) {
       if (event.key !== 'Enter' || event.repeat || event.defaultPrevented) return;
       const focused = document.activeElement;
       if (focused instanceof HTMLElement && focused !== document.body && focused.closest('button, input, select, textarea, a, summary')) return;
+      // A dialog over the menu (a story beat, CON-06) takes Enter itself.
+      if (document.querySelector('[role="dialog"]')) return;
       if (selectedStageLocked) return;
       event.preventDefault();
       startRun();
@@ -534,7 +539,7 @@ export function MenuScreen(props: MenuScreenProps) {
           <GrowthView {...props} />
         </div>
         <div className="menuPanel codexColumn" id="menu-panel-codex" role="tabpanel" aria-labelledby="menu-tab-codex" hidden={menuView !== 'codex'}>
-          {menuView === 'codex' && <CodexView profile={props.profile} meta={meta} bestInfiniteSeconds={props.bestInfiniteSeconds} onBuyCosmetic={props.onBuyCosmetic} onWearCosmetic={props.onWearCosmetic} />}
+          {menuView === 'codex' && <CodexView profile={props.profile} meta={meta} bestInfiniteSeconds={props.bestInfiniteSeconds} onBuyCosmetic={props.onBuyCosmetic} onWearCosmetic={props.onWearCosmetic} onPlayStory={props.onPlayStory} />}
         </div>
         <div className="menuPanel settingsColumn" id="menu-panel-settings" role="tabpanel" aria-labelledby="menu-tab-settings" hidden={menuView !== 'settings'}>
           <h2>{t('menu.nav.settings')}</h2>

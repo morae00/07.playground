@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 100938,
-      "kib": 98.57,
+      "bytes": 102367,
+      "kib": 99.97,
       "baselineBytes": 92420,
-      "growthRatio": 0.09216619779268553,
+      "growthRatio": 0.10762821900021646,
       "warningBytes": 106282,
       "failBytes": 115525,
       "status": "passed",
@@ -27,24 +27,24 @@
       "passed": true
     },
     "css": {
-      "bytes": 15278,
-      "kib": 14.92,
+      "bytes": 15628,
+      "kib": 15.26,
       "warningBytes": 32768,
       "failBytes": 49152,
       "status": "passed",
       "passed": true
     },
     "initialAssets": {
-      "bytes": 1750529,
-      "kib": 1709.5,
+      "bytes": 1757670,
+      "kib": 1716.47,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 13874360,
-      "kib": 13549.18,
+      "bytes": 14989173,
+      "kib": 14637.86,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-BoqxWKrz.js",
+      "file": "assets/App-CMrMYl3J.js",
       "category": "appJs",
-      "sourceBytes": 322707,
-      "gzipBytes": 97385
+      "sourceBytes": 327127,
+      "gzipBytes": 98813
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -97,16 +97,22 @@
       "gzipBytes": 866
     },
     {
+      "file": "assets/content/story.json",
+      "category": "data",
+      "sourceBytes": 6436,
+      "gzipBytes": 2429
+    },
+    {
       "file": "assets/content/strings/en.json",
       "category": "data",
-      "sourceBytes": 33657,
-      "gzipBytes": 10436
+      "sourceBytes": 34003,
+      "gzipBytes": 10536
     },
     {
       "file": "assets/content/strings/ko.json",
       "category": "data",
-      "sourceBytes": 36439,
-      "gzipBytes": 11831
+      "sourceBytes": 36798,
+      "gzipBytes": 11955
     },
     {
       "file": "assets/content/tables.json",
@@ -127,16 +133,16 @@
       "gzipBytes": 113032
     },
     {
-      "file": "assets/index-8h5LvEio.js",
-      "category": "appJs",
-      "sourceBytes": 7500,
-      "gzipBytes": 3553
+      "file": "assets/index-CRvRxQ0x.css",
+      "category": "css",
+      "sourceBytes": 59333,
+      "gzipBytes": 15628
     },
     {
-      "file": "assets/index-CBGfMxSg.css",
-      "category": "css",
-      "sourceBytes": 57712,
-      "gzipBytes": 15278
+      "file": "assets/index-RGMBgzJP.js",
+      "category": "appJs",
+      "sourceBytes": 7500,
+      "gzipBytes": 3554
     },
     {
       "file": "assets/keyart-eZyZ9LBc.webp",
@@ -899,6 +905,126 @@
       "category": "audio",
       "sourceBytes": 3662,
       "gzipBytes": 2004
+    },
+    {
+      "file": "assets/packs/story/ending-1.webp",
+      "category": "image",
+      "sourceBytes": 30624,
+      "gzipBytes": 29894
+    },
+    {
+      "file": "assets/packs/story/ending-2.webp",
+      "category": "image",
+      "sourceBytes": 45118,
+      "gzipBytes": 44545
+    },
+    {
+      "file": "assets/packs/story/ending-3.webp",
+      "category": "image",
+      "sourceBytes": 34874,
+      "gzipBytes": 34313
+    },
+    {
+      "file": "assets/packs/story/ending-4.webp",
+      "category": "image",
+      "sourceBytes": 72362,
+      "gzipBytes": 72253
+    },
+    {
+      "file": "assets/packs/story/ending-5.webp",
+      "category": "image",
+      "sourceBytes": 27246,
+      "gzipBytes": 26158
+    },
+    {
+      "file": "assets/packs/story/ending-6.webp",
+      "category": "image",
+      "sourceBytes": 46324,
+      "gzipBytes": 46203
+    },
+    {
+      "file": "assets/packs/story/ending-7.webp",
+      "category": "image",
+      "sourceBytes": 2616,
+      "gzipBytes": 1099
+    },
+    {
+      "file": "assets/packs/story/intro-2.webp",
+      "category": "image",
+      "sourceBytes": 67932,
+      "gzipBytes": 67819
+    },
+    {
+      "file": "assets/packs/story/intro-3.webp",
+      "category": "image",
+      "sourceBytes": 65218,
+      "gzipBytes": 65086
+    },
+    {
+      "file": "assets/packs/story/intro-4.webp",
+      "category": "image",
+      "sourceBytes": 66610,
+      "gzipBytes": 66502
+    },
+    {
+      "file": "assets/packs/story/intro-5.webp",
+      "category": "image",
+      "sourceBytes": 53520,
+      "gzipBytes": 53406
+    },
+    {
+      "file": "assets/packs/story/outro-1.webp",
+      "category": "image",
+      "sourceBytes": 76020,
+      "gzipBytes": 75911
+    },
+    {
+      "file": "assets/packs/story/outro-2.webp",
+      "category": "image",
+      "sourceBytes": 71148,
+      "gzipBytes": 71045
+    },
+    {
+      "file": "assets/packs/story/outro-3.webp",
+      "category": "image",
+      "sourceBytes": 70936,
+      "gzipBytes": 70784
+    },
+    {
+      "file": "assets/packs/story/outro-4.webp",
+      "category": "image",
+      "sourceBytes": 69394,
+      "gzipBytes": 69282
+    },
+    {
+      "file": "assets/packs/story/outro-5.webp",
+      "category": "image",
+      "sourceBytes": 55498,
+      "gzipBytes": 55379
+    },
+    {
+      "file": "assets/packs/story/prologue-1.webp",
+      "category": "image",
+      "sourceBytes": 63168,
+      "gzipBytes": 63057
+    },
+    {
+      "file": "assets/packs/story/prologue-2.webp",
+      "category": "image",
+      "sourceBytes": 46322,
+      "gzipBytes": 45842
+    },
+    {
+      "file": "assets/packs/story/prologue-3.webp",
+      "category": "image",
+      "sourceBytes": 72302,
+      "gzipBytes": 72166
+    },
+    {
+      "file": "assets/packs/story/prologue-4.webp",
+      "category": "image",
+      "sourceBytes": 70440,
+      "gzipBytes": 70334
     },
     {
       "file": "assets/portraits-9HpTxBu7.webp",

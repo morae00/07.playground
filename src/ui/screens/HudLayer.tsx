@@ -11,6 +11,7 @@ import { formatCount, t, tx } from '../../i18n/strings';
 import { glyph } from '../Glyph';
 import { useInputDevice } from '../inputDevice';
 import { loadBossTitles, loadLandmarkTitles, type BossTitle, type LandmarkTitle } from '../bossTitles';
+import { loadStory } from '../story';
 import { ProgressBar } from '../ProgressBar';
 
 export type HudLayerProps = {
@@ -35,6 +36,8 @@ const HURT_FACE_MS = 500;
 const BOSS_INTRO_MS = 1200;
 /** CON-03: how long a landmark's name card stays as its stage begins (its CSS animation runs as long). */
 const LANDMARK_CARD_MS = 2800;
+/** CON-06: how long a round boss's phase line stays over the boss bar (its CSS animation runs as long). */
+const PHASE_LINE_MS = 3600;
 
 
 function SkillSlots({ snapshot }: { snapshot: HudSnapshot }) {
@@ -63,12 +66,13 @@ function SkillSlots({ snapshot }: { snapshot: HudSnapshot }) {
   );
 }
 
-function BossBar({ snapshot, name }: { snapshot: HudSnapshot; name: string }) {
+function BossBar({ snapshot, name, line }: { snapshot: HudSnapshot; name: string; line: string | null }) {
   const phase = snapshot.bossPhase ?? 1;
   const enrage = snapshot.bossEnrage ?? 0;
   const steps = snapshot.bossEnrageSteps ?? 1;
   return (
     <section className={enrage > 0 ? 'bossBar enraged' : 'bossBar'} aria-label={t('hud.boss')}>
+      {line && <p className="bossNarration" role="status">{line}</p>}
       <span className="artPortrait" data-art={enrage > 0 ? `${snapshot.bossId}-enraged` : snapshot.bossId} aria-hidden="true" />
       <div className="bossBody">
         <div className="bossLine">
@@ -130,6 +134,21 @@ export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen,
     };
     // A card per landmark stage started; the stage key brings it back on a retry.
   }, [landmark, stageKey]);
+  // CON-06: a round boss's phase change brings its narrated line over the boss bar, clear of the centre 40%.
+  const [phaseLine, setPhaseLine] = useState<string | null>(null);
+  const phaseKey = bossId && (snapshot.bossPhase ?? 1) > 1 ? `${bossId}:${snapshot.bossPhase}` : null;
+  useEffect(() => {
+    if (!phaseKey) return undefined;
+    let live = true;
+    const [id, phase] = phaseKey.split(':') as [string, '2' | '3'];
+    void loadStory().then((story) => { if (live) setPhaseLine(story.phases[id]?.[phase] ?? null); });
+    const timer = window.setTimeout(() => setPhaseLine(null), PHASE_LINE_MS);
+    return () => {
+      live = false;
+      window.clearTimeout(timer);
+      setPhaseLine(null);
+    };
+  }, [phaseKey]);
   // CON-08: an infinite run's turn to the next chapter shows the chapter's name card.
   const [chapterCard, setChapterCard] = useState<number | null>(null);
   const lookChapter = snapshot.lookChapter;
@@ -223,7 +242,7 @@ export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen,
           <button className="ghost small iconButton" onClick={onTogglePause} aria-pressed={runPaused} aria-label={t(runPaused ? 'hud.resume' : 'hud.pause')} title={t('hud.pauseTitle', { pause: device === 'keyboard' ? 'P / Esc' : glyph(device, 'pause') })}><span aria-hidden="true">{runPaused ? '▶' : 'Ⅱ'}</span></button>
         </section>
       </div>
-      {bossName && <BossBar snapshot={snapshot} name={bossName} />}
+      {bossName && <BossBar snapshot={snapshot} name={bossName} line={phaseLine} />}
       {chapterCard && !intro && (
         <div className="bossIntro landmarkIntro" role="status" aria-live="polite">
           <strong>{t('chapter.name', { n: chapterCard, theme: t(`chapter.${chapterCard as 1 | 2 | 3 | 4 | 5}`) })}</strong>

@@ -107,3 +107,50 @@ export const UI_SHEETS = Object.freeze({
   },
   terrain: { file: 'terrain-icons', className: 'artTerrain', columns: 9, cell: [64, 64], origin: [-32, -32], items: TERRAIN_KINDS.map((kind) => ({ key: kind, recipe: 'hazard', args: [kind] })) },
 });
+
+/**
+ * Story panels (CON-06): the prologue, the chapter intros and outros, and the ending, composed from the kit's
+ * landmark vignettes, the hero, the chapter's enemies, and its ruler (the final boss). Each panel is a 16:9 scene of
+ * `size` CSS px baked at `density`, written to its own file in public/assets/packs/story/, and loaded only when a
+ * story beat plays (it is not part of the first screen). The words stay in the DOM (public/assets/content/story.json),
+ * never in the art. A scene is:
+ * - `ch`: the chapter's landmark vignette, widened to the panel (API-env), or `paper` for plain paper;
+ * - `blank`: the white void eating the scene from x `from` rightwards, with a ragged ink fringe (lore bible §1.1);
+ *   `margin`: the void become a margin, ruled off with a double ink line (§7.2); `seam`: stitches down x;
+ * - `hero`: a full-body pose (API-hero §1) standing on `ground` at x, scaled; `enemies`: [role, x, scale, flip];
+ * - `boss`: the chapter's ruler, `fallen` (tilted and faded) after its defeat; `drop`: one ink drop at [x, y].
+ */
+export const STORY_PANEL = Object.freeze({ size: [480, 270], density: 2.5, ground: 252 });
+
+const storyHero = (pose, x, scale = 0.34, flip = false) => ({ pose, x, scale, flip });
+const RULERS = Object.freeze({
+  1: { kit: 'gaoler' },
+  2: { kit: 'maw' },
+  3: { kit: 'empress', module: 'bossesB' },
+  4: { kit: 'herald', module: 'bossesB' },
+  5: { kit: 'balance', module: 'bossesB' },
+});
+const outro = (ch) => ({ ch, boss: { ...RULERS[ch], x: 340, scale: ch >= 3 ? 0.56 : 0.52, fallen: true }, hero: storyHero('threeQuarter', 118, 0.32) });
+
+export const STORY_PANELS = Object.freeze({
+  'prologue-1': { ch: 1, hero: storyHero('back', 120) },
+  'prologue-2': { ch: 1, blank: { from: 300 }, hero: storyHero('back', 120) },
+  'prologue-3': { ch: 1, blank: { from: 410 }, enemies: [['stalker', 236, 0.62], ['charger', 318, 0.54], ['warden', 388, 0.48]], hero: storyHero('threeQuarter', 96, 0.3) },
+  'prologue-4': { ch: 1, hero: storyHero('throw', 168, 0.38) },
+  'intro-2': { ch: 2, hero: storyHero('run', 104, 0.3), enemies: [['warden', 400, 0.48, true]] },
+  'intro-3': { ch: 3, hero: storyHero('run', 104, 0.3), enemies: [['charger', 404, 0.56, true]] },
+  'intro-4': { ch: 4, hero: storyHero('run', 104, 0.3), enemies: [['shooter', 404, 0.56, true]] },
+  'intro-5': { ch: 5, hero: storyHero('run', 104, 0.3), enemies: [['stalker', 392, 0.66, true], ['warden', 446, 0.46, true]] },
+  'outro-1': outro(1),
+  'outro-2': outro(2),
+  'outro-3': outro(3),
+  'outro-4': outro(4),
+  'outro-5': outro(5),
+  'ending-1': { ch: 5, blank: { from: 228 }, hero: storyHero('back', 118) },
+  'ending-2': { ch: 5, blank: { from: 262 }, seam: 262, hero: storyHero('throw', 150, 0.36) },
+  'ending-3': { ch: 5, margin: 262, hero: storyHero('front', 144, 0.34) },
+  'ending-4': { ch: 1, hero: storyHero('levelup', 210, 0.36) },
+  'ending-5': { paper: true, hero: storyHero('front', 240, 0.4) },
+  'ending-6': { ch: 1 },
+  'ending-7': { paper: true, drop: [392, 66] },
+});

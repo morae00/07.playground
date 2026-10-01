@@ -2646,6 +2646,132 @@ h2 {
   100% { opacity: 0; }
 }
 
+/* CON-06: a round boss's phase line, over the boss bar and clear of the centre 40%; it never takes input. */
+.bossNarration {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  width: max-content;
+  max-width: min(560px, calc(100vw - 28px));
+  margin: 0;
+  translate: -50% 0;
+  border: 2px solid var(--ink);
+  padding: 6px 12px;
+  color: var(--ink);
+  background: var(--paper);
+  box-shadow: 3px 3px 0 var(--ink);
+  font-size: 15px;
+  font-weight: 800;
+  text-shadow: none;
+  animation: phaseLine 3.6s ease both;
+}
+
+@keyframes phaseLine {
+  0% { opacity: 0; }
+  8%, 85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* CON-06: story panels. The art keeps 16:9 at any size and the words sit under it, in the manuscript's ink. */
+.storyPanels {
+  display: grid;
+  gap: 10px;
+  width: min(760px, 100%);
+  max-height: calc(100dvh - 48px);
+  border: 3px solid var(--ink);
+  padding: 14px 18px 16px;
+  color: var(--ink);
+  background: var(--paper);
+  box-shadow: 6px 6px 0 var(--ink);
+  overflow: auto;
+}
+
+.storyPanels .eyebrow,
+.storyPanels .modalActions {
+  margin: 0;
+}
+
+.storyPanels .modalActions {
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.storyFigure {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  animation: storyIn 0.35s ease-out both;
+}
+
+/* The frame keeps to the art: width and height follow its 16:9 within the dialog and 54% of the window's height. */
+.storyFigure img {
+  display: block;
+  justify-self: center;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 54dvh;
+  border: 2px solid var(--ink);
+  background: var(--paper-raised);
+}
+
+.storyFigure figcaption {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-height: 92px;
+}
+
+.storyFigure p {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+.storyChapter {
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.storyQuote {
+  margin: 6px 0 0;
+  border-left: 4px solid var(--ink);
+  padding-left: 12px;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.storyQuote.glyph {
+  border: 0;
+  padding: 0;
+  font-size: 56px;
+  line-height: 1;
+  text-align: center;
+}
+
+.storyFigure .soonStrip {
+  margin-top: 6px;
+}
+
+.storyCount {
+  margin-right: auto;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.storyReplay {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+@keyframes storyIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 /* Onboarding hint (UI-09): above the boss bar, clear of the centre 40%, never taking input. */
 .hintToast {
   position: absolute;

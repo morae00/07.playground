@@ -164,6 +164,8 @@ try {
   await page.getByRole('button', { name: 'Ch.1 / St.1 출정' }).click();
   const timer = page.locator('.hudClock .timer');
   await timer.waitFor({ timeout: 5_000 });
+  // CON-06: the moved save played 1-1 before the story existed, so it has passed the prologue (G17).
+  record('CON-06 a save from before the story starts its run without the prologue', (await page.locator('.storyPanels').count()) === 0);
   const startClock = await timer.innerText();
   await page.waitForTimeout(2_200);
   const laterClock = await timer.innerText();
