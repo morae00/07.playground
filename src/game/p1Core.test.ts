@@ -12,6 +12,7 @@ import {
   applyTimedSlow,
   assertCampaignContent,
   calculateFireDotDamage,
+  hybridHitDamage,
   effectiveCoinFeverAttackSpeed,
   filterSkillsForChapter,
   paperWardDirectHitInvulnerability,
@@ -170,4 +171,28 @@ test('campaign invariant reports stage shape, boss coverage, ids, and unlock ran
   assert.ok(issues.some((issue) => issue.includes('duplicate skill ids: late')));
   assert.ok(issues.some((issue) => issue.includes('skill late has invalid chapterMin 0')));
   assert.throws(() => assertCampaignContent(invalid), CampaignContentInvariantError);
+});
+
+test('SYS-07 hybrid defence: about the flat rule at low defence, real hits at high defence, never below 15% or 1', () => {
+  const curve = { flat: 0.35, flatOther: 0.2, ratio: 4, floor: 0.15 };
+  const flatRule = (raw: number, defense: number) => Math.max(1, raw - defense * 0.72);
+  // A fresh build (defence 2) takes within 8% of what the 0.1.0 rule gave.
+  for (const raw of [8, 14, 22, 40]) {
+    assert.ok(Math.abs(hybridHitDamage(raw, 2, true, curve) / flatRule(raw, 2) - 1) < 0.08, `raw ${raw}`);
+  }
+  // A maxed build (defence 24.5): the flat rule gave 1 to small and medium hits; the hybrid keeps them real.
+  assert.equal(flatRule(10.5, 24.5), 1);
+  assert.ok(hybridHitDamage(10.5, 24.5, true, curve) > 1.5);
+  assert.ok(Math.abs(hybridHitDamage(18.5, 24.5, true, curve) - (18.5 - 24.5 * 0.35) * 100 / 198) < 1e-9);
+  // The floor holds against any defence, and more defence never takes more damage.
+  assert.equal(hybridHitDamage(40, 1000, true, curve), 40 * 0.15);
+  assert.equal(hybridHitDamage(2, 50, true, curve), 1);
+  let previous = Infinity;
+  for (let defense = 0; defense <= 60; defense += 5) {
+    const damage = hybridHitDamage(30, defense, true, curve);
+    assert.ok(damage <= previous + 1e-12, `defence ${defense}`);
+    previous = damage;
+  }
+  assert.ok(hybridHitDamage(30, 20, false, curve) > hybridHitDamage(30, 20, true, curve), 'non-physical hits keep less flat cut');
+  assert.equal(hybridHitDamage(Number.NaN, 10, true, curve), 1);
 });

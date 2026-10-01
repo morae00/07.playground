@@ -87,4 +87,15 @@ const roundBosses: BossDef[] = [
   { id: 's5-final-null', name: 'boss.s5-final-null', chapter: 5, role: 'final', pattern: 'null', hp: 17000, damage: 56, speed: 98 },
 ];
 
-export default deepFreeze({ baseStats, skills, metaUpgrades, metaPassives, runUpgrades, fieldBosses, roundBosses });
+/**
+ * The difficulty curve (SYS-07, difficultyCurve rule).
+ * - A hit is cut by a flat share of defence, then by the ratio 100 / (100 + defence × ratio), and never below `floor`
+ *   of itself, so high defence no longer turns every hit into 1.
+ * - Enemy contact and shot damage rises by `damageChapter` per chapter after the first.
+ * - Stage difficulty (enemy health, spawn rate, and damage) climbs `chapterStep` per chapter and `stageStep` per stage.
+ *   The pilots kept 0.45 and 0.2: flatter steps deepened the Ch3 valley instead of evening the curve.
+ * - Boss stages' crowds are scaled by `bossStageMobs`: without saturated defence a tank no longer outlasts them.
+ */
+const difficulty = { flat: 0.35, flatOther: 0.2, ratio: 4, floor: 0.15, damageChapter: 0.07, chapterStep: 0.45, stageStep: 0.2, bossStageMobs: 0.85 };
+
+export default deepFreeze({ baseStats, skills, metaUpgrades, metaPassives, runUpgrades, fieldBosses, roundBosses, difficulty });

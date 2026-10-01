@@ -29,6 +29,8 @@ export const BALANCE_PERSONAS = Object.freeze([
  */
 export const EXTRA_PERSONAS = Object.freeze([
   Object.freeze({ id: 'novice', skillPriority: ['needleStorm', 'chainSpark', 'fanKnives', 'ironFrame', 'recoveryThread'], movePeriod: 180, freshMeta: true, evasive: true }),
+  // SYS-07: every permanent upgrade and passive at its cap, the striker's picks; the R3 gate for a threatening Ch5.
+  Object.freeze({ id: 'maxed', skillPriority: ['blackSun', 'railSpear', 'boneMortar', 'chainSpark', 'needleStorm', 'fanKnives'], movePeriod: 150, maxedMeta: true }),
 ]);
 
 /** Personas by id from the default and opt-in lists, in the order given. */
@@ -66,6 +68,17 @@ function scenarioSeed(chapter, stage, personaIndex, baseSeed) {
 }
 
 function progressionMeta(chapter, persona) {
+  if (persona.maxedMeta) {
+    return {
+      gold: 0,
+      xp: 0,
+      level: 1,
+      passivePoints: 0,
+      progress: { chapter: 5, stage: 10 },
+      upgrades: { attack: 30, defense: 25, maxHp: 30, moveSpeed: 20, crit: 20, regen: 20, magnet: 25 },
+      passives: { rareLuck: 5, bossHunter: 5, coinMagnet: 5 },
+    };
+  }
   if (persona.freshMeta) {
     return {
       gold: 0,
@@ -279,8 +292,15 @@ export async function runFullBalanceBatch({
         let settlement;
         let drafts = 0;
         let death = null;
+        // SYS-07: the lowest health the run reached, and how many hits landed at the minimum 1.
+        let lowestHp = 1;
+        let hits = 0;
+        let minimumHits = 0;
         engine = new ProbedGameEngine(createHeadlessCanvas(), progressionMeta(address.chapter, persona), standardOptions(), {
-          onSnapshot(snapshot) { latestSnapshot = snapshot; },
+          onSnapshot(snapshot) {
+            latestSnapshot = snapshot;
+            lowestHp = Math.min(lowestHp, snapshot.hp / Math.max(1, snapshot.maxHp));
+          },
           onDraft(draft) {
             drafts += 1;
             const offer = selectBalanceOffer(draft.cards, persona, latestSnapshot);
@@ -297,6 +317,10 @@ export async function runFullBalanceBatch({
         if (process.env.BALANCE_RULE_PATCH) engine.probe.patchRules(JSON.parse(process.env.BALANCE_RULE_PATCH));
         engine.subscribe((event) => {
           if (event.type === 'player/died') death = event;
+          if (event.type === 'player/hurt') {
+            hits += 1;
+            if (event.damage <= 1 + 1e-9) minimumHits += 1;
+          }
         });
         engine.startRun(address.chapter, address.stage, seed);
         const { worldSize } = engine.probe.renderWorld(1);
@@ -330,6 +354,9 @@ export async function runFullBalanceBatch({
           bossHpRatio: mainBoss ? round(mainBoss.hp / mainBoss.maxHp, 5) : null,
           // CON-03: whether the stage's bonus goal was met (null on stages without one).
           bonus: settlement?.bonus ? settlement.bonus.met : null,
+          lowestHpRatio: round(Math.max(0, lowestHp), 4),
+          hits,
+          minimumHits,
           skillCount: latestSnapshot ? Object.keys(latestSnapshot.skills).length : 0,
           skills: latestSnapshot ? Object.keys(latestSnapshot.skills).sort() : [],
         };

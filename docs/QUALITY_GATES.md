@@ -210,6 +210,29 @@ CON-03 (stage objectives, `stageObjectives` rule) was piloted with the flag on a
 - All 640 runs: clears 38.9% to 35.9%, 37 flips (9 to a clear, 28 to a death). The giants and traps changes are the hardest, at 13 and 10 points. SYS-07's curve work starts from these numbers.
 - The personas never walk to a zone or a cache, so the hold and salvage goals need playtests. The field boss goals are met on 93-94% of clears. SYS-10's elites will give the elite hunt its intended goal; the vanguard goal may want a time limit after playtests. **[Team decision]**
 
+SYS-07 (difficulty curve, `difficultyCurve` rule) was tuned with three pilot sets, each against today's formulas and the chosen numbers:
+- The team: striker, survivor, and collector on 1, 4, 9 (normal), 5, and 10 of every chapter × 5 seeds.
+- `maxed` (an opt-in persona with every upgrade and passive at its cap) on six Ch5 stages × 10 seeds.
+- `novice` on 1-1 × 20 seeds.
+
+| | before | after |
+|---|---:|---:|
+| normal stage clears by chapter, team (%) | 31 / 64 / 47 / 71 / 76 | 33 / 53 / 33 / 49 / 42 |
+| adjacent chapter differences (points) | +33 / -18 / +24 / +4 | +20 / -20 / +16 / -7 |
+| boss stage clears by chapter, team (%) | 27 / 43 / 40 / 63 / 83 | 30 / 50 / 30 / 47 / 67 |
+| maxed in Ch5: clears, lowest health p50 | 98%, 0.89 | 85%, 0.65 |
+| maxed in Ch5: hits that dealt the minimum 1 | 57% | 0% |
+| novice 1-1 clears | 50% | 50% |
+
+- The R3 balance gates hold on these sets: the new-player 1-1 band (40-70%), adjacent chapters within ±25 points, a maxed Ch5 lowest health median at most 70%, and minimum hits at most 20%. The full rebaseline at R3's end confirms them.
+- The inverted curve is gone. The team's normal clears are now 33% to 53% in every chapter instead of rising to 76%.
+- Ch3 is still the valley. Its 3-9 clears 7% and its mid boss 27-33%: the canal maps' horizontal channels and slows trap the personas' fixed walk. Ch3's mid boss stage fell to 0% under the hybrid defence alone, until boss stages took 15% lighter crowds. A Ch3 look in playtests is a **[Team decision]**.
+- Tried and dropped:
+  - flatter stage steps (0.08 to 0.12 per stage, with 0.5 to 0.6 per chapter): they deepened the Ch3 valley;
+  - 15% more damage per chapter: maxed Ch5 clears fell to 30%;
+  - a lower damage floor and gentler tide slows: they did not move the Ch3 spike.
+- `scripts/lib/full-balance-runner.mjs` now records each run's lowest health, hits, and minimum hits, and offers the `maxed` persona.
+
 ## Game rules and grammar
 
 Gameplay changes ship behind the rule set in `src/game/rules.ts`. `classic` reproduces 0.1.0 exactly and `remaster` is the default. Infinite-mode records and replay fixtures are kept per rules version: the remaster rules (v2) may change freely until a build ships them, and after that the first change to seeded outcomes must raise `RULES_VERSION`. `test/grammarContracts.integration.test.mjs` pins the preserved game grammar (stage structure, draft sizes, radii, tier mix, deterministic replay) and one regression test per R0 gameplay fix.

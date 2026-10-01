@@ -267,6 +267,14 @@ The settings (menu and pause hub) have three assists: the share of damage the pl
 - A campaign settlement reports `assisted`, and the stage record keeps an `assisted` mark that the menu shows next to the best record (G16).
 - Tools that pass partial options get no assists.
 
+## Difficulty curve (SYS-07)
+
+The 0.1.0 curve was inverted: a new build hit a wall in Ch1, and a strong one found Ch5 harmless. Its flat defence (defence × 0.72 off every hit) turned most hits on a maxed build into the minimum 1. The `difficultyCurve` rule (remaster on, classic off) changes three things, with the numbers in `src/content/data/catalog.ts` (`difficulty`):
+- Hybrid defence (`hybridHitDamage` in `p1Core.ts`): a hit loses a flat 0.35 of defence (0.2 for non-physical hits), then is scaled by 100 / (100 + defence × 4), never below 15% of itself or 1. A fresh build takes within 8% of the 0.1.0 damage; a maxed one keeps taking real hits.
+- Enemy contact and shot damage rises 7% per chapter after the first.
+- Boss stages scale their crowds by 0.85. Without the saturated defence, a tank no longer outlasts a boss stage's crowd for free; Ch3's mid boss stage went from 47% to 0% without it.
+- Stage and chapter steps stay 0.2 and 0.45. The pilots that flattened them deepened the Ch3 valley instead.
+
 ## Camera (FX-04)
 
 The simulation camera stays hard-locked on the player, clamped to the world. Spawns, aim, and off-screen checks use it together with the logical frame (G14). Under the `smoothCamera` rule, the screen shows a separate view camera instead (`src/game/presentation/viewCamera.ts`):

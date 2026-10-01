@@ -118,6 +118,12 @@ export type RuleSet = Readonly<{
    * campaign's first stage keeps its bonus goal without the modifiers. A goal met on a clear pays gold and a star.
    */
   stageObjectives: boolean;
+  /**
+   * SYS-07: hits are cut by the hybrid defence (a flat share of defence, then a ratio, never below 15% of the hit), so
+   * high defence no longer makes every hit 1. Enemy damage rises 7% per chapter after the first, and boss stages'
+   * crowds are 15% lighter. Numbers in src/content/data/catalog.ts (difficulty).
+   */
+  difficultyCurve: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -150,6 +156,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   terrainOnEnemies: false,
   patientPickups: false,
   stageObjectives: false,
+  difficultyCurve: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -182,6 +189,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   terrainOnEnemies: false,
   patientPickups: true,
   stageObjectives: true,
+  difficultyCurve: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

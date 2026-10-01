@@ -111,6 +111,22 @@ export function paperWardDirectHitInvulnerability(level: number) {
   return BASE_DIRECT_HIT_INVULNERABILITY + safeLevel * PAPER_WARD_INVULNERABILITY_PER_LEVEL;
 }
 
+/**
+ * SYS-07 hybrid defence: a flat cut (a share of defence), then a ratio that shrinks with defence, never below a share
+ * of the hit or below 1. Low defence takes about what the flat 0.1.0 rule gave; high defence keeps taking real hits.
+ */
+export function hybridHitDamage(
+  raw: number,
+  defense: number,
+  physical: boolean,
+  curve: Readonly<{ flat: number; flatOther: number; ratio: number; floor: number }>,
+) {
+  const safeRaw = Math.max(0, finiteOr(raw, 0));
+  const safeDefense = Math.max(0, finiteOr(defense, 0));
+  const cut = (safeRaw - safeDefense * (physical ? curve.flat : curve.flatOther)) * 100 / (100 + safeDefense * curve.ratio);
+  return Math.max(1, safeRaw * curve.floor, cut);
+}
+
 export function calculateFireDotDamage(
   damagePerSecond: number,
   deltaSeconds: number,

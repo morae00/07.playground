@@ -21,6 +21,7 @@ import {
   applyTimedSlow,
   assertCampaignContent,
   calculateFireDotDamage,
+  hybridHitDamage,
   effectiveCoinFeverAttackSpeed,
   filterSkillsForChapter,
   paperWardDirectHitInvulnerability,
@@ -2353,8 +2354,11 @@ export class GameEngine {
     }
 
     const progress = 1 - this.timeLeft / this.duration;
-    const stagePressure = this.kind === 'normal' ? (this.stage - 1) * 0.2 : this.kind === 'finalBoss' ? 0.35 : 0.15;
-    const difficulty = 1 + (this.chapter - 1) * 0.45 + stagePressure + progress * 0.85 + (this.bossEnraged ? 0.85 : 0);
+    // SYS-07: the difficulty curve reshapes the climb (CATALOG.difficulty); the classic rules keep 0.45 and 0.2.
+    const curve = this.rules.difficultyCurve ? CATALOG.difficulty : null;
+    const stagePressure = this.kind === 'normal' ? (this.stage - 1) * (curve?.stageStep ?? 0.2) : this.kind === 'finalBoss' ? 0.35 : 0.15;
+    const difficulty = (1 + (this.chapter - 1) * (curve?.chapterStep ?? 0.45) + stagePressure + progress * 0.85 + (this.bossEnraged ? 0.85 : 0))
+      * (curve && this.kind !== 'normal' ? curve.bossStageMobs : 1);
     const cap = this.enemyCap();
     const director = this.director;
     if (director) {
@@ -2470,7 +2474,9 @@ export class GameEngine {
     // Breathers pay more for each kill (SYS-03).
     const rewardScale = director ? director.rewardScale(stageTime) : 1;
     const baseDamage = (tier === 'small' ? 8 : tier === 'medium' ? 14 : 22)
-      * (0.8 + (infiniteDifficulty ? INFINITE_BASELINE.mobDifficulty : difficulty) * 0.14);
+      * (0.8 + (infiniteDifficulty ? INFINITE_BASELINE.mobDifficulty : difficulty) * 0.14)
+      // SYS-07: later chapters hit harder, so a maxed build still feels Ch5.
+      * (this.rules.difficultyCurve && !infiniteDifficulty ? 1 + (this.chapter - 1) * CATALOG.difficulty.damageChapter : 1);
     const enemy: Entity = {
       id: this.nextId(),
       x,
@@ -4236,7 +4242,9 @@ export class GameEngine {
       return;
     }
     if (this.player.invuln > 0 || this.player.shield > 0) return;
-    const reduced = Math.max(1, rawDamage - this.player.stats.defense * (physical ? 0.72 : 0.42));
+    const reduced = this.rules.difficultyCurve
+      ? hybridHitDamage(rawDamage, this.player.stats.defense, physical, CATALOG.difficulty)
+      : Math.max(1, rawDamage - this.player.stats.defense * (physical ? 0.72 : 0.42));
     const taken = reduced * this.assist().damage;
     this.damageTakenTotal += Math.min(taken, Math.max(0, this.player.hp));
     this.player.hp -= taken;
