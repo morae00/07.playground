@@ -1,4 +1,4 @@
-// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, TEC-15, CON-02, CON-04, CON-06, CON-07, CON-08, D-07, SYS-08, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-05, UI-07, UI-09) against the developer build.
+// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, TEC-15, CON-02, CON-04, CON-06, CON-07, CON-08, D-07, SYS-08, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-05, UI-07, UI-08, UI-09) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -451,6 +451,37 @@ try {
       record(`UI-02 ${width}x${height} the HUD covers at most ${Math.round(limit * 100)}% of the screen and leaves the centre clear`, hud.share <= limit && hud.centre === 0, `${(hud.share * 100).toFixed(2)}% covered, ${hud.centre} centre cells, ${slots} skill slots`);
       await page.close();
     }
+  });
+
+  await probe('UI-08', async () => {
+    // The effect rack redraws its timers every snapshot, so it must not be a live region; one always-mounted line
+    // speaks the effects, and its text may change only when the set of effects does.
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await openStage(page);
+    await cheat(page, 'GOD');
+    const closer = page.getByRole('button', { name: '개발 패널 닫기' });
+    if (await closer.count()) await closer.click();
+    const watch = await page.evaluate(async () => {
+      const rack = () => [...document.querySelectorAll('.effectRack .effectItem b')].map((b) => b.textContent).join('|');
+      const timers = () => [...document.querySelectorAll('.effectRack small')].map((small) => small.textContent).join('|');
+      const line = () => document.querySelector('[data-effect-announcer]')?.textContent ?? null;
+      let lastSet = rack();
+      let lastLine = line();
+      let setChanges = 0;
+      let lineChanges = 0;
+      const timerStates = new Set([timers()]);
+      for (let tick = 0; tick < 30; tick += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        if (rack() !== lastSet) { setChanges += 1; lastSet = rack(); }
+        if (line() !== lastLine) { lineChanges += 1; lastLine = line(); }
+        timerStates.add(timers());
+      }
+      const rackElement = document.querySelector('.effectRack');
+      return { rackLive: rackElement?.getAttribute('aria-live') ?? null, rackRole: rackElement?.getAttribute('role') ?? null, text: line(), setChanges, lineChanges, timerStates: timerStates.size };
+    });
+    record('UI-08 the effect rack is not a live region, and one always-mounted line speaks the effects', watch.rackLive === null && watch.rackRole !== 'status' && typeof watch.text === 'string' && watch.text.startsWith('효과'), `rack aria-live ${watch.rackLive}, role ${watch.rackRole}, line "${watch.text}"`);
+    record('UI-08 the spoken line holds no timer and changes only when the effects do', watch.lineChanges <= watch.setChanges && !/\d+(\.\d)?s\b/.test(watch.text ?? ''), `${watch.lineChanges} line changes, ${watch.setChanges} effect-set changes, ${watch.timerStates} timer states in 3 s`);
+    await page.close();
   });
 
   await probe('UI-04', async () => {

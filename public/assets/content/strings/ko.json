@@ -390,6 +390,8 @@
  "hud.pauseTitle": "일시정지 ({pause})",
  "hud.effects": "현재 버프와 디버프",
  "hud.effectActive": "적용 중",
+ "hud.effects.list": "효과: {list}",
+ "hud.effects.none": "효과가 모두 끝났습니다",
  "pause.kicker": "RUN PAUSED",
  "pause.title": "일시정지",
  "pause.lead.keyboard": "런이 멈춰 있습니다. P 또는 Escape로 계속합니다.",

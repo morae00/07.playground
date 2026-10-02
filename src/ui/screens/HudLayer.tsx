@@ -13,6 +13,7 @@ import { useInputDevice } from '../inputDevice';
 import { loadBossTitles, loadLandmarkTitles, type BossTitle, type LandmarkTitle } from '../bossTitles';
 import { loadStory } from '../story';
 import { ProgressBar } from '../ProgressBar';
+import { effectAnnouncement } from '../effectAnnouncement';
 
 export type HudLayerProps = {
   snapshot: HudSnapshot;
@@ -64,6 +65,14 @@ function SkillSlots({ snapshot }: { snapshot: HudSnapshot }) {
       ))}
     </div>
   );
+}
+
+/** A live line that changes only when an effect starts or ends (UI-08); always mounted, so the first change is heard. */
+function EffectAnnouncer({ names }: { names: string[] }) {
+  const hadEffects = useRef(false);
+  const line = effectAnnouncement(names, hadEffects.current);
+  if (names.length > 0) hadEffects.current = true;
+  return <p className="srOnly" role="status" aria-live="polite" data-effect-announcer="">{line ? tx(line) : ''}</p>;
 }
 
 function BossBar({ snapshot, name, line }: { snapshot: HudSnapshot; name: string; line: string | null }) {
@@ -262,10 +271,12 @@ export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen,
           {intro.line && <p>{intro.line}</p>}
         </div>
       )}
+      <EffectAnnouncer names={snapshot.activeEffects.map((effect) => t(effect.label))} />
       {snapshot.activeEffects.length > 0 && (
-        <div className="effectRack" role="status" aria-live="polite" aria-label={t('hud.effects')}>
+        // Not a live region: its timers change every snapshot. EffectAnnouncer speaks the changes (UI-08).
+        <div className="effectRack" role="group" aria-label={t('hud.effects')}>
           {snapshot.activeEffects.map((effect) => (
-            // Silence and root show as timers over the hero (UI-02); the rack still announces them.
+            // Silence and root show as timers over the hero (UI-02); the rack still lists them for screen readers.
             <div className={`effectItem ${effect.kind}${effect.id === 'silence' || effect.id === 'root' ? ' srOnly' : ''}`} key={effect.id}>
               <span className="effectMark" aria-hidden="true">{effect.kind === 'buff' ? '+' : '!'}</span>
               <span className="effectCopy">

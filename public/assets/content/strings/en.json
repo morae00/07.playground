@@ -390,6 +390,8 @@
  "hud.pauseTitle": "Pause ({pause})",
  "hud.effects": "Buffs and debuffs",
  "hud.effectActive": "Active",
+ "hud.effects.list": "Effects: {list}",
+ "hud.effects.none": "All effects ended",
  "pause.kicker": "RUN PAUSED",
  "pause.title": "Paused",
  "pause.lead.keyboard": "The run is paused. Continue with P or Escape.",
