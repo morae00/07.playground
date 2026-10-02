@@ -5,6 +5,7 @@
 - Renderer sandboxing, context isolation, disabled Node integration, and web security are mandatory.
 - Only the entry page `app://game/index.html` may remain in the application window (TEC-15).
 - `app://` serves GET requests for files inside the build folder only. Another host, a path that leaves the folder, a folder, or another method gets a 404, and every response carries the content security policy.
+- The policy (`electron/security.cjs`) allows only the app's own scripts, styles, images (and data: images), fonts, fetches, and media, no workers, no objects, no forms, and no framing. Sound and music are fetched and decoded through Web Audio; `media-src` covers a future media element (TEC-09). The page's meta policy in `index.html` is the same list without `frame-ancestors`, which a meta tag cannot set, and a test keeps the two equal.
 - Credential-free HTTPS links may open in the operating-system browser. Every other external scheme is denied.
 - `requestSingleInstanceLock()` prevents a second process from creating another game window. A second launch restores and focuses the primary window.
 

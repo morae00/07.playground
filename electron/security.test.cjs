@@ -35,10 +35,20 @@ test('CSP blocks remote scripts, objects, forms and framing', () => {
   assert.match(CONTENT_SECURITY_POLICY, /object-src 'none'/);
   assert.match(CONTENT_SECURITY_POLICY, /form-action 'none'/);
   assert.match(CONTENT_SECURITY_POLICY, /frame-ancestors 'none'/);
+  assert.match(CONTENT_SECURITY_POLICY, /media-src 'self'/, 'media only from the app (TEC-09)');
+  assert.match(CONTENT_SECURITY_POLICY, /worker-src 'none'/, 'no workers (TEC-09)');
   assert.deepEqual(withContentSecurityPolicy({ Existing: ['value'] }), {
     Existing: ['value'],
     'Content-Security-Policy': [CONTENT_SECURITY_POLICY],
   });
+});
+
+test("the page's meta policy matches the app's header policy, which adds only frame-ancestors (TEC-09)", () => {
+  const html = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'index.html'), 'utf8');
+  const meta = html.match(/http-equiv="Content-Security-Policy"\s+content="([^"]+)"/);
+  assert.ok(meta, 'index.html carries a meta policy');
+  const directives = (policy) => policy.split(';').map((part) => part.trim()).filter(Boolean);
+  assert.deepEqual(directives(meta[1]), directives(CONTENT_SECURITY_POLICY).filter((directive) => !directive.startsWith('frame-ancestors')));
 });
 
 test('release metadata exposes isolated arm64 and x64 package paths', () => {

@@ -1,3 +1,6 @@
+// The page's own meta policy (index.html) is the same list without frame-ancestors, which a meta tag cannot set.
+// Sound and music are fetched and decoded through Web Audio, so media-src only covers a future media element;
+// the game runs no workers (TEC-09).
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self'",
@@ -5,6 +8,8 @@ const CONTENT_SECURITY_POLICY = [
   "img-src 'self' data:",
   "font-src 'self'",
   "connect-src 'self'",
+  "media-src 'self'",
+  "worker-src 'none'",
   "object-src 'none'",
   "base-uri 'none'",
   "form-action 'none'",
