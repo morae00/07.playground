@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createHeadlessCanvas, installHeadlessPlatform, localeTable, maxMeta, standardOptions } from '../scripts/lib/headless-engine.mjs';
 
-// Build depth (SYS-08): an A/B experiment, off in both rule sets until the slot A/B decides. Under the buildDepth rule a
+// Build depth (SYS-08): on in the remaster rules since decision D-09 (6 + 4 slots), off in the classic ones. Under it a
 // build holds 6 active and 4 passive skills, owned skills weigh more, six fusion awakenings appear once both of their
 // skills are awakened, account levels unlock reroll-or-banish tokens, and drafts opened together share one screen.
 // Drafts keep 3 cards (4 for a boss), skills stop at Lv5, and the awakening card leads (G3, G4).
@@ -25,7 +25,7 @@ function run({ depth = true, level = 16, chapter = 5, stage = 4, seed = 808, rul
     onGameOver() {},
   });
   engine.setRuleSet(rules);
-  if (depth) engine.probe.patchRules({ buildDepth: true });
+  engine.probe.patchRules({ buildDepth: depth });
   engine.startRun(chapter, stage, seed);
   engine.probe.haltSpawns();
   engine.probe.clear('enemies', 'hazards', 'obstacles', 'pickups');
@@ -53,7 +53,15 @@ function takeFusion(r, build, fusionId) {
   r.probe.setSkills(build);
 }
 
-test('SYS-08: off in both rule sets: no slots, tokens, or shared screens, and a reroll does nothing', () => {
+test('SYS-08: on in the remaster rules only; without it no slots, tokens, or shared screens, and a reroll does nothing', () => {
+  const rulesOf = (rules) => {
+    const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), maxMeta(), standardOptions(), { onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver() {} });
+    engine.setRuleSet(rules);
+    const on = engine.ruleSet.buildDepth;
+    engine.dispose();
+    return on;
+  };
+  assert.deepEqual([rulesOf('classic'), rulesOf('remaster')], [false, true]);
   for (const rules of ['classic', 'remaster']) {
     const r = run({ depth: false, rules });
     try {

@@ -753,8 +753,7 @@ try {
   });
 
   await probe('SYS-08', async () => {
-    // The build depth experiment for playtests: DEPTH in the menu's cheat input turns it on for the next run. An
-    // account at level 16 has two tokens a stage.
+    // Build depth is on in the remaster rules (D-09): an account at level 16 has two tokens a stage.
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     await page.goto('http://127.0.0.1:5177/');
     await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
@@ -768,10 +767,6 @@ try {
     await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
     const devToggle = page.getByRole('checkbox', { name: '개발자 모드: 모든 Stage 접근' });
     if (!(await devToggle.isChecked())) await devToggle.check();
-    const menuCheat = page.getByLabel('Cheat code');
-    await menuCheat.fill('DEPTH');
-    await menuCheat.press('Enter');
-    record('SYS-08 DEPTH turns the experiment on for the next run', (await page.getByText('BUILD DEPTH ON (next run)').count()) === 1);
     await launchFirstStage(page);
     await page.waitForTimeout(300);
     await cheat(page, 'DRAFT');

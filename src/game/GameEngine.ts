@@ -902,8 +902,6 @@ export class GameEngine {
   protected runStart: { meta: MetaState; options: GameOptions } | null = null;
   protected replaying = false;
   protected cheatsUsed = false;
-  /** Developer builds: an experiment's rule flag was turned on (setExperiment), so runs are not suspended. */
-  protected experimental = false;
   protected activeDraftReason: DraftReason = 'level';
   protected draftQueue: Array<{ reason: DraftReason; after: DraftState['after'] }> = [];
   protected activeDraftId: number | null = null;
@@ -1281,13 +1279,6 @@ export class GameEngine {
     this.cosmetics = cosmetics;
   }
 
-  /** Developer builds: turns an undecided experiment's rule flag on for the runs this engine starts (playtest A/Bs). */
-  setExperiment(flag: 'buildDepth' | 'terrainOnEnemies') {
-    if (!DEVELOPER_UI_AVAILABLE) return;
-    this.rules = Object.freeze({ ...this.rules, [flag]: true });
-    this.experimental = true;
-  }
-
   applyCheat(code: string) {
     if (!DEVELOPER_UI_AVAILABLE) return 'DISABLED';
     // A cheat changes the run outside the command log, so it can no longer be suspended (CON-04).
@@ -1482,7 +1473,7 @@ export class GameEngine {
 
   /** CON-04: the run so far, to save and replay; null when there is no live run to suspend. */
   suspendState(): SuspendedRun | null {
-    if (!this.running || this.stageFinished || this.player.hp <= 0 || !this.runStart || this.cheatsUsed || this.experimental || this.runLog.length > MAX_RUN_LOG) return null;
+    if (!this.running || this.stageFinished || this.player.hp <= 0 || !this.runStart || this.cheatsUsed || this.runLog.length > MAX_RUN_LOG) return null;
     return {
       version: 1,
       rulesVersion: this.rules.version,

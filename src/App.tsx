@@ -143,8 +143,6 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const [pauseTab, setPauseTab] = useState<PauseTab>('build');
   const [cheatCode, setCheatCode] = useState('');
   const [cheatMessage, setCheatMessage] = useState('');
-  // Developer builds: the SYS-08 build depth A/B for the runs that start next (cheat code DEPTH).
-  const depthExperimentRef = useRef(false);
   const [snapshot, setSnapshot] = useState<HudSnapshot | null>(null);
   // CON-06: the story beats playing, if any, and what comes after them (a run to start, or nothing).
   const [story, setStory] = useState<{ beats: StoryBeatId[]; then?: () => void } | null>(null);
@@ -502,7 +500,6 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     engineRef.current?.dispose();
     const engine = new GameEngine(canvas, meta, options, callbacks);
     engine.setCosmetics(wornLooks(profileRef.current.cosmetics));
-    if (DEVELOPER_UI_AVAILABLE && depthExperimentRef.current) engine.setExperiment('buildDepth');
     engineRef.current = engine;
     engine.setSprites(spriteAtlas);
     engine.setSound(appMixer);
@@ -808,12 +805,6 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     if (code === 'METAUP' || code === 'LEVEL') {
       setMeta((prev) => ({ ...prev, xp: prev.xp + xpForMetaLevel(prev.level), passivePoints: prev.passivePoints + 1 }));
       setCheatMessage('META XP + PASSIVE POINT');
-      return;
-    }
-
-    if (code === 'DEPTH') {
-      depthExperimentRef.current = !depthExperimentRef.current;
-      setCheatMessage(depthExperimentRef.current ? 'BUILD DEPTH ON (next run)' : 'BUILD DEPTH OFF (next run)');
       return;
     }
 

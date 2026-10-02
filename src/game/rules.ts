@@ -125,7 +125,7 @@ export type RuleSet = Readonly<{
    */
   difficultyCurve: boolean;
   /**
-   * SYS-08 A/B (off in both rule sets until the slot A/B decides): builds hold 6 active and 4 passive skills, owned
+   * SYS-08 (on in the remaster rules since decision D-09, 2026-10-02): builds hold 6 active and 4 passive skills, owned
    * skills weigh more in the draft, six fusion awakenings appear once both of their skills are awakened, account
    * levels unlock up to two reroll-or-banish tokens a stage, chained drafts share one screen, and the XP curve aims
    * at 20-28 drafts an 8-minute stage. Numbers in src/content/data/buildDepth.ts.
@@ -215,7 +215,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   patientPickups: true,
   stageObjectives: true,
   difficultyCurve: true,
-  buildDepth: false,
+  buildDepth: true,
   eliteAffixes: true,
   infiniteRotation: true,
 });

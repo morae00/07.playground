@@ -283,16 +283,15 @@ The 0.1.0 curve was inverted: a new build hit a wall in Ch1, and a strong one fo
 - Boss stages scale their crowds by 0.85. Without the saturated defence, a tank no longer outlasts a boss stage's crowd for free; Ch3's mid boss stage went from 47% to 0% without it.
 - Stage and chapter steps stay 0.2 and 0.45. The pilots that flattened them deepened the Ch3 valley instead.
 
-## Build depth (SYS-08 experiment)
+## Build depth (SYS-08)
 
-Builds converged on collecting every skill, and one fusion of two skills existed in practice. The `buildDepth` rule is an A/B experiment, off in both rule sets until the slot A/B playtests decide (`grammarContracts.test.ts` lists it with the SYS-06 terrain flag). Its numbers are in `src/content/data/buildDepth.ts`:
+Builds converged on collecting every skill, and one fusion of two skills existed in practice. The `buildDepth` rule began as an A/B experiment; decision D-09 (2026-10-02) adopted it with 6 + 4 slots, so it is on in the remaster rules and off in the classic ones. Its numbers are in `src/content/data/buildDepth.ts`:
 - A build holds 6 active and 4 passive skills. Once a kind is full, drafts offer no new skill of that kind, only level-ups of the ones held.
 - An owned skill's draft weight is multiplied by `ownedWeight` (2), on top of its rarity weight (52/25/14/7/2) and the luck and stage biases (`drawSkillOffers`).
 - Six fusion awakenings: 집행 바늘비 (needle storm + execution mark), 빙결 연쇄 (white chain + chalk cut), 공허 박격 (bone mortar + silent mine), 거울 레일 (black rail + mirror clone), 일식 흑점 (black sun + eclipse step), and 강철 부적 (iron frame + paper armour). Once both of a fusion's skills are awakened, its card takes the last place of every draft until it is picked. It adds to the two awakenings, and the first place stays the awakening card's (G3, G4). Each changes its skills with what they already draw: more needles that finish enemies left under 15%, slowing chain jumps, a void under each mortar shell, rails mirrored by both clones, a small black sun at each step, and a ward push that hits and stuns.
 - Account levels 8 and 16 each unlock a token a stage. A token draws the open draft again (다시 뽑기, R) or banishes one skill card's skill for the rest of the run (제외), and another card takes its place. Both are engine commands (`draft/reroll`, `draft/banish`), so suspended runs replay them.
 - Drafts opened together share one screen: it counts 연속 선택 n/m, and the opening sequence plays for the first only. A redraw keeps the screen as well.
 - Level L needs the usual XP × `xpScale` × (1 + `xpGrowth` × (L − 1)), aimed at 20-28 drafts an 8-minute stage.
-- Developer builds switch it on for the next runs with the cheat code `DEPTH`, for playtests; such runs are not suspended.
 - `test/buildDepth.integration.test.mjs` covers the slots, the weight, where the fusion card goes, each fusion's effect, the tokens, the shared screen, the XP curve, and a run that spends tokens replaying exactly from its suspended log. QUALITY_GATES has the bot A/B.
 
 ## Run suspension (CON-04)

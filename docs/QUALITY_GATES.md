@@ -309,8 +309,8 @@ The second set adds tokens and compares slot counts, all with XP 0.6 / 0.1. The 
 | novice 1-1 clears | 50% | 65% | 65% | 65% |
 
 - Tokens add about two points of clears (42.4% to 44.8%).
-- The slot count barely moves the bots. In eight minutes they rarely fill ten slots, so a build with no limit plays almost the same. Players pick differently, so the slot count stays the playtests' call **[Team decision]**: 6 + 4 (the table's setting), 5 + 3, or no limit. Developer builds turn the experiment on with the cheat code `DEPTH` (docs/DEVELOPER_APP.md).
-- With the experiment on, the Ch3-4 step (+29) passes the R3 gate of ±25 points. Ch3 is the bots' valley either way. Turning the experiment on needs that step closed, or a playtest showing it is the walk and not the stage **[Team decision]**.
+- The slot count barely moves the bots. In eight minutes they rarely fill ten slots, so a build with no limit plays almost the same. Players pick differently. The team chose 6 + 4 and switched the rule on in the remaster rules (decision D-09, 2026-10-02).
+- With the experiment on, the Ch3-4 step (+29) passed the R3 gate of ±25 points in this pilot. Ch3 is the bots' valley either way. The team adopted the rule anyway and kept Ch3 as it is (D-03); the next full measure shows where the step lands.
 - `scripts/lib/full-balance-runner.mjs` now records each run's awakenings, fusions, run level, and the cards and bonus cards offered in the stage's second half. The personas take fusion cards first.
 
 CON-08 (the endless rotation, `infiniteRotation` rule) was measured with `npm run test:balance:infinite`: the striker's picks and square walk, six seeds, at most 30 minutes of frames. `max` is the test fixture's full build (passives 5 / 5 / 5) and `mid` has half its upgrades and passives. The rotation off is `BALANCE_RULE_PATCH='{"infiniteRotation":false}'`:
