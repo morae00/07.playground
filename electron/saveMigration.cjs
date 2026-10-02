@@ -13,7 +13,8 @@ const MARKER_FILE = 'storage-migrated.json';
 const ownKeys = (entries) => Object.fromEntries(Object.entries(entries ?? {}).filter(([key, value]) => key.startsWith(STORAGE_PREFIX) && typeof value === 'string'));
 
 /**
- * Reading and writing each origin's localStorage is injected: hidden windows in the app, fakes in tests.
+ * Reading and writing each origin's localStorage is injected: the app reads the old origin from disk
+ * (levelDbReader.cjs) and the new one through a hidden app:// window; tests pass fakes.
  * Resolves with what happened: skipped, empty, migrated, or failed (with the keys that did not arrive).
  */
 async function migrateStorage({ readOld, readNew, writeNew, fs, dir, now = () => Date.now() }) {

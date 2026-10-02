@@ -101,7 +101,7 @@ xcrun stapler validate "release/Blackline Survivor-<version>-mac-arm64.dmg"
 - [ ] SHA-256 checksums are generated after all signing and stapling operations.
 - [ ] `artifacts/release-evidence/checksums.sha256` matches every DMG, ZIP, blockmap, and update metadata file.
 - [ ] `artifacts/release-evidence/sbom.cdx.json` and `release-evidence.json` are archived with the release.
-- [ ] Packaged Electron fuses match `docs/ELECTRON_HARDENING.md`; the `file:` protocol exception is reviewed before each Electron upgrade.
+- [ ] Packaged Electron fuses match `docs/ELECTRON_HARDENING.md` (the `file:` fuse is off, D-25), and `npm run test:electron-fuse-smoke` passes. After an Electron upgrade, regenerate `test/fixtures/chromium-local-storage` with `node scripts/make-local-storage-fixture.mjs` and rerun `npm run test:security`, so the save move still reads its localStorage format.
 
 ## 6. Clean-machine acceptance
 

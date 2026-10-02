@@ -1,9 +1,9 @@
 const { app, BrowserWindow, Menu, crashReporter, ipcMain, net, protocol, session, shell } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
-const { pathToFileURL } = require('node:url');
 const { APP_ENTRY, APP_ORIGIN, registerAppScheme, serveAppFiles } = require('./appProtocol.cjs');
 const { migrateStorage } = require('./saveMigration.cjs');
+const { readLocalStorage } = require('./levelDbReader.cjs');
 const { createCrashLog, createReloadGate, rendererErrorLine } = require('./crashLog.cjs');
 const { isGameFrame, readWindowState, writeWindowState } = require('./windowState.cjs');
 const {
@@ -68,7 +68,7 @@ function openExternal(url) {
   void shell.openExternal(url).catch(() => undefined);
 }
 
-/** Hidden, sandboxed windows on an empty bridge page, to reach one origin's localStorage during the save migration. */
+/** Hidden, sandboxed windows on an empty bridge page, to reach the app:// origin's localStorage during the save migration. */
 const storageWindows = new WeakSet();
 async function storageWindow(url) {
   const window = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true } });
@@ -82,20 +82,16 @@ const writeStorage = (entries) => `Object.entries(${JSON.stringify(entries)}).fo
 
 /**
  * TEC-15: moves the saves and leaderboards the file:// origin kept to app:// on the first launch (saveMigration.cjs),
- * logging the outcome. In an unpackaged run, BLACKLINE_SEED_FILE_STORAGE (JSON) seeds the old origin first, for the
- * desktop smoke test.
+ * logging the outcome. The old origin is read from Chromium's localStorage folder on disk (D-25): with the file: fuse
+ * off a file: page cannot reach its localStorage. This runs before any window opens that database.
  */
 async function migrateSaves() {
   const bridge = 'storage-bridge.html';
-  let oldWindow = null;
   let newWindow = null;
-  const oldOrigin = async () => (oldWindow ??= await storageWindow(pathToFileURL(path.join(buildRoot, bridge)).href));
   const newOrigin = async () => (newWindow ??= await storageWindow(`${APP_ORIGIN}/${bridge}`));
   try {
-    const seed = app.isPackaged ? undefined : process.env.BLACKLINE_SEED_FILE_STORAGE;
-    if (seed) await (await oldOrigin()).webContents.executeJavaScript(writeStorage(JSON.parse(seed)));
     const result = await migrateStorage({
-      readOld: async () => (await oldOrigin()).webContents.executeJavaScript(READ_STORAGE),
+      readOld: async () => readLocalStorage(path.join(app.getPath('userData'), 'Local Storage', 'leveldb'), 'file://'),
       readNew: async () => (await newOrigin()).webContents.executeJavaScript(READ_STORAGE),
       writeNew: async (entries) => (await newOrigin()).webContents.executeJavaScript(writeStorage(entries)),
       fs,
@@ -106,7 +102,6 @@ async function migrateSaves() {
   } catch (error) {
     localLog().append('storage-migration', error instanceof Error ? error.message : String(error));
   } finally {
-    oldWindow?.destroy();
     newWindow?.destroy();
   }
 }

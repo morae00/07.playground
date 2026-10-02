@@ -23,9 +23,9 @@ electron-builder flips the following Electron V1 fuses before signing:
 | `EnableEmbeddedAsarIntegrityValidation` | on | Validate the packaged ASAR on supported platforms. |
 | `OnlyLoadAppFromAsar` | on | Prevent fallback to unpackaged application code. |
 | `LoadBrowserProcessSpecificV8Snapshot` | off | No separate `browser_v8_context_snapshot.bin` is shipped. Enabling this fuse without that file prevents Electron from starting. |
-| `GrantFileProtocolExtraPrivileges` | on, temporary | The game loads from `app://` now (TEC-15), but the first-launch save move still reads the old `file:` origin through a `file:` page. Disable once the move is verified (below). |
+| `GrantFileProtocolExtraPrivileges` | off | The game loads from `app://` (TEC-15), and the first-launch save move reads the old `file:` origin from disk (D-25, below), so no page needs `file:` privileges. |
 
-The `file:` exception is explicit rather than silently inheriting Electron's default. It must not be described as fully hardened. R5 remains blocked until the packaged artifact is inspected with `npm run verify:electron:fuses -- <release-root>` and the fuse is off.
+Inspect the packaged artifact with `npm run verify:electron:fuses -- <release-root>` before a release. `npm run test:electron-fuse-smoke` runs the desktop smoke on a copy of Electron with the `file:` fuse off, the way the release ships it (the other release fuses stay as they are, because the smoke drives the app over the Node inspector and runs it unpackaged).
 
 ## App origin and the save move (TEC-15)
 
@@ -33,20 +33,16 @@ The game loads from `app://game/`. The scheme is registered before the app is re
 
 localStorage belongs to an origin, so a player's saves from a `file:` build are not visible at `app://`. On every launch, before the game window loads, `electron/saveMigration.cjs` runs:
 1. If `storage-migrated.json` is in the app's data folder, it stops: the move is done.
-2. A hidden, sandboxed window opens the empty `storage-bridge.html` from the build folder over `file:` and reads the game's entries (`blackline-survivor-*`). Other keys are left alone.
+2. The main process reads the `file:` origin's entries (`blackline-survivor-*`) from Chromium's localStorage folder on disk (`Local Storage/leveldb` in the data folder) with a small read-only LevelDB reader (`electron/levelDbReader.cjs`: write-ahead logs and Snappy-compressed tables, the newest record of each key, deletions honoured). It runs before any window opens that database. Other keys are left alone. (A `file:` page cannot reach its localStorage once the `file:` fuse is off; the fuse smoke showed the old page-based read failing.)
 3. They go to `save-backup-file-origin-<time>.json` in the data folder, in the save export format.
 4. A second hidden window on `app://game/storage-bridge.html` writes each entry the new origin does not have yet. It never overwrites one.
 5. It reads everything back. If any entry is missing or differs, it writes no marker (the next launch tries again) and logs `storage-migration` to `logs/errors.log`. Otherwise it writes the marker.
 
-If the move cannot finish, the player can paste the backup file's text into 설정 > 세이브 > 가져오기. The same screen exports the current saves as text (TEC-15 manual path). `npm run test:electron-smoke` seeds a played `file:` save into a throwaway data folder, checks that the first launch moves every entry with a backup and a marker, and that a second launch keeps the saves without moving again. The seed variable (`BLACKLINE_SEED_FILE_STORAGE`) is ignored in packaged builds.
+If the move cannot finish, the player can paste the backup file's text into 설정 > 세이브 > 가져오기. The same screen exports the current saves as text (TEC-15 manual path). `npm run test:electron-smoke` seeds a played `file:` save into a throwaway data folder with the stock Electron (`scripts/lib/seed-file-storage.mjs`), then checks that the first launch moves every entry with a backup and a marker, and that a second launch keeps the saves without moving again. `npm run test:electron-fuse-smoke` does the same on a binary with the `file:` fuse off.
 
 `src/platform/saveSamples.test.ts` runs ten save samples (`src/platform/saveSamples.json`) through the move, then through the import of its backup file. The samples are a 0.1.0 legacy meta, a v2 save, v3 saves from first launch to endgame, a save cut short mid-write, and a save from a newer build. Every entry must arrive byte for byte and load the same, and the backup must restore every entry. The one exception is the newer build's save, which is never imported over (G17). Saves from the R2-R3 playtest builds join the samples for the R2 exit check.
 
-**[Team check]** when to turn the fuse off:
-- Keep it on through the R2-R3 playtest builds, so real players' saves move.
-- Then, before R5, check with a packaged build whether a `file:` page can still read its localStorage with the fuse off.
-  - If it can, turn the fuse off and keep the move.
-  - If not, turn it off in a later release and leave players who skipped every earlier build to the manual import.
+Turning the fuse off (decision D-25, 2026-10-02): with the fuse off a `file:` page could no longer read its localStorage, so the move reads the old origin from disk instead of through a page, and the fuse is off. `electron/levelDbReader.test.cjs` reads a localStorage folder that Chromium itself wrote (`test/fixtures/chromium-local-storage`: a compacted, Snappy-compressed table plus a log with an overwrite, a removal, and an addition), a log cut short by a crash, and a damaged table, which fails the read so the move writes no marker and the next launch tries again. The desktop tools seed a `file:` build's saves with the stock Electron (`scripts/lib/seed-file-storage.mjs`) before the app under test first launches.
 
 A player who goes back to a `file:` build after the move, and plays there, keeps that progress only on the old origin: the marker stops a second move. The manual export and import covers this case.
 

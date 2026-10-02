@@ -8,6 +8,7 @@ import { mkdir, mkdtemp, readFile, readdir, realpath, rm, stat, writeFile } from
 import os from 'node:os';
 import path from 'node:path';
 import { _electron as electron } from 'playwright';
+import { seedFileStorage } from './lib/seed-file-storage.mjs';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const rounds = Number(process.env.PACK_BENCH_ROUNDS ?? '4');
@@ -64,10 +65,11 @@ const openSave = JSON.stringify({
   profile: { hintsSeen: ['move', 'draft', 'pause', 'boss', 'shop', 'hazard'] },
 });
 const userDataDir = await realpath(await mkdtemp(path.join(os.tmpdir(), 'blackline-pack-bench-')));
+// The open save goes in as a file: build's save, and the first launch moves it (TEC-15).
+seedFileStorage(userDataDir, { [SAVE_KEY]: openSave });
 const app = await electron.launch({
   args: [root, `--user-data-dir=${userDataDir}`],
   cwd: root,
-  env: { ...process.env, BLACKLINE_SEED_FILE_STORAGE: JSON.stringify({ [SAVE_KEY]: openSave }) },
 });
 const transitions = {};
 try {

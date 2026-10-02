@@ -13,7 +13,7 @@ const expected = new Map([
   [FuseV1Options.EnableEmbeddedAsarIntegrityValidation, FuseState.ENABLE],
   [FuseV1Options.OnlyLoadAppFromAsar, FuseState.ENABLE],
   [FuseV1Options.LoadBrowserProcessSpecificV8Snapshot, FuseState.DISABLE],
-  [FuseV1Options.GrantFileProtocolExtraPrivileges, FuseState.ENABLE],
+  [FuseV1Options.GrantFileProtocolExtraPrivileges, FuseState.DISABLE],
 ]);
 
 async function findApps(root) {

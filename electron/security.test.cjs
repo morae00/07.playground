@@ -104,6 +104,6 @@ test('electron fuses disable Node escape hatches and require the packaged ASAR',
     enableEmbeddedAsarIntegrityValidation: true,
     onlyLoadAppFromAsar: true,
     loadBrowserProcessSpecificV8Snapshot: false,
-    grantFileProtocolExtraPrivileges: true,
+    grantFileProtocolExtraPrivileges: false,
   });
 });

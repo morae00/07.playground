@@ -36,6 +36,7 @@
     "test:dev-smoke": "node scripts/dev-smoke.mjs",
     "test:ui-probes": "node scripts/ui-probes.mjs",
     "test:electron-smoke": "node scripts/electron-smoke.mjs",
+    "test:electron-fuse-smoke": "node scripts/electron-fuse-smoke.mjs",
     "bench:render": "node scripts/render-bench.mjs",
     "bench:packs": "node scripts/pack-bench.mjs",
     "test:perf": "BENCH_ONLY='^(unlocked )?stress DPR2 2.0 sprites$' BENCH_GATE=1 node scripts/render-bench.mjs",
@@ -115,7 +116,7 @@
       "enableEmbeddedAsarIntegrityValidation": true,
       "onlyLoadAppFromAsar": true,
       "loadBrowserProcessSpecificV8Snapshot": false,
-      "grantFileProtocolExtraPrivileges": true
+      "grantFileProtocolExtraPrivileges": false
     },
     "npmRebuild": false
   }

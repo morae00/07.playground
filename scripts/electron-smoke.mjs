@@ -8,6 +8,7 @@ import { mkdir, mkdtemp, readFile, readdir, realpath, rm } from 'node:fs/promise
 import os from 'node:os';
 import path from 'node:path';
 import { _electron as electron } from 'playwright';
+import { seedFileStorage } from './lib/seed-file-storage.mjs';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const outputDir = path.resolve(process.env.ELECTRON_SMOKE_ARTIFACTS ?? 'artifacts/electron-smoke');
@@ -110,10 +111,15 @@ let pausedRun = null;
 let killedRun = null;
 
 await mkdir(outputDir, { recursive: true });
+// ELECTRON_SMOKE_EXECUTABLE runs another Electron binary, such as a copy with the release fuses flipped
+// (scripts/electron-fuse-smoke.mjs).
+const executablePath = process.env.ELECTRON_SMOKE_EXECUTABLE || undefined;
+// A file: build's saves, written by the stock Electron before the app under test first launches.
+seedFileStorage(userDataDir, fileOriginStorage);
 const app = await electron.launch({
+  executablePath,
   args: [root, `--user-data-dir=${userDataDir}`],
   cwd: root,
-  env: { ...process.env, BLACKLINE_SEED_FILE_STORAGE: JSON.stringify(fileOriginStorage) },
 });
 try {
   const page = await gameWindow(app);
@@ -215,7 +221,7 @@ try {
 }
 
 // TEC-15: a second launch skips the move (the marker is there) and keeps what the app:// origin holds.
-const again = await electron.launch({ args: [root, `--user-data-dir=${userDataDir}`], cwd: root });
+const again = await electron.launch({ executablePath, args: [root, `--user-data-dir=${userDataDir}`], cwd: root });
 try {
   const page = await gameWindow(again);
   await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor({ timeout: 20_000 });
@@ -240,7 +246,7 @@ try {
 }
 
 // CON-04: after the force-quit, the next launch offers the run as it was at the last pause, and resumes it there.
-const third = await electron.launch({ args: [root, `--user-data-dir=${userDataDir}`], cwd: root });
+const third = await electron.launch({ executablePath, args: [root, `--user-data-dir=${userDataDir}`], cwd: root });
 try {
   const page = await gameWindow(third);
   await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor({ timeout: 20_000 });
