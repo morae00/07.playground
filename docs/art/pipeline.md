@@ -122,3 +122,11 @@ DOM 화면(드래프트 카드, HUD 스킬 슬롯, 초상, 칩 아이콘)이 쓰
 ## 최종 원화로 교체하기
 
 손으로 정리한 원화가 오면 같은 키(`hero/run/3`, `enemy/1/warden/walk/2` …)로 굽도록 사양만 바꾼다. 앵커·크기 규칙과 매니페스트 형식이 같으면 코드는 바꾸지 않는다. 교체 후 `npm run test:unit`의 매니페스트 검사와 `npm run test:visual`로 확인한다.
+
+## 리뷰 렌더와 서브에이전트
+
+- `node scripts/art-review-sheet.mjs <subject>`는 킷 그림을 크게(기본 3배, 얼굴·스프라이트는 8배) 저장소 밖 임시 폴더에 PNG로 그린다. 게임 크기에서는 안 보이는 얼굴과 작은 디테일을 검수할 때 쓴다. 대상은 `hero`, `hero-portrait`, `hero-sprite`, `bosses`, `boss-faces`, `enemies`, `story`, `ui-sheets`, 그리고 킷 호출 하나를 그리는 `expr --expr "<호출>"`이다. 저장소의 파일은 바꾸지 않는다.
+- 프로젝트 서브에이전트(`.claude/agents/`):
+  - `art-director`는 읽기 전용으로 스타일 바이블 기준 리뷰를 돌려준다. 위 렌더 명령만 실행할 수 있다.
+  - `sound-designer`는 오디오 폴더(`art/sfx-spec.mjs`, `art/audio/`, `public/assets/packs/sfx-common/`, `public/assets/packs/music/`)만 고친다.
+  - 두 에이전트의 범위는 PreToolUse 훅 `.claude/hooks/scope-guard.mjs`가 지킨다. 공유 맥락은 `.claude/agents/CONTEXT.md`에 있다.
