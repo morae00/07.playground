@@ -347,6 +347,20 @@ Captures are deterministic: seeded `Math.random` and `crypto`, and a paused Play
 - A health upgrade bought in the hub adds no health until the run resumes, then about +7 after one second and the full +20 after four (G6).
 - The menu's settings tab can set reduced flash before any run.
 
+The colour probe (UI-08) checks that colour is never the only cue. Every coloured state also has a shape, a mark, or words:
+
+| Where | State | Cue besides colour |
+|---|---|---|
+| Draft cards | rarity | the rarity's name and one more ◆ per rank (the kit frame also changes shape, UI-03) |
+| Stage map | current, cleared, locked, stars | the "도전 가능" caption, the cleared seal, a dashed border with the lock reason, ★ per star |
+| HUD effects | buff, debuff | a + or ! mark and the effect's name |
+| HUD bonus goal | done, failed | done inverts to paper on ink, failed is dashed |
+| Endless record | ranked, practice | the words 경쟁 기록 or 연습 · 기록 제외 |
+| Boss bar | enraged | the words 광폭화 with the step (광폭화 2/4) or the overtime count |
+| Field (canvas) | ownership, telegraphs, elites, hazards | hatching for enemies and stitched dots for allies (style bible P4), dashed then thick then filled telegraph stages (V3), the elite's three-dot crown (V6), each hazard's icon and pattern (ART-06) |
+
+The probe checks the first three rows in the developer build: every current stage node has its caption, every cleared one its seal, and every locked one a dashed border; every draft card's ◆ count matches its rarity and it names the rarity; every effect carries its mark.
+
 The save probe (TEC-15) exports from the menu's settings and checks the text reaches the clipboard. It then pastes a text that is not an export, which is refused, and a changed export, which asks once more before importing and reloads with it. The hint probe (UI-09) checks that a first 1-1 run opens with the movement hint without pausing, below the centre band, and that a second run on the same save does not repeat it. The draft probe (UI-03) opens a draft at 1440×900 and 1024×720. It checks that the three cards sit centred and show their baked tiles, that no text is under 13 px, and that the dialog fits without scrolling. The pad probe (UI-07) plays 1-1 with a virtual Xbox pad only: A lands on the start button and starts the stage, the stick moves the hero, the D-pad and A pick a draft card, Start opens the pause hub, RB and LB switch its tabs, and B resumes. The settlement then shows A, and ✕ once the pad reports as a PlayStation pad, and A takes it to 1-2. Only the draft and the stage end are forced, with the developer cheats. The settlement probe (UI-05) plays 1-1 for six seconds and clears it, at the same two sizes. It checks that Enter inside the input guard does nothing, that the settlement shows the victory portrait, the gold's parts, and the damage bars with no text under 13 px and no scrolling, and that Enter after the guard starts 1-2. `npm run test:dev-smoke` checks that `npm run dev` serves a styled page under the development CSP.
 
 The string checks (UI-10) run with the unit tests. The Korean and English tables must have the same keys and placeholders, English must have no Korean left, every key must be used, and no player-facing Korean may stay in code outside the allowlist in `src/i18n/strings.test.ts`. The developer bundle check reads the tables too, so its required controls can live there.

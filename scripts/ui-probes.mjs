@@ -523,6 +523,50 @@ try {
     await page.close();
   });
 
+  await probe('UI-08 colour', async () => {
+    // Colour is never the only cue (UI-08): every state the UI colours also has a shape, a mark, or words.
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await page.goto('http://127.0.0.1:5177/');
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    const devToggle = page.getByRole('checkbox', { name: '개발자 모드: 모든 Stage 접근' });
+    if (!(await devToggle.isChecked())) await devToggle.check();
+    const nodes = await page.evaluate(() => [...document.querySelectorAll('.stageNode')].map((node) => ({
+      status: ['current', 'cleared', 'locked', 'open'].find((name) => node.classList.contains(name)) ?? 'other',
+      caption: Boolean(node.querySelector('.nowCaption')),
+      seal: Boolean(node.querySelector('.nodeSeal')),
+      dashed: getComputedStyle(node).borderStyle.includes('dashed'),
+    })));
+    const nodeGaps = nodes.filter((node) => (node.status === 'current' && !node.caption) || (node.status === 'cleared' && !node.seal) || (node.status === 'locked' && !node.dashed));
+    record('UI-08 stage nodes mark current, cleared, and locked by words, seals, and dashes as well as colour', nodes.length > 0 && nodeGaps.length === 0, `${nodes.length} nodes, ${nodeGaps.length} without a non-colour cue`);
+    await launchFirstStage(page);
+    await page.waitForTimeout(300);
+    await cheat(page, 'GOD');
+    const ranks = ['common', 'rare', 'epic', 'legendary', 'mythic'];
+    const cards = [];
+    for (let round = 0; round < 4; round += 1) {
+      await cheat(page, 'DRAFT');
+      await page.waitForTimeout(450);
+      cards.push(...await page.evaluate(() => [...document.querySelectorAll('.draftCard')].map((card) => ({
+        rarity: card.dataset.rarity,
+        diamonds: (card.querySelector('.cardRank i')?.textContent ?? '').length,
+        words: (card.querySelector('.cardRank')?.textContent ?? '').replace(/◆/g, '').trim(),
+      }))));
+      await page.keyboard.press('1');
+      await page.waitForTimeout(150);
+    }
+    const cardGaps = cards.filter((card) => card.diamonds !== ranks.indexOf(card.rarity) + 1 || !card.words);
+    record('UI-08 draft cards name their rarity and count it in ◆, not by colour alone', cards.length > 0 && cardGaps.length === 0, `${cards.length} cards (${[...new Set(cards.map((card) => card.rarity))].join(', ')}), ${cardGaps.length} gaps`);
+    const closer = page.getByRole('button', { name: '개발 패널 닫기' });
+    if (await closer.count()) await closer.click();
+    const effects = await page.evaluate(() => [...document.querySelectorAll('.effectRack .effectItem')].map((item) => ({
+      kind: item.classList.contains('buff') ? 'buff' : item.classList.contains('debuff') ? 'debuff' : 'other',
+      mark: item.querySelector('.effectMark')?.textContent ?? '',
+    })));
+    const effectGaps = effects.filter((effect) => effect.mark !== (effect.kind === 'buff' ? '+' : '!'));
+    record('UI-08 buffs and debuffs carry + and ! marks as well as colour', effects.length > 0 && effectGaps.length === 0, `${effects.length} effects, ${effectGaps.length} gaps`);
+    await page.close();
+  });
+
   await probe('UI-04', async () => {
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     await page.goto('http://127.0.0.1:5177/');
