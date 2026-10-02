@@ -1,10 +1,11 @@
-const { app, BrowserWindow, Menu, crashReporter, net, protocol, session, shell } = require('electron');
+const { app, BrowserWindow, Menu, crashReporter, ipcMain, net, protocol, session, shell } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { APP_ENTRY, APP_ORIGIN, registerAppScheme, serveAppFiles } = require('./appProtocol.cjs');
 const { migrateStorage } = require('./saveMigration.cjs');
 const { createCrashLog, createReloadGate, rendererErrorLine } = require('./crashLog.cjs');
+const { isGameFrame, readWindowState, writeWindowState } = require('./windowState.cjs');
 const {
   CONTENT_SECURITY_POLICY,
   focusPrimaryWindow,
@@ -49,13 +50,15 @@ function watchForFailures(window) {
   webContents.on('responsive', () => localLog().append('renderer-responsive', 'the page responds again'));
 }
 
-// macOS needs role-based app and edit menus for Cmd+Q, Cmd+H, and Cmd+C/V (e.g. pasting a Challenge Seed).
-// No custom items or navigation live here; other platforms keep the menu bar hidden (BUG-17).
+// macOS needs role-based app and edit menus for Cmd+Q, Cmd+H, and Cmd+C/V (e.g. pasting a Challenge Seed), and the
+// full-screen toggle (Ctrl+Cmd+F, TEC-09). No custom items or navigation live here, and no reload or developer tools;
+// other platforms keep the menu bar hidden (BUG-17).
 function applicationMenu() {
   if (process.platform !== 'darwin') return null;
   return Menu.buildFromTemplate([
     { role: 'appMenu' },
     { role: 'editMenu' },
+    { label: 'View', submenu: [{ role: 'togglefullscreen' }] },
     { role: 'windowMenu' },
   ]);
 }
@@ -109,6 +112,7 @@ async function migrateSaves() {
 }
 
 function createWindow() {
+  const stateDirectory = app.getPath('userData');
   const window = new BrowserWindow({
     // Sizes are the page (canvas) size, not the outer frame: the 1440x900 reference view and the 1024x720
     // minimum from TEC-01 are what the game draws into.
@@ -120,6 +124,8 @@ function createWindow() {
     backgroundColor: '#f4f4f1',
     title: windowTitle,
     autoHideMenuBar: true,
+    // TEC-09: back in the mode it was left in.
+    fullscreen: readWindowState(stateDirectory).fullScreen,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -127,8 +133,16 @@ function createWindow() {
       webSecurity: true,
       allowRunningInsecureContent: false,
       spellcheck: false,
+      preload: path.join(__dirname, 'preload.cjs'),
     },
   });
+  // Whichever way the mode changes (the settings, the menu, the green button), it is kept and the page told.
+  for (const event of ['enter-full-screen', 'leave-full-screen']) {
+    window.on(event, () => {
+      writeWindowState(stateDirectory, { fullScreen: window.isFullScreen() });
+      if (!window.webContents.isDestroyed()) window.webContents.send('window:full-screen-changed', window.isFullScreen());
+    });
+  }
 
   window.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({ responseHeaders: withContentSecurityPolicy(details.responseHeaders) });
@@ -156,6 +170,16 @@ if (!hasSingleInstanceLock) {
 } else {
   app.on('second-instance', () => {
     focusPrimaryWindow(BrowserWindow.getAllWindows().filter((window) => !storageWindows.has(window)));
+  });
+
+  // The window mode bridge (TEC-09): only the game's own top frame may read or switch it.
+  const gameWindowOf = (event) => (isGameFrame(event, APP_ENTRY) ? BrowserWindow.fromWebContents(event.sender) : null);
+  ipcMain.handle('window:full-screen', (event) => gameWindowOf(event)?.isFullScreen() ?? false);
+  ipcMain.handle('window:set-full-screen', (event, on) => {
+    const window = gameWindowOf(event);
+    if (!window || typeof on !== 'boolean') return false;
+    window.setFullScreen(on);
+    return true;
   });
 
   app.whenReady().then(async () => {

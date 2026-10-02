@@ -7,6 +7,7 @@
 - `app://` serves GET requests for files inside the build folder only. Another host, a path that leaves the folder, a folder, or another method gets a 404, and every response carries the content security policy.
 - The policy (`electron/security.cjs`) allows only the app's own scripts, styles, images (and data: images), fonts, fetches, and media, no workers, no objects, no forms, and no framing. Sound and music are fetched and decoded through Web Audio; `media-src` covers a future media element (TEC-09). The page's meta policy in `index.html` is the same list without `frame-ancestors`, which a meta tag cannot set, and a test keeps the two equal.
 - Credential-free HTTPS links may open in the operating-system browser. Every other external scheme is denied.
+- The page's only bridge into the app is the window mode (TEC-09, `electron/preload.cjs`): `window.blacklineDesktop` with `fullScreen()`, `setFullScreen(on)`, and `onFullScreen(listener)`. The preload exposes no Node access and no raw IPC. The main process answers the two channels only for the game's own top frame on its entry page (`isGameFrame`), accepts only a boolean, and keeps the mode in `window-state.json` in the app's data folder, so the next launch opens the same way. On macOS the View menu holds only the full-screen toggle (Ctrl+Cmd+F); it has no reload or developer tools.
 - `requestSingleInstanceLock()` prevents a second process from creating another game window. A second launch restores and focuses the primary window.
 
 ## Packaged fuses

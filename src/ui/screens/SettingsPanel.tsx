@@ -7,6 +7,7 @@ import type { StringKey } from '../../i18n/text';
 import { DEVELOPER_UI_AVAILABLE } from '../../platform/developerAccess';
 import type { GameOptions, PaceMode } from '../../platform/save';
 import { MoveKeysSetting } from './MoveKeysSetting';
+import { WindowModeSetting } from './WindowModeSetting';
 
 type NumberOption = 'volume' | 'musicVolume' | 'sfxVolume' | 'effects' | 'uiScale' | 'hitReaction' | 'assistDamage' | 'assistEnemySpeed';
 type SwitchOption = 'damageNumbers' | 'screenShake' | 'reducedFlash' | 'reducedMotion' | 'autoPause' | 'assistSlowGame';
@@ -35,6 +36,7 @@ export function SettingsPanel({ options, setOptions, inRun = false, children }: 
       </fieldset>
       <fieldset>
         <legend>{t('settings.screen')}</legend>
+        <WindowModeSetting />
         <label>
           <span>{t('settings.healthBars')}</span>
           <select value={options.healthBars} onChange={(event) => setOptions({ ...options, healthBars: event.target.value as GameOptions['healthBars'] })}>

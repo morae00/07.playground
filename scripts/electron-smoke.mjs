@@ -1,4 +1,4 @@
-// Desktop smoke check (TEC-01, TEC-03, TEC-14, TEC-15, CON-04): launches the built app in Electron with a throwaway
+// Desktop smoke check (TEC-01, TEC-03, TEC-09, TEC-14, TEC-15, CON-04): launches the built app in Electron with a throwaway
 // data folder, so the player's own save is never touched. It checks the window's content size, the app:// origin, the
 // first-launch move of file:// saves (seeded into that folder first), sprite loading, a short run, the local error
 // log, recovery after a renderer crash, a second launch that keeps the moved saves, and a run that survives a crash, a
@@ -157,6 +157,18 @@ try {
 
   const size = await page.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight }));
   record('TEC-01 the page is 1440x900 inside the window frame', size.width === 1440 && size.height === 900, `${size.width}x${size.height}`);
+
+  // TEC-09: the page's only desktop bridge is the window mode, it starts as a window, and the settings show it. The
+  // smoke does not switch to full screen, which would take over the screen of the machine running it.
+  const bridge = await page.evaluate(async () => {
+    const api = window.blacklineDesktop;
+    return api ? { keys: Object.keys(api).sort().join(','), node: typeof window.require, fullScreen: await api.fullScreen() } : null;
+  });
+  record('TEC-09 the page gets the window-mode bridge and nothing else from the desktop app', bridge?.keys === 'fullScreen,onFullScreen,setFullScreen' && bridge.node === 'undefined' && bridge.fullScreen === false, JSON.stringify(bridge));
+  await page.getByRole('tab', { name: '설정' }).click();
+  const modeSetting = await page.getByRole('combobox', { name: '화면 모드' }).inputValue().catch(() => null);
+  record('TEC-09 the settings offer the window mode in the desktop app', modeSetting === 'window', String(modeSetting));
+  await page.getByRole('tab', { name: '출정' }).click();
 
   const sprites = await until(() => page.evaluate(() => document.documentElement.dataset.sprites));
   record('TEC-03 sprite packs load under app://', sprites === 'ready', String(sprites));
