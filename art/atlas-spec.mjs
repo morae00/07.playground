@@ -72,7 +72,7 @@ function heroFrames() {
  *   bow rises 132 units above the box, so its cells get 150 units of extra room on top.
  * - PN.bossesB (API-bosses2): 384x384 box, feet at y 360, 0.5 world units per box unit, game detail.
  * `pad` is extra room in box units, [top, right, bottom, left]; the bake fails if a drawing still reaches its cell edge.
- * The mid and field bosses of Ch2-5 have no kit drawing yet and keep their vector bodies.
+ * Field bosses (FIELD_BOSSES below) and the Ch2-5 mid bosses without kit drawings keep their vector bodies.
  */
 export const BOSS_SPRITES = Object.freeze({
   'boss/1/butcher': { kit: 'butcher', module: 'bossesA', bossId: 's1-mid-dash', chapter: 1, pad: [150, 0, 60, 0] },
@@ -83,45 +83,94 @@ export const BOSS_SPRITES = Object.freeze({
   'boss/5/balance': { kit: 'balance', module: 'bossesB', bossId: 's5-final-null', chapter: 5, pad: [80, 80, 30, 60] },
 });
 
+/**
+ * Field bosses (ART-04, API-bosses4): PN.fieldBosses draws the r38 hit circle in a 384x384 box with the feet at
+ * y 328, at 0.5 world units per box unit. A field boss also roams the chapters after its own (GameEngine spawnBoss),
+ * so each chapter pack holds the field bosses of that chapter and the ones before, under that chapter's slot, each
+ * with that chapter's ground colour for its knockout halo. The kit draws a phase-2 crack mark (phase 3 keeps it), no
+ * enraged variant, idle, windup, and attack poses, and four death frames.
+ */
+export const FIELD_BOSSES = Object.freeze({
+  'field-shock': { kit: 'commander', chapter: 1 },
+  'field-rings': { kit: 'reliquary', chapter: 2 },
+  'field-trap': { kit: 'architect', chapter: 3 },
+  'field-clock': { kit: 'executioner', chapter: 4 },
+  'field-null': { kit: 'judge', chapter: 5 },
+});
+/** Each chapter's ground base colour (kit env.chN.base), the halo of the field bosses in that chapter's pack. */
+const CHAPTER_GROUND = Object.freeze({ 1: '#B8AC93', 2: '#ABADB4', 3: '#ADB4AA', 4: '#BBAE94', 5: '#ABA5AC' });
+/** Box-unit room around field boss cells: the death puddle's halo reaches the bottom edge of the box (API-bosses4). */
+const FIELD_BOSS_PAD = Object.freeze([8, 8, 8, 8]);
+/** Boss death frames play in this many frames per second, then the stain takes over (worldRenderer drawBossFalls). */
+export const BOSS_DEATH_FRAMES = 4;
+export const BOSS_DEATH_FPS = 6;
+
 const BOSS_MODULES = Object.freeze({
   bossesA: { box: [400, 400], anchor: [200, 392], scale: 0.4, options: { lod: 'game', halo: true, shadow: false, fx: true } },
   bossesB: { box: [384, 384], anchor: [192, 360], scale: 0.5, options: { detail: 'game', shadow: false } },
+  fieldBosses: { box: [384, 384], anchor: [192, 328], scale: 0.5, options: { detail: 'game', shadow: false } },
 });
 
-export function bossStates() {
+/**
+ * A module's still states: phases x poses x calm/enraged. Keys match slots.ts bossState. Round bosses A and B draw
+ * idle and windup in three phases, calm and enraged; field bosses draw idle, windup, and attack in two phases.
+ */
+const BOSS_STATE_SETS = Object.freeze({
+  bossesA: { phases: [1, 2, 3], poses: ['idle', 'windup'], enraged: [false, true], death: false },
+  bossesB: { phases: [1, 2, 3], poses: ['idle', 'windup'], enraged: [false, true], death: false },
+  fieldBosses: { phases: [1, 2], poses: ['idle', 'windup', 'attack'], enraged: [false], death: true },
+});
+
+export function bossStates(module = 'bossesA') {
+  const set = BOSS_STATE_SETS[module];
   const states = [];
-  for (const phase of [1, 2, 3]) {
-    for (const windup of [false, true]) {
-      for (const enraged of [false, true]) {
-        states.push({ key: `phase${phase}${windup ? '-windup' : ''}${enraged ? '-enraged' : ''}`, phase, windup, enraged });
+  for (const phase of set.phases) {
+    for (const pose of set.poses) {
+      for (const enraged of set.enraged) {
+        states.push({ key: `phase${phase}${pose === 'idle' ? '' : `-${pose}`}${enraged ? '-enraged' : ''}`, phase, pose, enraged });
       }
     }
   }
   return states;
 }
 
-const chapterBosses = (chapter) => Object.entries(BOSS_SPRITES).filter(([, boss]) => boss.chapter === chapter);
+/** The kit call for one state: bossesA and B only know `windup`; fieldBosses takes the pose itself. */
+function stateOptions(module, state) {
+  if (module === 'fieldBosses') return { phase: state.phase, pose: state.pose };
+  return { phase: state.phase, windup: state.pose === 'windup', enraged: state.enraged };
+}
+
+/** Every boss drawn in a chapter's pack: its round bosses, then the field bosses of this chapter and the ones before. */
+function chapterBosses(chapter) {
+  const round = Object.entries(BOSS_SPRITES).filter(([, boss]) => boss.chapter === chapter);
+  const field = Object.entries(FIELD_BOSSES)
+    .filter(([, boss]) => boss.chapter <= chapter)
+    .map(([bossId, { kit }]) => [`boss/${chapter}/${kit}`, { kit, module: 'fieldBosses', bossId, chapter, pad: FIELD_BOSS_PAD, halo: CHAPTER_GROUND[chapter] }]);
+  return [...round, ...field];
+}
 
 function bossFrames(chapter) {
   const frames = [];
-  for (const [slot, { kit, module, pad }] of chapterBosses(chapter)) {
+  for (const [slot, { kit, module, pad, halo }] of chapterBosses(chapter)) {
     const { box, anchor, scale, options } = BOSS_MODULES[module];
-    for (const state of bossStates()) {
-      frames.push({
-        key: `${slot}/${state.key}/0`,
-        call: [`PN.${module}.draw`, kit, { phase: state.phase, windup: state.windup, enraged: state.enraged, ...options }],
-        box,
-        anchor,
-        scale,
-        extraPad: pad,
-      });
+    const extra = halo ? { halo } : {};
+    for (const state of bossStates(module)) {
+      frames.push({ key: `${slot}/${state.key}/0`, call: [`PN.${module}.draw`, kit, { ...stateOptions(module, state), ...options, ...extra }], box, anchor, scale, extraPad: pad });
+    }
+    if (!BOSS_STATE_SETS[module].death) continue;
+    for (let frame = 0; frame < BOSS_DEATH_FRAMES; frame += 1) {
+      frames.push({ key: `${slot}/death/${frame}`, call: [`PN.${module}.draw`, kit, { pose: 'death', frame, ...options, ...extra }], box, anchor, scale, extraPad: pad });
     }
   }
   return frames;
 }
 
 function bossAnimations(chapter) {
-  return Object.fromEntries(chapterBosses(chapter).map(([slot]) => [slot, Object.fromEntries(bossStates().map((state) => [state.key, { frames: 1, fps: 1 }]))]));
+  return Object.fromEntries(chapterBosses(chapter).map(([slot, { module }]) => {
+    const states = Object.fromEntries(bossStates(module).map((state) => [state.key, { frames: 1, fps: 1 }]));
+    if (BOSS_STATE_SETS[module].death) states.death = { frames: BOSS_DEATH_FRAMES, fps: BOSS_DEATH_FPS };
+    return [slot, states];
+  }));
 }
 
 /**

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { BOSS_SLOTS } from '../game/render/assets/slots.ts';
+import { BOSS_SLOTS, FIELD_BOSS_KITS } from '../game/render/assets/slots.ts';
 import { SKILL_NUMBERS } from '../game/skillNumbers.ts';
 import CODEX from '../content/data/codex.ts';
 
@@ -56,9 +56,10 @@ test('draft tiles and HUD slots cover every skill, plain and awakened, and every
 });
 
 test('portraits cover the hero expressions and every boss the kit draws; pickups the four kinds', () => {
-  // The bosses with baked sprites (ART-07) are the ones with kit art, so each gets a boss bar portrait too.
-  const bosses = Object.keys(BOSS_SLOTS);
-  assert.deepEqual(bosses, ['s1-mid-dash', 's1-final-rings', 's2-final-flame', 's3-final-traps', 's4-final-saw', 's5-final-null']);
+  // The bosses with baked sprites (ART-07, ART-04) are the ones with kit art, so each gets a boss bar portrait too.
+  // Field bosses have no enraged drawing; their enraged cell is the calm portrait in the coral ring.
+  const bosses = [...Object.keys(BOSS_SLOTS), ...Object.keys(FIELD_BOSS_KITS)];
+  assert.deepEqual(bosses, ['s1-mid-dash', 's1-final-rings', 's2-final-flame', 's3-final-traps', 's4-final-saw', 's5-final-null', 'field-shock', 'field-rings', 'field-trap', 'field-clock', 'field-null']);
   assert.deepEqual(sheet('artPortrait').keys, [
     ...['calm', 'focus', 'hurt', 'lowhp', 'awakened', 'victory'].map((expr) => `hero-${expr}`),
     ...bosses.flatMap((id) => [id, `${id}-enraged`]),

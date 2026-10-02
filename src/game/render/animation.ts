@@ -33,6 +33,8 @@ export const SPAWN_SECONDS = 0.25;
 export const BOSS_INTRO_SECONDS = 1;
 /** A shooter holds its release pose this long after the shot leaves. */
 export const ATTACK_SECONDS = 0.2;
+/** A boss holds its attack pose this long after a telegraphed pattern goes off (the windup ends). */
+export const BOSS_ATTACK_SECONDS = 0.25;
 /** The phase-change pause every boss telegraphs (grammar V3). */
 export const PHASE_POSE_SECONDS = 0.45;
 export const ENRAGE_POSE_SECONDS = 0.6;
@@ -122,8 +124,12 @@ export function stepEnemyAnim(entry: AnimState, enemy: EnemyAnimInput, now: numb
 
 export type BossAnimInput = EnemyAnimInput & { bossPhase: number; armedPattern?: unknown };
 
-/** A boss's windup (its "!" pose) and dash always show; the entrance, phase, and enrage poses fill the gaps. */
-export function stepBossAnim(entry: AnimState, boss: BossAnimInput, now: number, enraged: boolean): BossAnim {
+/**
+ * A boss's windup (its "!" pose), dash, and the release after a windup always show; the entrance, phase, and enrage
+ * poses fill the gaps. `windingUp` adds a windup the boss state does not carry (a field boss's shock that is about
+ * to go off under it).
+ */
+export function stepBossAnim(entry: AnimState, boss: BossAnimInput, now: number, enraged: boolean, windingUp = false): BossAnim {
   if (entry.phase === 0) {
     entry.phase = boss.bossPhase;
     entry.enraged = enraged;
@@ -133,8 +139,9 @@ export function stepBossAnim(entry: AnimState, boss: BossAnimInput, now: number,
   entry.phase = boss.bossPhase;
   entry.enraged = enraged;
   let state: BossAnim;
-  if (boss.patternPhase === 'warn' || boss.armedPattern !== undefined) state = 'windup';
+  if (boss.patternPhase === 'warn' || boss.armedPattern !== undefined || windingUp) state = 'windup';
   else if (boss.patternPhase === 'dash') state = 'attack';
+  else if (entry.state === 'windup' || (entry.state === 'attack' && now - entry.startedAt < BOSS_ATTACK_SECONDS)) state = 'attack';
   else if (phaseChanged || enrageBegan) {
     // Restart the pose even when the last one was the same kind.
     entry.state = '';

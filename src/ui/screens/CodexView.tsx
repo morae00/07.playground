@@ -8,7 +8,7 @@ import ACHIEVEMENTS from '../../content/data/achievements';
 import CODEX from '../../content/data/codex';
 import COSMETICS, { type CosmeticId } from '../../content/data/cosmetics';
 import { SKILLS } from '../../game/GameEngine';
-import { BOSS_SLOTS } from '../../game/render/assets/slots';
+import { hasBossArt } from '../../game/render/assets/slots';
 import type { ChapterId } from '../../content/schema';
 import { formatCount, formatDate, t } from '../../i18n/strings';
 import type { MetaState, ProfileData } from '../../platform/save';
@@ -65,7 +65,7 @@ function Art({ part, id }: { part: Part; id: string }) {
   if (part === 'enemies') return <span className="artEnemy" data-art={id} />;
   if (part === 'terrain') return <span className="artTerrain" data-art={id} />;
   if (part === 'chapters') return <span className="artChapter" data-art={`chapter-${id}`} />;
-  return id in BOSS_SLOTS ? <span className="artPortrait" data-art={id} /> : <span className="codexDisc">{bossChapter(id)}</span>;
+  return hasBossArt(id) ? <span className="artPortrait" data-art={id} /> : <span className="codexDisc">{bossChapter(id)}</span>;
 }
 
 const bossChapter = (id: string) => (id.startsWith('field-') ? CODEX.bosses.indexOf(id) / 3 + 1 : Number(id[1]));

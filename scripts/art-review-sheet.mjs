@@ -61,7 +61,7 @@ function items() {
     case 'boss-faces':
       return Object.entries(BOSS_PORTRAITS).flatMap(([id, spec]) => ['art', 'game'].map((detail) => {
         // The portrait disc spans 148 units at the portrait scale; the face crop is that disc, a little tighter.
-        const span = (spec.module === 'bossesB' ? 384 : 400) * spec.scale * 0.8;
+        const span = (spec.module === undefined || spec.module === 'bossesA' ? 400 : 384) * spec.scale * 0.8;
         return { name: `boss-face-${id}-${detail}`, expr: bossCall(spec, 1, detail), crop: [spec.center[0] - span / 2, spec.center[1] - span / 2, span, span] };
       }));
     case 'enemies':
@@ -82,9 +82,9 @@ function items() {
 }
 
 function bossCall({ kit, module = 'bossesA' }, phase, detail) {
-  return module === 'bossesB'
-    ? `PN.bossesB.draw(${JSON.stringify(kit)}, { phase: ${phase}, detail: ${JSON.stringify(detail)}, halo: false, shadow: false })`
-    : `PN.bossesA.draw(${JSON.stringify(kit)}, { phase: ${phase}, lod: ${JSON.stringify(detail)}, halo: false, shadow: false })`;
+  return module === 'bossesA'
+    ? `PN.bossesA.draw(${JSON.stringify(kit)}, { phase: ${phase}, lod: ${JSON.stringify(detail)}, halo: false, shadow: false })`
+    : `PN.${module}.draw(${JSON.stringify(kit)}, { phase: ${phase}, detail: ${JSON.stringify(detail)}, halo: false, shadow: false })`;
 }
 
 mkdirSync(outDir, { recursive: true });

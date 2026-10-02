@@ -39,6 +39,13 @@ export const BOSS_PORTRAITS = Object.freeze({
   's3-final-traps': { kit: 'empress', module: 'bossesB', center: [196, 112], scale: 0.36 },
   's4-final-saw': { kit: 'herald', module: 'bossesB', center: [306, 168], scale: 0.34 },
   's5-final-null': { kit: 'balance', module: 'bossesB', center: [330, 158], scale: 0.34 },
+  // Field bosses (ART-04): the framing comes from PN.fieldBosses.anchors(id).portrait. Art detail, because the
+  // portrait scale makes game outlines the heaviest lines on the sheet (K2 review, user decision 2026-10-02).
+  'field-shock': { kit: 'commander', module: 'fieldBosses', center: [208, 169], scale: 0.27, detail: 'art' },
+  'field-rings': { kit: 'reliquary', module: 'fieldBosses', center: [164, 193], scale: 0.3, detail: 'art' },
+  'field-trap': { kit: 'architect', module: 'fieldBosses', center: [236, 185], scale: 0.2, detail: 'art' },
+  'field-clock': { kit: 'executioner', module: 'fieldBosses', center: [214, 153], scale: 0.23, detail: 'art' },
+  'field-null': { kit: 'judge', module: 'fieldBosses', center: [205, 171], scale: 0.22, detail: 'art' },
 });
 
 export const PICKUP_ART = Object.freeze(['xp', 'coin', 'magnet', 'heal']);

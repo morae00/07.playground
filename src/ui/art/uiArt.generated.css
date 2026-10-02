@@ -93,26 +93,36 @@
   aspect-ratio: 98 / 98;
   background-image: url("./portraits.webp");
   background-repeat: no-repeat;
-  background-size: 500% 400%;
+  background-size: 500% 600%;
 }
 .artPortrait[data-art="hero-calm"] { background-position: 0% 0%; }
 .artPortrait[data-art="hero-focus"] { background-position: 25% 0%; }
 .artPortrait[data-art="hero-hurt"] { background-position: 50% 0%; }
 .artPortrait[data-art="hero-lowhp"] { background-position: 75% 0%; }
 .artPortrait[data-art="hero-awakened"] { background-position: 100% 0%; }
-.artPortrait[data-art="hero-victory"] { background-position: 0% 33.3333%; }
-.artPortrait[data-art="s1-mid-dash"] { background-position: 25% 33.3333%; }
-.artPortrait[data-art="s1-mid-dash-enraged"] { background-position: 50% 33.3333%; }
-.artPortrait[data-art="s1-final-rings"] { background-position: 75% 33.3333%; }
-.artPortrait[data-art="s1-final-rings-enraged"] { background-position: 100% 33.3333%; }
-.artPortrait[data-art="s2-final-flame"] { background-position: 0% 66.6667%; }
-.artPortrait[data-art="s2-final-flame-enraged"] { background-position: 25% 66.6667%; }
-.artPortrait[data-art="s3-final-traps"] { background-position: 50% 66.6667%; }
-.artPortrait[data-art="s3-final-traps-enraged"] { background-position: 75% 66.6667%; }
-.artPortrait[data-art="s4-final-saw"] { background-position: 100% 66.6667%; }
-.artPortrait[data-art="s4-final-saw-enraged"] { background-position: 0% 100%; }
-.artPortrait[data-art="s5-final-null"] { background-position: 25% 100%; }
-.artPortrait[data-art="s5-final-null-enraged"] { background-position: 50% 100%; }
+.artPortrait[data-art="hero-victory"] { background-position: 0% 20%; }
+.artPortrait[data-art="s1-mid-dash"] { background-position: 25% 20%; }
+.artPortrait[data-art="s1-mid-dash-enraged"] { background-position: 50% 20%; }
+.artPortrait[data-art="s1-final-rings"] { background-position: 75% 20%; }
+.artPortrait[data-art="s1-final-rings-enraged"] { background-position: 100% 20%; }
+.artPortrait[data-art="s2-final-flame"] { background-position: 0% 40%; }
+.artPortrait[data-art="s2-final-flame-enraged"] { background-position: 25% 40%; }
+.artPortrait[data-art="s3-final-traps"] { background-position: 50% 40%; }
+.artPortrait[data-art="s3-final-traps-enraged"] { background-position: 75% 40%; }
+.artPortrait[data-art="s4-final-saw"] { background-position: 100% 40%; }
+.artPortrait[data-art="s4-final-saw-enraged"] { background-position: 0% 60%; }
+.artPortrait[data-art="s5-final-null"] { background-position: 25% 60%; }
+.artPortrait[data-art="s5-final-null-enraged"] { background-position: 50% 60%; }
+.artPortrait[data-art="field-shock"] { background-position: 75% 60%; }
+.artPortrait[data-art="field-shock-enraged"] { background-position: 100% 60%; }
+.artPortrait[data-art="field-rings"] { background-position: 0% 80%; }
+.artPortrait[data-art="field-rings-enraged"] { background-position: 25% 80%; }
+.artPortrait[data-art="field-trap"] { background-position: 50% 80%; }
+.artPortrait[data-art="field-trap-enraged"] { background-position: 75% 80%; }
+.artPortrait[data-art="field-clock"] { background-position: 100% 80%; }
+.artPortrait[data-art="field-clock-enraged"] { background-position: 0% 100%; }
+.artPortrait[data-art="field-null"] { background-position: 25% 100%; }
+.artPortrait[data-art="field-null-enraged"] { background-position: 50% 100%; }
 
 .artPickup {
   aspect-ratio: 28 / 28;

@@ -30,7 +30,7 @@ import { CORPSE_FALL_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HURT_VIGN
 import { WARDEN_SHIELD } from '../enemyBehaviors.ts';
 import { AnimationBook, SPAWN_SECONDS, enemyPoses, heroPoses, poseFrame, stepBossAnim, stepEnemyAnim, stepPlayerAnim, type AnimState, type EnemyAnim } from './animation.ts';
 import { phaseFor, type GroundTile, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
-import { BOSS_SLOTS, CHAPTER_PACKS, COMMON_PACK, FX_SLOT, HERO_SLOT, PICKUP_SLOT, bossState, enemyDrawScale, enemySlot, frameKey, pickupState, slotEnabled } from './assets/slots.ts';
+import { CHAPTER_PACKS, COMMON_PACK, FX_SLOT, HERO_SLOT, PICKUP_SLOT, bossSlot, bossState, enemyDrawScale, enemySlot, frameKey, pickupState, slotEnabled, type BossPose, type BossSlot } from './assets/slots.ts';
 import { GameRenderer } from './GameRenderer.ts';
 import { NumberGlyphs, type NumberStyle } from './numberGlyphs.ts';
 import { shakeOffset } from '../presentation/viewCamera.ts';
@@ -67,6 +67,11 @@ const GROUND_SEAM = 0.5;
 
 /** Decal stage ages in seconds, as baked (art/atlas-spec.mjs DECAL_AGES). */
 const DECAL_STAGE_AGES = Object.freeze([0, 1, 1.5, 3, 15]);
+/** How near a field boss its own shock zone lies while it counts down; the boss keeps walking for 0.52 s. */
+const SHOCK_WINDUP_REACH = 80;
+/** A boss last drawn longer ago than this has left without a fall; how far its corpse may lie from where it stood. */
+const BOSS_SEEN_SECONDS = 0.5;
+const BOSS_FALL_MATCH = 24;
 
 /** Cut-outs kept per cache: far more than the frames a chapter and the hero have (TEC-09). */
 const CUTOUT_LIMIT = 1024;
@@ -250,6 +255,12 @@ export class WorldRenderer {
   /** CON-07: cut-outs in the hero's outline colour, rebuilt when the colour changes. */
   private readonly outlines = new Map<SpriteFrame, SpriteFrame | null>();
   private outlineColor: string | null = null;
+  /**
+   * Bosses drawn from the atlas, by entity id: their slot, where they stood, and which way they faced. A boss's kill
+   * event carries no id, so its fall (ART-04, ART-07) finds the boss that stood where the corpse lies.
+   */
+  private readonly bossesSeen = new Map<number, { slot: BossSlot; x: number; y: number; facing: 1 | -1; at: number }>();
+  private readonly bossFalls = new Map<Readonly<Corpse>, { slot: BossSlot; x: number; y: number; facing: 1 | -1 }>();
   private unsubscribeSprites: (() => void) | null = null;
   /** CON-07: where the hero's ink trail was laid, oldest first, with the time each was laid. */
   private readonly trail: { x: number; y: number; at: number }[] = [];
@@ -273,6 +284,8 @@ export class WorldRenderer {
     this.unsubscribeSprites?.();
     this.sprites = atlas;
     this.anims.clear();
+    this.bossesSeen.clear();
+    this.bossFalls.clear();
     this.clearCutouts();
     // A released pack's frames are gone; their cut-outs go with them (TEC-09).
     this.unsubscribeSprites = atlas?.onChange(() => this.clearCutouts()) ?? null;
@@ -1629,6 +1642,7 @@ export class WorldRenderer {
     const sprites = this.sprites;
     const pack = CHAPTER_PACKS[this.world.chapter];
     if (!sprites || !pack || sprites.status(pack) !== 'ready' || this.stats.detail === 'minimal') return;
+    this.drawBossFalls(ctx, sprites);
     for (const corpse of this.world.effects.corpses) {
       const age = corpse.maxLife - corpse.life;
       if (corpse.isBoss || age >= CORPSE_FALL_SECONDS) continue;
@@ -1740,7 +1754,7 @@ export class WorldRenderer {
     const anim = this.anims.touch(enemy.id, now, player.x < enemy.x ? -1 : 1, Math.atan2(player.y - enemy.y, player.x - enemy.x));
     let lateral: number;
     if (enemy.isBoss) {
-      stepBossAnim(anim, enemy, now, this.world.bossEnraged);
+      stepBossAnim(anim, enemy, now, this.world.bossEnraged, enemy.boss?.pattern === 'shock' && this.shockUnder(enemy));
       // Classic rules keep a target point in patternX during the windup, so only the dash itself reads velocity.
       lateral = enemy.patternPhase === 'dash' ? enemy.vx : player.x - enemy.x;
     } else {
@@ -1779,15 +1793,60 @@ export class WorldRenderer {
   }
 
   /**
-   * A round boss's frame (TEC-03b): its phase art, the windup pose while a dash winds up or a volley is armed,
-   * and the enraged variant. The kit draws bosses facing right.
+   * A boss's frame (TEC-03b, ART-04, ART-07): its phase art, the windup pose while a dash winds up or a volley is
+   * armed, the attack pose as it goes off, and the enraged variant. A kit without an attack pose shows the phase's
+   * idle frame. The kit draws bosses facing right.
    */
   private bossSprite(enemy: Readonly<Entity>, anim: AnimState, sprites: SpriteAtlas) {
-    const entry = enemy.boss ? BOSS_SLOTS[enemy.boss.id] : undefined;
+    const entry = enemy.boss ? bossSlot(enemy.boss.id, this.world.chapter) : undefined;
     if (!entry || !slotEnabled(entry.slot) || sprites.status(entry.pack) !== 'ready') return undefined;
-    const frame = sprites.frame(frameKey(entry.slot, bossState(enemy.bossPhase ?? 1, anim.state === 'windup', this.world.bossEnraged), 0));
+    const pose: BossPose = anim.state === 'windup' ? 'windup' : anim.state === 'attack' ? 'attack' : 'idle';
+    const enraged = entry.enraged && this.world.bossEnraged;
+    const phase = enemy.bossPhase ?? 1;
+    const frame = sprites.frame(frameKey(entry.slot, bossState(phase, pose, enraged, entry.phases), 0))
+      ?? (pose === 'attack' ? sprites.frame(frameKey(entry.slot, bossState(phase, 'idle', enraged, entry.phases), 0)) : undefined);
     if (!frame) return undefined;
+    this.bossesSeen.set(enemy.id, { slot: entry, x: enemy.x, y: enemy.y, facing: anim.facing, at: this.world.elapsed });
     return { frame, facing: anim.facing, scale: 1 };
+  }
+
+  /** A field boss's shock about to go off under it: the zone it planted is still counting down (field-shock). */
+  private shockUnder(enemy: Readonly<Entity>) {
+    for (const hazard of this.world.hazards) {
+      if (hazard.kind === 'shock' && !hazard.triggered && hazard.life > 0 && Math.hypot(hazard.x - enemy.x, hazard.y - enemy.y) < SHOCK_WINDUP_REACH) return true;
+    }
+    return false;
+  }
+
+  /**
+   * A baked boss's death frames (ART-04, ART-07) at its corpse, facing as it last stood, before its stain takes
+   * over. The kill event has no boss id, so the corpse is matched to the atlas boss last seen where it fell.
+   */
+  private drawBossFalls(ctx: CanvasRenderingContext2D, sprites: SpriteAtlas) {
+    const now = this.world.elapsed;
+    for (const [id, seen] of this.bossesSeen) {
+      if (seen.at > now || now - seen.at > BOSS_SEEN_SECONDS) {
+        this.bossesSeen.delete(id);
+        continue;
+      }
+      if (this.world.enemies.some((enemy) => enemy.id === id)) continue;
+      const corpse = this.world.effects.corpses.find((candidate) => candidate.isBoss && !this.bossFalls.has(candidate)
+        && Math.hypot(candidate.x - seen.x, candidate.y - seen.y) < BOSS_FALL_MATCH);
+      if (corpse) this.bossFalls.set(corpse, { slot: seen.slot, x: corpse.x, y: corpse.y, facing: seen.facing });
+      this.bossesSeen.delete(id);
+    }
+    for (const [corpse, fall] of this.bossFalls) {
+      const spec = sprites.animation(fall.slot.slot, 'death');
+      const age = corpse.maxLife - corpse.life;
+      // Pooled corpses are reused, so one that moved or restarted is no longer this boss.
+      if (!spec || corpse.life <= 0 || corpse.x !== fall.x || corpse.y !== fall.y || age >= spec.frames / spec.fps) {
+        this.bossFalls.delete(corpse);
+        continue;
+      }
+      if (sprites.status(fall.slot.pack) !== 'ready' || !circleVisible(this.viewport, corpse.x, corpse.y, 200)) continue;
+      const frame = sprites.frame(frameKey(fall.slot.slot, 'death', poseFrame(spec, 'death', 0, age, 0)));
+      if (frame) this.blit(ctx, frame, corpse.x, corpse.y, fall.facing, 1);
+    }
   }
 
   private drawParticles(ctx: CanvasRenderingContext2D) {

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   ATTACK_SECONDS,
+  BOSS_ATTACK_SECONDS,
   AnimationBook,
   BOSS_INTRO_SECONDS,
   ENRAGE_POSE_SECONDS,
@@ -52,6 +53,8 @@ test('a boss makes an entrance, marks phase changes and enrage, and always shows
   const boss = { ...still, bossPhase: 1 };
   assert.equal(stepBossAnim(entry, boss, 0, false), 'intro');
   assert.equal(stepBossAnim(entry, { ...boss, armedPattern: {} }, 0.5, false), 'windup', 'a threat outranks the entrance');
+  assert.equal(stepBossAnim(entry, boss, 0.6, false), 'attack', 'the armed pattern just went off');
+  assert.equal(stepBossAnim(entry, boss, 0.6 + BOSS_ATTACK_SECONDS - 0.01, false), 'attack');
   assert.equal(stepBossAnim(entry, boss, BOSS_INTRO_SECONDS + 1e-6, false), 'idle');
   assert.equal(stepBossAnim(entry, { ...boss, bossPhase: 2 }, 5, false), 'phase');
   assert.equal(stepBossAnim(entry, { ...boss, bossPhase: 2 }, 5 + PHASE_POSE_SECONDS - 0.01, false), 'phase');
@@ -59,6 +62,7 @@ test('a boss makes an entrance, marks phase changes and enrage, and always shows
   assert.equal(stepBossAnim(entry, { ...boss, bossPhase: 2, patternPhase: 'dash', vx: 400 }, 5.6, false), 'attack');
   assert.equal(stepBossAnim(entry, { ...boss, bossPhase: 2 }, 8, true), 'enrage');
   assert.equal(stepBossAnim(entry, { ...boss, bossPhase: 2, vx: 60 }, 8 + ENRAGE_POSE_SECONDS + 1e-6, true), 'move');
+  assert.equal(stepBossAnim(entry, { ...boss, bossPhase: 2 }, 9, true, true), 'windup', 'a shock planted under a field boss winds it up');
   const enragedAtSight = fresh(3);
   assert.equal(stepBossAnim(enragedAtSight, boss, 3, true), 'intro', 'a boss seen already enraged does not replay it');
 });

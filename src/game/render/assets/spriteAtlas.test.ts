@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ATLAS_MANIFEST } from './atlasManifest.generated.ts';
 import { ATLAS_MANIFEST_URL, SpriteAtlas, loopFrame, phaseFor, type AtlasManifest } from './spriteAtlas.ts';
-import { BOSS_SLOTS, CHAPTER_PACKS, COMMON_PACK, HERO_SLOT, enemyDrawScale, enemySlot, frameKey } from './slots.ts';
+import { BOSS_SLOTS, CHAPTER_PACKS, COMMON_PACK, FIELD_BOSS_KITS, HERO_SLOT, bossSlot, enemyDrawScale, enemySlot, frameKey } from './slots.ts';
 
 const manifest = ATLAS_MANIFEST as AtlasManifest;
 const fakeImage = (width: number, height: number) => ({ width, height }) as unknown as CanvasImageSource & { width: number; height: number };
@@ -35,6 +35,20 @@ test('the baked manifest is complete: every animation frame exists and sits insi
   for (const [bossId, { slot, pack }] of Object.entries(BOSS_SLOTS)) {
     assert.equal(Object.keys(manifest.animations[slot]).length, 12, `${bossId}: 3 phases x windup x enraged`);
     assert.ok(manifest.packs[pack].frames[frameKey(slot, 'phase3-windup-enraged', 0)], `${bossId} is in ${pack}`);
+  }
+  // Field bosses (ART-04) roam their own chapter and the ones after it, so each chapter pack holds every earlier one.
+  for (const [bossId, { chapter: home }] of Object.entries(FIELD_BOSS_KITS)) {
+    for (const chapter of Object.keys(CHAPTER_PACKS).map(Number)) {
+      const entry = bossSlot(bossId, chapter);
+      if (chapter < home) {
+        assert.equal(entry, undefined, `${bossId} does not appear before Ch${home}`);
+        continue;
+      }
+      assert.ok(entry, `${bossId} has a slot in Ch${chapter}`);
+      assert.deepEqual(Object.keys(manifest.animations[entry.slot]).sort(), ['death', 'phase1', 'phase1-attack', 'phase1-windup', 'phase2', 'phase2-attack', 'phase2-windup'], `${bossId} in Ch${chapter}`);
+      assert.equal(manifest.animations[entry.slot].death.frames, 4);
+      assert.ok(manifest.packs[entry.pack].frames[frameKey(entry.slot, 'death', 3)], `${bossId} is in ${entry.pack}`);
+    }
   }
   assert.deepEqual(Object.keys(manifest.animations[HERO_SLOT]).sort(), ['hurt', 'idle', 'run', 'throw']);
   assert.equal(manifest.atlasScale, 2, 'atlas pixels per world unit');
