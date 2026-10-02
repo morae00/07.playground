@@ -225,7 +225,7 @@ CON-03 (stage objectives, `stageObjectives` rule) was piloted with the flag on a
 | vanguard (third field boss) | 58.3 / 55.0 | 31 of 33 |
 
 - All 640 runs: clears 38.9% to 35.9%, 37 flips (9 to a clear, 28 to a death). The giants and traps changes are the hardest, at 13 and 10 points. SYS-07's curve work starts from these numbers.
-- The personas never walk to a zone or a cache, so the hold and salvage goals need playtests. The field boss goals are met on 93-94% of clears. SYS-10's elites will give the elite hunt its intended goal; the vanguard goal may want a time limit after playtests. **[Team decision]**
+- The personas never walk to a zone or a cache, so the hold and salvage goals need playtests. The field boss goals were met on 93-94% of clears, so decision D-04 (2026-10-02) counts only field bosses defeated within 60 s of arriving, and one that outlives the window fails the goal. SYS-10's elites gave the elite hunt its intended goal.
 
 SYS-07 (difficulty curve, `difficultyCurve` rule) was tuned with three pilot sets, each against today's formulas and the chosen numbers:
 - The team: striker, survivor, and collector on 1, 4, 9 (normal), 5, and 10 of every chapter × 5 seeds.

@@ -173,6 +173,7 @@
  "bonus.goal.hold": "점령 구역에서 {n}초 버티기",
  "bonus.goal.terrain": "위험지형 안에 {n}초 이하로 머물기",
  "bonus.goal.fieldBosses": "필드 보스 {n}마리 모두 처치",
+ "bonus.goal.fieldBossesWithin": "필드 보스 {n}마리를 각각 나타난 뒤 {s}초 안에 처치",
  "bonus.goal.salvage": "먹 꾸러미 {n}개 회수",
  "objective.mod.small": "소형 비중 +{n}%p",
  "objective.mod.large": "대형 비중 +{n}%p",

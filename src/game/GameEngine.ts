@@ -1955,6 +1955,9 @@ export class GameEngine {
     this.updatePlayer(dt);
     if (this.endStepIfInterrupted()) return;
     this.stageObjective?.update(dt, this.player, (radius, random) => this.objectiveSpot(radius, random));
+    if (this.stageObjective?.timesFieldBosses) {
+      for (const enemy of this.enemies) if (enemy.fieldBossAt !== undefined && enemy.hp > 0) this.stageObjective.onFieldBossAlive(this.duration - this.timeLeft - enemy.fieldBossAt);
+    }
     this.rebuildEnemyIndex();
     this.updateSkills(dt);
     this.flushDeadEnemies();
@@ -3013,6 +3016,8 @@ export class GameEngine {
       bossPhase: 1,
       bossPhaseFlash: 0,
     };
+    // D-04: a stage objective's own field bosses carry the time they came, for the timed field boss goal.
+    if (kind === 'normal' && !legacy && this.stageObjective?.timesFieldBosses) boss.fieldBossAt = this.duration - this.timeLeft;
     this.enemies.push(boss);
     this.emit({ type: 'boss/spawned', x, y, infinite: false });
   }
@@ -4747,7 +4752,7 @@ export class GameEngine {
     if (enemy.isBoss) this.bossesDefeated += 1;
     if (enemy.boss) this.found.bosses.add(enemy.boss.id);
     else if (!enemy.isBoss) this.found.enemies.add(`${this.shownChapter}-${enemyRole(enemy.tier, enemy.attackStyle)}`);
-    this.stageObjective?.onKill({ tier: enemy.tier, ranged: enemy.attackStyle === 'ranged', fieldBoss: enemy.isBoss && enemy.boss?.role === 'field' && !enemy.legacyBoss, elite: enemy.elite !== undefined });
+    this.stageObjective?.onKill({ tier: enemy.tier, ranged: enemy.attackStyle === 'ranged', fieldBoss: enemy.isBoss && enemy.boss?.role === 'field' && !enemy.legacyBoss, elite: enemy.elite !== undefined, aliveSeconds: enemy.fieldBossAt === undefined ? undefined : this.duration - this.timeLeft - enemy.fieldBossAt });
     if (enemy.elite) this.eliteFalls(enemy);
     if (this.runMode === 'infinite') {
       // CON-08: a field boss scores on its own, without the round bosses' streak, and does not count as one.

@@ -92,6 +92,8 @@ export type Entity = {
   damageCooldowns: Record<string, number>;
   bossPhase: 1 | 2 | 3;
   bossPhaseFlash: number;
+  /** CON-03, D-04: the stage time a stage objective's field boss appeared at (timed field boss goals). */
+  fieldBossAt?: number;
   /** SYS-10: an elite's affix; its shield, and when it was last hit (the shield comes back after a while untouched). */
   elite?: 'haste' | 'split' | 'shield' | 'drain';
   eliteShield?: number;

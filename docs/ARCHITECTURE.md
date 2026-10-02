@@ -246,11 +246,11 @@ A normal stage keeps its survival clock. Under the `stageObjectives` rule its ob
 | 소형 무리 압박전 (swarm) | small share +15 points, spawns ×1.2 | defeat 280 small enemies |
 | 중형 경계선 유지 (holdLine) | — | hold a marked zone for 30 s; it moves on every 10 s held |
 | 지형 함정 구역 (traps) | twice the terrain | spend at most 20 s in hazards |
-| 정예 추격전 (elites) | elites in every beat (SYS-10); without elites, field bosses with ×1.5 health and ×1.2 damage | defeat 10 elites; without elites, both field bosses |
+| 정예 추격전 (elites) | elites in every beat (SYS-10); without elites, field bosses with ×1.5 health and ×1.2 damage | defeat 10 elites; without elites, both field bosses, each within 60 s of arriving |
 | 자원 회수 압박전 (salvage) | — | recover 5 ink caches, one after another, by standing on each for 1.5 s |
 | 대형 개체 회피전 (giants) | large share +15 points | defeat 45 large enemies |
 | 투사체 포위망 (crossfire) | three times the ranged cap, up to 6 | defeat 14 ranged enemies |
-| 보스 전초 압박전 (vanguard) | a third field boss at 18% | defeat all three field bosses |
+| 보스 전초 압박전 (vanguard) | a third field boss at 18% | defeat all three field bosses, each within 60 s of arriving (D-04) |
 
 - Kill goals scale by chapter (×1, 1.6, 3.5, 4.5, 5.5): later chapters bring far more enemies.
 - G9's stage exception: a moved share takes 15 points at most, and the other two tiers split the rest in their 58:30:12 proportion. Hit radii and tier stats never change. The ranged cap (1-3) is raised on the crossfire stages only. Field bosses keep their 36% and 72% marks, and the vanguard adds one (G8). The stage card lists every change (`menuStage.ts` `stageObjective`).

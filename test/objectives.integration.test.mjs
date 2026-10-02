@@ -116,7 +116,7 @@ test('CON-03: the vanguard objective calls a third field boss at 18%; without el
     }
     assert.equal(vanguard.probe.read().enemies.filter((enemy) => enemy.isBoss).length, 1, 'vanguard: a field boss at 18%');
     assert.equal(plain.probe.read().enemies.filter((enemy) => enemy.isBoss).length, 0, 'the others wait for 36%');
-    assert.equal(tx(vanguard.probe.hud().bonus.goal), '필드 보스 3마리 모두 처치');
+    assert.equal(tx(vanguard.probe.hud().bonus.goal), '필드 보스 3마리를 각각 나타난 뒤 60초 안에 처치');
   } finally {
     vanguard.engine.dispose();
     plain.engine.dispose();
@@ -135,6 +135,37 @@ test('CON-03: the vanguard objective calls a third field boss at 18%; without el
     run.engine.dispose();
   }
   near(hp.elites / hp.plain, 1.5, 0.001, 'elite field boss health');
+});
+
+test('D-04: a field boss goal counts only field bosses defeated within 60 s of arriving, and one that outlives it fails the goal', () => {
+  const callBoss = (run) => {
+    // No skills, so the boss lives until the test says.
+    run.probe.setSkills({});
+    run.probe.clear('enemies');
+    run.probe.setClock({ timeLeft: run.probe.hud().duration * (1 - 0.19) });
+    run.probe.step(2);
+    return run.probe.read().enemies.find((enemy) => enemy.isBoss);
+  };
+  const quick = stageRun(1, 8);
+  try {
+    const boss = callBoss(quick);
+    quick.probe.haltSpawns();
+    quick.probe.step(60 * 30);
+    quick.probe.patchEnemy(boss.id, { hp: 0 });
+    quick.probe.step(2);
+    assert.deepEqual([quick.probe.hud().bonus.progress, quick.probe.hud().bonus.status], [1, 'active'], 'killed at 30 s, it counts');
+  } finally {
+    quick.engine.dispose();
+  }
+  const slow = stageRun(1, 8);
+  try {
+    callBoss(slow);
+    slow.probe.haltSpawns();
+    slow.probe.step(60 * 61);
+    assert.deepEqual([slow.probe.hud().bonus.progress, slow.probe.hud().bonus.status], [0, 'failed'], 'alive past 60 s, the goal fails');
+  } finally {
+    slow.engine.dispose();
+  }
 });
 
 test('CON-03: holding the line: the zone fills while the player stands in it, moves on every 10 s, and a clear pays the bonus', () => {

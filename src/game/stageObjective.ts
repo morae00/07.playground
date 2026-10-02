@@ -61,6 +61,7 @@ export function bonusTarget(bonus: ObjectiveBonus, chapter: number, def: Objecti
 export function bonusGoal(bonus: ObjectiveBonus, target: number): Text {
   if (bonus.kind === 'kills') return text(`bonus.goal.${bonus.tier}`, { n: target });
   if (bonus.kind === 'terrain') return text('bonus.goal.terrain', { n: target });
+  if (bonus.kind === 'fieldBosses' && bonus.within) return text('bonus.goal.fieldBossesWithin', { n: target, s: bonus.within });
   return text(`bonus.goal.${bonus.kind}`, { n: target });
 }
 
@@ -120,12 +121,22 @@ export class StageObjective {
     return this.modifiers ? this.def.fieldBoss : undefined;
   }
 
-  onKill(kill: Readonly<{ tier: string; ranged: boolean; fieldBoss: boolean; elite?: boolean }>) {
+  onKill(kill: Readonly<{ tier: string; ranged: boolean; fieldBoss: boolean; elite?: boolean; aliveSeconds?: number }>) {
     const bonus = this.def.bonus;
     if (!this.bonus || this.status !== 'active') return;
     const counts = bonus.kind === 'kills' && (bonus.tier === 'ranged' ? kill.ranged : bonus.tier === 'elite' ? kill.elite === true : kill.tier === bonus.tier && !kill.fieldBoss);
     if (counts) this.progress += 1;
-    if (bonus.kind === 'fieldBosses' && kill.fieldBoss) this.progress += 1;
+    if (bonus.kind === 'fieldBosses' && kill.fieldBoss && (bonus.within === undefined || (kill.aliveSeconds ?? 0) <= bonus.within)) this.progress += 1;
+  }
+
+  /** D-04: a timed field boss goal fails once a field boss has lived past its window. */
+  get timesFieldBosses() {
+    return this.bonus && this.def.bonus.kind === 'fieldBosses' && this.def.bonus.within !== undefined;
+  }
+
+  onFieldBossAlive(seconds: number) {
+    const bonus = this.def.bonus;
+    if (bonus.kind === 'fieldBosses' && bonus.within !== undefined && seconds > bonus.within && this.status === 'active') this.failed = true;
   }
 
   /** Time the player spent standing in terrain; the terrain goal fails once it passes its limit. */

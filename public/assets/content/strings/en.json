@@ -173,6 +173,7 @@
  "bonus.goal.hold": "Hold the marked ground for {n} s",
  "bonus.goal.terrain": "Spend at most {n} s in hazards",
  "bonus.goal.fieldBosses": "Defeat all {n} field bosses",
+ "bonus.goal.fieldBossesWithin": "Defeat all {n} field bosses, each within {s} s of its arrival",
  "bonus.goal.salvage": "Recover {n} ink caches",
  "objective.mod.small": "Small enemies +{n} pts",
  "objective.mod.large": "Large enemies +{n} pts",
