@@ -338,7 +338,7 @@ Skill numbers live in `src/content/data/skillNumbers.ts` (a content table, TEC-0
 
 ## Visual and accessibility
 
-`npm run test:visual` builds the developer bundle and captures the menu, infinite menu, infinite play, story (the prologue's first panel, CON-06), playing, paused, draft, settlement, and boss states at the TEC-01 viewports (1024x720, 1280x720, 1440x900, 1920x1080), at DPR 1 and 2, with normal and reduced motion: 144 captures. Phone and tablet sizes (320x568, 375x812, 768x1024) remain selectable with `VISUAL_VIEWPORTS`. It fails on console errors, blank Canvas output, viewport overflow, incoherent control overlap, missing images, and contract-level accessibility violations.
+`npm run test:visual` builds the developer bundle and captures the menu, infinite menu, infinite play, story (the prologue's first panel, CON-06), playing, paused, draft, settlement, and boss states at the TEC-01 viewports (1024x720, 1280x720, 1440x900, 1920x1080), at DPR 1 and 2, in three modes: full motion, the system's reduced motion, and the reduced flash setting (set in the menu's settings before the first capture), which UI-08 separates from reduced motion: 216 captures. Phone and tablet sizes (320x568, 375x812, 768x1024) remain selectable with `VISUAL_VIEWPORTS`. It fails on console errors, blank Canvas output, viewport overflow, incoherent control overlap, missing images, and contract-level accessibility violations. It also reads every visible text in each capture (UI-08) and fails on text under 13 px, or under WCAG contrast (4.5:1, 3:1 for large text) against the surface painted under it. Text over the game canvas, which carries its own paper halo, and text on baked art are not measured; disabled controls are exempt, and with a modal open only the modal's text is read.
 
 Captures are deterministic: seeded `Math.random` and `crypto`, and a paused Playwright clock that only moves when a step settles, so the game loop, timers, and the dialog input guard advance by exact amounts (TEC-06). Once the app has mounted, the gate runs the page clock to an exact tick count. Playwright adds the real time between installing and pausing its clock (0-2 ms) to `performance.now()`, which otherwise shifts moving sprites by a sub-pixel. Two runs of the same build produce identical images, in any viewport order.
 
@@ -346,6 +346,8 @@ Captures are deterministic: seeded `Math.random` and `crypto`, and a paused Play
 - The run stays stopped while the hub is open, and the hub has its four tabs.
 - A health upgrade bought in the hub adds no health until the run resumes, then about +7 after one second and the full +20 after four (G6).
 - The menu's settings tab can set reduced flash before any run.
+
+The focus probe (UI-08) presses Tab through the pause hub and a draft and checks that focus stays in the modal, lands only on visible controls, and always shows a focus ring.
 
 The colour probe (UI-08) checks that colour is never the only cue. Every coloured state also has a shape, a mark, or words:
 

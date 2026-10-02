@@ -11,8 +11,9 @@ const requireGoldens = process.env.VISUAL_REQUIRE_GOLDENS !== '0';
 const maxDiffRatio = Number.parseFloat(process.env.VISUAL_MAX_DIFF_RATIO ?? '0.005');
 const pixelTolerance = Number.parseInt(process.env.VISUAL_PIXEL_TOLERANCE ?? '24', 10);
 // The default matrix is the platform decision (TEC-01: minimum 1024x720, reference 1280x720 and 1440x900,
-// largest verified 1920x1080): 4 viewports x DPR 1/2 x 2 motion modes x 9 states = 144 captures. The small
-// sizes stay selectable by name (VISUAL_VIEWPORTS) to check the responsive layout.
+// largest verified 1920x1080): 4 viewports x DPR 1/2 x 3 modes x 9 states = 216 captures. The modes are full
+// motion, the system's reduced motion, and the reduced flash setting, which UI-08 separates from reduced motion.
+// The small sizes stay selectable by name (VISUAL_VIEWPORTS) to check the responsive layout.
 const viewportCatalog = [
   { name: '320x568', width: 320, height: 568 },
   { name: '375x812', width: 375, height: 812 },
@@ -36,7 +37,7 @@ function selectValues(value, catalog, label, defaults) {
 
 const viewports = selectValues(process.env.VISUAL_VIEWPORTS, viewportCatalog, 'viewport', defaultViewports);
 const dprs = selectValues(process.env.VISUAL_DPRS, ['1', '2'], 'DPR').map(Number);
-const motions = selectValues(process.env.VISUAL_MOTIONS, ['full', 'reduce'], 'motion mode');
+const motions = selectValues(process.env.VISUAL_MOTIONS, ['full', 'reduce', 'flash'], 'motion mode');
 const report = {
   version: 2,
   configuration: {
@@ -224,6 +225,102 @@ async function inspectLayout(page) {
   });
 }
 
+// UI-08: text the player reads is at least 13 px and meets WCAG contrast (4.5:1, or 3:1 for large text) against the
+// surface behind it. Text drawn over the game canvas has its own paper halo, and text on baked art has no single
+// background colour, so both are skipped; disabled controls are exempt (WCAG 1.4.3).
+async function inspectText(page) {
+  return page.evaluate(() => {
+    const parse = (value) => {
+      const match = value.match(/rgba?\(([^)]+)\)/);
+      if (!match) return null;
+      const [r, g, b, a = 1] = match[1].split(/[ ,/]+/).filter(Boolean).map(Number);
+      return { r, g, b, a };
+    };
+    const over = (top, bottom) => ({
+      r: top.r * top.a + bottom.r * (1 - top.a),
+      g: top.g * top.a + bottom.g * (1 - top.a),
+      b: top.b * top.a + bottom.b * (1 - top.a),
+      a: 1,
+    });
+    const luminance = ({ r, g, b }) => {
+      const channel = (value) => {
+        const c = value / 255;
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      };
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+    };
+    const ratio = (a, b) => {
+      const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+      return (light + 0.05) / (dark + 0.05);
+    };
+    /**
+     * The opaque colour behind an element's text, or null when it sits on the canvas, on art, or under a filter.
+     * It reads what is painted under the text's centre, so a caption placed outside its parent's box is measured
+     * against the surface it actually sits on.
+     */
+    const surface = (element) => {
+      const rect = element.getBoundingClientRect();
+      const x = Math.min(innerWidth - 1, Math.max(0, rect.left + rect.width / 2));
+      const y = Math.min(innerHeight - 1, Math.max(0, rect.top + rect.height / 2));
+      const stack = document.elementsFromPoint(x, y);
+      const own = stack.indexOf(element);
+      const below = [element, ...stack.slice(own + 1).filter((other) => other !== element && !element.contains(other))];
+      const layers = [];
+      for (const current of below) {
+        if (current.tagName === 'CANVAS') return null;
+        if (current.closest('.gameHud, .xpStrip, .bossBar, .effectRack, .bossIntro, .hintToast')) return null;
+        const style = getComputedStyle(current);
+        if (style.backgroundImage !== 'none' || style.filter !== 'none' || style.mixBlendMode !== 'normal') return null;
+        const background = parse(style.backgroundColor);
+        if (background && background.a > 0) {
+          layers.push(background);
+          if (background.a >= 1) return layers.reduceRight((under, layer) => over(layer, under));
+        }
+      }
+      return null;
+    };
+    const visible = (element) => {
+      if (element.closest('[aria-hidden="true"], .srOnly, [hidden]')) return false;
+      const rect = element.getBoundingClientRect();
+      if (rect.width < 1 || rect.height < 1 || rect.bottom < 0 || rect.right < 0 || rect.top > innerHeight || rect.left > innerWidth) return false;
+      for (let current = element; current; current = current.parentElement) {
+        const style = getComputedStyle(current);
+        if (style.visibility === 'hidden' || style.display === 'none' || Number(style.opacity) === 0) return false;
+      }
+      return true;
+    };
+    const small = [];
+    const faint = [];
+    let checked = 0;
+    const seen = new Set();
+    // With a modal open, the page behind it is dimmed on purpose; only the modal's text is read.
+    const modals = [...document.querySelectorAll('[role="dialog"][aria-modal="true"], [role="alertdialog"]')].filter(visible);
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const element = node.parentElement;
+      if (!element || seen.has(element) || !node.textContent.trim() || !visible(element)) continue;
+      if (modals.length > 0 && !modals.some((modal) => modal.contains(element))) continue;
+      seen.add(element);
+      if (element.closest('button:disabled, [aria-disabled="true"], input:disabled, select:disabled')) continue;
+      const style = getComputedStyle(element);
+      const size = Number.parseFloat(style.fontSize);
+      const text = node.textContent.trim().slice(0, 30);
+      if (size < 12.95) small.push(`${size.toFixed(1)}px "${text}"`);
+      const colour = parse(style.color);
+      const behind = surface(element);
+      if (!colour || !behind) continue;
+      // Opacity on the text or a parent fades it towards the surface.
+      for (let current = element; current; current = current.parentElement) colour.a *= Number(getComputedStyle(current).opacity);
+      checked += 1;
+      const weight = Number(style.fontWeight) || 400;
+      const large = size >= 24 || (size >= 18.66 && weight >= 700);
+      const value = ratio(over(colour, behind), behind);
+      if (value < (large ? 3 : 4.5)) faint.push(`${value.toFixed(2)}:1 "${text}"`);
+    }
+    return { small: [...new Set(small)], faint: [...new Set(faint)], checked };
+  });
+}
+
 async function inspectCanvas(page) {
   return page.evaluate(() => {
     const source = document.querySelector('canvas.gameCanvas');
@@ -286,6 +383,9 @@ async function captureEvidence(page, viewport, dpr, motion, state) {
   if (layout.accessibilityIssues.length > 0) failures.push(`accessibility contract: ${layout.accessibilityIssues.join(' | ')}`);
   if (Math.abs(layout.dpr - dpr) > 0.01) failures.push(`runtime DPR ${layout.dpr}, expected ${dpr}`);
   if (layout.reducedMotion !== (motion === 'reduce')) failures.push(`reduced-motion media mismatch: ${layout.reducedMotion}`);
+  const text = await inspectText(page);
+  if (text.small.length > 0) failures.push(`text under 13 px: ${text.small.join(' | ')}`);
+  if (text.faint.length > 0) failures.push(`text under WCAG contrast: ${text.faint.join(' | ')}`);
 
   let canvas = null;
   let render = null;
@@ -380,6 +480,14 @@ async function runScenario(page, viewport, dpr, motion) {
   await unique(page.getByRole('heading', { name: '흑백 타격 생존전' }), 'menu heading');
   const sprites = await waitForSprites(page);
   if (sprites !== 'ready') throw new Error(`character atlas failed to load (${sprites})`);
+  if (motion === 'flash') {
+    // The reduced flash setting, set where a player sets it before any run (UI-04, UI-08).
+    await (await unique(page.getByRole('tab', { name: '설정' }), 'settings tab')).click();
+    await settle(page, 40);
+    await (await unique(page.getByRole('checkbox', { name: '섬광 감소' }), 'reduced flash setting')).check();
+    await (await unique(page.getByRole('tab', { name: '출정' }), 'campaign menu tab')).click();
+    await settle(page, 40);
+  }
   await captureEvidence(page, viewport, dpr, motion, 'menu');
 
   await (await unique(page.getByRole('tab', { name: '무한 경쟁' }), 'infinite menu tab')).click();

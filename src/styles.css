@@ -981,6 +981,11 @@ h2 {
   gap: 6px;
 }
 
+/* The found/total count in each part button stays at the 13 px floor (UI-01, UI-08). */
+.codexParts small {
+  font-size: 13px;
+}
+
 .codexParts .active {
   color: var(--paper);
   background: var(--ink);
@@ -1463,6 +1468,7 @@ h2 {
 
 .seedPresets small {
   margin-left: 6px;
+  font-size: 13px;
   font-weight: 700;
   opacity: 0.75;
 }
@@ -2037,8 +2043,10 @@ h2 {
   transform: translateX(-50%);
 }
 
+/* The ally keyline under ink words: teal on paper is under 4.5:1 for text (UI-08). */
 .nowCaption {
-  color: var(--player-keyline);
+  color: var(--ink);
+  border-bottom: 2px solid var(--player-keyline);
 }
 
 .stageDetail {

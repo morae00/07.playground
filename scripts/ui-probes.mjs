@@ -567,6 +567,48 @@ try {
     await page.close();
   });
 
+  await probe('UI-08 focus', async () => {
+    // Keyboard focus in a modal stays inside it, lands only on visible controls, and always shows where it is.
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await openStage(page);
+    const closer = page.getByRole('button', { name: '개발 패널 닫기' });
+    if (await closer.count()) await closer.click();
+    const walk = async (presses) => {
+      const stops = [];
+      for (let step = 0; step < presses; step += 1) {
+        await page.keyboard.press('Tab');
+        stops.push(await page.evaluate(() => {
+          const element = document.activeElement;
+          const dialog = document.querySelector('[role="dialog"], [role="alertdialog"]');
+          if (!element || element === document.body) return { inside: false, visible: false, ring: false, name: 'body' };
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          const ring = (style.outlineStyle !== 'none' && Number.parseFloat(style.outlineWidth) > 0) || style.boxShadow !== 'none';
+          return {
+            inside: Boolean(dialog?.contains(element)),
+            visible: rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < innerHeight && style.visibility !== 'hidden',
+            ring,
+            name: (element.getAttribute('aria-label') || element.textContent || element.tagName).trim().slice(0, 24),
+          };
+        }));
+      }
+      return stops;
+    };
+    const summary = (stops) => `${stops.length} tab stops, ${new Set(stops.map((stop) => stop.name)).size} distinct, ${stops.filter((stop) => !stop.inside).length} outside, ${stops.filter((stop) => !stop.visible).length} hidden, ${stops.filter((stop) => !stop.ring).length} without a ring`;
+    await page.keyboard.press('p');
+    await page.waitForTimeout(200);
+    const pause = await walk(30);
+    record('UI-08 Tab stays in the pause hub, on visible controls, with a visible focus ring', pause.every((stop) => stop.inside && stop.visible && stop.ring), summary(pause));
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+    await cheat(page, 'DRAFT');
+    if (await closer.count()) await closer.click();
+    await page.waitForTimeout(450);
+    const draft = await walk(12);
+    record('UI-08 Tab stays in the draft, on visible controls, with a visible focus ring', draft.every((stop) => stop.inside && stop.visible && stop.ring), summary(draft));
+    await page.close();
+  });
+
   await probe('UI-04', async () => {
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     await page.goto('http://127.0.0.1:5177/');
