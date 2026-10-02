@@ -196,13 +196,13 @@ async function run(): Promise<RenderBenchResult> {
 
   const intervals = stamps.slice(1).map((time, index) => time - stamps[index]);
   const counts = probe.counts();
-  // Screen to world: x = (screenX - offsetX) / zoom + camera.x, y = screenY / zoom + camera.y.
+  // Screen to world: x = (screenX - offsetX) / zoom + camera.x, y = (screenY - offsetY) / zoom + camera.y.
   const { view } = probe.renderWorld();
   const world = probe.read();
   const left = world.camera.x - view.frame.offsetX / view.frame.zoom;
   const right = world.camera.x + (view.width - view.frame.offsetX) / view.frame.zoom;
-  const top = world.camera.y;
-  const bottom = world.camera.y + view.height / view.frame.zoom;
+  const top = world.camera.y - view.frame.offsetY / view.frame.zoom;
+  const bottom = world.camera.y + (view.height - view.frame.offsetY) / view.frame.zoom;
   const enemiesInView = world.enemies.filter((enemy) => enemy.x > left && enemy.x < right && enemy.y > top && enemy.y < bottom).length;
   engine.dispose();
   return {

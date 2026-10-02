@@ -326,7 +326,7 @@ export class WorldRenderer {
     ctx.fillStyle = NEUTRAL.paper;
     ctx.fillRect(0, 0, this.world.view.width, this.world.view.height);
     ctx.save();
-    ctx.setTransform(this.world.view.dpr * frame.zoom, 0, 0, this.world.view.dpr * frame.zoom, this.world.view.dpr * frame.offsetX, 0);
+    ctx.setTransform(this.world.view.dpr * frame.zoom, 0, 0, this.world.view.dpr * frame.zoom, this.world.view.dpr * frame.offsetX, this.world.view.dpr * frame.offsetY);
     ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
     this.collectBodies();
     for (const layer of WORLD_LAYERS) {
@@ -341,6 +341,12 @@ export class WorldRenderer {
       ctx.fillStyle = NEUTRAL.ink;
       ctx.fillRect(0, 0, frame.offsetX, this.world.view.height);
       ctx.fillRect(this.world.view.width - frame.offsetX, 0, frame.offsetX, this.world.view.height);
+    }
+    if (frame.offsetY > 0) {
+      // D-28: letterbox bars above and below a frame capped at 1.2× or held at 1200 units across.
+      ctx.fillStyle = NEUTRAL.ink;
+      ctx.fillRect(0, 0, this.world.view.width, frame.offsetY);
+      ctx.fillRect(0, this.world.view.height - frame.offsetY, this.world.view.width, frame.offsetY);
     }
   }
 
@@ -1249,10 +1255,11 @@ export class WorldRenderer {
     const { effects, view, options } = this.world;
     if (effects.hurtVignette <= 0 && !effects.lowHealth) return;
     const left = view.frame.offsetX;
+    const top = view.frame.offsetY;
     const width = view.width - left * 2;
-    const height = view.height;
+    const height = view.height - top * 2;
     const cx = left + width / 2;
-    const cy = height / 2;
+    const cy = top + height / 2;
     const reach = Math.hypot(width, height) / 2;
     const strength = options.reducedFlash ? 0.5 : 1;
     const glow = (x: number, y: number, inner: number, outer: number, innerAlpha: number, outerAlpha: number) => {
@@ -1466,23 +1473,24 @@ export class WorldRenderer {
     const { frame } = this.world.view;
     const left = frame.offsetX;
     const right = left + frame.width * frame.zoom;
-    const bottom = frame.height * frame.zoom;
+    const top = frame.offsetY;
+    const bottom = top + frame.height * frame.zoom;
     const cx = (left + right) / 2;
-    const cy = bottom / 2;
+    const cy = (top + bottom) / 2;
     const marks: Array<{ boss: boolean; x: number; y: number; distance: number }> = [];
     for (const enemy of this.world.enemies) {
       const boss = enemy.isBoss && !enemy.legacyBoss;
       if (enemy.hp <= 0 || (!boss && enemy.tier !== 'large' && !enemy.elite)) continue;
       const point = this.interpolated(enemy);
       const x = left + (point.x - camera.x) * frame.zoom;
-      const y = (point.y - camera.y) * frame.zoom;
+      const y = top + (point.y - camera.y) * frame.zoom;
       const reach = enemy.radius * frame.zoom;
-      if (x + reach > left && x - reach < right && y + reach > 0 && y - reach < bottom) continue;
+      if (x + reach > left && x - reach < right && y + reach > top && y - reach < bottom) continue;
       marks.push({ boss, x, y, distance: Math.hypot(x - cx, y - cy) });
     }
     if (marks.length === 0) return;
     marks.sort((a, b) => Number(b.boss) - Number(a.boss) || a.distance - b.distance);
-    const edge = { left: left + MARKER_INSET.left, right: right - MARKER_INSET.right, top: MARKER_INSET.top, bottom: bottom - MARKER_INSET.bottom };
+    const edge = { left: left + MARKER_INSET.left, right: right - MARKER_INSET.right, top: top + MARKER_INSET.top, bottom: bottom - MARKER_INSET.bottom };
     for (const mark of marks.slice(0, MAX_OFFSCREEN_MARKERS)) {
       const angle = Math.atan2(mark.y - cy, mark.x - cx);
       const dx = Math.cos(angle);

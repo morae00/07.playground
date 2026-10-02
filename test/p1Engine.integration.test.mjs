@@ -269,10 +269,13 @@ test('mobile canvas uses its CSS logical size, DPR backing store, and camera-sca
     engine.probe.setCamera({ x: 900, y: 500 });
     const pointer = engine.screenToWorld(rect.left + 160, rect.top + 284);
 
-    // The camera shows 900 world units vertically (BUG-09), so screen pixels divide by the camera zoom.
-    const zoom = 1136 / 900;
+    // The camera shows 900 world units vertically (BUG-09) and at least 1200 across (D-28), so this portrait canvas
+    // zooms to fit 1200 units across and is letterboxed above and below; screen pixels lose the bar, then divide by
+    // the zoom.
+    const zoom = 640 / 1200;
+    const offsetY = (1136 - 900 * zoom) / 2;
     assert.ok(Math.abs(pointer.x - (900 + 320 / zoom)) < 1e-9, 'pointer x scales CSS → canvas → world before adding the camera');
-    assert.ok(Math.abs(pointer.y - (500 + 568 / zoom)) < 1e-9, 'pointer y scales CSS → canvas → world before adding the camera');
+    assert.ok(Math.abs(pointer.y - (500 + (568 - offsetY) / zoom)) < 1e-9, 'pointer y scales CSS → canvas, leaves the letterbox, then → world');
 
     // Dispatched as the input adapter does, the mapped point becomes the target the player walks toward.
     const start = { x: pointer.x + 300, y: pointer.y + 400 };

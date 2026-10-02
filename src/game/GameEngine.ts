@@ -1639,7 +1639,7 @@ export class GameEngine {
     const frame = this.viewFrame();
     return {
       x: ((clientX - rect.left) * scaleX - frame.offsetX) / frame.zoom + this.shownCamera().x,
-      y: ((clientY - rect.top) * scaleY) / frame.zoom + this.shownCamera().y,
+      y: ((clientY - rect.top) * scaleY - frame.offsetY) / frame.zoom + this.shownCamera().y,
     };
   }
 

@@ -348,6 +348,8 @@ The campaign had no story on screen: clearing 5-10 showed a banner and nothing e
 
 ## Camera (FX-04)
 
+The visible frame (`src/game/viewPolicy.ts`) shows 900 world units vertically and scales to the window. A window wider than 16:9 is pillarboxed at 1600 units across. Decision D-28 caps the zoom at 1.2 (the 1920×1080 size), so a larger window shows that frame with bars round it, and keeps at least 1200 units across, so a window narrower than 4:3 is letterboxed above and below. The frame's `offsetX` and `offsetY` place it in the canvas; the renderer, the pointer mapping, the off-screen markers, and the hurt vignette all go through them. Spawns use the fixed 1600×900 logical frame, so none of this changes a seeded outcome.
+
 The simulation camera stays hard-locked on the player, clamped to the world. Spawns, aim, and off-screen checks use it together with the logical frame (G14). Under the `smoothCamera` rule, the screen shows a separate view camera instead (`src/game/presentation/viewCamera.ts`):
 - It follows the simulation camera on a critically damped spring (about 0.4 s to settle, no overshoot).
 - It leans up to 70 units ahead of the player's movement. The spring's lag takes most of that back while the player moves at full speed.
