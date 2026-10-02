@@ -92,6 +92,21 @@ test('packs load once, hand out frames, and fall back cleanly when a page fails'
   assert.equal(await failing.load('no-such-pack'), false);
 });
 
+test('TEC-09: a key gives the same frame object until the resident packs change', async () => {
+  const atlas = new SpriteAtlas({ loadManifest: async () => manifest, loadImage: async () => fakeImage(2048, 512) });
+  await atlas.load(COMMON_PACK);
+  const key = frameKey(HERO_SLOT, 'run', 3);
+  const first = atlas.frame(key);
+  assert.ok(first);
+  assert.equal(atlas.frame(key), first, 'the renderer caches cut-outs by frame, so the frame must be the same object');
+  assert.equal(atlas.frame('enemy/1/stalker/walk/0'), undefined);
+  await atlas.load(CHAPTER_PACKS[1]);
+  assert.ok(atlas.frame('enemy/1/stalker/walk/0'), 'a frame missing before its pack loaded is found after');
+  assert.notEqual(atlas.frame(key), first, 'a pack change hands out fresh frames');
+  atlas.release(CHAPTER_PACKS[1]);
+  assert.equal(atlas.frame('enemy/1/stalker/walk/0'), undefined, 'and a release forgets the released frames');
+});
+
 test('a released pack frees its pages, drops a load still in flight, and loads again on request (ART-07)', async () => {
   const closed: string[] = [];
   const waiting: (() => void)[] = [];

@@ -77,6 +77,11 @@ export class SpriteAtlas {
   private readonly failures = new Map<string, unknown>();
   /** Bumped by release, so a load still in flight for a released pack is thrown away. */
   private readonly generations = new Map<string, number>();
+  /**
+   * One frame object per key while the resident packs stay the same (TEC-09): the renderer caches cut-outs by frame,
+   * so a new object for every lookup made it build a canvas for every hit flash, elite outline, and hero outline.
+   */
+  private readonly frames = new Map<string, SpriteFrame | undefined>();
   private readonly options: Required<SpriteAtlasOptions>;
   private readonly listeners = new Set<() => void>();
 
@@ -126,6 +131,7 @@ export class SpriteAtlas {
       this.statuses.set(pack, 'failed');
       this.failures.set(pack, error);
     }
+    this.frames.clear();
     for (const listener of this.listeners) listener();
     return this.status(pack) === 'ready';
   }
@@ -142,6 +148,7 @@ export class SpriteAtlas {
     this.grounds.delete(pack);
     this.statuses.delete(pack);
     this.failures.delete(pack);
+    this.frames.clear();
     for (const listener of this.listeners) listener();
   }
 
@@ -162,6 +169,13 @@ export class SpriteAtlas {
 
   /** The frame for a key from any ready pack, or undefined (not baked, pack not loaded, or load failed). */
   frame(key: string): SpriteFrame | undefined {
+    if (this.frames.has(key)) return this.frames.get(key);
+    const frame = this.findFrame(key);
+    if (this.manifest) this.frames.set(key, frame);
+    return frame;
+  }
+
+  private findFrame(key: string): SpriteFrame | undefined {
     const manifest = this.manifest;
     if (!manifest) return undefined;
     for (const [pack, images] of this.pages) {

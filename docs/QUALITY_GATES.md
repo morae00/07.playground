@@ -382,7 +382,13 @@ Golden screenshot updates require explicit review. A capture-only run is not a r
 
 ## Performance
 
-`npm run test:soak:smoke` checks deterministic simulation pressure in CI. Release performance additionally requires `npm run test:soak` plus a real Chromium or packaged Electron trace for a 15-minute representative run.
+`npm run test:soak:smoke` checks deterministic simulation pressure in CI. Release performance additionally requires `npm run test:soak` and the desktop soak.
+
+`npm run test:electron-soak` (after `npm run build:developer`, about 45 minutes, the window open) is the desktop soak (TEC-09): the real app on a throwaway data folder, 15 minutes of 5-10 at double speed and 30 minutes of the infinite run, with GOD on, each draft taking its first card, and a settled stage started again. It records every animation frame's interval, long tasks, the JS heap after a garbage collection, and renderer crashes, and fails unless at most 1% of frames miss a vsync (over 25 ms), the interval p99 is at most 33 ms, the heap grows at most 20 MiB over each phase, and nothing crashes. Its report goes to `artifacts/performance/electron-soak.json` with the load average at the start and the end.
+
+The first desktop soak (2026-10-02) found that frames fell apart in the infinite run after its fifth minute: 30% of frames missed, p99 865 ms, the heap up 18 MiB. The main thread was idle or in native drawing, not in script. The cause: `SpriteAtlas.frame` handed out a new frame object for every lookup, and the renderer keys its cut-out caches (the hit flash, the elite outline, the hero's outline cosmetic) by frame, so every hit flash and every elite on every frame built a new canvas that the GPU kept. The atlas now keeps one frame object per key until the resident packs change, the renderer drops its cut-outs when they do, and each cache is bounded. The rerun on this Mac (load average 3.0 at the start):
+- 5-10 at double speed, 15 minutes: 50,410 frames, 0.01% missed, interval p50 16.7 / p95 18.5 / p99 18.7 / max 115.7 ms, 1 long task, heap after GC 8.9 to 8.5 MiB;
+- infinite, 30 minutes: 104,370 frames, 0.02% missed, interval p50 16.7 / p95 18.2 / p99 18.6 / max 66.0 ms, 1 long task, heap after GC 7.6 to 10.7 MiB.
 
 `npm run bench:render` (desktop session) measures the real renderer in Electron at 1440x900. It covers the TEC-04 stress scene (204 enemies, 240 hostile shots, 520 particles, 160 damage numbers) at DPR 1 and 2 and render scales 2.0 and 1.5, with sprites and vectors, plus the final boss stage of every chapter with its pack and runs with the frame rate unlocked. The first results and the provisional Canvas2D decision are in `docs/decisions/TEC-04-render-backend.md`. Headless Chromium can rasterize in software, so its frame times are not performance evidence.
 

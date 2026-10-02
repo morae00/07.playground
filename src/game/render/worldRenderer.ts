@@ -68,6 +68,9 @@ const GROUND_SEAM = 0.5;
 /** Decal stage ages in seconds, as baked (art/atlas-spec.mjs DECAL_AGES). */
 const DECAL_STAGE_AGES = Object.freeze([0, 1, 1.5, 3, 15]);
 
+/** Cut-outs kept per cache: far more than the frames a chapter and the hero have (TEC-09). */
+const CUTOUT_LIMIT = 1024;
+
 /** The hit flash fades in three steps over its 0.08 s (FX-03): bright, half, faint. */
 function hitFlashAlpha(hitFlash: number) {
   if (hitFlash <= 0) return 0;
@@ -247,6 +250,7 @@ export class WorldRenderer {
   /** CON-07: cut-outs in the hero's outline colour, rebuilt when the colour changes. */
   private readonly outlines = new Map<SpriteFrame, SpriteFrame | null>();
   private outlineColor: string | null = null;
+  private unsubscribeSprites: (() => void) | null = null;
   /** CON-07: where the hero's ink trail was laid, oldest first, with the time each was laid. */
   private readonly trail: { x: number; y: number; at: number }[] = [];
   /** Damage number glyphs (FX-07), drawn once per style. */
@@ -266,8 +270,15 @@ export class WorldRenderer {
   onLayer: ((layer: WorldLayer) => void) | null = null;
 
   setSprites(atlas: SpriteAtlas | null) {
+    this.unsubscribeSprites?.();
     this.sprites = atlas;
     this.anims.clear();
+    this.clearCutouts();
+    // A released pack's frames are gone; their cut-outs go with them (TEC-09).
+    this.unsubscribeSprites = atlas?.onChange(() => this.clearCutouts()) ?? null;
+  }
+
+  private clearCutouts() {
     this.silhouettes.clear();
     this.eliteCutouts.clear();
     this.outlines.clear();
@@ -1642,6 +1653,8 @@ export class WorldRenderer {
   private silhouette(frame: SpriteFrame, color: string = NEUTRAL.paperBright, cache = this.silhouettes): SpriteFrame | null {
     let cutout = cache.get(frame);
     if (cutout === undefined) {
+      // A bound in case frames ever stop being shared: every cut-out is a canvas, and the GPU keeps each one.
+      if (cache.size >= CUTOUT_LIMIT) cache.clear();
       cutout = null;
       const canvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
       const context = canvas?.getContext('2d');
