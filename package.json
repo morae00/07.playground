@@ -38,6 +38,7 @@
     "test:electron-smoke": "node scripts/electron-smoke.mjs",
     "bench:render": "node scripts/render-bench.mjs",
     "bench:packs": "node scripts/pack-bench.mjs",
+    "test:perf": "BENCH_ONLY='^(unlocked )?stress DPR2 2.0 sprites$' BENCH_GATE=1 node scripts/render-bench.mjs",
     "fingerprint:draw": "npm run build:test-bundles && node scripts/draw-fingerprint.mjs",
     "build:atlas": "node scripts/build-atlas.mjs",
     "build:ui-art": "node scripts/build-ui-art.mjs",

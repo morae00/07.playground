@@ -15,8 +15,11 @@ export type RenderBenchResult = {
   config: { scene: string; scale: number; sprites: boolean; devicePixelRatio: number; backingStore: string; warmupSeconds: number; measureSeconds: number };
   frames: number;
   /** Intervals between animation frames: what the player sees. */
-  /** slowFrames missed at least one 60 Hz vsync (> 17.5 ms); verySlowFrames missed two or more (> 34.2 ms). */
-  intervalMs: { p50: number; p95: number; p99: number; max: number; slowFrames: number; verySlowFrames: number };
+  /**
+   * slowFrames ran past one 60 Hz period (> 17.5 ms); missedFrames missed a vsync by TEC-04 D-3's measure (longer than
+   * 1.5 periods, > 25 ms); verySlowFrames missed two or more (> 34.2 ms).
+   */
+  intervalMs: { p50: number; p95: number; p99: number; max: number; slowFrames: number; missedFrames: number; verySlowFrames: number };
   /** Main-thread time inside one frame (simulation + render), and the render part alone. */
   frameWorkMs: { p50: number; p95: number; p99: number };
   renderWorkMs: { p50: number; p95: number; p99: number };
@@ -222,6 +225,7 @@ async function run(): Promise<RenderBenchResult> {
       p99: percentile(intervals, 0.99),
       max: Math.round(Math.max(0, ...intervals) * 100) / 100,
       slowFrames: intervals.filter((interval) => interval > 17.5).length,
+      missedFrames: intervals.filter((interval) => interval > 25).length,
       verySlowFrames: intervals.filter((interval) => interval > 34.2).length,
     },
     frameWorkMs: { p50: percentile(frameWork, 0.5), p95: percentile(frameWork, 0.95), p99: percentile(frameWork, 0.99) },

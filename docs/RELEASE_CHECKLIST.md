@@ -18,10 +18,12 @@ npm test
 npm run test:balance:full
 npm run test:soak
 npm run test:visual
+npm run test:perf
 npm run build
 ```
 
 - [ ] Unit, security, release-integrity, engine integration, balance, and soak gates pass.
+- [ ] `npm run test:perf` passes on the release Mac (TEC-04 D-3 targets), and the Intel Mac and 120 Hz numbers are recorded.
 - [ ] Visual golden diff, console/page errors, nonblank output, overlap/occlusion, DPR 1/2, and reduced-motion gates pass at every target viewport.
 - [ ] `artifacts/release-evidence/production-bundle-audit.json` reports no production debug or cheat marker.
 - [ ] The 50 Stage x 3 build policy x 10 seed balance report fingerprint and outlier scenarios are attached to the release record.

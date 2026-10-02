@@ -363,10 +363,13 @@ Golden screenshot updates require explicit review. A capture-only run is not a r
 
 `npm run bench:packs` (after `npm run build`) opens the production build in Electron and switches the menu's chapter to time each chapter pack's load, and adds up the resident textures (the common pack, the UI art, and the chapter's pack, decoded) and each pack's size. The R2 targets are a 1.5 s transition, 96 MiB resident, and 12 MiB per pack. The R2-end numbers are in the TEC-04 record.
 
-Targets:
+`npm run test:perf` (desktop session, about 45 s) is the release performance gate (decision D-22): the TEC-04 stress scene at DPR 2 and render scale 2.0 with sprites, once with vsync and once with the frame rate unlocked. It fails the run when a target below is missed.
 
-- frame p95 at or below 20ms
-- frame p99 at or below 33ms
+Targets (TEC-04 D-3, one wording for every gate since D-22):
+
+- with vsync at 60 Hz: at most 1% of frames miss a vsync, and in-frame main-thread work p95 at or below 8 ms
+- with the frame rate unlocked: frame interval p95 at or below 11 ms (90 fps)
+- 15-minute soak: frame p99 at or below 33ms
 - retained heap growth at or below 20MiB
 - entity and effect counts within documented caps
 - no unexplained long-task or GC cluster

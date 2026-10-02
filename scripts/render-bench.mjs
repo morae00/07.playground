@@ -95,13 +95,31 @@ for (const config of CONFIGS.filter((item) => !only || only.test(item.name))) {
   }
 }
 
+// D-22: the release gate is TEC-04's D-3. With vsync, at most 1% of frames miss a vsync (an interval over 1.5 periods)
+// and in-frame work p95 is at most 8 ms; with the frame rate unlocked, the frame interval p95 is at most 11 ms.
+const GATE = Object.freeze({ missedShare: 0.01, workP95Ms: 8, unlockedP95Ms: 11 });
+const failures = results.flatMap((result) => {
+  const config = CONFIGS.find((item) => item.name === result.name);
+  if (config?.unlocked) return result.intervalMs.p95 > GATE.unlockedP95Ms ? [`${result.name}: interval p95 ${result.intervalMs.p95} ms > ${GATE.unlockedP95Ms} ms`] : [];
+  const missed = result.intervalMs.missedFrames / Math.max(1, result.frames);
+  return [
+    ...(missed > GATE.missedShare ? [`${result.name}: ${(missed * 100).toFixed(2)}% of frames missed a vsync > ${GATE.missedShare * 100}%`] : []),
+    ...(result.frameWorkMs.p95 > GATE.workP95Ms ? [`${result.name}: work p95 ${result.frameWorkMs.p95} ms > ${GATE.workP95Ms} ms`] : []),
+  ];
+});
+
 const report = {
   version: 1,
   recordedAt: new Date().toISOString(),
   machine: { platform: process.platform, arch: process.arch, cpus: os.cpus()[0]?.model ?? 'unknown', memoryGiB: Math.round(os.totalmem() / 2 ** 30) },
-  gate: { viewport: '1440x900', p95IntervalMs: 16.7 },
+  gate: { viewport: '1440x900', ...GATE, failures },
   results,
 };
 await mkdir(path.dirname(reportPath), { recursive: true });
 await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
 console.log(`report: ${path.relative(root, reportPath)}`);
+if (process.env.BENCH_GATE === '1') {
+  for (const failure of failures) console.error(`FAIL ${failure}`);
+  console.log(failures.length === 0 ? `performance gate passed (${results.length} configurations)` : `performance gate failed (${failures.length})`);
+  if (failures.length > 0 || results.length === 0) process.exitCode = 1;
+}
