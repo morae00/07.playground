@@ -146,6 +146,11 @@ export type RuleSet = Readonly<{
    * and 150 s into each chapter its field boss joins them. Numbers in src/game/infiniteMode.ts (INFINITE_ROTATION).
    */
   infiniteRotation: boolean;
+  /**
+   * D-02 (decision 2026-10-02): enrage does not stop at its fourth step. Every 30 s after it an overtime step makes
+   * the bosses deal 25% more damage and move 8% faster, so a boss fight that neither side ends ends anyway.
+   */
+  enrageOvertime: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -182,6 +187,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   buildDepth: false,
   eliteAffixes: false,
   infiniteRotation: false,
+  enrageOvertime: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -218,6 +224,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   buildDepth: true,
   eliteAffixes: true,
   infiniteRotation: true,
+  enrageOvertime: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

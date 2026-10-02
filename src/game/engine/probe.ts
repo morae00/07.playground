@@ -66,6 +66,8 @@ export type ProbeWorld = {
   bossEnraged: boolean;
   /** SYS-04: the current enrage step, 0 before enrage. */
   enrageStep: number;
+  /** D-02: overtime steps after the last enrage step. */
+  overtimeStep: number;
   timeLeft: number;
   duration: number;
   elapsed: number;
@@ -247,6 +249,7 @@ export class ProbedGameEngine extends GameEngine {
         stageFinished: this.stageFinished,
         bossEnraged: this.bossEnraged,
         enrageStep: this.enrageStep,
+        overtimeStep: this.overtimeStep,
         timeLeft: this.timeLeft,
         duration: this.duration,
         elapsed: this.elapsed,

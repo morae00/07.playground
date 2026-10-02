@@ -375,6 +375,8 @@ export type HudSnapshot = {
   bossEnrage?: number;
   /** Enrage steps in all: 4 under stepped enrage (SYS-04), 1 under classic rules. */
   bossEnrageSteps?: number;
+  /** D-02: overtime steps since the last enrage step. */
+  bossOvertime?: number;
   bossMove?: string;
   /** SYS-04: the name of the boss's current phase move, shown under the boss bar. */
   bossMoveName?: StringKey;
@@ -549,6 +551,8 @@ const RARE_HIT_STOP = Object.freeze({ bossKill: 0.09, awakening: 0.06 });
 /** A max-health upgrade bought while paused heals over this long after the run resumes (UI-04, G6). */
 export const PAUSED_HEAL_SECONDS = 3;
 const ENRAGE_STEP_SECONDS = 30;
+/** D-02: what each overtime step after the last enrage step does to the bosses (every ENRAGE_STEP_SECONDS). */
+const ENRAGE_OVERTIME = Object.freeze({ damage: 1.25, speed: 1.08 });
 const ENRAGE_ZONE_WARNING_SECONDS = 0.8;
 /** SYS-04: how long each boss pattern is telegraphed before it fires (V3 timings: shots 0.44 s, shock 0.52 s). */
 const PATTERN_LEAD_SECONDS: Partial<Record<BossPattern, number>> = {
@@ -864,8 +868,9 @@ export class GameEngine {
   protected stageFinished = false;
   protected rewardLock = false;
   protected bossEnraged = false;
-  /** SYS-04: enrage step (1-4) and seconds since the boss stage clock ran out. */
+  /** SYS-04: enrage step (1-4) and seconds since the boss stage clock ran out; D-02: overtime steps after the last. */
   protected enrageStep = 0;
+  protected overtimeStep = 0;
   /** Whether the last step reported low health; a new round reports it again (FX-03). */
   protected lowHealth = false;
   protected enrageSeconds = 0;
@@ -1178,6 +1183,7 @@ export class GameEngine {
     this.pausedHealRate = 0;
     this.bossEnraged = false;
     this.enrageStep = 0;
+    this.overtimeStep = 0;
     this.enrageSeconds = 0;
     this.pendingEnrageZone = null;
     this.lowHealth = false;
@@ -1776,6 +1782,7 @@ export class GameEngine {
     this.pendingRoundClear = false;
     this.bossEnraged = false;
     this.enrageStep = 0;
+    this.overtimeStep = 0;
     this.enrageSeconds = 0;
     this.pendingEnrageZone = null;
     this.lowHealth = false;
@@ -2062,6 +2069,18 @@ export class GameEngine {
     }
   }
 
+  /** D-02: one overtime step: every boss deals ENRAGE_OVERTIME.damage times the damage and moves faster. */
+  protected raiseOvertime() {
+    this.overtimeStep += 1;
+    for (const enemy of this.enemies) {
+      if (enemy.hp <= 0 || !enemy.isBoss) continue;
+      enemy.damage *= ENRAGE_OVERTIME.damage;
+      enemy.speed *= ENRAGE_OVERTIME.speed;
+      enemy.hitFlash = 0.4;
+      this.emit({ type: 'boss/enraged', x: enemy.x, y: enemy.y });
+    }
+  }
+
   /** The multiplier on boss pattern cadence from enrage step 2 on (SYS-04). */
   protected enrageCadence() {
     return this.rules.steppedEnrage && this.enrageStep >= 2 ? 1.3 : 1;
@@ -2070,6 +2089,8 @@ export class GameEngine {
   protected advanceEnrage(clockDelta: number) {
     this.enrageSeconds += clockDelta;
     while (this.enrageStep < ENRAGE_STEPS && this.enrageSeconds >= this.enrageStep * ENRAGE_STEP_SECONDS) this.raiseEnrage();
+    // D-02: past the last step, an overtime step every 30 s.
+    while (this.rules.enrageOvertime && this.enrageStep >= ENRAGE_STEPS && this.enrageSeconds >= (ENRAGE_STEPS + this.overtimeStep) * ENRAGE_STEP_SECONDS) this.raiseOvertime();
     const zone = this.pendingEnrageZone;
     if (zone && this.elapsed >= zone.at) {
       this.pendingEnrageZone = null;
@@ -5123,6 +5144,7 @@ export class GameEngine {
     this.bossEnraged = true;
     if (this.rules.steppedEnrage) {
       this.enrageStep = 0;
+      this.overtimeStep = 0;
       this.enrageSeconds = 0;
       this.raiseEnrage();
       const reinforcements = Math.min(14 + this.chapter * 3, Math.max(0, this.enemyCap() - this.enemies.length));
@@ -5247,6 +5269,7 @@ export class GameEngine {
       bossPhase: boss ? boss.bossPhase ?? 1 : undefined,
       bossEnrage: boss ? (this.bossEnraged ? (this.rules.steppedEnrage ? this.enrageStep : 1) : 0) : undefined,
       bossEnrageSteps: boss ? (this.rules.steppedEnrage ? ENRAGE_STEPS : 1) : undefined,
+      bossOvertime: boss ? this.overtimeStep : undefined,
       bossMove: bossMove?.attackGrammar,
       bossMoveName: this.rules.bossMoves && bossMove && IMPLEMENTED_GRAMMARS.has(bossMove.attackGrammar) ? bossMove.name : undefined,
       bossHp: boss?.hp,

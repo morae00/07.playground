@@ -123,7 +123,7 @@ Each screen is a component in `src/ui/screens`, and `src/App.tsx` owns the state
 The level copy on cards is generated from the same stat lines, so the rows and the copy cannot disagree.
 
 The HUD (UI-02) reads only the HUD snapshot, which the engine emits every 0.12 s:
-- `bossId` picks the boss portrait; `bossPhase` and `bossEnrage` / `bossEnrageSteps` fill the phase diamonds and the enrage state.
+- `bossId` picks the boss portrait; `bossPhase` and `bossEnrage` / `bossEnrageSteps` fill the phase diamonds and the enrage state, and `bossOvertime` counts enrage overtime (D-02).
 - `cooldowns` gives each active skill's remaining cooldown share. The engine infers a cooldown's length when it sees one start, so gameplay code needs no HUD bookkeeping.
 - The portrait's expression comes from the snapshot too. The HUD picks, in this order:
   1. a wince for half a second after health drops;
@@ -236,6 +236,7 @@ A campaign boss enters phase 2 at 66% health and phase 3 at 33%. Under the `boss
 - Movement: anchor holds near where the phase began, but only while the player is within 720, about the view's reach. A player farther away is followed, and the boss plants again where it stops. Once the stage clock runs out, enrage ends the hold, so an anchored boss can never be outwaited. Orbit and sweep circle the player at 300 and 380. Lattice walks one axis at a time. Warp moves land the boss where its warning ring stood.
 - Every move leaves a way out (an aisle, a gap, a gate, an open lane, or the void itself) and warns for its whole preview. Scheduled terrain goes through `pendingHazards`, as delayed shots go through `pendingHostileShots`. Orbiting saws follow their boss and fall away when it dies.
 - Still waiting for their kit art: the Ch2-5 mid bosses (유리 주교, 무채 조수왕, 시계 폭군, 일식 원장), whose moves are authored in data but not built, and the field bosses' light phase-2 moves.
+- Enrage: when a boss stage's clock runs out, enrage climbs a step every 30 s (`steppedEnrage`: speed ×1.2, pattern density ×1.3, damage ×1.5, then ×2.0). Under `enrageOvertime` (decision D-02, remaster on) it goes on after the fourth step: every 30 s the bosses deal 25% more damage and move 8% faster, so a fight that neither side ends still ends. The HUD shows the overtime count (`hud.enrage.overtime`).
 
 ## Stage objectives (CON-03)
 

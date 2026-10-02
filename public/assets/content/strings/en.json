@@ -358,6 +358,7 @@
  "hud.move": "Pattern · {move}",
  "hud.enrage": "Enraged",
  "hud.enrage.step": "Enraged {step}/{steps}",
+ "hud.enrage.overtime": "Enrage overtime {n}",
  "hud.enrageIn": "Enrage in {time}",
  "hud.summary.infinite": "Endless mode, chapter {chapter}. Time {time}. Score {score}. Bosses defeated {bosses}.",
  "hud.summary.campaign": "Chapter {chapter}, stage {stage}. Time left {time}.",

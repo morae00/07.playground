@@ -84,7 +84,7 @@ function BossBar({ snapshot, name, line }: { snapshot: HudSnapshot; name: string
           <span>{snapshot.bossMoveName ? t('hud.move', { move: t(snapshot.bossMoveName) }) : ''}</span>
           <span className={enrage > 0 ? 'bossRage on' : 'bossRage'}>
             {enrage > 0
-              ? (steps > 1 ? t('hud.enrage.step', { step: enrage, steps }) : t('hud.enrage'))
+              ? (snapshot.bossOvertime ? t('hud.enrage.overtime', { n: snapshot.bossOvertime }) : steps > 1 ? t('hud.enrage.step', { step: enrage, steps }) : t('hud.enrage'))
               : snapshot.runMode === 'campaign' ? t('hud.enrageIn', { time: formatClock(snapshot.timeLeft) }) : ''}
           </span>
         </div>

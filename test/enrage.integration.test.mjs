@@ -4,6 +4,7 @@ import { createHeadlessCanvas, installHeadlessPlatform, standardOptions } from '
 
 // Stepped enrage (SYS-04): when a boss stage's clock runs out, enrage climbs a step every 30 s (speed, pattern
 // density, damage x1.5, damage x2.0) instead of x4.5 damage at once, and its silence zone lands after a warning.
+// Overtime (D-02): every 30 s after the fourth step the bosses deal 25% more damage and move 8% faster.
 
 installHeadlessPlatform();
 Object.defineProperty(globalThis, 'performance', { value: { now: () => 0 }, configurable: true });
@@ -15,9 +16,10 @@ const meta = () => ({
   passives: { rareLuck: 0, bossHunter: 0, coinMagnet: 0 },
 });
 
-function enragedBoss(rules) {
+function enragedBoss(rules, patch = null) {
   const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), meta(), standardOptions(), { onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver() {} });
   engine.setRuleSet(rules);
+  if (patch) engine.probe.patchRules(patch);
   engine.startRun(1, 5, 6060);
   const { probe } = engine;
   probe.setSkills({});
@@ -44,8 +46,8 @@ test('classic enrage still multiplies damage by 4.5 and drops silence on the pla
   }
 });
 
-test('stepped enrage climbs every 30 s and caps at double damage', () => {
-  const { engine, probe, base, read } = enragedBoss('remaster');
+test('stepped enrage climbs every 30 s and, without overtime, caps at double damage', () => {
+  const { engine, probe, base, read } = enragedBoss('remaster', { enrageOvertime: false });
   try {
     let world = probe.read();
     assert.equal(world.bossEnraged, true);
@@ -74,5 +76,30 @@ test('stepped enrage climbs every 30 s and caps at double damage', () => {
     assert.equal(probe.hud().bossEnrageSteps, 4);
   } finally {
     engine.dispose();
+  }
+});
+
+test('D-02: past the fourth step, overtime adds 25% damage and 8% speed every 30 s, and the HUD counts it', () => {
+  const { engine, probe, base, read } = enragedBoss('remaster');
+  try {
+    probe.step(60 * 91);
+    assert.deepEqual([probe.read().enrageStep, probe.read().overtimeStep], [4, 0], 'step 4 at 90 s, no overtime yet');
+    probe.step(60 * 30);
+    assert.equal(probe.read().overtimeStep, 1, 'the first overtime step at 120 s');
+    assert.ok(Math.abs(read().damage / base.damage - 2 * 1.25) < 1e-9, `x2.5 damage (${(read().damage / base.damage).toFixed(3)})`);
+    assert.ok(Math.abs(read().speed / base.speed - 1.2 * 1.08) < 1e-9, 'and 8% faster');
+    probe.step(60 * 60);
+    assert.equal(probe.read().overtimeStep, 3);
+    assert.ok(Math.abs(read().damage / base.damage - 2 * 1.25 ** 3) < 1e-9, 'it keeps climbing');
+    assert.equal(probe.hud().bossOvertime, 3, 'the HUD shows the overtime steps');
+  } finally {
+    engine.dispose();
+  }
+  const classic = enragedBoss('classic');
+  try {
+    classic.probe.step(60 * 200);
+    assert.equal(classic.probe.read().overtimeStep, 0, 'classic rules have no overtime');
+  } finally {
+    classic.engine.dispose();
   }
 });

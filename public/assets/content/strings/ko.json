@@ -358,6 +358,7 @@
  "hud.move": "패턴 · {move}",
  "hud.enrage": "광폭화",
  "hud.enrage.step": "광폭화 {step}/{steps}",
+ "hud.enrage.overtime": "광폭화 연장 {n}",
  "hud.enrageIn": "광폭화까지 {time}",
  "hud.summary.infinite": "무한 모드 {chapter}장. 경과 시간 {time}. 점수 {score}. 보스 처치 {bosses}.",
  "hud.summary.campaign": "Chapter {chapter}, Stage {stage}. 남은 시간 {time}.",

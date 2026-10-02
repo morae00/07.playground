@@ -45,13 +45,13 @@ Findings:
 
 - Without `fresh`, clear rates rise with the chapter. The chapter growth modelled for upgrades outpaces the difficulty growth. SYS-02 (enemy roles) and SYS-04 (boss moves, stepped enrage) made Ch2 to Ch5 harder and flattened that curve; Ch1 stayed near 24%. Shot deaths rose from 7 to 50, because shooters lead their aim now. This is input for SYS-07.
 - Boss fights got longer, and at 73d367c two never ended. A crowd at the enemy cap shoved the boss away from the player (fixed in 83c3294), and Ch3 and Ch5 bosses anchored in place although their phase grammars are not built yet (fixed in bf4d474).
-- One fight still times out: 2-10 survivor, seed 211531, boss at 13% health after 20 minutes. The stepped enrage (SYS-04) stops at damage x2.0, so a tank build that keeps moving is never forced to end the fight. The 0.1.0 enrage (x4.5 and a silence field) was a hard stop. **[Team decision]** an overtime rule after the last enrage step, or accept the risk; either way this is why `noTimeouts` fails. `personaClearsObserved` fails because `fresh` clears 0 of 500.
+- One fight still times out: 2-10 survivor, seed 211531, boss at 13% health after 20 minutes. The stepped enrage (SYS-04) stops at damage x2.0, so a tank build that keeps moving is never forced to end the fight. The 0.1.0 enrage (x4.5 and a silence field) was a hard stop. Decision D-02 (2026-10-02) added the overtime rule after the last enrage step (`enrageOvertime`); before it, this is why `noTimeouts` failed. `personaClearsObserved` fails because `fresh` clears 0 of 500.
 - R1 end (f05b83e): clears 41.1%. Ch1 to Ch3 rose 3 to 5 points. The only rule changes since bf4d474 are FX-02 and ART-05, and the pilots below put the gain on FX-02: per-hit hit-stop had taken players' acting time. Ch4 and Ch5 moved within noise. The chapter curve is still inverted (Ch1 28% to Ch5 83%), which SYS-07 owns. `fresh` still clears 0 of 500.
 - Two fights time out, both `survivor` in a final boss stage, and the boss keeps almost all its health: 2-10 seed 211531 at 99% (13% at bf4d474) and 5-10 seed 1510177 at 97%.
   - The persona's fixed square walk gets pinned against the arena's top edge.
   - The crowd sits at its 150 cap, so a mob is always nearer than the boss, and auto-aim, which takes the nearest target, never picks the boss.
   - Without per-hit hit-stop (FX-02), the walk and the boss's following repeat exactly every 70 s, so nothing breaks the loop. The uneven slow-downs of per-hit hit-stop likely broke it at bf4d474.
-  - A player walks to the boss, so this is a persona artifact. It still shows that a boss can go unhurt for a whole fight, which adds weight to the overtime decision above; a boss-priority rule for auto-aim is another option. **[Team decision]**
+  - A player walks to the boss, so this is a persona artifact. It still shows that a boss can go unhurt for a whole fight, which led to the overtime rule above (D-02); a boss-priority rule for auto-aim was the other option.
 - R2 end (3d0c5d3): clears 41.1% to 42.0%. The rule changes since f05b83e are SYS-06 cover, the SYS-05 phase moves of the Ch2-5 final bosses, and the Ch2-5 kit footprints (ART-07, ART-08). Ch1 rose 2.3 points and Ch4 3.0 points. Ch2, Ch3, and Ch5 moved within noise. The chapter curve is still inverted (Ch1 30% to Ch5 82%), for SYS-07. `fresh` still clears 0 of 500.
 - Boss fights got longer: clear time p50 222 to 251 s, max 1,001 to 1,098 s. The Ch2-5 final bosses now run their phase moves.
 - Three fights time out. Two are the survivor pin above: 2-10 at 99% (base seed 17) and 5-10 at 98% (base seed 524287).
@@ -196,7 +196,7 @@ The SYS-05 anchor leash (an anchoring boss follows a player more than 720 away a
 
 - One run flipped: the 5-10 stalemate above (striker, base seed 997) now clears. The other 119 end the same way, with the same death causes.
 - Long anchored fights end sooner: 5-10's longest clear fell from 805 s to 445 s.
-- The two survivor pins remain. There the boss comes, but auto-aim keeps to the nearer crowd (the **[Team decision]** above).
+- The two survivor pins remain. There the boss comes, but auto-aim keeps to the nearer crowd (see the overtime rule above).
 
 SYS-09 (pickups wait 60 s before flying home, `patientPickups` rule) was piloted with the flag on and off (`BALANCE_RULE_PATCH`) on 1-2, 1-5, 1-6, 2-4, 3-7, 4-3, and 5-2 × the pilot seeds (11, 23, 37, 41, 59, 67, 71, 83, 97, 101) × 4 personas:
 
