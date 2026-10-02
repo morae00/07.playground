@@ -81,6 +81,15 @@ Findings:
   - 4-3 is the giants objective: 15 more points of large enemies (Ch4's wardens carry shields, SYS-02) on a landmark stage. The traps stages late in a chapter double the terrain, and Ch5's null zones become slows at 42% speed: 5-7 starts with 27 slow zones and 13 fires among the densest landmark's 39 obstacles (5-6 has 14, 6, and 22), and a survivor there spent 63 of its 132 s slowed.
   - The options were a smaller tier shift for giants from Ch3, no giants or traps on landmark stages, or a lower terrain multiplier where the chapter's hazards slow. The team kept the stages as they are, as hurdle stages, since the chapter gates hold (decision D-01, 2026-10-02).
 
+R4 interim (2ec7493: the decisions D-02, D-04, D-05, and D-09 on; the later UI-08 and TEC-09 commits leave every gameplay fingerprint unchanged), 2,000 scenarios in 66 minutes on 6 workers. This run is the new remaster baseline (`artifacts/balance-remaster-baseline.json`, fingerprint cda5998b1edf8203):
+- Clears 29.2% to 28.6%, by chapter 28 / 44 / 33 / 40 / 46%. D-02's enrage overtime ends every fight: no timeouts (one at R3's end), though the longest boss clear grew from 689 s to 993 s.
+- The R3 gates hold:
+  - normal stage clears by chapter for the team personas: 28.3 / 41.7 / 33.3 / 36.7 / 39.2%; adjacent steps +13.3 / -8.3 / +3.3 / +2.5 points (gate ±25). D-09's Ch3-4 step (+29 in its pilot) is +3.3 here;
+  - minimum hits: 0.1% of 160,321 team hits (gate 20%);
+  - `maxed` in Ch5: 68% clears (72% before), lowest health median 0.39 (gate 0.70);
+  - the `novice` in 1-1: 40% clears (gate 40-70%), at the band's floor: 8 of 20 runs against 10 at R3's end, within the noise of 20 runs. Its death median is 193 s.
+- The hurdle stages stay low as D-01 accepted: the team personas clear 4-8 at 3%, 3-9 at 7%, and 4-3 and 4-9 at 13%; `maxed` clears 5-7 at 20%.
+
 CON-02 Ch1 tuning: by the novice proxy, 1-1 already clears within the R1 target band (40-70%), and 3-minute survival (70%) is near its 80% target. A longer opening ramp does not help (1-1, novice, 20 seeds): a 90 s ramp kept 50% clear but dropped 3-minute survival to 50%, and 120 s gave 45% and 65%. Fewer early enemies mean less XP and fewer drafts (median 14 drafts at 45 s, 5 at 90 s), so the player is weaker when the pressure arrives. The 45 s ramp stays. The R1 playtest (6 or more new players) decides the final Ch1 numbers.
 
 FX-02 (two-layer hit-stop, `rareHitStop` rule) changes seeded outcomes, so it was piloted against its parent (FX-04) on 8 stages × 10 seeds × 4 personas:
