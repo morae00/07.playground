@@ -44,12 +44,22 @@ export function classifyImpact(
   return 'light';
 }
 
-export function motionPolicy(reducedOption: boolean, systemReducedMotion: boolean) {
-  const reduced = reducedOption || systemReducedMotion;
+/**
+ * What the two accessibility settings change (UI-08). They are separate: reduced motion (the setting or the system
+ * preference) stills movement, so pulses, rotation, bobbing, pose cycles, and pops stop; reduced flash dims what
+ * flashes, so a struck body keeps its pose instead of turning negative and its white cut-out and the hurt glow draw
+ * at half strength. Both keep the information (V5): a strike still reads, and a telegraph keeps its shape. Either one
+ * stops the screen shake, as reduced flash did in 0.1.0.
+ */
+export function motionPolicy(reducedFlash: boolean, reducedMotion: boolean) {
   return {
-    reduced,
-    pulse: !reduced,
-    invertFlash: !reduced,
-    rotateDanger: !reduced,
+    reduced: reducedMotion,
+    pulse: !reducedMotion,
+    invertFlash: !reducedFlash,
+    rotateDanger: !reducedMotion,
+    flashStrength: reducedFlash ? 0.5 : 1,
+    /** A light that keeps changing (the low-health heartbeat glow) holds still under either. */
+    beat: !reducedFlash && !reducedMotion,
+    shake: !reducedFlash && !reducedMotion,
   };
 }

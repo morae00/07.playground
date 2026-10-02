@@ -205,7 +205,7 @@ export type RenderWorld = {
   readonly jitterEveryFrame: boolean;
   /** SYS-06: boss shots are airborne (they fly over obstacles), so each gets a ground shadow. */
   readonly airShots: boolean;
-  /** The operating system's reduced-motion preference (the option lives in options.reducedFlash). */
+  /** Reduced motion: the setting or the operating system's preference (reduced flash is options.reducedFlash). */
   readonly reducedMotion: boolean;
   readonly options: Readonly<GameOptions>;
   readonly camera: Readonly<{ x: number; y: number; prevX: number; prevY: number }>;
@@ -312,7 +312,7 @@ export class WorldRenderer {
       if (value > this.debuffLast[key] + 1e-6) this.debuffSpans[key] = value;
       this.debuffLast[key] = value;
     }
-    const shakeEnabled = this.world.options.screenShake && !policy.reduced;
+    const shakeEnabled = this.world.options.screenShake && policy.shake;
     // Classic rules draw the shake jitter every frame like 0.1.0 did, because under them cosmetic random draws
     // still reach gameplay through particle ids; remaster rules draw only while actually shaking.
     const { shake } = this.world.effects;
@@ -334,7 +334,7 @@ export class WorldRenderer {
       this.drawLayer(ctx, layer);
     }
     ctx.restore();
-    this.drawPlayerFeedback(ctx, policy.pulse);
+    this.drawPlayerFeedback(ctx, policy.beat);
     this.drawOffscreenMarkers(ctx, camera);
     if (frame.offsetX > 0) {
       // Pillarbox bars keep windows wider than 16:9 from seeing past the logical frame (and its spawns).
@@ -1081,7 +1081,7 @@ export class WorldRenderer {
       const outline = enemy.elite ? this.silhouette(frame, SIGNAL.elite, this.eliteCutouts) : null;
       if (outline) for (const [dx, dy] of ELITE_NUDGES) this.blit(ctx, outline, x + dx, y + dy, facing, scale, rise);
       this.blit(ctx, frame, x, y, facing, scale, rise);
-      const flash = hitFlashAlpha(enemy.hitFlash);
+      const flash = hitFlashAlpha(enemy.hitFlash) * motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion).flashStrength;
       const silhouette = flash > 0 ? this.silhouette(frame) : null;
       if (silhouette) this.blit(ctx, silhouette, x, y, facing, scale, flash * rise);
       return;
@@ -1249,7 +1249,7 @@ export class WorldRenderer {
   /**
    * Player feedback in screen space, over the world (FX-03): a coral glow on the side a hit came from, fading over
    * HURT_VIGNETTE_SECONDS, and a coral edge while health is low that beats with the heartbeat unless motion is
-   * reduced. Reduced flash halves both.
+   * reduced. Reduced flash halves both (UI-08).
    */
   private drawPlayerFeedback(ctx: CanvasRenderingContext2D, pulse: boolean) {
     const { effects, view, options } = this.world;
@@ -1261,7 +1261,7 @@ export class WorldRenderer {
     const cx = left + width / 2;
     const cy = top + height / 2;
     const reach = Math.hypot(width, height) / 2;
-    const strength = options.reducedFlash ? 0.5 : 1;
+    const strength = motionPolicy(options.reducedFlash, this.world.reducedMotion).flashStrength;
     const glow = (x: number, y: number, inner: number, outer: number, innerAlpha: number, outerAlpha: number) => {
       const gradient = ctx.createRadialGradient?.(x, y, inner, x, y, outer);
       if (!gradient || typeof gradient.addColorStop !== 'function') return;
@@ -1751,7 +1751,11 @@ export class WorldRenderer {
     if (!pack || sprites.status(pack) !== 'ready') return undefined;
     const slot = enemySlot(this.world.chapter, enemy.tier, enemy.attackStyle);
     if (!slotEnabled(slot)) return undefined;
-    for (const pose of enemyPoses(anim.state as EnemyAnim, Math.hypot(enemy.vx, enemy.vy) > 5)) {
+    const moving = Math.hypot(enemy.vx, enemy.vy) > 5;
+    // Reduced flash keeps a struck body in its pose: the negative hit frame is the brightest flash (UI-08).
+    const flashPose = anim.state === 'hurt' && !motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion).invertFlash;
+    const state = flashPose ? (moving ? 'move' : 'idle') : anim.state as EnemyAnim;
+    for (const pose of enemyPoses(state, moving)) {
       const spec = sprites.animation(slot, pose);
       if (!spec) continue;
       const frame = sprites.frame(frameKey(slot, pose, poseFrame(spec, pose, anim.startedAt, this.world.elapsed, phaseFor(enemy.id), this.stats.detail)));

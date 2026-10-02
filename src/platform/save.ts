@@ -460,8 +460,11 @@ function parseEnvelope(raw: string): { data: SaveData; migrated: boolean } | nul
     };
   }
   if (parsed.version === 2) {
+    const options = sanitizeOptions(parsed.options);
+    // 0.1.0's one setting, reduced flash, also stilled motion; a player who chose it keeps both now that they are two
+    // settings (UI-08, G17).
     return {
-      data: { meta: sanitizeMeta(parsed.meta), options: sanitizeOptions(parsed.options), profile: createDefaultProfile() },
+      data: { meta: sanitizeMeta(parsed.meta), options: options.reducedFlash ? { ...options, reducedMotion: true } : options, profile: createDefaultProfile() },
       migrated: true,
     };
   }

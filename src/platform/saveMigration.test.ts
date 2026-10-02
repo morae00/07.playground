@@ -71,6 +71,8 @@ for (const sample of samples) {
       ...original.options,
       // Showcase pacing was a shipped option in 0.1.0; release builds now keep it for developers (G17).
       paceMode: original.options.paceMode === 'showcase' ? 'standard' : (original.options.paceMode as GameOptions['paceMode']),
+      // 0.1.0's reduced flash also stilled motion, and it is two settings now (UI-08).
+      reducedMotion: original.options.reducedFlash === true,
     };
     assert.deepEqual(loaded.data.options, options, 'the original settings carry over, and the new ones start at their defaults');
     assert.deepEqual(loaded.data.profile, createDefaultProfile(), 'the v3 profile starts empty');

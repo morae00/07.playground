@@ -46,7 +46,23 @@ test('impact classification is monotonic and critical for crit or kill', () => {
 });
 
 test('motion policy preserves information while disabling rapid motion signals', () => {
-  assert.deepEqual(motionPolicy(false, false), { reduced: false, pulse: true, invertFlash: true, rotateDanger: true });
-  assert.deepEqual(motionPolicy(true, false), { reduced: true, pulse: false, invertFlash: false, rotateDanger: false });
-  assert.equal(motionPolicy(false, true).reduced, true);
+  assert.deepEqual(motionPolicy(false, false), { reduced: false, pulse: true, invertFlash: true, rotateDanger: true, flashStrength: 1, beat: true, shake: true });
+  assert.deepEqual(motionPolicy(true, true), { reduced: true, pulse: false, invertFlash: false, rotateDanger: false, flashStrength: 0.5, beat: false, shake: false });
+});
+
+test('UI-08: reduced flash and reduced motion are separate settings', () => {
+  const flash = motionPolicy(true, false);
+  assert.equal(flash.reduced, false, 'reduced flash alone keeps motion: pulses, rotation, and pose cycles run');
+  assert.ok(flash.pulse && flash.rotateDanger);
+  assert.equal(flash.invertFlash, false, 'a struck body keeps its pose instead of turning negative');
+  assert.equal(flash.flashStrength, 0.5, 'white cut-outs and the hurt glow draw at half strength');
+  const motion = motionPolicy(false, true);
+  assert.equal(motion.reduced, true);
+  assert.ok(!motion.pulse && !motion.rotateDanger);
+  assert.equal(motion.invertFlash, true, 'reduced motion alone keeps flashes as they are');
+  assert.equal(motion.flashStrength, 1);
+  for (const policy of [flash, motion]) {
+    assert.equal(policy.shake, false, 'either stops the screen shake, as reduced flash did in 0.1.0');
+    assert.equal(policy.beat, false, 'either holds the heartbeat glow still');
+  }
 });

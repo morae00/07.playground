@@ -88,6 +88,8 @@ Threats come first (V3): a windup or a dash keeps its pose through hits, phase c
 
 Detail follows the enemies on screen: full below 80, reduced from 80 (crowd animation at half rate), and minimal from 160 (a still frame). Reduced motion, from the option or the system setting, never lowers detail and keeps frame animation; it only drops shake, pulses, and spinning decorations (style bible §13). `stats.detail` reports the level of the last frame.
 
+Reduced flash is a separate setting (UI-08, `motionPolicy` in `src/game/visualContracts.ts`). It dims what flashes and leaves motion alone: a struck enemy keeps its pose instead of the negative hit frame, and its white cut-out and the hurt and low-health glows draw at half strength. Either setting stops the screen shake and the heartbeat beat. In 0.1.0 reduced flash also stilled motion, so a v2 save with it on moves to v3 with reduced motion on too.
+
 Enemy feedback (FX-03):
 
 - A hit flashes a white cut-out of the enemy's sprite frame in three steps over 0.08 s. The cut-out is built once per frame with a source-in fill and cached. The hit's ink sprays out of the far side, because `enemy/hit` carries the direction the hit travelled, and the kit's comic hit star (`PN.vfx.hit`, four frames in 0.16 s) is drawn turned to the blow. Light hits skip the star at reduced effect density.
@@ -110,7 +112,7 @@ Damage numbers (FX-07) follow the kit's styles (`PN.vfx.damageNumber`):
 Player feedback (FX-03):
 
 - `player/hurt` carries where the hit came from, and a coral glow rises on that side of the screen for 0.35 s.
-- The engine reports `player/lowHealth` when health crosses 30% either way. While it is low, the heartbeat sounds every 0.85 s, the screen edge glows coral, and the health bar turns coral and beats. The glow and the bar hold still under reduced motion or reduced flash, and reduced flash halves both glows.
+- The engine reports `player/lowHealth` when health crosses 30% either way. While it is low, the heartbeat sounds every 0.85 s, the screen edge glows coral, and the health bar turns coral and beats. The glow and the bar hold still under reduced motion or reduced flash, and reduced flash halves both glows (UI-08).
 - On `player/died` the simulation stops as before, and the app holds the settlement for 0.7 s. Meanwhile the hero falls back, the last hit's ink drifts at quarter speed for 0.4 s, and nothing can pause the run.
 
 ## UI screens and art (UI-01, UI-03, ART-09)
