@@ -22,6 +22,8 @@ export const PRODUCTION_BANNED_MARKERS = Object.freeze([
   '쇼케이스',
   // The death-moment probe's cheat (FX-03).
   'PLAYER DOWN',
+  // The D-07 developer run log.
+  'blackline-survivor-dev-runlog',
   // The CON-08 chapter turn for endless playtests.
   'CHAPTER TURN',
   // The CON-06 boss phase skip for phase move and line checks.

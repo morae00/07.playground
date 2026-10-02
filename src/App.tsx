@@ -35,6 +35,7 @@ import { DevPanel } from './ui/screens/DevPanel';
 import { PauseHub, type PauseTab } from './ui/screens/PauseHub';
 import { HintLayer, type HintId } from './ui/screens/HintLayer';
 import { StoryPanels } from './ui/screens/StoryPanels';
+import { appendDevRunLog, devRunEntry } from './platform/devRunLog';
 import { beatsAfterClear, beatsBeforeRun, type StoryBeatId } from './ui/story';
 import { NAV as MENU_NAV, MenuScreen, type MenuView } from './ui/screens/MenuScreen';
 import { nextRovingId, watchReducedMotion, type RovingKey } from './ui/inputContracts';
@@ -443,6 +444,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         setSettlement(result);
         setProfile((prev) => ({ ...recordResult(prev, result), runSuspend: null }));
         grantSettlement(result, unlockProgress);
+        // D-07: developer builds keep every run's numbers for playtest export.
+        if (DEVELOPER_UI_AVAILABLE) appendDevRunLog(window.localStorage, devRunEntry(result, Date.now()));
         // CON-06: a chapter's final clear plays its outro (and the last one the ending) before the settlement.
         const beats = beatsAfterClear(profileRef.current.storySeen, result);
         if (beats.length > 0) setStory({ beats });
@@ -456,6 +459,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         setProfile((prev) => ({ ...recordResult(prev, result), runSuspend: null }));
         if (result.runMode === 'infinite') setInfiniteSeed(String(result.seed));
         grantSettlement(result, false);
+        if (DEVELOPER_UI_AVAILABLE) appendDevRunLog(window.localStorage, devRunEntry(result, Date.now()));
         recordInfiniteSettlement(result);
         // The results are kept at once; the dialog waits for the death moment on the canvas (FX-03).
         deathMomentRef.current = window.setTimeout(() => {

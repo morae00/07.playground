@@ -1,4 +1,4 @@
-// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, TEC-15, CON-02, CON-04, CON-06, CON-07, CON-08, SYS-08, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-05, UI-07, UI-09) against the developer build.
+// Browser regression probes (BUG-04, BUG-05, BUG-06, TEC-07, TEC-08, TEC-14, TEC-15, CON-02, CON-04, CON-06, CON-07, CON-08, D-07, SYS-08, AUD-01, FX-03, UI-02, UI-03, UI-04, UI-05, UI-07, UI-09) against the developer build.
 // Usage: npm run test:ui-probes  (builds dist-developer unless UI_PROBE_SKIP_BUILD=1)
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -706,6 +706,29 @@ try {
     await replay.waitFor({ state: 'detached', timeout: 3000 }).catch(() => undefined);
     record("CON-06 the codex plays a chapter's beats again", replays.join(' | ') === '프롤로그 다시 보기 | 1장 · 맺으며 다시 보기' && title === '프롤로그' && (await page.locator('#menu-panel-codex').count()) === 1, replays.join(' | '));
     await page.close();
+  });
+
+  await probe('D-07', async () => {
+    // Developer builds keep each settled run for playtest export: the menu counts them and copies them as JSON.
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] });
+    const page = await context.newPage();
+    await openStage(page);
+    await page.waitForTimeout(1500);
+    await cheat(page, 'CLEAR');
+    await settleDrafts(page);
+    const menuButton = page.getByRole('dialog').getByRole('button', { name: '메뉴로' });
+    await menuButton.waitFor({ timeout: 5000 });
+    await page.waitForTimeout(1000);
+    await menuButton.click();
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    const counted = (await page.locator('.devRunLog').innerText()).replace(/\s+/g, ' ');
+    await page.getByRole('button', { name: '런 기록 복사' }).click();
+    await page.waitForTimeout(150);
+    const copied = await page.evaluate(() => navigator.clipboard.readText()).catch(() => '');
+    let entry = null;
+    try { entry = JSON.parse(copied)[0]; } catch { entry = null; }
+    record('D-07 the menu counts the settled run and copies it as JSON', counted.includes('런 기록 1건') && entry?.mode === 'campaign' && entry?.outcome === 'clear' && Number.isFinite(entry?.coinsEarned), `${counted.slice(0, 40)} | ${copied.slice(0, 80)}`);
+    await context.close();
   });
 
   await probe('CON-08', async () => {

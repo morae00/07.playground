@@ -32,6 +32,7 @@ import { Glyph } from '../Glyph';
 import { ProgressBar } from '../ProgressBar';
 import { STAGE_PATH, chapterCleared, passiveEffect, smoothPath, stageBoss, stageObjective, stageRewardFloor, stageStatus, upgradeEffect } from '../menuStage';
 import { CodexView } from './CodexView';
+import { DevRunLog } from './DevPanel';
 import type { StoryBeatId } from '../story';
 import { SaveTransfer } from './SaveTransfer';
 import { SettingsPanel } from './SettingsPanel';
@@ -283,6 +284,7 @@ function PlayView({ meta, records, developerAccess, developerMode, setDeveloperM
           <button className="ghost" onClick={applyCheat}>입력</button>
         </div>
         {cheatMessage && <div className="emptyText" role="status" aria-live="polite" aria-atomic="true">{cheatMessage}</div>}
+        <DevRunLog />
       </div>}
     </>
   );

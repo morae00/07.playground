@@ -21,6 +21,7 @@ const REQUIRED_DEVELOPER_MARKERS = Object.freeze([
   'UI FAULT ARMED',
   'PLAYER DOWN',
   'CHAPTER TURN',
+  'blackline-survivor-dev-runlog',
   'BOSS PHASE',
 ]);
 

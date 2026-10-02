@@ -57,7 +57,7 @@ test('UI-10: every key is used by code, directly or through a template key', () 
 const ALLOWED: Record<string, readonly string[]> = {
   'main.tsx': ['게임을 불러오지 못했습니다', '게임 파일을 읽는 중 오류가 났습니다'],
   'ui/ErrorBoundary.tsx': ['오류 로그를 복사했습니다', '클립보드를 사용할 수 없어', '메뉴로 돌아가기', '로그 복사', '다시 불러오기', '화면을 그리다 문제가 생겼습니다', '진행 중이던 런은'],
-  'ui/screens/DevPanel.tsx': ['개발 도구', '입력'],
+  'ui/screens/DevPanel.tsx': ['개발 도구', '입력', '런 기록'],
   'ui/screens/HudLayer.tsx': ['적', '개발 패널'],
   'ui/screens/MenuScreen.tsx': ['개발자 모드: 모든 Stage 접근', '입력', '개발자 모드 Run은'],
   'ui/screens/SettingsPanel.tsx': ['쇼케이스'],

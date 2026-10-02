@@ -209,7 +209,7 @@ SYS-09 (pickups wait 60 s before flying home, `patientPickups` rule) was piloted
 
 - 7 of 280 runs flipped (3 to a clear, 4 to a death), so the longer wait barely moves power. It changes when the drops come home, and so how much a route past them pays.
 - The pause-hub guardrail is covered by `test/economy.integration.test.mjs`: a max-health upgrade bought paused heals nothing while paused, then fills in over 3 s after resuming, never faster than its share.
-- The R3 exit's coin target (median balance at most 30% of the coins earned) is a player measure: the personas never shop, so it needs playtest telemetry.
+- The R3 exit's coin target (median balance at most 30% of the coins earned) is a player measure: the personas never shop, so it needs playtest telemetry. Developer builds keep a run log for that (decision D-07, docs/DEVELOPER_APP.md): the menu shows the median share and copies the runs as JSON.
 
 CON-03 (stage objectives, `stageObjectives` rule) was piloted with the flag on and off on two stages per objective (1-9, 3-7 swarm; 2-9, 4-7 hold; 1-3, 5-7 traps; 2-3, 4-9 elites; 2-4, 5-9 salvage; 1-6, 5-2 giants; 2-6, 4-4 crossfire; 3-6, 5-4 vanguard) × the baseline's 10 seeds × 4 personas:
 
