@@ -6,6 +6,7 @@ This checklist separates locally verifiable gates from Apple account and certifi
 
 - [ ] Working tree and release commit are identified.
 - [ ] `package.json` version and in-product version agree.
+- [ ] The remaster rules are frozen for this build. If any rule change since the previous release (or, for the first release, since the playtest build) changes seeded outcomes, `RULES_VERSION` in `src/game/rules.ts` is raised so older infinite records stay apart (decision D-06, `docs/decisions/R3-decisions.md`).
 - [ ] `com.blackline.survivor` is owned by the release account and does not collide with an existing product.
 - [ ] Release notes include gameplay, save migration, known issues, and minimum macOS 12.
 - [ ] `npm ci` completes on a clean Node 22.6+ environment.

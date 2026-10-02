@@ -79,7 +79,7 @@ Findings:
 | without elites | 10% | 13% | 10% |
 
   - 4-3 is the giants objective: 15 more points of large enemies (Ch4's wardens carry shields, SYS-02) on a landmark stage. The traps stages late in a chapter double the terrain, and Ch5's null zones become slows at 42% speed: 5-7 starts with 27 slow zones and 13 fires among the densest landmark's 39 obstacles (5-6 has 14, 6, and 22), and a survivor there spent 63 of its 132 s slowed.
-  - These are per-stage tunings for the team: a smaller tier shift for giants from Ch3, no giants or traps on landmark stages, or a lower terrain multiplier where the chapter's hazards slow **[Team decision]**. The chapter gates hold either way.
+  - The options were a smaller tier shift for giants from Ch3, no giants or traps on landmark stages, or a lower terrain multiplier where the chapter's hazards slow. The team kept the stages as they are, as hurdle stages, since the chapter gates hold (decision D-01, 2026-10-02).
 
 CON-02 Ch1 tuning: by the novice proxy, 1-1 already clears within the R1 target band (40-70%), and 3-minute survival (70%) is near its 80% target. A longer opening ramp does not help (1-1, novice, 20 seeds): a 90 s ramp kept 50% clear but dropped 3-minute survival to 50%, and 120 s gave 45% and 65%. Fewer early enemies mean less XP and fewer drafts (median 14 drafts at 45 s, 5 at 90 s), so the player is weaker when the pressure arrives. The 45 s ramp stays. The R1 playtest (6 or more new players) decides the final Ch1 numbers.
 
@@ -243,7 +243,7 @@ SYS-07 (difficulty curve, `difficultyCurve` rule) was tuned with three pilot set
 
 - The R3 balance gates hold on these sets: the new-player 1-1 band (40-70%), adjacent chapters within ±25 points, a maxed Ch5 lowest health median at most 70%, and minimum hits at most 20%. The full rebaseline at R3's end confirms them.
 - The inverted curve is gone. The team's normal clears are now 33% to 53% in every chapter instead of rising to 76%.
-- Ch3 is still the valley. Its 3-9 clears 7% and its mid boss 27-33%: the canal maps' horizontal channels and slows trap the personas' fixed walk. Ch3's mid boss stage fell to 0% under the hybrid defence alone, until boss stages took 15% lighter crowds. A Ch3 look in playtests is a **[Team decision]**.
+- Ch3 is still the valley. Its 3-9 clears 7% and its mid boss 27-33%: the canal maps' horizontal channels and slows trap the personas' fixed walk. Ch3's mid boss stage fell to 0% under the hybrid defence alone, until boss stages took 15% lighter crowds. The team kept Ch3 as it is (decision D-03, 2026-10-02).
 - Tried and dropped:
   - flatter stage steps (0.08 to 0.12 per stage, with 0.5 to 0.6 per chapter): they deepened the Ch3 valley;
   - 15% more damage per chapter: maxed Ch5 clears fell to 30%;
@@ -262,7 +262,7 @@ SYS-10 (elites, `eliteAffixes` rule) was measured on the same sets, against fa5e
 | novice 1-1 clears | 50% | 50% | 50% |
 
 - Elites cost the team about two points overall. Boss stages have no beats, so they do not change.
-- Ch3 is the bots' valley again: its normal stages lose 6-9 points either way, and the Ch2-3 step reaches -27, past the ±25 gate. With 45 runs a chapter, a chapter moves about ±7 points by chance, and the gentler numbers did no better, so the chosen numbers stay. Ch3 needs the playtest look SYS-07 asked for **[Team decision]**.
+- Ch3 is the bots' valley again: its normal stages lose 6-9 points either way, and the Ch2-3 step reaches -27, past the ±25 gate. With 45 runs a chapter, a chapter moves about ±7 points by chance, and the gentler numbers did no better, so the chosen numbers stay. The team kept Ch3 as it is (decision D-03, 2026-10-02).
 - Elites keep a maxed build under pressure: its lowest health median falls from 0.68 to 0.60.
 
 CON-07's passive tree gives each account passive ten points instead of five. The `maxed` persona now holds all thirty (it held 5 / 5 / 5). Its second nodes started stronger; this is what each setting did to maxed Ch5 (six stages × 10 seeds):
