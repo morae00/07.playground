@@ -29,17 +29,17 @@ Chapter packs (`assets/packs/<chapter>/`) have a 12 MiB per-pack target and resi
 
 `npm run test:balance:smoke` is a deterministic pressure smoke test, not a difficulty verdict. `npm run test:balance:pilot` checks representative chapter boundaries and boss stages. A release candidate uses `npm run test:balance:full` across all 50 stages, four build policies, and ten fixed seeds. Three policies are representative builds whose permanent upgrades grow by chapter. The fourth, `fresh`, is a new player with no upgrades or passives (CON-09). Seed shards run through a bounded worker pool, then merge in canonical stage/persona/seed order. The JSON report records clear/death/timeout rates, simulated and wall-clock time percentiles, death causes (contact, shot, boss contact, boss shot, shock, fire, each marked when the boss was enraged), economy percentiles, build growth, scenario details, and a deterministic fingerprint.
 
-The remaster baseline is `artifacts/balance-remaster-baseline.json`: 2,000 scenarios under the remaster rules on commit 3d0c5d3, the end of R2 (fingerprint fa29bc029e7815cd). The refactors after it (de0d957, 03276fb) keep every fingerprint, so it stands for them too. Earlier full runs used the same seeds and personas:
+The remaster baseline is `artifacts/balance-remaster-baseline.json`: 2,000 scenarios under the remaster rules on commit 3171af0, the end of R3 (fingerprint 25cd131c5d4ca2aa). Earlier full runs used the same seeds and personas:
 
-| | bf13b46 (CON-09) | 565e8b2 (SYS-03) | 73d367c (SYS-02, SYS-04) | bf4d474 (boss fixes) | f05b83e (R1 end) | 3d0c5d3 (R2 end) |
-|---|---:|---:|---:|---:|---:|---:|
-| clear, all 2,000 | 52.0% | 51.2% | 39.6% | 40.0% | 41.1% | 42.0% |
-| clears: striker / survivor / collector / fresh (of 500) | 299 / 456 / 284 / 0 | 294 / 466 / 264 / 0 | 220 / 410 / 162 / 0 | 224 / 416 / 159 / 0 | 221 / 444 / 157 / 0 | 225 / 456 / 159 / 0 |
-| clear by chapter without fresh, Ch1 / 2 / 3 / 4 / 5 (%) | 23.3 / 59.0 / 72.3 / 91.7 / 100.0 | 27.3 / 54.3 / 69.3 / 90.7 / 99.7 | 23.7 / 41.7 / 43.3 / 70.3 / 85.0 | 24.0 / 46.0 / 42.7 / 70.3 / 83.3 | 28.0 / 49.0 / 47.7 / 66.7 / 82.7 | 30.3 / 49.7 / 48.3 / 69.7 / 82.0 |
-| timeouts (20 min of play) | 0 | 0 | 2 | 1 | 2 | 3 |
-| deaths: contact / shots / boss | 923 / 9 / 29 | 934 / 7 / 33 | 1120 / 57 / 21 | 1118 / 50 / 25 | 1085 / 59 / 27 | 1071 / 57 / 25 |
-| boss stages without fresh, clear time p50 / max (s) | 199 / 1155 | 184 / 755 | 249 / 751 | 252 / 927 | 222 / 1001 | 251 / 1098 |
-| fresh in 1-1, death p50 (s) | 45 | 67 | 72 | 72 | 65 | 66 |
+| | bf13b46 (CON-09) | 565e8b2 (SYS-03) | 73d367c (SYS-02, SYS-04) | bf4d474 (boss fixes) | f05b83e (R1 end) | 3d0c5d3 (R2 end) | 3171af0 (R3 end) |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| clear, all 2,000 | 52.0% | 51.2% | 39.6% | 40.0% | 41.1% | 42.0% | 29.2% |
+| clears: striker / survivor / collector / fresh (of 500) | 299 / 456 / 284 / 0 | 294 / 466 / 264 / 0 | 220 / 410 / 162 / 0 | 224 / 416 / 159 / 0 | 221 / 444 / 157 / 0 | 225 / 456 / 159 / 0 | 136 / 362 / 86 / 1 |
+| clear by chapter without fresh, Ch1 / 2 / 3 / 4 / 5 (%) | 23.3 / 59.0 / 72.3 / 91.7 / 100.0 | 27.3 / 54.3 / 69.3 / 90.7 / 99.7 | 23.7 / 41.7 / 43.3 / 70.3 / 85.0 | 24.0 / 46.0 / 42.7 / 70.3 / 83.3 | 28.0 / 49.0 / 47.7 / 66.7 / 82.7 | 30.3 / 49.7 / 48.3 / 69.7 / 82.0 | 30.3 / 47.0 / 30.3 / 39.7 / 47.3 |
+| timeouts (20 min of play) | 0 | 0 | 2 | 1 | 2 | 3 | 1 |
+| deaths: contact / shots / boss | 923 / 9 / 29 | 934 / 7 / 33 | 1120 / 57 / 21 | 1118 / 50 / 25 | 1085 / 59 / 27 | 1071 / 57 / 25 | 1323 / 48 / 39 |
+| boss stages without fresh, clear time p50 / max (s) | 199 / 1155 | 184 / 755 | 249 / 751 | 252 / 927 | 222 / 1001 | 251 / 1098 | 256 / 689 |
+| fresh in 1-1, death p50 (s) | 45 | 67 | 72 | 72 | 65 | 66 | 71 |
 
 Findings:
 
@@ -63,6 +63,23 @@ Findings:
   - 1-1, 20 seeds: 50% clear (fresh 0 of 10) and 70% survive 3 minutes.
   - Ch1, 10 seeds each: 1-1 4/10, 1-2 3/10, 1-3 4/10, 1-4 4/10, 1-5 4/10, 1-6 2/10, 1-7 1/10, 1-8 1/10, 1-9 4/10, 1-10 1/10. Later stages are harder because the novice keeps the fresh meta throughout.
   - Contact still causes nearly every death.
+- R3 end (3171af0): clears 42.0% to 29.2%. R3 changed seeded outcomes with SYS-07's difficulty curve, CON-03's objectives, SYS-09's pickups, SYS-10's elites, and the endless rotation (CON-08, infinite only). The inverted chapter curve is gone: Ch1 30%, then 47 / 30 / 40 / 47%, where R2 rose to 82% in Ch5. The R3 exit gates hold on this run:
+  - normal stage clears by chapter for the three team personas, Ch1 / 2 / 3 / 4 / 5: 30.0 / 45.4 / 31.7 / 37.5 / 41.2%; adjacent steps +15.4 / -13.7 / +5.8 / +3.8 points (gate ±25);
+  - hits that dealt the minimum 1: 0.1% of 160,066 team hits (gate 20%);
+  - `maxed` in all ten Ch5 stages × 10 seeds: 72% clears, lowest health median 0.54 (gate 0.70), minimum hits 0%;
+  - the `novice` in 1-1 × 20 seeds: 50% clears (gate 40-70%). `fresh`, the fixed square walk with no upgrades, clears 1 of 500 (1-9).
+- One fight times out: the known survivor pin at 5-10 (base seed 524287, boss at 98%). The 5-10 striker stalemate of R2 is gone (1ad7113).
+- Some stages fall far below their chapter. The team personas clear 4-3 at 3%, 3-9 at 7%, 4-8 and 5-9 at 13%, and `maxed` clears 5-7 at 10% and 5-8 at 40%. A flag A/B on 4-3, 3-9, and 4-8 (the same 30 runs each) puts the causes apart:
+
+| | 4-3 (giants, landmark) | 3-9 (traps) | 4-8 (traps) |
+|---|---:|---:|---:|
+| remaster rules | 3% | 7% | 13% |
+| without stage objectives | 40% | 10% | 23% |
+| without the difficulty curve | 17% | 17% | 43% |
+| without elites | 10% | 13% | 10% |
+
+  - 4-3 is the giants objective: 15 more points of large enemies (Ch4's wardens carry shields, SYS-02) on a landmark stage. The traps stages late in a chapter double the terrain, and Ch5's null zones become slows at 42% speed: 5-7 starts with 27 slow zones and 13 fires among the densest landmark's 39 obstacles (5-6 has 14, 6, and 22), and a survivor there spent 63 of its 132 s slowed.
+  - These are per-stage tunings for the team: a smaller tier shift for giants from Ch3, no giants or traps on landmark stages, or a lower terrain multiplier where the chapter's hazards slow **[Team decision]**. The chapter gates hold either way.
 
 CON-02 Ch1 tuning: by the novice proxy, 1-1 already clears within the R1 target band (40-70%), and 3-minute survival (70%) is near its 80% target. A longer opening ramp does not help (1-1, novice, 20 seeds): a 90 s ramp kept 50% clear but dropped 3-minute survival to 50%, and 120 s gave 45% and 65%. Fewer early enemies mean less XP and fewer drafts (median 14 drafts at 45 s, 5 at 90 s), so the player is weaker when the pressure arrives. The 45 s ramp stays. The R1 playtest (6 or more new players) decides the final Ch1 numbers.
 
