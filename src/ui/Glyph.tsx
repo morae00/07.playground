@@ -1,11 +1,12 @@
 // Button glyphs for the device in use (UI-07): Enter on the keyboard, A on an Xbox pad, ✕ on a PlayStation pad.
 import { t } from '../i18n/strings';
+import { moveKeysInUse } from '../platform/moveKeys';
 import { useInputDevice, type InputDevice } from './inputDevice';
 
 export type GlyphAction = 'confirm' | 'back' | 'pause' | 'tabs' | 'move' | 'navigate';
 
 export function glyph(device: InputDevice, action: GlyphAction) {
-  return t(`glyph.${device}.${action}`);
+  return t(`glyph.${device}.${action}`, { keys: moveKeysInUse() });
 }
 
 /** Every glyph for a device, as template parameters: t('pause.lead.pad', glyphs(device)). */

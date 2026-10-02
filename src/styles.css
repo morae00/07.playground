@@ -895,6 +895,39 @@ h2 {
   text-align: right;
 }
 
+/* Movement keys (UI-08): a button per direction showing its keycap, then the default button. */
+.moveKeys {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.moveKeyGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.moveKeyGrid button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.moveKeyGrid kbd {
+  min-width: 2em;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+  padding: 0 5px;
+  font: inherit;
+  font-weight: 900;
+  text-align: center;
+}
+
+.moveKeyGrid button.listening kbd {
+  border-style: dashed;
+}
+
 .settingsNote {
   margin: 0;
   color: var(--muted);

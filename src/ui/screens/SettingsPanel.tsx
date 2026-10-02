@@ -6,6 +6,7 @@ import { t } from '../../i18n/strings';
 import type { StringKey } from '../../i18n/text';
 import { DEVELOPER_UI_AVAILABLE } from '../../platform/developerAccess';
 import type { GameOptions, PaceMode } from '../../platform/save';
+import { MoveKeysSetting } from './MoveKeysSetting';
 
 type NumberOption = 'volume' | 'musicVolume' | 'sfxVolume' | 'effects' | 'uiScale' | 'hitReaction' | 'assistDamage' | 'assistEnemySpeed';
 type SwitchOption = 'damageNumbers' | 'screenShake' | 'reducedFlash' | 'reducedMotion' | 'autoPause' | 'assistSlowGame';
@@ -52,6 +53,7 @@ export function SettingsPanel({ options, setOptions, inRun = false, children }: 
         <legend>{t('settings.access')}</legend>
         {toggle('reducedFlash', 'settings.reducedFlash')}
         {toggle('reducedMotion', 'settings.reducedMotion')}
+        <MoveKeysSetting keys={options.moveKeys} onChange={(moveKeys) => setOptions({ ...options, moveKeys })} />
       </fieldset>
       <fieldset>
         <legend>{t('settings.game')}</legend>

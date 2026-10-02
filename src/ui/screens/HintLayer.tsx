@@ -3,6 +3,7 @@
 // the pause hub. At the first boss: read the telegraph and step out. Keys are named for the device in use (UI-07).
 // The hint sits above the boss bar, clear of the centre 40% of the screen.
 import { useEffect, useState } from 'react';
+import { moveKeysInUse } from '../../platform/moveKeys';
 import type { HudSnapshot } from '../../game/GameEngine';
 import { t } from '../../i18n/strings';
 import { glyphs } from '../Glyph';
@@ -13,7 +14,7 @@ export type HintId = 'move' | 'xp' | 'shop' | 'telegraph';
 
 function hintText(id: HintId, device: InputDevice) {
   const keys = glyphs(device);
-  if (id === 'move') return device === 'keyboard' ? t('hint.move.keyboard') : t('hint.move.pad', keys);
+  if (id === 'move') return device === 'keyboard' ? t('hint.move.keyboard', { keys: moveKeysInUse() }) : t('hint.move.pad', keys);
   return t(`hint.${id}`, keys);
 }
 

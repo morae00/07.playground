@@ -1,5 +1,6 @@
 import { CAMPAIGN_CHAPTER_COUNT, STAGES_PER_CHAPTER } from '../content/campaign.ts';
 import { DEVELOPER_UI_AVAILABLE } from './developerAccess.ts';
+import { DEFAULT_MOVE_KEYS, sanitizeMoveKeys, type MoveKeys } from './moveKeys.ts';
 
 export type MetaUpgradeId = 'attack' | 'defense' | 'maxHp' | 'moveSpeed' | 'crit' | 'regen' | 'magnet';
 export type PassiveId = 'rareLuck' | 'bossHunter' | 'coinMagnet';
@@ -38,6 +39,8 @@ export type GameOptions = {
   uiScale: number;
   /** Reduced motion even when the system does not ask for it (UI-04); the system setting always applies too. */
   reducedMotion: boolean;
+  /** UI-08: the keyboard keys that move the hero (key codes); the arrows always move too. */
+  moveKeys: MoveKeys;
   /** How far a struck body recoils, 0-1 (FX-02). Presentation only: it never changes the simulation. */
   hitReaction: number;
   /**
@@ -156,6 +159,7 @@ export const createDefaultOptions = (): GameOptions => ({
   sfxVolume: 1,
   uiScale: 1,
   reducedMotion: false,
+  moveKeys: DEFAULT_MOVE_KEYS,
   hitReaction: 1,
   assistDamage: 1,
   assistEnemySpeed: 1,
@@ -233,6 +237,7 @@ export function sanitizeOptions(value: unknown, allowShowcase = DEVELOPER_UI_AVA
     sfxVolume: finiteNumber(value.sfxVolume, fallback.sfxVolume, 0, 1),
     uiScale: finiteNumber(value.uiScale, fallback.uiScale, 0.8, 1.3),
     reducedMotion: booleanValue(value.reducedMotion, fallback.reducedMotion),
+    moveKeys: value.moveKeys === undefined ? fallback.moveKeys : sanitizeMoveKeys(value.moveKeys),
     hitReaction: finiteNumber(value.hitReaction, fallback.hitReaction, 0, 1),
     assistDamage: finiteNumber(value.assistDamage, fallback.assistDamage, 0.5, 1),
     assistEnemySpeed: finiteNumber(value.assistEnemySpeed, fallback.assistEnemySpeed, 0.8, 1),

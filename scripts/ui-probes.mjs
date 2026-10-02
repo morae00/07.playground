@@ -484,6 +484,45 @@ try {
     await page.close();
   });
 
+  await probe('UI-08 keys', async () => {
+    // The menu's settings choose the movement keys by physical key: I moves up after the change, W no longer does,
+    // the arrows still do, and the choice survives a reload.
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await page.goto('http://127.0.0.1:5177/');
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    await page.getByRole('tab', { name: '설정' }).click();
+    const up = page.locator('.moveKeys button', { hasText: '위' });
+    await up.click();
+    await page.keyboard.press('KeyP');
+    const refused = await page.locator('.moveKeys .settingsNote').textContent();
+    await page.keyboard.press('KeyI');
+    const label = (await up.locator('kbd').textContent())?.trim();
+    record('UI-08 a movement key is chosen by pressing it, and keys with another job are refused', label === 'I' && refused?.includes('P 키는'), `up key ${label}; after P: "${refused}"`);
+    await page.reload();
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    await page.getByRole('tab', { name: '설정' }).click();
+    const kept = (await page.locator('.moveKeys button', { hasText: '위' }).locator('kbd').textContent())?.trim();
+    record('UI-08 the chosen keys survive a reload', kept === 'I', `up key after reload ${kept}`);
+    await openStage(page);
+    const closer = page.getByRole('button', { name: '개발 패널 닫기' });
+    if (await closer.count()) await closer.click();
+    const y = async () => (await diagnostics(page))?.player?.y ?? NaN;
+    const hold = async (code) => {
+      const before = await y();
+      await page.keyboard.down(code);
+      await page.waitForTimeout(500);
+      await page.keyboard.up(code);
+      await page.waitForTimeout(120);
+      return before - (await y());
+    };
+    // Up with I, nothing with W, then back down with the arrow, so the hero never runs into the top edge.
+    const byI = await hold('KeyI');
+    const byW = await hold('KeyW');
+    const byArrow = -(await hold('ArrowDown'));
+    record('UI-08 the chosen key moves, the old one does not, and the arrows still do', byI > 40 && Math.abs(byW) < 5 && byArrow > 40, `moved up ${byI.toFixed(0)} with I, ${byW.toFixed(0)} with W, down ${byArrow.toFixed(0)} with the arrow`);
+    await page.close();
+  });
+
   await probe('UI-04', async () => {
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     await page.goto('http://127.0.0.1:5177/');

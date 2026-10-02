@@ -14,6 +14,7 @@ import { loadBossTitles, loadLandmarkTitles, type BossTitle, type LandmarkTitle 
 import { loadStory } from '../story';
 import { ProgressBar } from '../ProgressBar';
 import { effectAnnouncement } from '../effectAnnouncement';
+import { moveKeysInUse } from '../../platform/moveKeys';
 
 export type HudLayerProps = {
   snapshot: HudSnapshot;
@@ -189,7 +190,7 @@ export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen,
           {infinite
             ? t('hud.summary.infinite', { chapter: lookChapter, time: formatClock(snapshot.elapsed), score: snapshot.score, bosses: snapshot.bossKills })
             : t('hud.summary.campaign', { chapter: snapshot.chapter, stage: snapshot.stage, time: formatClock(snapshot.timeLeft) })}
-          {' '}{t('hud.summary.health', { hp: Math.ceil(snapshot.hp), max: Math.ceil(snapshot.maxHp) })}
+          {' '}{t('hud.summary.health', { hp: Math.ceil(snapshot.hp), max: Math.ceil(snapshot.maxHp), keys: moveKeysInUse() })}
           {' '}{t('hud.summary.pause')} {runPaused ? t('hud.summary.paused') : ''}
         </p>
       )}

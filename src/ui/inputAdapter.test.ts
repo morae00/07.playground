@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { EngineCommand } from '../game/engine/contracts.ts';
 import { InputAdapter } from './inputAdapter.ts';
+import { DEFAULT_MOVE_KEYS, bindMoveKey, type MoveKeys } from '../platform/moveKeys.ts';
 
 class FakeElement {
   tagName: string;
@@ -35,7 +36,7 @@ function host() {
   };
 }
 
-function setup() {
+function setup(moveKeys?: () => MoveKeys) {
   const commands: EngineCommand[] = [];
   const windowHost = host();
   const documentHost = host();
@@ -58,15 +59,21 @@ function setup() {
     },
     onPauseIntent: () => { pauses += 1; },
     getGamepads: () => pads,
+    moveKeys,
   });
   const key = (type: 'keydown' | 'keyup', keyName: string, target: object = new FakeElement('DIV')) => {
     let prevented = false;
     windowHost.fire(type, { key: keyName, target, preventDefault: () => { prevented = true; } });
     return prevented;
   };
+  /** A real keyboard event: the physical key's code, and the character the layout or input source gives it. */
+  const physical = (type: 'keydown' | 'keyup', code: string, keyName = '') => {
+    windowHost.fire(type, { key: keyName, code, target: new FakeElement('DIV'), preventDefault: () => {} });
+  };
   return {
     adapter,
     commands,
+    physical,
     windowHost,
     documentHost,
     canvas,
@@ -88,6 +95,34 @@ test('keyboard keys become move actions, with overlapping keys held until the la
   assert.deepEqual(input.commands.at(-1), { type: 'input/action', action: 'moveUp', pressed: false });
   input.key('keydown', 'x');
   assert.equal(input.commands.length, 2, 'unmapped keys send nothing');
+  input.adapter.dispose();
+});
+
+test('UI-08: the physical key decides, so WASD moves whatever the layout or input source types', () => {
+  const input = setup();
+  input.physical('keydown', 'KeyW', 'ㅈ');
+  input.physical('keydown', 'ArrowUp', 'ArrowUp');
+  input.physical('keyup', 'KeyW', 'ㅈ');
+  assert.deepEqual(input.commands, [{ type: 'input/action', action: 'moveUp', pressed: true }], 'held by the arrow');
+  input.physical('keyup', 'ArrowUp', 'ArrowUp');
+  assert.deepEqual(input.commands.at(-1), { type: 'input/action', action: 'moveUp', pressed: false });
+  input.physical('keydown', 'KeyQ', 'w');
+  assert.equal(input.commands.length, 2, 'a key that only types "w" on another layout does not move');
+  input.adapter.dispose();
+});
+
+test('UI-08: chosen movement keys move, the old ones stop, the arrows stay, and a change applies at once', () => {
+  let keys: MoveKeys = DEFAULT_MOVE_KEYS;
+  const input = setup(() => keys);
+  keys = ['KeyI', 'KeyJ', 'KeyK', 'KeyL'].reduce((acc, code, index) => bindMoveKey(acc, (['moveUp', 'moveLeft', 'moveDown', 'moveRight'] as const)[index], code), keys);
+  input.physical('keydown', 'KeyW', 'w');
+  assert.equal(input.commands.length, 0, 'W no longer moves');
+  input.physical('keydown', 'KeyI', 'i');
+  input.physical('keydown', 'ArrowLeft', 'ArrowLeft');
+  assert.deepEqual(input.commands, [
+    { type: 'input/action', action: 'moveUp', pressed: true },
+    { type: 'input/action', action: 'moveLeft', pressed: true },
+  ]);
   input.adapter.dispose();
 });
 

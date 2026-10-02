@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { DEFAULT_MOVE_KEYS } from './moveKeys.ts';
 import CATALOG from '../content/data/catalog.ts';
 import {
   LEGACY_META_KEY,
@@ -113,6 +114,10 @@ test('options saved before the settings screen load with the new settings at the
   assert.equal(sanitizeOptions({ ...legacy, uiScale: 0.5 }).uiScale, 0.8);
   assert.equal(sanitizeOptions({ ...legacy, reducedMotion: true }).reducedMotion, true);
   assert.equal(sanitizeOptions(legacy).hitReaction, 1, 'full hit reaction until set (FX-02)');
+  assert.deepEqual(sanitizeOptions(legacy).moveKeys, DEFAULT_MOVE_KEYS, 'WASD until the keys are chosen (UI-08)');
+  const ijkl = { moveUp: 'KeyI', moveDown: 'KeyK', moveLeft: 'KeyJ', moveRight: 'KeyL' };
+  assert.deepEqual({ ...sanitizeOptions({ ...legacy, moveKeys: ijkl }).moveKeys }, ijkl);
+  assert.deepEqual(sanitizeOptions({ ...legacy, moveKeys: { ...ijkl, moveUp: 'KeyP' } }).moveKeys, DEFAULT_MOVE_KEYS, 'a reserved key falls back to WASD');
   assert.equal(sanitizeOptions({ ...legacy, hitReaction: 3 }).hitReaction, 1);
 });
 

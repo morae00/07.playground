@@ -2,7 +2,9 @@
 // The engine only sees commands, so a seed plus the command log reproduces a run (G14).
 import type { EngineAction, EngineCommand } from '../game/engine/contracts.ts';
 import { readGamepadIntent, type GamepadLike } from './inputContracts.ts';
+import { DEFAULT_MOVE_KEYS, moveKeyMap, type MoveKeys } from '../platform/moveKeys.ts';
 
+/** Movement by key name, for key events that carry no key code; real keyboards use the chosen codes (UI-08). */
 export const KEYBOARD_ACTIONS: Readonly<Record<string, EngineAction>> = Object.freeze({
   w: 'moveUp',
   arrowup: 'moveUp',
@@ -29,6 +31,8 @@ export type InputAdapterOptions = {
   /** Gamepad Start was pressed (a UI navigation event, not a simulation command). */
   onPauseIntent?: () => void;
   getGamepads?: () => readonly (GamepadLike | null | undefined)[];
+  /** The movement keys in use (UI-08), read on every key event so a change in the settings applies at once. */
+  moveKeys?: () => MoveKeys;
 };
 
 function isTextEntry(target: EventTarget | null) {
@@ -61,7 +65,7 @@ function defaultGamepads() {
 
 export class InputAdapter {
   private readonly options: InputAdapterOptions;
-  /** Physical keys held per action, so releasing W while ArrowUp is still down keeps moving up. */
+  /** Keys held per action (by code), so releasing W while ArrowUp is still down keeps moving up. */
   private readonly keysByAction = new Map<EngineAction, Set<string>>();
   private pointerActive = false;
   private pointerWorld = { x: 0, y: 0 };
@@ -123,15 +127,20 @@ export class InputAdapter {
     const arrow = key === 'arrowup' || key === 'arrowdown' || key === 'arrowleft' || key === 'arrowright';
     // Roving tab lists use arrow keys to change tabs; letting them also steer the player would do both at once.
     if (arrow && hasRole(event.target, 'tab')) return;
-    const action = KEYBOARD_ACTIONS[key];
-    if (action) this.press(action, key);
+    const action = this.actionFor(event);
+    if (action) this.press(action, event.code || key);
     if (arrow || (key === ' ' && !isButton(event.target))) event.preventDefault();
   }
 
   private onKeyUp(event: KeyboardEvent) {
-    const key = event.key.toLowerCase();
-    const action = KEYBOARD_ACTIONS[key];
-    if (action) this.lift(action, key);
+    const action = this.actionFor(event);
+    if (action) this.lift(action, event.code || event.key.toLowerCase());
+  }
+
+  /** The physical key decides (UI-08), so the chosen keys work on any layout and input source. */
+  private actionFor(event: KeyboardEvent): EngineAction | undefined {
+    if (!event.code) return KEYBOARD_ACTIONS[event.key.toLowerCase()];
+    return moveKeyMap(this.options.moveKeys?.() ?? DEFAULT_MOVE_KEYS)[event.code];
   }
 
   private press(action: EngineAction, key: string) {

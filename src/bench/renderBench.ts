@@ -8,6 +8,7 @@
 // scale (render scale cap), sprites (on/off), warmup and seconds (measurement window).
 import { ProbedGameEngine } from '../game/engine/probe';
 import type { GameOptions, MetaState } from '../platform/save';
+import { DEFAULT_MOVE_KEYS } from '../platform/moveKeys';
 import { SpriteAtlas } from '../game/render/assets/spriteAtlas';
 import { CHAPTER_PACKS, COMMON_PACK } from '../game/render/assets/slots';
 
@@ -65,7 +66,7 @@ const meta: MetaState = {
 const options: GameOptions = {
   healthBars: 'elite', volume: 0, effects: 1, damageNumbers: true, screenShake: false, reducedFlash: false, paceMode: 'standard',
   autoPause: false, musicVolume: 0, sfxVolume: 0, uiScale: 1, reducedMotion: false, hitReaction: 1,
-  assistDamage: 1, assistEnemySpeed: 1, assistSlowGame: false,
+  assistDamage: 1, assistEnemySpeed: 1, assistSlowGame: false, moveKeys: DEFAULT_MOVE_KEYS,
 };
 
 function setUpStressScene(probe: ProbedGameEngine['probe']) {

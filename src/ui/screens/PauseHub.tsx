@@ -10,6 +10,7 @@ import type { GameOptions } from '../../platform/save';
 import { nextRovingId, type RovingKey } from '../inputContracts';
 import { ModalDialog } from '../ModalDialog';
 import { SettingsPanel } from './SettingsPanel';
+import { moveKeysInUse } from '../../platform/moveKeys';
 
 export type PauseTab = 'build' | 'shop' | 'settings' | 'controls';
 
@@ -134,7 +135,7 @@ export function PauseHub({ snapshot, tab, setTab, confirmingAbandon, onResume, o
                   {CONTROLS.map((action) => (
                     <tr key={action}>
                       <th scope="row">{t(`controls.${action}`)}</th>
-                      <td>{t(`controls.${action}.keyboard`)}</td>
+                      <td>{t(`controls.${action}.keyboard`, { keys: moveKeysInUse() })}</td>
                       {/* The pad column names the family in use, or the Xbox layout while on the keyboard. */}
                       <td>{t(`controls.${action}.pad`, glyphs(device === 'keyboard' ? 'xbox' : device))}</td>
                     </tr>

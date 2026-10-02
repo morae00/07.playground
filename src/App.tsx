@@ -36,6 +36,7 @@ import { PauseHub, type PauseTab } from './ui/screens/PauseHub';
 import { HintLayer, type HintId } from './ui/screens/HintLayer';
 import { StoryPanels } from './ui/screens/StoryPanels';
 import { appendDevRunLog, devRunEntry } from './platform/devRunLog';
+import { moveKeyMap, setMoveKeysInUse } from './platform/moveKeys';
 import { beatsAfterClear, beatsBeforeRun, type StoryBeatId } from './ui/story';
 import { NAV as MENU_NAV, MenuScreen, type MenuView } from './ui/screens/MenuScreen';
 import { nextRovingId, watchReducedMotion, type RovingKey } from './ui/inputContracts';
@@ -178,6 +179,10 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   // The settlement callbacks read the save as it was before the result is applied (UI-05 notes).
   const metaRef = useRef(meta);
   const profileRef = useRef(profile);
+  // UI-08: the input reads the movement keys on every key event, and the prompts name them.
+  const moveKeysRef = useRef(options.moveKeys);
+  moveKeysRef.current = options.moveKeys;
+  setMoveKeysInUse(options.moveKeys);
   metaRef.current = meta;
   profileRef.current = profile;
 
@@ -517,6 +522,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
       canvas,
       target: engine,
       onPauseIntent: () => pauseIntentRef.current(),
+      moveKeys: () => moveKeysRef.current,
     });
     setSettlement(null);
     setDraft(null);
@@ -648,6 +654,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         engineRef.current?.rerollDraft();
         return;
       }
+      // A digit chosen as a movement key moves; it does not pick a card (UI-08).
+      if (moveKeyMap(moveKeysRef.current)[event.code]) return;
       const index = Number(event.key) - 1;
       const offer = draft.cards[index];
       if (!offer) return;
