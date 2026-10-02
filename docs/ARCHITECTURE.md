@@ -213,7 +213,7 @@ Under the `obstacleCover` rule, obstacles are cover for both sides:
 - An ordinary enemy shot stops at the first obstacle it reaches before the player, with the same small ink burst as a friendly shot (`shot/blocked`).
 - A shooter only starts to aim with a clear line to the player (`clearShot`, the check the player's auto-aim already uses). Without one it circles the player, closing a little, until a line opens. A shot already aimed still fires and can hit the wall.
 - Boss barrages are airborne and fly over obstacles. The renderer draws each boss shot above the bodies, as before, and a ground shadow under them, offset down and to the right like every cast shadow, so a shot passing over a wall reads as passing over.
-- Terrain acting on enemies is the team's A/B. It sits behind the `terrainOnEnemies` flag, off in both rule sets; the pilot is in docs/QUALITY_GATES.md. With the flag on, terrain acts on ordinary enemies at half strength (`TERRAIN_ENEMY_SCALE`):
+- Terrain acts on enemies under the `terrainOnEnemies` flag: on in the remaster rules since decision D-05 (2026-10-02), off in the classic ones; the A/B pilot is in docs/QUALITY_GATES.md. Terrain acts on ordinary enemies at half strength (`TERRAIN_ENEMY_SCALE`):
   - fire burns them at half its damage per second;
   - water and slow zones slow them by half as much as they slow the player;
   - binding zones slow them to half speed rather than holding them, since enemies get no immunity to walk out on;

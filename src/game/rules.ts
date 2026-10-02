@@ -102,9 +102,9 @@ export type RuleSet = Readonly<{
    */
   obstacleCover: boolean;
   /**
-   * SYS-06 A/B (off in both rule sets until the team decides): fire, water, and traps act on enemies at half
-   * strength. Fire burns them, water and bindings slow them, and an enemy that walks onto a trap springs it.
-   * Bosses are immune. Tools switch it on with the probe's patchRules.
+   * SYS-06: fire, water, and traps act on enemies at half strength. Fire burns them, water and bindings slow them,
+   * and an enemy that walks onto a trap springs it. Bosses are immune. An A/B until the team switched it on in the
+   * remaster rules (decision D-05, 2026-10-02).
    */
   terrainOnEnemies: boolean;
   /**
@@ -211,7 +211,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   rareHitStop: true,
   kitProps: true,
   obstacleCover: true,
-  terrainOnEnemies: false,
+  terrainOnEnemies: true,
   patientPickups: true,
   stageObjectives: true,
   difficultyCurve: true,

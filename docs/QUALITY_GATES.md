@@ -153,7 +153,7 @@ SYS-06 (obstacles as cover, `obstacleCover` rule) was piloted against its parent
 - Boss deaths fell from 21 to 14.
 - The three timeouts are the same `survivor` loops before and after.
 
-The terrain A/B (SYS-06, `terrainOnEnemies`, off in both rule sets) was piloted on the same 520 runs with the flag switched on (`BALANCE_RULE_PATCH`), against the flag off:
+The terrain A/B (SYS-06, `terrainOnEnemies`, then off in both rule sets) was piloted on the same 520 runs with the flag switched on (`BALANCE_RULE_PATCH`), against the flag off:
 
 | | off | on |
 |---|---:|---:|
@@ -167,7 +167,7 @@ The terrain A/B (SYS-06, `terrainOnEnemies`, off in both rule sets) was piloted 
 - The clear rate did not move beyond noise: 48 runs flipped, 22 to a clear and 26 away from one.
 - Boss stages end sooner (p50 243 to 231 s) and the runs make 5.5% fewer kills.
 - The largest single change is 3-3 (27 to 20 clears of 40), where water covers the most ground.
-- The personas never lure enemies into terrain on purpose, so this measures the side effects only. **[Team decision]** Whether luring is worth having is a playtest question; the flag stays off until then.
+- The personas never lure enemies into terrain on purpose, so this measures the side effects only. The team switched the flag on in the remaster rules (decision D-05, 2026-10-02); the next full measure includes it.
 
 SYS-05 (the Ch2-5 final bosses' phase moves) was piloted on those bosses' stages (2-10, 3-10, 4-10, 5-10) × 10 seeds × 4 personas, against the SYS-06 run:
 

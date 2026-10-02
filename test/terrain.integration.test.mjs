@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createHeadlessCanvas, installHeadlessPlatform, maxMeta, standardOptions } from '../scripts/lib/headless-engine.mjs';
 
-// Terrain on enemies (SYS-06 A/B): off in both rule sets; with the flag on, fire, water, and traps act on enemies at
-// half strength, and bosses are immune.
+// Terrain on enemies (SYS-06): on in the remaster rules since decision D-05, off in the classic ones. Fire, water, and
+// traps act on enemies at half strength, and bosses are immune.
 installHeadlessPlatform();
 Object.defineProperty(globalThis, 'performance', { value: { now: () => 0 }, configurable: true });
 const { ProbedGameEngine } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
@@ -11,7 +11,7 @@ const { ProbedGameEngine } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '
 function arena(terrainOnEnemies) {
   const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), maxMeta(), standardOptions(), { onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver() {} });
   engine.setRuleSet('remaster');
-  if (terrainOnEnemies) engine.probe.patchRules({ terrainOnEnemies: true });
+  engine.probe.patchRules({ terrainOnEnemies });
   engine.startRun(1, 2, 5151);
   const { probe } = engine;
   probe.haltSpawns();
@@ -24,16 +24,16 @@ function arena(terrainOnEnemies) {
 const zone = (kind, x, y, extra = {}) => ({ kind, x, y, radius: 90, life: 30, maxLife: 30, damage: 20, slow: 0.34, triggered: false, ...extra });
 const enemyAt = (probe, id) => probe.read().enemies.find((enemy) => enemy.id === id);
 
-test('SYS-06 A/B: the rule sets keep terrain off enemies', () => {
-  for (const rules of ['classic', 'remaster']) {
+test('SYS-06: the remaster rules put terrain on enemies, the classic ones keep it off', () => {
+  for (const [rules, on] of [['classic', false], ['remaster', true]]) {
     const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), maxMeta(), standardOptions(), { onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver() {} });
     engine.setRuleSet(rules);
-    assert.equal(engine.ruleSet.terrainOnEnemies, false, rules);
+    assert.equal(engine.ruleSet.terrainOnEnemies, on, rules);
     engine.dispose();
   }
 });
 
-test('SYS-06 A/B: fire burns an enemy at half strength and its kill counts; without the flag it does nothing', () => {
+test('SYS-06: fire burns an enemy at half strength and its kill counts; without the flag it does nothing', () => {
   for (const on of [true, false]) {
     const { engine, probe } = arena(on);
     try {
@@ -58,7 +58,7 @@ test('SYS-06 A/B: fire burns an enemy at half strength and its kill counts; with
   }
 });
 
-test('SYS-06 A/B: water and binding zones slow enemies by half their pull on the player', () => {
+test('SYS-06: water and binding zones slow enemies by half their pull on the player', () => {
   const { engine, probe } = arena(true);
   try {
     const { player } = probe.read();
@@ -74,7 +74,7 @@ test('SYS-06 A/B: water and binding zones slow enemies by half their pull on the
   }
 });
 
-test('SYS-06 A/B: an enemy springs a trap, which then no longer waits for the player; bosses are immune', () => {
+test('SYS-06: an enemy springs a trap, which then no longer waits for the player; bosses are immune', () => {
   const { engine, probe } = arena(true);
   try {
     const { player } = probe.read();
