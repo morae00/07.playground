@@ -17,8 +17,21 @@ type IndexedEntry<T> = {
   item: T;
   order: number;
   bounds: SpatialBounds;
-  cellKeys: string[];
+  /** The cells it covers, as a range (TEC-09: no key strings or arrays per insert). */
+  minCellX: number;
+  minCellY: number;
+  maxCellX: number;
+  maxCellY: number;
+  /** The last query that met it, so a query visits each entry once without a set of its own. */
+  stamp: number;
 };
+
+/** Cell coordinates as one integer key: unique while a cell index stays within ±2^20 (about 10^8 world units). */
+const CELL_BIAS = 0x100000;
+const CELL_SPAN = 0x200000;
+function cellKey(cellX: number, cellY: number) {
+  return (cellX + CELL_BIAS) * CELL_SPAN + (cellY + CELL_BIAS);
+}
 
 function assertFinite(value: number, label: string) {
   if (!Number.isFinite(value)) throw new RangeError(`${label} must be finite; received ${value}`);
@@ -72,9 +85,10 @@ export class SpatialIndex<T extends SpatialItem> {
   readonly cellSize: number;
 
   private readonly resolveBounds: SpatialBoundsResolver<T>;
-  private readonly cells = new Map<string, IndexedEntry<T>[]>();
+  private readonly cells = new Map<number, IndexedEntry<T>[]>();
   private readonly entries = new Map<T, IndexedEntry<T>>();
   private nextOrder = 0;
+  private queries = 0;
 
   constructor(cellSize = 96, resolveBounds: SpatialBoundsResolver<T> = defaultBounds) {
     assertFinite(cellSize, 'cellSize');
@@ -90,16 +104,23 @@ export class SpatialIndex<T extends SpatialItem> {
 
     const entry: IndexedEntry<T> = {
       item,
-      bounds: { ...bounds },
+      bounds: { minX: bounds.minX, minY: bounds.minY, maxX: bounds.maxX, maxY: bounds.maxY },
       order: previous?.order ?? this.nextOrder++,
-      cellKeys: this.cellKeysFor(bounds),
+      minCellX: Math.floor(bounds.minX / this.cellSize),
+      minCellY: Math.floor(bounds.minY / this.cellSize),
+      maxCellX: Math.floor(bounds.maxX / this.cellSize),
+      maxCellY: Math.floor(bounds.maxY / this.cellSize),
+      stamp: 0,
     };
     this.entries.set(item, entry);
 
-    for (const key of entry.cellKeys) {
-      const cell = this.cells.get(key);
-      if (cell) cell.push(entry);
-      else this.cells.set(key, [entry]);
+    for (let cellY = entry.minCellY; cellY <= entry.maxCellY; cellY += 1) {
+      for (let cellX = entry.minCellX; cellX <= entry.maxCellX; cellX += 1) {
+        const key = cellKey(cellX, cellY);
+        const cell = this.cells.get(key);
+        if (cell) cell.push(entry);
+        else this.cells.set(key, [entry]);
+      }
     }
   }
 
@@ -143,14 +164,22 @@ export class SpatialIndex<T extends SpatialItem> {
   }
 
   private queryCandidates(queryBounds: SpatialBounds, intersects: (bounds: SpatialBounds) => boolean) {
-    const seenOrders = new Set<number>();
+    const stamp = ++this.queries;
     const matches: IndexedEntry<T>[] = [];
+    const minCellX = Math.floor(queryBounds.minX / this.cellSize);
+    const minCellY = Math.floor(queryBounds.minY / this.cellSize);
+    const maxCellX = Math.floor(queryBounds.maxX / this.cellSize);
+    const maxCellY = Math.floor(queryBounds.maxY / this.cellSize);
 
-    for (const key of this.cellKeysFor(queryBounds)) {
-      for (const entry of this.cells.get(key) ?? []) {
-        if (seenOrders.has(entry.order)) continue;
-        seenOrders.add(entry.order);
-        if (intersects(entry.bounds)) matches.push(entry);
+    for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
+      for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+        const cell = this.cells.get(cellKey(cellX, cellY));
+        if (!cell) continue;
+        for (const entry of cell) {
+          if (entry.stamp === stamp) continue;
+          entry.stamp = stamp;
+          if (intersects(entry.bounds)) matches.push(entry);
+        }
       }
     }
 
@@ -158,28 +187,16 @@ export class SpatialIndex<T extends SpatialItem> {
     return matches.map((entry) => entry.item);
   }
 
-  private cellKeysFor(bounds: SpatialBounds) {
-    const minCellX = Math.floor(bounds.minX / this.cellSize);
-    const minCellY = Math.floor(bounds.minY / this.cellSize);
-    const maxCellX = Math.floor(bounds.maxX / this.cellSize);
-    const maxCellY = Math.floor(bounds.maxY / this.cellSize);
-    const keys: string[] = [];
-
-    for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
-      for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
-        keys.push(`${cellX},${cellY}`);
-      }
-    }
-    return keys;
-  }
-
   private removeFromCells(entry: IndexedEntry<T>) {
-    for (const key of entry.cellKeys) {
-      const cell = this.cells.get(key);
-      if (!cell) continue;
-      const index = cell.indexOf(entry);
-      if (index >= 0) cell.splice(index, 1);
-      if (cell.length === 0) this.cells.delete(key);
+    for (let cellY = entry.minCellY; cellY <= entry.maxCellY; cellY += 1) {
+      for (let cellX = entry.minCellX; cellX <= entry.maxCellX; cellX += 1) {
+        const key = cellKey(cellX, cellY);
+        const cell = this.cells.get(key);
+        if (!cell) continue;
+        const index = cell.indexOf(entry);
+        if (index >= 0) cell.splice(index, 1);
+        if (cell.length === 0) this.cells.delete(key);
+      }
     }
   }
 }

@@ -390,6 +390,12 @@ Targets (TEC-04 D-3, one wording for every gate since D-22):
 - entity and effect counts within documented caps
 - no unexplained long-task or GC cluster
 
+TEC-09's CPU items, measured before any change (this Mac, 2026-10-02):
+- The simulation is not the bottleneck. A headless Ch3 crowd of 220 enemies with skills firing steps at 0.032 ms per tick; the stress scene's whole in-frame work p95 is 3-4 ms, mostly drawing.
+- The broad-phase index (`src/game/spatialIndex.ts`) now keys cells by integer and marks visited entries with a query stamp, instead of building key strings, key arrays, and a set per query. Results and their order are unchanged. 400 rounds of 300 inserts and 250 circle queries take 222 ms instead of 442, and the crowd steps at 0.028 ms per tick (3 runs each). Classic and remaster gameplay fingerprints and every draw fingerprint are unchanged.
+- Particles need no ring buffer: a burst only spawns into the room left under the cap (`Presentation.burst`), so the oldest are dropped one by one only when the effect density setting lowers the cap.
+- Enemy objects are not pooled. Spawns are a few per second, the soak's heap holds, and reusing an enemy object would risk a stale reference (a target or a projectile owner) changing a seeded outcome.
+
 ## Release evidence
 
 A release record contains:
