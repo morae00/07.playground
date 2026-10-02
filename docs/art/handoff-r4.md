@@ -1,6 +1,6 @@
 # R4 아트·음악 작업 지시서
 
-> 결정 기록 `docs/decisions/R3-decisions.md`의 D-14(킷 확장 전부), D-15(이야기 패널 6장 손그림), D-16(음악 9곡)을 외주나 다른 에이전트가 바로 작업할 수 있게 정리한 문서다. 납품물을 아래 위치에 두면 굽기 명령과 코드 연결은 이 저장소 쪽에서 한다. 스타일은 `docs/art/style-bible.md`(먹극화 · Paper Noir Ink), 세계관과 디자인 키워드는 `docs/lore/lore-bible.md` §4를 따른다.
+> 결정 기록 `docs/decisions/R3-decisions.md`의 D-14(킷 확장 전부), D-15(이야기 패널 6장 손그림), D-16(음악 9곡)을 외주나 다른 에이전트가 바로 작업할 수 있게 정리한 문서다. 납품물을 아래 위치에 두면 굽기 명령과 코드 연결은 이 저장소 쪽에서 한다. 스타일은 `docs/art/style-bible.md`(먹극화 · Paper Noir Ink), 세계관과 디자인 키워드는 `docs/lore/lore-bible.md` §4를 따른다. 외주는 프로젝트 서브에이전트가 맡는다(2026-10-02 결정). 단계별 발주 순서와 문구는 `docs/outsourcing/R4-orders.md`에 있다.
 
 ## 0. 공통 규칙
 

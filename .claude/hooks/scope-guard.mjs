@@ -8,7 +8,10 @@
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 
-/** A Bash command must match one of these whole, after the shell-syntax check below. */
+/**
+ * `write` scopes are a folder (ending in /), one file, or a pattern over the repository-relative path. A Bash command
+ * must match one of `bash` whole, after the shell-syntax check below.
+ */
 const PROFILES = {
   // Edits only the audio folders: the SFX recipes, the baked sound pack, music deliveries, and its own working notes.
   'sound-designer': {
@@ -22,6 +25,13 @@ const PROFILES = {
       /^node --test(?: (?:src\/game\/audioPolicy\.test\.ts|src\/game\/audio\/[\w*.-]+\.test\.ts|test\/[\w*.-]*audio[\w*.-]*\.test\.mjs))+$/,
       /^afinfo(?: [\w./*@+-]+)+$/,
     ],
+  },
+  // Draws the concept kit: its own k-*.js modules and API-*.md docs. The originals (lib.js, hero.js, sprites.js,
+  // boss.js, board.js) stay read-only. Kit modules run in the bakes' browser page, not in Node.
+  'kit-artist': {
+    write: [/^art\/concept-kit\/k-[\w-]+\.js$/, /^art\/concept-kit\/API-[\w-]+\.md$/],
+    code: {},
+    bash: [/^node scripts\/art-review-sheet\.mjs(?: (?!.*--out\b).*)?$/],
   },
   // Read-only: renders review images outside the repository and nothing else.
   'art-director': {
@@ -83,10 +93,13 @@ function check(profileName, event) {
     const target = realTarget(path.resolve(event.cwd || root, file));
     const relative = path.relative(root, target).split(path.sep).join('/');
     const inside = !relative.startsWith('../') && relative !== '..' && !path.isAbsolute(relative);
-    const allowed = inside && profile.write.some((scope) => (scope.endsWith('/') ? relative.startsWith(scope) : relative === scope));
+    const allowed = inside && profile.write.some((scope) => {
+      if (scope instanceof RegExp) return scope.test(relative);
+      return scope.endsWith('/') ? relative.startsWith(scope) : relative === scope;
+    });
     if (!allowed) {
       block(profile.write.length
-        ? `${profileName} may change only ${profile.write.join(', ')}; "${relative}" is outside that scope. Put the proposal in your report instead.`
+        ? `${profileName} may change only ${profile.write.map(String).join(', ')}; "${relative}" is outside that scope. Put the proposal in your report instead.`
         : `${profileName} is read-only; put the proposed change in your report instead of writing "${relative}".`);
     }
     const pattern = profile.code[relative];

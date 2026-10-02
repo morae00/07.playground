@@ -126,7 +126,9 @@ DOM 화면(드래프트 카드, HUD 스킬 슬롯, 초상, 칩 아이콘)이 쓰
 ## 리뷰 렌더와 서브에이전트
 
 - `node scripts/art-review-sheet.mjs <subject>`는 킷 그림을 크게(기본 3배, 얼굴·스프라이트는 8배) 저장소 밖 임시 폴더에 PNG로 그린다. 게임 크기에서는 안 보이는 얼굴과 작은 디테일을 검수할 때 쓴다. 대상은 `hero`, `hero-portrait`, `hero-sprite`, `bosses`, `boss-faces`, `enemies`, `story`, `ui-sheets`, 그리고 킷 호출 하나를 그리는 `expr --expr "<호출>"`이다. 저장소의 파일은 바꾸지 않는다.
-- 프로젝트 서브에이전트(`.claude/agents/`):
-  - `art-director`는 읽기 전용으로 스타일 바이블 기준 리뷰를 돌려준다. 위 렌더 명령만 실행할 수 있다.
+- `--check`를 붙이면 굽기가 거부하거나 깨뜨리는 마크업(같은 속성이 두 번 나오는 태그, 겹치는 id, 없는 id 참조, 빈 그림, 킷 모듈 오류)을 잡고 실패하면 1로 끝난다. 새 킷 모듈(`k-*.js`)도 자동으로 읽는다. `expr`는 `--crop x,y,w,h`로 부분만 자를 수 있다.
+- 프로젝트 서브에이전트(`.claude/agents/`, 외주 담당, 실행 순서는 `docs/outsourcing/R4-orders.md`):
+  - `art-director`는 읽기 전용이다. 스타일 바이블 기준 리뷰, `kit-artist`의 작업 지시서, 납품 검수를 돌려준다. 위 렌더 명령만 실행할 수 있다.
+  - `kit-artist`는 킷 모듈(`art/concept-kit/k-*.js`)과 그 API 문서(`API-*.md`)만 쓰고 고친다. 등록·굽기·렌더러는 메인 세션이 한다.
   - `sound-designer`는 오디오 폴더(`art/sfx-spec.mjs`, `art/audio/`, `public/assets/packs/sfx-common/`, `public/assets/packs/music/`)만 고친다.
-  - 두 에이전트의 범위는 PreToolUse 훅 `.claude/hooks/scope-guard.mjs`가 지킨다. 공유 맥락은 `.claude/agents/CONTEXT.md`에 있다.
+  - 세 에이전트의 범위는 PreToolUse 훅 `.claude/hooks/scope-guard.mjs`가 지킨다. 공유 맥락은 `.claude/agents/CONTEXT.md`에 있다.
