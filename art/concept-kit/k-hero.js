@@ -1,5 +1,6 @@
 // k-hero.js — 결(結) · 먹선 사냥꾼 hero kit  →  window.PN.heroKit
-// Requires kit/lib.js (PN.taper, PN.rng). Built from work/hero/src/*.js (do not hand-edit the built file).
+// Requires kit/lib.js (PN.taper, PN.rng). Originally concatenated from work/hero/src/*.js; since v2.1 (R4 faces) this
+// file is the source and the kit artist edits it directly (API-hero.md, change log).
 window.PN = window.PN || {};
 (function (PN) {
   'use strict';
@@ -160,68 +161,140 @@ window.PN = window.PN || {};
   PN.heroKit = PN.heroKit || {};
   PN._hk = { K, f, pt, T, Ctx, V, smooth, poly, limb, shadowEdge, litEdge, flat, limbShade, inkHem, beads, needle, splat };
 })(window.PN);
-// ---- HEAD · 흑립 (head-local coords: origin = skull centre, chin y≈+37, brim centre (0,-34), 1 head ≈ 84u) ----
+// ---- HEAD · 흑립 (head-local coords: origin = skull centre, chin y≈+32.5, brim centre (0,-34), 1 head ≈ 84u) ----
+// v2.1 (R4 faces H1): every feature follows ONE ~45° three-quarter turn. Construction: skull circle + face midline +
+// level lines (brow −8, eye −3.5, nose base 10, mouth 17.5, chin 32.5). The midline is x≈20 at the eyes; the nose tip
+// pushes forward to x≈34. The far contour is temple → far brow ridge → far eye socket → far cheekbone, and only the
+// nose tip leaves the cheek line (2u). The bridge starts between the eyes, the far eye (0.57 × the near eye) sits
+// beyond it and inside the far contour, the near ear and jaw angle are under the near hair locks.
 (function (PN) {
   'use strict';
-  const { K, f, T, splat, beads } = PN._hk;
+  const { K, f, pt, T, smooth, splat, beads } = PN._hk;
 
   // 3/4 view facing RIGHT. Face design shared by full body, portraits (bible §6: glint in shadow, right-cheek scar, knot)
-  const FACE = 'M -13,-28 C -4,-34 14,-34 23,-30 C 28,-26 30,-19 30,-12 C 29.6,-9 28.4,-7.6 28.6,-6 L 35,6 C 35.6,7.8 34.4,9.4 32.8,9.4 C 31.6,9.4 30.8,10 30.2,10.8 C 31.2,12 31.6,13.4 31.2,14.6 L 30.2,16.4 C 31,17.4 31,18.8 30.2,19.8 C 29,21 27.8,21.6 27.8,23 C 28,25.6 28,28.6 26,30.6 C 24,32.6 20.6,33 17.6,32.4 C 8,30 -2,24 -9,14 C -12,8 -13.6,0 -13.6,-8 C -13.6,-16 -13.4,-22 -13,-28 Z';
-  // diagonal brim shadow: far brow (upper right) → near cheekbone (lower left). NOT a horizontal band.
-  const SHADOW = 'M -40,-50 L 46,-50 L 46,-15.5 L 37,-14.5 C 31,-12.2 26.5,-10 22,-8.4 C 17.5,-6.6 14.5,-4 11.5,-1.8 L 8.6,0.2 C 4.6,2.6 0.4,4.6 -3.6,6.6 C -8.4,9 -11.6,12 -15.6,16.6 L -40,22 Z';
+  // contour, clockwise from the near temple (the top is under the brim); the outline strokes follow these same points
+  const FACE_PTS = [[-13, -28], [-4, -33], [14, -35], [22, -31], [31, -20], [31.4, -12.5], [31.6, -8.6], [29.8, -3.6], [32.2, 3.2],
+    [34, 6.4], [34.4, 7.8], [32, 9.6], [29.6, 11.2], [30.6, 13.8], [29.2, 16.8], [29.8, 19], [27.6, 23.6], [27.2, 29], [25.4, 30.8],
+    [17.6, 32.4], [8, 30.4], [-8.6, 15], [-13.6, 1], [-13.6, -14]];
+  const FACE = smooth(FACE_PTS, true);
+  // point runs: smooth inside a run, a deliberate corner where two runs meet (bible §6-2: designed, hard-edged black)
+  const runs = (R) => R.map((P, i) => (i ? smooth(P, false).replace(/^M \S+/, '') : smooth(P, false))).join('');
+  // ONE shadow mass wrapping the form: far brow (its lower edge IS the far eyebrow) → bend into the nasal root → under the
+  // near eye → corner at the near cheekbone → down the side plane to the jaw angle. Above the edge everything is ink.
+  const SHADOW = 'M -40,-50 L 46,-50 ' + runs([
+    [[46, -11.5], [31.6, -10.2]],
+    [[31.6, -10.2], [27.6, -8.2], [25.8, -8.6], [22.4, -8.8], [21.2, -7.4], [19.8, -4.4], [19, -0.8]],
+    [[19, -0.8], [15.6, 1.2], [11, 2.1], [7, 2.4], [3, 3.4], [-1.4, 6.6]],
+    [[-1.4, 6.6], [-3.6, 13.6], [-5.4, 17.4], [-9, 21]],
+    [[-9, 21], [-40, 24]]]).replace(/^M/, 'L') + ' Z';
+  // paper-shadow planes (bible §6-1 flat mid tone, no halftone in the face): side plane band inside the shadow edge,
+  // far cheek turning away below the far eye socket, and the worn under-eye plane of lowhp / hurt
+  const SIDE_TONE = 'M -1.4,6.6 C -2.2,9.6 -3.6,13.6 -5.4,17.4 L -2.6,18.2 C -1,14.4 0.4,10.4 1.4,6.8 Z';
+  const FAR_TONE = 'M 29.2,-1.6 C 30.4,0 31.4,1.6 31.8,3.6 L 30.2,4.4 C 29.8,2.6 29.2,0.6 28.4,-0.8 Z';
+  const WORN_TONE = 'M 15.6,1.2 C 11,2.1 7,2.4 3,3.4 C 1.2,4 0,5.2 -1.4,6.6 L 1.4,6.8 C 3,5.6 5.4,5.2 8.4,5 C 11.6,4.8 14.2,3.8 16.6,2.4 Z';
+  // the nose's near side plane: from the shadow edge at the root, between the cheek and the bridge, down to the wing
+  const NOSE_TONE = 'M 19,-0.8 C 21,0.6 22.6,2.4 23.8,4.6 C 24.6,6 25.4,7.2 26.2,8.2 C 27.6,7.6 29.4,7.2 31,6.2 C 29.4,4.8 27.4,3 25.4,1.2 C 23.6,-0.4 21.8,-2.4 19.8,-4.4 Z';
+  // variable-width brush along FACE_PTS[i0..i1] (same Catmull-Rom as FACE, so the stroke sits on the fill edge).
+  // wfn(t, p) → full width at arc fraction t / point p. Bible §3: one contour in 2–4 strokes, thin lit side, heavy below.
+  function edge(i0, i1, wfn) {
+    const P = FACE_PTS, n = P.length, g = (i) => P[((i % n) + n) % n], C = [];
+    for (let i = i0; i < i1; i++) for (let k = 0; k < 10; k++) {
+      const t = k / 10, a = g(i - 1), b = g(i), c = g(i + 1), d = g(i + 2), t2 = t * t, t3 = t2 * t;
+      C.push([0, 1].map((j) => 0.5 * (2 * b[j] + (c[j] - a[j]) * t + (2 * a[j] - 5 * b[j] + 4 * c[j] - d[j]) * t2 + (3 * b[j] - a[j] - 3 * c[j] + d[j]) * t3)));
+    }
+    C.push(g(i1));
+    const cum = [0];
+    for (let i = 1; i < C.length; i++) cum.push(cum[i - 1] + Math.hypot(C[i][0] - C[i - 1][0], C[i][1] - C[i - 1][1]));
+    const tot = cum[cum.length - 1] || 1, L = [], R = [];
+    C.forEach((p, i) => {
+      const a = C[Math.max(0, i - 1)], b = C[Math.min(C.length - 1, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1;
+      const h = Math.max(0.1, wfn(cum[i] / tot, p) / 2);
+      L.push([p[0] - dy / l * h, p[1] + dx / l * h]); R.push([p[0] + dy / l * h, p[1] - dx / l * h]);
+    });
+    return `<path d="M ${L.concat(R.reverse()).map(pt).join(' L ')} Z" fill="${K.ink}"/>`;
+  }
+  const ramp = (t, a, b) => Math.max(0, Math.min(1, t / a, (1 - t) / b));
+  // three strokes: lit far contour (forehead → cheekbone → nose tip) 3.0, easing to 0.7× at the far eye socket so the
+  // far eye keeps its gap; nose base → lips → chin front pressing from 2.2 to 4.2 (the shadow side is below); the chin
+  // 5.2 fading back along the jaw. No stroke where the jaw meets the neck: the neck's cast-shadow band is the edge.
+  const CONTOUR = edge(3, 10, (t, p) => 3.0 * ramp(t, 0.08, 0.12) * (1 - 0.3 * Math.max(0, 1 - Math.abs(p[1] + 3.6) / 4.5))) +
+    edge(9, 18, (t) => (2.2 + 2.0 * t) * ramp(t, 0.12, 0.1)) +
+    edge(17, 20, (t) => 5.2 * Math.min(1, t / 0.08) * Math.pow(Math.max(0, 1 - t / 0.8), 0.9));
   const HAIR_BACK = 'M -12,-42 C -28,-42 -40,-28 -39,-8 C -38,8 -33,20 -24,28 L -10,22 C -14,12 -14.5,0 -13.5,-12 C -13,-22 -11,-30 -4,-36 Z';
   const NECK = 'M -9,14 C -2,24 8,30 18,31 L 18,62 L -20,62 L -21,20 Z';
 
-  function eyes34(expr) {
-    let o = '';
-    const glint = expr === 'awakened' ? K.ally : K.p50;
-    // ---- near eye (inside the diagonal brim shadow unless the brim is lifted)
-    if (expr === 'victory') {
-      // brim lifted → near eye lit: almond + ink iris, lash stroke
-      o += `<path d="M 3.6,-4.8 C 6,-7.4 11,-7.8 14,-5.4 C 11.4,-2.6 6.4,-2.4 3.6,-4.8 Z" fill="${K.p50}"/><ellipse cx="9.4" cy="-4.8" rx="1.9" ry="2.1" fill="${K.ink}"/><circle cx="9.9" cy="-5.5" r="0.6" fill="${K.p50}"/>` +
-        T([3, -4.6, 8.4, -8.6, 14.8, -5.8], 2.2, 'mid', K.ink) + T([4, -2.6, 9, -1.6, 13.6, -3], 0.9, 'mid', K.ink, 'opacity="0.8"');
-    } else if (expr === 'hurt') {
-      o += T([2.6, -4.4, 8, -2.2, 13.6, -5.2], 1.8, 'mid', K.p50) + T([3.4, -6.6, 8.2, -5.4, 13, -7.6], 1.1, 'mid', K.p50, 'opacity="0.7"');
-    } else if (expr === 'focus') {
-      // horizontal slit glint + hard lower lid
-      o += `<ellipse cx="9.6" cy="-4.2" rx="3" ry="0.8" fill="${glint}"/>` + T([2, -2.6, 8, -1.8, 14, -3.2], 1.5, 'mid', K.p50, 'opacity="0.95"');
-    } else {
-      const lid = expr === 'lowhp' ? -2.8 : -2.4, gy = expr === 'lowhp' ? -4.4 : -5;
-      o += T([2, lid, 7.5, lid + 1.4, 13.6, lid - 0.6], 1.3, 'mid', K.p50, 'opacity="0.95"');
-      if (expr === 'awakened') o += `<circle cx="9.6" cy="${gy}" r="4.4" fill="${K.allyG}" opacity="0.5" filter="url(#{ID}glow)"/>` + T([9.6, gy, 0, gy - 3, -14, gy + 1], 2.2, 'start', K.ally) + T([9.6, gy, -2, gy + 2, -12, gy + 8], 1.4, 'start', K.allyG);
-      o += `<ellipse cx="9.6" cy="${gy}" rx="2" ry="${expr === 'lowhp' ? 1.5 : 2}" fill="${glint}"/><circle cx="6.4" cy="${gy + 1}" r="0.7" fill="${K.p50}" opacity="0.8"/>`;
-    }
-    // ---- far eye (lit, just under the shadow edge)
-    if (expr === 'hurt') {
-      o += T([22, -8, 26.6, -5.2, 30, -3.4], 2.3, 'mid', K.ink) + T([22.4, -1.4, 26.4, -2.8, 30, -3.4], 2.3, 'mid', K.ink) + T([21, -11.4, 25.6, -9.4, 30.6, -11.8], 1.8, 'mid', K.ink);
-    } else if (expr === 'victory') {
-      o += `<path d="M 22.4,-5 C 24.4,-7.2 27.6,-7.2 29.6,-5.4 C 27.8,-3.2 24.6,-3 22.4,-5 Z" fill="${K.p50}"/><ellipse cx="26.4" cy="-5" rx="1.5" ry="1.8" fill="${K.ink}"/><circle cx="26.8" cy="-5.6" r="0.5" fill="${K.p50}"/>` +
-        T([21.8, -5, 25.4, -8.4, 30, -5.8], 2.1, 'mid', K.ink) + T([21.6, -10.6, 26, -12.6, 31, -11], 1.9, 'mid', K.ink);
-    } else if (expr === 'focus') {
-      // narrowed: heavy upper lid low over the iris, hard brow slanting down to the nose
-      o += `<path d="M 22.6,-3.6 C 24.6,-4.4 27.4,-4.4 29.4,-3.4 C 27.8,-1.8 24.8,-1.6 22.6,-3.6 Z" fill="${K.p50}"/><ellipse cx="26.6" cy="-2.9" rx="1.5" ry="1.1" fill="${K.ink}"/>` +
-        T([22, -3.4, 25.8, -5, 30, -3.6], 2.6, 'mid', K.ink) + `<path d="M 20.6,-10.6 L 31.6,-7.4 L 31,-5.8 L 20.4,-8.4 Z" fill="${K.ink}"/>`;
-    } else {
-      const top = expr === 'lowhp' ? -3.8 : -5.2;
-      o += `<path d="M 22.6,${top + 0.4} C 24.6,${top - 0.6} 27.4,${top - 0.4} 29.4,${top + 0.4} C 27.8,-1.6 24.8,-1.4 22.6,${top + 0.4} Z" fill="${K.p50}"/>`;
-      o += `<ellipse cx="26.6" cy="-3.2" rx="1.55" ry="1.95" fill="${expr === 'awakened' ? K.allyD : K.ink}"/><circle cx="27" cy="-3.8" r="0.55" fill="${K.p50}"/>`;
-      o += T([22.2, top + 0.6, 25.6, top - 1, 29.8, top + 0.2], expr === 'lowhp' ? 2.8 : 2.1, 'mid', K.ink) + T([23.6, -1.4, 26.2, -1, 28.8, -1.8], 0.8, 'mid', K.ink, 'opacity="0.8"');
-    }
-    return o;
+  // lit almond with an iris clipped by the lids (the upper lid covers the top of the iris)
+  function almond(c, d, iris, glint) {
+    return `<path d="${d}" fill="${K.p50}"/><g clip-path="url(#${c.clip(d)})">${iris}</g>` + (glint || '');
   }
-  function mouth34(expr) {
+  // eyes in head-local coords. B = bold: a line-weight factor only (positions and sizes never grow, R4 H1)
+  function eyes34(c, expr, B) {
+    B = B || 1;
+    let o = '';
+    // ---- near eye: inside the brim shadow → one glint on the lower lid (v1.0 §8.1), unless the brim is lifted
+    if (expr === 'victory') {
+      const d = 'M 2.6,-3.6 C 5.4,-6.6 10.6,-7 13.4,-4.2 C 10.8,-1.8 5.6,-1.4 2.6,-3.6 Z';
+      o += almond(c, d, `<ellipse cx="9.6" cy="-4" rx="1.8" ry="2.2" fill="${K.ink}"/>`, `<circle cx="10.1" cy="-4.8" r="0.55" fill="${K.p50}"/>`) +
+        T([2.2, -3.5, 7.4, -8, 13.8, -4.3], 2.2 * B, 'end') + T([3.6, -2.5, 8.4, -1.2, 12.8, -3.3], 0.8 * B, 'mid', K.ink, 'opacity="0.8"') +
+        T([1.6, -9.6, 7.4, -11.6, 13.6, -10.2], 1.9 * B);
+    } else if (expr === 'hurt') {
+      // squeezed shut in the shadow: two paper lid arcs closing toward the nose
+      o += T([3, -2.4, 8, -0.6, 13.4, -3.4], 1.8 * B, 'mid', K.p50) + T([3.6, -5, 8.2, -4, 13, -4.2], 1.1 * B, 'mid', K.p50, 'opacity="0.7"');
+    } else if (expr === 'focus') {
+      // hard lower lid + a horizontal slit glint
+      o += T([2.8, -1.6, 7.6, -0.6, 13.2, -2.4], 1.4 * B, 'mid', K.p50, 'opacity="0.95"') + `<ellipse cx="9.2" cy="-2.5" rx="2.4" ry="0.6" fill="${K.p50}"/>`;
+    } else {
+      const low = expr === 'lowhp', wake = expr === 'awakened';
+      o += T([2.8, low ? -1.4 : -1.8, 7.6, low ? -0.2 : -0.8, 13.2, low ? -2.2 : -2.6], 1.1 * B, 'mid', K.p50, 'opacity="0.95"');
+      const gx = 9.4, gy = low ? -2.3 : -3, rx = low ? 0.9 : wake ? 1.3 : 1.1, ry = low ? 1 : wake ? 1.6 : 1.4;
+      // awakened: the glint bleeds into a cyan thread trailing back into the shadow (ink · cyan · glow, no blur)
+      if (wake) o += T([gx, gy, 0, gy - 3, -14, gy + 1], 2.2, 'start', K.ally) + T([gx, gy, -2, gy + 2, -12, gy + 8], 1.4, 'start', K.allyG);
+      o += `<ellipse cx="${gx}" cy="${gy}" rx="${rx}" ry="${ry}" transform="rotate(-20 ${gx} ${gy})" fill="${wake ? K.ally : K.p50}"/>`;
+      if (wake) o += `<circle cx="${gx + 0.2}" cy="${gy - 0.3}" r="0.5" fill="${K.allyG}"/>`;
+    }
+    // ---- far eye: lit, beyond the bridge, outer corner ≥ 1u inside the far contour stroke
+    // (drawn 0.8u nearer the bridge than the R4 order coordinates, inside its ±1.5u tolerance, for that gap)
+    o += '<g transform="translate(-0.8 0)">';
+    if (expr === 'hurt') {
+      // shut tight: a '<' pointing at the nose, the brow's outer tail pulled down out of the shadow
+      o += T([29.4, -6.2, 26, -4.6, 22.8, -3.3], 2.3 * B) + T([29.2, -0.6, 26, -1.8, 22.8, -3.3], 2.3 * B) + T([21.4, -9.8, 26.2, -9.6, 30.8, -7.4], 1.8 * B);
+    } else if (expr === 'focus') {
+      // narrowed: the upper lid down to the iris centre, a hard brow kinked down toward the nose
+      o += almond(c, 'M 22.6,-3 C 24.4,-3.7 27,-3.9 28.6,-3.4 C 27.4,-2 24.6,-1.6 22.6,-3 Z', `<ellipse cx="26.2" cy="-3.2" rx="1.2" ry="1.7" fill="${K.ink}"/>`) +
+        T([22.2, -3, 25.4, -4.1, 29, -3.4], 2.4 * B, 'end') + `<path d="M 20.8,-8.4 C 23.8,-8.6 27.6,-9.6 31.6,-11 L 31.4,-8.4 C 27.8,-7.4 24.4,-5.8 21.4,-5.2 Z" fill="${K.ink}"/>`;
+    } else if (expr === 'lowhp') {
+      // half shut, heavy drooping lid, no catch-light
+      o += almond(c, 'M 22.6,-3 C 24.4,-4 27,-4.2 28.6,-3.4 C 27.4,-2 24.6,-1.7 22.6,-3 Z', `<ellipse cx="26" cy="-2.8" rx="1.2" ry="1.6" fill="${K.ink}"/>`) +
+        T([22.2, -3.1, 25.4, -4.7, 29, -3.2], 2.6 * B) + T([23.2, -2.1, 25.6, -1.4, 28.2, -2.6], 0.7 * B, 'mid', K.ink, 'opacity="0.8"');
+    } else {
+      o += almond(c, 'M 22.6,-3.2 C 24.2,-5.2 27,-5.4 28.6,-3.8 C 27.4,-2.2 24.6,-1.8 22.6,-3.2 Z',
+        `<ellipse cx="26.2" cy="-3.4" rx="1.2" ry="1.7" fill="${expr === 'awakened' ? K.allyD : K.ink}"/>`, `<circle cx="26.6" cy="-4" r="0.45" fill="${K.p50}"/>`) +
+        T([22.2, -3.2, 25.2, -5.8, 29, -3.9], 2 * B, 'end') + T([23.2, -2.4, 25.6, -1.6, 28.2, -3], 0.7 * B, 'mid', K.ink, 'opacity="0.8"');
+      // the far brow is the shadow edge itself; only the lifted brim (victory) shows it as a stroke
+      if (expr === 'victory') o += T([21.4, -9.6, 25.4, -11, 30.4, -9.4], 1.7 * B);
+    }
+    return o + '</g>';
+  }
+  // mouth: near corner (17.4,18) → centre on the midline (24.6,18) → far corner on the far contour (29.2,16.8)
+  function mouth34(expr, B, fine) {
+    B = B || 1;
+    const lip = T([21.6, 21.2, 24.4, 21.6, 27, 20.8], 0.9 * B, 'mid', K.ink, 'opacity="0.8"');
     switch (expr) {
-      case 'focus': return `<path d="M 23.4,18.6 L 31.8,18.2 L 31.8,19.8 L 23.4,20.2 Z" fill="${K.ink}"/>` + T([23, 18.6, 23.4, 20.2, 24.4, 21.4], 1.1, 'mid', K.ink);
-      case 'hurt': return `<path d="M 23,17.8 C 25.6,16.4 29.8,16.6 32,17.8 C 30.8,22.4 26.4,23 23,17.8 Z" fill="${K.ink}"/><path d="M 24.4,18.4 L 31,18.2" stroke="${K.p50}" stroke-width="1"/>`;
-      case 'lowhp': return `<path d="M 25,18.6 C 27,17.8 30,18 31.6,18.6 C 30.6,21 27.4,21.4 25,18.6 Z" fill="${K.ink}"/>`;
-      case 'victory': return T([22.6, 19.6, 27, 20.6, 31.4, 16.6], 2, 'mid', K.ink) + T([31, 17.2, 32.2, 16.2, 32.4, 14.8], 1.1, 'mid', K.ink) + T([26, 23.4, 28.4, 23.8, 30.4, 22.8], 0.9, 'mid', K.ink, 'opacity="0.7"');
-      default: return T([24.2, 19, 28, 19.6, 31.6, 18.7], 1.6, 'mid', K.ink) + T([27, 22.8, 28.6, 23, 30, 22.4], 0.9, 'mid', K.ink, 'opacity="0.7"');
+      case 'focus': return T([18, 18.2, 23.6, 18.1, 29.2, 16.9], 1.8 * B) + lip;
+      case 'hurt': return `<path d="M 18.4,17.4 C 21.4,16.2 26.4,15.8 29.4,16.4 C 28.8,21.4 22.4,22.8 18.4,17.4 Z" fill="${K.ink}"/><path d="M 20.2,17.6 L 28.2,16.9" stroke="${K.p50}" stroke-width="${f(B)}"/>`;
+      case 'lowhp': return `<path d="M 20.6,18 C 23,17.2 26.6,17 28.6,17.4 C 27.6,20.4 23.2,21 20.6,18 Z" fill="${K.ink}"/>`;
+      // one-sided smile (v1.0 §8.1): only the near corner lifts
+      case 'victory': return T([17.2, 16.4, 20.4, 18.8, 25.6, 19, 29.2, 16.8], 1.7 * B) + T([17.8, 16.6, 16.6, 15.8, 16.2, 14.4], 1 * B) + lip;
+      default: return T([17.4, 18, 21.4, 18.7, 26.4, 18.6, 29.2, 16.8], 1.5 * B) + lip +
+        // philtrum: opaque thin ink (no 4th grey value, bible §6-1, K0 R3)
+        (fine ? T([25.8, 11.4, 25.9, 12.7, 26.2, 14], 0.5 * B) : '');
     }
   }
 
-  // hat in head-local coords (brim tilt deg)
+  // hat in head-local coords (brim tilt deg). v2.1 default −3: the near side sits level or lower, so the brim's front
+  // edge leans the same way as the face shadow (far brow high → near cheek low) instead of crossing it (R4 H2, Q1)
   function hat34(c, tilt, rings) {
-    tilt = tilt == null ? 5 : tilt;
+    tilt = tilt == null ? -3 : tilt;
     const rim = (a0, a1, rx, ry, w, op) => {
       const p = (a) => [f(rx * Math.cos(a * Math.PI / 180)), f(-34 + ry * Math.sin(a * Math.PI / 180))];
       const s = p(a0), e = p(a1);
@@ -241,39 +314,49 @@ window.PN = window.PN || {};
     </g>`;
   }
 
+  // the jaw's cast shadow starts right on the jawline, so the face needs no stroke where the jaw meets the neck (R4 H1).
+  // lite (portrait): a thinner band over a paper-shadow neck plane (no halftone, R4 H3)
   function neck34(c, lite) {
+    const jaw = 'M -9,14 C -2,24 8,30 18,31';
     return `<path d="${NECK}" fill="${K.paper}" stroke="${K.ink}" stroke-width="4.4" stroke-linejoin="round" paint-order="stroke"/>` +
-      (lite ? `<path d="M -21,20 C -8,29 6,34 18,32 L 18,62 L -21,62 Z" fill="${c.pat('d20')}"/><path d="M -21,20 C -8,29 6,34 18,32 L 18,37 C 6,39 -10,34 -21,26 Z" fill="${K.ink}"/>`
-        : `<path d="M -21,20 C -8,29 6,34 18,32 L 18,46 C 6,46 -10,42 -21,34 Z" fill="${K.ink}"/>`);
+      (lite ? `<path d="${jaw} L 18,62 L -21,62 L -21,20 Z" fill="${K.p300}"/><path d="${jaw} L 18,36.6 C 6,37.6 -10,32.6 -21,25.4 L -21,20 Z" fill="${K.ink}"/>`
+        : `<path d="${jaw} L 18,46 C 6,46 -10,42 -21,34 L -21,20 Z" fill="${K.ink}"/>`);
   }
-  // full 3/4 head. o: {expr, hat:true, tilt, beads:true, sweat, splash}
+  // sweat drop: tip (x, y) up, round bottom h below; paper with an ink rim
+  const drop = (x, y, h) => `<path d="M ${f(x)},${f(y)} C ${f(x - 0.34 * h)},${f(y + 0.57 * h)} ${f(x - 0.31 * h)},${f(y + 0.94 * h)} ${f(x)},${f(y + h)} C ${f(x + 0.31 * h)},${f(y + 0.94 * h)} ${f(x + 0.34 * h)},${f(y + 0.57 * h)} ${f(x)},${f(y)} Z" fill="${K.p50}" stroke="${K.ink}" stroke-width="1.1"/>`;
+  // full 3/4 head. o: {expr, hat:true, tilt, beads:true, sweat, splash, bold, fine, shadowDy, shadowRot, hatDy, rings, sheen, neck}
+  // bold = line-weight factor for the features (portrait 1.25); fine = portrait / key-art detail (philtrum)
   function head34(c, o) {
-    o = o || {}; const expr = o.expr || 'calm';
+    o = o || {}; const expr = o.expr || 'calm', B = o.bold || 1;
+    // a lifted brim (victory) lifts its shadow off both eyes unless the caller places it (full-body levelup)
+    const sDy = o.shadowDy != null ? o.shadowDy : expr === 'victory' ? -11 : 0;
+    const sRot = o.shadowRot != null ? o.shadowRot : expr === 'victory' ? -5 : 0;
     const cl = c.clip(FACE);
     let s = `<path d="${HAIR_BACK}" fill="${K.ink}" stroke="${K.ink}" stroke-width="4"/>`;
     s += o.sheen ? T([-26, -36, -38, -12, -30, 20], 3.2, 'mid', K.p50, 'opacity="0.9"') + T([-18, -38, -28, -18, -24, 8], 2, 'mid', K.p50, 'opacity="0.8"') + T([-33, -24, -40, -4, -34, 18], 1.4, 'mid', K.p50, 'opacity="0.7"')
       : T([-30, -34, -42, -10, -30, 22], 1.6, 'mid', K.p50, 'opacity="0.55"') + T([-22, -38, -34, -18, -28, 10], 1, 'mid', K.p50, 'opacity="0.4"');
     if (o.neck !== false) s += neck34(c);
     s += `<path d="M -16,-6 C -23,-9 -26,1 -23,7 C -21.6,10.6 -18.4,12 -15,10.4 Z" fill="${K.ink}" stroke="${K.ink}" stroke-width="2"/>`;
-    s += `<path d="${FACE}" fill="${K.paper}" stroke="${K.ink}" stroke-width="4" stroke-linejoin="round" paint-order="stroke"/>`;
-    s += `<g clip-path="url(#${cl})">
-      <path d="M 30.2,10.8 C 32,11 34,10.6 35,9 L 35,12 L 30,12 Z" fill="${K.ink}"/>
-      <path d="M 27.8,23 C 26,24.4 24.6,24.6 23,24.2 C 24.6,25.8 26.6,26 28,25.2 Z" fill="${K.ink}" opacity="0.85"/>
-      <path d="${SHADOW}" fill="${K.ink}" transform="translate(0 ${o.shadowDy || 0}) rotate(${o.shadowRot || 0} 10 -10)"/>
-      ${expr === 'lowhp' || expr === 'hurt' ? `<path d="M -16,16.6 C -11,12 -6,8.4 0,5.2 L 2,8.4 C -4,11 -10,16 -16,22 Z" fill="${c.pat('d40')}"/>` : ''}
-    </g>`;
-    // nostril + scar (right cheek, sewn stroke) + eyes + mouth
-    s += T([29.6, 8.6, 31, 7.8, 32.6, 8.2], 1.2, 'mid', K.ink);
-    s += T([-4, 14.6, 2, 12, 9.6, 9.2], 1.3, 'mid', K.ink) + `<path d="M 0.6,11.4 L 1.8,14.2 M 5,9.8 L 6.2,12.6" stroke="${K.ink}" stroke-width="0.7"/>`;
-    const B = o.bold || 1, sc = (cx, cy, m) => B === 1 ? m : `<g transform="translate(${cx} ${cy}) scale(${B}) translate(${-cx} ${-cy})">${m}</g>`;
-    s += sc(18, -4, eyes34(expr).replace(/\{ID\}/g, c.id)) + sc(27, 17, `<g transform="translate(-1.3 -2.2)">${mouth34(expr)}</g>`);
+    // face: fill only — the outline is the three brush strokes of CONTOUR, drawn over the shading
+    s += `<path d="${FACE}" fill="${K.paper}"/>`;
+    // inside the face: 3 values (paper · paper shadow · ink), ONE shadow mass and ONE accent (the nose shadow)
+    s += `<g clip-path="url(#${cl})"><path d="${FAR_TONE}" fill="${K.p300}"/><path d="${NOSE_TONE}" fill="${K.p300}"/>` +
+      `<g transform="translate(0 ${f(sDy)}) rotate(${f(sRot)} 10 -10)"><path d="${SIDE_TONE}" fill="${K.p300}"/>` +
+      (expr === 'lowhp' || expr === 'hurt' ? `<path d="${WORN_TONE}" fill="${K.p300}"/>` : '') +
+      `<path d="${SHADOW}" fill="${K.ink}"/></g><path d="M 28.6,10.4 L 32,9.8 L 30.6,12.4 Z" fill="${K.ink}"/></g>`;
+    s += CONTOUR;
+    // nose: lower bridge line into the tip, near nostril wing, nostril
+    s += T([25.4, 1.2, 29, 4, 32.4, 6.4], 0.9 * B, 'end') + T([26.2, 8.2, 27.2, 10.2, 29.6, 10.6], B) + T([29.8, 9.4, 31, 9.6, 32.2, 9.4], B);
+    // scar on the near (right) cheek, in the light (Q2): one rising stroke + 2 stitches
+    s += T([1.5, 13.8, 6.2, 12.2, 11, 10.2], 1.1 * B) + `<path d="M 3.9,11.6 L 4.8,14 M 7.2,10.3 L 8.1,12.8" stroke="${K.ink}" stroke-width="${f(0.6 * B)}" stroke-linecap="round"/>`;
+    s += eyes34(c, expr, B) + mouth34(expr, B, o.fine);
     // front locks (near side) framing the face
     s += T([-9, -26, -19, 0, -18, 28], 6, 'mid', K.ink) + T([-3, -28, -10, -6, -8.6, 16], 4.2, 'mid', K.ink) + T([-12, -24, -16, 2, -14, 22], 1, 'mid', K.p50, 'opacity="0.55"');
-    if (o.sweat || expr === 'lowhp') {
-      s += `<path d="M 16,-10 C 13.6,-6 13.8,-3.4 16,-3 C 18.2,-3.4 18.4,-6 16,-10 Z" fill="${K.p50}" stroke="${K.ink}" stroke-width="1.2"/>` +
-        `<path d="M 33,-16 C 31.2,-12.6 31.4,-10.4 33.2,-10 C 35,-10.4 35.2,-12.6 33,-16 Z" fill="${K.p50}" stroke="${K.ink}" stroke-width="1.1"/>`;
-    }
-    if (o.splash || expr === 'hurt') s += splat(18, 26, 5, 7, 31, K.ink, 2.4);
+    // sweat: one temple drop on the far contour, hanging from the brow edge with its round end in the light (v1.0 §8.7
+    // "이마에 땀"). Nothing white below the far eye (a cheek drop read as a tear, K0 F2), nothing floating in the shadow.
+    if (o.sweat || expr === 'lowhp') s += drop(30.4, -11.8, 5.2);
+    // hurt: ink splash on the lower near cheek, clear of the scar (v1.0 §8.7 "뺨에 먹 튐", K0 R4)
+    if (o.splash || expr === 'hurt') s += splat(9, 20, 5, 7, 31, K.ink, 2.4);
     if (o.beads !== false) {
       s += `<path d="M -15,-14 C -12,4 -8,20 -6,30" fill="none" stroke="${K.ink}" stroke-width="1.2"/>`;
       s += beads([-6, 31], [0, 60], [9, 88], 11, 2.2) + beads([25, 38], [24, 62], [17, 90], 10, 2);
@@ -290,25 +373,29 @@ window.PN = window.PN || {};
   const { K, f, T, splat, beads } = PN._hk;
   // ---- FRONT head (origin skull centre, symmetric; brim tilts down to viewer-left so the shadow runs diagonally) ----
   const FFACE = 'M -22,-30 C -24.6,-14 -24.4,2 -21,12.6 C -17.4,22.4 -9.4,30.4 -2.4,36.4 C -1.2,37.6 -0.4,39.2 0,40.2 C 0.6,39 1.4,37.6 2.8,36.2 C 9.6,30.2 17,22.2 20.6,12.6 C 24,2 24.6,-14 22,-30 Z';
-  // diagonal brim shadow: viewer-right brow (y≈−15) → viewer-left cheekbone (y≈+3). NOT a horizontal band.
-  const FSHADOW = 'M -40,-60 L 40,-60 L 40,-15.4 L 30,-14.2 C 22,-12.2 14,-9.8 6,-6.8 C -2,-3.8 -10,-1.2 -17,1.8 L -40,7 Z';
+  // v2.1 (R4 H4) brim shadow that wraps the form: over the viewer-right brow → a light notch at the nasal root (the
+  // bridge stays lit) → under the viewer-left eye → its cheekbone → down the side plane. NOT a horizontal band.
+  const FSHADOW = 'M -40,-60 L 40,-60 L 40,-15.6 L 24,-13.8 C 18,-13.2 14,-12 10.6,-9.6 C 8.4,-8 6.4,-7.4 4.4,-7.6 C 2.6,-7.8 1.4,-6.6 0.6,-4.6 C -0.4,-2 -2.6,-0.6 -5.4,-0.2 C -10,0.4 -14.4,0.6 -17.6,2.4 C -19.4,3.6 -20.4,6.4 -21,10 L -40,12 Z';
   function headFront(c, o) {
     o = o || {};
     const cl = c.clip(FFACE);
     let s = `<path d="M -30,-38 C -44,-20 -42,14 -34,40 L -18,34 L -24,-10 Z M 30,-38 C 44,-20 42,14 34,40 L 18,34 L 24,-10 Z" fill="${K.ink}" stroke="${K.ink}" stroke-width="3"/>`;
-    s += `<path d="M -13,26 L -14,58 L 14,58 L 13,26 Z" fill="${K.paper}" stroke="${K.ink}" stroke-width="4" paint-order="stroke"/><path d="M -14,29 C -6,38 6,38 14,29 L 14,33 C 6,42 -6,42 -14,33 Z" fill="${K.ink}"/><path d="M -14,33 C -6,42 6,42 14,33 L 14,42 L -14,42 Z" fill="${c.pat('d20')}"/><path d="M 4,40 L 14,34 L 14,58 L 8,58 Z" fill="${c.pat('d40')}"/>`;
+    // neck: the under-jaw band and the side of the neck are flat paper shadow, not halftone in a narrow strip (K0 R2)
+    s += `<path d="M -13,26 L -14,58 L 14,58 L 13,26 Z" fill="${K.paper}" stroke="${K.ink}" stroke-width="4" paint-order="stroke"/><path d="M -14,29 C -6,38 6,38 14,29 L 14,33 C 6,42 -6,42 -14,33 Z" fill="${K.ink}"/><path d="M -14,33 C -6,42 6,42 14,33 L 14,42 L -14,42 Z" fill="${K.p300}"/><path d="M 4,40 L 14,34 L 14,58 L 8,58 Z" fill="${K.p300}"/>`;
     s += `<path d="M -23,-6 C -30,-8 -31,4 -27,8 L -22,9 Z M 23,-6 C 30,-8 31,4 27,8 L 22,9 Z" fill="${K.ink}"/>`;
     s += `<path d="${FFACE}" fill="${K.paper}" stroke="${K.ink}" stroke-width="4" stroke-linejoin="round" paint-order="stroke"/>`;
-    // inside the face: jaw plane tone on the shadow (viewer-right) side, under-chin tone, then the diagonal brim shadow
+    // inside the face: flat paper-shadow planes (jaw side plane on the viewer-right, under-chin rim; no single halftone
+    // dots in the face, R4 H4), then the brim shadow
     s += `<g clip-path="url(#${cl})">
-      <path d="M 10,16 C 16,11 20,4 22,-4 L 30,-4 L 30,44 L 2,44 C 10,34 14,26 15,20 Z" fill="${c.pat('d20')}"/>
-      <path d="M 13,20 C 16,14 19,8 21,1 L 26,1 L 26,30 L 6,40 C 10,32 12,26 13,20 Z" fill="${c.pat('d40')}"/>
-      <path d="M -24,26 C -14,34 -5,39 0,41 C 6,39 15,33 24,24 L 24,46 L -24,46 Z" fill="${c.pat('d40')}"/>
+      <path d="M 10,16 C 16,11 20,4 22,-4 L 30,-4 L 30,44 L 2,44 C 10,34 14,26 15,20 Z" fill="${K.p300}"/>
+      <path d="M -24,26 C -14,34 -5,39 0,41 C 6,39 15,33 24,24 L 24,46 L -24,46 Z" fill="${K.p300}"/>
       <path d="${FSHADOW}" fill="${K.ink}"/></g>`;
-    // nose: tapered wedge on the shadow side from brow to tip + nostril ticks
-    s += `<path d="M 1.2,-5 C 3.2,1.6 4.8,7.6 6.6,12.8 C 5.8,14.6 4.2,15.2 2.6,14.8 C 3.6,10 3,3.6 1.2,-5 Z" fill="${K.ink}"/>` + T([-3.6, 14.4, -1.8, 15.9, 0.4, 15.1], 1.4, 'mid', K.ink) + T([2.4, 15.2, 3.8, 15.9, 5.4, 15.2], 1.1, 'mid', K.ink);
-    // eyes: viewer-left (character's right) in shadow → glint + lower lid; viewer-right lit with brow
-    s += T([-16.5, -2.2, -11, -0.4, -5.6, -2.6], 1.3, 'mid', K.p50) + `<circle cx="-10.4" cy="-4.6" r="2" fill="${K.p50}"/>`;
+    // nose: only the lower 60% is a shadow wedge (the bridge stays lit), one cast-shadow accent under the tip, nostrils
+    s += `<path d="M 2.6,4 C 4,7.4 5.4,10.4 6.6,12.8 C 5.8,14.4 4.2,15 2.8,14.6 C 3.6,11.2 3.4,7.6 2.6,4 Z" fill="${K.ink}"/>` +
+      `<path d="M 2.2,15.6 L 7.4,14.4 L 5.4,17 Z" fill="${K.ink}"/>` + T([-3.6, 14.4, -1.8, 15.9, 0.4, 15.1], 1.4, 'mid', K.ink) + T([2.4, 15.2, 3.8, 15.9, 5.4, 15.2], 1.1, 'mid', K.ink);
+    // eyes: viewer-left (character's right) in shadow → lower lid + the same glint as the 3/4 head (rx 1.2 · ry 1.5, −20°)
+    // sitting on the lid (K0 R1, v1.0 §6 shared face design); viewer-right lit with brow
+    s += T([-16.5, -2.2, -11, -0.4, -5.6, -2.6], 1.3, 'mid', K.p50) + `<ellipse cx="-10.4" cy="-2.95" rx="1.2" ry="1.5" transform="rotate(-20 -10.4 -2.95)" fill="${K.p50}"/>`;
     s += `<path d="M 5,-5 C 8,-7.4 13.6,-7.6 17,-5 C 14,-2 8.4,-2 5,-5 Z" fill="${K.p50}"/><ellipse cx="11.2" cy="-4.4" rx="1.9" ry="2.1" fill="${K.ink}"/><circle cx="11.7" cy="-5" r="0.6" fill="${K.p50}"/>`;
     s += T([4.4, -4.8, 10.8, -8.2, 17.6, -5.2], 2.1, 'mid', K.ink) + T([4.6, -11.2, 11.6, -13.4, 19, -11.4], 2.3, 'mid', K.ink) + T([6, -1.4, 11, -0.6, 16, -2.2], 0.8, 'mid', K.ink, 'opacity="0.8"');
     // mouth: one-sided corner (right corner tucked), lower-lip shadow, chin cleft
@@ -859,7 +946,7 @@ window.PN = window.PN || {};
       spool: () => H.spool(c, F.at(0.9, -12), -6) + (P.sword && P.swordOver ? H.swordHilt(c, P.sword.p, P.sword.deg, P.sword.len) : ''),
       aN: () => H.arm(c, P.aN, P.hN || {}, { w0: P.aNw, pref: P.aNpref, minBend: P.aNbend }),
       head: () => hg(H.neck34(c)) + H.scarfWrap(c, P.wrap ? P.wrap.p : V.add(F.N, [4, -10]), P.wrap ? P.wrap.rot : 0, P.wrap || {}) +
-        hg(H.head34(c, { expr: hd.expr, tilt: hd.tilt, neck: false, splash: hd.splash })) + (P.front2 || '')
+        hg(H.head34(c, { expr: hd.expr, tilt: hd.tilt, neck: false, splash: hd.splash, fine: c.opts.fine })) + (P.front2 || '')
     };
     (P.order || ORDER).forEach((k) => { s += parts[k] ? parts[k]() : ''; });
     return s;
@@ -910,12 +997,15 @@ window.PN = window.PN || {};
     return `<ellipse cx="${cx}" cy="600" rx="${w}" ry="${f(w * 0.16)}" fill="${K.ink}" opacity="0.22"/><ellipse cx="${cx}" cy="600" rx="${f(w * 0.62)}" ry="${f(w * 0.09)}" fill="${K.ink}" opacity="0.35"/>`;
   }
 
-  // full(pose, opts) → SVG <g> string in the 400x640 local box. opts: {pitch, rough, ground:true, scaleHint}
+  // full(pose, opts) → SVG <g> string in the 400x640 local box. opts: {pitch, rough, ground:true, scaleHint, fine, lettering:false}
+  // fine (face detail for key art and close-ups) defaults to true without a scaleHint or from scaleHint 0.9 up.
+  // lettering: sound-effect / damage lettering in the over layer (throw '슉!', hurt '-18'); off by default (no text in art)
   PN.heroKit.full = function (pose, opts) {
     opts = opts || {};
     pose = pose || 'threeQuarter';
     const pitch = opts.pitch || (opts.scaleHint ? Math.max(6, 3.2 / opts.scaleHint) : 6);
-    const c = H.Ctx({ pitch, rough: opts.rough, seed: 7 });
+    const fine = opts.fine != null ? !!opts.fine : !opts.scaleHint || opts.scaleHint >= 0.9;
+    const c = H.Ctx({ pitch, rough: opts.rough, seed: 7, fine });
     let body = '';
     if (pose === 'front') body = H.frontFig(c, opts);
     else if (pose === 'back') body = H.backFig(c, opts);
@@ -931,7 +1021,7 @@ window.PN = window.PN || {};
         c.defs.push(`<filter id="${c.id}echo" x="-10%" y="-10%" width="120%" height="120%"><feMorphology in="SourceAlpha" operator="dilate" radius="2.6" result="d"/><feFlood flood-color="${K.ink}"/><feComposite in2="d" operator="in" result="o"/><feFlood flood-color="${K.p50}"/><feComposite in2="SourceAlpha" operator="in" result="p"/><feMerge><feMergeNode in="o"/><feMergeNode in="p"/></feMerge></filter>`);
         echo = `<g transform="translate(${echoV[0]} ${echoV[1]})" filter="url(#${c.id}echo)" opacity="0.96">${fig}</g>`;
       }
-      body = (opts.ground === false ? '' : ground(c, P.groundX || 200, P.groundW || 120)) + under + echo + `<g ${c.rough}>${fig}</g>` + (P.over ? P.over(c) : '');
+      body = (opts.ground === false ? '' : ground(c, P.groundX || 200, P.groundW || 120)) + under + echo + `<g ${c.rough}>${fig}</g>` + (P.over ? P.over(c, opts) : '');
     }
     return c.wrap(body);
   };
@@ -994,11 +1084,12 @@ window.PN = window.PN || {};
       edge: [234, 360, 228, 404, 228, 448, 3.2],
       lining: [[[292, 444], [286, 424], [280, 442], [270, 456], [288, 452]]]
     },
-    over(c) {
+    over(c, o) {
       // needles leaving the splayed fingers, ink threads back to the fingertips, 3 in flight
       return `<g fill="none" stroke="${K.ink}" stroke-width="1.6"><path d="M 414,194 C 426,186 434,182 444,176"/><path d="M 420,218 C 434,216 444,215 456,214"/><path d="M 412,238 C 424,244 434,248 446,252"/></g>` +
         needle(c, 444, 176, 494, 150, 3.8, 72) + needle(c, 456, 214, 514, 208, 4, 78) + needle(c, 446, 252, 496, 272, 3.6, 70) +
-        `<g transform="translate(318 118) rotate(-10)"><text x="0" y="0" font-family="'Apple SD Gothic Neo','AppleGothic',sans-serif" font-size="44" font-weight="900" fill="${K.p50}" stroke="${K.ink}" stroke-width="8" paint-order="stroke" stroke-linejoin="round">슉!</text></g>`;
+        // sound-effect lettering only on request (R4 H6: no text in shipped art)
+        (o && o.lettering === true ? `<g transform="translate(318 118) rotate(-10)"><text x="0" y="0" font-family="'Apple SD Gothic Neo','AppleGothic',sans-serif" font-size="44" font-weight="900" fill="${K.p50}" stroke="${K.ink}" stroke-width="8" paint-order="stroke" stroke-linejoin="round">슉!</text></g>` : '');
     }
   };
 
@@ -1110,9 +1201,10 @@ window.PN = window.PN || {};
       lining: [[[326, 444], [300, 432], [306, 452], [292, 470], [316, 462]], [[148, 488], [158, 470], [170, 486], [178, 498]]]
     },
     echo: [-14, -4],
-    over(c) {
+    over(c, o) {
       return splat(232, 282, 14, 14, 41, K.ink, -2.6) + splat(262, 408, 11, 10, 5, K.ink, -2.8) + splat(198, 454, 9, 8, 13, K.ink, -2.2) +
-        `<g transform="translate(262 126) rotate(8)"><text x="0" y="0" font-family="'Helvetica Neue','Apple SD Gothic Neo',sans-serif" font-size="40" font-weight="900" font-style="italic" fill="${K.hostile}" stroke="${K.ink}" stroke-width="7" paint-order="stroke" stroke-linejoin="round">-18</text></g>`;
+        // the coral damage number is lettering too: only on request (R4 H6)
+        (o && o.lettering === true ? `<g transform="translate(262 126) rotate(8)"><text x="0" y="0" font-family="'Helvetica Neue','Apple SD Gothic Neo',sans-serif" font-size="40" font-weight="900" font-style="italic" fill="${K.hostile}" stroke="${K.ink}" stroke-width="7" paint-order="stroke" stroke-linejoin="round">-18</text></g>` : '');
     }
   };
 
@@ -1266,7 +1358,8 @@ window.PN = window.PN || {};
   'use strict';
   const H = PN._hk;
   const { K, f, T } = H;
-  const SP = { w: 96, h: 96, pivot: [48, 60], r: 15, height: 64, top: -49, feet: 15, shadow: { cy: 8.25, rx: 15, ry: 6.5 }, ring: { cy: 8.25, rx: 24, ry: 10.3 }, frames: { idle: 6, run: 8, throw: 4, hurt: 3 }, fps: { idle: 8, run: 14, throw: 16, hurt: 12 }, eye: [1, -31] };
+  // eye: the 2×2 near-eye glint centre (v2.1: [5, −31], forward under the brow instead of on the hair, R4 H5 / Q8)
+  const SP = { w: 96, h: 96, pivot: [48, 60], r: 15, height: 64, top: -49, feet: 15, shadow: { cy: 8.25, rx: 15, ry: 6.5 }, ring: { cy: 8.25, rx: 24, ry: 10.3 }, frames: { idle: 6, run: 8, throw: 4, hurt: 3 }, fps: { idle: 8, run: 14, throw: 16, hurt: 12 }, eye: [5, -31] };
   const IL = `stroke="${K.ink}" stroke-width="0.6" stroke-linejoin="round"`;
   const P2 = (p) => f(p[0]) + ',' + f(p[1]);
 
@@ -1335,11 +1428,14 @@ window.PN = window.PN || {};
     let s = `<path d="M -4.6,-33.8 C -6.6,-31.8 -7.2,-29.6 -6.8,-27.4 L -5.2,-27.6 C -5.2,-29.6 -4.4,-31.4 -3.2,-33 Z" fill="${K.ink}"/>`;
     s += `<path d="M -6.2,-27.6 C -7.8,-25.4 -8.4,-23.4 -8.4,-21.6" fill="none" stroke="${K.ink}" stroke-width="1.2" stroke-linecap="round"/>`;
     s += `<path d="M -2.6,-34.6 L 8.6,-34.6 L 9.4,-31.6 L 11.2,-29.6 L 10,-28.8 L 10.1,-27.9 L 8.6,-26.4 C 7.4,-25.2 6.2,-24.8 5.2,-24.9 C 2.8,-25.2 0.4,-26.4 -1.4,-28.4 C -2.6,-29.8 -2.8,-32 -2.6,-34.6 Z" fill="${K.paper}"/>`;
-    // diagonal shadow: far brow (upper right) → near cheekbone (lower left); leaves the lower-front face lit
-    s += `<path d="M -3,-35 L 9,-35 L 9,-32.4 L 4.6,-30.4 L 1,-28.6 L -3,-27 Z" fill="${K.ink}"/>`;
+    // diagonal shadow: far brow (upper right) → near cheekbone (lower left), wrapped round the glint so it keeps ≥ 1 px
+    // of ink on every side; leaves the lower-front face lit (v2.1, R4 H5)
+    s += `<path d="M -3,-35 L 9,-35 L 9,-32.6 L 8.2,-30.8 L 6.8,-28.8 L 3.4,-27.8 L -3,-27 Z" fill="${K.ink}"/>`;
     s += `<rect x="${f(SP.eye[0] - 1)}" y="${f(SP.eye[1] - 1)}" width="2" height="2" fill="${o.glint || K.p50}"/>`;
-    s += `<path d="M 7.4,-30.9 L 8.5,-30.9" stroke="${K.ink}" stroke-width="1.2"/><path d="M 10.6,-29 L 9.8,-28.7" stroke="${K.ink}" stroke-width="0.6"/><path d="M 8.2,-27.5 L 9.9,-27.8" stroke="${K.ink}" stroke-width="0.7"/>`;
-    s += `<path d="M 1.6,-27.2 L 3.8,-28.1" stroke="${K.ink}" stroke-width="0.9"/>`;
+    // nose underside + level mouth on the contour end; no far-eye dot (one glint only)
+    s += `<path d="M 10.6,-29 L 9.8,-28.7" stroke="${K.ink}" stroke-width="0.6"/><path d="M 8,-27.6 L 10.1,-27.9" stroke="${K.ink}" stroke-width="0.7"/>`;
+    // scar: a rising '/' on the lit near cheek, unlike the level mouth
+    s += `<path d="M 2,-26.6 L 3.4,-28.6" stroke="${K.ink}" stroke-width="0.9"/>`;
     // hat: brim 40 × 11, crown lowered 25% (6.4 → top y≈-48.5)
     s += `<g transform="rotate(${f(tilt)} 1 -39)"><ellipse cx="1" cy="-38.6" rx="20" ry="5.6" transform="rotate(6 1 -38.6)" fill="${K.ink}"/>` +
       `<ellipse cx="1" cy="-38.6" rx="16.4" ry="4.4" transform="rotate(6 1 -38.6)" fill="none" stroke="${K.p50}" stroke-width="0.6" opacity="0.5"/><ellipse cx="1" cy="-38.6" rx="12.2" ry="3.2" transform="rotate(6 1 -38.6)" fill="none" stroke="${K.p50}" stroke-width="0.5" opacity="0.4"/>` +
@@ -1471,12 +1567,13 @@ window.PN = window.PN || {};
   const { K, f, T, V, smooth, splat } = H;
   const PB = { w: 160, h: 160, pivot: [80, 80], r: 74, exprs: ['calm', 'focus', 'hurt', 'lowhp', 'awakened', 'victory'], headScale: 1.72 };
   // per-expression shape parameters: head rotation, brim tilt, hat drop, shadow shift, head offset
+  // v2.1 brim tilts follow the face shadow (near side level or lower, R4 H2)
   const EX = {
-    calm: { rot: 0, tilt: 2, hatDy: 0, shDy: -1.5, dx: 0, dy: 0 },
-    focus: { rot: 7, tilt: 7, hatDy: 3.4, shDy: 3.4, dx: 2, dy: 2 },
+    calm: { rot: 0, tilt: -3, hatDy: 0, shDy: -1.5, dx: 0, dy: 0 },
+    focus: { rot: 7, tilt: -1, hatDy: 3.4, shDy: 3.4, dx: 2, dy: 2 },
     hurt: { rot: -10, tilt: -10, hatDy: -1, shDy: 0, dx: -6, dy: -2 },
-    lowhp: { rot: 8, tilt: 4, hatDy: 1.2, shDy: 1.2, dx: 0, dy: 4 },
-    awakened: { rot: -3, tilt: 1, hatDy: 0, shDy: -1.5, dx: 0, dy: -1 },
+    lowhp: { rot: 8, tilt: -2, hatDy: 1.2, shDy: 1.2, dx: 0, dy: 4 },
+    awakened: { rot: -3, tilt: -3, hatDy: 0, shDy: -1.5, dx: 0, dy: -1 },
     victory: { rot: -4, tilt: -8, hatDy: -3, shDy: -8, shRot: -5, dx: -13, dy: 0 }
   };
 
@@ -1484,27 +1581,32 @@ window.PN = window.PN || {};
   PN.heroKit.portrait = function (expr, opts) {
     opts = opts || {}; expr = EX[expr] ? expr : 'calm';
     const E = EX[expr], S = PB.headScale;
-    const c = H.Ctx({ pitch: 4.2, rough: 0.6, seed: 11 });
+    // halftone pitch 6 (≥ 3 px at the 84 px HUD size, bible §5.1 / §6-4); the face and neck use flat tones only
+    const c = H.Ctx({ pitch: 6, rough: 0.6, seed: 11 });
     const clip = c.clip(`M 80,6 A 74 74 0 1 1 79.9,6 Z`);
     let bg = '';
     if (opts.bg !== false) {
-      bg = `<rect width="160" height="160" fill="${K.paper}"/>` + PN.halftone(0, 0, 160, 160, 5, (x, y) => { const d = Math.hypot(x - 96, y - 70); return Math.max(0, Math.min(1.9, (d - 40) / 30)); }, K.ink1, 45);
+      bg = `<rect width="160" height="160" fill="${K.paper}"/>` + PN.halftone(0, 0, 160, 160, 6, (x, y) => { const d = Math.hypot(x - 96, y - 70); return Math.max(0, Math.min(1.9, (d - 40) / 30)); }, K.ink1, 45);
       if (expr === 'awakened') bg += [0, 1, 2].map((i) => `<path d="${H.brushArc(80, 88, 60 + i * 8, 60 + i * 8, -2.6 + i * 0.7, -0.4 + i * 0.9, (t) => 1 + 5 * Math.sin(Math.PI * t))}" fill="${K.ally}" stroke="${K.ink}" stroke-width="1.6"/>`).join('');
-      if (expr === 'hurt') bg = `<rect width="160" height="160" fill="${K.ink}"/>` + splat(132, 44, 12, 12, 7, K.p50) + splat(20, 112, 8, 8, 3, K.p50) + `<path d="M 160,20 L 112,64 L 124,70 L 92,104 M 0,60 L 30,76 L 22,84 L 48,100" fill="none" stroke="${K.p50}" stroke-width="2.4"/>`;
+      // hurt: the paper splat and crack stay ≥ 8 units off the far contour (v2.1 K0 F1: the left-shifted head met them)
+      if (expr === 'hurt') bg = `<rect width="160" height="160" fill="${K.ink}"/>` + splat(136, 36, 9, 10, 7, K.p50) + splat(20, 112, 8, 8, 3, K.p50) + `<path d="M 160,40 L 136,62 L 146,68 L 128,90 M 0,60 L 30,76 L 22,84 L 48,100" fill="none" stroke="${K.p50}" stroke-width="2.4"/>`;
       if (expr === 'focus') bg += PN.speedLines(104, 90, 56, 130, 60, 13, K.ink, 0, Math.PI * 2, 0.012);
       if (expr === 'lowhp') bg += `<rect width="160" height="160" fill="${c.pat('d20')}"/>`;
       if (expr === 'victory') { const r = PN.rng(5); for (let i = 0; i < 12; i++) { const x = 16 + r() * 60, y = 16 + r() * 60, q = 2 + r() * 3; bg += `<path d="M ${f(x)},${f(y - q * 2)} L ${f(x + q * 0.6)},${f(y - q * 0.6)} L ${f(x + q * 2)},${f(y)} L ${f(x + q * 0.6)},${f(y + q * 0.6)} L ${f(x)},${f(y + q * 2)} L ${f(x - q * 0.6)},${f(y + q * 0.6)} L ${f(x - q * 2)},${f(y)} L ${f(x - q * 0.6)},${f(y - q * 0.6)} Z" fill="${K.p50}" stroke="${K.ink}" stroke-width="1.2"/>`; } }
     }
-    // head frame: face centre (head-local ≈ (11, 2)) lands near the disc centre
-    const hx = 98 - 11 * S + E.dx, hy = 72 + E.dy, g = (m) => `<g transform="translate(${f(hx)} ${f(hy)}) rotate(${E.rot} 11 4) scale(${S})">${m}</g>`;
+    // head frame (v2.1, R4 H3): 15 units further left than v2, so the near eye (head-local ≈ (8, −2.5)) sits within ±8
+    // of the disc centre and the nose tip stays well inside the ring (the back hair crops more, Q7)
+    const hx = 83 - 11 * S + E.dx, hy = 72 + E.dy, g = (m) => `<g transform="translate(${f(hx)} ${f(hy)}) rotate(${E.rot} 11 4) scale(${S})">${m}</g>`;
     let fig = '';
     // collar / coat shoulder just visible at the bottom of the disc
     fig += c.part('M -10,176 C 4,156 24,146 50,144 L 124,144 C 140,148 156,158 170,176 Z', K.paper, 5, `<path d="M 110,140 L 170,140 L 170,180 L 118,180 Z" fill="${c.pat('d20')}"/>` + H.hemLine(c, [[-10, 170], [20, 154], [48, 148]], expr === 'lowhp' ? 18 : 7, 3, [0.4, -1]));
     fig += `<path d="M 66,146 L 84,178 L 102,146 Z" fill="${K.ink7}" stroke="${K.ink}" stroke-width="2"/>` + T([62, 146, 72, 162, 82, 180], 9, 'flat', K.ink) + T([104, 146, 96, 162, 88, 180], 8, 'flat', K.ink);
     fig += g(H.neck34(c, true));
     fig += `<g transform="translate(${f(hx + 8 * S)} ${f(hy + 41 * S)}) rotate(${E.rot * 0.5}) scale(1.45)">${H.scarfWrap(c, [0, 0], 0, { ends: false })}</g>`;
-    fig += g(H.head34(c, { expr, tilt: E.tilt, neck: false, bold: 1.25, beads: false, hatDy: E.hatDy, shadowDy: E.shDy, shadowRot: E.shRot, rings: 2, sheen: true }));
-    if (expr === 'victory') fig += H.hand(c, [151, 93], -128, 'point', { scale: 1.1 });
+    fig += g(H.head34(c, { expr, tilt: E.tilt, neck: false, bold: 1.25, beads: false, hatDy: E.hatDy, shadowDy: E.shDy, shadowRot: E.shRot, rings: 2, sheen: true, fine: true }));
+    // victory: the hand rises from the lower right of the disc and the index fingertip lifts the brim's lower edge just
+    // in front of the far contour; no part of the glove crosses or comes within 6 units of the temple, brow or nose (K0 F3)
+    if (expr === 'victory') fig += H.hand(c, [160, 100], -106.8, 'point', { scale: 1.93 });
     if (expr === 'hurt') fig += splat(108, 124, 5, 7, 12, K.ink, 1.2);
     let s = `<g clip-path="url(#${clip})">${bg}<g ${c.rough}>${fig}</g></g>`;
     if (opts.frame !== false) {
@@ -1536,5 +1638,5 @@ window.PN = window.PN || {};
     const s = (size || 84) / 160;
     return `<g transform="translate(${f(cx - 80 * s)} ${f(cy - 80 * s)}) scale(${f(s)})">${HK.portrait(expr, opts)}</g>`;
   };
-  HK.version = '2.0';
+  HK.version = '2.1';
 })(window.PN);
