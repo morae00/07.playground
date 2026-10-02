@@ -8,7 +8,8 @@ This checklist separates locally verifiable gates from Apple account and certifi
 - [ ] `package.json` version and in-product version agree.
 - [ ] The remaster rules are frozen for this build. If any rule change since the previous release (or, for the first release, since the playtest build) changes seeded outcomes, `RULES_VERSION` in `src/game/rules.ts` is raised so older infinite records stay apart (decision D-06, `docs/decisions/R3-decisions.md`).
 - [ ] `com.blackline.survivor` is owned by the release account and does not collide with an existing product.
-- [ ] Release notes include gameplay, save migration, known issues, and minimum macOS 12.
+- [ ] Release notes include gameplay, save migration, known issues, and minimum macOS 12. Start from `docs/release-notes/1.0-draft.md`, which lists every rule change against 0.1.0 (R4 exit criterion 5); check it against `src/game/rules.ts` so a flag added since is not missing.
+- [ ] `game-manual.html` matches the build: controls, modes, settings, and cheats, with screenshots from the release art.
 - [ ] `npm ci` completes on a clean Node 22.6+ environment.
 
 ## 2. Automated gates
