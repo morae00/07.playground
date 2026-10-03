@@ -76,7 +76,7 @@ test('the hero draws from the atlas with its feet on the player position', async
   }
 });
 
-test('Ch1 enemies and round bosses draw from the chapter pack; field bosses and other chapters keep vectors', async () => {
+test('Ch1 enemies, round bosses, and the field boss draw from the chapter pack; a chapter without its pack keeps vectors', async () => {
   const atlas = await loadedAtlas();
   const ch1 = arena(1, 2, atlas);
   try {
@@ -113,7 +113,9 @@ test('Ch1 enemies and round bosses draw from the chapter pack; field bosses and 
     boss.engine.probe.spawnBoss('field');
     boss.images.length = 0;
     boss.engine.probe.render(1);
-    assert.equal(boss.images.filter((draw) => draw.image.url?.includes('chapter-01/atlas')).length, 0, 'the field boss has no kit art yet');
+    // ART-04 (90388ba): the field bosses have kit art too; Ch1's is the crack officer.
+    const commander = ATLAS_MANIFEST.packs['chapter-01'].frames['boss/1/commander/phase1/0'];
+    assert.ok(boss.images.some((draw) => draw.image.url === ATLAS_MANIFEST.packs['chapter-01'].pages[commander[0]] && draw.sx === commander[1] && draw.sy === commander[2]), 'the crack officer draws its phase 1 art');
   } finally {
     boss.engine.dispose();
   }
