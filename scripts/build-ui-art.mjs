@@ -14,7 +14,7 @@ const kitDir = path.join(root, 'art/concept-kit');
 const outDir = path.join(root, 'src/ui/art');
 const storyDir = path.join(root, 'public/assets/packs/story');
 const only = process.argv[2];
-const KIT_FILES = ['lib.js', 'k-hero.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses4.js', 'k-icons.js', 'k-enemies.js', 'k-env.js'];
+const KIT_FILES = ['lib.js', 'k-hero.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses3.js', 'k-bosses4.js', 'k-icons.js', 'k-enemies.js', 'k-env.js'];
 
 const browser = await chromium.launch();
 try {

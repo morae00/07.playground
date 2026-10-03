@@ -37,6 +37,10 @@ export const BOSS_SLOTS: Readonly<Record<string, Readonly<{ slot: string; pack: 
   's3-final-traps': { slot: 'boss/3/empress', pack: 'chapter-03' },
   's4-final-saw': { slot: 'boss/4/herald', pack: 'chapter-04' },
   's5-final-null': { slot: 'boss/5/balance', pack: 'chapter-05' },
+  's2-mid-clones': { slot: 'boss/2/bishop', pack: 'chapter-02' },
+  's3-mid-tide': { slot: 'boss/3/tide-king', pack: 'chapter-03' },
+  's4-mid-clock': { slot: 'boss/4/tyrant', pack: 'chapter-04' },
+  's5-mid-eclipse': { slot: 'boss/5/director', pack: 'chapter-05' },
 });
 
 /**

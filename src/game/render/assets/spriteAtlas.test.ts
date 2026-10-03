@@ -33,8 +33,12 @@ test('the baked manifest is complete: every animation frame exists and sits insi
     for (const role of ['stalker', 'charger', 'shooter', 'warden']) assert.ok(manifest.animations[`enemy/${chapter}/${role}`], `Ch${chapter} ${role}`);
   }
   for (const [bossId, { slot, pack }] of Object.entries(BOSS_SLOTS)) {
-    assert.equal(Object.keys(manifest.animations[slot]).length, 12, `${bossId}: 3 phases x windup x enraged`);
+    const states = manifest.animations[slot];
+    // The Ch2-5 mid bosses (PN.bossesC) also draw an attack pose in every phase and four death frames.
+    const midBoss = bossId.includes('-mid-') && bossId !== 's1-mid-dash';
+    assert.equal(Object.keys(states).length, midBoss ? 19 : 12, `${bossId}: 3 phases x ${midBoss ? 'windup and attack' : 'windup'} x enraged`);
     assert.ok(manifest.packs[pack].frames[frameKey(slot, 'phase3-windup-enraged', 0)], `${bossId} is in ${pack}`);
+    if (midBoss) assert.ok(manifest.packs[pack].frames[frameKey(slot, 'phase3-attack-enraged', 0)] && states.death.frames === 4, `${bossId} attacks and falls`);
   }
   // Field bosses (ART-04) roam their own chapter and the ones after it, so each chapter pack holds every earlier one.
   for (const [bossId, { chapter: home }] of Object.entries(FIELD_BOSS_KITS)) {
@@ -72,11 +76,14 @@ test('baked sizes stay inside the style bible ranges (hero 56-64 tall, warden 68
     const stalker = heightOf(`enemy/${chapter}/stalker/idle/0`);
     assert.ok(stalker <= 40, `Ch${chapter} stalker stands ${stalker}`);
   }
-  // Round bosses: the kit draws the r54 body about 156 units across; smoke, horns, and flames reach higher.
-  for (const { slot, pack } of Object.values(BOSS_SLOTS)) {
+  // Round bosses: the kit draws the r54 body about 156 units across; smoke, horns, and flames reach higher. The Ch2-5
+  // mid bosses stand 148-157 tall on the same circle but are built narrower or wider (API-bosses3: the glass bishop
+  // is the thinnest pillar, the tide king the widest mass), so only their height range and a 150-unit body cap apply.
+  for (const [bossId, { slot, pack }] of Object.entries(BOSS_SLOTS)) {
     const frame = manifest.packs[pack].frames[frameKey(slot, 'phase1', 0)];
     const [width, height] = [frame[3] / manifest.atlasScale, frame[6] / manifest.atlasScale];
-    assert.ok(width >= 140 && width <= 170 && height >= 130 && height <= 200, `${slot} is ${width} wide and stands ${height}`);
+    const [low, high] = bossId.includes('-mid-') && bossId !== 's1-mid-dash' ? [90, 175] : [140, 170];
+    assert.ok(width >= low && width <= high && height >= 130 && height <= 200, `${slot} is ${width} wide and stands ${height}`);
   }
 });
 

@@ -59,7 +59,7 @@ test('portraits cover the hero expressions and every boss the kit draws; pickups
   // The bosses with baked sprites (ART-07, ART-04) are the ones with kit art, so each gets a boss bar portrait too.
   // Field bosses have no enraged drawing; their enraged cell is the calm portrait in the coral ring.
   const bosses = [...Object.keys(BOSS_SLOTS), ...Object.keys(FIELD_BOSS_KITS)];
-  assert.deepEqual(bosses, ['s1-mid-dash', 's1-final-rings', 's2-final-flame', 's3-final-traps', 's4-final-saw', 's5-final-null', 'field-shock', 'field-rings', 'field-trap', 'field-clock', 'field-null']);
+  assert.deepEqual(bosses, ['s1-mid-dash', 's1-final-rings', 's2-final-flame', 's3-final-traps', 's4-final-saw', 's5-final-null', 's2-mid-clones', 's3-mid-tide', 's4-mid-clock', 's5-mid-eclipse', 'field-shock', 'field-rings', 'field-trap', 'field-clock', 'field-null']);
   assert.deepEqual(sheet('artPortrait').keys, [
     ...['calm', 'focus', 'hurt', 'lowhp', 'awakened', 'victory'].map((expr) => `hero-${expr}`),
     ...bosses.flatMap((id) => [id, `${id}-enraged`]),

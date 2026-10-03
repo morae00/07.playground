@@ -39,6 +39,11 @@ export const BOSS_PORTRAITS = Object.freeze({
   's3-final-traps': { kit: 'empress', module: 'bossesB', center: [196, 112], scale: 0.36 },
   's4-final-saw': { kit: 'herald', module: 'bossesB', center: [306, 168], scale: 0.34 },
   's5-final-null': { kit: 'balance', module: 'bossesB', center: [330, 158], scale: 0.34 },
+  // Ch2-5 mid bosses (ART-07, ART-08): framing from PN.bossesC META[id].portrait, game detail like the round bosses.
+  's2-mid-clones': { kit: 'bishop', module: 'bossesC', center: [205, 134], scale: 0.36 },
+  's3-mid-tide': { kit: 'tide-king', module: 'bossesC', center: [220, 124], scale: 0.44 },
+  's4-mid-clock': { kit: 'tyrant', module: 'bossesC', center: [212, 102], scale: 0.36 },
+  's5-mid-eclipse': { kit: 'director', module: 'bossesC', center: [210, 94], scale: 0.38 },
   // Field bosses (ART-04): the framing comes from PN.fieldBosses.anchors(id).portrait. Art detail, because the
   // portrait scale makes game outlines the heaviest lines on the sheet (K2 review, user decision 2026-10-02).
   'field-shock': { kit: 'commander', module: 'fieldBosses', center: [208, 169], scale: 0.27, detail: 'art' },

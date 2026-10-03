@@ -72,7 +72,9 @@ function heroFrames() {
  *   bow rises 132 units above the box, so its cells get 150 units of extra room on top.
  * - PN.bossesB (API-bosses2): 384x384 box, feet at y 360, 0.5 world units per box unit, game detail.
  * `pad` is extra room in box units, [top, right, bottom, left]; the bake fails if a drawing still reaches its cell edge.
- * Field bosses (FIELD_BOSSES below) and the Ch2-5 mid bosses without kit drawings keep their vector bodies.
+ * - PN.bossesC (API-bosses3): the Ch2-5 mid bosses in the bossesB box, with an attack pose and four death frames.
+ *   Phase 2 and 3 bake the base move's windup and attack until their own moves run (SYS-05).
+ * Field bosses are listed in FIELD_BOSSES below.
  */
 export const BOSS_SPRITES = Object.freeze({
   'boss/1/butcher': { kit: 'butcher', module: 'bossesA', bossId: 's1-mid-dash', chapter: 1, pad: [150, 0, 60, 0] },
@@ -81,6 +83,10 @@ export const BOSS_SPRITES = Object.freeze({
   'boss/3/empress': { kit: 'empress', module: 'bossesB', bossId: 's3-final-traps', chapter: 3, pad: [80, 60, 30, 60] },
   'boss/4/herald': { kit: 'herald', module: 'bossesB', bossId: 's4-final-saw', chapter: 4, pad: [80, 80, 30, 60] },
   'boss/5/balance': { kit: 'balance', module: 'bossesB', bossId: 's5-final-null', chapter: 5, pad: [80, 80, 30, 60] },
+  'boss/2/bishop': { kit: 'bishop', module: 'bossesC', bossId: 's2-mid-clones', chapter: 2, pad: [100, 60, 20, 50] },
+  'boss/3/tide-king': { kit: 'tide-king', module: 'bossesC', bossId: 's3-mid-tide', chapter: 3, pad: [20, 60, 20, 0] },
+  'boss/4/tyrant': { kit: 'tyrant', module: 'bossesC', bossId: 's4-mid-clock', chapter: 4, pad: [100, 60, 20, 50] },
+  'boss/5/director': { kit: 'director', module: 'bossesC', bossId: 's5-mid-eclipse', chapter: 5, pad: [40, 60, 20, 0] },
 });
 
 /**
@@ -108,16 +114,19 @@ export const BOSS_DEATH_FPS = 6;
 const BOSS_MODULES = Object.freeze({
   bossesA: { box: [400, 400], anchor: [200, 392], scale: 0.4, options: { lod: 'game', halo: true, shadow: false, fx: true } },
   bossesB: { box: [384, 384], anchor: [192, 360], scale: 0.5, options: { detail: 'game', shadow: false } },
+  bossesC: { box: [384, 384], anchor: [192, 360], scale: 0.5, options: { detail: 'game', shadow: false } },
   fieldBosses: { box: [384, 384], anchor: [192, 328], scale: 0.5, options: { detail: 'game', shadow: false } },
 });
 
 /**
  * A module's still states: phases x poses x calm/enraged. Keys match slots.ts bossState. Round bosses A and B draw
- * idle and windup in three phases, calm and enraged; field bosses draw idle, windup, and attack in two phases.
+ * idle and windup in three phases, calm and enraged; the mid bosses add an attack pose; field bosses draw idle,
+ * windup, and attack in two phases.
  */
 const BOSS_STATE_SETS = Object.freeze({
   bossesA: { phases: [1, 2, 3], poses: ['idle', 'windup'], enraged: [false, true], death: false },
   bossesB: { phases: [1, 2, 3], poses: ['idle', 'windup'], enraged: [false, true], death: false },
+  bossesC: { phases: [1, 2, 3], poses: ['idle', 'windup', 'attack'], enraged: [false, true], death: true },
   fieldBosses: { phases: [1, 2], poses: ['idle', 'windup', 'attack'], enraged: [false], death: true },
 });
 
@@ -134,10 +143,15 @@ export function bossStates(module = 'bossesA') {
   return states;
 }
 
-/** The kit call for one state: bossesA and B only know `windup`; fieldBosses takes the pose itself. */
+/**
+ * The kit call for one state: bossesA and B only know `windup`; fieldBosses takes the pose itself; bossesC takes
+ * `windup` or `pose: 'attack'` and the move, the base move for every phase until SYS-05 runs the phase moves.
+ */
 function stateOptions(module, state) {
   if (module === 'fieldBosses') return { phase: state.phase, pose: state.pose };
-  return { phase: state.phase, windup: state.pose === 'windup', enraged: state.enraged };
+  const base = { phase: state.phase, windup: state.pose === 'windup', enraged: state.enraged };
+  if (module === 'bossesC') return { ...base, pose: state.pose === 'attack' ? 'attack' : 'idle', move: 'base' };
+  return base;
 }
 
 /** Every boss drawn in a chapter's pack: its round bosses, then the field bosses of this chapter and the ones before. */
