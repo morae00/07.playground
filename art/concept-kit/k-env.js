@@ -468,17 +468,21 @@ window.PN = window.PN || {};
   E.ringBand = (c, cx, cy, r0, r1, fill) => { const cd = (r) => `M ${f(cx - r)},${f(cy)} a ${f(r)},${f(r)} 0 1 0 ${f(2 * r)},0 a ${f(r)},${f(r)} 0 1 0 ${f(-2 * r)},0 Z`; return `<path d="${cd(r1)} ${cd(r0)}" fill="${fill}" fill-rule="evenodd"/>` + E.engrave(cd(r1), c, 1.6) + E.engrave(cd(r0), c, 1.4); };
   E.ch4Decals = function (c, w, h, rnd, p, o, ctr) {
     let s = '';
-    if (ctr) { // plaza-scale dial: ring band + 60 ticks + all 12 Roman numerals running round the patch (≥ 200 px across)
+    if (ctr) { // plaza-scale dial: ring band + 60 ticks + 12 engraved hour wedges running round the patch (≥ 200 px across)
       const [cx, cy] = ctr, R = o.dialR || Math.max(104, Math.min(w, h) * 0.42);
       s += E.ringBand(c, cx, cy, R - 30, R, D(c, 0.22));
       s += E.engrave(`M ${f(cx - R - 10)},${f(cy)} a ${f(R + 10)},${f(R + 10)} 0 1 0 ${f(2 * R + 20)},0 a ${f(R + 10)},${f(R + 10)} 0 1 0 ${f(-2 * R - 20)},0`, c, 1.2);
       let tk = ''; for (let i = 0; i < 60; i++) { const a = i * Math.PI / 30, big = i % 5 === 0, r0 = big ? R + 1 : R + 3, r1 = big ? R + 10 : R + 7; tk += `M ${f(cx + Math.cos(a) * r0)},${f(cy + Math.sin(a) * r0)} L ${f(cx + Math.cos(a) * r1)},${f(cy + Math.sin(a) * r1)} `; }
       s += E.engrave(tk, c, 1.5);
-      ['XII', 'I', 'II', 'III', 'IIII', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'].forEach((t, i) => {
-        const a = -Math.PI / 2 + i * Math.PI / 6, rr = R - 15, x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr, deg = i * 30;
-        const txt = (fill, dx, dy) => `<text x="${f(x + dx)}" y="${f(y + dy)}" transform="rotate(${deg} ${f(x + dx)} ${f(y + dy)})" font-family="AppleMyungjo,'Apple SD Gothic Neo',serif" font-size="19" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="${fill}">${t}</text>`;
-        s += txt(Lt(c, 0.7), 0.9, 1.1) + txt(D(c, 0.6), 0, 0);
-      });
+      // K5-G8: hour marks are engraved WEDGES pointing at the centre (no numerals, no font). 3·6·9 are 1.6× longer and 1.5× wider;
+      // 12 is a broad triangle pointing inward. Centred on the old numeral radius R − 15.
+      for (let i = 0; i < 12; i++) {
+        const a = -Math.PI / 2 + i * Math.PI / 6, ux = Math.cos(a), uy = Math.sin(a), nx = -uy, ny = ux, rr = R - 15;
+        const big = i % 3 === 0, Lw = big ? 16 : 10, hw = i === 0 ? 7 : (big ? 3.3 : 2.2);
+        const tip = [cx + ux * (rr - Lw / 2), cy + uy * (rr - Lw / 2)], bo = [cx + ux * (rr + Lw / 2), cy + uy * (rr + Lw / 2)];
+        const wd = E.P([tip, [bo[0] + nx * hw, bo[1] + ny * hw], [bo[0] - nx * hw, bo[1] - ny * hw]]);
+        s += E.engrave(wd, c, 1.2) + `<path d="${wd}" fill="${D(c, 0.6)}"/>`;
+      }
       s += E.engrave(`M ${f(cx - 16)},${f(cy)} a 16,16 0 1 0 32,0 a 16,16 0 1 0 -32,0`, c, 1.4);
     }
     const gears = o.gears || [[w * 0.18, h * 0.16, 20, 10], [w * 0.84, h * 0.86, 15, 8]];
@@ -608,6 +612,9 @@ window.PN = window.PN || {};
   E.propMeta = function (ch, kind, o = {}) { E.prop(ch, kind, o); const m = E.lastMeta; return Object.assign({ ratio: m.H / E.HERO_H }, m); };
   const rect = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
   E.rect = rect;
+  // K5 (rev 3) solid tiers: the big bake sizes get a dressed top. min(w,d) ≥ 160 → 'large' (280×190), ≥ 100 → 'mid' (200×130), else 'base'
+  // (120×70, the 70×132 / 104×30 / 76×28 pillars and every default size). 'base' keeps the rev 2 code path.
+  E.tier = (w, d) => { const m = Math.min(w, d); return m >= 160 ? 'large' : m >= 100 ? 'mid' : 'base'; };
   // generic 3/4 block on footprint (x,y center, w×d), height H. o: {jag, topFill, frontFill, topInner, frontInner, r, noShadow, rim}
   E.block = function (X, x, y, w, d, H, o = {}) {
     const c = X.c, rnd = X.rnd, j = o.jag == null ? 0 : o.jag;
@@ -633,17 +640,33 @@ window.PN = window.PN || {};
     return s;
   };
   // torn poster (paper piece) with print blocks; tone: 'paper' | 'spot' | 'pale'; o.dots presses value; o.curl adds a lifted corner
+  // K5 (rev 3): NO lettering. o.glyph is gone. o.layout picks the print vocabulary (API-env §E.poster, brief §1.6):
+  //   'print'    (default) block top-left + 3 left-aligned lines of falling length — byte-identical to rev 2
+  //   'portrait' wanted-poster: big block u −0.30…0.30 × v −0.40…0.10 + 2 lines (v 0.24 → u 0.24, v 0.36 → u 0.02)
+  //   'blank'    no print; the lower 35 % is torn away (jagged). The tear uses its own rng, so X.rnd advances exactly as in 'print'.
   E.poster = function (X, cx, cy, w, h, a, o = {}) {
-    const rnd = X.rnd, c = X.c;
-    const pts = E.torn(cx, cy, w, h, a, rnd, o.amp || 1.6);
+    const rnd = X.rnd, c = X.c, lay = o.layout || 'print';
+    let pts = E.torn(cx, cy, w, h, a, rnd, o.amp || 1.6);
     const fill = o.tone === 'spot' ? c.spot : o.tone === 'pale' ? mix(K.p300, c.light, 0.5) : K.p300;
     const ink = o.tone === 'spot' ? mix(c.spot, K.ink9, 0.55) : K.ink9;
     const ca = Math.cos(a), sa = Math.sin(a), T = (u, v) => [cx + u * w * ca - v * h * sa, cy + u * w * sa + v * h * ca];
-    let print = `<path d="${E.P([T(-0.34, -0.36), T(0.2, -0.36), T(0.2, -0.04), T(-0.34, -0.04)])}" fill="${ink}"/>`;
-    for (let k = 0; k < 3; k++) print += `<path d="${E.P([T(-0.34, 0.08 + k * 0.12), T(0.34 - k * 0.14, 0.08 + k * 0.12)], false)}" stroke="${ink}" stroke-width="${f(Math.max(1.2, h * 0.05))}"/>`;
-    if (o.glyph) print += `<text x="${f(T(0.02, 0.1)[0])}" y="${f(T(0.02, 0.1)[1])}" transform="rotate(${f(a * 57.3)} ${f(T(0.02, 0.1)[0])} ${f(T(0.02, 0.1)[1])})" font-family="'Apple SD Gothic Neo','AppleGothic',sans-serif" font-weight="900" font-size="${f(h * 0.5)}" text-anchor="middle" dominant-baseline="middle" fill="${ink}">${o.glyph}</text>`;
+    const lw = f(Math.max(1.2, h * 0.05));
+    let print = '';
+    if (lay === 'portrait') {
+      print = `<path d="${E.P([T(-0.3, -0.4), T(0.3, -0.4), T(0.3, 0.1), T(-0.3, 0.1)])}" fill="${ink}"/>`;
+      [[0.24, 0.24], [0.36, 0.02]].forEach(([v, u1]) => { print += `<path d="${E.P([T(-0.3, v), T(u1, v)], false)}" stroke="${ink}" stroke-width="${lw}"/>`; });
+    } else if (lay === 'blank') {
+      // keep the top 65 %: drop the jag points below v 0.15 and splice in a ragged tear (right → left)
+      const V = (p) => (-(p[0] - cx) * sa + (p[1] - cy) * ca) / h, cut = 0.15, tr = E.rng(Math.round(Math.abs(cx * 7 + cy * 13 + w * 3)) + 17);
+      let i0 = -1, i1 = -1; pts.forEach((p, i) => { if (V(p) > cut) { if (i0 < 0) i0 = i; i1 = i; } });
+      const tear = []; for (let k = 0; k <= 6; k++) { const u = 0.5 - k / 6; tear.push(T(Math.max(-0.5, Math.min(0.5, u + (k % 6 ? (tr() - 0.5) * 0.06 : 0))), cut + (k % 2 ? 0.05 + tr() * 0.09 : -0.03 - tr() * 0.06))); }
+      if (i0 > 0) pts = pts.slice(0, i0).concat(tear, pts.slice(i1 + 1));
+    } else {
+      print = `<path d="${E.P([T(-0.34, -0.36), T(0.2, -0.36), T(0.2, -0.04), T(-0.34, -0.04)])}" fill="${ink}"/>`;
+      for (let k = 0; k < 3; k++) print += `<path d="${E.P([T(-0.34, 0.08 + k * 0.12), T(0.34 - k * 0.14, 0.08 + k * 0.12)], false)}" stroke="${ink}" stroke-width="${lw}"/>`;
+    }
     const d = E.P(pts);
-    let s = `<path d="${d}" fill="${fill}"/>` + X.clipped(d, (o.glyph ? print.slice(print.indexOf('<text')) : print) + (o.dots ? `<rect x="${f(cx - w)}" y="${f(cy - h)}" width="${f(w * 2)}" height="${f(h * 2)}" fill="url(#${X.p}${o.dots})"/>` : ''));
+    let s = `<path d="${d}" fill="${fill}"/>` + X.clipped(d, print + (o.dots ? `<rect x="${f(cx - w)}" y="${f(cy - h)}" width="${f(w * 2)}" height="${f(h * 2)}" fill="url(#${X.p}${o.dots})"/>` : ''));
     s += E.ribbon(pts.concat([pts[0]]), 1.4, { color: K.ink9, taper: 'none', wobble: 0.25 });
     if (o.curl) { const q = pts[Math.floor(pts.length * o.curl) % pts.length]; s += `<path d="M ${f(q[0])},${f(q[1])} q 5,-2 7,3 q -4,1 -7,-3 Z" fill="${K.p100}" stroke="${K.ink9}" stroke-width="1.2"/>`; }
     return s;
@@ -671,8 +694,9 @@ window.PN = window.PN || {};
   L._alias = { solid: 'wall', pillar: 'pole' };
   // 금 간 회벽 블록 — footprint w×d (default 150×46), height H 30 (knee–waist). Broken right end exposes a black rubble core.
   L.wall = function (X, o) {
-    const w = o.w || 150, d = o.d || 40, H = Math.min(o.H || 26, 28), c = X.c, rnd = X.rnd;
-    X.meta = { H, name: '금 간 회벽' };
+    const w = o.w || 150, d = o.d || 40, H = Math.min(o.H || 26, 28), c = X.c, rnd = X.rnd, tier = E.tier(w, d);
+    if (tier !== 'base') return wallBig(X, { w, d }, tier); // K5: mid / large = '벽보 담장 빈터'
+    X.meta = { H, name: '금 간 회벽', front: H, tier };
     const x0 = -w / 2, x1 = w / 2, yT0 = -d / 2 - H, yT1 = d / 2 - H, yB = d / 2, bx = x1 - 16;
     // broken right end profile (top face) and front
     const topPts = E.jag([[x0 + 5, yT0], [bx - 4, yT0], [bx + 3, yT0 + d * 0.22], [bx - 3, yT0 + d * 0.45], [bx + 6, yT0 + d * 0.7], [bx + 2, yT1]], rnd, 0.8, 10, false)
@@ -683,7 +707,7 @@ window.PN = window.PN || {};
     // FRONT
     let fr = `<rect x="${x0 - 2}" y="${yT1 - 6}" width="${w + 4}" height="${H + 8}" fill="${X.d20}"/>`;
     fr += `<path d="${E.P(E.jag([[x0 + w * 0.05, yT1 + H * 0.2], [x0 + w * 0.16, yT1 + H * 0.12], [x0 + w * 0.17, yT1 + H * 0.88], [x0 + w * 0.04, yT1 + H * 0.92]], rnd, 1.2, 6))}" fill="${mix(c.base, c.light, 0.6)}" stroke="${mix(c.deep, K.ink9, 0.3)}" stroke-width="1"/>`;
-    fr += E.poster(X, x0 + w * 0.29, yT1 + H * 0.54, 25, H * 0.72, -0.05, { tone: 'paper', glyph: '수배', curl: 0.1 });
+    fr += E.poster(X, x0 + w * 0.29, yT1 + H * 0.54, 25, H * 0.72, -0.05, { tone: 'paper', layout: 'portrait', curl: 0.1 }); // K5-G2: was '수배' lettering
     fr += E.poster(X, x0 + w * 0.5, yT1 + H * 0.47, 28, H * 0.6, 0.07, { tone: 'pale', dots: 'd20' });
     fr += E.crackWedge(x0 + w * 0.66, yT1 - 1, H + 1, 6, rnd, 1);
     fr += E.inkQ(x0 + w * 0.675, yT1 + H * 0.5, x0 + w * 0.69, yT1 + H * 0.8, x0 + w * 0.685, yB + 1, 3, { color: mix(c.deep, K.ink9, 0.25), taper: 'mid', opacity: 0.8 });
@@ -748,6 +772,156 @@ window.PN = window.PN || {};
     s += E.rubble(X, 4 * sc, 30 * sc, 22 * sc, 3);
     return s;
   };
+  // ===== K5 (rev 3) · Ch1 wall, big tiers: '벽보 담장 빈터' (brief §2.1) =====
+  // A plaster wall ring (front 26, thickness 12 / 14) closes a sunken lot; the cap is the rail (Q1). Inside: a jar pile with a fallen ink
+  // bucket and its spilled ink (focus), tied manuscript bundles, floor posters. The large tier adds the hand cart and a heap of fallen plaster.
+  // copy of the cart's paper bundle (L.cart stays byte-identical); the three sheet edges are uneven so they never stack into '≡'
+  function bundle(X, x, y, w, d, H, fill) {
+    const c = X.c, rnd = X.rnd, yt = y + d / 2 - H;
+    let q = X.shadow(E.rect(x - w / 2, y - d / 2, x + w / 2, y + d / 2), 6, 3.5, 'd40');
+    let fr = ''; [[0, -2], [3, 0], [1, -6]].forEach(([a, b], k) => { const yy = yt + H * (k + 1) / 4 + (rnd() - 0.5); fr += `<path d="M ${f(x - w / 2 + a)},${f(yy)} L ${f(x + w / 2 + b)},${f(yy)}" stroke="${mix(K.p300, K.ink7, 0.5)}" stroke-width="0.9"/>`; });
+    fr += `<path d="M ${f(x + w / 2 - 5)},${f(yt)} L ${f(x + w / 2)},${f(yt)} L ${f(x + w / 2)},${f(y + d / 2)} L ${f(x + w / 2 - 8)},${f(y + d / 2)} Z" fill="${K.ink9}"/>`;
+    q += X.face(E.rect(x - w / 2, yt, x + w / 2, y + d / 2), fill === c.spot ? mix(c.spot, K.ink7, 0.25) : mix(K.p300, c.base, 0.3), fr, 1);
+    q += X.face(E.jag(E.rect(x - w / 2, y - d / 2 - H, x + w / 2, yt), rnd, 0.7, 8), fill, fill === c.spot ? '' : `<path d="M ${f(x - w / 2 + 3)},${f(y - d / 2 - H + 3)} l ${f(w * 0.5)},0" stroke="${c.deep}" stroke-width="0.9"/>`, 1.5);
+    q += `<path d="M ${f(x + w * 0.1)},${f(y - d / 2 - H)} L ${f(x + w * 0.1)},${f(y + d / 2)}" stroke="${K.ink9}" stroke-width="1.6"/><circle cx="${f(x + w * 0.1)}" cy="${f(yt + 1)}" r="2.3" fill="${K.ink9}"/>` + E.inkQ(x + w * 0.1, yt + 2, x + w * 0.1 - 3, yt + 6, x + w * 0.1 - 5, yt + 9, 1.4, { taper: 'end' });
+    q += X.out(E.rect(x - w / 2, y - d / 2 - H, x + w / 2, y + d / 2), 2, { r: 1.5 });
+    return q;
+  }
+  // fallen ink bucket on its side, mouth to the lower-right: (gx, gy) ground contact, R radius, Lb length, a axis tilt (deg)
+  function tippedBucket(X, gx, gy, R, Lb, a) {
+    const c = X.c, ry = R * 0.82, cy = gy - ry, ca = Math.cos(a * Math.PI / 180), sa = Math.sin(a * Math.PI / 180);
+    const T = (u, v) => [gx + u * ca - v * sa, cy + u * sa + v * ca], Q = (p) => f(p[0]) + ',' + f(p[1]);
+    const body = [T(-Lb / 2, -ry * 0.88), T(Lb / 2, -ry), T(Lb / 2, ry), T(-Lb / 2, ry * 0.88)];
+    let s = X.shadow(E.ellPts(gx + 2, gy - 1, Lb * 0.58, ry * 0.42, 16), R * 0.6, R * 0.3);
+    let inner = `<path d="${E.P([T(-Lb, ry * 0.18), T(Lb, ry * 0.24), T(Lb, ry * 1.5), T(-Lb, ry * 1.5)])}" fill="${K.ink9}"/>`; // underside = black spot
+    [0.24, 0.7].forEach((k) => { const u = -Lb / 2 + Lb * k; inner += `<path d="M ${Q(T(u, -ry * 1.1))} Q ${Q(T(u + 2.6, 0))} ${Q(T(u, ry * 1.1))}" fill="none" stroke="${K.ink9}" stroke-width="3"/>`; });
+    inner += E.ribbon(E.qs(...T(-Lb * 0.42, -ry * 0.6), ...T(0, -ry * 0.74), ...T(Lb * 0.36, -ry * 0.66), 12), 1.6, { color: K.p100, taper: 'mid', opacity: 0.85 });
+    s += X.face(body, c.deep, inner, 2) + X.out(body, 2.4, { gaps: 1, r: 2 });
+    const m = T(Lb / 2, 0);
+    s += `<g transform="rotate(${f(a)} ${f(m[0])} ${f(m[1])})"><ellipse cx="${f(m[0])}" cy="${f(m[1])}" rx="${f(ry * 0.32)}" ry="${f(ry + 1)}" fill="${c.light}" stroke="${K.ink9}" stroke-width="2"/><ellipse cx="${f(m[0] + 0.5)}" cy="${f(m[1] + 0.4)}" rx="${f(ry * 0.18)}" ry="${f(ry * 0.8)}" fill="${K.ink9}"/></g>`;
+    return s;
+  }
+  // spilled ink (black spot): a 9-point fan, narrow at the source (sx, sy), radius ±25 % (never an ellipse), ink9 core in a c.deep rim, 3 drops
+  function spill(X, sx, sy, rx, ry, rot) {
+    const rnd = X.rnd, ca = Math.cos(rot), sa = Math.sin(rot), cx = sx + rx * 0.85 * ca, cy = sy + rx * 0.85 * sa, pts = [];
+    for (let i = 0; i < 9; i++) { const t = i / 9 * Math.PI * 2, k = 0.75 + rnd() * 0.5, u = Math.cos(t) * rx * k, v = Math.sin(t) * ry * k * (0.55 + 0.45 * (1 + Math.cos(t)) / 2); pts.push([cx + u * ca - v * sa, cy + u * sa + v * ca]); }
+    let s = `<path d="${E.crPath(pts, true)}" fill="${mix(X.c.deep, K.ink9, 0.5)}"/><path d="${E.crPath(E.shrink(pts, 2.2), true)}" fill="${K.ink9}"/>`;
+    for (let i = 0; i < 3; i++) { const t = (rnd() - 0.5) * 1.6, dd = 1.15 + rnd() * 0.3, r = 1.2 + rnd() * 1.2, u = Math.cos(t) * rx * dd, v = Math.sin(t) * ry * dd; s += `<circle cx="${f(cx + u * ca - v * sa)}" cy="${f(cy + u * sa + v * ca)}" r="${f(r)}" fill="${K.ink9}"/>`; }
+    return s;
+  }
+  // heap of fallen plaster (≈ wd × ht): angular light lumps with a black lower-right wedge, painted back to front
+  function chunks(X, cx, cy, wd, ht, n) {
+    const c = X.c, rnd = X.rnd, L = [];
+    for (let i = 0; i < n; i++) L.push([cx + (rnd() - 0.5) * wd * 0.8, cy + (rnd() - 0.5) * ht * 0.6, 4 + rnd() * 4, i % 2]);
+    L.sort((p, q) => p[1] - q[1]);
+    let s = X.shadow(E.ellPts(cx, cy + 2, wd * 0.5, ht * 0.45, 12), 5, 3);
+    for (const [x, y, r, k] of L) {
+      s += `<path d="${E.P([[x - r, y], [x - r * 0.35, y - r * 0.95], [x + r * 0.75, y - r * 0.55], [x + r, y + r * 0.25], [x + r * 0.05, y + r * 0.5]])}" fill="${k ? mix(c.light, c.base, 0.4) : c.base}" stroke="${K.ink9}" stroke-width="1.5" stroke-linejoin="miter"/>` +
+        `<path d="${E.P([[x + r * 0.15, y + r * 0.45], [x + r, y + r * 0.25], [x + r * 0.78, y - r * 0.5]])}" fill="${K.ink9}"/>`;
+    }
+    return s;
+  }
+  function wallBig(X, o, tier) {
+    const c = X.c, rnd = X.rnd, w = o.w, d = o.d, H = 26, lg = tier === 'large', t = lg ? 14 : 12;
+    X.meta = { H, name: '벽보 담장 빈터', front: H, tier };
+    const x0 = -w / 2, x1 = w / 2, yN = -d / 2, yS = d / 2, ix0 = x0 + t, ix1 = x1 - t, iyN = yN + t, iyS = yS - t;
+    const cN0 = yN - H, cN1 = iyN - H, cS0 = iyS - H, cS1 = yS - H, fw = ix1 - ix0, fh = cS0 - iyN, dp = iyS - iyN;
+    const U = (u) => ix0 + u * fw, V = (v) => iyN + v * dp;            // inner floor (plane): u across, v back → front
+    const brk = ['N', 'E', 'W'][Math.floor(rnd() * 3)], du = (rnd() - 0.5) * 0.16 * fw, DROP = 7;
+    const bL = 22 + rnd() * 8, bA = brk === 'N' ? ix0 + 24 + rnd() * (fw - 48 - bL) : cN1 + 16 + rnd() * (cS0 - cN1 - 32 - bL), bB = bA + bL;
+    const jt = (xa, ya, xb, yb) => `<path d="M ${f(xa)},${f(ya)} L ${f(xb)},${f(yb)}" stroke="${mix(c.deep, K.ink9, 0.3)}" stroke-width="1.5"/>`;
+    let s = X.shadow(E.rect(x0, yN, x1, yS), H * 0.62 + 4, H * 0.3 + 3);
+    // ── north wall, inner (south-facing) face: plaster + 20 % dots, 2–3 / 3–5 posters (≤ 19 tall, one half-fallen), nails, crack wedge, ink run
+    let ni = `<rect x="${f(ix0 - 2)}" y="${f(cN1 - 2)}" width="${f(fw + 4)}" height="${H + 4}" fill="${X.d20}"/>`;
+    const nP = lg ? 3 + Math.floor(rnd() * 3) : 2 + Math.floor(rnd() * 2), sh = Math.floor(rnd() * 4);
+    const LAY = ['portrait', 'print', 'blank', 'print'], TONE = ['paper', 'pale', 'spot', 'pale'];
+    for (let i = 0; i < nP; i++) {
+      const fall = i === nP - 1, pw = 15 + rnd() * 5, ph = 14 + rnd() * 4, px = U((i + 0.5) / nP) + (rnd() - 0.5) * 8, tn = TONE[(i + sh) % 4];
+      ni += E.poster(X, px, cN1 + H * 0.5 + (fall ? 3 : 0), pw, ph, fall ? 0.5 : (rnd() - 0.5) * 0.16, { tone: tn, layout: LAY[(i + sh) % 4], dots: tn === 'pale' ? 'd20' : undefined, curl: fall ? 0.35 : undefined });
+    }
+    for (let i = 0, nn = lg ? 5 : 3; i < nn; i++) ni += E.nail(U(0.05 + 0.9 * (i + 0.2 + rnd() * 0.6) / nn), cN1 + 4 + rnd() * 2, c);
+    ni += E.crackWedge(U(Math.floor(nP / 2) / nP), cN1 - 1, H + 1, 5, rnd, 1) + E.dripStain(U(0.5 / nP) - 9, cN1 + 3, H * 0.45, c, 2.4);
+    s += X.face(E.rect(ix0, cN1, ix1, iyN), c.base, ni, 0);
+    // ── the lot's floor: base/deep mix, inner shadow bands (north 11, west 20) in 40 % dots, two slab joints, flat posters, spilled ink
+    const J = lg ? { oR: 19, oH: 18, oM: 0.48, sR: 10, sH: 13, bR: 14, bL: 18, sx: 34, sy: 19 } : { oR: 15, oH: 16, oM: 0.52, sR: 8, sH: 11, bR: 11, bL: 14, sx: 22, sy: 12 }; // spill ≈ 2.48·sx·sy ≈ 4.7 % of the floor
+    const px = U(0.3) + du, py = iyN + fh * 0.55, bx = px + J.oR * 0.95, by = py + 3, ba = 16, bry = J.bR * 0.82; // pile contact −35,−9 / −50,−6
+    const mo = [bx + J.bL / 2 * Math.cos(ba * Math.PI / 180), by - bry + J.bL / 2 * Math.sin(ba * Math.PI / 180)];
+    let fi = `<rect x="${f(ix0)}" y="${f(iyN)}" width="${f(fw)}" height="11" fill="${X.d40}"/><rect x="${f(ix0)}" y="${f(iyN + 11)}" width="20" height="${f(fh - 11)}" fill="${X.d40}"/>`;
+    fi += X.line([[U(0.27), iyN + 1], [U(0.31), iyN + fh * 0.4], [U(0.25), cS0]], 1.5, { color: mix(c.base, c.deep, 0.8), taper: 'none' });
+    fi += X.line([[U(0.36), iyN + fh * 0.52], [U(0.68), iyN + fh * 0.6], [ix1, iyN + fh * 0.5]], 1.5, { color: mix(c.base, c.deep, 0.8), taper: 'none' });
+    const FL = lg ? [[0.47, 0.15, 20, 14, 0.3, 'pale', 'print'], [0.13, 0.64, 22, 15, -0.5, 'paper', 'portrait'], [0.53, 0.69, 18, 13, 0.55, 'spot', 'blank']] : [[0.48, 0.17, 18, 13, 0.35, 'pale', 'print'], [0.16, 0.66, 20, 14, -0.45, 'paper', 'portrait']];
+    FL.forEach(([u, v, pw, ph, a, tone, lay]) => { fi += E.poster(X, U(u), V(v), pw, ph, a, { tone, layout: lay, dots: tone === 'pale' ? 'd20' : undefined }); });
+    fi += spill(X, mo[0], mo[1] + bry * 0.75, J.sx, J.sy, 0.22);
+    s += X.face(E.rect(ix0, iyN, ix1, cS0), mix(c.base, c.deep, 0.4), fi, 0) + E.rubble(X, U(0.1), U(0.9), iyN - 2, lg ? 4 : 3);
+    // ── standing props, painted back to front by their ground line (all tops ≤ 24 above the floor)
+    const it = [[py - 5, jar(X, px - 4, py - 5, J.oR, J.oH, J.oM, 'onggi')], [py + 8, jar(X, px - J.oR - J.sR * 0.3, py + 8, J.sR, J.sH, 0.5, 'onggi')], [by, tippedBucket(X, bx, by, J.bR, J.bL, ba)]];
+    const BU = lg ? [[0.66, 0.36, 30, 18, 11, K.p300], [0.83, 0.56, 22, 15, 13, c.spot], [0.71, 0.72, 26, 14, 8, K.p300]] : [[0.69, 0.29, 26, 16, 11, K.p300], [0.83, 0.585, 22, 14, 13, c.spot]];
+    if (rnd() < 0.5) BU.push(lg ? [0.45, 0.28, 22, 14, 8, mix(K.p300, c.light, 0.5)] : [0.86, 0.3, 22, 14, 8, mix(K.p300, c.light, 0.5)]); // seed: bundle count (22–30 × 14–18 × 8–14)
+    BU.forEach(([u, v, bw, bd, bh, fill]) => it.push([V(v) + bd / 2, bundle(X, U(u), V(v), bw, bd, bh, fill)]));
+    if (lg) {
+      const tx = U(0.8), ty = iyN + 22, cart = E.props[1].cart(X, { w: 80 }); // cart scale 0.65 → height ≤ 17; it overwrites X.meta
+      X.meta = { H, name: '벽보 담장 빈터', front: H, tier };
+      it.push([ty + 19, `<g transform="translate(${f(tx)},${f(ty)})">${cart}</g>`], [V(0.76) + 10, chunks(X, U(0.32), V(0.76), 40, 20, 6)]);
+    }
+    it.sort((p, q) => p[0] - q[0]).forEach((p) => { s += p[1]; });
+    s += wallRing(X, { x0, x1, ix0, ix1, cN0, cN1, cS0, cS1, t, brk, bA, bB, DROP, U, jt });
+    s += wallFront(X, { x0, x1, w, yS, cS1, H, lg });
+    // ── edges: rims (cap / face), inner cap edges, wall foot, ground line, brush silhouette, chips outside the front
+    const N = brk === 'N', edge = (a, b) => E.ribbon(E.jag([a, b], rnd, 0.4, 12, false), 1.8, { color: K.ink9, taper: 'none', wobble: 0.25 });
+    s += X.rim(x0 + 1.5, cS1, x1 - 1.5, cS1, 2.2) + (N ? X.rim(ix0 + 1, cN1, bA, cN1, 2.2) + X.rim(bB, cN1, ix1 - 1, cN1, 2.2) + X.rim(bA + 1, cN1 + DROP - 1, bB - 1, cN1 + DROP - 1, 2) : X.rim(ix0 + 1, cN1, ix1 - 1, cN1, 2.2));
+    s += edge([ix0, cN1 + 0.5], [ix0, cS0]) + edge([ix1, cN1 + 0.5], [ix1, cS0]) + edge([ix0, cS0], [ix1, cS0]) + X.line([[ix0 + 1, iyN], [ix1 - 1, iyN]], 1.5, { color: mix(c.deep, K.ink9, 0.4), taper: 'none' });
+    s += `<path d="M ${f(x0 + 1)},${f(yS)} L ${f(x1 - 1)},${f(yS)}" stroke="${K.ink9}" stroke-width="3" stroke-linecap="round"/>`;
+    s += X.out(N ? [[x0, cN0], [bA, cN0], [bA + 2, cN0 + DROP], [bB - 2, cN0 + DROP], [bB, cN0], [x1, cN0], [x1, yS], [x0, yS]] : E.rect(x0, cN0, x1, yS), 2.6, { gaps: 1, r: 1.5 });
+    s += E.rubble(X, x0 + 14, x1 - 40, yS - 3, lg ? 4 : 3);
+    return s;
+  }
+  // cap ring (c.light): irregular joints 28–48 apart, 2–3 chipped spots, one section broken down by DROP showing the black rubble core.
+  // N: the north top drops (notch in the silhouette). E/W: a rubble crater on the inner 62 % of the side cap — the outer edge stays, so it never reads as a gate.
+  function wallRing(X, g) {
+    const c = X.c, rnd = X.rnd, { x0, x1, ix0, ix1, cN0, cN1, cS0, cS1, t, brk, bA, bB, DROP, U, jt } = g, N = brk === 'N';
+    const outer = N ? [[x0, cN0], [bA, cN0], [bA + 2, cN0 + DROP], [bB - 2, cN0 + DROP], [bB, cN0], [x1, cN0], [x1, cS1], [x0, cS1]] : E.rect(x0, cN0, x1, cS1);
+    let s = `<path d="${E.P(outer)} ${E.P(E.rect(ix0, cN1, ix1, cS0).reverse())}" fill="${c.light}"/>`;
+    for (let x = x0 + 18 + rnd() * 14; x < x1 - 14; x += 28 + rnd() * 20) if (!(N && x > bA - 4 && x < bB + 4)) s += jt(x, cN0 + 0.6, x + (rnd() - 0.5) * 2, cN1 - 0.6);
+    for (let x = x0 + 26 + rnd() * 14; x < x1 - 14; x += 28 + rnd() * 20) s += jt(x, cS0 + 0.6, x + (rnd() - 0.5) * 2, cS1 - 0.6);
+    [[x0, ix0, 'W'], [ix1, x1, 'E']].forEach(([xa, xb, side]) => {
+      for (let y = cN1 + 14 + rnd() * 14; y < cS0 - 10; y += 28 + rnd() * 20) if (!(brk === side && y > bA - 4 && y < bB + 4)) s += jt(xa + 0.6, y, xb - 0.6, y + (rnd() - 0.5) * 2);
+      s += jt(xa + 0.6, cN1, xb - 0.6, cN1) + jt(xa + 0.6, cS0, xb - 0.6, cS0);
+    });
+    for (let i = 0, n = 2 + Math.floor(rnd() * 2); i < n; i++) { // chipped spots: dark notches biting into the cap from its inner edges
+      const q = 0.15 + rnd() * 0.7;
+      if (i % 3 === 0) { const x = U(q); s += `<path d="M ${f(x - 3)},${f(cN1)} L ${f(x)},${f(cN1 - 3.2)} L ${f(x + 3.6)},${f(cN1)} Z" fill="${K.ink9}"/>`; }
+      else if (i % 3 === 1) { const x = U(q); s += `<path d="M ${f(x - 3.4)},${f(cS0)} L ${f(x + 0.4)},${f(cS0 + 3.2)} L ${f(x + 3)},${f(cS0)} Z" fill="${K.ink9}"/>`; }
+      else { const y = cN1 + (cS0 - cN1) * q; s += `<path d="M ${f(ix1)},${f(y - 3)} L ${f(ix1 + 3.2)},${f(y)} L ${f(ix1)},${f(y + 3.4)} Z" fill="${K.ink9}"/>`; }
+    }
+    const stones = (L) => L.map(([x, y, a, b]) => `<path d="${E.P(E.jag(E.rect(x - a / 2, y - b / 2, x + a / 2, y + b / 2), rnd, 0.7, 3))}" fill="${c.deep}" stroke="${K.ink9}" stroke-width="0.8"/>`).join('');
+    if (N) {
+      const ya = cN0 + DROP, yb = cN1 + DROP - 1, m = (bA + bB) / 2;
+      s += `<path d="${E.P(E.jag([[bA + 2, ya], [bB - 2, ya], [bB - 1, yb], [bA + 1, yb]], rnd, 1.1, 5))}" fill="${K.ink9}"/>` + stones([[m - 6, ya + 4, 6, 3.4], [m + 5, ya + 7.5, 7, 3.6]]);
+    } else {
+      const W = brk === 'W', xi = W ? ix0 : ix1, xo = W ? x0 + t * 0.38 : x1 - t * 0.38, mx = (xi + xo) / 2;
+      s += `<path d="${E.P(E.jag([[xo, bA + 3], [xi, bA], [xi, bB], [xo, bB - 4]], rnd, 1.1, 5))}" fill="${K.ink9}"/>` + `<path d="M ${f(xo)},${f(bA + 3)} L ${f(xo)},${f(bB - 4)}" stroke="${mix(c.deep, K.ink9, 0.4)}" stroke-width="1.2"/>`;
+      s += stones([[mx, bA + (bB - bA) * 0.32, 5, 3.4], [mx + (W ? 1 : -1), bA + (bB - bA) * 0.7, 6, 3.4]]);
+    }
+    const hl = (xa, xb) => (xb - xa > 20 ? E.ribbon(E.qs(xa, cN0 + 2.2, (xa + xb) / 2, cN0 + 1.5, xb, cN0 + 2.2, 14), 1.2, { color: K.p100, taper: 'mid', opacity: 0.85 }) : '');
+    return s + (N ? hl(x0 + 7, bA - 4) + hl(bB + 4, x1 - 10) : hl(x0 + 7, x1 - 10));
+  }
+  // south wall front (26 band): the small wall's front grammar stretched — plaster patch, 3 / 4 posters (§1.6; the old '수배' spot is 'portrait'),
+  // crack wedge + ink run, nails, the plaster fallen off at the east end (black rubble core, lit stones), dark band under the cap
+  function wallFront(X, g) {
+    const c = X.c, rnd = X.rnd, { x0, x1, w, yS, cS1, H, lg } = g;
+    let fr = `<rect x="${f(x0 - 2)}" y="${f(cS1 - 6)}" width="${f(w + 4)}" height="${H + 8}" fill="${X.d20}"/>`;
+    fr += `<path d="${E.P(E.jag([[x0 + w * 0.03, cS1 + H * 0.2], [x0 + w * 0.1, cS1 + H * 0.12], [x0 + w * 0.11, cS1 + H * 0.88], [x0 + w * 0.025, cS1 + H * 0.92]], rnd, 1.2, 6))}" fill="${mix(c.base, c.light, 0.6)}" stroke="${mix(c.deep, K.ink9, 0.3)}" stroke-width="1"/>`;
+    const FP = lg ? [[0.18, 'portrait', 'paper', 25], [0.34, 'print', 'pale', 27], [0.5, 'blank', 'spot', 22], [0.72, 'print', 'pale', 26]] : [[0.2, 'portrait', 'paper', 25], [0.37, 'print', 'pale', 27], [0.58, 'blank', 'spot', 22]];
+    FP.forEach(([u, lay, tone, pw], i) => { fr += E.poster(X, x0 + w * u + (rnd() - 0.5) * 6, cS1 + H * 0.54, pw, H * 0.72, (rnd() - 0.5) * 0.14, { tone, layout: lay, dots: tone === 'pale' ? 'd20' : undefined, curl: i === 0 ? 0.1 : undefined }); });
+    const kx = x0 + w * (lg ? 0.61 : 0.48);
+    fr += E.crackWedge(kx, cS1 - 1, H + 1, 6, rnd, 1) + E.inkQ(kx + 3, cS1 + H * 0.5, kx + 6, cS1 + H * 0.8, kx + 5, yS + 1, 3, { color: mix(c.deep, K.ink9, 0.25), taper: 'mid', opacity: 0.8 }) + X.line([[kx, cS1 + H * 0.4], [kx + 12, cS1 + H * 0.55], [kx + 20, cS1 + H * 0.5]], 1.3);
+    [0.1, 0.28, 0.45, 0.66, 0.8].forEach((u) => { fr += E.nail(x0 + w * u, cS1 + 5 + rnd() * 3, c); });
+    const ex = x1 - 18;
+    fr += `<path d="${E.P(E.jag([[ex - 10, cS1], [ex + 2, cS1], [ex + 9, cS1 + H * 0.35], [ex + 7, cS1 + H * 0.6], [x1 - 1, yS], [ex - 22, yS], [ex - 14, cS1 + H * 0.5]], rnd, 1.4, 6))}" fill="${K.ink9}"/>`;
+    [[ex - 9, cS1 + H * 0.3, 7, 4], [ex - 1, cS1 + H * 0.62, 6, 4], [ex - 14, cS1 + H * 0.8, 8, 4.4]].forEach(([x, y, a, b]) => { fr += `<path d="${E.P(E.jag(E.rect(x - a / 2, y - b / 2, x + a / 2, y + b / 2), rnd, 0.8, 3))}" fill="${c.deep}" stroke="${K.ink9}" stroke-width="0.8"/>`; });
+    fr += `<path d="M ${f(x0)},${f(cS1)} L ${f(x1)},${f(cS1)} L ${f(x1)},${f(cS1 + 3)} L ${f(x0)},${f(cS1 + 3.4)} Z" fill="${K.ink9}" opacity="0.5"/>`;
+    return X.face(E.rect(x0, cS1, x1, yS), c.base, fr, 0);
+  }
 })(window.PN);
 // ---- Ch1 props (cont.): cart 나무 수레 · pole 전봇대 밑동 ----
 (function (PN) {
@@ -811,7 +985,6 @@ window.PN = window.PN || {};
     };
     inner += band(top + H * 0.16, top + H * 0.56, -R * 0.95, R * 0.4, K.p300) + band(top + H * 0.34, top + H * 0.76, -R * 0.2, R * 1.1, mix(K.p300, c.light, 0.5));
     inner += `<rect x="${-R * 0.7}" y="${f(top + H * 0.28)}" width="${f(R * 0.6)}" height="5" fill="${K.ink9}"/><path d="M ${-R * 0.7},${f(top + H * 0.4)} h ${f(R * 0.7)} M ${-R * 0.7},${f(top + H * 0.46)} h ${f(R * 0.5)}" stroke="${K.ink9}" stroke-width="1.6"/>`;
-    inner += `<text x="${f(R * 0.45)}" y="${f(top + H * 0.6)}" font-family="'Apple SD Gothic Neo',sans-serif" font-size="7" font-weight="900" text-anchor="middle" fill="${K.ink9}">失</text>`;
     // black spot: right third + dark band ring near the foot
     inner += `<path d="M ${f(R * 0.42)},${top - 4} C ${f(R * 0.62)},${f(top + H * 0.3)} ${f(R * 0.5)},${f(top + H * 0.7)} ${f(R * 0.4)},${f(R)} L ${R + 2},${f(R)} L ${R + 2},${top - 4} Z" fill="${K.ink9}"/>`;
     inner += `<path d="M ${-R},${f(-H * 0.12)} A ${R},${ry} 0 0 0 ${R},${f(-H * 0.12)} L ${R},${f(-H * 0.12 + 4)} A ${R},${ry} 0 0 1 ${-R},${f(-H * 0.12 + 4)} Z" fill="${K.ink9}"/>`;
@@ -839,8 +1012,9 @@ window.PN = window.PN || {};
   const iron = (x0, y0, x1, y1, w) => E.ribbon([[x0, y0], [x1, y1]], w, { taper: 'none', wobble: 0.05 }) + `<path d="M ${f(x0 - w * 0.22)},${f(y0 + 1)} L ${f(x1 - w * 0.22)},${f(y1 - 1)}" stroke="${K.ink5}" stroke-width="0.8"/>`;
   // 쇠창살 칸막이 — LOW rail: stone sill (H 8) + iron bars 15 + short spear finials ≈ 26 px total. See-through; chained gate section + pewter padlock.
   L.gate = function (X, o) {
-    const w = o.w || 150, d = o.d || 22, c = X.c, rnd = X.rnd, Hs = 8, Hb = Math.min(o.H || 15, 18), pitch = 11;
-    X.meta = { H: Hs + Hb + 3, name: '쇠창살 칸막이' };
+    const w = o.w || 150, d = o.d || 22, c = X.c, rnd = X.rnd, Hs = 8, Hb = Math.min(o.H || 15, 18), pitch = 11, tier = E.tier(w, d);
+    if (tier !== 'base') return gateBig(X, { w, d }, tier); // K5: mid / large = '철책 제단'
+    X.meta = { H: Hs + Hb + 3, name: '쇠창살 칸막이', front: Hs, tier };
     const x0 = -w / 2, x1 = w / 2, yb = d / 2 - Hs - d / 2; // bar foot = sill top (centre line of the top face)
     let s = '';
     // bar shadows on the floor (dotted slants to the lower-right)
@@ -866,6 +1040,138 @@ window.PN = window.PN || {};
     s += `<path d="M ${lx - 3},${ly - 1.6} v -3.4 a 3,3 0 0 1 6,0 v 3.4" fill="none" stroke="${K.ink9}" stroke-width="2.2"/><rect x="${lx - 5}" y="${ly - 1.6}" width="10" height="8.4" rx="1.6" fill="${c.spot}" stroke="${K.ink9}" stroke-width="1.8"/><circle cx="${lx}" cy="${ly + 2}" r="1.3" fill="${K.ink9}"/><path d="M ${lx - 3.4},${ly + 0.4} h 2.6" stroke="${mix(c.spot, K.p100, 0.6)}" stroke-width="1"/>`;
     return s;
   };
+  // ===== K5 (rev 3) · Ch2 gate, big tiers: '철책 제단' (brief §2.2) =====
+  // A low stone dais (front 8) ringed by iron: the north and south railings are bar rows (bars 15 on the dais, finial tips ≤ z 26), the side
+  // railings ONE iron rail between stone posts (N–S bars would stack into one line in this view). On the dais: altar stone with a broken
+  // corner, a fallen bell (focus), a toppled pew, fallen candlesticks, wax, glass shards. Each railing casts ONE 40 % dot band.
+  // E–W railing: bar sockets, two rails, bars (pitch 11) with spear finials; a chained gate leaf between gx0..gx1 (hinge bars, chain, padlock)
+  function railRow(X, xa, xb, yb, Hb, pitch, gx0, gx1) {
+    const c = X.c, rnd = X.rnd, r1 = yb - Hb * 0.82, r2 = yb - Hb * 0.28;
+    let s = '';
+    for (let x = xa + 9; x <= xb - 7; x += pitch) s += `<path d="M ${f(x - 2.4)},${f(yb + 0.6)} L ${f(x + 3.4)},${f(yb + 0.6)} L ${f(x + 2.4)},${f(yb + 2.2)} L ${f(x - 1.6)},${f(yb + 2.2)} Z" fill="${mix(c.deep, K.ink9, 0.5)}"/>`;
+    s += iron(xa + 4, r1, xb - 4, r1, 2.8);
+    for (let x = xa + 9, i = 0; x <= xb - 7; x += pitch, i++) {
+      const top = yb - Hb + (i % 2 ? 1.5 : 0); // finial tip = top − 3 ≥ yb − Hb − 3 → z ≤ 26 (the gate leaf is not lifted any more)
+      s += iron(x, yb + 1, x + (rnd() - 0.5) * 0.8, top + 2.5, 3) + `<path d="M ${f(x - 2.8)},${f(top + 3)} L ${f(x)},${f(top - 3)} L ${f(x + 2.8)},${f(top + 3)} L ${f(x)},${f(top + 1.6)} Z" fill="${K.ink9}"/>`;
+    }
+    s += iron(xa + 4, r2, xb - 4, r2, 2.8);
+    if (gx1 > gx0) {
+      s += iron(gx0, r1 - 2, gx0, r2 + 4, 4.4) + iron(gx1, r1 - 2, gx1, r2 + 4, 4.4);
+      for (let k = 0; k < 6; k++) { const t = k / 5, x = gx0 + 3 + (gx1 - gx0 - 6) * t, y = r2 - 3 + Math.sin(t * Math.PI) * 4.5; s += `<ellipse cx="${f(x)}" cy="${f(y)}" rx="${k % 2 ? 3 : 3.4}" ry="${k % 2 ? 1.3 : 2.2}" fill="none" stroke="${K.ink9}" stroke-width="2.2"/><ellipse cx="${f(x)}" cy="${f(y)}" rx="${k % 2 ? 3 : 3.4}" ry="${k % 2 ? 1.3 : 2.2}" fill="none" stroke="${c.light}" stroke-width="0.7"/>`; }
+      const lx = (gx0 + gx1) / 2 + 1, ly = r2 + 4.5;
+      s += `<path d="M ${f(lx - 3)},${f(ly - 1.6)} v -3.4 a 3,3 0 0 1 6,0 v 3.4" fill="none" stroke="${K.ink9}" stroke-width="2.2"/><rect x="${f(lx - 5)}" y="${f(ly - 1.6)}" width="10" height="8.4" rx="1.6" fill="${c.spot}" stroke="${K.ink9}" stroke-width="1.8"/><circle cx="${f(lx)}" cy="${f(ly + 2)}" r="1.3" fill="${K.ink9}"/><path d="M ${f(lx - 3.4)},${f(ly + 0.4)} h 2.6" stroke="${mix(c.spot, K.p100, 0.6)}" stroke-width="1"/>`;
+    }
+    return s;
+  }
+  // stone post 11×12, 24 tall from the floor (the base gate's end-post grammar)
+  function post(X, x, y, right) {
+    const P2 = E.block(X, x, y, 11, 12, 24, { noShadow: true, rim: false });
+    return P2.s + X.clipped(E.P(P2.front), right ? `<rect x="${f(x - 1)}" y="${f(P2.yT1)}" width="8" height="26" fill="${K.ink9}"/>` : `<rect x="${f(x + 1)}" y="${f(P2.yT1)}" width="6" height="26" fill="${X.d40}"/>`) + P2.outline(2.3);
+  }
+  // altar stone (plane centre ax, ay on a floor at z), aw × ad, 10 tall, the north-east corner broken off; a short candlestick (≤ 8) on it
+  function altarStone(X, ax, ay, aw, ad, z) {
+    const c = X.c, h = 10, x0 = ax - aw / 2, x1 = ax + aw / 2, t0 = ay - ad / 2 - z - h, t1 = ay + ad / 2 - z - h, fb = ay + ad / 2 - z;
+    const top = [[x0, t0], [x1 - 12, t0], [x1 - 8, t0 + 3], [x1 - 10, t0 + 6.5], [x1 - 4, t0 + 8.5], [x1, t0 + 12], [x1, t1], [x0, t1]];
+    let s = X.shadow(E.rect(x0, ay - ad / 2 - z, x1, fb), h * 0.62 + 4, h * 0.3 + 3);
+    s += X.face(E.rect(x0, t1, x1, fb), c.base, `<rect x="${f(x0 - 2)}" y="${f(t1)}" width="${f(aw + 4)}" height="${h + 2}" fill="${X.d20}"/><path d="${E.P([[x1 - 13, t1], [x1 + 2, t1], [x1 + 2, fb + 2], [x1 - 19, fb + 2]])}" fill="${K.ink9}"/>` + X.line([[x0 + aw * 0.34, t1 + 1], [x0 + aw * 0.34 + 0.6, fb - 1]], 1.5), 0);
+    s += X.face(top, c.light, `<path d="${E.P([[x0, t0], [x1, t0], [x1, t0 + 2.4], [x0, t0 + 2.4]])}" fill="${X.e20}"/><path d="${E.P([[x0 + aw * 0.55, t0 + 5], [x1 - 14, t0 + 9], [x1 - 6, t1 - 2], [x0 + aw * 0.62, t1 - 1]])}" fill="${X.e20}"/>`, 0);
+    s += `<path d="${E.P([[x1 - 12, t0], [x1 - 8, t0 + 3], [x1 - 10, t0 + 6.5], [x1 - 4, t0 + 8.5], [x1, t0 + 12], [x1, t0 + 14.5], [x1 - 5.4, t0 + 10.4], [x1 - 11.6, t0 + 8], [x1 - 10, t0 + 3.4]])}" fill="${mix(c.deep, K.ink9, 0.4)}"/>`; // fracture face
+    s += X.rim(x0 + 1.5, t1, x1 - 1.5, t1, 2.2) + X.out(top.slice(0, 6).concat([[x1, fb], [x0, fb]]), 2.5, { gaps: 1, r: 0.8 });
+    const kx = x0 + aw * 0.3, ky = (t0 + t1) / 2 + 2; // candlestick: foot, stem, pan, candle stub (paper300) — 8 tall
+    s += `<path d="M ${f(kx + 1)},${f(ky + 0.6)} l 8,4 l 2.4,-1.4 l -8,-4 Z" fill="url(#${X.p}d40)"/><ellipse cx="${f(kx)}" cy="${f(ky)}" rx="3.4" ry="1.4" fill="${K.ink7}" stroke="${K.ink9}" stroke-width="1"/><rect x="${f(kx - 0.9)}" y="${f(ky - 5)}" width="1.8" height="5" fill="${K.ink9}"/><ellipse cx="${f(kx)}" cy="${f(ky - 5)}" rx="2.6" ry="1" fill="${K.ink7}" stroke="${K.ink9}" stroke-width="0.8"/><rect x="${f(kx - 1.3)}" y="${f(ky - 8.2)}" width="2.6" height="3.4" fill="${K.p300}" stroke="${K.ink9}" stroke-width="0.8"/>`;
+    return s;
+  }
+  // fallen bell lying on its side, mouth to the upper-right (axis angle rot): ground contact (cx, cy), length L, mouth width D.
+  // Round things are foreshortened (kit convention): the drawn width across the axis is 0.72 D, so the top stays ≤ 16 above the floor.
+  // Iron ink7 + an ink5 lit band on the upper-left; the inside shows only as a thin ink crescent; no clapper, no light dot.
+  function fallenBell(X, cx, cy, L, D, rot) {
+    const c = X.c, rnd = X.rnd, h = D * 0.36, ca = Math.cos(rot), sa = Math.sin(rot), my = cy - h;
+    const T = (u, v) => [cx + u * ca - v * sa, my + u * sa + v * ca];
+    const prof = [[-0.5, 0.3], [-0.36, 0.62], [0, 0.66], [0.28, 0.78], [0.46, 0.98], [0.5, 1]];
+    const body = prof.map(([u, v]) => T(u * L, -v * h)).concat(prof.slice().reverse().map(([u, v]) => T(u * L, v * h)));
+    const bd = E.crPath(body, true, 5), m = T(L / 2, 0), am = D * 0.13, deg = f(rot * 57.2958);
+    let s = X.shadow(E.ellPts(cx + 1, cy - 1, L * 0.5, h * 0.55, 14), h * 0.9, h * 0.45);
+    s += `<path d="${E.P([T(-L / 2, -h * 0.2), T(-L / 2 - 3.5, -h * 0.14), T(-L / 2 - 3.5, h * 0.14), T(-L / 2, h * 0.2)])}" fill="${K.ink7}" stroke="${K.ink9}" stroke-width="1.4"/>`; // crown knob
+    const lit = `<path d="${E.crPath([T(-L * 0.46, -h * 0.4), T(-L * 0.1, -h * 0.62), T(L * 0.3, -h * 0.74), T(L * 0.44, -h * 0.92), T(L * 0.34, -h * 0.5), T(0, -h * 0.34), T(-L * 0.36, -h * 0.2)], true, 4)}" fill="${K.ink5}"/>`;
+    s += X.faceD(bd, K.ink7, lit + E.crackWedge(T(L * 0.08, -h * 0.66)[0], T(L * 0.08, -h * 0.66)[1], h * 1.1, 2.6, rnd, 1));
+    s += `<g transform="rotate(${deg} ${f(m[0])} ${f(m[1])})"><ellipse cx="${f(m[0])}" cy="${f(m[1])}" rx="${f(am)}" ry="${f(h)}" fill="${K.ink9}"/><ellipse cx="${f(m[0] - am * 0.42)}" cy="${f(m[1])}" rx="${f(am * 0.86)}" ry="${f(h * 0.94)}" fill="${K.ink7}"/></g>`;
+    return s + X.outSm(body, 2.4, { gaps: 1 });
+  }
+  // toppled pew: backrest flat on the floor (north), seat standing on edge (9 tall), 2–3 legs at uneven spacing sticking out toward the viewer
+  function toppledPew(X, cx, cy, L, W, rot) {
+    const c = X.c, rnd = X.rnd, ca = Math.cos(rot), sa = Math.sin(rot), hs = 9;
+    const P3 = (u, v, z) => [cx + u * ca - v * sa, cy + u * sa + v * ca - z];
+    const back = [P3(-L / 2, -W - 1, 2), P3(L / 2, -W - 1, 2), P3(L / 2, -1, 2), P3(-L / 2, -1, 2)];
+    const stop = [P3(-L / 2, -1, hs), P3(L / 2, -1, hs), P3(L / 2, 2, hs), P3(-L / 2, 2, hs)], sfr = [P3(-L / 2, 2, hs), P3(L / 2, 2, hs), P3(L / 2, 2, 0), P3(-L / 2, 2, 0)];
+    let s = X.shadow(back.concat(sfr), 9, 4.5);
+    s += X.face(back, mix(c.base, c.light, 0.35), X.line([P3(-L * 0.47, -W * 0.55, 2), P3(L * 0.47, -W * 0.5, 2)], 1.2, { color: mix(c.deep, K.ink9, 0.2) }), 0) + X.out(back, 1.8, { gaps: 0 });
+    s += X.face(sfr, c.base, `<path d="${E.P([P3(L / 2 - 9, 2, hs), P3(L / 2 + 1, 2, hs), P3(L / 2 + 1, 2, -1), P3(L / 2 - 13, 2, -1)])}" fill="${K.ink9}"/><path d="${E.P(sfr)}" fill="${X.d20}"/>`, 0) + X.face(stop, c.light, '', 0);
+    [-0.37, 0.02 + rnd() * 0.08, 0.36].forEach((k, i) => { const u = k * L; if (i === 1 && L < 90) return; const a = P3(u, 2, 4.5), b = P3(u, 9, 4.5); s += `<path d="M ${f(a[0])},${f(a[1])} L ${f(b[0])},${f(b[1])}" stroke="${K.ink9}" stroke-width="4.2" stroke-linecap="square"/><path d="M ${f(a[0] - 0.8)},${f(a[1] + 0.6)} L ${f(b[0] - 0.8)},${f(b[1] - 0.4)}" stroke="${K.ink5}" stroke-width="1"/>`; });
+    return s + X.out(stop.slice(0, 2).concat([sfr[1], sfr[2], sfr[3]]), 2.2, { gaps: 1, r: 0.6 });
+  }
+  // fallen iron candlestick: rod (w 3) from the foot plate (x, y) for len at angle a; drip pan + broken candle (paper300, ≤ 4×8) at the end
+  function fallenCandle(X, x, y, len, a) {
+    const c = X.c, ex = x + Math.cos(a) * len, ey = y + Math.sin(a) * len, nx = -Math.sin(a), ny = Math.cos(a);
+    let s = `<path d="${E.P([[x + 2, y + 2.5], [ex + 2, ey + 2.5], [ex + 3.6, ey + 4.6], [x + 3.6, y + 4.6]])}" fill="${X.d40}"/>` + iron(x, y, ex, ey, 3);
+    s += `<ellipse cx="${f(x)}" cy="${f(y)}" rx="2.4" ry="4.4" fill="${K.ink7}" stroke="${K.ink9}" stroke-width="1.4" transform="rotate(${f(a * 57.2958)} ${f(x)} ${f(y)})"/>`;
+    s += `<ellipse cx="${f(ex)}" cy="${f(ey)}" rx="1.4" ry="3.4" fill="${K.ink7}" stroke="${K.ink9}" stroke-width="1" transform="rotate(${f(a * 57.2958)} ${f(ex)} ${f(ey)})"/>`;
+    const q = [ex + Math.cos(a) * 1.6, ey + Math.sin(a) * 1.6];
+    s += `<path d="${E.P([[q[0] + nx * 1.8, q[1] + ny * 1.8], [q[0] + Math.cos(a) * 6.5 + nx * 1.6, q[1] + Math.sin(a) * 6.5 + ny * 1.6], [q[0] + Math.cos(a) * 7.4 - nx * 0.4, q[1] + Math.sin(a) * 7.4 - ny * 0.4], [q[0] + Math.cos(a) * 5.6 - nx * 1.9, q[1] + Math.sin(a) * 5.6 - ny * 1.9], [q[0] - nx * 1.8, q[1] - ny * 1.8]])}" fill="${K.p300}" stroke="${K.ink9}" stroke-width="1"/>`;
+    return s;
+  }
+  // fallen stained-glass shard (glass grammar at ≈ 0.5): black thickness strip (H 3), two panes split by one lead came, exactly one spot pane
+  function glassShard(X, cx, cy, k, rot, flip) {
+    const c = X.c, P0 = [[-12, -3], [-3, -10], [12, -7], [10, 5], [-7, 8]].map(([u, v]) => [cx + (u * Math.cos(rot) - v * Math.sin(rot)) * k, cy + (u * Math.sin(rot) + v * Math.cos(rot)) * k]);
+    const m0 = [(P0[0][0] + P0[1][0]) / 2, (P0[0][1] + P0[1][1]) / 2], m1 = [(P0[2][0] + P0[3][0]) / 2, (P0[2][1] + P0[3][1]) / 2], d = E.P(P0), lite = mix(c.light, c.base, 0.4);
+    let s = `<path d="${E.P(P0.map(([x, y]) => [x + 0.6, y + 3]))}" fill="${K.ink9}"/><path d="${d}" fill="${flip ? c.spot : lite}"/>`;
+    s += X.clipped(d, `<path d="${E.P([m0, P0[1], P0[2], m1])}" fill="${flip ? lite : c.spot}"/><path d="M ${f(m0[0])},${f(m0[1])} L ${f(m1[0])},${f(m1[1])}" stroke="${K.ink9}" stroke-width="1.8"/><path d="M ${f(m0[0] - 0.6)},${f(m0[1] - 0.6)} L ${f(m1[0] - 0.6)},${f(m1[1] - 0.6)}" stroke="${K.ink5}" stroke-width="0.6"/>`);
+    return s + X.out(P0, 2, { gaps: 0 });
+  }
+  function gateBig(X, o, tier) {
+    const c = X.c, rnd = X.rnd, w = o.w, d = o.d, Hs = 8, Hb = 15, lg = tier === 'large', Z = Hs;
+    X.meta = { H: Hs + Hb + 3, name: '철책 제단', front: Hs, tier };
+    const x0 = -w / 2, x1 = w / 2, yN = -d / 2, yS = d / 2, fx = x1 - 4, ybN = yN + 4 - Hs, ybS = yS - 4 - Hs, px = x1 - 4.5, py = yS - 6;
+    // floor band of the south railing's shadow (one 40 % band, not a slant per bar)
+    let s = `<path d="${E.P([[x0 + 16, yS + 1], [x1 - 2, yS + 1], [x1 + 5, yS + 9], [x0 + 22, yS + 9]])}" fill="${X.d40}"/>`;
+    // dais: c.light top, radial joints (8 spokes from (0, −0.05d), two short arcs — never a closed circle), north railing shadow band; sill front
+    const jc = [0, -0.05 * d - Hs], jcol = mix(c.light, c.deep, 0.45);
+    let tj = '';
+    for (let i = 0; i < 8; i++) { // each spoke ends on the top face's edge (getBBox ignores clipping, so nothing is drawn past it)
+      const a = (i + 0.5) * Math.PI / 4 + (rnd() - 0.5) * 0.14, ux = Math.cos(a), uy = Math.sin(a), ex = ux > 0 ? x1 - 1 : x0 + 1, ey = uy > 0 ? yS - Hs - 1 : yN - Hs + 1;
+      const tm = Math.min(Math.abs(ux) > 1e-6 ? (ex - jc[0]) / ux : 1e9, Math.abs(uy) > 1e-6 ? (ey - jc[1]) / uy : 1e9);
+      tj += `<path d="M ${f(jc[0] + ux * 18)},${f(jc[1] + uy * 18)} L ${f(jc[0] + ux * tm)},${f(jc[1] + uy * tm)}" stroke="${jcol}" stroke-width="1.5"/>`;
+    }
+    [[0.3, 0.55, 1.25], [0.53, 2.45, 0.9]].forEach(([rr, a0, da]) => { const r = d * rr; tj += `<path d="M ${f(jc[0] + Math.cos(a0) * r)},${f(jc[1] + Math.sin(a0) * r)} A ${f(r)},${f(r)} 0 0 1 ${f(jc[0] + Math.cos(a0 + da) * r)},${f(jc[1] + Math.sin(a0 + da) * r)}" fill="none" stroke="${jcol}" stroke-width="1.5"/>`; });
+    tj += `<path d="${E.P([[-fx + 6, ybN], [fx - 4, ybN], [fx + 2, ybN + 8], [-fx + 12, ybN + 8]])}" fill="${X.d40}"/>`;
+    const B = E.block(X, 0, 0, w, d, Hs, { jag: 0.5, topInner: tj });
+    s += B.s + X.clipped(E.P(B.front), `<path d="M ${f(x1 - 20)},${f(B.yT1)} L ${f(x1)},${f(B.yT1)} L ${f(x1)},${f(B.yB)} L ${f(x1 - 26)},${f(B.yB)} Z" fill="${K.ink9}"/>` + [0.3, 0.62].map((t) => X.line([[x0 + w * t, B.yT1 + 1], [x0 + w * t + 1, B.yB - 1]], 1.5)).join('')) + B.outline(2.5);
+    // north railing + its posts
+    s += railRow(X, -px, px, ybN, Hb, 11, 0, 0) + post(X, -px, -py, false) + post(X, px, -py, true);
+    // dais props (on z = 8: a floor point (x, y) is drawn at (x, y − 8)), back to front
+    const it = [];
+    const SH = lg ? [[-104, -62, 0.55, 0.4, 0], [-30, 54, 0.5, -0.5, 1], [108, -12, 0.45, 1.1, 0], [-82, 16, 0.4, 2.2, 1], [-117, -22, 0.42, -0.9, 1]] : [[-70, -36, 0.5, 0.4, 0], [-22, 44, 0.45, -0.6, 1]]; // K5 F1-R1: large adds a shard + wax cluster at the left-middle
+    SH.forEach(([x, y, k, r, fl]) => it.push([y - 1e3, glassShard(X, x, y - Z, k, r, fl)])); // flat (H 3): always under the standing props
+    const WX = lg ? [[-96, 40, 2], [92, -46, 2], [-8, 12, 1], [-104, -20, 3]] : [[-62, 30, 2], [-8, 8, 2], [60, -40, 2]]; // [x, y, drops]: 8 / 6 drops (brief 4–8)
+    let wax = ''; WX.forEach(([x, y, nd]) => { for (let k = 0; k < nd; k++) { const r = 1 + rnd() * 2; wax += `<ellipse cx="${f(x + (rnd() - 0.5) * 18)}" cy="${f(y - Z + (rnd() - 0.5) * 10)}" rx="${f(r)}" ry="${f(r * 0.8)}" fill="${mix(c.base, c.deep, 0.38)}" stroke="${mix(c.base, c.deep, 0.5)}" stroke-width="0.8"/>`; } });
+    it.push([-1e3, wax]);
+    const A = lg ? [20, -20, 95, 53] : [14, -14, 68, 36];
+    it.push([A[1] + A[3] / 2, altarStone(X, A[0], A[1], A[2], A[3], Z)]);
+    const BL = lg ? [-50, -9.5, 30, 22] : [-36, -6.5, 24, 18], bx0 = BL[0] - BL[2] * 0.45, by0 = BL[1] - Z + 1, kc = mix(c.deep, K.ink9, 0.3);
+    it.push([-999, X.line([[bx0, by0], [bx0 - 9, by0 + 5], [bx0 - 16, by0 + 4]], 1.3, { color: kc }) + X.line([[bx0 + 2, by0 + 2], [bx0 + 1, by0 + 11], [bx0 - 5, by0 + 17]], 1.2, { color: kc })]); // impact cracks
+    it.push([BL[1] + 2, fallenBell(X, BL[0], BL[1] - Z, BL[2], BL[3], -0.32 + (rnd() - 0.5) * 0.16)]); // seed: small angle changes only
+    const PW = lg ? [50, 34, 106, 16, -(0.14 + rnd() * 0.1)] : [36, 23, 76, 12, -(0.14 + rnd() * 0.1)]; // pew −8…−14°
+    it.push([PW[1] + 3, toppledPew(X, PW[0], PW[1] - Z, PW[2], PW[3], PW[4])]);
+    if (lg) it.push([65, toppledPew(X, -62, 62 - Z, 58, 12, 0.12)]); // large: a second, shorter pew fills the front-left
+    (lg ? [[-100, 46, 38, -0.3], [92, -50, 30, 2.75]] : [[-64, 34, 32, -0.35], [72, -40, 28, 2.6]]).forEach(([x, y, len, a]) => it.push([y, fallenCandle(X, x, y - Z, len, a + (rnd() - 0.5) * 0.4)]));
+    it.sort((p, q) => p[0] - q[0]).forEach((p) => { s += p[1]; });
+    // side railings: one iron rail (w 3, ink + ink5 core) at bar-rail height between the posts; the large tier adds a middle post per side
+    const rz = Hs + Hb * 0.82;
+    [-fx, fx].forEach((x) => { s += iron(x, -py - rz + 2, x, py - rz, 3); });
+    if (lg) s += post(X, -px, 0, false) + post(X, px, 0, true);
+    // south railing with the chained gate leaf (x −18…18) + its posts
+    s += railRow(X, -px, px, ybS, Hb, 11, -18, 18) + post(X, -px, py, false) + post(X, px, py, true);
+    return s;
+  }
   // 떨어진 스테인드 조각 — 4 large angular shards lying flat (H 3). Each: thick lead came border, 2–4 panes (duotone light/base + dots),
   // exactly ONE pewter spot pane, a curved came fragment (it was a round window) and a paper glint. Heavy ink silhouette around the cluster.
   L.glass = function (X, o) {
@@ -941,8 +1247,9 @@ window.PN = window.PN || {};
   // 운하 석축 — narrow canal curb wall: coping row on top (5 unequal chipped blocks, one MISSING = black gap), two ashlar courses,
   // wet waterline band, mooring ring, moss-dot cluster and a drip stain. Straight edges only. Default footprint 150×16, H 26 (top ≈ 38 % of the height).
   L.embank = function (X, o) {
-    const w = o.w || 150, d = o.d || 16, H = Math.min(o.H || 26, 28), c = X.c, rnd = X.rnd, P = E.P;
-    X.meta = { H, name: '운하 석축' };
+    const w = o.w || 150, d = o.d || 16, H = Math.min(o.H || 26, 28), c = X.c, rnd = X.rnd, P = E.P, tier = E.tier(w, d);
+    if (tier !== 'base') return embankBig(X, { w, d }, tier); // K5: mid / large = '갈대 둑'
+    X.meta = { H, name: '운하 석축', front: H, tier };
     const x0 = -w / 2, x1 = w / 2, yT0 = -d / 2 - H, yT1 = d / 2 - H, yB = d / 2, cf = 4; // cf = coping front strip
     // coping block layout (unequal widths), one missing block
     const cuts = [x0]; let x = x0; while (x < x1 - 14) { x += 18 + rnd() * 26; cuts.push(Math.min(x, x1)); } if (cuts[cuts.length - 1] < x1) cuts[cuts.length - 1] = x1;
@@ -983,7 +1290,121 @@ window.PN = window.PN || {};
     s += ripple(x0 + w * 0.3, yB + 6, 26, c) + ripple(x1 - w * 0.2, yB + 7, 18, c, 1);
     return s;
   };
-  // 수문짝 — two stone posts, plank gate with iron bands, crank wheel on the right post, chain
+  // ===== K5 (rev 3) · Ch3 embank, big tiers: '갈대 둑' (brief §2.3) =====
+  // Coping stones (t 10 / 12, top z 26) ring an earth bank that has settled to z 10. On the wet bank: reed beds (2 big at the north and west,
+  // small ones in front), one ragged puddle and a half-sunk boat (focus). No cyan anywhere: the water is an ink wash.
+  // reed clump on the bank (floor at screen = plane − zb): plane centre (cx, cy), pw × pd; blades 10–16 tall (tips ≤ z 26), back blades
+  // mix(deep, ink7, .6) 2.6, front blades ink9 3.0–3.4, 1–3 cattails (L.reeds grammar). Blade tips stay inside the plane footprint.
+  function reedBed(X, cx, cy, pw, pd, zb, nCat, xl, xr) {
+    const c = X.c, rnd = X.rnd, n = Math.min(112, Math.round((pw * 0.7 + pd * 0.4) * 1.4)), B = [], tri = () => rnd() + rnd() - 1; // centre-weighted spread; K5 F1-R2: 1.4× blades
+    for (let k = 0; k < n; k++) { const bx = cx + tri() * pw * 0.6, by = cy + tri() * pd * 0.6, len = k % 3 === 1 ? 13.5 + rnd() * 2.5 : 9.5 + rnd() * 3.5; let lean = ((bx - cx) / (pw / 2)) * 5 + (rnd() - 0.5) * 10 - 2; lean = Math.max(xl - bx, Math.min(xr - bx, lean)); B.push({ bx, by, len, lean, back: by < cy - pd * 0.12 }); } // staggered heights (⅓ tall 13.5–16, ⅔ short 9.5–13); ≈ ⅓ back (grey), ⅔ front (ink)
+    B.sort((a, b) => a.by - b.by);
+    let s = `<path d="${E.crPath(E.ellPts(cx, cy - zb + 1, pw * 0.5, pd * 0.5, 9).map(([x, y]) => [x + (rnd() - 0.5) * pw * 0.14, y + (rnd() - 0.5) * pd * 0.22]), true)}" fill="${mix(c.base, c.deep, 0.85)}"/>`; // root mat
+    for (const b of B) {
+      const y0 = b.by - zb, p1 = [b.bx + b.lean * 0.3, y0 - b.len * 0.5], p2 = [b.bx + b.lean, y0 - b.len];
+      s += E.ribbon(E.qs(b.bx, y0, p1[0], p1[1], p2[0], p2[1], 16), b.back ? 2.6 : 3 + rnd() * 0.4, { color: b.back ? mix(c.deep, K.ink7, 0.6) : K.ink9, taper: 'start', wobble: 0.1 });
+      if (!b.back && rnd() > 0.7) s += E.ribbon(E.qs(b.bx - 0.8, y0 - b.len * 0.2, p1[0] - 0.8, p1[1], p1[0] + b.lean * 0.3 - 0.8, p1[1] - b.len * 0.2, 10), 0.9, { color: c.light, taper: 'mid' });
+    }
+    for (let k = 0; k < nCat; k++) { // cattail: stalk + ink head (rotated) with a light stroke and a short spike — top ≤ 16 above the bank
+      const x = cx + (k - (nCat - 1) / 2) * pw * 0.28 + (rnd() - 0.5) * 6, y = cy + (rnd() - 0.2) * pd * 0.4 - zb, a = (rnd() - 0.5) * 16, hy = y - 10.5;
+      s += E.inkQ(x - a * 0.05, y, x - a * 0.02, y - 6, x, hy + 3, 1.6, { taper: 'none' }) + `<g transform="rotate(${f(a)} ${f(x)} ${f(hy)})"><ellipse cx="${f(x)}" cy="${f(hy)}" rx="2.6" ry="3.6" fill="${K.ink9}"/><path d="M ${f(x - 1.6)},${f(hy - 2.4)} q -0.8,2.4 0,4.8" stroke="${c.light}" stroke-width="1" fill="none"/><path d="M ${f(x)},${f(hy - 3.6)} v -1.8" stroke="${K.ink9}" stroke-width="1.2"/></g>`;
+    }
+    return s;
+  }
+  // half-sunk boat: gunwale lens (bow +u), ink7 hull with an ink5 lit gunwale on the upper-left, deep plank seams 1.5, two thwarts of
+  // different width and angle, a broken plank gap (black spot) near the stern, the stern buried in mud. Centre (cx, cy) on the water line.
+  function sunkBoat(X, cx, cy, L, W, rot) {
+    const c = X.c, rnd = X.rnd, ca = Math.cos(rot), sa = Math.sin(rot), gz = 5;
+    const T = (u, v, z = 0) => [cx + u * ca - v * sa, cy + u * sa + v * ca - z];
+    const G = [[0.5, 0], [0.34, 0.36], [0.06, 0.5], [-0.3, 0.46], [-0.5, 0.34], [-0.5, -0.34], [-0.3, -0.46], [0.06, -0.5], [0.34, -0.36]];
+    const gun = G.map(([u, v]) => T(u * L, v * W, gz)), near = G.slice(0, 5).map(([u, v]) => T(u * L, v * W, gz)), nearW = G.slice(0, 5).map(([u, v]) => T(u * L, v * W, 1)).reverse();
+    const inn = E.shrink(gun, 2.8).map(([x, y]) => [x, y + 2.2]);
+    let s = X.shadow(gun.map(([x, y]) => [x, y + gz]), 6, 3);
+    s += `<path d="${E.P(near.concat(nearW))}" fill="${K.ink7}"/><path d="${E.P(near.concat(nearW))}" fill="${X.d20}"/>`; // near hull side above the water
+    s += `<path d="${E.crPath(gun, true, 4)}" fill="${K.ink5}"/>`;
+    let fl = '';
+    [-0.24, 0.02, 0.26].forEach((v) => { fl += `<path d="M ${f(T(-0.5 * L, v * W, 2)[0])},${f(T(-0.5 * L, v * W, 2)[1])} L ${f(T(0.48 * L, v * W * 0.3, 2)[0])},${f(T(0.48 * L, v * W * 0.3, 2)[1])}" stroke="${c.deep}" stroke-width="1.5"/>`; });
+    [[-0.2, 3.4, 0.08], [0.16, 2.4, -0.16]].forEach(([u, tw, ta]) => { const a = T((u - ta) * L, -0.6 * W, 3), b = T((u + ta) * L, 0.6 * W, 3); fl += `<path d="M ${f(a[0])},${f(a[1])} L ${f(b[0])},${f(b[1])}" stroke="${K.ink9}" stroke-width="${f(tw + 1.6)}"/><path d="M ${f(a[0])},${f(a[1])} L ${f(b[0])},${f(b[1])}" stroke="${mix(K.ink5, c.deep, 0.5)}" stroke-width="${f(tw)}"/>`; });
+    const g0 = T(-0.36 * L, 0.05 * W, 2);
+    fl += `<path d="${E.P(E.jag([[g0[0] - 4, g0[1] - 2], [g0[0] + 5, g0[1] - 3], [g0[0] + 6, g0[1] + 2], [g0[0] - 3, g0[1] + 3]], rnd, 1, 3))}" fill="${K.ink9}"/>`; // broken plank gap
+    s += `<path d="${E.crPath(inn, true, 4)}" fill="${K.ink7}"/>` + X.clipped(E.crPath(inn, true, 4), fl);
+    s += E.ribbon(E.cr(gun.slice(4, 9), false, 4), 1.4, { color: mix(K.ink5, c.light, 0.35), taper: 'mid' }); // lit gunwale (far / upper-left side)
+    s += X.outSm(gun, 2.2, { gaps: 1 });
+    const st = T(-0.5 * L, 0, 0); // mud swallowing the stern + a water ring at the bow
+    s += `<path d="${E.crPath(E.ellPts(st[0] - 2, st[1] + 2, W * 0.42, W * 0.32, 8).map(([x, y]) => [x + (rnd() - 0.5) * 3, y + (rnd() - 0.5) * 2]), true)}" fill="${mix(c.base, c.deep, 0.62)}"/>`;
+    return s + ripple(T(0.42 * L, 0, 0)[0], T(0.42 * L, 0, 0)[1] + 2, 8, c, 1);
+  }
+  // ragged puddle (never an ellipse): 11 points, radius 0.72–1.22, jagged edge; ink-wash fill mix(base, deep, .36), 2 ripple arcs, one glint ≤ 6×2
+  function puddle(X, cx, cy, rx, ry) {
+    const c = X.c, rnd = X.rnd, pts = [];
+    for (let i = 0; i < 11; i++) { const a = i / 11 * Math.PI * 2, k = 0.72 + rnd() * 0.5; pts.push([cx + Math.cos(a) * rx * k, cy + Math.sin(a) * ry * k]); }
+    const d = E.P(E.jag(pts, rnd, 1.6, 9));
+    return `<path d="${d}" fill="${mix(c.base, c.deep, 0.36)}"/><path d="${d}" fill="none" stroke="${mix(c.deep, K.ink9, 0.2)}" stroke-width="1.5" opacity="0.7"/>` +
+      ripple(cx - rx * 0.28, cy + ry * 0.12, rx * 0.3, c, 1) + ripple(cx + rx * 0.3, cy - ry * 0.3, rx * 0.2, c, 1) + `<path d="M ${f(cx - rx * 0.5)},${f(cy - ry * 0.42)} q 3,-1.6 6,0 q -3,1.4 -6,0 Z" fill="${K.p50}"/>`;
+  }
+  function embankBig(X, o, tier) {
+    const c = X.c, rnd = X.rnd, w = o.w, d = o.d, H = 26, ZB = 10, lg = tier === 'large', t = lg ? 12 : 10;
+    X.meta = { H, name: '갈대 둑', front: H, tier };
+    const x0 = -w / 2, x1 = w / 2, yN = -d / 2, yS = d / 2, ix0 = x0 + t, ix1 = x1 - t, iyN = yN + t, iyS = yS - t;
+    const cN0 = yN - H, cN1 = iyN - H, cS0 = iyS - H, cS1 = yS - H, bT = iyN - ZB, bw = ix1 - ix0, bdp = iyS - iyN;
+    const U = (u) => ix0 + u * bw, V = (v) => iyN + v * bdp;   // bank plane: u across, v back → front
+    const cuts = (a, b) => { const L = [a]; let x = a; while (x < b - 14) { x += 18 + rnd() * 26; L.push(Math.min(x, b)); } L[L.length - 1] = b; return L; };
+    const stone = (x0b, y0b, x1b, y1b, i) => { // coping block: alternating light tones, 1.5 ink line, one chipped corner (L.embank grammar)
+      const ch = 2.5 + rnd() * 3.5, k = Math.floor(rnd() * 3); let pts = E.rect(x0b, y0b, x1b, y1b);
+      if (k === 0) pts = [[x0b + ch, y0b], [x1b, y0b], [x1b, y1b], [x0b, y1b], [x0b, y0b + ch * 0.8]];
+      if (k === 1) pts = [[x0b, y0b], [x1b - ch, y0b], [x1b, y0b + ch * 0.8], [x1b, y1b], [x0b, y1b]];
+      if (k === 2) pts = [[x0b, y0b], [x1b, y0b], [x1b, y1b - ch * 0.6], [x1b - ch, y1b], [x0b, y1b]];
+      return `<path d="${E.P(pts)}" fill="${i % 2 ? c.light : mix(c.light, c.base, 0.2)}"/><path d="${E.P(pts)}" fill="none" stroke="${K.ink9}" stroke-width="1.5" stroke-linejoin="miter"/>`;
+    };
+    const gap = (x0b, y0b, x1b, y1b) => `<path d="${E.P(E.rect(x0b, y0b, x1b, y1b))}" fill="${K.ink9}"/>` + E.rubble(X, x0b + 2, Math.max(x0b + 3, x1b - 4), y1b - 4, 2); // missing block
+    let s = X.shadow(E.rect(x0, yN, x1, yS), H * 0.62 + 4, H * 0.3 + 3);
+    // north coping, inner face (16 tall): base + 20 % dots, the shade under the coping, joints, two wet ink runs
+    let ni = `<rect x="${f(ix0 - 2)}" y="${f(cN1 - 2)}" width="${f(bw + 4)}" height="${H - ZB + 4}" fill="${X.d20}"/><rect x="${f(ix0)}" y="${f(cN1)}" width="${f(bw)}" height="2.2" fill="${K.ink9}" opacity="0.55"/>`;
+    for (let x = ix0 + 20 + rnd() * 16; x < ix1 - 10; x += 30 + rnd() * 22) ni += `<path d="M ${f(x)},${f(cN1 + 2)} L ${f(x + (rnd() - 0.5) * 1.5)},${f(bT)}" stroke="${mix(c.deep, K.ink9, 0.25)}" stroke-width="1.5"/>`;
+    ni += E.dripStain(U(0.3), cN1 + 3, (H - ZB) * 0.6, c, 2.4) + E.dripStain(U(0.71), cN1 + 3, (H - ZB) * 0.45, c, 2);
+    s += X.face(E.rect(ix0, cN1, ix1, bT), c.base, ni, 0);
+    // the settled bank (z 10): wet earth, inner shadow bands (north 8, west 14), moss, 1–2 cracks, the puddle
+    let bi = `<rect x="${f(ix0)}" y="${f(bT)}" width="${f(bw)}" height="8" fill="${X.d40}"/><rect x="${f(ix0)}" y="${f(bT + 8)}" width="14" height="${f(cS0 - bT - 8)}" fill="${X.d40}"/>`;
+    bi += X.line([[U(0.22), V(0.56) - ZB], [U(0.31), V(0.63) - ZB], [U(0.4), V(0.6) - ZB]], 1.5, { color: mix(c.deep, K.ink9, 0.25) });
+    if (lg) bi += X.line([[U(0.78), V(0.18) - ZB], [U(0.86), V(0.24) - ZB], [U(0.95), V(0.2) - ZB]], 1.5, { color: mix(c.deep, K.ink9, 0.25) });
+    (lg ? [[0.3, 0.73], [0.74, 0.82], [0.5, 0.22]] : [[0.33, 0.75], [0.82, 0.62]]).forEach(([u, v]) => { for (let q = 0; q < 9; q++) bi += `<circle cx="${f(U(u) + (rnd() - 0.5) * 16)}" cy="${f(V(v) - ZB + (rnd() - 0.5) * 8)}" r="${f(0.8 + rnd() * 1.4)}" fill="${mix(c.deep, K.ink9, 0.3)}"/>`; });
+    const PU = lg ? [0.6, 0.45, 54, 28] : [0.62, 0.45, 36, 18];
+    bi += puddle(X, U(PU[0]), V(PU[1]) - ZB, PU[2], PU[3]);
+    s += X.face(E.rect(ix0, bT, ix1, cS0), mix(c.base, c.deep, 0.5), bi, 0) + X.line([[ix0 + 1, bT], [ix1 - 1, bT]], 1.5, { color: mix(c.deep, K.ink9, 0.4), taper: 'none' });
+    // north + side coping (before the reeds: blades may overlap them), missing blocks: north (all), east (large, seed)
+    const cn = cuts(x0, x1), miss = Math.min(cn.length - 2, 1 + Math.floor(rnd() * (cn.length - 2))), mx0 = cn[miss], mx1 = cn[miss + 1];
+    for (let i = 0; i < cn.length - 1; i++) s += i === miss ? gap(cn[i] + 0.8, cN0 + 1, cn[i + 1] - 0.8, cN1) : stone(cn[i] + 0.8, cN0, cn[i + 1] - 0.8, cN1, i);
+    const eMiss = lg && rnd() < 0.6;
+    [[x0, ix0, false], [ix1, x1, eMiss]].forEach(([xa, xb, mm]) => { const cv = cuts(cN1, cS0), mi = mm ? 1 + Math.floor(rnd() * Math.max(1, cv.length - 3)) : -1; for (let i = 0; i < cv.length - 1; i++) s += i === mi ? gap(xa + 0.8, cv[i] + 0.8, xb - 0.8, cv[i + 1] - 0.8) : stone(xa + 0.8, cv[i] + 0.8, xb - 0.8, cv[i + 1] - 0.8, i + 1); });
+    const mj = cn[Math.max(1, miss - 1)] - 2; for (let k = 0; k < 13; k++) s += `<circle cx="${f(mj + (rnd() - 0.5) * 16)}" cy="${f(cN0 + 2 + rnd() * (t - 4))}" r="${f(0.8 + rnd() * 1.5)}" fill="${mix(c.deep, K.ink9, 0.3)}"/>`; // moss on a joint
+    s += `<path d="M ${f(x0 + w * 0.8)},${f(cN0 + t * 0.5)} l 3,-1 l -1,1.6 Z" fill="${K.p50}"/>`; // the one wet glint on the coping
+    // bank props, back to front: reed beds (big ones north + west, small ones in front), the half-sunk boat (focus)
+    const xl = x0 + 2, xr = x1 - 2, it = [];
+    const RB = lg ? [[0.38, 0.15, 116, 38, 3], [0.12, 0.52, 38, 110, 2], [0.4, 0.74, 34, 14, 1], [0.86, 0.68, 28, 12, 1], [0.88, 0.2, 26, 11, 1], [0.64, 0.8, 24, 10, 1]] : [[0.42, 0.15, 78, 25, 2], [0.12, 0.5, 26, 72, 2], [0.62, 0.72, 30, 12, 1], [0.86, 0.26, 24, 10, 1]]; // 1–3 cattails per bed
+    RB.forEach(([u, v, pw, pd, nc]) => it.push([V(v) + pd / 2, reedBed(X, U(u), V(v), pw, pd, ZB, nc, xl, xr)]));
+    const BT = lg ? [0.6, 0.43, 70, 24, 0.3] : [0.64, 0.42, 50, 18, 0.35];
+    it.push([V(BT[1]) + 6, sunkBoat(X, U(BT[0]), V(BT[1]) - ZB, BT[2], BT[3], BT[4])]);
+    it.sort((p, q) => p[0] - q[0]).forEach((p) => { s += p[1]; });
+    // south coping (hides the bank behind it) and the front face: coping lip strip, two ashlar courses, shade, water band, drips, ring
+    const cs = cuts(x0, x1), cf = 4, cy1 = cS1 + cf, cy2 = cy1 + (H - cf) * 0.5;
+    for (let i = 0; i < cs.length - 1; i++) s += stone(cs[i] + 0.8, cS0, cs[i + 1] - 0.8, cS1, i);
+    let fr = `<rect x="${f(x0 - 2)}" y="${f(cS1)}" width="${f(w + 4)}" height="${H + 2}" fill="${X.d20}"/>`;
+    let jn = `M ${f(x0)},${f(cy1)} H ${f(x1)} M ${f(x0)},${f(cy2)} H ${f(x1)} `;
+    [[cy1, cy2, 0], [cy2, yS, 1]].forEach(([ya, yb, r]) => { let xx = x0 + (r ? 12 + rnd() * 10 : 24 + rnd() * 14); while (xx < x1 - 8) { jn += `M ${f(xx)},${f(ya)} V ${f(yb)} `; xx += 26 + rnd() * 22; } });
+    fr += `<path d="${jn}" stroke="${mix(c.deep, K.ink9, 0.25)}" stroke-width="1.5" fill="none"/><rect x="${f(x0 - 2)}" y="${f(yS - 6)}" width="${f(w + 4)}" height="7" fill="${X.d40}"/><rect x="${f(x0)}" y="${f(cy1)}" width="${f(w)}" height="2.2" fill="${K.ink9}" opacity="0.55"/>`;
+    fr += `<path d="${E.P(E.jag([[x1 - 24, cy1], [x1 + 2, cy1], [x1 + 2, yS + 1], [x1 - 34, yS + 1], [x1 - 26, cy1 + (H - cf) * 0.45]], rnd, 1, 6))}" fill="${K.ink9}"/>`;
+    fr += E.dripStain(x0 + w * 0.2, cy1 + 2, H * 0.62, c, 2.6) + E.dripStain(x0 + w * 0.47, cy1 + 2, H * 0.4, c, 2.1) + E.dripStain(x0 + w * 0.66, cy1 + 2, H * 0.52, c, 2.4);
+    const rx = x0 + w * 0.58, ry = cy2 - 1;
+    fr += `<rect x="${f(rx - 3)}" y="${f(ry - 5)}" width="6" height="4.6" fill="${K.ink9}"/><ellipse cx="${f(rx)}" cy="${f(ry + 4)}" rx="5.4" ry="5.8" fill="none" stroke="${K.ink9}" stroke-width="2.8"/><path d="M ${f(rx - 4.6)},${f(ry + 1.2)} a 5.4,5.8 0 0 1 3.6,-2.8" fill="none" stroke="${K.ink5}" stroke-width="1"/>`;
+    s += X.face(E.rect(x0, cS1, x1, yS), c.base, fr, 0);
+    for (let i = 0; i < cs.length - 1; i++) { const a = cs[i] + 0.8, b = cs[i + 1] - 0.8; s += `<path d="${E.P(E.rect(a, cS1, b, cy1))}" fill="${mix(c.light, c.base, 0.35)}"/><path d="M ${f(a)},${f(cy1)} H ${f(b)}" stroke="${K.ink9}" stroke-width="1.5"/>`; }
+    // edges: rims, inner coping edges, silhouette (1-unit notch at the missing north block), ripples on the floor in front
+    const edge = (a, b) => E.ribbon(E.jag([a, b], rnd, 0.4, 12, false), 1.8, { color: K.ink9, taper: 'none', wobble: 0.25 });
+    s += X.rim(x0 + 1.5, cS1, x1 - 1.5, cS1, 2.2) + (mx0 > ix0 ? X.rim(ix0 + 1, cN1, Math.min(mx0, ix1 - 1), cN1, 2.2) : '') + (mx1 < ix1 ? X.rim(Math.max(mx1, ix0 + 1), cN1, ix1 - 1, cN1, 2.2) : '');
+    s += edge([ix0, cN1 + 0.5], [ix0, cS0]) + edge([ix1, cN1 + 0.5], [ix1, cS0]) + edge([ix0, cS0], [ix1, cS0]);
+    s += X.out([[x0, yS], [x0, cN0], [mx0, cN0], [mx0, cN0 + 1], [mx1, cN0 + 1], [mx1, cN0], [x1, cN0], [x1, yS]], 2.6, { gaps: 1, r: 0.4 });
+    return s + ripple(x0 + w * 0.3, yS + 6, 26, c) + ripple(x1 - w * 0.2, yS + 7, 18, c, 1);
+  }
   L.sluice = function (X, o) {
     const w = o.w || 124, d = o.d || 30, c = X.c, rnd = X.rnd, pw = 22, Hp = Math.min(o.H || 26, 28), Hg = Hp - 8;
     X.meta = { H: Hp, name: '수문짝' };
@@ -1067,11 +1488,18 @@ window.PN = window.PN || {};
   E.dial = dial;
   // 괘종 묘비 — LOW plinth (H 18) with the clock dial set flush into its top plane (spot 바랜 황동 = flat plate fill, never a ring),
   // and the clock's pendulum case lying flat beside it (H 8): glass window on its up-facing front shows rod + bob.
+  // recessed blank name plate (brief §1.6-5): filled face, inner shade on the top + left, light lip on the bottom + right. Never an empty outline.
+  const plaque = (x0, y0, x1, y1, fill, shade, lip, sw = 1.5, lw = 0.8) => `<path d="${E.P(E.rect(x0, y0, x1, y1))}" fill="${fill}"/>` +
+    `<path d="M ${f(x0 + sw / 2)},${f(y1)} L ${f(x0 + sw / 2)},${f(y0 + sw / 2)} L ${f(x1)},${f(y0 + sw / 2)}" fill="none" stroke="${shade}" stroke-width="${sw}"/>` +
+    `<path d="M ${f(x0 + sw)},${f(y1 - lw / 2)} L ${f(x1 - lw / 2)},${f(y1 - lw / 2)} L ${f(x1 - lw / 2)},${f(y0 + sw)}" fill="none" stroke="${lip}" stroke-width="${lw}"/>`;
+  E.plaque = plaque;
   L.clock = function (X, o) {
-    const c = X.c, rnd = X.rnd, w = o.w || 84, d = o.d || 38, H = Math.min(o.H || 18, 28), sc = w / 84;
-    X.meta = { H, name: '괘종 묘비' };
-    const pw = 54 * sc, px = -w / 2 + pw / 2, cw = 17 * sc, cx = w / 2 - cw / 2 - 1;
-    let s = X.shadow(E.rect(-w / 2, -d / 2, w / 2 - cw - 4, d / 2), H * 0.62 + 4, H * 0.3 + 3);
+    const c = X.c, rnd = X.rnd, w = o.w || 84, d = o.d || 38, H = Math.min(o.H || 18, 28), sc = w / 84, tier = E.tier(w, d);
+    if (tier !== 'base') return clockBig(X, { w, d }, tier); // K5: mid / large = '문자판 받침'
+    X.meta = { H, name: '괘종 묘비', front: H, tier };
+    // K5 §2.4 base fix: the plinth now runs up to the lying case (pw = w − cw − 1), so no floor gap shows inside the footprint (bible §7.2)
+    const cw = 17 * sc, pw = w - cw - 1, px = -w / 2 + pw / 2, cx = w / 2 - cw / 2 - 1;
+    let s = X.shadow(E.rect(-w / 2, -d / 2, w / 2 - cw - 1, d / 2), H * 0.62 + 4, H * 0.3 + 3);
     // pendulum case lying flat (N–S), behind-right of the plinth front
     const C = E.block(X, cx, 2, cw, d - 4, 8, { jag: 0.3 });
     const wx0 = C.x0 + 3.5, wx1 = C.x1 - 3.5, wy0 = C.yT0 + 5, wy1 = C.yT1 - 4;
@@ -1081,28 +1509,69 @@ window.PN = window.PN || {};
     ci += `<path d="${P([[wx0, wy0], [wx0 + 4, wy0], [wx0, wy0 + 12]])}" fill="${K.ink3}"/>` + E.crackWedge(wx1 - 2, wy0, (wy1 - wy0) * 0.6, 2.2, rnd, -1);
     s += C.s + X.clipped(E.P(C.top), ci) + X.clipped(E.P(C.front), `<path d="${P([[C.x1 - 6, C.yT1], [C.x1 + 2, C.yT1], [C.x1 + 2, C.yB], [C.x1 - 8, C.yB]])}" fill="${K.ink9}"/>`) + C.outline(2.4);
     // plinth
-    const B = E.block(X, px, 0, pw, d, H, { jag: 0.5 });
+    const B = E.block(X, px, 0, pw, d, H, { jag: 0.5, noShadow: true }); // its cast shadow is the one above (it would dot the case top now)
     const dx = px - pw * 0.04, dy = B.yT0 + d * 0.52, R = Math.min(d * 0.4, pw * 0.3);
     let ti = `<path d="${P(E.rect(dx - R - 4, dy - R - 3, dx + R + 4, dy + R + 3))}" fill="${c.spot}"/><path d="${P([[dx - R - 4, dy - R - 3], [dx + R + 4, dy - R - 3], [dx + R + 1, dy - R], [dx - R - 1, dy - R]])}" fill="${mix(c.spot, c.light, 0.35)}"/>`;
     ti += dial(X, dx, dy, R, rnd, true);
     ti += `<path d="${P([[B.x1 - 10, B.yT0], [B.x1, B.yT0], [B.x1, B.yT1], [B.x1 - 6, B.yT1]])}" fill="${X.e20}"/>`;
     let fi = `<path d="${P([[B.x1 - 14, B.yT1], [B.x1 + 2, B.yT1], [B.x1 + 2, B.yB + 2], [B.x1 - 20, B.yB + 2]])}" fill="${K.ink9}"/>`;
     fi += `<path d="${P([[B.x0 + 6, B.yT1 + H * 0.3], [B.x0 + pw * 0.58, B.yT1 + H * 0.3], [B.x0 + pw * 0.58, B.yT1 + H * 0.3 + 1.5], [B.x0 + 6, B.yT1 + H * 0.3 + 1.5]])}" fill="${mix(c.deep, K.ink9, 0.35)}"/>`;
-    fi += `<text x="${f(B.x0 + pw * 0.3)}" y="${f(B.yT1 + H * 0.78)}" font-family="AppleMyungjo,serif" font-size="8" font-weight="700" text-anchor="middle" fill="${mix(c.deep, K.ink9, 0.4)}">時</text>`;
+    { const qw = pw * 0.22, qx = B.x0 + pw * 0.3, qh = Math.min(7, H * 0.4), qy = B.yT1 + H * 0.3 + 1.5 + (H * 0.7 - 1.5 - qh) * 0.45; // K5-G6: blank plate replaces '時'
+      fi += plaque(qx - qw / 2, qy, qx + qw / 2, qy + qh, mix(c.deep, K.ink9, 0.15), K.ink7, c.light); }
     s += B.s + X.clipped(E.P(B.top), ti) + X.clipped(E.P(B.front), fi) + B.outline(2.6);
     s += E.rubble(X, B.x1 - 6, B.x1 + 6, d / 2 - 1, 3);
     return s;
   };
   const P = E.P;
   // gear lying flat: face on top, thickness strip below (3/4)
-  function flatGear(X, cx, cy, r, n, fill, rot, th = 5) {
+  function flatGear(X, cx, cy, r, n, fill, rot, th = 5, inkHub = false) { // K5: inkHub (opt-in) paints the axle hole ink — never a lit ring with a dot
     const pts = E.gearPath(cx, cy, r, n, 0.2, rot), side = pts.map(([x, y]) => [x, y + th]);
     let s = `<path d="${E.P(E.hull(pts.concat(side)))}" fill="${K.ink9}"/>`;
     let holes = ''; for (let k = 0; k < 4; k++) { const a = rot + k * Math.PI / 2 + 0.4; holes += `<path d="${E.crPath(E.ellPts(cx + Math.cos(a) * r * 0.55, cy + Math.sin(a) * r * 0.55, r * 0.2, r * 0.14, 8), true)}"/>`; }
     s += `<path d="${E.P(pts)}" fill="${fill}" stroke="${K.ink9}" stroke-width="2" stroke-linejoin="round"/>` + `<g fill="${K.ink9}">${holes}</g>`;
-    s += `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(r * 0.2)}" fill="${X.c.light}" stroke="${K.ink9}" stroke-width="1.6"/><circle cx="${f(cx)}" cy="${f(cy)}" r="${f(r * 0.08)}" fill="${K.ink9}"/>`;
+    s += inkHub ? `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(r * 0.22)}" fill="${K.ink9}"/>` : `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(r * 0.2)}" fill="${X.c.light}" stroke="${K.ink9}" stroke-width="1.6"/><circle cx="${f(cx)}" cy="${f(cy)}" r="${f(r * 0.08)}" fill="${K.ink9}"/>`;
     s += E.ribbon(E.ellPts(cx, cy, r * 0.82, r * 0.82, 20, Math.PI * 1.05, Math.PI * 1.45), 1.2, { color: K.p100, taper: 'mid', opacity: 0.8 });
     return s;
+  }
+  // ===== K5 (rev 3) · Ch4 clock, big tiers: '문자판 받침' (brief §2.4) =====
+  // A plinth (18) over the whole footprint (no floor gap). Most of its top is a SQUARE brass plate (spot flat fill, so the brass shows as four
+  // corners — never a ring) holding the dial (E.dial as is); its lower-right corner is broken open on the clockwork (ink hole, ink5 gear arcs,
+  // no light circles). The pendulum case lies on the right (+8 → z 26), a snapped minute-hand fragment between plate and case, 2 / 3 flat gears
+  // with ink axle holes. Front: the groove, the black wedge, and a recessed blank name plate.
+  function clockBig(X, o, tier) {
+    const c = X.c, rnd = X.rnd, w = o.w, d = o.d, H = 18, lg = tier === 'large';
+    X.meta = { H: 26, name: '문자판 받침', front: H, tier };
+    const x0 = -w / 2, x1 = w / 2, R = Math.round(0.33 * d), S2 = R + Math.round(0.18 * R), pcx = x0 + 0.4 * w, pcy = -H, br = 0.35 * R;
+    const px0 = pcx - S2, px1 = pcx + S2, py0 = pcy - S2, py1 = pcy + S2, bev = mix(c.spot, c.light, 0.35);
+    let ti = `<path d="${E.P(E.rect(px0, py0, px1, py1))}" fill="${c.spot}"/><path d="${E.P([[px0, py0], [px1, py0], [px1 - 3, py0 + 3], [px0 + 3, py0 + 3]])}" fill="${bev}"/><path d="${E.P([[px0, py0], [px0 + 3, py0 + 3], [px0 + 3, py1 - 3], [px0, py1]])}" fill="${bev}"/>`;
+    ti += dial(X, pcx, pcy, R, rnd, true);
+    const brk = E.jag([[px1 + 1, py1 - br * 1.25], [px1 - br * 0.35, py1 - br * 0.9], [px1 - br * 0.75, py1 - br * 0.98], [px1 - br * 0.58, py1 - br * 0.45], [px1 - br * 1.05, py1 - br * 0.32], [px1 - br * 1.3, py1 + 1]], rnd, 1.2, 5, false), hole = brk.concat([[px1 + 1, py1 + 1]]);
+    const ga = (gx, gy, gr, n) => `<path d="${E.P(E.gearPath(gx, gy, gr, n, 0.22, rnd()))}" fill="none" stroke="${K.ink5}" stroke-width="1.5"/>`;
+    ti += `<path d="${E.P(hole)}" fill="${K.ink9}"/>` + X.clipped(E.P(hole), ga(px1 - br * 0.25, py1 - br * 0.15, br * 0.62, 10) + ga(px1 - br * 0.95, py1 + br * 0.05, br * 0.4, 8));
+    ti += `<path d="${E.P(brk.map(([x, y]) => [x - 0.7, y - 0.7]), false)}" fill="none" stroke="${bev}" stroke-width="1.2" stroke-linejoin="round"/>`; // K5 F1-R3: lit brass lip along the break, so it reads as a broken plate, not an ink blot
+    let fi = `<path d="${E.P([[x1 - 14, d / 2 - H], [x1 + 2, d / 2 - H], [x1 + 2, d / 2 + 2], [x1 - 20, d / 2 + 2]])}" fill="${K.ink9}"/>`;
+    fi += `<path d="${E.P([[x0 + 6, d / 2 - H + H * 0.3], [x0 + w * 0.58, d / 2 - H + H * 0.3], [x0 + w * 0.58, d / 2 - H + H * 0.3 + 1.5], [x0 + 6, d / 2 - H + H * 0.3 + 1.5]])}" fill="${mix(c.deep, K.ink9, 0.35)}"/>`;
+    { const qw = w * 0.22, qx = x0 + w * 0.3, qh = 9, qy = d / 2 - H + H * 0.3 + 1.5 + (H * 0.7 - 1.5 - qh) * 0.45; fi += E.plaque(qx - qw / 2, qy, qx + qw / 2, qy + qh, mix(c.deep, K.ink9, 0.15), K.ink7, c.light); }
+    const B = E.block(X, 0, 0, w, d, H, { jag: 0.5, topInner: ti });
+    let s = B.s + X.clipped(E.P(B.front), fi) + B.outline(2.6);
+    // props on the plinth top (a floor point (x, y) at z 18 is drawn at (x, y − 18)), back to front
+    const it = [], GR = lg ? [[x0 + 0.1 * w, -d / 2 + 0.15 * d, 16, 12, c.base], [63, 70, 13, 10, c.spot], [-121, 62, 10, 8, mix(c.light, c.base, 0.3)]] : [[x0 + 0.1 * w, -d / 2 + 0.15 * d, 13, 10, c.base], [45, 50, 11, 9, c.spot]]; // front gear clear of the broken corner
+    GR.forEach(([x, y, r, n, fill], i) => it.push([y, flatGear(X, x, y - H, r, n, fill, 0.3 + i * 0.7 + rnd() * 0.6, 4, true)]));
+    // snapped minute-hand fragment (spot, ink rim, ≤ 2 thick) from the plate's right edge toward the case (seed: ±4°)
+    { const a = ((lg ? 58 : 50) + (rnd() - 0.5) * 8) * Math.PI / 180, L = 0.9 * R, hw = 0.07 * R, sx = px1 - 3, sy = py0 + 0.56 * S2, ux = Math.cos(a), uy = Math.sin(a), nx = -uy, ny = ux;
+      const Q = (t, k) => [sx + ux * L * t + nx * hw * k, sy + uy * L * t + ny * hw * k];
+      const bl = [Q(0, -1), Q(0.06, -0.4), Q(0.02, 0.2), Q(0, 1), Q(0.55, 1.35), Q(0.86, 0.75), Q(1, 0), Q(0.86, -0.75), Q(0.55, -1.35)];
+      it.push([sy + 4, `<path d="${E.P(bl.map(([x, y]) => [x + 0.6, y + 2]))}" fill="${K.ink9}"/><path d="${E.P(bl)}" fill="${c.spot}" stroke="${K.ink9}" stroke-width="1.6" stroke-linejoin="miter"/><path d="${E.P([Q(0.08, -0.35), Q(0.8, -0.3)], false)}" stroke="${bev}" stroke-width="1"/>`]); }
+    // pendulum case lying on the plinth (+8): window 0.5 × 0.7 of the case, angular brass bob (never a round one)
+    { const cx0 = lg ? 78 : 56, cx1 = lg ? 134 : 94, cd = (lg ? 79.8 : 54.6) * 2, cw = cx1 - cx0, C = E.block(X, (cx0 + cx1) / 2, -H, cw, cd, 8, { jag: 0.3 });
+      const wx0 = C.x0 + cw * 0.25, wx1 = C.x1 - cw * 0.25, wy0 = C.yT0 + cd * 0.15, wy1 = C.yT1 - cd * 0.15, mx = (wx0 + wx1) / 2, k = cw / 38;
+      let ci = `<path d="${E.P([[C.x0 + 1.5, C.yT0 + 1.5], [C.x1 - 1.5, C.yT0 + 1.5], [C.x1 - 1.5, C.yT1 - 1.5], [C.x0 + 1.5, C.yT1 - 1.5]])}" fill="none" stroke="${mix(c.deep, K.ink9, 0.35)}" stroke-width="1"/>`;
+      ci += `<path d="${E.P(E.rect(wx0, wy0, wx1, wy1))}" fill="${K.ink7}"/><path d="M ${f(mx)},${f(wy0 + 1)} L ${f(mx + 1.2)},${f(wy1 - 9 * k)}" stroke="${c.light}" stroke-width="1.2"/>`;
+      ci += `<path d="${E.P([[mx - 3.8 * k, wy1 - 11 * k], [mx + 5 * k, wy1 - 10 * k], [mx + 4 * k, wy1 - 3 * k], [mx - 4 * k, wy1 - 3.6 * k]])}" fill="${c.spot}" stroke="${K.ink9}" stroke-width="1.2"/>`;
+      ci += `<path d="${E.P([[wx0, wy0], [wx0 + 4 * k, wy0], [wx0, wy0 + 12 * k]])}" fill="${K.ink3}"/>` + E.crackWedge(wx1 - 2, wy0, (wy1 - wy0) * 0.45, 2.2, rnd, -1);
+      it.push([cd / 2, C.s + X.clipped(E.P(C.top), ci) + X.clipped(E.P(C.front), `<path d="${E.P([[C.x1 - 6, C.yT1], [C.x1 + 2, C.yT1], [C.x1 + 2, C.yB], [C.x1 - 8, C.yB]])}" fill="${K.ink9}"/>`) + C.outline(2.4)]); }
+    it.sort((p, q) => p[0] - q[0]).forEach((p) => { s += p[1]; });
+    return s + E.rubble(X, x1 - 6, x1 + 6, d / 2 - 1, 3);
   }
   // 톱니 잔해 더미 — gears heaped, one on edge, spring coil; brass on the top gear face
   L.gears = function (X, o) {
@@ -1166,13 +1635,32 @@ window.PN = window.PN || {};
   const E = PN.env, K = E.K, f = E.f, mix = E.mix, L = E.props[5];
   L._alias = { solid: 'stele' };
   const P = E.P;
+  // K5 (rev 3) erased inscription: a recessed blank plate on a slab plane mapped by q(u, v) (u along the length, v toward the back = up).
+  // Fill mix(ob, ink3, .62); inner shade ink7 1.5 on the top + left; lip mix(ob, ink3, .75) 0.8 on the bottom + right. No strokes inside.
+  // K5 F1: optional `cut` (fraction of the plate width) chamfers the back-right corner at 45° on screen — a broken tablet, not a window.
+  // cut = 0 (default, base stele) keeps the plain four-corner plate byte-identical.
+  E.erasedPlate = function (q, u0, v0, u1, v1, ob, cut = 0) {
+    if (!cut) {
+      const pl = [q(u0, v0), q(u1, v0), q(u1, v1), q(u0, v1)], sh = E.shrink(pl, 0.9), lp = E.shrink(pl, 0.55);
+      return `<path d="${P(pl)}" fill="${mix(ob, K.ink3, 0.62)}"/>` +
+        `<path d="${P([sh[0], sh[3], sh[2]], false)}" fill="none" stroke="${K.ink7}" stroke-width="1.5"/>` +
+        `<path d="${P([lp[0], lp[1], lp[2]], false)}" fill="none" stroke="${mix(ob, K.ink3, 0.75)}" stroke-width="0.8"/>`;
+    }
+    const a = q(u0, v0), b = q(u1, v0), cc = q(u1, v1), dd = q(u0, v1), W = Math.hypot(b[0] - a[0], b[1] - a[1]), cl = cut * W;
+    const tw = (p) => { const L = Math.hypot(p[0] - cc[0], p[1] - cc[1]) || 1; return [cc[0] + (p[0] - cc[0]) * cl / L, cc[1] + (p[1] - cc[1]) * cl / L]; }; // point on the corner's edge toward p, cl from the corner
+    const pl = [a, b, tw(b), tw(dd), dd], sh = E.shrink(pl, 0.9), lp = E.shrink(pl, 0.55);
+    return `<path d="${P(pl)}" fill="${mix(ob, K.ink3, 0.62)}"/>` +
+      `<path d="${P([sh[0], sh[4], sh[3], sh[2]], false)}" fill="none" stroke="${K.ink7}" stroke-width="1.5"/>` +
+      `<path d="${P([lp[0], lp[1], lp[2]], false)}" fill="none" stroke="${mix(ob, K.ink3, 0.75)}" stroke-width="0.8"/>`;
+  };
   // 쓰러진 흑요 비석 — slab lying at a slant: left end sunk into the floor, right end propped on a rock (front face 20 px).
   // Moonlit top plane (the read), one angular facet glint along the upper-left bevel, black underside wedge (Mignola).
   L.stele = function (X, o) {
-    const c = X.c, rnd = X.rnd, w = o.w || 76, d = o.d || 28, ob = c.spot;
+    const c = X.c, rnd = X.rnd, w = o.w || 76, d = o.d || 28, ob = c.spot, tier = E.tier(w, d);
+    if (tier !== 'base') return steleBig(X, { w, d }, tier); // K5: mid / large = '갈라진 흑요 석판'
     const hR = Math.min(o.H || 18, 26), hL = 3, t = Math.min(9, hR * 0.45);
     const x0 = -w / 2, x1 = w / 2, yG = d / 2, yK = -d / 2;
-    X.meta = { H: hR, name: '쓰러진 흑요 비석' };
+    X.meta = { H: hR, name: '쓰러진 흑요 비석', front: hR, tier };
     const FL = [x0, yG - hL], FR = [x1 - 3, yG - hR], BR = [x1 - 9, yK - hR - 1], BL = [x0 + 7, yK - hL];
     const U = [FR[0], FR[1] + t], contact = [x0 + w * 0.46, yG];
     let s = X.shadow([[x0 + w * 0.3, yK], [x1, yK - 4], [x1, yG], [x0 + w * 0.3, yG]], hR * 0.7 + 4, hR * 0.3 + 3);
@@ -1193,10 +1681,8 @@ window.PN = window.PN || {};
     let ti = `<path d="${P([q(0.55, 0), q(1, 0), q(1, 0.62), q(0.78, 0.4)])}" fill="${mix(ob, K.ink3, 0.28)}"/>`;
     ti += `<path d="${P([q(0.1, 0), q(0.38, 0), q(0.3, 0.34), q(0.12, 0.26)])}" fill="${mix(ob, K.ink3, 0.38)}"/>`;
     ti += `<path d="${P([q(0.62, 0.55), q(0.86, 0.72), q(0.9, 1), q(0.6, 1)])}" fill="${mix(ob, K.ink3, 0.62)}"/>`;
-    // recessed inscription cartouche (engraved groove, angular) with weathered carved strokes
-    const cart = [q(0.2, 0.3), q(0.56, 0.3), q(0.56, 0.78), q(0.2, 0.78)];
-    ti += `<path d="${P(cart)}" fill="none" stroke="${K.ink7}" stroke-width="1.5"/><path d="${P(cart.map(([x, y]) => [x + 0.8, y + 0.9]))}" fill="none" stroke="${mix(ob, K.ink3, 0.75)}" stroke-width="0.8"/>`;
-    [[0.24, 0.46, 0.34, 0.46], [0.29, 0.37, 0.3, 0.7], [0.4, 0.4, 0.5, 0.62], [0.41, 0.66, 0.52, 0.55]].forEach(([u0, v0, u1, v1]) => { const a = q(u0, v0), b = q(u1, v1); ti += `<path d="M ${f(a[0])},${f(a[1])} L ${f(b[0])},${f(b[1])}" stroke="${K.ink7}" stroke-width="1.4" stroke-linecap="square"/>`; });
+    // K5-G7: erased inscription — one recessed BLANK plate (filled, ≤ 12 % of the top), no carved strokes (they read as letters)
+    ti += E.erasedPlate(q, 0.22, 0.32, 0.5, 0.74, ob);
     // the ONE moonlit glint: tapered wedge along the upper-left bevel (back edge, left → right), paper core
     ti += `<path d="${P([q(0.03, 0.98), q(0.7, 0.99), q(0.34, 0.86), q(0.06, 0.84)])}" fill="${K.ink3}"/>` + `<path d="${P([q(0.05, 0.97), q(0.4, 0.985), q(0.12, 0.9)])}" fill="${K.p300}"/>`;
     s += X.face(top, tp, ti, 0);
@@ -1208,6 +1694,97 @@ window.PN = window.PN || {};
     [[x0 - 4, yG - 4, 9, 5, -0.3], [x0 + 5, yG + 1, 8, 4, 0.2]].forEach(([x, y, a, b, r]) => { const pts = [[x - a / 2, y + b / 2], [x - a * 0.3, y - b / 2], [x + a / 2, y - b * 0.3], [x + a * 0.4, y + b / 2]].map(([u, v]) => [x + (u - x) * Math.cos(r) - (v - y) * Math.sin(r), y + (u - x) * Math.sin(r) + (v - y) * Math.cos(r)]); s += X.face(pts, c.light, `<path d="${P([pts[2], pts[3], [pts[3][0] - 3, pts[3][1]]])}" fill="${K.ink9}"/>`, 0) + `<path d="${P(pts)}" fill="none" stroke="${K.ink9}" stroke-width="1.5" stroke-linejoin="miter"/>`; });
     return s;
   };
+  // ===== K5 (rev 3) · Ch5 stele, big tiers: '갈라진 흑요 석판' (brief §2.5) =====
+  // The toppled slab (sunk end raised to 8, raised end 18, corners within ±3 of the footprint) split into 2 / 3 pieces by LEANING,
+  // non-parallel splits that bend once (K5 F1 — straight back-to-front splits read as cabinet doors). The splits show the blank paper
+  // (void.paper) underneath — one wall shaded with ink wedges, the other a single line. Each piece tilts 1–2 differently. Tops: conchoidal
+  // facets fanning out from a fracture origin on the split (tones .28/.38/.62/.75 over .55, never tall slivers), ONE moon glint, a WIDE
+  // erased plate with a chamfered corner on the widest piece, chips only near the split ends. Front: tone .35, black wedge on the right 20 %.
+  function steleBig(X, o, tier) {
+    const c = X.c, rnd = X.rnd, w = o.w, d = o.d, ob = c.spot, lg = tier === 'large', hR = 18, hL = 8, t = Math.min(9, hR * 0.45), tn = (k) => mix(ob, K.ink3, k);
+    const x0 = -w / 2, x1 = w / 2, yG = d / 2, yK = -d / 2;
+    const FL = [x0, yG - hL], FR = [x1 - 3, yG - hR], BR = [x1 - 3, yK - hR - 1], BL = [x0 + 2, yK - hL], U = [FR[0], FR[1] + t], contact = [x0 + w * 0.46, yG];
+    const lerp = (a, b, k) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k], q = (u, v) => lerp(lerp(FL, FR, u), lerp(BL, BR, u), v);
+    const yb = (x) => (x <= contact[0] ? yG : yG + (U[1] - yG) * (x - contact[0]) / (U[0] - contact[0]));
+    // F1 (a): split = [u at the back (v 1), u at the front (v 0), kink side, bend from v, kink]. Large: .30 → .43 and .73 → .59 (opposite
+    // leans), mid: .38 → .57. ONE bend at v .40–.60, pushed .12–.18u off the chord so neither half runs straight (each half |Δu/Δv| ≥ .118);
+    // 6–9 jagged nodes (±.012u), whole split shifted ±.04 by seed. Nodes are [u, v, half-gap]; gap 6–9 → 3–6 of paper between the outlines.
+    // half slopes over the seed ranges: large A ≥ .120 / .313, B ≥ .131 / .357, mid ≥ .118 / .476 (lower / upper half)
+    const SPEC = lg ? [[0.30, 0.43, -1, 0.52, 0.12], [0.73, 0.59, -1, 0.40, 0.13]] : [[0.38, 0.57, 1, 0.44, 0.16]]; // both large splits bend the same way: no symmetric 'vase'
+    const cracks = SPEC.map(([uB, uF, side, vb0, kk]) => {
+      const sh = (rnd() - 0.5) * 0.08, vb = vb0 + rnd() * 0.08, ub = uF + (uB - uF) * vb + side * (kk + rnd() * 0.02), n = 6 + Math.floor(rnd() * 4);
+      const cu = (v) => sh + (v >= vb ? ub + (uB - ub) * (v - vb) / (1 - vb) : uF + (ub - uF) * v / vb);
+      const vs = []; for (let k = 0; k <= n; k++) vs.push(1 - k / n);
+      if (!vs.some((v) => Math.abs(v - vb) < 0.03)) vs.push(vb);
+      vs.sort((a, b) => b - a);
+      return vs.map((v, k) => [cu(v) + (k && k < vs.length - 1 && Math.abs(v - vb) > 0.01 ? (rnd() - 0.5) * 0.024 : 0), v, (3 + Math.sin(Math.PI * v) + rnd() * 0.5) / w]);
+    });
+    const along = (C, v, j) => { for (let k = 0; k < C.length - 1; k++) { const a = C[k], b = C[k + 1]; if (v <= a[1] && v >= b[1]) return a[j] + (b[j] - a[j]) * (a[1] - v) / ((a[1] - b[1]) || 1); } return C[C.length - 1][j]; }; // centre u (j 0) / half-gap (j 2) at v
+    const DZ = lg ? [0, 1.6, 0.8] : [0, 1.5], Qd = (i) => (u, v) => { const p = q(u, v); return [p[0], p[1] - DZ[i] * v]; }; // a piece tilts by lifting its back edge
+    X.meta = { H: Math.round(hR + 1 + Math.max(...DZ)), name: '갈라진 흑요 석판', front: hR, tier };
+    let s = X.shadow([[x0 + w * 0.3, yK], [x1, yK - 4], [x1, yG], [x0 + w * 0.3, yG]], hR * 0.7 + 4, hR * 0.3 + 3);
+    s += `<path d="${E.P([U, [x1 - 1, yG], contact])}" fill="${K.ink9}"/>`; // black underside gap below the raised end (black spot)
+    const rk = [[x1 - 18, yG + 1], [x1 - 16, yG - 6], [x1 - 9, yG - 8], [x1 - 4, yG - 3], [x1 - 5, yG + 1.5]];
+    s += X.face(rk, c.light, `<path d="${E.P([[x1 - 10, yG - 8], [x1 - 3, yG - 3], [x1 - 5, yG + 2], [x1 - 11, yG + 2]])}" fill="${K.ink9}"/>`, 0) + X.out(rk, 1.8, { gaps: 0 });
+    // paper void through each split (top + down the front face); the pieces cover everything but the gap
+    cracks.forEach((C, i) => {
+      const L = C.map(([u, v, h]) => Qd(i)(u - h, v)), R = C.map(([u, v, h]) => Qd(i + 1)(u + h, v)), fl = L[L.length - 1], fr = R[R.length - 1];
+      s += `<path d="${E.P(L.concat([[fl[0], yb(fl[0]) + 0.5], [fr[0], yb(fr[0]) + 0.5]], R.slice().reverse()))}" fill="${K.voidp}"/>`;
+    });
+    // pieces
+    const nP = cracks.length + 1, P = [];
+    for (let i = 0; i < nP; i++) {
+      const Lc = i ? cracks[i - 1] : null, Rc = i < nP - 1 ? cracks[i] : null, g = Qd(i);
+      const uv = (Lc ? Lc.slice().reverse().map(([u, v, h]) => [u + h, v]) : [[0, 0], [0, 1]]).concat(Rc ? Rc.map(([u, v, h]) => [u - h, v]) : [[1, 1], [1, 0]]);
+      const top = uv.map(([u, v]) => g(u, v)), A = top[0], B = top[top.length - 1], mid = A[0] < contact[0] && B[0] > contact[0] ? [contact] : [];
+      P.push({ i, g, top, front: [A, B, [B[0], yb(B[0])]].concat(mid, [[A[0], yb(A[0])]]), sil: [[A[0], yb(A[0])]].concat(top, [[B[0], yb(B[0])]], mid), crackL: Lc, crackR: Rc,
+        lo: (v) => (Lc ? along(Lc, v, 0) + along(Lc, v, 2) : 0), hi: (v) => (Rc ? along(Rc, v, 0) - along(Rc, v, 2) : 1) });
+    }
+    const PV = [0.42, 0.53, 0.64], narrow = (p) => Math.min(...PV.map((v) => p.hi(v) - p.lo(v))); // splits lean, so judge a piece by its narrowest row
+    const big = P.reduce((a, b) => (narrow(b) > narrow(a) ? b : a));
+    P.forEach((p) => {
+      const g = p.g;
+      s += X.face(p.front, tn(0.35), `<path d="${E.P([[x1 - w * 0.2, FR[1] - 8], [x1 + 2, FR[1] - 8], [x1 + 2, yG + 2], [x1 - w * 0.26, yG + 2]])}" fill="${K.ink9}"/><path d="${E.P([p.front[0], p.front[1], [p.front[1][0], p.front[1][1] + 2.2], [p.front[0][0], p.front[0][1] + 1.6]])}" fill="${tn(0.5)}"/>`, 0);
+      let ti = '';
+      // F1 (b): 3–5 conchoidal facets fanning out from a fracture origin O on this piece's split edge (v .38–.58). Each facet points its
+      // tip at O and bows its far side away from O; screen w:h is clamped to .7–1.8 (no tall slivers); direction, size, aspect and tone
+      // all change from one facet to the next. (F1 (c): the small concentric arcs are gone — they read as '(((' .)
+      const C0 = p.crackR || p.crackL, sgn = p.crackR ? -1 : 1, vo = 0.38 + rnd() * 0.2, O = g(along(C0, vo, 0) + sgn * along(C0, vo, 2), vo);
+      const Wp = (p.hi(vo) - p.lo(vo)) * w, th0 = p.crackR ? Math.PI : 0, AS = [0.85, 1.2, 0.7, 1.35, 1.0];
+      for (let k = 0, n = 3 + Math.floor(rnd() * 3); k < n; k++) {
+        const th = th0 + (-1.3 + 2.6 * (k + 0.5) / n) + (rnd() - 0.5) * 0.25, ux = Math.cos(th), uy = Math.sin(th), nx = -uy, ny = ux;
+        const dk = (0.3 + 0.4 * ((k * 0.618 + 0.3) % 1)) * Math.min(Wp, d) * 0.9, C = [O[0] + ux * dk, O[1] + uy * dk];
+        const tw = Wp * (0.28 + 0.17 * ((k * 0.618 + 0.2) % 1)), thh = d * (0.1 + 0.08 * ((k * 0.382 + 0.5) % 1)); // target box: (.28–.45)·piece width × (.10–.18)·depth
+        let F = [[-0.55, 0], [0.1, 0.5 * AS[k]], [0.95, 0], [0.1, -0.5 * AS[k]]].map(([r, tt]) => [C[0] + ux * r + nx * tt, C[1] + uy * r + ny * tt]); // unit scallop: tip, side, bulge control, side
+        const bx = [F[0][0], F[1][0], F[3][0], 0.25 * F[1][0] + 0.5 * F[2][0] + 0.25 * F[3][0]], by = [F[0][1], F[1][1], F[3][1], 0.25 * F[1][1] + 0.5 * F[2][1] + 0.25 * F[3][1]];
+        let sx = tw / (Math.max(...bx) - Math.min(...bx) || 1), sy = thh / (Math.max(...by) - Math.min(...by) || 1);
+        const rt = tw / thh; if (rt > 1.8) sx *= 1.8 / rt; else if (rt < 0.7) sy *= rt / 0.7; // screen w:h .7–1.8
+        F = F.map(([x, y]) => [C[0] + (x - C[0]) * sx, C[1] + (y - C[1]) * sy]);
+        ti += `<path d="M ${f(F[0][0])},${f(F[0][1])} L ${f(F[1][0])},${f(F[1][1])} Q ${f(F[2][0])},${f(F[2][1])} ${f(F[3][0])},${f(F[3][1])} Z" fill="${tn([0.28, 0.38, 0.62, 0.75][(k + p.i) % 4])}"/>`;
+      }
+      if (p.i === 0) { const ue = Math.min(0.62, Math.min(p.hi(0.84), p.hi(0.99)) - 0.05); ti += `<path d="${E.P([g(0.03, 0.98), g(ue, 0.99), g(ue * 0.49, 0.86), g(0.06, 0.84)])}" fill="${K.ink3}"/><path d="${E.P([g(0.05, 0.97), g(ue * 0.57, 0.985), g(ue * 0.17, 0.9)])}" fill="${K.p300}"/>`; } // the ONE moon glint
+      if (p === big) { // F1 (d): a WIDE erased plate — 60 % of the piece's narrowest width in v .42–.64 (≥ 4 off the splits), screen w:h ≈ 1.8, one corner chamfered 12 %
+        const L0 = Math.max(p.lo(0.42), p.lo(0.64)), H0 = Math.min(p.hi(0.42), p.hi(0.64)), Wa = H0 - L0, u0 = L0 + 0.2 * Wa, u1 = H0 - 0.2 * Wa;
+        const dv = Math.max(0.16, Math.min(0.26, (u1 - u0) * w / 1.8 / d)), v0 = 0.53 - dv / 2;
+        ti += E.erasedPlate(g, u0, v0, u1, v0 + dv, ob, 0.12);
+      }
+      s += X.face(p.top, tn(0.55), ti, 0) + X.rim(p.front[0][0] + 1, p.front[0][1], p.front[1][0] - 1, p.front[1][1], 2.2);
+      if (p.crackR) { const C = p.crackR; [0.22, 0.5, 0.78].forEach((t2) => { const k = Math.min(C.length - 2, Math.floor(t2 * (C.length - 1))), a = g(C[k][0] - C[k][2], C[k][1]), b = g(C[k + 1][0] - C[k + 1][2], C[k + 1][1]); s += `<path d="${E.P([a, b, [(a[0] + b[0]) / 2 + 2.6, (a[1] + b[1]) / 2 + 1]])}" fill="${K.ink9}"/>`; }); } // shade wedges on the split's dark wall
+      s += X.out(p.sil, 2.6, { gaps: 1 });
+    });
+    // F1 (e): obsidian chips (≤ 6 tall) only near a split's front end (v .07–.25) or back end (v .77–.91), each split's chips on ONE side
+    // (never a facing pair), none in the middle band v .3–.7. Mid: both right of the split; large: split A's left (front), split B's right.
+    const CH = lg ? [[0, -1, 0], [1, 1, 1], [1, 1, 0]].concat(rnd() < 0.5 ? [[0, -1, 2]] : []) : [[0, 1, 0], [0, 1, 1]];
+    CH.forEach(([ci, sd, e]) => {
+      const C = cracks[ci], v = e === 1 ? 0.77 + rnd() * 0.14 : e === 0 ? 0.07 + rnd() * 0.1 : 0.19 + rnd() * 0.05, u = along(C, v, 0) + sd * (along(C, v, 2) + 0.03 + rnd() * 0.03 + (e === 2 ? 0.05 : 0)), cc = P[sd < 0 ? ci : ci + 1].g(u, v), z0 = 4 + rnd() * 2.4;
+      const pts = [[-z0, 0.3 * z0], [-0.3 * z0, -0.75 * z0], [0.7 * z0, -0.55 * z0], [z0, 0.35 * z0], [0.1 * z0, 0.65 * z0]].map(([a, b]) => [cc[0] + a, cc[1] + b]);
+      s += `<path d="${E.P(pts.map(([a, b]) => [a + 0.4, b + 2]))}" fill="${K.ink9}"/><path d="${E.P(pts)}" fill="${tn(0.62)}" stroke="${K.ink9}" stroke-width="1.2" stroke-linejoin="miter"/><path d="${E.P([pts[0], pts[1], [(pts[0][0] + pts[2][0]) / 2, (pts[0][1] + pts[2][1]) / 2]])}" fill="${tn(0.78)}"/>`;
+    });
+    // sunk left end: a fracture in the floor + two heaved floor chips
+    s += X.line([[x0 + 2, yG - 2], [x0 + 8, yG + 2], [x0 + 20, yG + 3.5]], 1.5, { color: mix(c.deep, K.ink9, 0.3) });
+    [[x0 + 1, yG - 3, 8, 4.4, -0.3], [x0 + 9, yG + 1.5, 7, 3.6, 0.2]].forEach(([x, y, a, b, r]) => { const pts = [[x - a / 2, y + b / 2], [x - a * 0.3, y - b / 2], [x + a / 2, y - b * 0.3], [x + a * 0.4, y + b / 2]].map(([u, v]) => [x + (u - x) * Math.cos(r) - (v - y) * Math.sin(r), y + (u - x) * Math.sin(r) + (v - y) * Math.cos(r)]); s += X.face(pts, c.light, `<path d="${E.P([pts[2], pts[3], [pts[3][0] - 3, pts[3][1]]])}" fill="${K.ink9}"/>`, 0) + `<path d="${E.P(pts)}" fill="none" stroke="${K.ink9}" stroke-width="1.5" stroke-linejoin="miter"/>`; });
+    return s;
+  }
   // 일식 고리 — stone ring lying flat, half-sunk on the front-right. Hole shows the floor; the far inner wall is a black crescent (= the eclipse).
   // Footprint: circle R = w/2 (default 84 → R42). Thickness above the floor H = 11.
   L.ring = function (X, o) {
@@ -1581,7 +2158,7 @@ window.PN = window.PN || {};
       s += `<path d="M -2,${wt1} L ${w + 2},${wt1}" stroke="${K.ink9}" stroke-width="2"/>`;
       let fr = `<rect x="-2" y="${wt1}" width="${w + 4}" height="${-wt1}" fill="${c.base}"/><rect x="-2" y="${wt1}" width="${w + 4}" height="${-wt1}" fill="${X.d20}"/>`;
       const pos = [[w * 0.14, 22, 'paper'], [w * 0.52, 16, 'pale'], [w * 0.83, 26, 'pale']];
-      pos.forEach(([x, pw, tone], i) => { fr += E.poster(X, x + rnd() * 10, wt1 / 2 + 1, pw, -wt1 * 0.74, (rnd() - 0.5) * 0.25, { tone, dots: tone === 'spot' ? undefined : 'd20', glyph: i === 0 ? '禁' : undefined }); });
+      pos.forEach(([x, pw, tone], i) => { fr += E.poster(X, x + rnd() * 10, wt1 / 2 + 1, pw, -wt1 * 0.74, (rnd() - 0.5) * 0.25, { tone, dots: tone === 'spot' ? undefined : 'd20', layout: i === 0 ? 'portrait' : undefined }); }); // K5-G3: was '禁'
       for (let x = 60 + rnd() * 30; x < w; x += 120 + rnd() * 60) fr += E.crackWedge(x, wt1, -wt1, 4.4, rnd, 1);
       fr += `<path d="M ${f(w * 0.66)},${wt1} L ${f(w * 0.74)},${wt1} L ${f(w * 0.72)},0 L ${f(w * 0.63)},0 Z" fill="${K.ink9}"/>`;
       s += fr + `<path d="M -2,0 L ${w + 2},0" stroke="${K.ink9}" stroke-width="3.4"/><rect x="-2" y="1.5" width="${w + 4}" height="10" fill="${X.d40}"/>`;
@@ -1657,10 +2234,12 @@ window.PN = window.PN || {};
     s += `<path d="${E.P(E.cylSil(cx, R + 5, ry + 2, cy - 4, cy + 1))}" fill="${c.light}"/>` + `<path d="${E.P(E.ellPts(cx, cy + 1, R + 5, ry + 2, 28, 0, Math.PI))}" fill="none" stroke="${K.ink9}" stroke-width="3"/>` + X.out(E.cylSil(cx, R + 5, ry + 2, cy - 4, cy + 1), 2.4, { dense: true, gaps: 1 });
     const body = `M ${cx - R},${top} L ${cx - R},${cy - 4} A ${R},${ry} 0 0 0 ${cx + R},${cy - 4} L ${cx + R},${top} Z`;
     let inner = `<rect x="${cx - R - 2}" y="${top - 2}" width="${2 * R + 4}" height="${Hc + ry + 4}" fill="${c.base}"/>`;
-    const glyphs = ['수배', '禁', '失', '', '墨', '', '尋'];
-    for (let k = 0; k < 9; k++) { const col = k % 3, row = Math.floor(k / 3), px = cx - R + 6 + col * (R * 0.6) + rnd() * 3, py = top + 6 + row * 13 + rnd() * 3; inner += E.poster(X, px + 5, py + 5, 17, 13, (rnd() - 0.5) * 0.3, { tone: k === 5 ? 'spot' : k % 2 ? 'pale' : 'paper', glyph: glyphs[k % 7] || undefined }); }
+    const layouts = ['portrait', 'print', 'blank', 'print', 'portrait', 'blank', 'print']; // K5-G4: was 수배·禁·失·墨·尋 lettering
+    let pst = ''; // K5: posters are collected first (same rng order) and stacked OVER the paste drips, so no pale drip splits a print block
+    for (let k = 0; k < 9; k++) { const col = k % 3, row = Math.floor(k / 3), px = cx - R + 6 + col * (R * 0.6) + rnd() * 3, py = top + 6 + row * 13 + rnd() * 3; pst += E.poster(X, px + 5, py + 5, 17, 13, (rnd() - 0.5) * 0.3, { tone: k === 5 ? 'spot' : k % 2 ? 'pale' : 'paper', layout: layouts[k % 7] }); }
     // paste drips under the posters (dried glue, pale) + black-spot shadow side (right) + foot shadow band
     for (let k = 0; k < 5; k++) { const x = cx - R + 10 + k * 12 + rnd() * 3, y = top + 20 + (k % 2) * 12; inner += E.inkQ(x, y, x + 0.6, y + 5, x - 0.2, y + 9 + rnd() * 5, 2, { color: mix(K.p300, c.light, 0.3), taper: 'start', wobble: 0.2 }); }
+    inner += pst;
     inner += `<path d="M ${cx + R * 0.36},${top - 4} C ${cx + R * 0.58},${top + Hc * 0.3} ${cx + R * 0.5},${top + Hc * 0.7} ${cx + R * 0.4},${cy + ry + 2} L ${cx + R + 2},${cy + ry + 2} L ${cx + R + 2},${top - 4} Z" fill="${K.ink9}"/>`;
     inner += `<path d="M ${cx - R},${cy - 10} A ${R},${ry} 0 0 0 ${cx + R},${cy - 10} L ${cx + R},${cy} L ${cx - R},${cy} Z" fill="${X.d40}"/>`;
     s += X.faceD(body, c.base, inner) + X.out(E.cylSil(cx, R, ry, top, cy - 4), 3, { dense: true, gaps: 1 });

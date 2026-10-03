@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "root": "/Users/kyuukkang/CT_AX/07.playground/dist",
+  "root": "/private/tmp/claude-501/-Users-kyuukkang-CT-AX-07-playground/8dda5f23-d08c-4a83-ac74-3091d8b4216f/scratchpad/bake-k5env/dist",
   "files": [
-    "assets/App-Dhnpe0pK.js",
+    "assets/App-CC-_MjgB.js",
     "assets/atlas/manifest.json",
     "assets/content/boss-titles.json",
     "assets/content/codex.json",
@@ -11,8 +11,8 @@
     "assets/content/strings/en.json",
     "assets/content/strings/ko.json",
     "assets/content/tables.json",
-    "assets/index-C5m_uEf2.js",
-    "assets/index-DK60neyC.css",
+    "assets/index-BRNc5-P7.js",
+    "assets/index-BmNgdlz5.css",
     "assets/packs/sfx-common/pack.json",
     "assets/vendor-sXpfDjey.js",
     "index.html",

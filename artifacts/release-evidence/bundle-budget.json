@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 105647,
+      "bytes": 105648,
       "kib": 103.17,
       "baselineBytes": 92420,
-      "growthRatio": 0.1431183726466132,
+      "growthRatio": 0.14312919281540792,
       "warningBytes": 106282,
       "failBytes": 115525,
       "status": "passed",
@@ -27,7 +27,7 @@
       "passed": true
     },
     "css": {
-      "bytes": 15850,
+      "bytes": 15851,
       "kib": 15.48,
       "warningBytes": 32768,
       "failBytes": 49152,
@@ -35,16 +35,16 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 1914404,
-      "kib": 1869.54,
+      "bytes": 1913993,
+      "kib": 1869.13,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 22202732,
-      "kib": 21682.36,
+      "bytes": 22821884,
+      "kib": 22287,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,7 +55,7 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-Dhnpe0pK.js",
+      "file": "assets/App-CC-_MjgB.js",
       "category": "appJs",
       "sourceBytes": 338132,
       "gzipBytes": 102095
@@ -69,14 +69,14 @@
     {
       "file": "assets/atlas/manifest.json",
       "category": "data",
-      "sourceBytes": 57137,
+      "sourceBytes": 57140,
       "gzipBytes": 9171
     },
     {
-      "file": "assets/chapter-thumbs-C6hcPyyZ.webp",
+      "file": "assets/chapter-thumbs-D_lcRDUv.webp",
       "category": "image",
-      "sourceBytes": 45784,
-      "gzipBytes": 45667
+      "sourceBytes": 45370,
+      "gzipBytes": 45251
     },
     {
       "file": "assets/content/boss-titles.json",
@@ -133,16 +133,16 @@
       "gzipBytes": 113032
     },
     {
-      "file": "assets/index-C5m_uEf2.js",
+      "file": "assets/index-BRNc5-P7.js",
       "category": "appJs",
       "sourceBytes": 7500,
-      "gzipBytes": 3552
+      "gzipBytes": 3553
     },
     {
-      "file": "assets/index-DK60neyC.css",
+      "file": "assets/index-BmNgdlz5.css",
       "category": "css",
       "sourceBytes": 61084,
-      "gzipBytes": 15850
+      "gzipBytes": 15851
     },
     {
       "file": "assets/keyart-DFQzyQdB.webp",
@@ -153,14 +153,14 @@
     {
       "file": "assets/packs/chapter-01/atlas-0.png",
       "category": "image",
-      "sourceBytes": 1847712,
-      "gzipBytes": 1834488
+      "sourceBytes": 2051670,
+      "gzipBytes": 2039361
     },
     {
       "file": "assets/packs/chapter-01/atlas-1.png",
       "category": "image",
-      "sourceBytes": 937347,
-      "gzipBytes": 931554
+      "sourceBytes": 936824,
+      "gzipBytes": 931217
     },
     {
       "file": "assets/packs/chapter-01/ground-0.webp",
@@ -171,14 +171,14 @@
     {
       "file": "assets/packs/chapter-02/atlas-0.png",
       "category": "image",
-      "sourceBytes": 930188,
-      "gzipBytes": 918042
+      "sourceBytes": 1061944,
+      "gzipBytes": 1052706
     },
     {
       "file": "assets/packs/chapter-02/atlas-1.png",
       "category": "image",
-      "sourceBytes": 1712967,
-      "gzipBytes": 1698371
+      "sourceBytes": 1793234,
+      "gzipBytes": 1779516
     },
     {
       "file": "assets/packs/chapter-02/ground-0.webp",
@@ -189,14 +189,14 @@
     {
       "file": "assets/packs/chapter-03/atlas-0.png",
       "category": "image",
-      "sourceBytes": 1469455,
-      "gzipBytes": 1455440
+      "sourceBytes": 1617844,
+      "gzipBytes": 1604314
     },
     {
       "file": "assets/packs/chapter-03/atlas-1.png",
       "category": "image",
-      "sourceBytes": 1961904,
-      "gzipBytes": 1950421
+      "sourceBytes": 2051035,
+      "gzipBytes": 2040641
     },
     {
       "file": "assets/packs/chapter-03/ground-0.webp",
@@ -207,14 +207,14 @@
     {
       "file": "assets/packs/chapter-04/atlas-0.png",
       "category": "image",
-      "sourceBytes": 1201521,
-      "gzipBytes": 1195949
+      "sourceBytes": 1176091,
+      "gzipBytes": 1170314
     },
     {
       "file": "assets/packs/chapter-04/atlas-1.png",
       "category": "image",
-      "sourceBytes": 1640277,
-      "gzipBytes": 1628000
+      "sourceBytes": 1630997,
+      "gzipBytes": 1618842
     },
     {
       "file": "assets/packs/chapter-04/atlas-2.png",
@@ -231,20 +231,20 @@
     {
       "file": "assets/packs/chapter-05/atlas-0.png",
       "category": "image",
-      "sourceBytes": 1159514,
-      "gzipBytes": 1152880
+      "sourceBytes": 1170971,
+      "gzipBytes": 1164616
     },
     {
       "file": "assets/packs/chapter-05/atlas-1.png",
       "category": "image",
-      "sourceBytes": 1740202,
-      "gzipBytes": 1730373
+      "sourceBytes": 1733502,
+      "gzipBytes": 1724598
     },
     {
       "file": "assets/packs/chapter-05/atlas-2.png",
       "category": "image",
-      "sourceBytes": 698055,
-      "gzipBytes": 694157
+      "sourceBytes": 696041,
+      "gzipBytes": 692109
     },
     {
       "file": "assets/packs/chapter-05/ground-0.webp",
@@ -963,8 +963,8 @@
     {
       "file": "assets/packs/story/ending-4.webp",
       "category": "image",
-      "sourceBytes": 72422,
-      "gzipBytes": 72306
+      "sourceBytes": 72530,
+      "gzipBytes": 72418
     },
     {
       "file": "assets/packs/story/ending-5.webp",
@@ -975,8 +975,8 @@
     {
       "file": "assets/packs/story/ending-6.webp",
       "category": "image",
-      "sourceBytes": 46324,
-      "gzipBytes": 46203
+      "sourceBytes": 46474,
+      "gzipBytes": 46358
     },
     {
       "file": "assets/packs/story/ending-7.webp",
@@ -999,8 +999,8 @@
     {
       "file": "assets/packs/story/intro-4.webp",
       "category": "image",
-      "sourceBytes": 66256,
-      "gzipBytes": 66149
+      "sourceBytes": 65004,
+      "gzipBytes": 64890
     },
     {
       "file": "assets/packs/story/intro-5.webp",
@@ -1011,8 +1011,8 @@
     {
       "file": "assets/packs/story/outro-1.webp",
       "category": "image",
-      "sourceBytes": 75424,
-      "gzipBytes": 75314
+      "sourceBytes": 75508,
+      "gzipBytes": 75399
     },
     {
       "file": "assets/packs/story/outro-2.webp",
@@ -1029,8 +1029,8 @@
     {
       "file": "assets/packs/story/outro-4.webp",
       "category": "image",
-      "sourceBytes": 68766,
-      "gzipBytes": 68665
+      "sourceBytes": 67988,
+      "gzipBytes": 67886
     },
     {
       "file": "assets/packs/story/outro-5.webp",
@@ -1041,26 +1041,26 @@
     {
       "file": "assets/packs/story/prologue-1.webp",
       "category": "image",
-      "sourceBytes": 63168,
-      "gzipBytes": 63057
+      "sourceBytes": 63124,
+      "gzipBytes": 63007
     },
     {
       "file": "assets/packs/story/prologue-2.webp",
       "category": "image",
-      "sourceBytes": 46322,
-      "gzipBytes": 45842
+      "sourceBytes": 46726,
+      "gzipBytes": 46241
     },
     {
       "file": "assets/packs/story/prologue-3.webp",
       "category": "image",
-      "sourceBytes": 72360,
-      "gzipBytes": 72222
+      "sourceBytes": 72238,
+      "gzipBytes": 72097
     },
     {
       "file": "assets/packs/story/prologue-4.webp",
       "category": "image",
-      "sourceBytes": 69410,
-      "gzipBytes": 69305
+      "sourceBytes": 69412,
+      "gzipBytes": 69303
     },
     {
       "file": "assets/portraits-BkRMzvVM.webp",
