@@ -1,7 +1,56 @@
-# API — `k-bosses1.js` · `PN.bossesA` (라운드 보스 A) — rev 2
+# API — `k-bosses1.js` · `PN.bossesA` (라운드 보스 A) — rev 3
 
 잉크 도살자 `butcher` (Ch1 St5 · dash) · 종탑 간수 `gaoler` (Ch1 St10 · rings) · 용광의 입 `maw` (Ch2 St10 · flame).
 먹극화 · PAPER NOIR INK. Style bible §4 (lines), §5 (shading), §7.3 (size), §10.1/§10.3 (bosses), §12.2/§12.4 (telegraphs and bullets).
+
+**rev 3(K3, 2026-10): 킷 사본을 직접 고쳤다. concept/work 원본은 이 판보다 오래됐다.** 작업 지시서 `docs/art/briefs/boss-poses.md` §2(얼굴·글자 묶음, K3-1)를 반영했다. 호출 형식, 옵션 이름, 박스·피벗·발·판정 반지름·`gameScale`, `META`의 키와 값은 그대로다. 기존 옵션의 출력은 아래 표만큼 **의도적으로** 바뀌었다. 지문 F0 → F1과 렌더는 납품서 `docs/art/deliveries/K3-boss-poses.md`에 있다. 포즈(`pose`·`frame`, `anchors()`)는 K3-2에서 더한다.
+
+| 보스 | 바뀐 것 | LOD |
+|---|---|---|
+| 공통 | **그림 안 글자 0.** 출력 어디에도 `<text>`가 없다(rev 2는 지문 범위에서 54개) | art · game |
+| butcher | 간판 글자(art `<text>` 정육점, game에서 "HOI"처럼 읽히던 직선 획)를 **걸린 고깃덩이 기호 하나**로 바꿨다(아래 "간판 기호") | art · game |
+| butcher | 봉투의 도장 원과 '肉'을 지웠다. 원 안의 원은 가짜 눈이 된다 | art · game |
+| butcher | 봉투 game 재드로잉(아래 "game LOD 규칙") | game |
+| gaoler | P2 풍경의 「딩—」 `<text>`를 지웠다. 소리 호 2줄은 남는다. 이야기 패널 outro-1에 구워지던 글자다 | art |
+| gaoler | 풍경 물고기와 등롱 속 종이학을 눌렀다: game ink.300 평면, art paper.300 + 40% 망점. 물고기 눈 원·아가미 획은 art에서만, ink.300으로 | art · game |
+| gaoler | 철창 속 영혼의 눈 2개를 지웠다(모든 페이즈). 얼굴은 열쇠구멍 하나다 | art · game |
+| gaoler | 범종 유곽 칸(game)에서 원을 뺐다. 두 칸이 "두 눈 + 열쇠구멍 코"로 읽혔다 | game |
+| maw | 두 눈을 한 눈선(y 244)에 맞추고 두 동공이 플레이어(+x)를 본다. 광폭 glow도 같은 중심으로 | art · game |
+| maw | 화구 바닥 잉걸불 점 7개: paper.300 → ink.300 | art · game |
+| butcher | (K3-1f, 검수 1차 R7) 칼날 강철 테의 하이라이트 paper.50 → paper.300, 리벳 4개 paper.50 → ink.300(먹 테 유지). paper.50은 얼굴(눈구멍) 전용이다 | art · game |
+
+**초점 규칙(rev 3).** 보스 얼굴(약점) 밖의 종이 소품은 game에서 ink.300 평면, art에서 paper.300 + 40% 망점으로 누른다. 도살자 칼날의 하이라이트·리벳도 paper.50을 쓰지 않는다(K3-1f). 간수 phase 1의 paper.50 요소는 열쇠구멍 테·눈과 그 아래 빛 조각 3개뿐이다(준비 '!', P2·P3 종이 균열·이 빠짐은 페이즈 표식이라 예외). 얼굴 밖에 "원 + 가운데 점", "고리 + 원판", "점 두 개 나란히"를 새로 두지 않는다.
+
+**눈 규칙(rev 3).** 얼굴은 각도 하나다. 입(maw)은 정면 화구라서 두 눈이 같은 높이에 있고, 비대칭은 크기·높이(원근)가 아니라 크게 뜬 눈 대 가늘게 뜬 눈으로 둔다. 두 동공은 모두 +x쪽 윗꺼풀에 닿는다.
+
+| maw 눈 | 눈 (`eye(x, y, w, h, tilt)`) | 동공 | 광폭 glow |
+|---|---|---|---|
+| 왼눈(크게 뜸) | (186, 244), 13.5 × 8.6, tilt +1 | (191.5, 242.6) r 4 — 윗꺼풀 y ≈ 239.9 | (186, 244) rx 18 ry 12 |
+| 오른눈(가늘게 뜸) | (227, 244), 10.4 × 6.2, tilt −1 | (231.5, 242.4) r 3.2 — 윗꺼풀 y ≈ 239.1 | (227, 244) rx 14 ry 10 |
+
+`META.maw.face` (206, 244)는 두 눈의 가운데로 그대로다. 광폭에서는 지금처럼 눈 크기만 ×1.25다.
+
+**game LOD 규칙(rev 3).** game은 축소본이 아니라 156px용 재드로잉이다.
+
+| 보스 | game에서만 다른 것 | 이유 |
+|---|---|---|
+| butcher 봉투 | 주름 획 4개 생략. 아래 띠는 20% 망점 대신 paper.300 평면. 눈 먹물 `drip(266,160,20,5)`·`drip(282,163,13,4.2)`(art는 38·22 길이의 가는 줄) | 0.4배에서 큰 점 무늬·긴 막대가 얼굴을 덮었다 |
+| butcher 입 | 꿰맨 X 5 → **3**: 간격 12.6, 반폭 3.8 × 반높이 5.2, 선 2.6(×LW). 중심 (243.1,191.7)·(255.7,192.4)·(268.3,190.8). 입 선은 `M 236,190 C 252,195 270,192 290,184`. 앞 접힘선은 입 위 y 177에서 끊는다 | 가까운 팔이 봉투의 x ≈ 280 오른쪽을 가린다. 지시 자리(262.2~287.4)면 셋째 X가 팔 뒤로 들어간다. P3 먹물(x 262)은 둘째·셋째 X 사이로 흐른다 |
+| gaoler 유곽 | 칸(평행사변형)을 대각선으로 나눠 아래·오른쪽 삼각형만 ink.500, ink.300 테를 그 위에 다시 | 오목한 칸의 빛 받는 면. 원을 빼서 두 번째 눈 쌍을 없앴다 |
+| gaoler 종이 소품 | 물고기·종이학 ink.300 평면(먹 1.5~1.8 테), 물고기 눈·아가미 없음 | 열쇠구멍 눈(약 6px)보다 밝고 큰 종이 면이 없게 |
+
+**간판 기호(rev 3, 사용자 결정 Q3·Q5).** 칼 간판에는 글자 대신 걸린 고깃덩이 하나를 그린다. 좌표는 `A.butcherCleaver`의 칼 프레임(손잡이 축 x = 0, 날이 +y)이고, 간판 틀 x −21~17, y 28~96 안이다. 망점 위에 얹어 game에서도 한 덩어리로 읽힌다.
+
+| 부분 | 값 |
+|---|---|
+| 갈고리 | 먹 한 획 `M -2,29 L -2,35 C -2,40.5 6,40.5 6,35`(J, 끝이 오른쪽으로 말려 올라감), 굵기 2.4(×LW) |
+| 뼈 끝 | 둥근 막대 6 × 16(rx 2.6), `rotate(16 1 46)`, paper.300 + 먹 1.5(×LW). 보이는 길이 약 10. 원 끝(뼈 혹) 없음 |
+| 고깃덩이 | 먹 물방울꼴, y 46~84, 폭 최대 26(x −14~12), 아래가 둥글다 |
+| 지방 결 | paper.300 곡선 획: art 2줄(2.2·1.6), game 1줄(최대 폭 4.05 ≥ 3.6) |
+
+직선 획 묶음, 원 + 점, 글자·숫자처럼 읽히는 획은 쓰지 않는다. P2 칼 균열은 기호 위로 지나간다.
+
+**rev 3 검사.** 두 LOD × phase 1~3 × 준비 × 광폭 72상태와 실루엣 6장 모두 `--check` ok, 굽기 셀 마스크(K3-C2) 밖 칠 0, 48px 실루엣은 rev 2와 같다.
 
 **rev 2 (art-director rework).** The three bodies are redrawn. The calls, box, pivot, feet, hit radius and `gameScale` are unchanged, so existing scene code keeps working. What changed:
 - Anchors moved: `face`, `muzzle` and `head` in `META` (see the table below).
@@ -27,7 +76,7 @@ Verified in rev 2 with one page holding:
 
 Result: 2763 ids, 0 duplicates, 0 dangling `url(#…)`.
 
-The source lives in `concept/work/bosses1/src/*.js` and is concatenated by `concept/work/bosses1/build.sh`. Do not hand-edit the kit copy.
+rev 3(K3, 2026-10): 킷 사본을 직접 고쳤다. concept/work 원본은 이 판보다 오래됐다. (rev 2까지는 `concept/work/bosses1/src/*.js`를 `build.sh`로 이어 붙인 사본이었다. 아래 `src/00-core.js` 같은 이름은 그 원본 기준이며, 킷 사본에서는 `k-bosses1.js`의 첫 블록이다.)
 
 ## `PN.bossesA.draw(id, opts) → string`
 Returns `<g class="bossA bossA-<id>"><defs>…</defs>shadow · ground · body · fx</g>`.
@@ -37,7 +86,7 @@ Returns `<g class="bossA bossA-<id>"><defs>…</defs>shadow · ground · body ·
 | `phase` | `1` | `1` \| `2` \| `3`. Damage is cumulative (P3 includes P2 marks). |
 | `windup` | `false` | Windup pose (telegraph stage 1). It is a **separate drawing**, not a transform of idle (bible §15: windup is designed bigger and first), plus the amber `!` and pose FX. |
 | `enraged` | `false` | Ink flame, white-hot eyes, and a **coral outline pulse 2px** sandwiched in ink (filter). This is the only coral on an enemy body. |
-| `lod` | `'art'` | `'art'`: key-art weights, 5-unit halftone pitch, lettering. `'game'`: outline ×1.55 (about 4px at 156px), brush ×1.35, **halftone pitch 8** (3.2px at 1x), tiny details dropped (sign lettering becomes a glyph mark; 유곽 nipples and stamp text are dropped). |
+| `lod` | `'art'` | `'art'`: key-art weights, 5-unit halftone pitch. `'game'`: outline ×1.55 (about 4px at 156px), brush ×1.35, **halftone pitch 8** (3.2px at 1x), redrawn small details (rev 3 "game LOD 규칙" above: butcher bag, 유곽 cells, gaoler paper props). Neither LOD draws lettering (rev 3). |
 | `halo` | `null` | `true` = knock-out halo in the chapter `env.base` colour (§5-6). A colour string gives a custom colour. |
 | `haloW` | auto | **new**. Halo dilate radius in local units. Default: game 3.8 (= 1.5px at 0.4), art 3. Sheets use 2.6–2.8 at art scale 1.1–1.4 (about 3–4px). |
 | `silhouette` | `false` | Flat `ink` silhouette (no shadow/ground/fx). Use it for 32/48px silhouette tests. |
@@ -95,8 +144,8 @@ Shared construction is in `src/00-core.js`:
   - near forearm
   - sign-board cleaver in the fist
 - The cleaver (`A.butcherCleaver`, frame: handle axis x = 0):
-  - blade: 58×86 paper.300 slab under 40% dots with 정육점 lettering
-  - edge: ink.300 steel strip (14% of the width) riveted with 4 paper.50 dots
+  - blade: 58×86 paper.300 slab under 40% dots with the hanging-meat sign glyph (rev 3 "간판 기호"; no lettering)
+  - edge: ink.300 steel strip (14% of the width) with a paper.300 highlight, riveted with 4 ink.300 rivets in ink rims (K3-1f: paper.50 is for the face only)
   - handle: wrapped, with a ring pommel and a riveted ferrule
   - idle pose: tilted 17° off vertical
 - The fist (`A.butcherFist`) has 4 ink.500 finger wedges with a 1.5px paper.300 rim, and a thumb over the top.
@@ -112,22 +161,22 @@ Shared construction is in `src/00-core.js`:
 
 **gaoler.** 범종 head tilted 8° toward facing.
 - 당좌 medallion: a **true keyhole** (round top plus tapering slot, 3px ink frame, paper.50 inner rim, eye in the round part, 3 dripping light slivers).
-- Tiled eave cape with **3 풍경 on visible cords**, hung from the two upturned tips and the front-left corner. Each has a bronze cup, a clapper, and a paper fish about 30 local long.
-- Chest cage, belt with the key ring on the left hip.
-- Lantern arm: comes from under the left eave, and the gauntlet fist holds a paper lantern at hip height. Inside is a **folded-paper bird** (head, beak, tail, 2 wing folds, paper.50 with 1.5px ink).
+- Tiled eave cape with **3 풍경 on visible cords**, hung from the two upturned tips and the front-left corner. Each has a bronze cup, a clapper, and a fish plate about 30 local long (rev 3: game flat ink.300, art paper.300 under 40% dots, eye and gill marks art-only in ink.300).
+- Chest cage (the trapped soul has no eyes since rev 3), belt with the key ring on the left hip.
+- Lantern arm: comes from under the left eave, and the gauntlet fist holds a paper lantern at hip height. Inside is a **folded-paper bird** (head, beak, tail, 2 wing folds, 1.5px ink; rev 3: game flat ink.300, art paper.300 under 40% dots).
 - Tower-key staff (`A.gaolerKey`, frame: grip at 0,0):
   - crosses the body diagonally (idle rotation 19°: pagoda bow upper-right, stepped 3-tooth ward bit at the lower-left, 72 of 364 shaft = 20%)
   - an ink.300 gap outline separates it from the robe
   - gripped at chest height by `A.gaolerGauntlet` (plated back, thumb, 3 finger wedges)
 - Windup: forearm raised, grip (318,150), staff `rotate(-8)`, bow high over the bell, dashed strike arc, `!`.
-- P2: bell crack, and the left 풍경 swings and rings (sound arcs, plus 「딩—」 in art LOD).
+- P2: bell crack, and the left 풍경 swings and rings (2 sound arcs; the art-LOD 「딩—」 lettering was removed in rev 3).
 - P3:
   - cage door hangs open on its hinge, padlock swinging, soul core exposed (paper.300)
   - second bell crack plus a **chip knocked out of the bell lip**
   - ink drips (ink.900 teardrops with a 1px ink.300 rim) off the eave tips and hem
 - Enraged: black flame in the lantern.
 
-**maw.** Cast-iron stove idol. The face is frontal. One stovepipe arm is planted on clenched iron knuckles (4 blocky fingers plus a thumb block, `A.mawFist`). The other is lifted with a bent elbow in a **rivet collar**.
+**maw.** Cast-iron stove idol. The face is frontal: two eyes on ONE eye line (y 244), wide-open left vs narrowed right, both pupils looking +x (rev 3, "눈 규칙" above). One stovepipe arm is planted on clenched iron knuckles (4 blocky fingers plus a thumb block, `A.mawFist`). The other is lifted with a bent elbow in a **rivet collar**.
 - Belly:
   - designed ink.500 lit crescent with a notched terminator
   - ink.500 dot band under the collar

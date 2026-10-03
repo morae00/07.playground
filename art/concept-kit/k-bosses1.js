@@ -1,5 +1,5 @@
 // k-bosses1.js — 라운드 보스 A: 잉크 도살자(butcher) · 종탑 간수(gaoler) · 용광의 입(maw)
-// 먹극화 · PAPER NOIR INK. Built from concept/work/bosses1/src/*.js (do not hand-edit the kit copy).
+// 먹극화 · PAPER NOIR INK. rev 3(K3, 2026-10): 킷 사본을 직접 고쳤다. concept/work 원본은 이 판보다 오래됐다.
 // LOCAL BOX 400 x 400, all bosses face RIGHT (flip with scale(-1,1) around x=200).
 //   pivot  = (200,257) = hit-circle centre (r54 in game -> 135 local units)
 //   feet   = y 392 (pivot + r)          shadow = ellipse (200,331) rx135 ry55 (= hit diameter)
@@ -185,21 +185,29 @@ window.PN = window.PN || {};
   };
 
   // sign-board cleaver in its own frame: handle axis x=0 (fist at 0,0), blade hangs +y. Rotate the frame to pose it.
+  // K3-1f R7: paper.50 is for the face only — the steel edge highlight is paper.300 and its 4 rivets ink.300 (ink rim kept).
   A.butcherCleaver = function (X) {
     const { K, T } = X, ph = X.o.phase, LW = X.LW;
     const blade = 'M -29,22 L 29,22 L 29,100 L 22,106 L 8,102 L -4,108 L -29,102 Z';
-    const letters = X.game ? `<path d="M -16,34 h 22 M -5,34 v 10 M -16,46 h 22 M -12,58 h 16 v 12 h -16 Z M -16,80 h 22 M -14,88 v 8 h 18 v -8" fill="none" stroke="${K.ink}" stroke-width="5.5" stroke-linejoin="round"/>` :
-      `<g font-family="'Apple SD Gothic Neo','AppleGothic',sans-serif" font-weight="900" fill="${K.ink}" text-anchor="middle"><text x="-3" y="48" font-size="22">정</text><text x="-3" y="72" font-size="22">육</text><text x="-3" y="96" font-size="22">점</text></g>`;
+    // rev 3 (K3 F-A3, user decisions Q3 · Q5): the shop sign shows a picture, not letters (the old 정육점 <text> and the
+    // game strokes that read "HOI" are gone). ONE piece of meat hanging on a J hook inside the sign frame (x −21…17,
+    // y 28…96): a short rounded bone end (no round knob), an ink lump widening downward to 26 with a round bottom, and
+    // curved paper.300 fat seams (art 2, game 1 at ≥ 3.6 wide). Laid over the board's dots so it stays one clean shape.
+    const lump = 'M -6,47 C -11.5,51 -14,60 -14,69 C -13.5,79 -7,85 0,84 C 7.5,83 12,77 12,68 C 11.5,58 8,50 4,46 C 1,48 -3,48 -6,47 Z';
+    const meat = `<g transform="rotate(16 1 46)"><rect x="-2" y="33" width="6" height="16" rx="2.6" fill="${K.paper300}" stroke="${K.ink}" stroke-width="${X.f(1.5 * LW)}"/></g><path d="${lump}" fill="${K.ink}"/>` +
+      (X.game ? T([-8.5, 54, -12, 64, -6.5, 77], 3, 'mid', K.paper300)
+        : T([-8.5, 54, -12, 63, -10, 73, -5, 79], 2.2, 'mid', K.paper300) + T([3, 56, 6, 63, 5.5, 71], 1.6, 'mid', K.paper300)) +
+      X.line('M -2,29 L -2,35 C -2,40.5 6,40.5 6,35', K.ink, 2.4);
     const crack = 'M 12,24 L 4,40 L 14,52 L 2,66 L 10,78 L 0,94 L 6,102';
     const inner = `<rect x="-30" y="18" width="62" height="92" fill="${K.paper300}"/>
       <path d="M -21,28 L 17,28 L 17,96 L -21,96 Z" fill="none" stroke="${K.ink}" stroke-width="${1.8 * LW}"/>
-      ${letters}
       ${X.ht('M -30,18 L 32,18 L 32,110 L -30,110 Z', 'd40', 0.72)}${X.ht('M 6,18 L 32,18 L 32,110 L 12,110 Z', 'd60', 0.5)}
+      ${meat}
       <path d="M -30,70 L -18,76 L -22,86 L -10,92 L -14,110 L -30,110 Z" fill="${K.ink}"/>
       <path d="M 21,18 L 32,18 L 32,110 L 21,110 Z" fill="${K.ink300}"/>
-      ${T([24.5, 28, 25, 60, 24.5, 96], 2.2, 'mid', K.paper50)}
+      ${T([24.5, 28, 25, 60, 24.5, 96], 2.2, 'mid', K.paper300)}
       <path d="M 21,18 L 21,104" stroke="${K.ink}" stroke-width="${1.8 * LW}"/>
-      ${[34, 54, 74, 92].map((y) => `<circle cx="26.5" cy="${y}" r="2.4" fill="${K.paper50}" stroke="${K.ink}" stroke-width="1.2"/>`).join('')}
+      ${[34, 54, 74, 92].map((y) => `<circle cx="26.5" cy="${y}" r="2.4" fill="${K.ink300}" stroke="${K.ink}" stroke-width="1.2"/>`).join('')}
       ${[[-22, 24], [12, 24]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.8" fill="${K.ink}"/>`).join('')}
       ${ph >= 2 ? `<path d="${crack}" fill="none" stroke="${K.ink}" stroke-width="${5 * LW}" stroke-linejoin="round"/><path d="${crack}" fill="none" stroke="${K.paper50}" stroke-width="${2 * LW}" stroke-linejoin="round"/>` : ''}`;
     // wrapped handle + ring pommel + riveted ferrule
@@ -299,17 +307,24 @@ window.PN = window.PN || {};
         ${X.ht('M 296,176 C 300,162 312,154 326,154 L 318,166 C 308,168 302,176 300,186 Z', 'l20')}${X.R([292, 146, 298, 124, 326, 118], 2.6)}`) +
       X.brk('M 291,168 C 294,182 298,190 302,195') + X.C([357, 150, 358, 172, 348, 186, 330, 193], 5.2);
     // ---- paper-bag head (face = weak point, <=12%, heavy ink frame)
+    // rev 3 (K3 F-A3): the stamp circle and its 肉 are gone in both LODs (a ring inside the bag is a fake eye; no lettering).
+    // game is redrawn for 156px rather than shrunk: no wrinkle strokes, the lower band a flat paper.300 plane (not big 20%
+    // dots), 2 short wide ink drips under the eye hole, 3 stitches spaced 12.6 so eye, mouth and drips stay apart at 0.4.
+    // The near arm (drawn over the head) hides the bag right of x≈280 at mouth height, so in game the stitched mouth is
+    // moved into the visible window (x 236…275) and the front fold stops above it; art keeps its mouth and fold. The P3
+    // drip at x 262 then runs between the 2nd and 3rd stitch instead of through one.
+    const band = 'M 220,178 C 250,188 276,188 306,172 L 306,216 L 220,216 Z';
     const bag = X.S(SH.bag, K.paper, 6, `${X.ht('M 286,110 L 306,110 L 306,216 L 282,216 C 290,180 290,140 286,110 Z', 'd40')}
-        ${X.ht('M 220,178 C 250,188 276,188 306,172 L 306,216 L 220,216 Z', 'd20')}
-        <path d="M 250,118 C 252,150 252,178 250,208" fill="none" stroke="${K.ink}" stroke-width="${2 * X.LW}"/>
+        ${X.game ? `<path d="${band}" fill="${K.paper300}"/>` : X.ht(band, 'd20')}
+        <path d="${X.game ? 'M 250,118 C 252,150 252.2,166 251.4,177' : 'M 250,118 C 252,150 252,178 250,208'}" fill="none" stroke="${K.ink}" stroke-width="${2 * X.LW}"/>
         <path d="M 228,124 L 294,122 L 296,136 L 285,129 L 274,138 L 264,129 L 254,138 L 244,131 L 230,138 Z" fill="${K.ink}"/>
-        ${X.Ts([[231, 148, 235, 158, 233, 170, 1.4, 'mid'], [240, 142, 244, 150, 242, 158, 1.3, 'mid'], [293, 150, 289, 162, 293, 176, 1.6, 'mid'], [254, 198, 266, 196, 278, 200, 1.3, 'mid']], K.ink)}
-        <g transform="rotate(-12 237 176)" opacity="0.85"><circle cx="237" cy="176" r="8.5" fill="none" stroke="${K.ink}" stroke-width="1.9"/>${X.game ? '' : `<text x="237" y="180.5" font-family="'AppleMyungjo','Apple SD Gothic Neo',serif" font-size="11" font-weight="900" fill="${K.ink}" text-anchor="middle">肉</text>`}</g>`) +
+        ${X.game ? '' : X.Ts([[231, 148, 235, 158, 233, 170, 1.4, 'mid'], [240, 142, 244, 150, 242, 158, 1.3, 'mid'], [293, 150, 289, 162, 293, 176, 1.6, 'mid'], [254, 198, 266, 196, 278, 200, 1.3, 'mid']], K.ink)}`) +
       X.C([298, 128, 303, 158, 303, 184, 298, 204], 4.6) + X.C([298, 204, 274, 213, 250, 213, 228, 205], 3.4);
     const eye = ph >= 3 ? '' : `<path d="M 260,146 L 268,138 L 276,143 L 285,138 L 290,150 L 284,162 L 272,165 L 263,158 Z" fill="${K.ink}" ${X.O(1.6)}/>
-      <ellipse cx="275" cy="151" rx="7" ry="5" fill="${K.paper50}"/><circle cx="277.6" cy="151.6" r="2.6" fill="${K.ink}"/>${X.drip(266, 160, 38, 3.4)}${X.drip(281, 163, 22, 2.8)}`;
-    let mouth = X.line('M 254,188 C 266,192 280,190 294,182', K.ink, 2.8);
-    for (let i = 0; i < 5; i++) { const x = 258 + i * 8.4, y = 190 - i * 1.6; mouth += X.line(`M ${x - 3.2},${y - 4.4} L ${x + 3.2},${y + 4.4} M ${x + 3.2},${y - 4.4} L ${x - 3.2},${y + 4.4}`, K.ink, 2); }
+      <ellipse cx="275" cy="151" rx="7" ry="5" fill="${K.paper50}"/><circle cx="277.6" cy="151.6" r="2.6" fill="${K.ink}"/>${X.game ? X.drip(266, 160, 20, 5) + X.drip(282, 163, 13, 4.2) : X.drip(266, 160, 38, 3.4) + X.drip(281, 163, 22, 2.8)}`;
+    let mouth = X.line(X.game ? 'M 236,190 C 252,195 270,192 290,184' : 'M 254,188 C 266,192 280,190 294,182', K.ink, 2.8);
+    if (X.game) [[243.1, 191.7], [255.7, 192.4], [268.3, 190.8]].forEach(([x, y]) => { const f = X.f; mouth += X.line(`M ${f(x - 3.8)},${f(y - 5.2)} L ${f(x + 3.8)},${f(y + 5.2)} M ${f(x + 3.8)},${f(y - 5.2)} L ${f(x - 3.8)},${f(y + 5.2)}`, K.ink, 2.6); });
+    else for (let i = 0; i < 5; i++) { const x = 258 + i * 8.4, y = 190 - i * 1.6; mouth += X.line(`M ${x - 3.2},${y - 4.4} L ${x + 3.2},${y + 4.4} M ${x + 3.2},${y - 4.4} L ${x - 3.2},${y + 4.4}`, K.ink, 2); }
     const twine = `<path d="M 226,202 C 250,212 276,210 300,198" fill="none" stroke="${K.ink}" stroke-width="${5.5 * X.LW}"/><path d="M 226,202 C 250,212 276,210 300,198" fill="none" stroke="${K.ink300}" stroke-width="2.2" stroke-dasharray="5 3"/>
       <circle cx="296" cy="200" r="4.6" fill="${K.ink300}" ${X.O(2.2)}/>${T([297, 204, 305, 214, 306, 228], 3.2, 'end', K.ink300, `stroke="${K.ink}" stroke-width="1.5"`)}${T([294, 205, 293, 216, 289, 228], 2.8, 'end', K.ink300, `stroke="${K.ink}" stroke-width="1.5"`)}`;
     const broken = ph >= 3 ? `<path d="M 250,116 L 258,132 L 252,146 L 264,154 L 258,168 L 272,176 L 282,170 L 292,182 L 302,178 L 298,112 Z" fill="${K.ink}" ${X.O(3)}/>
@@ -370,9 +385,11 @@ window.PN = window.PN || {};
 
   A.gaolerBell = function (X) {
     const { K, T } = X, ph = X.o.phase, SH = A.GSH, f = X.f;
+    // 유곽 cell. rev 3 (K3 F-A1) game: no circle (two circled cells read as a second pair of eyes over the keyhole);
+    // the recessed cell's lower-right half catches the key light (ink.500), the ink.300 frame laid back on top.
     const nip = (x0, y0, w, h, skew) => {
       let s = `<path d="M ${x0},${y0} L ${x0 + w},${y0 + skew} L ${x0 + w},${y0 + h + skew} L ${x0},${y0 + h} Z" fill="${K.ink700}" stroke="${K.ink300}" stroke-width="${1.4 * X.TW}"/>`;
-      if (X.game) return s + `<circle cx="${x0 + w / 2}" cy="${y0 + h / 2 + skew / 2}" r="${w * 0.22}" fill="${K.ink500}" stroke="${K.ink300}" stroke-width="1.5"/>`;
+      if (X.game) return s + `<path d="M ${x0 + w},${y0 + skew} L ${x0 + w},${y0 + h + skew} L ${x0},${y0 + h} Z" fill="${K.ink500}"/><path d="M ${x0},${y0} L ${x0 + w},${y0 + skew} L ${x0 + w},${y0 + h + skew} L ${x0},${y0 + h} Z" fill="none" stroke="${K.ink300}" stroke-width="${1.4 * X.TW}"/>`;
       for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
         const x = x0 + w * (0.2 + 0.3 * i), y = y0 + h * (0.2 + 0.3 * j) + skew * (0.2 + 0.3 * i);
         s += `<circle cx="${f(x)}" cy="${f(y)}" r="${f(w * 0.1)}" fill="${K.ink500}" stroke="${K.ink}" stroke-width="1"/><circle cx="${f(x - 1)}" cy="${f(y - 1)}" r="0.9" fill="${K.ink100}"/>`;
@@ -450,11 +467,12 @@ window.PN = window.PN || {};
   };
 
   // raised paper lantern (hangs from the fist at 46,252) with a folded-paper bird inside
+  // rev 3 (K3 F-A1): the bird is pressed below the keyhole eye: game = flat ink.300, art = paper.300 under 40% dots.
   A.gaolerLantern = function (X) {
     const { K, T } = X, SH = A.GSH, en = X.o.enraged;
-    const bird = `<g transform="translate(46,306)" stroke="${K.ink}" stroke-width="1.5" stroke-linejoin="round" fill="${K.paper50}">
-      <path d="M -11,4 L 0,12 L 13,2 L 1,-1 Z"/><path d="M -3,2 L -9,-17 L 4,-1 Z"/><path d="M 3,1 L 12,-15 L 8,2 Z"/>
-      <path d="M -9,5 L -15,-7 L -21,-7 L -14,-10 L -5,2 Z"/><path d="M 11,3 L 19,-9 L 14,5 Z"/>
+    const folds = ['M -11,4 L 0,12 L 13,2 L 1,-1 Z', 'M -3,2 L -9,-17 L 4,-1 Z', 'M 3,1 L 12,-15 L 8,2 Z', 'M -9,5 L -15,-7 L -21,-7 L -14,-10 L -5,2 Z', 'M 11,3 L 19,-9 L 14,5 Z'];
+    const bird = `<g transform="translate(46,306)" stroke="${K.ink}" stroke-width="1.5" stroke-linejoin="round" fill="${X.game ? K.ink300 : K.paper300}">
+      ${folds.map((d) => `<path d="${d}"/>`).join('')}${X.game ? '' : `<path d="${folds.join(' ')}" fill="url(#${X.p}d40)" stroke="none"/>`}
       <path d="M 0,12 L 1,-1 M -9,-17 L -1,1" fill="none" stroke-width="1"/></g>`;
     return `${X.chain(46, 256, 46, 266, 1, 0, 3.2)}
       <path d="M 14,278 L 78,278 L 68,266 L 24,266 Z" fill="${K.ink}" ${X.O(3.5)}/><path d="M 10,278 C 28,273 64,273 82,278" fill="none" stroke="${K.ink}" stroke-width="${4.4 * X.LW}" stroke-linecap="round"/>
@@ -466,17 +484,21 @@ window.PN = window.PN || {};
   };
 
   // 풍경 wind chime hung on a visible cord from an eave tip (x,y): bronze cup + clapper + paper fish plate
+  // rev 3 (K3 F-A1): the fish is a prop, not a face, so it is pressed below the keyhole eye (bible §4.2, §10.2-2):
+  //   game = flat ink.300; art = paper.300 under 40% dots, its eye and gill marks kept in art only, in ink.300.
+  //   `loud` draws the two sound arcs only. No lettering: the old 「딩—」 <text> is gone (CONTEXT §2, story outro-1).
   A.gaolerChime = function (X, x, y, sw, loud) {
     const { K, T } = X, f = X.f;
     const cup = `M ${x - 11},${y + 38} C ${x - 11},${y + 22} ${x - 6},${y + 16} ${x},${y + 16} C ${x + 6},${y + 16} ${x + 11},${y + 22} ${x + 11},${y + 38} Z`;
     const fish = `M ${x - 12},${y + 60} C ${x - 6},${y + 51} ${x + 5},${y + 51} ${x + 11},${y + 58} L ${x + 17},${y + 52} L ${x + 16},${y + 66} L ${x + 11},${y + 61} C ${x + 5},${y + 68} ${x - 6},${y + 68} ${x - 12},${y + 60} Z`;
+    const fishPlate = `<path d="${fish}" fill="${X.game ? K.ink300 : K.paper300}" stroke="${K.ink}" stroke-width="${f(1.8 * X.LW)}" stroke-linejoin="round"/>` +
+      (X.game ? '' : X.ht(fish, 'd40') + `<circle cx="${x - 6}" cy="${y + 58}" r="1.5" fill="${K.ink300}"/><path d="M ${x - 1},${y + 55} C ${x + 1},${y + 58} ${x + 1},${y + 62} ${x - 1},${y + 64} M ${x + 4},${y + 56} C ${x + 6},${y + 59} ${x + 6},${y + 62} ${x + 4},${y + 64}" fill="none" stroke="${K.ink300}" stroke-width="1"/>`);
     return `<g transform="rotate(${sw} ${x} ${y})">
       <path d="M ${x},${y} L ${x},${y + 17}" stroke="${K.ink}" stroke-width="${f(2.2 * X.LW)}"/>
       ${X.S(cup, K.ink, 2.6, X.R([x - 7, y + 22, x - 8, y + 29, x - 8, y + 36], 1.8))}<path d="M ${x - 13},${y + 38} L ${x + 13},${y + 38}" stroke="${K.ink}" stroke-width="${f(3 * X.LW)}" stroke-linecap="round"/>
       <path d="M ${x},${y + 38} L ${x},${y + 52}" stroke="${K.ink}" stroke-width="1.6"/><circle cx="${x}" cy="${y + 42}" r="2.6" fill="${K.ink}"/>
-      <path d="${fish}" fill="${K.paper50}" stroke="${K.ink}" stroke-width="${f(1.8 * X.LW)}" stroke-linejoin="round"/>
-      <circle cx="${x - 6}" cy="${y + 58}" r="1.5" fill="${K.ink}"/><path d="M ${x - 1},${y + 55} C ${x + 1},${y + 58} ${x + 1},${y + 62} ${x - 1},${y + 64} M ${x + 4},${y + 56} C ${x + 6},${y + 59} ${x + 6},${y + 62} ${x + 4},${y + 64}" fill="none" stroke="${K.ink}" stroke-width="1"/></g>
-      ${loud ? `<g fill="none" stroke="${K.ink}" stroke-linecap="round"><path d="M ${x - 22},${y + 22} C ${x - 30},${y + 30} ${x - 30},${y + 44} ${x - 22},${y + 52}" stroke-width="${f(3 * X.LW)}"/><path d="M ${x - 32},${y + 12} C ${x - 44},${y + 26} ${x - 44},${y + 50} ${x - 32},${y + 64}" stroke-width="${f(2.4 * X.LW)}"/></g>${X.game ? '' : `<text x="${x - 30}" y="${y - 2}" font-family="'Apple SD Gothic Neo',sans-serif" font-size="15" font-weight="900" fill="${K.paper50}" stroke="${K.ink}" stroke-width="4" paint-order="stroke" transform="rotate(-12 ${x - 30} ${y})">딩—</text>`}` : ''}`;
+      ${fishPlate}</g>
+      ${loud ? `<g fill="none" stroke="${K.ink}" stroke-linecap="round"><path d="M ${x - 22},${y + 22} C ${x - 30},${y + 30} ${x - 30},${y + 44} ${x - 22},${y + 52}" stroke-width="${f(3 * X.LW)}"/><path d="M ${x - 32},${y + 12} C ${x - 44},${y + 26} ${x - 44},${y + 50} ${x - 32},${y + 64}" stroke-width="${f(2.4 * X.LW)}"/></g>` : ''}`;
   };
 })(window.PN);
 // ---------------------------------------------------------------- 종탑 간수 builder
@@ -517,7 +539,7 @@ window.PN = window.PN || {};
       `${X.drip(142, 388, 18, 4)}${X.drip(202, 388, 24, 4.2)}${X.drip(262, 388, 16, 3.6)}${X.drip(318, 384, 20, 3.8)}`;
     const lapels = `${X.S('M 146,222 L 162,222 L 166,318 L 150,318 Z', K.ink, 3.5, X.R([150, 226, 152, 270, 156, 314], 2))}
       ${X.S('M 244,222 L 258,222 L 254,318 L 240,318 Z', K.ink, 3.5, T([250, 226, 250, 270, 248, 314], 1.6, 'mid', K.ink500))}`;
-    // ---- chest cage: iron bars, trapped ink soul; P3 door swung open on its hinge, soul core exposed
+    // ---- chest cage: iron bars, trapped ink soul (eyeless since rev 3 F-A1: the keyhole is the only face); P3 door swung open, soul core exposed
     const open = ph >= 3;
     const soul = open ? 'M 184,306 C 176,282 180,258 192,246 C 186,238 190,228 200,226 C 212,228 216,238 210,246 C 222,258 226,282 218,306 C 210,298 208,308 200,300 C 194,308 190,298 184,306 Z'
       : 'M 188,304 C 184,284 186,266 194,256 C 190,250 192,242 200,240 C 208,242 212,250 208,256 C 216,266 218,284 214,304 C 208,298 206,306 200,300 C 196,306 192,298 188,304 Z';
@@ -529,7 +551,6 @@ window.PN = window.PN || {};
     const cage = X.S(SH.cage, K.ink700, 6, `
       <ellipse cx="200" cy="274" rx="${open ? 40 : 30}" ry="${open ? 44 : 36}" fill="${K.ink300}" opacity="${open ? 0.75 : 0.35}"/>
       <path d="${soul}" fill="${open ? K.paper300 : K.ink100}" opacity="${open ? 1 : 0.8}" stroke="${K.ink}" stroke-width="${open ? 2 : 0}"/>
-      <ellipse cx="195" cy="${open ? 236 : 249}" rx="2.4" ry="3.2" fill="${K.ink}"/><ellipse cx="205.5" cy="${open ? 237 : 250}" rx="2" ry="2.8" fill="${K.ink}"/>
       ${open ? X.drip(196, 300, 16, 3) + X.drip(210, 302, 12, 2.6) : ''}
       ${bars}${X.ht('M 214,226 L 250,226 L 250,316 L 222,316 Z', 'd40', 0.6)}`) +
       `<path d="M 162,254 C 164,232 236,232 240,254" fill="none" stroke="${K.ink300}" stroke-width="${1.4 * X.TW}"/>` +
@@ -714,10 +735,12 @@ window.PN = window.PN || {};
         ${X.ht('M 140,160 L 270,160 L 270,230 L 140,230 Z', 'd20', 0.55)}` : '';
     const eyeR = o.enraged ? 1.25 : 1;
     const eye = (x, y, w, h, tilt) => `<path d="M ${f(x - w)},${f(y - h * 0.2 * tilt)} C ${f(x - w * 0.5)},${f(y - h - h * 0.5 * tilt)} ${f(x + w * 0.5)},${f(y - h + h * 0.5 * tilt)} ${f(x + w)},${f(y + h * 0.1 * tilt)} C ${f(x + w * 0.4)},${f(y + h)} ${f(x - w * 0.4)},${f(y + h)} ${f(x - w)},${f(y - h * 0.2 * tilt)} Z" fill="${K.paper50}" stroke="${K.ink}" stroke-width="${wu ? 3 : 1.4}"/>`;
-    const eyes = `${eye(186, 246, 13.5 * eyeR, 8.6 * eyeR, 1)}<circle cx="190" cy="247" r="4" fill="${K.ink}"/>${eye(227, 241, 10.2 * eyeR, 6.8 * eyeR, -1)}<circle cx="230" cy="242" r="3.2" fill="${K.ink}"/>`;
+    // rev 3 (K3 F-A2): one eye line (y 244) on the frontal firebox; the asymmetry is wide-open vs narrowed, not a size/height
+    // (perspective) difference. Both pupils look +x (at the player) and touch the upper lid on that side. META.maw.face = midpoint.
+    const eyes = `${eye(186, 244, 13.5 * eyeR, 8.6 * eyeR, 1)}<circle cx="191.5" cy="242.6" r="4" fill="${K.ink}"/>${eye(227, 244, 10.4 * eyeR, 6.2 * eyeR, -1)}<circle cx="231.5" cy="242.4" r="3.2" fill="${K.ink}"/>`;
     const tooth = (x, y0, tip, up) => `<path d="M ${x - 6},${y0} L ${x + 6},${y0} L ${x + 6},${tip + (up ? 12 : -12)} L ${x},${tip} L ${x - 6},${tip + (up ? 12 : -12)} Z" fill="${K.ink300}" stroke="${K.ink}" stroke-width="${2.2 * X.LW}" stroke-linejoin="round"/><path d="M ${x + 1},${y0} L ${x + 1},${tip + (up ? 10 : -10)} L ${x + 5},${tip + (up ? 12 : -12)} L ${x + 5},${y0} Z" fill="${K.ink500}"/>`;
     const mouth = X.S(SH.mouth, K.ink, 5, `${heat}
-      ${wu ? '' : `<ellipse cx="206" cy="302" rx="50" ry="12" fill="${K.ink700}"/>${[[172, 302, 3.4], [188, 306, 2.6], [202, 298, 3.8], [218, 305, 3], [234, 300, 2.8], [196, 292, 2], [226, 294, 2.2]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${K.paper300}" stroke="${K.ink}" stroke-width="1.2"/>`).join('')}${X.ht('M 150,270 L 262,270 L 262,312 L 150,312 Z', 'r40', 0.5)}`}
+      ${wu ? '' : `<ellipse cx="206" cy="302" rx="50" ry="12" fill="${K.ink700}"/>${[[172, 302, 3.4], [188, 306, 2.6], [202, 298, 3.8], [218, 305, 3], [234, 300, 2.8], [196, 292, 2], [226, 294, 2.2]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${K.ink300}" stroke="${K.ink}" stroke-width="1.2"/>`).join('')}${X.ht('M 150,270 L 262,270 L 262,312 L 150,312 Z', 'r40', 0.5)}`}
       ${eyes}
       ${topT.map((x) => tooth(x, 160, x === 206 ? 226 : 222 - Math.abs(x - 206) * 0.1, false)).join('')}
       ${[178, 197, 216, 235].map((x) => tooth(x, 312, 276, true)).join('')}
@@ -727,7 +750,7 @@ window.PN = window.PN || {};
     let fx = A.mawSoot(X, o.enraged || wu);
     if (o.enraged) fx += `${[[128, 78, 30], [164, 42, 40], [202, 12, 48], [240, 42, 40], [276, ph >= 2 ? 104 : 78, 30]].map(([x, t, h]) => X.flame(x, t + 4, h, 22, -4)).join('')}
       ${X.flame(180, 196, 30, 20, -6)}${X.flame(232, 196, 34, 20, 6)}
-      <ellipse cx="186" cy="246" rx="18" ry="12" fill="${K.paper50}" filter="url(#${X.p}glow)"/><ellipse cx="227" cy="241" rx="14" ry="10" fill="${K.paper50}" filter="url(#${X.p}glow)"/>`;
+      <ellipse cx="186" cy="244" rx="18" ry="12" fill="${K.paper50}" filter="url(#${X.p}glow)"/><ellipse cx="227" cy="244" rx="14" ry="10" fill="${K.paper50}" filter="url(#${X.p}glow)"/>`;
     if (wu) fx += `${X.bang(206, 104, 0.85)}${[0, 1, 2].map((i) => X.line(`M ${178 + i * 28},150 c -6,-8 6,-14 0,-22 c -6,-8 6,-14 0,-22`, K.ink, 2)).join('')}`;
     const ground = `<ellipse cx="200" cy="394" rx="150" ry="9" fill="${K.ink}" opacity="0.3"/>`;
     return { ground, body: bodyAll, fx };

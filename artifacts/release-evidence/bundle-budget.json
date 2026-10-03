@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 105145,
+      "bytes": 105146,
       "kib": 102.68,
       "baselineBytes": 92420,
-      "growthRatio": 0.13768664791170737,
+      "growthRatio": 0.1376974680805021,
       "warningBytes": 106282,
       "failBytes": 115525,
       "status": "passed",
@@ -27,7 +27,7 @@
       "passed": true
     },
     "css": {
-      "bytes": 15849,
+      "bytes": 15850,
       "kib": 15.48,
       "warningBytes": 32768,
       "failBytes": 49152,
@@ -35,16 +35,16 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 1911618,
-      "kib": 1866.81,
+      "bytes": 1910542,
+      "kib": 1865.76,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 22229012,
-      "kib": 21708.02,
+      "bytes": 22198870,
+      "kib": 21678.58,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,7 +55,7 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-Oel8lg0I.js",
+      "file": "assets/App-D_VLb1sB.js",
       "category": "appJs",
       "sourceBytes": 336410,
       "gzipBytes": 101593
@@ -133,16 +133,16 @@
       "gzipBytes": 113032
     },
     {
-      "file": "assets/index-DnnhcUy7.js",
-      "category": "appJs",
-      "sourceBytes": 7500,
-      "gzipBytes": 3552
-    },
-    {
-      "file": "assets/index-QRQSmuA8.css",
+      "file": "assets/index-DK60neyC.css",
       "category": "css",
       "sourceBytes": 61084,
-      "gzipBytes": 15849
+      "gzipBytes": 15850
+    },
+    {
+      "file": "assets/index-DqByReqN.js",
+      "category": "appJs",
+      "sourceBytes": 7500,
+      "gzipBytes": 3553
     },
     {
       "file": "assets/keyart-DFQzyQdB.webp",
@@ -153,8 +153,8 @@
     {
       "file": "assets/packs/chapter-01/atlas-0.png",
       "category": "image",
-      "sourceBytes": 1859551,
-      "gzipBytes": 1846312
+      "sourceBytes": 1847712,
+      "gzipBytes": 1834488
     },
     {
       "file": "assets/packs/chapter-01/atlas-1.png",
@@ -171,14 +171,14 @@
     {
       "file": "assets/packs/chapter-02/atlas-0.png",
       "category": "image",
-      "sourceBytes": 931262,
-      "gzipBytes": 919067
+      "sourceBytes": 930188,
+      "gzipBytes": 918042
     },
     {
       "file": "assets/packs/chapter-02/atlas-1.png",
       "category": "image",
-      "sourceBytes": 1713180,
-      "gzipBytes": 1698525
+      "sourceBytes": 1712967,
+      "gzipBytes": 1698371
     },
     {
       "file": "assets/packs/chapter-02/ground-0.webp",
@@ -189,8 +189,8 @@
     {
       "file": "assets/packs/chapter-03/atlas-0.png",
       "category": "image",
-      "sourceBytes": 1474290,
-      "gzipBytes": 1460392
+      "sourceBytes": 1469455,
+      "gzipBytes": 1455440
     },
     {
       "file": "assets/packs/chapter-03/atlas-1.png",
@@ -207,14 +207,14 @@
     {
       "file": "assets/packs/chapter-04/atlas-0.png",
       "category": "image",
-      "sourceBytes": 1202121,
-      "gzipBytes": 1196545
+      "sourceBytes": 1201521,
+      "gzipBytes": 1195949
     },
     {
       "file": "assets/packs/chapter-04/atlas-1.png",
       "category": "image",
-      "sourceBytes": 1642453,
-      "gzipBytes": 1630132
+      "sourceBytes": 1640277,
+      "gzipBytes": 1628000
     },
     {
       "file": "assets/packs/chapter-04/atlas-2.png",
@@ -231,14 +231,14 @@
     {
       "file": "assets/packs/chapter-05/atlas-0.png",
       "category": "image",
-      "sourceBytes": 1164544,
-      "gzipBytes": 1158278
+      "sourceBytes": 1159514,
+      "gzipBytes": 1152880
     },
     {
       "file": "assets/packs/chapter-05/atlas-1.png",
       "category": "image",
-      "sourceBytes": 1742147,
-      "gzipBytes": 1732305
+      "sourceBytes": 1740202,
+      "gzipBytes": 1730373
     },
     {
       "file": "assets/packs/chapter-05/atlas-2.png",
@@ -1011,32 +1011,32 @@
     {
       "file": "assets/packs/story/outro-1.webp",
       "category": "image",
-      "sourceBytes": 75660,
-      "gzipBytes": 75555
+      "sourceBytes": 75424,
+      "gzipBytes": 75314
     },
     {
       "file": "assets/packs/story/outro-2.webp",
       "category": "image",
-      "sourceBytes": 71064,
-      "gzipBytes": 70954
+      "sourceBytes": 70804,
+      "gzipBytes": 70676
     },
     {
       "file": "assets/packs/story/outro-3.webp",
       "category": "image",
-      "sourceBytes": 70946,
-      "gzipBytes": 70808
+      "sourceBytes": 70790,
+      "gzipBytes": 70618
     },
     {
       "file": "assets/packs/story/outro-4.webp",
       "category": "image",
-      "sourceBytes": 69302,
-      "gzipBytes": 69193
+      "sourceBytes": 68766,
+      "gzipBytes": 68665
     },
     {
       "file": "assets/packs/story/outro-5.webp",
       "category": "image",
-      "sourceBytes": 55348,
-      "gzipBytes": 55236
+      "sourceBytes": 55182,
+      "gzipBytes": 55066
     },
     {
       "file": "assets/packs/story/prologue-1.webp",
@@ -1063,10 +1063,10 @@
       "gzipBytes": 69305
     },
     {
-      "file": "assets/portraits-6x2wfT7d.webp",
+      "file": "assets/portraits-BkRMzvVM.webp",
       "category": "image",
-      "sourceBytes": 289088,
-      "gzipBytes": 283593
+      "sourceBytes": 288012,
+      "gzipBytes": 282532
     },
     {
       "file": "assets/skill-tiles-j80riEru.webp",

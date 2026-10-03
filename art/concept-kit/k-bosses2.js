@@ -139,8 +139,10 @@ window.PN = window.PN || {};
     return o;
   }
   // eyes = paper holes (chapter fingerprint, bible §9.1): ch3 bubble · ch4 dial · ch5 eclipse ring
-  function eyeBubble(X, x, y, r, hot = false) {
-    return `${hot ? `<circle cx="${x}" cy="${y}" r="${f(r * 2.1)}" fill="${K.paper50}" opacity="0.35"/>` : ''}<circle cx="${x}" cy="${y}" r="${f(r)}" fill="${K.paper50}" stroke="${K.ink}" stroke-width="${f(1.6 * X.li)}"/>` +
+  // glow (rev 3 K3-1f, default true = the old output): false leaves the hot halo to the caller, so a pair of eyes can
+  // share ONE halo instead of two overlapping discs that brighten into a lens (empress, R5).
+  function eyeBubble(X, x, y, r, hot = false, glow = true) {
+    return `${hot && glow ? `<circle cx="${x}" cy="${y}" r="${f(r * 2.1)}" fill="${K.paper50}" opacity="0.35"/>` : ''}<circle cx="${x}" cy="${y}" r="${f(r)}" fill="${K.paper50}" stroke="${K.ink}" stroke-width="${f(1.6 * X.li)}"/>` +
       `<circle cx="${x}" cy="${y}" r="${f(r * 0.58)}" fill="none" stroke="${K.ink}" stroke-width="${f(r * 0.2)}"/>` +
       `<circle cx="${f(x + r * 0.08)}" cy="${f(y + r * 0.06)}" r="${f(r * 0.26)}" fill="${hot ? K.paper50 : K.ink}"/><circle cx="${f(x - r * 0.3)}" cy="${f(y - r * 0.32)}" r="${f(r * 0.14)}" fill="${K.ink}" opacity="${hot ? 0 : 0.0}"/>`;
   }
@@ -151,10 +153,13 @@ window.PN = window.PN || {};
     return `${hot ? `<circle cx="${x}" cy="${y}" r="${f(r * 1.9)}" fill="${K.paper50}" opacity="0.35"/>` : ''}<circle cx="${x}" cy="${y}" r="${f(r)}" fill="${K.paper50}" stroke="${K.ink}" stroke-width="${f(1.8 * X.li)}"/>${ticks}` +
       (hot ? '' : `<path d="M ${f(x + Math.cos(b) * r * 0.35)},${f(y + Math.sin(b) * r * 0.35)} L ${x},${y} L ${f(x + Math.cos(a) * r * 0.8)},${f(y + Math.sin(a) * r * 0.8)}" fill="none" stroke="${K.ink}" stroke-width="${f(r * 0.2)}" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${x}" cy="${y}" r="${f(r * 0.17)}" fill="${K.ink}"/>`);
   }
-  function eyeEclipse(X, x, y, r, hot = false) {
+  // core = the ink core's +x offset as a share of r (default 0.1 = the old drawing, paper arc included). rev 3 (K3 F-B3):
+  // the balance passes 0.22 so the paper crescent reads as an eclipse looking at the player; a moved core drops the paper
+  // arc, which would otherwise fall off the core onto the paper and vanish.
+  function eyeEclipse(X, x, y, r, hot = false, core = 0.1) {
     return `${hot ? `<circle cx="${x}" cy="${y}" r="${f(r * 2)}" fill="${K.paper50}" opacity="0.38"/>` : ''}<circle cx="${x}" cy="${y}" r="${f(r)}" fill="${K.paper50}" stroke="${K.ink}" stroke-width="${f(1.8 * X.li)}"/>` +
-      `<circle cx="${f(x + r * 0.1)}" cy="${f(y + r * 0.05)}" r="${f(r * 0.66)}" fill="${hot ? K.paper50 : K.ink}"/>` +
-      (hot ? '' : `<path d="M ${f(x - r * 0.25)},${f(y - r * 0.5)} A ${f(r * 0.66)} ${f(r * 0.66)} 0 0 0 ${f(x - r * 0.5)},${f(y + r * 0.2)}" fill="none" stroke="${K.paper50}" stroke-width="${f(r * 0.1)}" opacity="0.9"/>`);
+      `<circle cx="${f(x + r * core)}" cy="${f(y + r * 0.05)}" r="${f(r * 0.66)}" fill="${hot ? K.paper50 : K.ink}"/>` +
+      (hot || core !== 0.1 ? '' : `<path d="M ${f(x - r * 0.25)},${f(y - r * 0.5)} A ${f(r * 0.66)} ${f(r * 0.66)} 0 0 0 ${f(x - r * 0.5)},${f(y + r * 0.2)}" fill="none" stroke="${K.paper50}" stroke-width="${f(r * 0.1)}" opacity="0.9"/>`);
   }
   // hasp latch glyph (걸쇠): plate + hinged tongue + staple ring. open → tongue swings out
   function latch(X, x, y, s = 1, open = false, rot = 0, fill = K.ch3.deep) {
@@ -315,16 +320,28 @@ window.PN = window.PN || {};
     s += `<path d="${ell(193, 101, 22, 28)}" fill="${K.ink}" stroke="${K.ink300}" stroke-width="${f(1.3 * X.li)}"/>`;
     const face = ell(193, 101, 17, 23);
     const fc = X.clip(face);
-    s += `<path d="${face}" fill="${En ? K.ink700 : K.paper}"/><g clip-path="url(#${fc})">${En ? '' : `<path d="M 213,84 C 207,104 200,116 178,126 L 214,130 Z" fill="${X.pat('d20')}"/>`}</g>`;
-    // two bubble eyes (Ch3 fingerprint) — ink discs with paper glints, rising bubbles, one ink tear running DOWN
-    const eye = (x, y, r) => En ? eyeBubble(X, x, y, r * 1.08, true)
-      : `<circle cx="${x}" cy="${y}" r="${r}" fill="${K.ink}"/><circle cx="${f(x - r * 0.34)}" cy="${f(y - r * 0.36)}" r="${f(r * 0.34)}" fill="${K.paper50}"/><circle cx="${f(x + r * 0.38)}" cy="${f(y + r * 0.3)}" r="${f(r * 0.15)}" fill="${K.paper50}"/>` +
-        X.art(`<circle cx="${x}" cy="${y}" r="${f(r + 2.4)}" fill="none" stroke="${K.ink}" stroke-width="0.9"/>`);
-    s += eye(185, 97, g ? 7.8 : 7.4) + eye(203, 103, g ? 5.8 : 5.3);
+    // shadow wedge on the glass: a flat paper.300 plane in both LODs (20% dots printed as a dotted "mouth" in game and at
+    // story-panel scale; rev 3 game, K3-1f R6 art)
+    s += `<path d="${face}" fill="${En ? K.ink700 : K.paper}"/><g clip-path="url(#${fc})">${En ? '' : `<path d="M 213,84 C 207,104 200,116 178,126 L 214,130 Z" fill="${K.paper300}"/>`}</g>`;
+    // rev 3 (K3 F-B1, user decision Q4 corrected): two EQUAL eyes on one level across the face glass (a size or height
+    // difference would read as a second viewpoint). Each eye = ink ellipse + paper.50 ring (×0.6, dropped 0.08ry, clipped to
+    // the eye) under an ink upper lid whose lower edge is a straight line through cy − 0.15ry, 0.35ry lower on the nose side
+    // and 0.35ry higher outside: a stern, half-closed eye. The ink inside the ring is the pupil — no white dots.
+    // Enraged: eyeBubble(hot) on the same two centres, both the same size, under ONE shared halo (K3-1f R5: the two
+    // r×2.1 halos used to overlap into a bright lens that read as goggles). Ch3 bubbles: art only, ≥ 4 from the eyes.
+    const erx = g ? 6.0 : 5.8, ery = g ? 4.6 : 4.4;
+    if (En) s += `<g opacity="0.35"><circle cx="185" cy="99" r="${f(erx * 2.1)}" fill="${K.paper50}"/><circle cx="201" cy="99" r="${f(erx * 2.1)}" fill="${K.paper50}"/></g>`;
+    const eye = (x, y, nose) => {
+      if (En) return eyeBubble(X, x, y, erx, true, false);
+      const d = ell(x, y, erx, ery), c = X.clip(d), m = y - 0.15 * ery, k = 0.35 * ery * nose / erx, ly = (dx) => f(m + k * dx);
+      return `<path d="${d}" fill="${K.ink}"/><g clip-path="url(#${c})"><path d="${ell(x, f(y + 0.08 * ery), f(erx * 0.6), f(ery * 0.6))}" fill="none" stroke="${K.paper50}" stroke-width="${g ? 2 : 1.4}"/>` +
+        `<path d="M ${f(x - erx - 1)},${ly(-erx - 1)} L ${f(x + erx + 1)},${ly(erx + 1)} L ${f(x + erx + 1)},${f(y - ery - 1)} L ${f(x - erx - 1)},${f(y - ery - 1)} Z" fill="${K.ink}"/></g>`;
+    };
+    s += eye(185, 99, 1) + eye(201, 99, -1);
     if (!En) {
-      s += g ? `<circle cx="182" cy="81" r="3" fill="none" stroke="${K.ink}" stroke-width="2"/>`
-        : [[181, 83, 2.4], [185, 76, 1.6], [207, 91, 1.9]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${K.ink}" stroke-width="1.2"/>`).join('');
-      s += X.T([185.4, 104, 184.6, 112, 185.4, 119], 2.8, 'end', K.ink) + `<circle cx="185.4" cy="120.5" r="${f(g ? 2.4 : 1.9)}" fill="${K.ink}"/>`;
+      s += X.art([[181, 83, 2.4], [185, 76, 1.6], [203.5, 88, 1.9]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${K.ink}" stroke-width="1.2"/>`).join(''));
+      // one ink tear running DOWN from the left eye's outer-lower corner, clear of the face midline (x 193)
+      s += PN.taper([180.5, 104, 179.9, 108.5, 180.4, 112.5], g ? 2.4 : 2, 'end', K.ink) + `<circle cx="180.4" cy="113.8" r="${g ? 2 : 1.6}" fill="${K.ink}"/>`;
     }
     // open lid = faded portrait, knocked DOWN (ink500 + 60% dots, no paper) so the face wins the eye
     const portrait = X.art(`<g transform="translate(232 100) scale(0.6) translate(-235 -101)"><path d="M 238,80 C 231,80 228,86 229,92 L 226,96 L 229,98 C 228,102 231,104 233,104 L 231,110 C 226,112 224,118 224,126 L 246,126 C 246,118 243,112 239,110 C 243,106 244,100 243,95 C 245,90 245,82 238,80 Z" fill="${K.ink}" stroke="${K.ink300}" stroke-width="1.2"/></g>`);
@@ -454,14 +471,18 @@ window.PN = window.PN || {};
     // bell mouth (foreshortened 0.7 along the axis → reads as facing us), black throat
     s += `<path d="${ell(bx, 0, 27, 39)}" fill="${K.ch4.deep}" ${X.O(2.8)}/><path d="${ell(bx - 5, -6, 20, 26)}" fill="none" stroke="${K.paper300}" stroke-width="${f(1.4 * X.li)}" stroke-dasharray="${X.game ? '20 90' : '14 60'}" opacity="0.9"/>`;
     s += `<path d="${ell(bx + 1.5, 0, 22, 33)}" fill="${K.ink}"/>`;
-    s += `<g transform="translate(${bx + 2},0) scale(0.84,1) rotate(${-ang})">${H.dial(X, 0, 0, hot ? 18 : 17, -52, hot)}</g>`;
+    // rev 3 (K3 F-B2): the dial lies IN the bell-mouth plane, so it takes the bell's own foreshortening 27/39 = 0.69
+    // (was 0.84, which read as a disc pasted on): r17 → 11.7 × 17, inside the 22 × 33 throat.
+    s += `<g transform="translate(${bx + 2},0) scale(0.69,1) rotate(${-ang})">${H.dial(X, 0, 0, hot ? 18 : 17, -52, hot)}</g>`;
     if (ph >= 2) s += B._.pcrack(X, [[bx - 26, -18], [bx - 20, -8], [bx - 27, 4], [bx - 21, 16], [bx - 25, 28]]);
     s += `</g>`;
     return { s, eye: rotP([M[0] + bx + 2, M[1]], M, ang) };
   };
-  // proclamation scroll hanging from the far fist: two rolled rods with ink end-knobs, paper sheet (40% dots, §3.5)
+  // proclamation scroll hanging from the far fist: two rolled rods with end-knobs, paper sheet (40% dots, §3.5)
+  // K3-1f R4: plain knobs (no inner ink ellipse — two dark-centred knobs either side of the rod read as "◉≡◉", a second
+  // face); game knobs pressed to ink.500, art keeps brass ch4.deep.
   H.scroll = function (X, x, y, rot, g) {
-    const knob = (xx, yy, r) => `<path d="${ell(xx, yy, r * 0.72, r)}" fill="${K.ch4.deep}" ${X.O(1.3)}/><path d="${ell(xx, yy, r * 0.3, r * 0.42)}" fill="${K.ink}"/>`;
+    const knob = (xx, yy, r) => `<path d="${ell(xx, yy, r * 0.72, r)}" fill="${g ? K.ink500 : K.ch4.deep}" ${X.O(1.3)}/>`;
     const sheet = 'M -16,3 C -8,1 8,1 16,3 L 17,60 C 8,63 -6,64 -17,60 Z';
     let s = `<g transform="translate(${f(x)},${f(y)}) rotate(${rot})">`;
     s += X.S(sheet, K.paper300, 1.7, `<path d="M 8,0 L 20,0 L 20,70 L 12,70 C 10,40 9,20 8,0 Z" fill="${X.pat('d40')}"/><path d="M -20,0 L 8,0 C 9,20 10,40 12,70 L -20,70 Z" fill="${X.pat('d20')}"/>` +
@@ -527,7 +548,9 @@ window.PN = window.PN || {};
     const TAB = 'M 172,150 L 218,150 L 216,250 L 206,244 L 196,258 L 186,244 L 174,250 Z';
     fig += X.S(TAB, K.ink, 2, `<path d="M 170,146 L 195,146 L 195,262 L 170,262 Z" fill="${K.ink700}"/>` + X.L('M 195,150 L 195,256', 1.4, K.ink500) +
       `<path d="${gearPath(184, 180, 9, 7, 8, 0, 3.4)}" fill="${K.ink300}" fill-rule="evenodd"/>` + `<path d="M 200,168 L 212,168 L 206,178 L 212,190 L 200,190 L 206,178 Z" fill="none" stroke="${K.ink300}" stroke-width="${f(1.8 * X.li)}" stroke-linejoin="round"/>`);
-    if (ph >= 3) fig += `<path d="M 180,206 L 212,204 L 214,240 L 196,248 L 178,238 Z" fill="${K.ink}" stroke="${K.paper300}" stroke-width="${f(1.6 * X.li)}" stroke-dasharray="4 3"/><circle cx="196" cy="224" r="17" fill="${K.paper50}" opacity="0.24"/>` + H.saw(X, 196, 224, 14, spin * 2) + `<circle cx="196" cy="224" r="5" fill="${K.paper50}" stroke="${K.ink}" stroke-width="1.6"/>`;
+    // P3 core: erased plate (dotted paper.300 cut) + the exposed saw + a brass hub. K3-1f F2: no paper.50 glow disc and no
+    // paper.50 hub — a white dot in a ring on the body was a second face (the face is the dial in the bell).
+    if (ph >= 3) fig += `<path d="M 180,206 L 212,204 L 214,240 L 196,248 L 178,238 Z" fill="${K.ink}" stroke="${K.paper300}" stroke-width="${f(1.6 * X.li)}" stroke-dasharray="4 3"/>` + H.saw(X, 196, 224, 14, spin * 2) + `<circle cx="196" cy="224" r="5" fill="${K.ch4.deep}" stroke="${K.ink}" stroke-width="${f(1.6 * X.li)}"/>`;
     fig += X.P('M 156,198 C 178,206 212,206 234,198 L 234,210 C 212,218 178,218 156,210 Z', K.ink700, 1.8) + `<rect x="189" y="199" width="12" height="13" rx="2" fill="${K.ch4.deep}" ${X.O(1.4)}/>`;
     // ---------------- far arm: comes forward from under the cape, fist grips the proclamation scroll ----------------
     const fa = W ? { s: [156, 162], e: [120, 178], w: [100, 202] } : { s: [156, 162], e: [124, 186], w: [114, 214] };
@@ -538,13 +561,13 @@ window.PN = window.PN || {};
       X.T([fist[0] - 7, fist[1] - 5, fist[0] - 1, fist[1] - 9, fist[0] + 6, fist[1] - 6], 1.2, 'mid', K.ink300);
     // shoulder mantle (ragged capelet) — lit wedge upper-left
     fig += X.S('M 150,160 C 150,142 170,134 194,134 C 216,134 236,142 238,160 L 228,170 L 222,160 L 212,172 L 204,162 L 194,174 L 184,162 L 174,172 L 166,160 L 158,170 Z', K.ink, 2.2, `<path d="M 148,160 C 150,140 168,134 186,134 L 176,150 L 182,154 L 164,168 Z" fill="${K.ink500}"/>`);
-    // ---------------- hood: lit crescent + chaperon roll + two paper glints deep inside (it is a being, not a sack) ----------------
+    // ---------------- hood: lit crescent + chaperon roll + an empty ink opening ----------------
+    // rev 3 (K3 F-B2, user decision Q4): no paper glints inside the hood, normal or enraged. Those who serve the void have
+    // their faces erased (lore §3.1), and the face = weak point is ONE place: the dial in the bell. anchors().hoodEyes is
+    // kept for callers but unused.
     fig += X.S(H.HOOD, K.ink700, 2.6, `<path d="M 170,60 C 188,70 184,118 192,156 L 166,156 L 166,60 Z" fill="${K.ink500}"/>` + dry(X, [184, 62, 176, 92, 176, 128], 3.6, 3, K.ink300, 2) +
       `<path d="M 204,74 C 226,86 234,116 222,150 L 240,150 L 240,70 Z" fill="${K.ink}"/>`);
     fig += `<path d="M 205,96 C 216,92 226,100 226,114 C 226,126 218,134 208,132 C 202,124 200,106 205,96 Z" fill="${K.ink}"/>`;
-    const gr = g ? 1.35 : 1;
-    fig += En ? `<circle cx="210" cy="106" r="${f(3 * gr)}" fill="${K.paper50}"/><circle cx="220" cy="107" r="${f(2.4 * gr)}" fill="${K.paper50}"/>`
-      : `<path d="${ell(209.5, 106, 2.6 * gr, 1.7 * gr)}" fill="${K.paper50}" transform="rotate(-14 209.5 106)"/><path d="${ell(219.5, 107.5, 2.1 * gr, 1.4 * gr)}" fill="${K.paper50}" transform="rotate(-14 219.5 107.5)"/>`;
     fig += `<path d="M 204,90 C 222,84 236,100 234,118 C 232,134 220,142 206,138 C 196,128 194,102 204,90 Z" fill="none" stroke="${K.ink}" stroke-width="${f(10 * X.lw)}" stroke-linejoin="round"/>` +
       `<path d="M 204,90 C 222,84 236,100 234,118 C 232,134 220,142 206,138 C 196,128 194,102 204,90 Z" fill="none" stroke="${K.ink700}" stroke-width="${f(6 * X.li)}"/>` +
       X.T([200, 104, 204, 90, 220, 88], 2.2, 'mid', K.ink300) + X.art(X.L('M 214,88 l 3,6 M 226,96 l -2,6 M 232,110 l -5,2 M 230,126 l -5,-2', 1, K.ink500));
@@ -579,6 +602,7 @@ window.PN = window.PN || {};
     const solid = circ(WH[0], WH[1], 64) + ' ' + circ(HALO[0], HALO[1], 82);
     return { back, fig, front, solid };
   };
+  // hoodEyes: kept so existing callers keep working, but UNUSED since rev 3 (F-B2): the hood holds no glints any more.
   B.anchorsOf.herald = (o) => { const ang = o.windup ? -38 : 26; return { face: rotP([MOUTH[0] + H.BELL + 2, MOUTH[1]], MOUTH, ang), muzzle: HALO.slice(), halo: { c: HALO.slice(), r: 76, saws: HALO_SAWS.slice() }, wheel: { c: WH.slice(), r: 70 }, scroll: o.windup ? [88, 244] : [108, 258], hoodEyes: [214, 106] }; };
 })(window.PN);
 // ---------- 공백 천칭 (balance · Ch5 St10 · null · FINAL) — part 1/2: geometry + helpers ----------
@@ -683,8 +707,9 @@ window.PN = window.PN || {};
       dry(X, [142, 214, 128, 250, 116, 290, 100, 336], 5, 3, K.ink300, 3) + X.T([254, 214, 264, 270, 284, 334], 2, 'mid', K.ink700));
     back += drip(X, 128, 352, 10, 4.4) + drip(X, 246, 356, 11, 4.4);
     if (ph >= 3) back += drip(X, 100, 344, 14, 5) + drip(X, 152, 357, 18, 5.4) + drip(X, 266, 352, 16, 5);
+    // belt boss: a plain ink.500 cap with an ink rim (K3-1f R3: an ink disc ringed in ink.300 was ring + disc, a fake eye)
     back += X.S('M 128,238 C 160,248 228,248 262,238 L 264,254 C 228,264 160,264 126,254 Z', K.ink700, 2, X.T([132, 242, 160, 250, 196, 250], 1.4, 'mid', K.ink300)) + X.P('M 214,252 L 228,252 L 234,296 L 224,290 L 218,300 Z', K.ink700, 1.8) +
-      `<path d="${circ(196, 250, 7)}" fill="${K.ink}" stroke="${K.ink300}" stroke-width="${f(1.4 * X.li)}"/>`;
+      `<path d="${circ(196, 250, 7)}" fill="${K.ink500}" stroke="${K.ink}" stroke-width="${f(1.4 * X.li)}"/>`;
     // far arm (viewer-left): idle = open palm pressing DOWN (판결); windup = palm raised toward the player
     const farS = W ? 'M 132,196 C 116,208 100,220 84,228 L 100,254 C 114,244 132,232 150,214 Z' : 'M 132,196 C 114,220 96,242 78,262 L 106,284 C 116,258 132,234 150,212 Z';
     const farLit = W ? 'M 132,196 C 116,208 100,220 84,228 L 89,237 C 104,228 120,216 138,204 Z' : 'M 132,196 C 114,220 96,242 78,262 L 86,270 C 104,248 122,226 140,204 Z';
@@ -694,7 +719,9 @@ window.PN = window.PN || {};
     fig += X.SS(Q.HOOD, K.ink, 2.6, `<path d="M 144,112 C 160,114 164,136 170,170 L 144,170 Z" fill="${K.ink500}"/>` + dry(X, [156, 126, 152, 138, 152, 156], 3, 3, K.ink300, 2) + X.T([236, 102, 246, 124, 238, 162], 2, 'mid', K.ink500));
     fig += X.SS(Q.MANTLE, K.ink700, 2.4, `<path d="M 100,200 C 104,168 140,150 180,146 C 150,160 132,180 126,212 Z" fill="${K.ink500}"/>` +
       dry(X, [110, 190, 126, 162, 160, 148, 196, 144], 4, 4, K.ink300, 7) + X.T([236, 150, 270, 164, 282, 192], 2, 'mid', K.ink500));
-    fig += `<path d="${circ(200, 186, 11)}" fill="${K.ink}" ${X.O(1.8)}/><path d="${circ(200, 186, 7.6)}" fill="none" stroke="${K.ink300}" stroke-width="${f(1.6 * X.li)}"/><path d="${circ(202.4, 186, 6.2)}" fill="${K.ink}"/>`;
+    // rev 3 (K3 F-B3): chest clasp = a flat square plate (ink.700, ink.300 lit rim on the top-left edges). The old brooch,
+    // a ring around an off-centre disc, was the eclipse eye's own figure: a fake eye.
+    fig += `<path d="M 190,179.5 L 210,179.5 L 209,192.5 L 191,192.5 Z" fill="${K.ink700}" ${X.O(1.2)}/><path d="M 192.4,190.4 L 192.6,181.8 L 207.6,181.8" fill="none" stroke="${K.ink300}" stroke-width="${f(1.4 * X.li)}" stroke-linecap="round" stroke-linejoin="round"/>`;
     if (ph >= 3) fig += drip(X, 150, 216, 18, 4.6) + drip(X, 248, 216, 22, 5) + drip(X, 196, 208, 14, 4);
     // ---------------- near arm (viewer-right): bell sleeve + forearm rising to grip the post ----------------
     fig += X.SS('M 252,206 C 266,200 282,208 286,222 C 292,248 296,274 300,300 L 282,306 L 274,294 L 264,304 C 262,278 260,250 254,232 Z', K.ink, 2.4,
@@ -708,7 +735,8 @@ window.PN = window.PN || {};
     fig += `<g transform="translate(${PIV[0]},${PIV[1]}) rotate(${tilt})">` + X.S(bd, K.ink, 2.4, `<path d="M ${-HALF},-9 L ${HALF},-9 L ${HALF},-3 L ${-HALF},-3.6 Z" fill="${K.ink500}"/>`) +
       `<path d="M ${-HALF - 4},0 a 5,5 0 1 1 0,0.1 Z M ${HALF + 4},0 a 5,5 0 1 1 0,0.1 Z" fill="none" stroke="${K.ink}" stroke-width="${f(3.6 * X.li)}"/>` +
       X.P('M -3,-8 L 0,-30 L 3,-8 Z', K.ink300, 1.6) + (ph >= 2 ? pcrack(X, [[-98, -1], [-86, 3], [-74, -3], [-60, 2.5], [-46, -2]]) : '') + `</g>`;
-    fig += `<path d="${circ(PIV[0], PIV[1], 9)}" fill="${K.ink}" ${X.O(1.8)}/><path d="${circ(PIV[0], PIV[1], 5.4)}" fill="none" stroke="${K.ink300}" stroke-width="${f(1.8 * X.li)}"/>`;
+    // beam pivot: a plain ink.500 cap (rev 3 F-B3: no inner ring — ring + disc is the fake-eye figure)
+    fig += `<path d="${circ(PIV[0], PIV[1], 9)}" fill="${K.ink500}" ${X.O(1.8)}/>`;
     // ink-full pan (focus exception: eclipse eye floating on the ink)
     const R = panR;
     fig += [[-34, -1], [34, -1], [4, -9]].map(([dx, dy], i) => chain(X, endR[0], endR[1] + 5, R[0] + dx, R[1] + dy, g ? 6 : 12, 0, g ? 0.8 : 0.55, i === 2 ? K.ink500 : K.ink300)).join('');
@@ -716,12 +744,19 @@ window.PN = window.PN || {};
     fig += X.S(bowl, K.ink, 2.4, `<path d="M ${f(R[0] - 40)},${f(R[1])} L ${f(R[0] - 10)},${f(R[1])} C ${f(R[0] - 14)},${f(R[1] + 12)} ${f(R[0] - 18)},${f(R[1] + 20)} ${f(R[0] - 26)},${f(R[1] + 24)} Z" fill="${K.ink500}"/>`);
     fig += `<path d="${ell(R[0], R[1], 37, 12)}" fill="${K.ink}" ${X.O(2.2)}/><path d="${ell(R[0] - 1, R[1] + 0.5, 30, 8.4)}" fill="none" stroke="${K.ink500}" stroke-width="${f(1.2 * X.li)}"/>` + X.art(`<path d="${ell(R[0] - 3, R[1] + 1, 20, 4.4)}" fill="none" stroke="${K.ink500}" stroke-width="0.9"/>`);
     fig += drip(X, R[0] - 30, R[1] + 8, 18, 4.6) + drip(X, R[0] + 6, R[1] + 22, 26, 5) + drip(X, R[0] + 28, R[1] + 12, 14, 4);
+    // rev 3 (K3 F-B3): the eclipse eye STANDS in the ink (a full circle, no longer half laid down by scale(1,0.8)) at
+    // panR + (−6, +3), core offset 0.22r, and the pan's front rim is drawn again OVER it (ink, game 9 / art 7) so the
+    // eye's lower part sinks behind the rim: hidden ≈ 31% of its height in game, ≈ 25% in art.
+    const eye = [R[0] - 6, R[1] + 3];
+    fig += `<g transform="translate(${f(eye[0])},${f(eye[1])})">${eyeEclipse(X, 0, 0, En ? 12 : g ? 11.5 : 10.5, En, 0.22)}</g>`;
+    fig += `<path d="M ${f(R[0] - 37)},${f(R[1])} A 37 12 0 0 0 ${f(R[0] + 37)},${f(R[1])}" fill="none" stroke="${K.ink}" stroke-width="${g ? 9 : 7}" stroke-linecap="round"/>`;
     if (ph >= 2) fig += pcrack(X, [[R[0] + 34, R[1] - 2], [R[0] + 24, R[1] + 6], [R[0] + 29, R[1] + 12], [R[0] + 14, R[1] + 17], [R[0] + 18, R[1] + 22], [R[0] - 2, R[1] + 21]]);
-    const eye = [R[0] - 6, R[1] - 1];
-    fig += `<g transform="translate(${f(eye[0])},${f(eye[1])}) scale(1,0.8)">${eyeEclipse(X, 0, 0, En ? 12 : g ? 11.5 : 10.5, En)}</g>`;
     // ---------------- torn-edge rims (masked to the body by the composer) ----------------
     rims += Q.rim(X, headD, 5.6) + Q.rim(X, panD, 4) + Q.rim(X, stripD, 4.2) + Q.rim(X, sleeveD, 4.2) + Q.rim(X, swipeD, 4) + (ph >= 3 ? Q.rim(X, chestD, 4.4) + Q.rim(X, biteD, 4) : '');
-    if (ph >= 3) rims += `<circle cx="203" cy="224" r="13" fill="${K.ink}" stroke="${K.ink300}" stroke-width="${f(1.4 * X.li)}"/><circle cx="199" cy="220" r="3.4" fill="${K.paper50}"/>` + X.L('M 188,224 A 15 15 0 0 0 218,224', 1.4, K.ink300);
+    // P3 core floating in the erased chest = an INK BEAD (K3-1f F1). The old paper.50 glint + ink.300 ring + lower arc read
+    // as an eyeball, a second face mid-body (bible §10.2-2 "one place"). Lit like every ink body: one ink.500 crescent on
+    // the upper-left (max 4.2 thick) and an ink.300 dry rim on the upper-left quarter only. No ring + disc, no white dot.
+    if (ph >= 3) rims += `<circle cx="203" cy="224" r="13" fill="${K.ink}"/><path d="M 213.57,216.43 A 13 13 0 1 0 195.43,234.57 A 13 13 0 0 1 213.57,216.43 Z" fill="${K.ink500}"/>` + X.L('M 191.4,219.6 A 13 13 0 0 1 199.4,211.5', 1.2, K.ink300);
     // ---------------- OVER (not erased): void-pan chains + rim + bowl outline, floating blindfold ends ----------------
     over += Q.ribbon(X, [156, 124, 140, 114, 124, 126, 106, 118], 8, 7, 2, 3.4, 0.6) + Q.ribbon(X, [156, 131, 142, 139, 128, 136, 112, 142], 8, 6.6, 1.8, 3.4, 2.4);
     over += `<path d="${ell(157, 128, 6.6, 8)}" fill="${K.paper300}" ${X.O(1.8)}/>` + X.T([153, 122, 157, 120, 161, 123], 1.4, 'mid', K.ink500);
@@ -740,7 +775,7 @@ window.PN = window.PN || {};
   };
   B.anchorsOf.balance = (o) => {
     const tilt = o.windup ? 13 : 0, eL = rotP([PIV[0] - HALF, PIV[1]], PIV, tilt), eR = rotP([PIV[0] + HALF, PIV[1]], PIV, tilt);
-    return { face: [eR[0] - 6, eR[1] + DROP - 1], muzzle: [[eL[0], eL[1] + DROP], [eR[0], eR[1] + DROP]], pans: { void: [eL[0], eL[1] + DROP], ink: [eR[0], eR[1] + DROP] }, beamPivot: PIV.slice(), beamEnds: [eL, eR], voidHead: [201, 116], head: [201, 112] };
+    return { face: [eR[0] - 6, eR[1] + DROP + 3], muzzle: [[eL[0], eL[1] + DROP], [eR[0], eR[1] + DROP]], pans: { void: [eL[0], eL[1] + DROP], ink: [eR[0], eR[1] + DROP] }, beamPivot: PIV.slice(), beamEnds: [eL, eR], voidHead: [201, 116], head: [201, 112] };
   };
 })(window.PN);
 // ---------- signature-attack FX (bible §12.2 텔레그래프 3단계 · §12.4 적 탄) ----------
