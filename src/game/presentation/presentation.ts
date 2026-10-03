@@ -1,6 +1,6 @@
 // Presentation layer (TEC-02): turns game events into particles, damage numbers, impact rings, screen shake,
 // and sound cues for the app's mixer (AUD-01). It owns only cosmetic state; the simulation never reads it back.
-import type { Corpse, DamageNumber, EffectOwner, HitStamp, ImpactRing, Particle, Recoil, SkillId } from '../engine/worldTypes.ts';
+import type { Corpse, DamageNumber, EffectOwner, HitStamp, ImpactRing, Particle, Recoil, SkillId, SkillMark } from '../engine/worldTypes.ts';
 import type { GameOptions } from '../../platform/save.ts';
 import { CUES, HIT_CUES, KILL_CUES, type CueId, type SoundOutput } from '../audioPolicy.ts';
 import type { GameEvent } from '../engine/events.ts';
@@ -27,6 +27,9 @@ const DAMAGE_NUMBER_CAP = 160;
 /** Hits on one enemy within this long add into its number instead of stacking new ones (FX-07). */
 export const NUMBER_MERGE_SECONDS = 0.3;
 const IMPACT_RING_CAP = 32;
+/** FX-06: how long each skill mark shows (the kit's thread ring and collapse, the slash ring, a shard), and how many. */
+export const SKILL_MARK_SECONDS = Object.freeze({ ring: 0.3, slash: 0.2, shard: 0.12 });
+const SKILL_MARK_CAP = 48;
 /** Ink stains on the floor (style bible P6): 48 at full effects, 24 at reduced; the renderer drops them at minimal detail. */
 const CORPSE_CAP_FULL = 48;
 const CORPSE_CAP_REDUCED = 24;
@@ -83,6 +86,7 @@ export class Presentation {
   readonly particles: Particle[] = [];
   readonly damageNumbers: DamageNumber[] = [];
   readonly impactRings: ImpactRing[] = [];
+  readonly skillMarks: SkillMark[] = [];
   readonly corpses: Corpse[] = [];
   readonly hitStamps: HitStamp[] = [];
   readonly recoils: Recoil[] = [];
@@ -163,6 +167,7 @@ export class Presentation {
     this.corpses.length = 0;
     this.hitStamps.length = 0;
     this.impactRings.length = 0;
+    this.skillMarks.length = 0;
     this.playerHurt = 0;
     this.playerBurst = 0;
     this.playerCast = 0;
@@ -363,11 +368,13 @@ export class Presentation {
     this.playerBurst = Math.max(0, this.playerBurst - dt);
     this.playerCast = Math.max(0, this.playerCast - dt);
     for (const ring of this.impactRings) ring.life -= dt;
+    for (const mark of this.skillMarks) mark.life -= dt;
     for (const number of this.damageNumbers) {
       number.life -= dt;
       number.y -= dt * 38;
     }
     compactWhere(this.impactRings, (ring) => ring.life > 0);
+    compactWhere(this.skillMarks, (mark) => mark.life > 0);
     recycleWhere(this.damageNumbers, (number) => number.life > 0, this.damageNumberPool);
   }
 
@@ -454,6 +461,13 @@ export class Presentation {
   addImpactRing(x: number, y: number, radius: number, tier: 'heavy' | 'critical') {
     if (this.impactRings.length >= IMPACT_RING_CAP) this.impactRings.shift();
     this.impactRings.push({ x, y, radius, life: 0.24, maxLife: 0.24, tier, owner: 'player' });
+  }
+
+  /** FX-06: a skill ring or stroke from the engine; it draws no ids or cosmetic random numbers. */
+  addSkillMark(kind: SkillMark['kind'], skillId: SkillId, x: number, y: number, radius: number, heavy: boolean, x2: number, y2: number) {
+    if (this.skillMarks.length >= SKILL_MARK_CAP) this.skillMarks.shift();
+    const life = SKILL_MARK_SECONDS[kind];
+    this.skillMarks.push({ kind, skillId, x, y, radius, heavy, x2, y2, life, maxLife: life });
   }
 
   addShake(amount: number) {

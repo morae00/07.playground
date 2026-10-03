@@ -98,6 +98,12 @@ export type Entity = {
   elite?: 'haste' | 'split' | 'shield' | 'drain';
   eliteShield?: number;
   eliteHitAt?: number;
+  /**
+   * FX-06: the stage time the chalk cut's chill and root on this enemy end. Drawing only: terrain slows and roots
+   * use the same slowTimer and root, so the renderer tells the cut's marks apart by these.
+   */
+  frostUntil?: number;
+  frostRootUntil?: number;
   /** SYS-01: consecutive aimed shots that missed this enemy, and when the last one missed. */
   aimMisses?: number;
   aimMissedAt?: number;
@@ -307,6 +313,8 @@ export type BeamEffect = {
   life: number;
   maxLife: number;
   owner: EffectOwner;
+  /** FX-06: the skill that cast a player's beam, for its art; hostile beams have none. */
+  skillId?: SkillId;
 };
 
 /** A hostile area the player can read before it activates (lane = rectangle from start to end). */
@@ -324,6 +332,26 @@ export type LaneTelegraph = {
 export type ChainEffect = {
   id: number;
   points: Array<{ x: number; y: number }>;
+  life: number;
+  maxLife: number;
+  /** FX-06: the white chain's bolt, or the thread from the hero to a mirror clone. */
+  skillId: SkillId;
+};
+
+/**
+ * FX-06: a skill ring or stroke whose size no game event carries: the white chain's last burst, the black rail's
+ * fissures, the bone mortar's aftershock, the eclipse step's slash, a needle shard. Drawing only.
+ */
+export type SkillMark = {
+  kind: 'ring' | 'slash' | 'shard';
+  skillId: SkillId;
+  x: number;
+  y: number;
+  radius: number;
+  heavy: boolean;
+  /** Where a shard flies to. */
+  x2: number;
+  y2: number;
   life: number;
   maxLife: number;
 };

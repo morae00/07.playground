@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { CueId, SoundOutput } from '../audioPolicy.ts';
 import { createDefaultOptions } from '../../platform/save.ts';
-import { CORPSE_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HIT_STAMP_SECONDS, HURT_VIGNETTE_SECONDS, NUMBER_MERGE_SECONDS, PICKUP_COMBO_MAX, PICKUP_COMBO_SECONDS, PICKUP_COMBO_STEP, Presentation, RECOIL_SECONDS, RECOIL_SIZE } from './presentation.ts';
+import { CORPSE_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HIT_STAMP_SECONDS, HURT_VIGNETTE_SECONDS, NUMBER_MERGE_SECONDS, PICKUP_COMBO_MAX, PICKUP_COMBO_SECONDS, PICKUP_COMBO_STEP, Presentation, RECOIL_SECONDS, RECOIL_SIZE, SKILL_MARK_SECONDS } from './presentation.ts';
 
 function setup(overrides: Partial<ReturnType<typeof createDefaultOptions>> = {}, chapter = 1) {
   let id = 0;
@@ -333,4 +333,22 @@ test('AUD-04: kills sound in the chapter material, and each boss pattern has its
   presentation.unlockSound();
   for (const pattern of ['dash', 'saw', 'null'] as const) presentation.handle({ type: 'boss/attack', x: 500, y: 0, pattern });
   assert.deepEqual(played.map((entry) => entry.cue), ['boss.dash', 'boss.saw', 'boss.null']);
+});
+
+test('FX-06: skill marks age out by kind, stop at 48, and draw no ids or cosmetic random numbers', () => {
+  const { presentation, ids } = setup();
+  const before = presentation.random();
+  presentation.reseed(1234);
+  presentation.addSkillMark('ring', 'chainSpark', 10, 20, 78, false, 10, 20);
+  presentation.addSkillMark('shard', 'needleStorm', 0, 0, 0, false, 40, 0);
+  assert.deepEqual(presentation.skillMarks.map((mark) => [mark.kind, mark.maxLife]), [['ring', SKILL_MARK_SECONDS.ring], ['shard', SKILL_MARK_SECONDS.shard]]);
+  assert.equal(ids(), 0);
+  assert.equal(presentation.random(), before, 'the cosmetic stream did not move');
+  presentation.step(SKILL_MARK_SECONDS.shard + 0.01);
+  assert.deepEqual(presentation.skillMarks.map((mark) => mark.kind), ['ring']);
+  for (let index = 0; index < 60; index += 1) presentation.addSkillMark('ring', 'railSpear', index, 0, 58, false, index, 0);
+  assert.equal(presentation.skillMarks.length, 48);
+  assert.equal(presentation.skillMarks[47].x, 59, 'the newest marks stay');
+  presentation.clearRound();
+  assert.equal(presentation.skillMarks.length, 0);
 });

@@ -139,6 +139,7 @@ import type {
   Pickup,
   Projectile,
   SkillId,
+  SkillMark,
   SkillState,
 } from './engine/worldTypes';
 
@@ -2388,13 +2389,14 @@ export class GameEngine {
       if (skill.awakened && i === jumps - 1) {
         current.stun = Math.max(current.stun, SKILL_NUMBERS.chainSpark.stunSeconds);
         this.areaDamage(current.x, current.y, 78, damage * 0.7, 'chainSpark', 90);
+        this.skillMark('ring', 'chainSpark', current.x, current.y, 78);
       }
       const struck: Entity = current;
       current = this.findNearestEnemyFrom(current.x, current.y, 330, hit);
       // SYS-08 빙결 연쇄: every jump chills, and the chain's last target is rooted.
       if (this.fusions.frostChain) this.chill(struck, this.skills.frostLine?.level ?? 1, !current || i === jumps - 1);
     }
-    this.chains.push({ id: this.nextId(), points, life: 0.18, maxLife: 0.18 });
+    this.chains.push({ id: this.nextId(), points, life: 0.18, maxLife: 0.18, skillId: 'chainSpark' });
     this.emit({ type: 'skill/cast', skillId: 'chainSpark', x: this.player.x, y: this.player.y });
   }
 
@@ -2408,7 +2410,7 @@ export class GameEngine {
     const y2 = this.player.y + Math.sin(angle) * 980;
     const width = scaleAt(SKILL_NUMBERS.frostLine.width, skill.level, skill.awakened);
     const damage = this.player.stats.attack * (0.95 + skill.level * 0.2);
-    this.beams.push({ id: this.nextId(), x1: this.player.x, y1: this.player.y, x2, y2, width, life: 0.28, maxLife: 0.28, owner: 'player' });
+    this.beams.push({ id: this.nextId(), x1: this.player.x, y1: this.player.y, x2, y2, width, life: 0.28, maxLife: 0.28, owner: 'player', skillId: 'frostLine' });
     for (const enemy of this.querySegmentEnemies(this.player.x, this.player.y, x2, y2, width)) {
       if (enemy.hp <= 0) continue;
       if (distancePointToSegment(enemy.x, enemy.y, this.player.x, this.player.y, x2, y2) < enemy.radius + width) {
@@ -2424,7 +2426,11 @@ export class GameEngine {
     const slow = applyTimedSlow({ multiplier: enemy.slowMultiplier ?? 1, remaining: enemy.slowTimer ?? 0 }, 1 - frostLineSlow(level), 1.25);
     enemy.slowMultiplier = slow.multiplier;
     enemy.slowTimer = slow.remaining;
-    if (root) enemy.root = Math.max(enemy.root, SKILL_NUMBERS.frostLine.rootSeconds);
+    enemy.frostUntil = this.elapsed + 1.25;
+    if (root) {
+      enemy.root = Math.max(enemy.root, SKILL_NUMBERS.frostLine.rootSeconds);
+      enemy.frostRootUntil = this.elapsed + SKILL_NUMBERS.frostLine.rootSeconds;
+    }
   }
 
   protected updateRailSpear(skill: SkillState) {
@@ -2479,6 +2485,7 @@ export class GameEngine {
       life: 0.22,
       maxLife: 0.22,
       owner: 'player',
+      skillId,
     });
     for (const enemy of this.querySegmentEnemies(x1, y1, x2, y2, width)) {
       if (enemy.hp <= 0) continue;
@@ -2486,6 +2493,7 @@ export class GameEngine {
         this.dealDamage(enemy, damage, skillId, knockback, false);
         if (explode) {
           this.areaDamage(enemy.x, enemy.y, 58, damage * SKILL_NUMBERS.railSpear.fissureDamage, skillId, 120);
+          this.skillMark('ring', skillId, enemy.x, enemy.y, 58);
         }
       }
     }
@@ -2536,7 +2544,7 @@ export class GameEngine {
       const sy = this.player.y + side.y * sign * offset;
       const shotAngle = angle;
       this.spawnProjectile('mirrorClone', sx, sy, Math.cos(shotAngle) * 820, Math.sin(shotAngle) * 820, 5.5, damage, 1.15, volley.pierce, 95, true);
-      this.chains.push({ id: this.nextId(), points: [{ x: this.player.x, y: this.player.y }, { x: sx, y: sy }], life: 0.16, maxLife: 0.16 });
+      this.chains.push({ id: this.nextId(), points: [{ x: this.player.x, y: this.player.y }, { x: sx, y: sy }], life: 0.16, maxLife: 0.16, skillId: 'mirrorClone' });
     }
     for (let i = 0; i < volley.aimedShots; i += 1) {
       const sign = i % 2 === 0 ? -1 : 1;
@@ -2628,10 +2636,12 @@ export class GameEngine {
         life: 0.2,
         maxLife: 0.2,
         owner: 'player',
+        skillId: 'eclipseStep',
       });
     }
     const damage = this.player.stats.attack * (1.25 + skill.level * 0.22);
     this.areaDamage(this.player.x, this.player.y, radius, damage, 'eclipseStep', 230, skill.awakened);
+    this.skillMark('slash', 'eclipseStep', this.player.x, this.player.y, radius);
     if (skill.awakened) {
       const afterimageRadius = Math.round(radius * 0.82);
       this.hazards.push({
@@ -4238,7 +4248,10 @@ export class GameEngine {
         projectile.pierce -= 1;
         if (projectile.skillId === 'needleStorm' && this.skills.needleStorm?.awakened) {
           const extra = this.findNearestEnemyFrom(enemy.x, enemy.y, SKILL_NUMBERS.needleStorm.shardRange, new Set([enemy.id]));
-          if (extra) this.dealDamage(extra, projectile.damage * SKILL_NUMBERS.needleStorm.shardDamage, projectile.skillId, 40, false, enemy);
+          if (extra) {
+            this.dealDamage(extra, projectile.damage * SKILL_NUMBERS.needleStorm.shardDamage, projectile.skillId, 40, false, enemy);
+            this.skillMark('shard', 'needleStorm', enemy.x, enemy.y, 0, false, extra.x, extra.y);
+          }
         }
         if (projectile.pierce < 0) {
           projectile.life = 0;
@@ -4379,6 +4392,7 @@ export class GameEngine {
         this.areaDamage(hazard.x, hazard.y, hazard.radius, hazard.skillDamage ?? 0, sourceSkillId, 210, false);
         if ((hazard.collapseDamage ?? 0) > 0) {
           this.areaDamage(hazard.x, hazard.y, hazard.radius * 0.55, hazard.collapseDamage!, sourceSkillId, 260, true);
+          this.skillMark('ring', sourceSkillId, hazard.x, hazard.y, hazard.radius * 0.55, true);
         }
         this.emit({ type: 'area/blast', x: hazard.x, y: hazard.y, radius: hazard.radius, source: sourceSkillId });
       }
@@ -5333,6 +5347,7 @@ export class GameEngine {
       beams: this.beams,
       laneTelegraphs: this.laneTelegraphs,
       chains: this.chains,
+      coinFrenzy: this.coinFeverRushTimer,
       objectiveMarks: this.stageObjective?.marks() ?? NO_MARKS,
       effects: this.presentation,
       cosmetics: this.cosmetics,
@@ -5344,6 +5359,14 @@ export class GameEngine {
     if (this.replaying) return;
     this.presentation.handle(event);
     for (const listener of this.eventListeners) listener(event);
+  }
+
+  /**
+   * FX-06: hands presentation a skill ring or stroke the events do not size. It bypasses the event stream, so replay
+   * fingerprints, which cover every event, stay the same.
+   */
+  protected skillMark(kind: SkillMark['kind'], skillId: SkillId, x: number, y: number, radius: number, heavy = false, x2 = x, y2 = y) {
+    if (!this.replaying) this.presentation.addSkillMark(kind, skillId, x, y, radius, heavy, x2, y2);
   }
 
   /** Subscribes to the game event stream (tools, replays, telemetry). Returns an unsubscribe function. */

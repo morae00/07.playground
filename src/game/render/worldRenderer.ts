@@ -17,6 +17,7 @@ import type {
   Projectile,
   Recoil,
   SkillId,
+  SkillMark,
   SkillState,
 } from '../engine/worldTypes.ts';
 import type { GameOptions } from '../../platform/save.ts';
@@ -171,6 +172,8 @@ export type RenderPlayer = Readonly<{
   silence: number;
   root: number;
   rootImmunity: number;
+  /** Seconds left of hit immunity (the paper ward's plates and the eclipse step's feet, FX-06). */
+  invuln: number;
 }>;
 
 /** Cosmetic state from the presentation layer; random() is its cosmetic stream (shake jitter). */
@@ -178,6 +181,8 @@ export type RenderEffects = {
   readonly particles: readonly Readonly<Particle>[];
   readonly damageNumbers: readonly Readonly<DamageNumber>[];
   readonly impactRings: readonly Readonly<ImpactRing>[];
+  /** Skill rings and strokes no event sizes (FX-06). */
+  readonly skillMarks: readonly Readonly<SkillMark>[];
   /** Fallen enemies (FX-03): falling bodies and their fading ink stains. */
   readonly corpses: readonly Readonly<Corpse>[];
   /** Hit stars at impacts (FX-03). */
@@ -229,6 +234,8 @@ export type RenderWorld = {
   readonly beams: readonly Readonly<BeamEffect>[];
   readonly laneTelegraphs: readonly Readonly<LaneTelegraph>[];
   readonly chains: readonly Readonly<ChainEffect>[];
+  /** FX-06: seconds left of the awakened coin fever's attack-speed rush. */
+  readonly coinFrenzy: number;
   /** CON-03: the zone to hold or the cache to recover, when the stage's bonus goal has one. */
   readonly objectiveMarks: readonly ObjectiveMark[];
   readonly effects: RenderEffects;
