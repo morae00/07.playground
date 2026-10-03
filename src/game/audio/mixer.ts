@@ -2,6 +2,8 @@
 // sound goes through its bus (music, sfx, ui, ambience) into the master gain and a limiter, under the voice
 // rules in audioPolicy. A cue plays a sample once a sound pack supplies one and its synth tone until then.
 import { CUES, LIMITER, LIMITER_MAKEUP, MAX_VOICES, PAN_SPREAD, SAMPLE_PEAK, SYNTH_PEAK, VoiceLedger, mixLevels, type CueId, type SoundBus, type SoundLevels, type SoundOutput, type VoiceSlot } from '../audioPolicy.ts';
+import type { MusicCommand } from './musicDirector.ts';
+import type { MusicPack, MusicPlayer } from './musicPlayer.ts';
 
 /** Sample files per cue (AUD-02 fills these), relative to the pack's base path; Opus in WebM or Ogg. */
 export type SoundPack = { id: string; base: string; cues: Partial<Record<CueId, readonly string[]>> };
@@ -11,6 +13,9 @@ export type MixerOptions = {
   fetchFile?: (url: string) => Promise<ArrayBuffer>;
   random?: () => number;
 };
+
+/** Builds the music player on the music bus once audio opens (AUD-03); the app passes it with a music pack. */
+export type MusicPlayerFactory = (options: { context: AudioContext; output: AudioNode; pack: MusicPack; fetchFile: (url: string) => Promise<ArrayBuffer> }) => MusicPlayer;
 
 type LiveVoice = { source: AudioScheduledSourceNode; gain: GainNode };
 
@@ -25,6 +30,8 @@ const SAMPLE_PITCH_JITTER = 0.04;
 /** AUD-04 ambience beds: their level on the ambience bus, and how long one fades into the next. */
 const AMBIENCE_LEVEL = 0.3;
 const AMBIENCE_FADE = 1.2;
+/** Music commands kept while audio is closed; the title's play is among the first. */
+const MUSIC_QUEUE = 64;
 
 async function fetchArrayBuffer(url: string) {
   const response = await fetch(url);
@@ -42,6 +49,9 @@ export class AudioMixer implements SoundOutput {
   private readonly ledger = new VoiceLedger(MAX_VOICES);
   private ambienceCue: CueId | null = null;
   private ambienceVoice: LiveVoice | null = null;
+  private musicSetup: { pack: MusicPack; create: MusicPlayerFactory } | null = null;
+  private musicPlayer: MusicPlayer | null = null;
+  private readonly musicQueue: MusicCommand[] = [];
   private levels: SoundLevels = mixLevels({ volume: 0, musicVolume: 0, sfxVolume: 0 });
   private contexts = 0;
   private unavailable = false;
@@ -168,6 +178,24 @@ export class AudioMixer implements SoundOutput {
     this.ambienceVoice = { source, gain };
   }
 
+  /** Gives the mixer a music pack and the player for it (AUD-03); the player starts once audio opens. */
+  setMusic(pack: MusicPack, create: MusicPlayerFactory) {
+    if (this.musicSetup) return;
+    this.musicSetup = { pack, create };
+    if (this.context) this.openMusic(this.context);
+  }
+
+  /** A music director command; kept until audio opens, and dropped while the mixer has no music pack. */
+  music(command: MusicCommand) {
+    if (this.musicPlayer) {
+      this.musicPlayer.run(command);
+      return;
+    }
+    if (!this.musicSetup || this.unavailable) return;
+    this.musicQueue.push(command);
+    if (this.musicQueue.length > MUSIC_QUEUE) this.musicQueue.shift();
+  }
+
   /** Queues a sound pack; its samples decode once audio is open. Resolves false if any file failed (synth covers it). */
   loadPack(pack: SoundPack) {
     return new Promise<boolean>((done) => {
@@ -187,6 +215,7 @@ export class AudioMixer implements SoundOutput {
       nodes: this.live.size,
       samples: this.samples.size,
       ambience: this.ambienceCue,
+      music: this.musicPlayer?.stats() ?? null,
       ...this.ledger.counts,
     };
   }
@@ -221,7 +250,15 @@ export class AudioMixer implements SoundOutput {
     this.context = context;
     this.master = master;
     this.decodeWaiting(context);
+    this.openMusic(context);
     return context;
+  }
+
+  private openMusic(context: AudioContext) {
+    const bus = this.buses.get('music');
+    if (!this.musicSetup || !bus || this.musicPlayer) return;
+    this.musicPlayer = this.musicSetup.create({ context, output: bus, pack: this.musicSetup.pack, fetchFile: this.fetchFile });
+    for (const command of this.musicQueue.splice(0)) this.musicPlayer.run(command);
   }
 
   private cut(voice: VoiceSlot, now: number) {

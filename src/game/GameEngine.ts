@@ -361,6 +361,8 @@ export type HudSnapshot = {
   coins: number;
   kills: number;
   enemyCount: number;
+  /** How many enemies the field holds at most now; the music's dense stem follows the crowd against it (AUD-03). */
+  enemyCap: number;
   elapsed: number;
   score: number;
   bossKills: number;
@@ -5257,6 +5259,7 @@ export class GameEngine {
       coins: this.player.coins,
       kills: this.player.kills,
       enemyCount: this.enemies.length,
+      enemyCap: infiniteDifficulty?.enemyCap ?? this.enemyCap(),
       elapsed: this.elapsed,
       score: this.runMode === 'infinite' ? infiniteScoreWithSurvival(this.infiniteEventScore, this.elapsed) : 0,
       bossKills: this.infiniteBossKills,

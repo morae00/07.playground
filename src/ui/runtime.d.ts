@@ -9,3 +9,5 @@ declare const __DEVELOPER_UI_AVAILABLE__: boolean;
 declare const __DEVELOPER_UI_DEFAULT_ENABLED__: boolean;
 /** False in builds: content modules skip their load-time invariant checks (src/content/checks.ts). */
 declare const __CONTENT_CHECKS__: boolean;
+/** True when the build ships a music pack (public/assets/packs/music/pack.json) and with it the music code (AUD-03). */
+declare const __MUSIC_PACK__: boolean;

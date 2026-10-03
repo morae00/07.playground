@@ -48,6 +48,7 @@ import { CHAPTER_PACKS, COMMON_PACK } from './game/render/assets/slots';
 import { INFINITE_BASELINE } from './game/infiniteMode';
 import { useGamepadNavigation } from './ui/useGamepadNavigation';
 import { AudioMixer, type SoundPack } from './game/audio/mixer';
+import type { MusicBridge } from './game/audio/musicBridge';
 import { installUiSounds } from './ui/uiSounds';
 import {
   CHAPTERS,
@@ -85,6 +86,12 @@ const appMixer = new AudioMixer();
 void fetch('assets/packs/sfx-common/pack.json')
   .then((response) => (response.ok ? response.json() : null))
   .then((pack: SoundPack | null) => pack && appMixer.loadPack(pack), () => undefined);
+// AUD-03: a build ships the music code only with a music pack (vite.config.ts); without one the music bus stays silent.
+const MUSIC_PACK = typeof __MUSIC_PACK__ === 'boolean' && __MUSIC_PACK__;
+let appMusic: MusicBridge | null = null;
+const appMusicReady = MUSIC_PACK
+  ? import('./game/audio/musicBridge').then(({ loadMusic }) => loadMusic(appMixer)).then((music) => { appMusic = music; return music; }, () => null)
+  : null;
 /** The death moment (FX-03): the canvas shows the fall this long before the settlement opens. */
 const DEATH_MOMENT_MS = 700;
 
@@ -194,6 +201,15 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   }, [initialSave.writable, meta, options, profile]);
 
   useEffect(() => installUiSounds(document, appMixer), []);
+
+  // AUD-03: the music follows the screens, the pause, the drafts, and the run's snapshots.
+  const [musicReady, setMusicReady] = useState(false);
+  useEffect(() => {
+    if (MUSIC_PACK) void appMusicReady?.then((music) => setMusicReady(music !== null));
+  }, []);
+  useEffect(() => {
+    if (MUSIC_PACK && musicReady) appMusic?.app({ phase, story: story?.beats ?? null, paused: runPaused, draft: draft?.reason ?? null, snapshot });
+  }, [musicReady, phase, story, runPaused, draft, snapshot]);
 
   useEffect(() => {
     if (developerAccess || isStageUnlocked(meta, selectedChapterId, selectedStageNo)) return;
@@ -512,6 +528,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     engineRef.current = engine;
     engine.setSprites(spriteAtlas);
     engine.setSound(appMixer);
+    if (MUSIC_PACK) engine.subscribe((event) => appMusic?.event(event));
     releaseReducedMotionRef.current = watchReducedMotion(
       typeof window.matchMedia === 'function' ? window.matchMedia.bind(window) : undefined,
       (reduced) => engine.setSystemReducedMotion(reduced),

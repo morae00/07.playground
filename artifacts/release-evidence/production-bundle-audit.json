@@ -2,7 +2,7 @@
   "version": 1,
   "root": "/Users/kyuukkang/CT_AX/07.playground/dist",
   "files": [
-    "assets/App-D_VLb1sB.js",
+    "assets/App-Ex4hymys.js",
     "assets/atlas/manifest.json",
     "assets/content/boss-titles.json",
     "assets/content/codex.json",
@@ -11,8 +11,8 @@
     "assets/content/strings/en.json",
     "assets/content/strings/ko.json",
     "assets/content/tables.json",
+    "assets/index-B8kPr28L.js",
     "assets/index-DK60neyC.css",
-    "assets/index-DqByReqN.js",
     "assets/packs/sfx-common/pack.json",
     "assets/vendor-sXpfDjey.js",
     "index.html",

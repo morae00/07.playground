@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build as esbuild } from 'esbuild';
@@ -59,6 +59,8 @@ export default defineConfig(({ command, mode }) => {
       __DEVELOPER_UI_AVAILABLE__: JSON.stringify(developerUiAvailable),
       __DEVELOPER_UI_DEFAULT_ENABLED__: JSON.stringify(packagedDeveloperBuild),
       __CONTENT_CHECKS__: JSON.stringify(command === 'serve'),
+      // AUD-03: the music code ships with a music pack, so a build without one requests nothing and carries none.
+      __MUSIC_PACK__: JSON.stringify(existsSync(fileURLToPath(new URL('./public/assets/packs/music/pack.json', import.meta.url)))),
     },
     plugins: [react(), devContentSecurityPolicy(), contentTables()],
     build: {

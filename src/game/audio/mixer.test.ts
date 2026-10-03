@@ -270,3 +270,25 @@ test('AUD-04: a chapter ambience bed loops on the ambience bus once decoded, fad
   assert.equal(chapel.stops.length, 1);
   assert.equal(beds().length, 2, 'null starts nothing new');
 });
+
+test('AUD-03: music commands wait for audio to open, then reach the player built on the music bus', async () => {
+  const { mixer, open } = setup();
+  mixer.music({ type: 'play', track: 'menu', fade: 2, crossfade: false, resume: true });
+  const ran: unknown[] = [];
+  let built: { output: unknown } | null = null;
+  const pack = { id: 'music-test', base: 'music/', tracks: {} };
+  mixer.setMusic(pack, (options) => {
+    built = options;
+    return { run: (command: unknown) => ran.push(command), stats: () => ({ track: null, fading: 0, buffers: 0, duckDb: 0 }) } as never;
+  });
+  mixer.music({ type: 'play', track: 'menu', fade: 2, crossfade: false, resume: true });
+  mixer.music({ type: 'duck', id: 'pause', db: -8, seconds: 0.3 });
+  assert.equal(built, null, 'no player before audio opens');
+  const context = await open();
+  const musicBus = context.nodes.find((node) => node.kind === 'gain' && node.outputs[0]?.kind === 'gain' && (node as Gain).gain.value === 0.8);
+  assert.equal(built!.output, musicBus);
+  assert.deepEqual(ran.map((command) => (command as { type: string }).type), ['play', 'duck'], 'the command before the pack is dropped');
+  mixer.music({ type: 'sting' });
+  assert.equal(ran.length, 3);
+  assert.deepEqual(mixer.stats().music, { track: null, fading: 0, buffers: 0, duckDb: 0 });
+});
