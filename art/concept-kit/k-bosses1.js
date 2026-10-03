@@ -127,16 +127,50 @@ window.PN = window.PN || {};
     return d;
   }
 
+  // ---- K3-2 pose kit (rev 3) -------------------------------------------------------------------------------------------
+  // pose normalisation shared by draw() and anchors(): pose 'idle' | 'attack' | 'death' (anything else = 'idle');
+  // death starts from the P3 damage and drops windup/enraged; attack drops windup. frame = death 0..3 (truncated, clamped).
+  function norm(o) {
+    o.pose = o.pose === 'attack' || o.pose === 'death' ? o.pose : 'idle';
+    if (o.pose === 'death') { o.frame = Math.max(0, Math.min(3, Math.trunc(Number(o.frame) || 0))); o.phase = 3; o.windup = false; o.enraged = false; }
+    else if (o.pose === 'attack') o.windup = false;
+    return o;
+  }
+  // one list of transform ops gives both the SVG transform string and the point mapper, so anchors follow the drawing.
+  // ops (first = outermost, as in transform=""): ['translate',x,y] ['rotate',deg,cx,cy] ['scale',sx,sy]
+  const tfs = (ops) => ops.map(([k, ...a]) => k === 'rotate' ? `rotate(${a.map(f).join(' ')})` : `${k}(${a.map(f).join(',')})`).join(' ');
+  function mat(ops) {
+    const mul = (m, n) => [m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1], m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3], m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5]];
+    let M = [1, 0, 0, 1, 0, 0];
+    ops.forEach(([k, ...a]) => {
+      let n = [1, 0, 0, 1, 0, 0];
+      if (k === 'translate') n = [1, 0, 0, 1, a[0], a[1] || 0];
+      else if (k === 'scale') n = [a[0], 0, 0, a[1] === undefined ? a[0] : a[1], 0, 0];
+      else if (k === 'rotate') { const r = a[0] * Math.PI / 180, c = Math.cos(r), s = Math.sin(r), cx = a[1] || 0, cy = a[2] || 0; n = [c, s, -s, c, cx - c * cx + s * cy, cy - s * cx - c * cy]; }
+      M = mul(M, n);
+    });
+    return M;
+  }
+  function xf(ops) { const M = mat(ops); return (p) => [f(M[0] * p[0] + M[2] * p[1] + M[4]), f(M[1] * p[0] + M[3] * p[1] + M[5])]; }
+  // inverse of the linear part of ops: a paper ✕ drawn inside a lying (rotated + squashed) relic group with this local
+  // matrix comes out upright and square on screen, like the enemy death decal
+  function inv(ops) { const [a, b, c, d] = mat(ops), k = a * d - b * c; return [d / k, -b / k, -c / k, a / k].map((v) => Math.round(v * 1000) / 1000); }
+  const ANCH = {};
+
   const META = {};
   const BUILD = {};
   PN.bossesA = {
-    K, META, BUILD, mk, _baseDefs: baseDefs,
+    K, META, BUILD, ANCH, mk, _baseDefs: baseDefs, _norm: norm, _tfs: tfs, _xf: xf, _inv: inv,
     ids: ['butcher', 'gaoler', 'maw'],
-    // draw(id, {phase:1|2|3, windup:bool, enraged:bool, lod:'art'|'game', halo:true|color|null, silhouette:bool, shadow:bool, fx:bool})
+    // draw(id, {phase:1|2|3, windup:bool, enraged:bool, lod:'art'|'game', halo:true|color|null, silhouette:bool, shadow:bool, fx:bool,
+    //           pose:'idle'|'attack'|'death', frame:0..3})
     draw(id, opts) {
       const b = BUILD[id]; if (!b) throw new Error('bossesA: unknown id ' + id);
-      const X = mk(opts), m = META[id], o = X.o;
+      const X = mk(opts), m = META[id], o = norm(X.o);
       const parts = b(X);                    // {ground, body, fx}
+      // death frames hold no paper.50 except the relic's ✕ (K3-2): P2/P3 cracks, chips and the like dim to paper.300. The ✕
+      // spells paper.50 in lower case, which this case-sensitive swap leaves alone (bakes map colours case-insensitively).
+      if (o.pose === 'death') { const dim = (s) => (s || '').split(K.paper50).join(K.paper300); parts.body = dim(parts.body); parts.fx = dim(parts.fx); }
       const pre = baseDefs(X, m.env);
       const sil = o.silhouette;
       let body = `<g filter="url(#${X.p}rough)">${parts.body}</g>`;
@@ -147,7 +181,71 @@ window.PN = window.PN || {};
       const ground = sil ? '' : (parts.ground || '');
       const fx = o.fx && !sil ? (parts.fx || '') : '';
       return `<g class="bossA bossA-${id}"><defs>${pre}${X.defs.join('')}</defs>${shadow}${ground}${body}${fx}</g>`;
+    },
+    // K3-2 (new, add-only): anchors(id, opts) → { pivot, feet, r, head, face, muzzle, …per boss } in local units, computed
+    // from the same rig values the pose is drawn with. Same options as draw() (phase, windup, pose, frame).
+    anchors(id, opts) {
+      const m = META[id]; if (!m || !ANCH[id]) throw new Error('bossesA: unknown id ' + id);
+      const o = Object.assign({ phase: 1, windup: false, enraged: false }, opts || {});
+      o.phase = Math.max(1, Math.min(3, o.phase | 0 || 1));
+      return Object.assign({ pivot: [200, 257], feet: [200, 392], r: 135 }, ANCH[id](norm(o)));
     }
+  };
+})(window.PN);
+// ---------------------------------------------------------------- K3-2 death vocabulary (shared by the three bosses)
+// paper ✕ eye (enemy decal ✕✕ grammar), wet ink puddle, melting ink mound, torn manuscript scrap. Death frames carry no
+// coral and no amber; the only paper.50 in a death frame is the relic's ✕ (f3).
+(function (PN) {
+  const A = PN.bossesA, K = A.K;
+  const f = (n) => Math.round(n * 10) / 10;
+  const pt = (p) => f(p[0]) + ',' + f(p[1]);
+  // Catmull-Rom → cubic path through points (closed or open)
+  A._smooth = function (pts, closed = false) {
+    const P = closed ? [pts[pts.length - 1], ...pts, pts[0], pts[1]] : [pts[0], ...pts, pts[pts.length - 1]];
+    let d = 'M ' + pt(P[1]);
+    for (let i = 1; i < P.length - 2; i++) {
+      const p0 = P[i - 1], p1 = P[i], p2 = P[i + 1], p3 = P[i + 2];
+      d += ` C ${pt([p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6])} ${pt([p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6])} ${pt(p2)}`;
+    }
+    return d + (closed ? ' Z' : '');
+  };
+  // paper ✕ with an ink rim. s = arm length centre → tip (game 7, art 5: ≥ 6 / ≥ 4). Ink rim beyond the paper stroke:
+  // game 4.4, art 3 (≥ 3.6 / ≥ 2). m = A._inv(relic ops) when the ✕ sits inside a lying relic group: that local matrix
+  // cancels the group's rotation + squash, so the ✕ reads upright and square on screen, like the enemy death decal.
+  A.xMark = function (X, x, y, m) {
+    const s = X.game ? 7 : 5, w = X.game ? 3.8 : 2.4, rim = X.game ? 4.4 : 3;
+    const d = `M ${f(x - s)},${f(y - s)} L ${f(x + s)},${f(y + s)} M ${f(x + s)},${f(y - s)} L ${f(x - s)},${f(y + s)}`;
+    // paper.50 spelled lower-case: the only paper.50 that survives the death-frame dim in draw()
+    const g = `<path d="${d}" fill="none" stroke="${K.ink}" stroke-width="${f(w + rim)}" stroke-linecap="round"/><path d="${d}" fill="none" stroke="${K.paper50.toLowerCase()}" stroke-width="${f(w)}" stroke-linecap="round"/>`;
+    return m ? `<g transform="translate(${f(x)},${f(y)}) matrix(${m.join(',')},0,0) translate(${f(-x)},${f(-y)})">${g}</g>` : g;
+  };
+  // f3 puddle: irregular ink.700 wet surface + ink rim, a darker inner pool; art adds ink.300 dry-brush pieces
+  A.puddle = function (X, cx, cy, rx, ry, seed = 1) {
+    const r = PN.rng(seed * 53 + 11), P = [];
+    for (let i = 0; i < 26; i++) { const a = (i / 26) * Math.PI * 2, k = 1 + (r() - 0.5) * 0.08 + (i % 6 === 2 ? 0.05 : 0); P.push([cx + Math.cos(a) * rx * k, cy + Math.sin(a) * ry * k]); }
+    const d = A._smooth(P, true);
+    const inner = `<ellipse cx="${f(cx - rx * 0.1)}" cy="${f(cy - ry * 0.15)}" rx="${f(rx * 0.72)}" ry="${f(ry * 0.5)}" fill="${K.ink}" opacity="0.55"/>` +
+      (X.game ? '' : X.T([cx - rx * 0.82, cy - ry * 0.5, cx - rx * 0.35, cy - ry * 0.92, cx + rx * 0.25, cy - ry * 0.88], 3.2, 'mid', K.ink300) +
+        X.T([cx + rx * 0.45, cy + ry * 0.55, cx + rx * 0.7, cy + ry * 0.35, cx + rx * 0.86, cy + ry * 0.05], 2.4, 'mid', K.ink300) +
+        X.T([cx - rx * 0.6, cy + ry * 0.62, cx - rx * 0.3, cy + ry * 0.78, cx - rx * 0.05, cy + ry * 0.72], 2, 'mid', K.ink300));
+    return X.S(d, K.ink700, 4, inner);
+  };
+  // f2 melting mound: ink body through the given top-contour points (left → right, ends on the ground line g), one ink.500
+  // lit plane on the upper left, an ink.300 dry rim along the top-left contour, ink drips running down its face
+  A.mound = function (X, top, g, drips = []) {
+    const P = [[top[0][0], g], ...top, [top[top.length - 1][0], g]];
+    const d = A._smooth(P, false) + ' Z';
+    const L = top.slice(0, Math.max(2, Math.ceil(top.length / 2)));
+    const lit = A._smooth([[L[0][0] + 8, g - 6], ...L.map(([x, y]) => [x + 10, y + 12]), [L[L.length - 1][0] + 14, L[L.length - 1][1] + 26], [L[0][0] + 26, g - 10]], true);
+    const inner = `<path d="${lit}" fill="${K.ink500}"/>` + X.R(L.slice(0, 3).flatMap(([x, y]) => [x + 3, y + 3]), 2.4);
+    return X.S(d, K.ink, 5.5, inner) + drips.map(([x, y, l, w]) => X.drip(x, y, l, w)).join('');
+  };
+  // torn manuscript scrap (paper.300 + ink rim), death f2, art only
+  A.scrap = function (X, x, y, s, rot, seed) {
+    if (X.game) return '';
+    const r = PN.rng(seed * 17 + 3), P = [];
+    for (let i = 0; i < 7; i++) { const a = (i / 7) * Math.PI * 2, k = 0.6 + r() * 0.5; P.push([x + Math.cos(a) * s * k, y + Math.sin(a) * s * k * 0.7]); }
+    return `<g transform="rotate(${rot} ${f(x)} ${f(y)})"><path d="M ${P.map(pt).join(' L ')} Z" fill="${K.paper300}" stroke="${K.ink}" stroke-width="2" stroke-linejoin="round"/>${X.T([x - s * 0.4, y - s * 0.1, x, y - s * 0.16, x + s * 0.35, y - s * 0.08], 1.2, 'mid', K.ink300)}</g>`;
   };
 })(window.PN);
 // ---------------------------------------------------------------- 잉크 도살자 (butcher · Ch1 St5 · dash) — shapes, cleaver, fist
@@ -222,15 +320,17 @@ window.PN = window.PN || {};
 
   // clenched fist wrapped around a vertical handle (frame: handle axis x=0, fist centre 0,0).
   // Back of hand faces up-left; 4 finger wedges stack on the right; thumb crosses the top. Knuckle wedges ink.500 + 1.5px paper.300 rim.
-  A.butcherFist = function (X, s = 1) {
+  A.butcherFist = function (X, s = 1, open = false) {
     const { K } = X, P = (x, y) => `${X.f(x * s)},${X.f(y * s)}`;
     const back = `M ${P(-24, -14)} C ${P(-22, -26)} ${P(-6, -30)} ${P(8, -26)} L ${P(22, -18)} C ${P(28, -6)} ${P(28, 10)} ${P(22, 22)} L ${P(4, 26)} C ${P(-12, 26)} ${P(-24, 18)} ${P(-26, 4)} Z`;
     let fing = '';
     for (let i = 0; i < 4; i++) {
       const y0 = -18 + i * 10.5, y1 = y0 + 10;
       const d = `M ${P(4, y0)} L ${P(20, y0 - 1)} C ${P(27, y0 + 1)} ${P(27, y1 - 1)} ${P(21, y1)} L ${P(4, y1)} Z`;
-      fing += `<path d="${d}" fill="${K.ink500}" stroke="${K.ink}" stroke-width="${X.f(2 * X.LW)}" stroke-linejoin="round"/>` +
+      const w = `<path d="${d}" fill="${K.ink500}" stroke="${K.ink}" stroke-width="${X.f(2 * X.LW)}" stroke-linejoin="round"/>` +
         `<path d="M ${P(6, y0 + 1.6)} L ${P(20, y0 + 0.8)} C ${P(23.5, y0 + 1.6)} ${P(24.5, y0 + 3.4)} ${P(24.5, y0 + 5)}" fill="none" stroke="${K.paper300}" stroke-width="1.5" stroke-linecap="round"/>`;
+      // K3-2 open hand (death): the finger wedges swing out from their knuckles, fanning open (the handle slips through)
+      fing += open ? `<g transform="rotate(${-34 + i * 16} ${X.f(4 * s)} ${X.f((y0 + 5) * s)})">${w}</g>` : w;
     }
     const inner = `<path d="M ${P(-28, 6)} C ${P(-26, -16)} ${P(-10, -28)} ${P(12, -28)} L ${P(8, -20)} C ${P(-6, -20)} ${P(-16, -10)} ${P(-18, 4)} Z" fill="${K.ink500}"/>
       ${X.ht(`M ${P(-30, 8)} L ${P(4, 8)} L ${P(4, 30)} L ${P(-30, 30)} Z`, 'd60')}${X.R([-24 * s, -4 * s, -18 * s, -22 * s, 2 * s, -28 * s], 1.8)}`;
@@ -243,11 +343,67 @@ window.PN = window.PN || {};
 // ---------------------------------------------------------------- 잉크 도살자 builder (idle / windup are separate drawings, not transforms)
 (function (PN) {
   const A = PN.bossesA;
+  // ---- K3-2 face function (brief §1.10-2): the paper-bag head, state 'open' | 'out' | 'dead'. Every pose calls it and only
+  // moves/rotates the group it returns. 'open' = the rev 3 drawing. 'out' = the eye light goes out (paper eye → ink, the P3
+  // big eye included), the ink drips stay. 'dead' = the eye hole becomes a paper ✕ (m = A._inv(relic ops), see A.xMark).
+  // rev 3 (K3 F-A3): the stamp circle and its 肉 are gone in both LODs (a ring inside the bag is a fake eye; no lettering).
+  // game is redrawn for 156px rather than shrunk: no wrinkle strokes, the lower band a flat paper.300 plane (not big 20%
+  // dots), 2 short wide ink drips under the eye hole, 3 stitches spaced 12.6 so eye, mouth and drips stay apart at 0.4.
+  // The near arm (drawn over the head) hides the bag right of x≈280 at mouth height, so in game the stitched mouth is
+  // moved into the visible window (x 236…275) and the front fold stops above it; art keeps its mouth and fold. The P3
+  // drip at x 262 then runs between the 2nd and 3rd stitch instead of through one.
+  A.butcherFace = function (X, state = 'open', m) {
+    const { K, T, o } = X, ph = o.phase, SH = A.BSH, lit = state === 'open';
+    const band = 'M 220,178 C 250,188 276,188 306,172 L 306,216 L 220,216 Z';
+    const bag = X.S(SH.bag, K.paper, 6, `${X.ht('M 286,110 L 306,110 L 306,216 L 282,216 C 290,180 290,140 286,110 Z', 'd40')}
+        ${X.game ? `<path d="${band}" fill="${K.paper300}"/>` : X.ht(band, 'd20')}
+        <path d="${X.game ? 'M 250,118 C 252,150 252.2,166 251.4,177' : 'M 250,118 C 252,150 252,178 250,208'}" fill="none" stroke="${K.ink}" stroke-width="${2 * X.LW}"/>
+        <path d="M 228,124 L 294,122 L 296,136 L 285,129 L 274,138 L 264,129 L 254,138 L 244,131 L 230,138 Z" fill="${K.ink}"/>
+        ${X.game ? '' : X.Ts([[231, 148, 235, 158, 233, 170, 1.4, 'mid'], [240, 142, 244, 150, 242, 158, 1.3, 'mid'], [293, 150, 289, 162, 293, 176, 1.6, 'mid'], [254, 198, 266, 196, 278, 200, 1.3, 'mid']], K.ink)}`) +
+      X.C([298, 128, 303, 158, 303, 184, 298, 204], 4.6) + X.C([298, 204, 274, 213, 250, 213, 228, 205], 3.4);
+    const eye = ph >= 3 ? '' : `<path d="M 260,146 L 268,138 L 276,143 L 285,138 L 290,150 L 284,162 L 272,165 L 263,158 Z" fill="${K.ink}" ${X.O(1.6)}/>
+      <ellipse cx="275" cy="151" rx="7" ry="5" fill="${lit ? K.paper50 : K.ink}"/><circle cx="277.6" cy="151.6" r="2.6" fill="${K.ink}"/>${X.game ? X.drip(266, 160, 20, 5) + X.drip(282, 163, 13, 4.2) : X.drip(266, 160, 38, 3.4) + X.drip(281, 163, 22, 2.8)}${state === 'dead' ? A.xMark(X, 275, 151, m) : ''}`;
+    let mouth = X.line(X.game ? 'M 236,190 C 252,195 270,192 290,184' : 'M 254,188 C 266,192 280,190 294,182', K.ink, 2.8);
+    if (X.game) [[243.1, 191.7], [255.7, 192.4], [268.3, 190.8]].forEach(([x, y]) => { const f = X.f; mouth += X.line(`M ${f(x - 3.8)},${f(y - 5.2)} L ${f(x + 3.8)},${f(y + 5.2)} M ${f(x + 3.8)},${f(y - 5.2)} L ${f(x - 3.8)},${f(y + 5.2)}`, K.ink, 2.6); });
+    else for (let i = 0; i < 5; i++) { const x = 258 + i * 8.4, y = 190 - i * 1.6; mouth += X.line(`M ${x - 3.2},${y - 4.4} L ${x + 3.2},${y + 4.4} M ${x + 3.2},${y - 4.4} L ${x - 3.2},${y + 4.4}`, K.ink, 2); }
+    const twine = `<path d="M 226,202 C 250,212 276,210 300,198" fill="none" stroke="${K.ink}" stroke-width="${5.5 * X.LW}"/><path d="M 226,202 C 250,212 276,210 300,198" fill="none" stroke="${K.ink300}" stroke-width="2.2" stroke-dasharray="5 3"/>
+      <circle cx="296" cy="200" r="4.6" fill="${K.ink300}" ${X.O(2.2)}/>${T([297, 204, 305, 214, 306, 228], 3.2, 'end', K.ink300, `stroke="${K.ink}" stroke-width="1.5"`)}${T([294, 205, 293, 216, 289, 228], 2.8, 'end', K.ink300, `stroke="${K.ink}" stroke-width="1.5"`)}`;
+    const broken = ph >= 3 ? `<path d="M 250,116 L 258,132 L 252,146 L 264,154 L 258,168 L 272,176 L 282,170 L 292,182 L 302,178 L 298,112 Z" fill="${K.ink}" ${X.O(3)}/>
+      <path d="M 250,116 L 258,132 L 252,146 L 264,154 L 258,168 L 272,176 L 282,170 L 292,182 L 302,178" fill="none" stroke="${K.paper300}" stroke-width="${2.6 * X.LW}" stroke-linejoin="round"/>
+      <ellipse cx="278" cy="144" rx="10" ry="7.5" fill="${lit ? K.paper50 : K.ink}"/><circle cx="281" cy="145" r="3.4" fill="${K.ink}"/>
+      ${X.drip(262, 170, 34, 3.8)}${X.drip(282, 176, 26, 3.4)}${X.drip(252, 150, 18, 2.8)}${state === 'dead' ? A.xMark(X, 278, 144, m) : ''}` : '';
+    return `${bag}${eye}${mouth}${twine}${broken}`;
+  };
+  // ---- K3-2 rig (one set of values for drawing and anchors). Attack = the dash pose, seen for the whole 0.55 s dash:
+  // the cleaver raised overhead while running (brief §3.1). Changed from the brief: head translate −4 (brief +4 put the eye
+  // hole under the near shoulder cap), far arm 9° (brief 22° swings the hook to x ≈ −16; brief limit x ≥ 12).
+  const tfs = A._tfs, xf = A._xf, f = (n) => Math.round(n * 10) / 10;
+  A.RIG = A.RIG || {};
+  const RB = A.RIG.butcher = {
+    idle: { up: [], head: [['rotate', -4, 262, 206]], fist: [340, 262], cleaver: [['translate', 340, 262], ['rotate', -17]] },
+    windup: { up: [['translate', 10, 18], ['rotate', 11, 200, 320]], head: [['rotate', 7, 262, 206], ['translate', 2, 5]], fist: [236, 314], cleaver: [['translate', 236, 314], ['rotate', 62]] },
+    attack: {
+      up: [['translate', 0, 8], ['rotate', 15, 200, 320]], head: [['rotate', -2, 262, 206], ['translate', -4, 0]], far: [['rotate', 9, 92, 150]],
+      sh: [362, 200], el: [366, 128], fist: [336, 74], cleaver: [['translate', 336, 74], ['rotate', 160]]
+    },
+    // death (P3 damage): f0 hit — torso thrown back 7°, bag eye out, cleaver slides +25° out of the opening hand, hook chain
+    // swings; f1 collapse to 70% (squash about the feet) with the bag drooping 18° forward, cleaver flat on the floor in
+    // front; f2 melting mound, the bag sliding off its upper right; f3 puddle with the flattened bag relic (✕ eye).
+    death: [
+      { up: [['rotate', -7, 200, 320]], head: [['rotate', -4, 262, 206]], far: [['rotate', -10, 92, 150]], fist: [340, 262], cleaver: [['translate', 344, 270], ['rotate', 8]] },
+      { up: [], squash: [['translate', 200, 392], ['scale', 1.04, 0.7], ['translate', -200, -392]], head: [['translate', 2.5, 55.8], ['rotate', 18, 262, 206]], far: [['rotate', 6, 92, 150]], fist: [340, 262], cleaver: [['translate', 250, 384], ['scale', 1, 0.28], ['rotate', -90]] },
+      { head: [['translate', 52, 130], ['rotate', 38, 262, 165]] },
+      { relic: [['translate', 232, 364], ['rotate', -6], ['scale', 1, 0.4], ['translate', -262, -165]], cleaver: [['translate', 68, 384], ['rotate', -5], ['scale', 1, 0.3], ['rotate', -90]] }
+    ]
+  };
   A.BUILD.butcher = function (X) {
     const { K, T, o } = X, ph = o.phase, wu = o.windup, SH = A.BSH;
+    const de = o.pose === 'death' ? o.frame : -1;           // death frame 0..3, or −1
+    if (de >= 2) return A.DEATH.butcher(X);                  // f2 mound, f3 puddle: separate drawings
+    const at = o.pose === 'attack', R = RB.attack, D = de >= 0 ? RB.death[de] : null;
     // windup = shoulders dropped + chest pitched further forward (rigid upper body), legs redrawn as a crouch lunge
     const UP = wu ? { tx: 10, ty: 18, a: 11 } : { tx: 0, ty: 0, a: 0 };
-    const upT = wu ? `transform="translate(${UP.tx},${UP.ty}) rotate(${UP.a} 200 320)"` : '';
+    const upT = at ? `transform="${tfs(R.up)}"` : D ? (D.up.length ? `transform="${tfs(D.up)}"` : '') : wu ? `transform="translate(${UP.tx},${UP.ty}) rotate(${UP.a} 200 320)"` : '';
     // ---- far arm: hangs, fist clenched on the hook chain
     const hook = `${X.chain(71, 330, 68, 346, 3, 2)}
       <path d="M 68,352 C 63,364 63,374 66,382 C 72,398 100,398 103,380 C 104,372 101,366 97,361" fill="none" stroke="${K.ink}" stroke-width="${8.5 * X.LW}" stroke-linecap="round"/>
@@ -270,7 +426,13 @@ window.PN = window.PN || {};
     const trouser = (d, lit, knee, dots, crease, cont) => X.S(d, K.ink700, 5.5, `<path d="${lit}" fill="${K.ink500}"/>${X.ht(dots, 'd60')}<path d="${knee}" fill="${K.ink}"/>${X.Ts(crease, K.ink)}`) + X.C(cont, 4.8);
     const clog = (d, cap, glint, sole) => X.S(d, K.ink, 5.5, `<path d="${cap}" fill="${K.ink500}"/>${T(glint, 2.2, 'mid', K.paper300)}<path d="${sole}" stroke="${K.ink500}" stroke-width="3"/>`);
     const patch = (x, y) => X.S(`M ${x - 13},${y - 11} L ${x + 12},${y - 13} L ${x + 14},${y + 11} L ${x - 11},${y + 13} Z`, K.ink300, 2.6, X.ht(`M ${x - 16},${y - 16} L ${x + 16},${y - 16} L ${x + 16},${y + 16} L ${x - 16},${y + 16} Z`, 'd40') + [[-9, -8], [8, -10], [10, 8], [-8, 10]].map(([a, b]) => `<path d="M ${x + a - 2.4},${y + b - 2.4} l 4.8,4.8 m 0,-4.8 l -4.8,4.8" stroke="${K.paper300}" stroke-width="1.3"/>`).join(''));
-    const legs = wu ? `${trouser(SH.legBw, 'M 150,304 C 134,320 116,336 106,354 L 118,352 C 130,336 146,322 164,310 Z', 'M 104,358 L 132,350 L 118,368 Z', 'M 170,306 L 204,306 L 204,386 L 140,386 C 160,358 176,334 170,306 Z', [[124, 340, 138, 346, 150, 340, 2, 'mid']], [198, 302, 194, 322, 170, 342, 148, 378])}
+    // attack: back leg pushed off behind (hip (170,300) → knee (128,346) → ankle (96,372)), its clog tipped onto the toe at
+    // (70,392) with the heel up 25°; front leg = the windup's lunging front leg
+    const atLegs = () => `${X.limb([170, 300], [128, 346], 26, 21, { bulge: 1.1 })}${patch(150, 322)}${X.limb([128, 346], [96, 372], 20, 15, { bulge: 1.08, brk0: true })}
+        <g transform="translate(70,392) rotate(-25)">${X.S('M 0,0 C -3,-8 3,-17 14,-19 L 46,-22 L 60,-18 C 64,-12 64,-5 62,0 Z', K.ink, 5.5, `<path d="M 2,-3 C 0,-9 5,-15 14,-16 L 18,-6 L 6,-2 Z" fill="${K.ink500}"/><path d="M 4,-3 L 60,-3" stroke="${K.ink500}" stroke-width="3"/>`)}</g>
+        ${trouser(SH.legFw, 'M 240,300 C 250,316 266,326 288,330 L 290,322 C 270,318 256,310 250,298 Z', 'M 338,326 L 310,340 L 342,346 Z', 'M 310,300 L 356,300 L 356,380 L 330,380 C 336,350 330,322 310,300 Z', [[300, 346, 312, 350, 326, 346, 2, 'mid']], [338, 326, 350, 344, 350, 360, 348, 376])}
+        ${clog(SH.bootFw, 'M 348,368 C 364,370 378,378 383,388 L 372,388 C 368,380 360,374 346,372 Z', [352, 372, 366, 376, 376, 386], 'M 290,386 L 386,386')}`;
+    const legs = at ? atLegs() : wu ? `${trouser(SH.legBw, 'M 150,304 C 134,320 116,336 106,354 L 118,352 C 130,336 146,322 164,310 Z', 'M 104,358 L 132,350 L 118,368 Z', 'M 170,306 L 204,306 L 204,386 L 140,386 C 160,358 176,334 170,306 Z', [[124, 340, 138, 346, 150, 340, 2, 'mid']], [198, 302, 194, 322, 170, 342, 148, 378])}
         ${patch(134, 340)}${clog(SH.bootBw, 'M 128,370 C 142,372 154,380 158,390 L 150,390 C 146,382 138,376 126,374 Z', [132, 373, 146, 376, 154, 386], 'M 76,386 L 160,386')}
         ${trouser(SH.legFw, 'M 240,300 C 250,316 266,326 288,330 L 290,322 C 270,318 256,310 250,298 Z', 'M 338,326 L 310,340 L 342,346 Z', 'M 310,300 L 356,300 L 356,380 L 330,380 C 336,350 330,322 310,300 Z', [[300, 346, 312, 350, 326, 346, 2, 'mid']], [338, 326, 350, 344, 350, 360, 348, 376])}
         ${clog(SH.bootFw, 'M 348,368 C 364,370 378,378 383,388 L 372,388 C 368,380 360,374 346,372 Z', [352, 372, 366, 376, 376, 386], 'M 290,386 L 386,386')}` :
@@ -306,36 +468,24 @@ window.PN = window.PN || {};
     const deltN = X.S(SH.deltN, K.ink, 6, `<path d="M 288,152 C 288,128 306,114 328,116 C 342,118 352,126 356,138 C 344,132 330,134 320,142 L 326,150 L 306,154 C 300,162 296,172 294,184 Z" fill="${K.ink500}"/>
         ${X.ht('M 296,176 C 300,162 312,154 326,154 L 318,166 C 308,168 302,176 300,186 Z', 'l20')}${X.R([292, 146, 298, 124, 326, 118], 2.6)}`) +
       X.brk('M 291,168 C 294,182 298,190 302,195') + X.C([357, 150, 358, 172, 348, 186, 330, 193], 5.2);
-    // ---- paper-bag head (face = weak point, <=12%, heavy ink frame)
-    // rev 3 (K3 F-A3): the stamp circle and its 肉 are gone in both LODs (a ring inside the bag is a fake eye; no lettering).
-    // game is redrawn for 156px rather than shrunk: no wrinkle strokes, the lower band a flat paper.300 plane (not big 20%
-    // dots), 2 short wide ink drips under the eye hole, 3 stitches spaced 12.6 so eye, mouth and drips stay apart at 0.4.
-    // The near arm (drawn over the head) hides the bag right of x≈280 at mouth height, so in game the stitched mouth is
-    // moved into the visible window (x 236…275) and the front fold stops above it; art keeps its mouth and fold. The P3
-    // drip at x 262 then runs between the 2nd and 3rd stitch instead of through one.
-    const band = 'M 220,178 C 250,188 276,188 306,172 L 306,216 L 220,216 Z';
-    const bag = X.S(SH.bag, K.paper, 6, `${X.ht('M 286,110 L 306,110 L 306,216 L 282,216 C 290,180 290,140 286,110 Z', 'd40')}
-        ${X.game ? `<path d="${band}" fill="${K.paper300}"/>` : X.ht(band, 'd20')}
-        <path d="${X.game ? 'M 250,118 C 252,150 252.2,166 251.4,177' : 'M 250,118 C 252,150 252,178 250,208'}" fill="none" stroke="${K.ink}" stroke-width="${2 * X.LW}"/>
-        <path d="M 228,124 L 294,122 L 296,136 L 285,129 L 274,138 L 264,129 L 254,138 L 244,131 L 230,138 Z" fill="${K.ink}"/>
-        ${X.game ? '' : X.Ts([[231, 148, 235, 158, 233, 170, 1.4, 'mid'], [240, 142, 244, 150, 242, 158, 1.3, 'mid'], [293, 150, 289, 162, 293, 176, 1.6, 'mid'], [254, 198, 266, 196, 278, 200, 1.3, 'mid']], K.ink)}`) +
-      X.C([298, 128, 303, 158, 303, 184, 298, 204], 4.6) + X.C([298, 204, 274, 213, 250, 213, 228, 205], 3.4);
-    const eye = ph >= 3 ? '' : `<path d="M 260,146 L 268,138 L 276,143 L 285,138 L 290,150 L 284,162 L 272,165 L 263,158 Z" fill="${K.ink}" ${X.O(1.6)}/>
-      <ellipse cx="275" cy="151" rx="7" ry="5" fill="${K.paper50}"/><circle cx="277.6" cy="151.6" r="2.6" fill="${K.ink}"/>${X.game ? X.drip(266, 160, 20, 5) + X.drip(282, 163, 13, 4.2) : X.drip(266, 160, 38, 3.4) + X.drip(281, 163, 22, 2.8)}`;
-    let mouth = X.line(X.game ? 'M 236,190 C 252,195 270,192 290,184' : 'M 254,188 C 266,192 280,190 294,182', K.ink, 2.8);
-    if (X.game) [[243.1, 191.7], [255.7, 192.4], [268.3, 190.8]].forEach(([x, y]) => { const f = X.f; mouth += X.line(`M ${f(x - 3.8)},${f(y - 5.2)} L ${f(x + 3.8)},${f(y + 5.2)} M ${f(x + 3.8)},${f(y - 5.2)} L ${f(x - 3.8)},${f(y + 5.2)}`, K.ink, 2.6); });
-    else for (let i = 0; i < 5; i++) { const x = 258 + i * 8.4, y = 190 - i * 1.6; mouth += X.line(`M ${x - 3.2},${y - 4.4} L ${x + 3.2},${y + 4.4} M ${x + 3.2},${y - 4.4} L ${x - 3.2},${y + 4.4}`, K.ink, 2); }
-    const twine = `<path d="M 226,202 C 250,212 276,210 300,198" fill="none" stroke="${K.ink}" stroke-width="${5.5 * X.LW}"/><path d="M 226,202 C 250,212 276,210 300,198" fill="none" stroke="${K.ink300}" stroke-width="2.2" stroke-dasharray="5 3"/>
-      <circle cx="296" cy="200" r="4.6" fill="${K.ink300}" ${X.O(2.2)}/>${T([297, 204, 305, 214, 306, 228], 3.2, 'end', K.ink300, `stroke="${K.ink}" stroke-width="1.5"`)}${T([294, 205, 293, 216, 289, 228], 2.8, 'end', K.ink300, `stroke="${K.ink}" stroke-width="1.5"`)}`;
-    const broken = ph >= 3 ? `<path d="M 250,116 L 258,132 L 252,146 L 264,154 L 258,168 L 272,176 L 282,170 L 292,182 L 302,178 L 298,112 Z" fill="${K.ink}" ${X.O(3)}/>
-      <path d="M 250,116 L 258,132 L 252,146 L 264,154 L 258,168 L 272,176 L 282,170 L 292,182 L 302,178" fill="none" stroke="${K.paper300}" stroke-width="${2.6 * X.LW}" stroke-linejoin="round"/>
-      <ellipse cx="278" cy="144" rx="10" ry="7.5" fill="${K.paper50}"/><circle cx="281" cy="145" r="3.4" fill="${K.ink}"/>
-      ${X.drip(262, 170, 34, 3.8)}${X.drip(282, 176, 26, 3.4)}${X.drip(252, 150, 18, 2.8)}` : '';
-    const headT = wu ? 'transform="rotate(7 262 206) translate(2,5)"' : 'transform="rotate(-4 262 206)"';
-    const head = `<g ${headT}>${bag}${eye}${mouth}${twine}${broken}</g>`;
+    // ---- paper-bag head (face = weak point, <=12%, heavy ink frame): A.butcherFace (K3-2 face function, below)
+    const face = A.butcherFace(X, D ? 'out' : 'open');
+    const headT = at ? `transform="${tfs(R.head)}"` : D ? `transform="${tfs(D.head)}"` : wu ? 'transform="rotate(7 262 206) translate(2,5)"' : 'transform="rotate(-4 262 206)"';
+    const head = `<g ${headT}>${face}</g>`;
     // ---- near arm: elbow back, forearm forward, fist wrapping the cleaver handle
     let nearArm;
-    if (!wu) {
+    if (at) {
+      // attack: upper arm straight up from the shoulder, forearm bent back over the head, cleaver raised overhead (blade up)
+      nearArm = `${X.limb(R.sh, R.el, 26, 23, { bulge: 1.08 })}${cuff(365, 140, 3)}
+        ${X.limb(R.el, R.fist, 24, 20, { bulge: 1.18, brk0: true })}
+        <g transform="${tfs(R.cleaver)}">${A.butcherCleaver(X)}${A.butcherFist(X)}</g>`;
+    } else if (D) {
+      // death f0/f1: idle arm, the hand opens; f0 the cleaver slides +25° out of it, f1 it lies flat on the floor (drawn
+      // outside the collapse, see `lying` below)
+      nearArm = `${X.limb([320, 174], [290, 234], 26, 23, { bulge: 1.08 })}${cuff(292, 226, -30)}
+        ${X.limb([290, 236], [328, 256], 24, 20, { bulge: 1.18, brk0: true })}
+        ${de === 0 ? `<g transform="${tfs(D.cleaver)}">${A.butcherCleaver(X)}</g>` : ''}<g transform="translate(340,262) rotate(-17)">${A.butcherFist(X, 1, true)}</g>`;
+    } else if (!wu) {
       nearArm = `${X.limb([320, 174], [290, 234], 26, 23, { bulge: 1.08 })}${cuff(292, 226, -30)}
         ${X.limb([290, 236], [328, 256], 24, 20, { bulge: 1.18, brk0: true })}
         <g transform="translate(340,262) rotate(-17)">${A.butcherCleaver(X)}${A.butcherFist(X)}</g>`;
@@ -344,9 +494,19 @@ window.PN = window.PN || {};
         ${X.limb([312, 266], [250, 306], 24, 20, { bulge: 1.18, brk0: true })}
         <g transform="translate(236,314) rotate(62)">${A.butcherCleaver(X)}${A.butcherFist(X)}</g>`;
     }
-    const farT = wu ? 'transform="rotate(14 92 150)"' : '';
-    const body = `${legs}<g ${upT}>${torso}${strap}<g ${farT}>${farArm}</g>${deltF}${apron}${head}${deltN}${wu ? '' : nearArm}</g>${wu ? nearArm : ''}`;
+    const farT = at ? `transform="${tfs(R.far)}"` : D ? `transform="${tfs(D.far)}"` : wu ? 'transform="rotate(14 92 150)"' : '';
+    const front = wu || at; // windup and attack draw the near arm in front of the whole upper body
+    // attack gap fills (brief §1.5, bossesA has no `solid`): the slits between the hump and the raised fist/forearm and
+    // between the far fist/hook and the stretched back thigh are < 32 wide, so ink plates at the very back close them and
+    // the enraged pulse stays on the outer contour
+    const atFill = at ? `<path d="M 286,58 L 312,52 L 338,96 L 352,140 L 300,152 L 288,120 Z M 74,262 L 112,276 L 124,326 L 92,358 L 64,350 L 64,300 Z" fill="${K.ink}"/>` : '';
+    // death f1: the body collapses to 70% (squash about the feet); the bag (face) is drawn outside the squash — faces are only
+    // moved and rotated — drooping 18° forward from its idle tilt, and the cleaver lies flat on the floor in front
+    const body = de === 1 ? `<g transform="${tfs(D.squash)}">${legs}${torso}${strap}<g ${farT}>${farArm}</g>${deltF}${apron}${deltN}${nearArm}</g>${head}<g transform="${tfs(D.cleaver)}">${A.butcherCleaver(X)}</g>`
+      : `${atFill}${legs}<g ${upT}>${torso}${strap}<g ${farT}>${farArm}</g>${deltF}${apron}${head}${deltN}${front ? '' : nearArm}</g>${front ? nearArm : ''}`;
     let fx = '';
+    // death f0: three ink shards of the torn bag fly up-left (sizes and turns differ: never a row of dots)
+    if (de === 0) fx += `<path d="M 236,92 L 226,80 L 241,84 Z M 214,116 L 198,110 L 212,104 Z M 252,72 L 249,60 L 258,66 Z" fill="${K.ink}"/>`;
     if (o.enraged) {
       const ey = ph >= 3 ? 144 : 151, ex = ph >= 3 ? 278 : 275;
       fx += `<g ${upT}><g ${headT}>${X.Ts([[226, 122, 210, 104, 234, 90, 216, 68, 13, 'start'], [252, 116, 270, 98, 242, 82, 262, 54, 16, 'start'], [278, 120, 296, 106, 284, 90, 300, 74, 11, 'start'], [216, 68, 208, 56, 220, 48, 214, 36, 6, 'start'], [262, 54, 268, 42, 258, 34, 266, 22, 7, 'start']], K.ink, `stroke="${K.ink}" stroke-width="1.5"`)}
@@ -357,8 +517,73 @@ window.PN = window.PN || {};
     if (wu) fx += `${X.Ts([[150, 397, 128, 395, 74, 399, 5.5, 'start'], [152, 390, 132, 388, 92, 390, 3.4, 'start'], [154, 404, 136, 405, 104, 406, 2.6, 'start']], K.ink)}
       ${[[156, 392], [148, 384], [164, 380], [140, 396]].map(([x, y], i) => `<path d="M ${x},${y} l ${-7 - i * 2},-${4 + i} l 1,6 Z" fill="${K.paper50}" stroke="${K.ink}" stroke-width="1.8" stroke-linejoin="round"/>`).join('')}
       ${X.bang(300, 64, 0.9)}${X.Ts([[112, 72, 96, 60, 74, 50, 4, 'end'], [92, 104, 72, 98, 48, 96, 3.4, 'end'], [150, 50, 142, 34, 130, 18, 3.4, 'end']], K.ink)}`;
-    const ground = `<ellipse cx="${wu ? 232 : 232}" cy="393" rx="${wu ? 150 : 110}" ry="7" fill="${K.ink}" opacity="0.5"/>`;
+    // attack pose FX (shape cue only, ink): 3 speed lines behind the back — 'start' tapers 16.5° / 19° apart, lengths 64 / 50
+    // / 36 (never a 三) — and a 3-drop ink kick off the back toe (widths ≤ 8, staggered, not a row)
+    if (at) fx += X.Ts([[74, 192, 44, 180, 12, 176, 5, 'start'], [70, 236, 45, 236, 20, 239, 4, 'start'], [66, 284, 50, 292, 32, 296, 3.4, 'start']], K.ink) +
+      X.Ts([[66, 386, 58, 383, 50, 379, 6.4, 'end'], [64, 382, 54, 374, 44, 369, 4.8, 'end'], [70, 382, 66, 374, 60, 368, 3.6, 'end']], K.ink);
+    const ground = at ? `<ellipse cx="300" cy="393" rx="70" ry="6" fill="${K.ink}" opacity="0.5"/><ellipse cx="74" cy="394" rx="22" ry="4" fill="${K.ink}" opacity="0.4"/>`
+      : de === 1 ? `<ellipse cx="220" cy="393" rx="150" ry="8" fill="${K.ink}" opacity="0.5"/>`
+        : `<ellipse cx="${wu ? 232 : 232}" cy="393" rx="${wu ? 150 : 110}" ry="7" fill="${K.ink}" opacity="0.5"/>`;
     return { ground, body, fx };
+  };
+  // ---- K3-2 death f2 / f3 (new drawings; f0 / f1 are branches of the builder above)
+  const HOOK = (K, X) => `<path d="M 68,352 C 63,364 63,374 66,382 C 72,398 100,398 103,380 C 104,372 101,366 97,361" fill="none" stroke="${K.ink}" stroke-width="${8.5 * X.LW}" stroke-linecap="round"/><path d="M 99,366 L 90,346 L 104,358 Z" fill="${K.ink}" stroke="${K.ink}" stroke-width="3.5" stroke-linejoin="round"/>`;
+  A.DEATH = A.DEATH || {};
+  A.DEATH.butcher = function (X) {
+    const { K, o } = X, D = RB.death[o.frame];
+    if (o.frame === 2) {
+      // melting ink mound (top y ≈ 256, x 90…330, = 40% of the idle height) with drips running down its face; the bag
+      // slides off its upper right as crumpled paper (eye out); the meat hook lies on the floor at left; art: 3 paper scraps
+      const top = [[94, 386], [102, 352], [124, 322], [150, 306], [168, 292], [196, 280], [220, 264], [244, 258], [262, 263], [286, 272], [306, 292], [322, 320], [332, 354], [336, 388]];
+      const body = `<ellipse cx="214" cy="388" rx="150" ry="11" fill="${K.ink700}" stroke="${K.ink}" stroke-width="${f(3 * X.LW)}"/>` +
+        A.mound(X, top, 392, [[124, 344, 22, 5], [156, 318, 30, 5.5], [204, 294, 26, 5]]) +
+        // remnants sinking into the mound: the far fist at its left foot, the apron flap (ink.300 + dots) on its front
+        `<g transform="translate(106,352) rotate(-30)">${A.butcherFist(X, 0.8, true)}</g>` +
+        X.S('M 236,330 L 300,318 L 318,350 L 302,384 L 286,372 L 272,388 L 258,374 L 242,386 Z', K.ink300, 4, X.ht('M 230,312 L 324,312 L 324,392 L 230,392 Z', 'd40', 0.9)) +
+        `<g transform="translate(-34,8) rotate(-28 84 376)">${HOOK(K, X)}</g>` +
+        `<g transform="${tfs(D.head)}">${A.butcherFace(X, 'out')}</g>` +
+        A.scrap(X, 64, 372, 13, -18, 1) + A.scrap(X, 356, 378, 11, 24, 2) + A.scrap(X, 176, 386, 9, 6, 3);
+      return { ground: `<ellipse cx="214" cy="393" rx="140" ry="8" fill="${K.ink}" opacity="0.45"/>`, body, fx: '' };
+    }
+    // f3: puddle (200,370) rx165 ry36 (world 66 × 14.4), the flattened bag relic lying in it (vertical ×0.4) whose eye is
+    // a paper ✕, the cleaver flat along the left rim (sign glyph up), one meat hook. Nothing rises above y 317.
+    const body = A.puddle(X, 200, 370, 165, 36, 4) +
+      `<g transform="${tfs(D.cleaver)}">${A.butcherCleaver(X)}</g>` +
+      `<g transform="${tfs(D.relic)}">${A.butcherFace(X, 'dead', A._inv(D.relic))}</g>` +
+      `<g transform="translate(318,374) rotate(-100) scale(0.62,0.5) translate(-84,-376)">${HOOK(K, X)}</g>`;
+    return { ground: '', body, fx: '' };
+  };
+  // ---- K3-2 anchors from the same rig ops. idle = META (face, muzzle, head, fist) + cleaver; windup = where it is drawn
+  // ('!' at bang(300,64), so head (300,64), not META.head (270,46)); attack / death = mapped through that pose's transforms.
+  // death: face = the extinguished eye (f3: the relic's ✕), head = top of the remaining mass + 10 up.
+  const BLADE = [[-29, 22], [29, 22], [29, 100], [22, 106], [8, 102], [-4, 108], [-29, 102]], BC = [0, 65];
+  const topOf = (pts) => pts.reduce((a, p) => (p[1] < a[1] ? p : a));
+  A.ANCH.butcher = function (o) {
+    const M = A.META.butcher, eye = o.pose === 'death' || o.phase >= 3 ? [278, 144] : [275, 151];
+    if (o.pose === 'idle' && !o.windup) return { head: M.head.slice(), face: M.face.slice(), muzzle: M.muzzle.slice(), fist: M.fist.slice(), cleaver: xf(RB.idle.cleaver)(BC) };
+    if (o.pose === 'idle') {
+      const W = RB.windup, c = xf(W.cleaver)(BC);
+      return { head: [300, 64], face: xf([...W.up, ...W.head])(eye), muzzle: c, fist: W.fist.slice(), cleaver: c };
+    }
+    if (o.pose === 'attack') {
+      const R = RB.attack, c = xf(R.cleaver)(BC), tip = topOf(BLADE.map(xf(R.cleaver)));
+      return { head: [tip[0], f(tip[1] - 12)], face: xf([...R.up, ...R.head])(eye), muzzle: c, fist: R.fist.slice(), cleaver: c };
+    }
+    const D = RB.death[o.frame], hump = [[150, 74], [176, 54], [198, 56], [226, 76]];
+    if (o.frame === 0) {
+      const c = xf(D.cleaver)(BC), t = topOf(hump.map(xf(D.up)));
+      return { head: [t[0], f(t[1] - 10)], face: xf([...D.up, ...D.head])(eye), muzzle: c, fist: D.fist.slice(), cleaver: c };
+    }
+    if (o.frame === 1) {
+      const c = xf(D.cleaver)(BC), t = topOf(hump.map(xf(D.squash)));
+      return { head: [t[0], f(t[1] - 10)], face: xf(D.head)(eye), muzzle: c, fist: xf(D.squash)(D.fist), cleaver: c };
+    }
+    if (o.frame === 2) {
+      const c = xf(RB.death[1].cleaver)(BC), t = topOf([[244, 258], ...[[226, 114], [294, 114], [228, 206], [298, 204]].map(xf(D.head))]);
+      return { head: [t[0], f(t[1] - 10)], face: xf(D.head)(eye), muzzle: c, fist: c, cleaver: c };
+    }
+    const c = xf(D.cleaver)(BC), x = xf(D.relic)(eye), t = topOf([[200, 334], ...[[226, 114], [294, 114]].map(xf(D.relic))]);
+    return { head: [t[0], f(t[1] - 10)], face: x, muzzle: c, fist: c, cleaver: c };
   };
 })(window.PN);
 // ---------------------------------------------------------------- 종탑 간수 (gaoler · Ch1 St10 · rings) — shapes + bell + key + lantern + chimes
@@ -383,7 +608,9 @@ window.PN = window.PN || {};
     lantern: 'M 22,278 L 70,278 L 76,292 L 72,332 L 20,332 L 16,292 Z'
   };
 
-  A.gaolerBell = function (X) {
+  // the bell head = the gaoler's face function (K3-2, brief §1.10-2): state 'open' | 'out' | 'dead', m = A._inv(relic ops)
+  // for the ✕, split = the death crack and second chip. Poses only move and rotate the returned group.
+  A.gaolerBell = function (X, state = 'open', m, split = false) {
     const { K, T } = X, ph = X.o.phase, SH = A.GSH, f = X.f;
     // 유곽 cell. rev 3 (K3 F-A1) game: no circle (two circled cells read as a second pair of eyes over the keyhole);
     // the recessed cell's lower-right half catches the key light (ink.500), the ink.300 frame laid back on top.
@@ -422,15 +649,22 @@ window.PN = window.PN || {};
     const kr = ph >= 3 ? 10 : 9;
     const key = `M ${226 - kr},128 A ${kr} ${kr} 0 1 1 ${226 + kr},128 C ${226 + kr},${128 + kr * 0.7} ${226 + kr * 0.55},${128 + kr * 0.95} ${226 + kr * 0.45},${128 + kr * 1.1} L ${226 + kr * 0.8},156 L ${226 - kr * 0.8},156 L ${226 - kr * 0.45},${128 + kr * 1.1} C ${226 - kr * 0.55},${128 + kr * 0.95} ${226 - kr},${128 + kr * 0.7} ${226 - kr},128 Z`;
     const er = X.game ? 1.25 : 1;
+    // K3-2 face states: 'out' = the keyhole eye and its 3 light slivers go dark (inner rim ink.300), 'dead' = paper ✕
+    const lit = state === 'open';
     const medal = `${petals}<circle cx="226" cy="136" r="16" fill="${K.ink700}" stroke="${K.ink}" stroke-width="2"/><circle cx="226" cy="136" r="16" fill="none" stroke="${K.ink300}" stroke-width="1" stroke-dasharray="2 3"/>
       <path d="${key}" fill="${K.ink}" stroke="${K.ink}" stroke-width="${3 * X.LW}" stroke-linejoin="round"/>
-      <path d="${key}" fill="none" stroke="${K.paper50}" stroke-width="1.2" transform="translate(226 136) scale(0.8) translate(-226 -136)"/>
-      <ellipse cx="226.5" cy="128" rx="${f(6.2 * er)}" ry="${f(4.4 * er)}" fill="${K.paper50}"/><circle cx="228.6" cy="128.4" r="${f(2.4 * er)}" fill="${K.ink}"/>
-      ${X.Ts([[222, 156, 221, 166, 223, 178, 2.4, 'start'], [226.5, 156, 227, 170, 226, 186, 2.8, 'start'], [231, 156, 232, 164, 231, 174, 2, 'start']], K.paper50, 'opacity="0.92"')}`;
+      <path d="${key}" fill="none" stroke="${lit ? K.paper50 : K.ink300}" stroke-width="1.2" transform="translate(226 136) scale(0.8) translate(-226 -136)"/>
+      <ellipse cx="226.5" cy="128" rx="${f(6.2 * er)}" ry="${f(4.4 * er)}" fill="${lit ? K.paper50 : K.ink}"/><circle cx="228.6" cy="128.4" r="${f(2.4 * er)}" fill="${K.ink}"/>
+      ${lit ? X.Ts([[222, 156, 221, 166, 223, 178, 2.4, 'start'], [226.5, 156, 227, 170, 226, 186, 2.8, 'start'], [231, 156, 232, 164, 231, 174, 2, 'start']], K.paper50, 'opacity="0.92"') : ''}${state === 'dead' ? A.xMark(X, 226.5, 128, m) : ''}`;
     const rim = `<path d="M 128,184 C 154,196 246,196 272,184" fill="none" stroke="${K.ink}" stroke-width="${7 * X.LW}" stroke-linecap="round"/><path d="M 134,184 C 160,193 240,193 266,184" fill="none" stroke="${K.ink300}" stroke-width="${1.8 * X.TW}"/>`;
     // P3: a chip knocked out of the bell lip (silhouette-level phase marker)
     const chip = ph >= 3 ? `<path d="M 238,194 L 244,180 L 252,186 L 258,176 L 266,190 Z" fill="${A._envBase || K.ch1.base}"/><path d="M 238,194 L 244,180 L 252,186 L 258,176 L 266,190" fill="none" stroke="${K.ink}" stroke-width="${3 * X.LW}" stroke-linejoin="round"/><path d="M 244,183 L 252,189 L 257,180" fill="none" stroke="${K.paper50}" stroke-width="1.6"/>` : '';
-    return `${top}${X.S(SH.bell, K.ink, 6.5, inner)}${X.R([170, 56, 154, 92, 146, 140], 2.6)}${X.C([234, 58, 250, 96, 256, 140, 270, 182], 5)}${rim}${medal}${chip}`;
+    // K3-2 death (split): a thick paper.300 crack splits the bell from the crown to the lip, left of the medallion, and a
+    // second chip is knocked out of the lip
+    const sp = 'M 205,50 L 196,72 L 208,94 L 193,118 L 204,142 L 190,166 L 199,190';
+    const splitS = split ? `<path d="${sp}" fill="none" stroke="${K.ink}" stroke-width="${f(8 * X.LW)}" stroke-linejoin="round"/><path d="${sp}" fill="none" stroke="${K.paper300}" stroke-width="${f(3.2 * X.LW)}" stroke-linejoin="round"/>` +
+      `<path d="M 140,186 L 148,174 L 156,182 L 164,170 L 172,190 Z" fill="${A._envBase || K.ch1.base}"/><path d="M 140,186 L 148,174 L 156,182 L 164,170 L 172,190" fill="none" stroke="${K.ink}" stroke-width="${f(3 * X.LW)}" stroke-linejoin="round"/>` : '';
+    return `${top}${X.S(SH.bell, K.ink, 6.5, inner)}${X.R([170, 56, 154, 92, 146, 140], 2.6)}${X.C([234, 58, 250, 96, 256, 140, 270, 182], 5)}${rim}${medal}${chip}${splitS}`;
   };
 
   // tower-key staff in its own frame: grip at (0,0), shaft along -y (bow) / +y (ward bit, resting on the ground)
@@ -453,14 +687,16 @@ window.PN = window.PN || {};
   };
 
   // plated gauntlet wrapped round the staff (same frame as the key): back plate right, thumb over the top, 3 finger wedges across the shaft
-  A.gaolerGauntlet = function (X) {
+  // K3-2 open (death): the three finger plates swing off the staff from their knuckles (14, y), fanning open
+  A.gaolerGauntlet = function (X, open = false) {
     const { K } = X;
     const back = 'M 6,-24 C 20,-30 36,-24 40,-10 L 40,14 C 34,26 20,28 8,22 Z';
     let s = X.S(back, K.ink700, 5, `<path d="M 6,-24 C 20,-30 36,-24 40,-10 L 30,-8 C 26,-18 16,-20 8,-16 Z" fill="${K.ink500}"/>${X.ht('M 20,6 L 44,6 L 44,30 L 20,30 Z', 'd60')}${X.R([10, -22, 24, -28, 38, -14], 1.8)}`);
     s += X.rivet(30, -4, 2.4) + X.rivet(24, 12, 2.2);
     [-12, -1, 10].forEach((y, i) => {
       const d = `M 14,${y - 5} L -12,${y - 6} C -20,${y - 5} -21,${y + 5} -13,${y + 6} L 14,${y + 6} Z`;
-      s += `<path d="${d}" fill="${K.ink500}" stroke="${K.ink}" stroke-width="${X.f(2.4 * X.LW)}" stroke-linejoin="round"/><path d="M 12,${y - 3.4} L -11,${y - 4.2} C -15,${y - 4} -17,${y - 2} -17,${y}" fill="none" stroke="${K.paper300}" stroke-width="1.5" stroke-linecap="round"/><path d="M -2,${y - 5.5} L -2,${y + 5.5}" stroke="${K.ink}" stroke-width="1.4"/>`;
+      const w = `<path d="${d}" fill="${K.ink500}" stroke="${K.ink}" stroke-width="${X.f(2.4 * X.LW)}" stroke-linejoin="round"/><path d="M 12,${y - 3.4} L -11,${y - 4.2} C -15,${y - 4} -17,${y - 2} -17,${y}" fill="none" stroke="${K.paper300}" stroke-width="1.5" stroke-linecap="round"/><path d="M -2,${y - 5.5} L -2,${y + 5.5}" stroke="${K.ink}" stroke-width="1.4"/>`;
+      s += open ? `<g transform="rotate(${-28 - i * 14} 14 ${y})">${w}</g>` : w;
     });
     s += `<path d="M 10,-26 C -2,-32 -16,-30 -22,-22 L -16,-16 C -10,-22 0,-22 8,-18 Z" fill="${K.ink500}" stroke="${K.ink}" stroke-width="${X.f(2.6 * X.LW)}" stroke-linejoin="round"/>${X.R([-18, -21, -8, -28, 6, -26], 1.5)}`;
     return s + X.C([40, -10, 44, 4, 40, 16], 3.6);
@@ -505,8 +741,30 @@ window.PN = window.PN || {};
 (function (PN) {
   const A = PN.bossesA;
   const bz = (p, t) => { const u = 1 - t; return [u * u * u * p[0] + 3 * u * u * t * p[2] + 3 * u * t * t * p[4] + t * t * t * p[6], u * u * u * p[1] + 3 * u * u * t * p[3] + 3 * u * t * t * p[5] + t * t * t * p[7]]; };
+  // ---- K3-2 rig (drawing and anchors share it). Attack (brief §3.2): the windup's dotted strike arc lands — the key comes
+  // down vertical and its bow strikes the 음통; the bell rings, all three 풍경 jump out, the lantern swings forward.
+  // Death: f0 keyhole out + split crack, fingers open, lantern dropped; f1 cape sinks to 70% (squash), bell tilted −25°,
+  // the key falls left about its bit (brief 35° → 40°: at 35° the shaft passes 18 from the keyhole of the tilted bell,
+  // 40° keeps it 42 clear); f2 the bell lies on its side on a melting mound; f3 bell relic half sunk in the puddle.
+  const tfs = A._tfs, xf = A._xf;
+  A.RIG = A.RIG || {};
+  const LANT_F = [['translate', 6, 50], ['rotate', 22, 46, 342]];
+  const RG = A.RIG.gaoler = {
+    idle: { grip: [286, 248], key: [['translate', 286, 248], ['rotate', 19]], bell: [['rotate', 8, 200, 190]] },
+    windup: { grip: [318, 150], key: [['translate', 318, 150], ['rotate', -8]], bell: [['rotate', 8, 200, 190]] },
+    attack: { grip: [287, 242], key: [['translate', 287, 242], ['rotate', -3]], bell: [['rotate', 8, 200, 190]], lantern: [['rotate', -20, 46, 256]] },
+    death: [
+      { grip: [286, 248], key: [['translate', 286, 248], ['rotate', 19]], bell: [['rotate', 8, 200, 190]], lantern: LANT_F },
+      { grip: [286, 248], squash: [['translate', 200, 392], ['scale', 1.03, 0.7], ['translate', -200, -392]], bell: [['translate', 0, 97], ['rotate', -25, 200, 190]], key: [['translate', 300, 392], ['rotate', -40], ['translate', 0, -150]], lantern: LANT_F },
+      { bell: [['translate', 30, 178], ['rotate', -90, 200, 120]], key: [['translate', 186, 360], ['scale', 1, 0.4], ['rotate', 34], ['rotate', -90], ['translate', 0, 65]], lantern: LANT_F },
+      { relic: [['translate', 196, 352], ['scale', 1, 0.4], ['rotate', -90], ['translate', -200, -120]], key: [['translate', 200, 358], ['scale', 1, 0.4], ['rotate', 58], ['rotate', -90], ['translate', 0, 65]] }
+    ]
+  };
   A.BUILD.gaoler = function (X) {
     const { K, T, o } = X, ph = o.phase, wu = o.windup, SH = A.GSH, f = X.f;
+    const de = o.pose === 'death' ? o.frame : -1;           // death frame 0..3, or −1
+    if (de >= 2) return A.DEATH.gaoler(X);                   // f2 mound, f3 puddle: separate drawings
+    const at = o.pose === 'attack', R = RG.attack, D = de >= 0 ? RG.death[de] : null;
     // ---- tiled eave cape: ridges + round tile-ends along the eave
     const segs = [[52, 154, 60, 182, 76, 206, 96, 224], [96, 224, 150, 238, 256, 238, 306, 224], [306, 224, 326, 206, 340, 182, 348, 154]];
     const eave = []; segs.forEach((sg, k) => { const n = k === 1 ? 11 : 4; for (let i = (k ? 1 : 0); i <= n; i++) eave.push(bz(sg, i / n)); });
@@ -523,7 +781,10 @@ window.PN = window.PN || {};
       `<path d="M 52,154 C 46,146 46,138 52,132" fill="none" stroke="${K.ink}" stroke-width="${5 * X.LW}" stroke-linecap="round"/><path d="M 348,154 C 354,146 354,138 348,132" fill="none" stroke="${K.ink}" stroke-width="${5 * X.LW}" stroke-linecap="round"/>` +
       X.C([306, 224, 326, 206, 340, 182, 348, 156], 4.4) + X.C([96, 226, 150, 240, 256, 240, 306, 226], 3.6);
     // ---- 풍경 x3 on cords from the two upturned tips + the front-left eave corner; P2: the left one swings and rings
-    const chimes = A.gaolerChime(X, 52, 134, ph >= 2 ? 22 : 0, ph >= 2) + A.gaolerChime(X, 348, 134, 0, false) + A.gaolerChime(X, 98, 226, 0, false);
+    // attack: all three ring and jump outward (sound arcs, no lettering); death: they swing silent
+    const chimes = at ? A.gaolerChime(X, 52, 134, 24, true) + A.gaolerChime(X, 348, 134, -24, true) + A.gaolerChime(X, 98, 226, 16, true)
+      : D ? A.gaolerChime(X, 52, 134, 10, false) + A.gaolerChime(X, 348, 134, -6, false) + A.gaolerChime(X, 98, 226, 4, false)
+        : A.gaolerChime(X, 52, 134, ph >= 2 ? 22 : 0, ph >= 2) + A.gaolerChime(X, 348, 134, 0, false) + A.gaolerChime(X, 98, 226, 0, false);
     // ---- boots + robe
     const boots = `${X.S('M 164,395 L 168,378 L 212,378 C 222,382 228,388 230,395 Z', K.ink, 5, `<path d="M 196,380 C 210,381 222,386 226,392 L 216,392 C 212,386 204,383 194,383 Z" fill="${K.ink500}"/>`)}
       ${X.S('M 232,395 L 236,380 L 276,380 C 288,384 294,389 296,395 Z', K.ink, 5, `<path d="M 262,382 C 276,383 288,387 292,393 L 282,393 C 278,387 270,385 260,385 Z" fill="${K.ink500}"/>`)}`;
@@ -562,22 +823,86 @@ window.PN = window.PN || {};
       <circle cx="134" cy="340" r="10" fill="none" stroke="${K.ink}" stroke-width="${6.5 * X.LW}"/><circle cx="134" cy="340" r="10" fill="none" stroke="${K.ink300}" stroke-width="2"/>
       ${[[126, 350, 122, 370], [136, 351, 138, 374]].map(([a, b, c, d]) => `<path d="M ${a},${b} L ${c},${d}" stroke="${K.ink}" stroke-width="${6 * X.LW}" stroke-linecap="round"/><path d="M ${a},${b} L ${c},${d}" stroke="${K.ink500}" stroke-width="2.2" stroke-linecap="round"/><path d="M ${c - 4},${d - 5} l 7,2" stroke="${K.ink}" stroke-width="2.4"/>`).join('')}`;
     // ---- lantern arm: forearm emerges from under the left eave, gauntlet fist holds the lantern ring at hip height
-    const lanternArm = `${A.gaolerLantern(X)}${X.limb([88, 204], [54, 242], 17, 15, { bulge: 1.06, fill: K.ink700 })}
+    // attack: the lantern swings forward about its ring; death: it has dropped to the floor (drawn on its own, below)
+    const lanternS = A.gaolerLantern(X);
+    const lanternArm = `${at ? `<g transform="${tfs(R.lantern)}">${lanternS}</g>` : D ? '' : lanternS}${X.limb([88, 204], [54, 242], 17, 15, { bulge: 1.06, fill: K.ink700 })}
       ${X.S('M 34,236 C 38,226 58,224 66,234 L 68,252 C 60,262 42,262 36,254 Z', K.ink700, 4.6, `<path d="M 34,238 C 40,228 56,226 64,232 L 56,238 C 50,234 42,236 38,244 Z" fill="${K.ink500}"/>${X.ht('M 40,248 L 70,248 L 70,264 L 40,264 Z', 'd60')}`)}
       ${[0, 1, 2].map((i) => `<path d="M ${40 + i * 8},250 L ${42 + i * 8},258" stroke="${K.ink}" stroke-width="1.6"/>`).join('')}${X.brk('M 70,214 C 76,222 78,230 74,238')}`;
     // ---- key staff + gauntlet (idle: diagonal across the body; windup: raised high, bow over the bell)
     const G = wu ? [318, 150] : A.META.gaoler.grip, rot = wu ? -8 : 19;
-    const keyT = `transform="translate(${G[0]},${G[1]}) rotate(${rot})"`;
-    const forearm = wu ? X.limb([360, 204], [352, 134], 18, 15, { bulge: 1.06 }) : X.limb([346, 204], [328, 242], 18, 15, { bulge: 1.06 });
+    const keyT = at ? `transform="${tfs(R.key)}"` : `transform="translate(${G[0]},${G[1]}) rotate(${rot})"`;
+    // attack: the forearm drives the key straight down, in front of the tile cape
+    const forearm = at ? X.limb([352, 206], [300, 240], 18, 15, { bulge: 1.06 }) : wu ? X.limb([360, 204], [352, 134], 18, 15, { bulge: 1.06 }) : X.limb([346, 204], [328, 242], 18, 15, { bulge: 1.06 });
     const bellT = 'transform="rotate(8 200 190)"';
-    const body = `${boots}${coat}${hemDrips}${lapels}${cage}${belt}${lanternArm}${wu ? '' : forearm}${cape}${chimes}<g ${bellT}>${A.gaolerBell(X)}</g>
-      ${wu ? forearm : ''}<g ${keyT}>${A.gaolerKey(X)}${A.gaolerGauntlet(X)}</g>`;
+    const fwd = wu || at;
+    const bellS = A.gaolerBell(X, D ? 'out' : 'open', undefined, !!D);
+    const floorLantern = D ? `<g transform="${tfs(D.lantern)}">${lanternS}</g>` : '';
+    // death f1: cape and coat sink to 70% (squash about the feet); the bell (face) is drawn outside the squash, tilted −25°,
+    // and the key falls left about its bit, clear of the keyhole
+    const body = de === 1 ? `${floorLantern}<g transform="${tfs(D.squash)}">${boots}${coat}${hemDrips}${lapels}${cage}${belt}${lanternArm}${forearm}${cape}${chimes}<g ${keyT}>${A.gaolerGauntlet(X, true)}</g></g><g transform="${tfs(D.bell)}">${bellS}</g><g transform="${tfs(D.key)}">${A.gaolerKey(X)}</g>`
+      : `${floorLantern}${boots}${coat}${hemDrips}${lapels}${cage}${belt}${lanternArm}${fwd ? '' : forearm}${cape}${chimes}<g ${bellT}>${bellS}</g>
+      ${fwd ? forearm : ''}<g ${keyT}>${A.gaolerKey(X)}${A.gaolerGauntlet(X, !!D)}</g>`;
     let fx = '';
-    if (ph >= 3) fx += `<g stroke="${K.ink300}" stroke-width="1">${X.drip(52, 160, 30, 4.8)}${X.drip(348, 160, 26, 4.4)}${X.drip(150, 236, 28, 4.4)}${X.drip(256, 236, 32, 4.6)}</g>`;
+    if (ph >= 3) { const dr = `<g stroke="${K.ink300}" stroke-width="1">${X.drip(52, 160, 30, 4.8)}${X.drip(348, 160, 26, 4.4)}${X.drip(150, 236, 28, 4.4)}${X.drip(256, 236, 32, 4.6)}</g>`; fx += de === 1 ? `<g transform="${tfs(D.squash)}">${dr}</g>` : dr; }
     if (o.enraged) fx += `<g ${bellT}><ellipse cx="226.5" cy="129" rx="12" ry="10" fill="${K.paper50}" filter="url(#${X.p}glow)"/><ellipse cx="226.5" cy="129" rx="6" ry="4.4" fill="${K.paper50}"/><circle cx="228" cy="129.4" r="1.8" fill="${K.ink}"/></g>`;
     if (wu) fx += `${X.bang(186, 4, 0.85)}<path d="M 292,-78 C 262,-84 250,-30 252,26" fill="none" stroke="${K.ink}" stroke-width="2.6" stroke-dasharray="7 5"/><path d="M 243,18 L 253,40 L 262,18 Z" fill="${K.ink}"/>`;
-    const ground = `<ellipse cx="220" cy="394" rx="94" ry="7" fill="${K.ink}" opacity="0.45"/>`;
+    if (at) {
+      // attack pose FX (shape cue, ink + paper only): 담묵 ripple arcs round the bell (r 150 / 176, left 160°–200°, right
+      // −20°–20°), an uneven 4-prong ink burst at the 음통 strike point (262,24) with a paper.300 core (paper.50 is the eye's
+      // only), one ink.300 vibration tick on each bell flank
+      const arc = (r, a0, a1) => { const p = (a) => `${f(200 + r * Math.cos(a * Math.PI / 180))},${f(150 + r * Math.sin(a * Math.PI / 180))}`; return `M ${p(a0)} A ${r} ${r} 0 0 1 ${p(a1)}`; };
+      fx += X.line(`${arc(150, 160, 200)} ${arc(150, -20, 20)}`, K.ink300, 3.4) + X.line(`${arc(176, 160, 200)} ${arc(176, -20, 20)}`, K.ink300, 2.4);
+      [[-62, 13], [14, 7], [118, 11], [205, 9]].forEach(([a, L]) => {
+        const c = Math.cos(a * Math.PI / 180), s = Math.sin(a * Math.PI / 180);
+        fx += X.T([262, 24, 262 + c * L * 0.5, 24 + s * L * 0.5, 262 + c * L, 24 + s * L], 6.4, 'start', K.ink) + X.T([262, 24, 262 + c * L * 0.3, 24 + s * L * 0.3, 262 + c * L * 0.6, 24 + s * L * 0.6], 2.2, 'start', K.paper300);
+      });
+      fx += X.line('M 124,98 C 118,114 118,130 122,146', K.ink300, 2.2) + X.line('M 280,88 C 288,104 290,122 288,138', K.ink300, 2.2);
+    }
+    const ground = de === 1 ? `<ellipse cx="206" cy="394" rx="140" ry="8" fill="${K.ink}" opacity="0.45"/>` : `<ellipse cx="220" cy="394" rx="94" ry="7" fill="${K.ink}" opacity="0.45"/>`;
     return { ground, body, fx };
+  };
+  // ---- K3-2 death f2 / f3 (new drawings)
+  // the fallen cage door: frame + two bars, no crossbar (lying on its side, bars + crossbar stacked into "三" / "H" glyphs)
+  const DOOR = (X, K) => X.S('M 160,236 L 128,246 L 128,322 L 160,312 Z', K.ink700, 4.4, `${[138, 148].map((x) => `<path d="M ${x},230 L ${x},326" stroke="${K.ink}" stroke-width="${4 * X.LW}"/>`).join('')}`);
+  A.DEATH = A.DEATH || {};
+  A.DEATH.gaoler = function (X) {
+    const { K, o } = X, f = X.f, D = RG.death[o.frame];
+    if (o.frame === 2) {
+      // the bell lies on its side on a low melting mound (whole frame ≈ 44% of the idle height), the key flat behind it,
+      // the cage door fallen in front, the lantern still on the floor at left; art: 3 paper scraps
+      const top = [[74, 386], [84, 354], [108, 330], [140, 312], [176, 302], [214, 298], [252, 300], [290, 308], [318, 326], [334, 354], [340, 388]];
+      const body = `<ellipse cx="206" cy="388" rx="152" ry="11" fill="${K.ink700}" stroke="${K.ink}" stroke-width="${f(3 * X.LW)}"/>` +
+        `<g transform="${tfs(D.key)}">${A.gaolerKey(X)}</g>` +
+        A.mound(X, top, 392, [[118, 342, 20, 5], [162, 320, 26, 5.5], [212, 306, 22, 5]]) +
+        `<g transform="${tfs(D.lantern)}">${A.gaolerLantern(X)}</g>` +
+        `<g transform="translate(262,352) rotate(-30) scale(0.9,0.62) translate(-144,-280)">${DOOR(X, K)}</g>` +
+        `<g transform="${tfs(D.bell)}">${A.gaolerBell(X, 'out', undefined, true)}</g>` +
+        A.scrap(X, 60, 376, 13, -14, 4) + A.scrap(X, 356, 380, 11, 20, 5) + A.scrap(X, 300, 388, 9, -6, 6);
+      return { ground: `<ellipse cx="206" cy="394" rx="150" ry="8" fill="${K.ink}" opacity="0.45"/>`, body, fx: '' };
+    }
+    // f3: the key lies diagonally across the puddle and sinks (only its two ends show, the far end ≤ y 280); the puddle;
+    // the bell relic on its side, medallion up (vertical ×0.4), half sunk at the waterline, keyhole eye = paper ✕; one 풍경
+    const body = `<g transform="${tfs(D.key)}">${A.gaolerKey(X)}</g>` + A.puddle(X, 200, 370, 165, 36, 6) +
+      X.clip('M 20,240 L 380,240 L 380,356 C 320,363 120,363 20,356 Z', `<g transform="${tfs(D.relic)}">${A.gaolerBell(X, 'dead', A._inv(D.relic), true)}</g>`) +
+      `<g transform="translate(304,352) rotate(-80)">${A.gaolerChime(X, 0, 0, 0, false)}</g>`;
+    return { ground: '', body, fx: '' };
+  };
+  // ---- K3-2 anchors from the same rig ops. idle = META + bow; windup = drawn ('!' at bang(186,4)); attack / death mapped.
+  const EYE = [226.5, 128], BELLC = [200, 120], BOW = [0, -232], BELL_OUT = [[200, 12], [168, 54], [232, 54], [128, 184], [272, 184]];
+  const r1 = (v) => Math.round(v * 10) / 10, topOf = (pts) => pts.reduce((a, p) => (p[1] < a[1] ? p : a));
+  A.ANCH.gaoler = function (o) {
+    const M = A.META.gaoler;
+    if (o.pose === 'idle' && !o.windup) return { head: M.head.slice(), face: M.face.slice(), muzzle: M.muzzle.slice(), grip: M.grip.slice(), bow: xf(RG.idle.key)(BOW) };
+    if (o.pose === 'idle') return { head: [186, 4], face: M.face.slice(), muzzle: M.muzzle.slice(), grip: RG.windup.grip.slice(), bow: xf(RG.windup.key)(BOW) };
+    if (o.pose === 'attack') { const R = RG.attack, cap = xf(R.key)([0, -280]); return { head: [cap[0], r1(cap[1] - 12)], face: M.face.slice(), muzzle: M.muzzle.slice(), grip: R.grip.slice(), bow: xf(R.key)(BOW) }; }
+    const D = RG.death[o.frame];
+    if (o.frame === 3) {
+      const t = topOf([[200, 334], ...BELL_OUT.map(xf(D.relic))]);
+      return { head: [t[0], r1(t[1] - 10)], face: xf(D.relic)(EYE), muzzle: xf(D.relic)(BELLC), grip: xf(D.key)([0, 0]), bow: xf(D.key)(BOW) };
+    }
+    const bell = xf(D.bell), t = topOf([...(o.frame === 2 ? [[214, 298]] : []), ...BELL_OUT.map(bell)]);
+    const grip = o.frame === 0 ? D.grip.slice() : o.frame === 1 ? xf(D.squash)(D.grip) : xf(D.key)([0, 0]);
+    return { head: [t[0], r1(t[1] - 10)], face: bell(EYE), muzzle: bell(BELLC), grip, bow: xf(D.key)(BOW) };
   };
 })(window.PN);
 // ---------------------------------------------------------------- 용광의 입 (maw · Ch2 St10 · flame) — shapes + parts
@@ -639,13 +964,14 @@ window.PN = window.PN || {};
     o += X.S(`M ${P(tx, -18)} L ${P(tx + tw, -14)} L ${P(tx + tw, 10)} L ${P(tx, 14)} Z`, K.ink500, 3.2, X.R([cx + (tx + tw * 0.3) * s, cy - 14 * s, cx + (tx + tw * 0.3) * s, cy, cx + (tx + tw * 0.3) * s, cy + 10 * s], 1.4));
     return o + X.C([cx + 32 * s, cy - 20 * s, cx + 34 * s, cy, cx + 30 * s, cy + 22 * s], 4.4);
   };
-  // organ pipes behind the stove (5, tallest centre) with V-cut organ mouths; P2 snaps the right one
-  A.mawPipes = function (X) {
+  // organ pipes behind the stove (5, tallest centre) with V-cut organ mouths; P2 snaps the right one.
+  // K3-2 snap = extra pipe indices drawn snapped the same way (death f1: two more pipes break)
+  A.mawPipes = function (X, snap = []) {
     const { K } = X, ph = X.o.phase, f = X.f;
     const P = [[128, 78, 24], [164, 42, 28], [202, 12, 32], [240, 42, 28], [276, 78, 24]];
     let s = '';
     P.forEach(([x, top, w], i) => {
-      const bent = ph >= 2 && i === 4, t0 = bent ? top + 26 : top, h = w / 2;
+      const bent = (ph >= 2 && i === 4) || snap.includes(i), t0 = bent ? top + 26 : top, h = w / 2;
       const d = `M ${x - h},172 L ${x - h},${t0 + 6} L ${x + h},${t0 + 6} L ${x + h},172 Z`;
       const my = Math.min(i === 2 ? 104 : 140, t0 + 58);
       s += X.S(d, K.ink, 5, `<rect x="${x - h}" y="${t0}" width="${w * 0.3}" height="${172 - t0}" fill="${K.ink500}"/>
@@ -687,14 +1013,74 @@ window.PN = window.PN || {};
 (function (PN) {
   const A = PN.bossesA;
   const bz = (p, t) => { const u = 1 - t; return [u * u * u * p[0] + 3 * u * u * t * p[2] + 3 * u * t * t * p[4] + t * t * t * p[6], u * u * u * p[1] + 3 * u * u * t * p[3] + 3 * u * t * t * p[5] + t * t * t * p[7]]; };
+  // ---- K3-2 face function (brief §1.10-2): the frontal pointed-arch firebox with its two eyes, state 'open' | 'out' |
+  // 'dead'; every pose calls it and only moves/rotates it. 'out' = both paper eyes go to ink; 'dead' = paper ✕✕
+  // (m = A._inv(relic ops)). opt.at = attack: eyes narrowed to ×0.7 height (pupils at cy − 0.3h, touching the +x lid),
+  // lower grille row dropped 8 (mouth gapes), pre-heat and ember bed off, 3 low black flames rise from the floor (y 310,
+  // tops ≥ 280, paper.50 core ≤ 3). opt.broken = 2 of the lower teeth snapped (death); opt.noKeystone = keystone fallen.
+  A.mawFace = function (X, state = 'open', m, opt = {}) {
+    const { K, T, o } = X, ph = o.phase, wu = o.windup, SH = A.MSH, f = X.f, lit = state === 'open';
+    // ---- pointed-arch firebox frame: lit inner bevel, keystone, rivets
+    const frame = X.S(SH.frame, K.ink, 6.5, `<path d="M 138,314 L 138,238 C 138,210 162,184 206,156 L 206,172 C 172,194 152,216 152,240 L 152,314 Z" fill="${K.ink500}"/>
+      ${X.R([140, 306, 140, 240, 204, 156], 2)}${X.ht('M 260,240 C 260,216 240,194 206,172 L 206,158 C 250,184 274,210 274,238 L 274,316 L 260,316 Z', 'd60')}
+      ${[[145, 296], [145, 262], [150, 226], [170, 196], [242, 196], [262, 226], [267, 262], [267, 296]].map(([x, y]) => X.rivet(x, y, 2.6)).join('')}`) +
+      X.brk('M 136,318 L 136,238 C 136,208 162,180 206,152 C 250,180 276,208 276,238 L 276,318', 2.2) + X.brk('M 152,310 L 152,240 C 152,216 172,194 206,172 C 240,194 260,216 260,240 L 260,310', 1.6) + (opt.noKeystone ? '' : X.S('M 194,146 L 218,146 L 213,176 L 199,176 Z', K.ink500, 3.4, X.R([197, 149, 206, 148, 215, 149], 1.4))) + X.C([250, 180, 276, 206, 278, 240, 276, 318], 5);
+    const topT = ph >= 3 ? [176, 236] : [176, 191, 206, 221, 236];
+    const heat = wu ? `<rect x="140" y="160" width="130" height="160" fill="${K.warn}"/>
+        <path d="M 150,300 C 176,284 236,284 262,300 L 262,312 L 150,312 Z" fill="${K.paper50}" stroke="${K.ink}" stroke-width="${2.4 * X.LW}"/>
+        ${X.ht('M 140,160 L 270,160 L 270,230 L 140,230 Z', 'd20', 0.55)}` : '';
+    const eyeR = o.enraged ? 1.25 : 1;
+    const eye = (x, y, w, h, tilt) => `<path d="M ${f(x - w)},${f(y - h * 0.2 * tilt)} C ${f(x - w * 0.5)},${f(y - h - h * 0.5 * tilt)} ${f(x + w * 0.5)},${f(y - h + h * 0.5 * tilt)} ${f(x + w)},${f(y + h * 0.1 * tilt)} C ${f(x + w * 0.4)},${f(y + h)} ${f(x - w * 0.4)},${f(y + h)} ${f(x - w)},${f(y - h * 0.2 * tilt)} Z" fill="${lit ? K.paper50 : K.ink}" stroke="${K.ink}" stroke-width="${wu ? 3 : 1.4}"/>`;
+    // rev 3 (K3 F-A2): one eye line (y 244) on the frontal firebox; the asymmetry is wide-open vs narrowed, not a size/height
+    // (perspective) difference. Both pupils look +x (at the player) and touch the upper lid on that side. META.maw.face = midpoint.
+    const eyes = opt.at ? `${eye(186, 244, 13.5 * eyeR, 6 * eyeR, 1)}<circle cx="191.5" cy="242.2" r="4" fill="${K.ink}"/>${eye(227, 244, 10.4 * eyeR, 4.3 * eyeR, -1)}<circle cx="231.5" cy="242.7" r="3.2" fill="${K.ink}"/>`
+      : `${eye(186, 244, 13.5 * eyeR, 8.6 * eyeR, 1)}<circle cx="191.5" cy="242.6" r="4" fill="${K.ink}"/>${eye(227, 244, 10.4 * eyeR, 6.2 * eyeR, -1)}<circle cx="231.5" cy="242.4" r="3.2" fill="${K.ink}"/>`;
+    const tooth = (x, y0, tip, up) => `<path d="M ${x - 6},${y0} L ${x + 6},${y0} L ${x + 6},${tip + (up ? 12 : -12)} L ${x},${tip} L ${x - 6},${tip + (up ? 12 : -12)} Z" fill="${K.ink300}" stroke="${K.ink}" stroke-width="${2.2 * X.LW}" stroke-linejoin="round"/><path d="M ${x + 1},${y0} L ${x + 1},${tip + (up ? 10 : -10)} L ${x + 5},${tip + (up ? 12 : -12)} L ${x + 5},${y0} Z" fill="${K.ink500}"/>`;
+    // attack mouth flames: low black tongues with a thin paper.50 core (≤ 3), tops at y 282 (eyes at 244 stay clear)
+    const fire = (x, h, w, lean) => `<path d="M ${f(x - w / 2)},310 C ${f(x - w * 0.62)},${f(310 - h * 0.45)} ${f(x + lean - w * 0.28)},${f(310 - h * 0.62)} ${f(x + lean)},${f(310 - h)} C ${f(x + lean + w * 0.08)},${f(310 - h * 0.66)} ${f(x + w * 0.6)},${f(310 - h * 0.4)} ${f(x + w / 2)},310 Z" fill="${K.ink}"/>` + T([x, 308, x + lean * 0.4, 310 - h * 0.45, x + lean * 0.7, 310 - h * 0.72], 2.4 / X.TW, 'mid', K.paper50);
+    const lower = opt.broken ? `${[197, 235].map((x) => tooth(x, 312, 276, true)).join('')}${[178, 216].map((x) => tooth(x, 312, 300, true)).join('')}` : [178, 197, 216, 235].map((x) => tooth(x, 312, 276, true)).join('');
+    const mouth = X.S(SH.mouth, K.ink, 5, `${heat}
+      ${wu || opt.at ? '' : `<ellipse cx="206" cy="302" rx="50" ry="12" fill="${K.ink700}"/>${[[172, 302, 3.4], [188, 306, 2.6], [202, 298, 3.8], [218, 305, 3], [234, 300, 2.8], [196, 292, 2], [226, 294, 2.2]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${K.ink300}" stroke="${K.ink}" stroke-width="1.2"/>`).join('')}${X.ht('M 150,270 L 262,270 L 262,312 L 150,312 Z', 'r40', 0.5)}`}
+      ${eyes}${opt.at ? fire(176, 26, 18, -3) + fire(206, 28, 20, 2) + fire(236, 24, 16, 4) : ''}
+      ${topT.map((x) => tooth(x, 160, x === 206 ? 226 : 222 - Math.abs(x - 206) * 0.1, false)).join('')}
+      ${opt.at ? `<g transform="translate(0,8)">${lower}</g>` : lower}
+      ${ph >= 3 ? `<path d="M 191,190 L 191,206 L 187,210 M 206,176 L 206,200 M 221,190 L 221,208 L 225,212" fill="none" stroke="${K.ink300}" stroke-width="${4 * X.LW}"/>` : ''}${state === 'dead' ? A.xMark(X, 186, 244, m) + A.xMark(X, 227, 244, m) : ''}`);
+    return `${frame}${mouth}`;
+  };
+  // ---- K3-2 rig (drawing and anchors share it). Attack (brief §3.3): the lifted right arm slams down, BOTH fists plant on
+  // the ground, the firebox gapes and spits black fire at its own feet. Death: f0 eyes out, teeth snap, soot stops (two
+  // ink.300 smoke wisps), the right arm sags; f1 legs buckle — body sinks to 70% and leans 8° left (the firebox face is
+  // drawn outside the squash), two pipes snap, the keystone falls; f2 a heap of cast-iron plates with the firebox leaning
+  // on it; f3 puddle with the arch frame lying face up (✕✕).
+  const tfs = A._tfs, xf = A._xf;
+  A.RIG = A.RIG || {};
+  const RM = A.RIG.maw = {
+    attack: { fists: [[58, 368], [352, 368]] },
+    death: [
+      { fists: [[58, 368], [346, 352]] },
+      { fists: [[58, 368], [346, 352]], body: [['rotate', -8, 200, 392], ['translate', 200, 392], ['scale', 1.04, 0.7], ['translate', -200, -392]], face: [['translate', -14.6, 45.8], ['rotate', -8, 206, 240]] },
+      { face: [['translate', 10, 86], ['rotate', -12, 206, 240]] },
+      { relic: [['translate', 200, 356], ['rotate', 4], ['scale', 1, 0.4], ['translate', -206, -240]] }
+    ]
+  };
   A.BUILD.maw = function (X) {
     const { K, T, o } = X, ph = o.phase, wu = o.windup, SH = A.MSH, f = X.f;
+    const de = o.pose === 'death' ? o.frame : -1;           // death frame 0..3, or −1
+    const at = o.pose === 'attack', D = de >= 0 ? RM.death[de] : null;
     X.defs.push(`<filter id="${X.p}soot" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.11" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="${X.game ? 4 : 7}" xChannelSelector="R" yChannelSelector="G"/></filter>`);
+    if (de >= 2) return A.DEATH.maw(X);                      // f2 heap, f3 puddle: separate drawings
     // ---- arms: left planted on its knuckles, right lifted with a bent, rivet-collared elbow
     const armL = `${A.mawPipe(X, [62, 258], [58, 342], 32)}${A.mawPipe(X, [116, 204], [62, 258], 36)}
       ${A.mawCollar(X, 116, 204, 22, 14, -45, false)}${A.mawCollar(X, 62, 258, 24, 15, 40, true)}${A.mawCollar(X, 58, 340, 20, 9, 0, false)}
       ${A.mawFist(X, 58, 368, 1, true, -1)}`;
-    const armR = `${A.mawPipe(X, [284, 204], [350, 244], 36)}${A.mawPipe(X, [350, 246], [348, 302], 32)}
+    // attack: the forearm pipe drops straight down and the right fist plants on the ground; death: the arm sags, fist hanging
+    const armR = at ? `${A.mawPipe(X, [284, 204], [350, 244], 36)}${A.mawPipe(X, [350, 246], [352, 340], 32)}
+      ${A.mawCollar(X, 284, 204, 22, 14, 45, false)}${A.mawCollar(X, 350, 246, 25, 16, -30, true)}${A.mawCollar(X, 352, 338, 20, 9, 0, false)}
+      ${A.mawFist(X, 352, 368, 1, true, 1)}`
+      : D ? `${A.mawPipe(X, [284, 204], [350, 244], 36)}${A.mawPipe(X, [350, 246], [346, 326], 32)}
+      ${A.mawCollar(X, 284, 204, 22, 14, 45, false)}${A.mawCollar(X, 350, 246, 25, 16, -30, true)}${A.mawCollar(X, 346, 324, 20, 9, 0, false)}
+      ${A.mawFist(X, 346, 352, 0.95, false, 1)}`
+        : `${A.mawPipe(X, [284, 204], [350, 244], 36)}${A.mawPipe(X, [350, 246], [348, 302], 32)}
       ${A.mawCollar(X, 284, 204, 22, 14, 45, false)}${A.mawCollar(X, 350, 246, 25, 16, -30, true)}${A.mawCollar(X, 348, 300, 20, 9, 0, false)}
       ${A.mawFist(X, 348, 324, 0.95, false, 1)}`;
     // ---- cast-iron belly: designed lit crescent, 60% band under the collar, plate seams curving round the volume
@@ -724,36 +1110,69 @@ window.PN = window.PN || {};
     const base = X.S(SH.base, K.ink, 5, `${X.R([102, 342, 200, 341, 298, 342], 1.4)}${[120, 160, 200, 240, 280].map((x) => X.rivet(x, 348, 2.2)).join('')}`);
     const legs = [SH.legL, SH.legR].map((d, i) => X.S(d, K.ink, 5, X.line(i ? 'M 228,358 C 228,370 232,378 238,386' : 'M 150,358 C 150,370 146,378 140,386', K.ink500, 3)) +
       [0, 1, 2].map((k) => { const x = (i ? 228 : 134) + k * 13; return `<path d="M ${x},393 L ${x + 4},400 L ${x + 8},393 Z" fill="${K.ink}"/>`; }).join('')).join('');
-    // ---- pointed-arch firebox frame: lit inner bevel, keystone, rivets
-    const frame = X.S(SH.frame, K.ink, 6.5, `<path d="M 138,314 L 138,238 C 138,210 162,184 206,156 L 206,172 C 172,194 152,216 152,240 L 152,314 Z" fill="${K.ink500}"/>
-      ${X.R([140, 306, 140, 240, 204, 156], 2)}${X.ht('M 260,240 C 260,216 240,194 206,172 L 206,158 C 250,184 274,210 274,238 L 274,316 L 260,316 Z', 'd60')}
-      ${[[145, 296], [145, 262], [150, 226], [170, 196], [242, 196], [262, 226], [267, 262], [267, 296]].map(([x, y]) => X.rivet(x, y, 2.6)).join('')}`) +
-      X.brk('M 136,318 L 136,238 C 136,208 162,180 206,152 C 250,180 276,208 276,238 L 276,318', 2.2) + X.brk('M 152,310 L 152,240 C 152,216 172,194 206,172 C 240,194 260,216 260,240 L 260,310', 1.6) + X.S('M 194,146 L 218,146 L 213,176 L 199,176 Z', K.ink500, 3.4, X.R([197, 149, 206, 148, 215, 149], 1.4)) + X.C([250, 180, 276, 206, 278, 240, 276, 318], 5);
-    const topT = ph >= 3 ? [176, 236] : [176, 191, 206, 221, 236];
-    const heat = wu ? `<rect x="140" y="160" width="130" height="160" fill="${K.warn}"/>
-        <path d="M 150,300 C 176,284 236,284 262,300 L 262,312 L 150,312 Z" fill="${K.paper50}" stroke="${K.ink}" stroke-width="${2.4 * X.LW}"/>
-        ${X.ht('M 140,160 L 270,160 L 270,230 L 140,230 Z', 'd20', 0.55)}` : '';
-    const eyeR = o.enraged ? 1.25 : 1;
-    const eye = (x, y, w, h, tilt) => `<path d="M ${f(x - w)},${f(y - h * 0.2 * tilt)} C ${f(x - w * 0.5)},${f(y - h - h * 0.5 * tilt)} ${f(x + w * 0.5)},${f(y - h + h * 0.5 * tilt)} ${f(x + w)},${f(y + h * 0.1 * tilt)} C ${f(x + w * 0.4)},${f(y + h)} ${f(x - w * 0.4)},${f(y + h)} ${f(x - w)},${f(y - h * 0.2 * tilt)} Z" fill="${K.paper50}" stroke="${K.ink}" stroke-width="${wu ? 3 : 1.4}"/>`;
-    // rev 3 (K3 F-A2): one eye line (y 244) on the frontal firebox; the asymmetry is wide-open vs narrowed, not a size/height
-    // (perspective) difference. Both pupils look +x (at the player) and touch the upper lid on that side. META.maw.face = midpoint.
-    const eyes = `${eye(186, 244, 13.5 * eyeR, 8.6 * eyeR, 1)}<circle cx="191.5" cy="242.6" r="4" fill="${K.ink}"/>${eye(227, 244, 10.4 * eyeR, 6.2 * eyeR, -1)}<circle cx="231.5" cy="242.4" r="3.2" fill="${K.ink}"/>`;
-    const tooth = (x, y0, tip, up) => `<path d="M ${x - 6},${y0} L ${x + 6},${y0} L ${x + 6},${tip + (up ? 12 : -12)} L ${x},${tip} L ${x - 6},${tip + (up ? 12 : -12)} Z" fill="${K.ink300}" stroke="${K.ink}" stroke-width="${2.2 * X.LW}" stroke-linejoin="round"/><path d="M ${x + 1},${y0} L ${x + 1},${tip + (up ? 10 : -10)} L ${x + 5},${tip + (up ? 12 : -12)} L ${x + 5},${y0} Z" fill="${K.ink500}"/>`;
-    const mouth = X.S(SH.mouth, K.ink, 5, `${heat}
-      ${wu ? '' : `<ellipse cx="206" cy="302" rx="50" ry="12" fill="${K.ink700}"/>${[[172, 302, 3.4], [188, 306, 2.6], [202, 298, 3.8], [218, 305, 3], [234, 300, 2.8], [196, 292, 2], [226, 294, 2.2]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${K.ink300}" stroke="${K.ink}" stroke-width="1.2"/>`).join('')}${X.ht('M 150,270 L 262,270 L 262,312 L 150,312 Z', 'r40', 0.5)}`}
-      ${eyes}
-      ${topT.map((x) => tooth(x, 160, x === 206 ? 226 : 222 - Math.abs(x - 206) * 0.1, false)).join('')}
-      ${[178, 197, 216, 235].map((x) => tooth(x, 312, 276, true)).join('')}
-      ${ph >= 3 ? `<path d="M 191,190 L 191,206 L 187,210 M 206,176 L 206,200 M 221,190 L 221,208 L 225,212" fill="none" stroke="${K.ink300}" stroke-width="${4 * X.LW}"/>` : ''}`);
+    // ---- pointed-arch firebox = the face (A.mawFace)
+    const face = A.mawFace(X, D ? 'out' : 'open', undefined, D ? { broken: true, noKeystone: de === 1 } : at ? { at: true } : {});
     const sootDrips = `${X.drip(170, 312, 26, 4.2)}${X.drip(214, 312, 36, 4.6)}${X.drip(248, 312, 20, 3.6)}`;
-    const bodyAll = `${A.mawPipes(X)}${legs}${armL}${armR}${body}${collar}${finial}${base}${frame}${mouth}${sootDrips}`;
-    let fx = A.mawSoot(X, o.enraged || wu);
+    // attack (brief §1.5): both forearms now run down to the floor beside the belly; the slits they leave against the belly
+    // and the base (< 32 wide) are filled with ink at the very back of the body, so the rage pulse stays outside
+    const atFill = at ? `<path d="M 82,266 L 100,262 L 110,300 L 114,352 L 104,366 L 92,366 L 86,330 Z M 304,246 L 330,248 L 340,300 L 342,346 L 322,360 L 300,362 Z" fill="${K.ink}"/>` : '';
+    // death f1: body sinks to 70% and leans 8° left; the firebox face is moved and turned with it, never squashed; the
+    // keystone lies on the floor
+    const bodyAll = de === 1 ? `<g transform="${tfs(D.body)}">${A.mawPipes(X, [1, 3])}${legs}${armL}${armR}${body}${collar}${finial}${base}</g><g transform="${tfs(D.face)}">${face}</g>` +
+      `<g transform="translate(266,382) rotate(76) translate(-206,-161)">${X.S('M 194,146 L 218,146 L 213,176 L 199,176 Z', K.ink500, 3.4, X.R([197, 149, 206, 148, 215, 149], 1.4))}</g>`
+      : `${atFill}${A.mawPipes(X)}${legs}${armL}${armR}${body}${collar}${finial}${base}${face}${sootDrips}`;
+    let fx = D ? '' : A.mawSoot(X, o.enraged || wu || at);
+    // death f0: the soot has stopped; two thin ink.300 smoke wisps rise instead
+    if (de === 0) fx += X.T([164, 40, 156, 18, 166, -4], 3.2, 'start', K.ink300) + X.T([240, 40, 248, 20, 239, 2], 2.6, 'start', K.ink300);
+    // attack pose FX: 5 black floor flames in front (x 130…282, base y 390, heights 34/46/56/46/34) = the fire zone that
+    // forms at its own feet; paper.50 cores are ≥ 90 below the eyes
+    // (heights / widths / leans kept a little uneven so the row never reads as a printed ΛΛΛΛΛ)
+    if (at) fx += [[130, 32, 21, -0.16], [170, 48, 24, -0.04], [206, 56, 26, 0.04], [242, 42, 23, 0.1], [282, 36, 20, 0.18]].map(([x, h, w, l]) => X.flame(x, 390, h, w, l * h)).join('');
     if (o.enraged) fx += `${[[128, 78, 30], [164, 42, 40], [202, 12, 48], [240, 42, 40], [276, ph >= 2 ? 104 : 78, 30]].map(([x, t, h]) => X.flame(x, t + 4, h, 22, -4)).join('')}
       ${X.flame(180, 196, 30, 20, -6)}${X.flame(232, 196, 34, 20, 6)}
       <ellipse cx="186" cy="244" rx="18" ry="12" fill="${K.paper50}" filter="url(#${X.p}glow)"/><ellipse cx="227" cy="244" rx="14" ry="10" fill="${K.paper50}" filter="url(#${X.p}glow)"/>`;
     if (wu) fx += `${X.bang(206, 104, 0.85)}${[0, 1, 2].map((i) => X.line(`M ${178 + i * 28},150 c -6,-8 6,-14 0,-22 c -6,-8 6,-14 0,-22`, K.ink, 2)).join('')}`;
     const ground = `<ellipse cx="200" cy="394" rx="150" ry="9" fill="${K.ink}" opacity="0.3"/>`;
     return { ground, body: bodyAll, fx };
+  };
+  // ---- K3-2 death f2 / f3 (new drawings)
+  // a cast-iron plate: ink.700 slab, ink rim, ink.500 lit top edge, one seam (no rivets: a row of rivets reads as dots)
+  const plate = (X, K, x, y, w, h, a) => `<g transform="rotate(${a} ${x} ${y})">${X.S(`M ${x - w / 2},${y - h / 2} L ${x + w / 2},${y - h / 2} L ${x + w / 2},${y + h / 2} L ${x - w / 2},${y + h / 2} Z`, K.ink700, 4, `<path d="M ${x - w / 2},${y - h / 2} L ${x + w / 2},${y - h / 2} L ${x + w / 2},${y - h / 2 + 5} L ${x - w / 2},${y - h / 2 + 5} Z" fill="${K.ink500}"/><path d="M ${x - w * 0.15},${y - h / 2} L ${x - w * 0.12},${y + h / 2}" stroke="${K.ink}" stroke-width="2"/>`)}</g>`;
+  A.DEATH = A.DEATH || {};
+  A.DEATH.maw = function (X) {
+    const { K, o } = X, f = X.f, D = RM.death[o.frame];
+    if (o.frame === 2) {
+      // a heap of cast-iron plates melting into ink (top ≈ 234 at the leaning firebox = 41% of the idle height), two pipes
+      // lying on the floor, the firebox (eyes out) leaning back on the heap, more plates piled in front; art: 3 scraps
+      const top = [[70, 386], [84, 350], [110, 320], [146, 302], [186, 294], [226, 292], [266, 298], [300, 318], [324, 350], [334, 388]];
+      const body = `<ellipse cx="200" cy="388" rx="156" ry="11" fill="${K.ink700}" stroke="${K.ink}" stroke-width="${f(3 * X.LW)}"/>` +
+        A.mawPipe(X, [30, 380], [128, 362], 26) + A.mawPipe(X, [300, 368], [384, 386], 24) +
+        A.mound(X, top, 392, [[110, 330, 22, 5], [150, 308, 26, 5.5]]) +
+        `<g transform="${tfs(D.face)}">${A.mawFace(X, 'out', undefined, { broken: true, noKeystone: true })}</g>` +
+        plate(X, K, 150, 362, 70, 26, -9) + plate(X, K, 252, 368, 82, 24, 7) + plate(X, K, 204, 384, 96, 18, -2) +
+        A.scrap(X, 48, 374, 13, -16, 7) + A.scrap(X, 356, 372, 11, 22, 8) + A.scrap(X, 120, 390, 9, 4, 9);
+      return { ground: `<ellipse cx="200" cy="394" rx="160" ry="9" fill="${K.ink}" opacity="0.3"/>`, body, fx: '' };
+    }
+    // f3: puddle, the pointed-arch firebox lying face up (vertical ×0.4) with both eyes as paper ✕✕, one pipe lying across
+    // the left rim, three rivets scattered at different heights (never a pair side by side). Nothing above y 317.
+    const body = A.puddle(X, 200, 370, 165, 36, 8) + A.mawPipe(X, [52, 380], [156, 362], 26) +
+      `<g transform="${tfs(D.relic)}">${A.mawFace(X, 'dead', A._inv(D.relic), { broken: true, noKeystone: true })}</g>` +
+      X.rivet(272, 388, 2.6) + X.rivet(306, 360, 2.2) + X.rivet(118, 396, 2.4);
+    return { ground: '', body, fx: '' };
+  };
+  // ---- K3-2 anchors from the same rig ops. idle / windup = META + fists ('!' at bang(206,104) = META.head)
+  const EYEC = [206.5, 244], MOUTH = [206, 284], APEX = [206, 146], TOPS = [[128, 78], [164, 42], [202, 12], [240, 42], [276, 78]];
+  const r1 = (v) => Math.round(v * 10) / 10, topOf = (pts) => pts.reduce((a, p) => (p[1] < a[1] ? p : a));
+  A.ANCH.maw = function (o) {
+    const M = A.META.maw;
+    if (o.pose === 'idle') return { head: M.head.slice(), face: M.face.slice(), muzzle: M.muzzle.slice(), fists: [[58, 368], [348, 324]] };
+    if (o.pose === 'attack') return { head: M.head.slice(), face: M.face.slice(), muzzle: [206, 290], fists: RM.attack.fists.map((p) => p.slice()) };
+    const D = RM.death[o.frame];
+    if (o.frame === 0) { const t = topOf(TOPS); return { head: [t[0], r1(t[1] - 10)], face: M.face.slice(), muzzle: M.muzzle.slice(), fists: D.fists.map((p) => p.slice()) }; }
+    if (o.frame === 1) { const B = xf(D.body), F = xf(D.face), t = topOf(TOPS.map(B)); return { head: [t[0], r1(t[1] - 10)], face: F(EYEC), muzzle: F(MOUTH), fists: D.fists.map(B) }; }
+    if (o.frame === 2) { const F = xf(D.face), t = topOf([F(APEX), [226, 292]]); return { head: [t[0], r1(t[1] - 10)], face: F(EYEC), muzzle: F(MOUTH), fists: [[96, 380], [318, 380]] }; }
+    const R = xf(D.relic), t = topOf([R(APEX), [200, 334]]);
+    return { head: [t[0], r1(t[1] - 10)], face: R(EYEC), muzzle: R(MOUTH), fists: [[52, 380], [156, 362]] };
   };
 })(window.PN);
 // ---------------------------------------------------------------- telegraphs (bible §12.2) — ground-plane, same local units as draw()

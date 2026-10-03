@@ -130,7 +130,7 @@ export const UI_SHEETS = Object.freeze({
  * - `blank`: the white void eating the scene from x `from` rightwards, with a ragged ink fringe (lore bible §1.1);
  *   `margin`: the void become a margin, ruled off with a double ink line (§7.2); `seam`: stitches down x;
  * - `hero`: a full-body pose (API-hero §1) standing on `ground` at x, scaled; `enemies`: [role, x, scale, flip];
- * - `boss`: the chapter's ruler, `fallen` (tilted and faded) after its defeat; `drop`: one ink drop at [x, y].
+ * - `boss`: the chapter's ruler, `fallen` (its fall's second frame, faded) after its defeat; `drop`: one ink drop at [x, y].
  */
 export const STORY_PANEL = Object.freeze({ size: [480, 270], density: 2.5, ground: 252 });
 

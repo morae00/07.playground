@@ -35,16 +35,16 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 1941393,
-      "kib": 1895.89,
+      "bytes": 1946686,
+      "kib": 1901.06,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 23653005,
-      "kib": 23098.64,
+      "bytes": 26876888,
+      "kib": 26246.96,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -69,8 +69,8 @@
     {
       "file": "assets/atlas/manifest.json",
       "category": "data",
-      "sourceBytes": 84644,
-      "gzipBytes": 13753
+      "sourceBytes": 89937,
+      "gzipBytes": 14487
     },
     {
       "file": "assets/chapter-thumbs-D_lcRDUv.webp",
@@ -153,14 +153,14 @@
     {
       "file": "assets/packs/chapter-01/atlas-0.png",
       "category": "image",
-      "sourceBytes": 2051670,
-      "gzipBytes": 2039361
+      "sourceBytes": 2341645,
+      "gzipBytes": 2330114
     },
     {
       "file": "assets/packs/chapter-01/atlas-1.png",
       "category": "image",
-      "sourceBytes": 934223,
-      "gzipBytes": 928569
+      "sourceBytes": 1966737,
+      "gzipBytes": 1955254
     },
     {
       "file": "assets/packs/chapter-01/ground-0.webp",
@@ -171,14 +171,20 @@
     {
       "file": "assets/packs/chapter-02/atlas-0.png",
       "category": "image",
-      "sourceBytes": 1061944,
-      "gzipBytes": 1052706
+      "sourceBytes": 1044446,
+      "gzipBytes": 1034970
     },
     {
       "file": "assets/packs/chapter-02/atlas-1.png",
       "category": "image",
-      "sourceBytes": 1793234,
-      "gzipBytes": 1779516
+      "sourceBytes": 1797637,
+      "gzipBytes": 1786910
+    },
+    {
+      "file": "assets/packs/chapter-02/atlas-2.png",
+      "category": "image",
+      "sourceBytes": 420218,
+      "gzipBytes": 418068
     },
     {
       "file": "assets/packs/chapter-02/ground-0.webp",
@@ -189,14 +195,20 @@
     {
       "file": "assets/packs/chapter-03/atlas-0.png",
       "category": "image",
-      "sourceBytes": 1617844,
-      "gzipBytes": 1604314
+      "sourceBytes": 1261568,
+      "gzipBytes": 1252008
     },
     {
       "file": "assets/packs/chapter-03/atlas-1.png",
       "category": "image",
-      "sourceBytes": 2051006,
-      "gzipBytes": 2040629
+      "sourceBytes": 1489505,
+      "gzipBytes": 1477488
+    },
+    {
+      "file": "assets/packs/chapter-03/atlas-2.png",
+      "category": "image",
+      "sourceBytes": 1254796,
+      "gzipBytes": 1247921
     },
     {
       "file": "assets/packs/chapter-03/ground-0.webp",
@@ -207,20 +219,20 @@
     {
       "file": "assets/packs/chapter-04/atlas-0.png",
       "category": "image",
-      "sourceBytes": 1176091,
-      "gzipBytes": 1170314
+      "sourceBytes": 1215186,
+      "gzipBytes": 1208623
     },
     {
       "file": "assets/packs/chapter-04/atlas-1.png",
       "category": "image",
-      "sourceBytes": 1630997,
-      "gzipBytes": 1618842
+      "sourceBytes": 1579028,
+      "gzipBytes": 1567240
     },
     {
       "file": "assets/packs/chapter-04/atlas-2.png",
       "category": "image",
-      "sourceBytes": 643621,
-      "gzipBytes": 640545
+      "sourceBytes": 1219563,
+      "gzipBytes": 1214368
     },
     {
       "file": "assets/packs/chapter-04/ground-0.webp",
@@ -231,20 +243,20 @@
     {
       "file": "assets/packs/chapter-05/atlas-0.png",
       "category": "image",
-      "sourceBytes": 1170971,
-      "gzipBytes": 1164616
+      "sourceBytes": 1457566,
+      "gzipBytes": 1449750
     },
     {
       "file": "assets/packs/chapter-05/atlas-1.png",
       "category": "image",
-      "sourceBytes": 1733357,
-      "gzipBytes": 1724441
+      "sourceBytes": 1479485,
+      "gzipBytes": 1469659
     },
     {
       "file": "assets/packs/chapter-05/atlas-2.png",
       "category": "image",
-      "sourceBytes": 695299,
-      "gzipBytes": 691503
+      "sourceBytes": 1249159,
+      "gzipBytes": 1241684
     },
     {
       "file": "assets/packs/chapter-05/ground-0.webp",
@@ -321,14 +333,14 @@
     {
       "file": "assets/packs/sfx-common/boss.eclipse-0.wav",
       "category": "audio",
-      "sourceBytes": 38764,
-      "gzipBytes": 23824
+      "sourceBytes": 38996,
+      "gzipBytes": 22199
     },
     {
       "file": "assets/packs/sfx-common/boss.eclipse-1.wav",
       "category": "audio",
-      "sourceBytes": 39768,
-      "gzipBytes": 24763
+      "sourceBytes": 39874,
+      "gzipBytes": 22435
     },
     {
       "file": "assets/packs/sfx-common/boss.enraged-0.wav",
@@ -357,8 +369,8 @@
     {
       "file": "assets/packs/sfx-common/boss.intro-0.wav",
       "category": "audio",
-      "sourceBytes": 45908,
-      "gzipBytes": 28063
+      "sourceBytes": 50320,
+      "gzipBytes": 28750
     },
     {
       "file": "assets/packs/sfx-common/boss.kill-0.wav",
@@ -603,26 +615,26 @@
     {
       "file": "assets/packs/sfx-common/enemy.kill-0.wav",
       "category": "audio",
-      "sourceBytes": 5660,
-      "gzipBytes": 3231
+      "sourceBytes": 4816,
+      "gzipBytes": 2514
     },
     {
       "file": "assets/packs/sfx-common/enemy.kill-1.wav",
       "category": "audio",
-      "sourceBytes": 6132,
-      "gzipBytes": 3575
+      "sourceBytes": 5202,
+      "gzipBytes": 2956
     },
     {
       "file": "assets/packs/sfx-common/enemy.kill-2.wav",
       "category": "audio",
-      "sourceBytes": 5772,
-      "gzipBytes": 3098
+      "sourceBytes": 4906,
+      "gzipBytes": 2569
     },
     {
       "file": "assets/packs/sfx-common/enemy.kill-3.wav",
       "category": "audio",
-      "sourceBytes": 6214,
-      "gzipBytes": 3537
+      "sourceBytes": 5270,
+      "gzipBytes": 2966
     },
     {
       "file": "assets/packs/sfx-common/enemy.kill.clock-0.wav",
@@ -789,26 +801,26 @@
     {
       "file": "assets/packs/sfx-common/hit.light-0.wav",
       "category": "audio",
-      "sourceBytes": 2386,
-      "gzipBytes": 1253
+      "sourceBytes": 2008,
+      "gzipBytes": 996
     },
     {
       "file": "assets/packs/sfx-common/hit.light-1.wav",
       "category": "audio",
-      "sourceBytes": 2222,
-      "gzipBytes": 1127
+      "sourceBytes": 1888,
+      "gzipBytes": 886
     },
     {
       "file": "assets/packs/sfx-common/hit.light-2.wav",
       "category": "audio",
-      "sourceBytes": 2340,
-      "gzipBytes": 1243
+      "sourceBytes": 1974,
+      "gzipBytes": 933
     },
     {
       "file": "assets/packs/sfx-common/hit.light-3.wav",
       "category": "audio",
-      "sourceBytes": 2376,
-      "gzipBytes": 1269
+      "sourceBytes": 2002,
+      "gzipBytes": 968
     },
     {
       "file": "assets/packs/sfx-common/pack.json",
@@ -820,37 +832,37 @@
       "file": "assets/packs/sfx-common/pickup.coin-0.wav",
       "category": "audio",
       "sourceBytes": 3144,
-      "gzipBytes": 1865
+      "gzipBytes": 1856
     },
     {
       "file": "assets/packs/sfx-common/pickup.coin-1.wav",
       "category": "audio",
       "sourceBytes": 3342,
-      "gzipBytes": 2026
+      "gzipBytes": 1985
     },
     {
       "file": "assets/packs/sfx-common/pickup.coin-2.wav",
       "category": "audio",
       "sourceBytes": 3104,
-      "gzipBytes": 1889
+      "gzipBytes": 1844
     },
     {
       "file": "assets/packs/sfx-common/pickup.xp-0.wav",
       "category": "audio",
       "sourceBytes": 2522,
-      "gzipBytes": 1397
+      "gzipBytes": 1420
     },
     {
       "file": "assets/packs/sfx-common/pickup.xp-1.wav",
       "category": "audio",
       "sourceBytes": 2558,
-      "gzipBytes": 1414
+      "gzipBytes": 1445
     },
     {
       "file": "assets/packs/sfx-common/pickup.xp-2.wav",
       "category": "audio",
       "sourceBytes": 2626,
-      "gzipBytes": 1471
+      "gzipBytes": 1495
     },
     {
       "file": "assets/packs/sfx-common/player.down-0.wav",
@@ -862,25 +874,25 @@
       "file": "assets/packs/sfx-common/player.heartbeat-0.wav",
       "category": "audio",
       "sourceBytes": 12482,
-      "gzipBytes": 5560
+      "gzipBytes": 5223
     },
     {
       "file": "assets/packs/sfx-common/player.hurt-0.wav",
       "category": "audio",
       "sourceBytes": 5196,
-      "gzipBytes": 3135
+      "gzipBytes": 3058
     },
     {
       "file": "assets/packs/sfx-common/player.hurt-1.wav",
       "category": "audio",
       "sourceBytes": 5208,
-      "gzipBytes": 3135
+      "gzipBytes": 3026
     },
     {
       "file": "assets/packs/sfx-common/player.hurt-2.wav",
       "category": "audio",
       "sourceBytes": 5384,
-      "gzipBytes": 3255
+      "gzipBytes": 3132
     },
     {
       "file": "assets/packs/sfx-common/run.levelUp-0.wav",
@@ -1017,32 +1029,32 @@
     {
       "file": "assets/packs/story/outro-1.webp",
       "category": "image",
-      "sourceBytes": 75508,
-      "gzipBytes": 75399
+      "sourceBytes": 74080,
+      "gzipBytes": 73975
     },
     {
       "file": "assets/packs/story/outro-2.webp",
       "category": "image",
-      "sourceBytes": 70804,
-      "gzipBytes": 70676
+      "sourceBytes": 70858,
+      "gzipBytes": 70746
     },
     {
       "file": "assets/packs/story/outro-3.webp",
       "category": "image",
-      "sourceBytes": 70790,
-      "gzipBytes": 70618
+      "sourceBytes": 71014,
+      "gzipBytes": 70856
     },
     {
       "file": "assets/packs/story/outro-4.webp",
       "category": "image",
-      "sourceBytes": 67988,
-      "gzipBytes": 67886
+      "sourceBytes": 71452,
+      "gzipBytes": 71346
     },
     {
       "file": "assets/packs/story/outro-5.webp",
       "category": "image",
-      "sourceBytes": 55182,
-      "gzipBytes": 55066
+      "sourceBytes": 55462,
+      "gzipBytes": 55347
     },
     {
       "file": "assets/packs/story/prologue-1.webp",

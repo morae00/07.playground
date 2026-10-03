@@ -222,13 +222,13 @@ async function renderPanel({ key, scene, panel, quality, colorMap }) {
   const place = (markup, [footX, footY], x, scale, flip = false, extra = '') => `<g transform="translate(${f(flip ? x + footX * scale : x - footX * scale)} ${f(ground - footY * scale)}) scale(${f(flip ? -scale : scale)} ${f(scale)})"${extra}>${markup}</g>`;
   if (scene.boss) {
     const { kit, module = 'bossesA', x, scale, fallen } = scene.boss;
+    // A fallen ruler is its kit fall's second frame (K3-2), faint: its line going out of the manuscript.
+    const pose = fallen ? { pose: 'death', frame: 1 } : { phase: 3 };
     const body = module === 'bossesB'
-      ? PN.bossesB.draw(kit, { phase: 3, detail: 'art', halo: false, shadow: !fallen })
-      : PN.bossesA.draw(kit, { phase: 3, lod: 'art', halo: false, shadow: !fallen, fx: false });
+      ? PN.bossesB.draw(kit, { ...pose, detail: 'art', halo: false, shadow: !fallen })
+      : PN.bossesA.draw(kit, { ...pose, lod: 'art', halo: false, shadow: !fallen, fx: false });
     const feet = module === 'bossesB' ? [192, 360] : [200, 392];
-    // A fallen ruler is drawn tilted and faint, its line going out of the manuscript.
-    const tilt = fallen ? ` opacity="0.42"` : '';
-    parts.push(fallen ? `<g transform="rotate(-14 ${x} ${ground})">${place(body, feet, x, scale, false, tilt)}</g>` : place(body, feet, x, scale));
+    parts.push(place(body, feet, x, scale, false, fallen ? ` opacity="0.42"` : ''));
   }
   for (const [role, x, scale, flip] of scene.enemies ?? []) {
     parts.push(place(PN.enemies.draw(scene.ch, role, { lod: 'art', halo: false }), PN.enemies.meta(scene.ch, role).feet, x, scale, flip));

@@ -37,11 +37,10 @@ test('the baked manifest is complete: every animation frame exists and sits insi
   }
   for (const [bossId, { slot, pack }] of Object.entries(BOSS_SLOTS)) {
     const states = manifest.animations[slot];
-    // The Ch2-5 mid bosses (PN.bossesC) also draw an attack pose in every phase and four death frames.
-    const midBoss = bossId.includes('-mid-') && bossId !== 's1-mid-dash';
-    assert.equal(Object.keys(states).length, midBoss ? 19 : 12, `${bossId}: 3 phases x ${midBoss ? 'windup and attack' : 'windup'} x enraged`);
+    // Round and mid bosses draw idle, windup, and attack in every phase, calm and enraged, and four death frames (K3-2).
+    assert.equal(Object.keys(states).length, 19, `${bossId}: 3 phases x idle, windup, and attack x enraged, and death`);
     assert.ok(manifest.packs[pack].frames[frameKey(slot, 'phase3-windup-enraged', 0)], `${bossId} is in ${pack}`);
-    if (midBoss) assert.ok(manifest.packs[pack].frames[frameKey(slot, 'phase3-attack-enraged', 0)] && states.death.frames === 4, `${bossId} attacks and falls`);
+    assert.ok(manifest.packs[pack].frames[frameKey(slot, 'phase3-attack-enraged', 0)] && states.death.frames === 4, `${bossId} attacks and falls`);
   }
   // Field bosses (ART-04) roam their own chapter and the ones after it, so each chapter pack holds every earlier one.
   for (const [bossId, { chapter: home }] of Object.entries(FIELD_BOSS_KITS)) {

@@ -119,13 +119,13 @@ const BOSS_MODULES = Object.freeze({
 });
 
 /**
- * A module's still states: phases x poses x calm/enraged. Keys match slots.ts bossState. Round bosses A and B draw
- * idle and windup in three phases, calm and enraged; the mid bosses add an attack pose; field bosses draw idle,
- * windup, and attack in two phases.
+ * A module's still states: phases x poses x calm/enraged. Keys match slots.ts bossState. Round and mid bosses draw
+ * idle, windup, and attack in three phases, calm and enraged, and four death frames; field bosses draw idle, windup,
+ * and attack in two phases.
  */
 const BOSS_STATE_SETS = Object.freeze({
-  bossesA: { phases: [1, 2, 3], poses: ['idle', 'windup'], enraged: [false, true], death: false },
-  bossesB: { phases: [1, 2, 3], poses: ['idle', 'windup'], enraged: [false, true], death: false },
+  bossesA: { phases: [1, 2, 3], poses: ['idle', 'windup', 'attack'], enraged: [false, true], death: true },
+  bossesB: { phases: [1, 2, 3], poses: ['idle', 'windup', 'attack'], enraged: [false, true], death: true },
   bossesC: { phases: [1, 2, 3], poses: ['idle', 'windup', 'attack'], enraged: [false, true], death: true },
   fieldBosses: { phases: [1, 2], poses: ['idle', 'windup', 'attack'], enraged: [false], death: true },
 });
@@ -151,7 +151,8 @@ function stateOptions(module, state) {
   if (module === 'fieldBosses') return { phase: state.phase, pose: state.pose };
   const base = { phase: state.phase, windup: state.pose === 'windup', enraged: state.enraged };
   if (module === 'bossesC') return { ...base, pose: state.pose === 'attack' ? 'attack' : 'idle', move: 'base' };
-  return base;
+  // bossesA and B (K3-2): idle and windup keep the calls they baked from before; only the attack names its pose.
+  return state.pose === 'attack' ? { ...base, pose: 'attack' } : base;
 }
 
 /** Every boss drawn in a chapter's pack: its round bosses, then the field bosses of this chapter and the ones before. */

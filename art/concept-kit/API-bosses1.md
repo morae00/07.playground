@@ -3,7 +3,7 @@
 잉크 도살자 `butcher` (Ch1 St5 · dash) · 종탑 간수 `gaoler` (Ch1 St10 · rings) · 용광의 입 `maw` (Ch2 St10 · flame).
 먹극화 · PAPER NOIR INK. Style bible §4 (lines), §5 (shading), §7.3 (size), §10.1/§10.3 (bosses), §12.2/§12.4 (telegraphs and bullets).
 
-**rev 3(K3, 2026-10): 킷 사본을 직접 고쳤다. concept/work 원본은 이 판보다 오래됐다.** 작업 지시서 `docs/art/briefs/boss-poses.md` §2(얼굴·글자 묶음, K3-1)를 반영했다. 호출 형식, 옵션 이름, 박스·피벗·발·판정 반지름·`gameScale`, `META`의 키와 값은 그대로다. 기존 옵션의 출력은 아래 표만큼 **의도적으로** 바뀌었다. 지문 F0 → F1과 렌더는 납품서 `docs/art/deliveries/K3-boss-poses.md`에 있다. 포즈(`pose`·`frame`, `anchors()`)는 K3-2에서 더한다.
+**rev 3(K3, 2026-10): 킷 사본을 직접 고쳤다. concept/work 원본은 이 판보다 오래됐다.** 작업 지시서 `docs/art/briefs/boss-poses.md` §2(얼굴·글자 묶음, K3-1)를 반영했다. 호출 형식, 옵션 이름, 박스·피벗·발·판정 반지름·`gameScale`, `META`의 키와 값은 그대로다. 기존 옵션의 출력은 아래 표만큼 **의도적으로** 바뀌었다. 지문 F0 → F1과 렌더는 납품서 `docs/art/deliveries/K3-boss-poses.md`에 있다. 포즈(`pose`·`frame`, `anchors()`)는 K3-2에서 더했다(아래 "K3-2 포즈" 절). 기존 옵션의 출력은 K3-2에서 바뀌지 않았다(지문 F2 = F1′).
 
 | 보스 | 바뀐 것 | LOD |
 |---|---|---|
@@ -52,6 +52,76 @@
 
 **rev 3 검사.** 두 LOD × phase 1~3 × 준비 × 광폭 72상태와 실루엣 6장 모두 `--check` ok, 굽기 셀 마스크(K3-C2) 밖 칠 0, 48px 실루엣은 rev 2와 같다.
 
+## K3-2 포즈 (rev 3, 2026-10): `pose` · `frame` · `anchors()`
+
+지시서 `docs/art/briefs/boss-poses.md` §1·§3.1~§3.3과 검수 2차 §5를 따랐다. **`pose`가 없거나 `'idle'`이면 출력은 K3-1f와 한 글자도 다르지 않다**(지문 F2 = F1′, 납품서). 새 옵션 두 개와 메서드 하나를 더했고, 기존 호출 형식은 그대로다.
+
+| opt | 기본 | 뜻 |
+|---|---|---|
+| `pose` | `'idle'` | `'idle'` \| `'attack'` \| `'death'`. 모르는 값은 `'idle'` |
+| `frame` | `0` | death 0~3. 정수로 자르고 0~3으로 묶는다. 3이 먹 웅덩이. 다른 pose에서는 무시 |
+
+- **attack**은 준비 자세의 다음 박자(팔로스루) 한 장이다. `windup`을 무시하고 '!'·긁힘 데칼·노력선·점선 타격 호를 그리지 않는다. `phase` 1~3의 파손 층과 `enraged`(먹 불꽃, 백열 눈, 산호 외곽 펄스)를 받는다. 호박은 0이다(입의 예열도 끈다).
+- **death**는 `phase`·`windup`·`enraged`를 무시하고 P3 파손에서 시작한다. 산호·호박이 없다. 처치 프레임의 paper.50은 f3 유물의 ✕뿐이다: `draw()`가 처치 프레임의 body·fx에서 `#FAF6EC`를 paper.300으로 바꾼다(P2·P3 종이 균열·이 빠짐·조각). ✕는 소문자 `#faf6ec`로 적어 이 치환을 피한다(굽기 `COLOR_MAP`은 대소문자를 가리지 않으므로 구현값은 같다). 쓰이지 않는 defs 패턴 `p40`에는 paper.50이 그대로 있다(칠하지 않음).
+- 포즈 FX와 날아가는 파편은 `fx` 층이다(`silhouette`과 `fx:false`에서 빠진다). 바닥 접지 타원은 `ground`.
+- 상태 수: 보스마다 attack 6장(페이즈 3 × 평상·광폭) + death 4장. 기존 12장은 그대로다.
+
+**얼굴 함수(지시서 §1.10-2).** 보스마다 얼굴을 그리는 함수가 하나이고, 모든 포즈가 그 함수를 부른다. 포즈는 얼굴 묶음 전체에 이동·회전만 건다(처치 f1처럼 몸을 누를 때도 얼굴은 squash 밖에서 그린다).
+
+| 보스 | 함수 | 각도 | `'out'`(f0~f2) | `'dead'`(f3 유물) |
+|---|---|---|---|---|
+| butcher | `A.butcherFace(X, state, m)` | 봉투 3/4 | 눈구멍(P3 큰 눈 포함)이 먹, 먹물만 남는다 | 눈구멍 = 종이 ✕ |
+| gaoler | `A.gaolerBell(X, state, m, split)` | 범종 8° | 열쇠구멍 눈·빛 조각 3이 먹, 안쪽 테 ink.300. `split`: 위에서 테까지 가르는 굵은 균열 + 두 번째 이 빠짐 | 열쇠구멍 눈 = 종이 ✕ |
+| maw | `A.mawFace(X, state, m, opt)` | 정면 화구 | 두 눈이 먹. `opt.broken` 아래 이빨 2개 부러짐, `opt.noKeystone` 쐐기돌 빠짐 | 두 눈 = 종이 ✕✕ |
+
+- `opt.at`(maw 공격): 눈 높이 ×0.7(왼 6.0, 오른 4.3), 동공은 cy − 0.3h에서 +x 윗꺼풀에 닿는다. 아래 이빨 줄 +8(입이 벌어짐), 예열·잉걸 바닥 끔, 화구 바닥 y 310에서 검은 불꽃 3(x 176·206·236, 높이 26·28·24, 꼭대기 y ≥ 282, paper.50 심 폭 ≤ 3).
+- ✕ = `A.xMark(X, x, y, m)`: 팔(중심→끝) game 7 / art 5(기준 ≥ 6 / ≥ 4), 종이 획 3.8 / 2.4, 먹테(종이 밖 총폭) 4.4 / 3(기준 ≥ 3.6 / ≥ 2). `m` = `A._inv(유물 변환)`이면 누운 유물 안에서도 화면에 똑바로 선 정사각 ✕가 된다(적 처치 데칼 문법).
+
+**리그.** `A.RIG[id]`(butcher·gaoler·maw)는 변환 연산 목록(`['translate',x,y]`, `['rotate',deg,cx,cy]`, `['scale',sx,sy]`, 앞이 바깥)이다. 같은 목록에서 SVG transform 문자열(`A._tfs`)과 점 변환(`A._xf`)을 만들므로 `anchors()`가 그린 자리를 그대로 따라간다. `A._inv(ops)` = 선형 부분의 역행렬.
+
+### 보스별 attack
+
+| 보스 | attack (리그 값) | 48px 단서 |
+|---|---|---|
+| butcher | 돌진하는 동안 계속 보이는 "달리는 자세": 상체 UP `translate(0,8) rotate(15 200 320)`, 머리 `rotate(-2 262 206) translate(-4,0)`, 먼 팔 `rotate(9 92 150)`(갈고리가 뒤로). 가까운 팔 어깨 (362,200) → 팔꿈치 (366,128) → 주먹 (336,74), 식칼 `translate(336,74) rotate(160)`: **가장 높은 점이 식칼**(y ≈ −51). 뒷다리 엉덩이 (170,300) → 무릎 (128,346) → 발목 (96,372), 나막신 앞코가 (70,392)에 닿고 뒤꿈치가 25° 들림. 앞다리는 준비의 `legFw`/`bootFw` | 머리 위로 솟은 식칼 |
+| | FX(`fx`): 뒤쪽 속도선 3획(x 12~74, 길이·각도가 서로 다름, 'start' 먹), 뒷발 앞코의 먹 튐. ground: 앞발 (300,393) rx 70 + 뒷발 작은 타원 | |
+| | 틈 채움 `atFill`(body 맨 뒤 먹 다각형 2개): 치켜든 주먹↔혹, 먼 주먹·갈고리↔뒷다리 | |
+| gaoler | 열쇠를 수직으로 내리꽂아 활이 음통을 친다: 열쇠 `translate(287,242) rotate(-3)`, 활 (274.9,10.3), 가까운 팔뚝 limb (352,206)→(300,240). 범종 `rotate(8 200 190)` 그대로. 풍경 셋 모두 `loud`(왼 sw +24, 오른 −24, 앞 +16, 글자 없음). 등롱 `rotate(-20 46 256)` | 범종 옆 수직 열쇠, 바깥으로 튄 풍경 |
+| | FX: 담묵 ink.300 파문 호 r 150·176(왼 160°~200°, 오른 −20°~20°), 음통 (262,24)의 4갈래 먹 충격 별(심 paper.300), 범종 양 옆구리 ink.300 진동선 1줄씩 | |
+| | 틈: 새 좁은 틈 없음(`k3p-enraged-gaoler-z`) | |
+| maw | 들었던 오른팔을 내리찍어 두 주먹으로 땅을 짚는다: 위 파이프 (284,204)→(350,244)는 대기와 같고, 아래 파이프 (350,246)→(352,340), 손목 칼라 (352,338), 주먹 `mawFist(X,352,368,1,true,1)`. 화구는 `mawFace(…, {at:true})` | 땅을 짚은 두 주먹 |
+| | FX: 바닥 앞 검은 불꽃 5(x 130·170·206·242·282, 밑 y 390, 높이 32~56, 폭 20~26, paper.50 심, 줄지은 ΛΛΛ로 읽히지 않게 높이·폭·기울기를 조금씩 어긋나게), 그을음 `mawSoot(X, true)` | |
+| | 틈 채움 `atFill`: 양 팔뚝 파이프↔배·밑판의 좁은 틈(폭 8~18) 두 곳 | |
+
+### 보스별 death
+
+| 보스 | f0 피격 | f1 무너짐 | f2 녹아내림 | f3 먹 웅덩이 |
+|---|---|---|---|---|
+| butcher | 봉투 눈 'out', 상체 `rotate(-7 200 320)`로 젖혀짐, 식칼이 주먹에서 빠짐(주먹이 펴짐), 갈고리 사슬 출렁임, 봉투 파편(`fx`) | 무릎 꿇기: 몸 squash 0.7(혹 y ≈ 155), 봉투는 squash 밖에서 앞으로 18° 처짐, 식칼은 앞 바닥에 눕는다(x 250~358) | 녹는 먹 언덕(꼭대기 ≈ 255), 구겨진 봉투가 오른쪽 위에서 미끄러짐(꼭대기 ≈ 242), 갈고리, art 종이 조각 3 | 웅덩이 (200,370) rx 165 ry 36. 누운 봉투 유물 (232,364) ×0.4 + 종이 ✕, 식칼이 웅덩이 왼쪽 가장자리에 눕고(간판 기호가 보임), 갈고리 하나 |
+| gaoler | 열쇠구멍 눈·빛 조각 'out' + split 균열·두 번째 이 빠짐, 장갑 손가락이 펴짐(열쇠는 대기 자리), 등롱이 바닥 (46,360)에 떨어져 기욺 | 망토·외투 squash 0.7, 범종 `translate(0,97) rotate(-25 200 190)`(꼭대기 y ≈ 126), 열쇠가 비트 (300,392)를 두고 왼쪽으로 **40°** 넘어감(활 (54.5,99.4)) | 범종이 녹는 언덕 위에 옆으로 눕는다(꼭대기 ≈ 221), 열쇠는 언덕 뒤에 납작하게, 철창 문(창살 둘, 가로대 없음)이 언덕 오른쪽에 기대 떨어짐, art 종이 조각 3 | 웅덩이 (200,370) rx 165 ry 36. 옆으로 누워 반쯤 잠긴 범종(당좌 위, ×0.4, 수면에서 잘림) + 종이 ✕, 열쇠가 웅덩이를 비스듬히 가로질러 잠김, 풍경 하나 |
+| maw | 두 눈 'out', 이빨 2개 부러짐, 그을음이 멈추고 ink.300 연기 2줄, 오른팔이 처짐(주먹 (346,352)) | 다리가 꺾여 squash 0.7 + 왼쪽으로 8° 기욺(파이프 꼭대기 y ≈ 128), 화구는 squash 밖, 파이프 2개 부러짐, 쐐기돌이 바닥에 떨어짐 | 무쇠 판이 쌓인 먹 언덕(꼭대기 ≈ 236), 화구가 언덕에 기대고, 파이프 둘이 눕는다, art 종이 조각 3 | 웅덩이 (200,370) rx 165 ry 36. 위를 보고 누운 화구 틀(×0.4) + 종이 ✕✕, 파이프 하나 가로놓임, 리벳 3개(높이가 서로 다름) |
+
+- f3 높이: 웅덩이 위로 y 317보다 높이 솟는 것이 없다. 누운 소품 끝만 y 280까지(간수 열쇠 활의 탑 끝 ≈ y 281, 반대쪽 비트 끝은 웅덩이 앞으로 나온다).
+- 키(대기 대비, 몸 기준·소품 제외): butcher f1 70%·f2 44%, gaoler f1 70%·f2 45%, maw f1 69%·f2 41%.
+
+### `PN.bossesA.anchors(id, opts) → object` (K3-2, 새로 더함)
+
+`draw`와 같은 옵션 정규화(`A._norm`)와 같은 리그에서 계산한다. 공통 키 `pivot:[200,257]`, `feet:[200,392]`, `r:135`에 보스별 키가 붙는다: butcher `head, face, muzzle, fist, cleaver`(날 중심), gaoler `head, face, muzzle, grip, bow`(열쇠 활 중심), maw `head, face, muzzle, fists:[왼,오]`. 모르는 id는 `draw`처럼 오류를 던진다.
+
+| 상태 | butcher | gaoler | maw |
+|---|---|---|---|
+| idle | head [270,46] face [271,150] muzzle [358,321] fist [340,262] cleaver [359,324.2] | head [200,0] face [235,132] muzzle [210,121] grip [286,248] bow [361.5,28.6] | head [206,104] face [206,244] muzzle [206,284] fists [[58,368],[348,324]] |
+| windup | **head [300,64]** face **[322.3,195]** muzzle [178.6,344.5] fist [236,314] cleaver = muzzle | **head [186,4]** grip [318,150] bow [285.7,−79.7] | idle과 같다 |
+| attack | head [328.4,−43.8] face [310.5,182.4] muzzle = cleaver [313.8,12.9] fist [336,74] | head [272.3,−49.6] face [235,132] grip [287,242] bow [274.9,10.3] | muzzle [206,290] fists [[58,368],[352,368]] |
+| f0 | head [165.8,48.2] face [251.5,135.4] muzzle [335,334.4] | head [224.8,3.7] face [234.9,132.3] bow [361.5,28.6] | head [202,2] face [206,244] fists [[58,368],[346,352]] |
+| f1 | head [175,145.4] face [298.9,207.8] muzzle [315,384] | head [124.8,115.7] face [197.8,219.6] bow [54.5,99.4] | head [165,118.3] face [192.5,289.7] muzzle [197.5,329.4] |
+| f2 | head [317,222.6] face [339.5,288.3] | head [294,216] face [238,271.5] bow [47.6,322.6] | head [196.5,224.1] face [217.3,329.8] |
+| f3 | head [200,324] face = ✕ [247,354] cleaver [132.8,378.3] | head [260,313.2] face = ✕ [204,341.4] bow [111.5,301.4] | head [202.6,308.5] face = ✕✕ 가운데 [200.4,357.6] |
+
+- 대기(`{}`)는 `META[id]`의 face·muzzle·head·fist/grip과 같다.
+- 준비는 **그린 자리**다. butcher '!'는 `bang(300,64)`, gaoler '!'는 `bang(186,4)`이므로 head가 META(270,46)·(200,0)와 다르다. butcher 준비의 face [322.3,195]는 그려진 눈 자리이고, **준비 자세에서는 가까운 어깨·팔에 가린다**(기존 구도, 검수 1차 §5 "다음 차수"). attack에서는 눈이 보인다.
+- 처치: face = 그 프레임의 꺼진 눈 자리, f3은 유물의 ✕ 중심(maw는 ✕✕ 가운데). head = 남은 덩어리 꼭대기 + 10 위. f2·f3의 muzzle·fist·grip·cleaver는 그 소품이 놓인 자리다.
+
 **rev 2 (art-director rework).** The three bodies are redrawn. The calls, box, pivot, feet, hit radius and `gameScale` are unchanged, so existing scene code keeps working. What changed:
 - Anchors moved: `face`, `muzzle` and `head` in `META` (see the table below).
 - New anchors: `META.butcher.fist` and `META.gaoler.grip`.
@@ -93,6 +163,8 @@ Returns `<g class="bossA bossA-<id>"><defs>…</defs>shadow · ground · body ·
 | `shadow` | `true` | Ground shadow = hit display ellipse |
 | `fx` | `true` | Windup `!`, scrape marks, soot plumes, enrage flames, P3 eave drips (gaoler) |
 | `seed` | `3` | Turbulence seed for the brush wobble (the wobble is lighter in rev 2: art 1.5, game 1.0) |
+| `pose` | `'idle'` | **K3-2.** `'idle'` \| `'attack'` \| `'death'` (anything else = `'idle'`). See "K3-2 포즈" above |
+| `frame` | `0` | **K3-2.** death frame 0..3 (truncated, clamped); ignored by other poses |
 
 ### Local box, pivot, display size (identical for all three)
 | key | value |
