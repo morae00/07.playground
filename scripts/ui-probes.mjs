@@ -3,6 +3,7 @@
 import path from 'node:path';
 import { chromium } from 'playwright';
 import { build, preview } from 'vite';
+import { inspectText } from './lib/text-audit.mjs';
 
 const outDir = path.resolve(process.env.UI_PROBE_BUILD_DIR ?? 'dist-developer');
 if (process.env.UI_PROBE_SKIP_BUILD !== '1') {
@@ -607,6 +608,46 @@ try {
     const draft = await walk(12);
     record('UI-08 Tab stays in the draft, on visible controls, with a visible focus ring', draft.every((stop) => stop.inside && stop.visible && stop.ring), summary(draft));
     await page.close();
+  });
+
+  await probe('UI-08 screens', async () => {
+    // The visual gate reads the text of its nine states; this reads every menu tab, every codex part, and every pause
+    // hub tab at both reference sizes (13 px floor, WCAG contrast, the shared text audit).
+    const failures = [];
+    let screens = 0;
+    for (const [width, height] of [[1440, 900], [1024, 720]]) {
+      const page = await browser.newPage({ viewport: { width, height } });
+      await page.goto('http://127.0.0.1:5177/');
+      await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+      const audit = async (name) => {
+        screens += 1;
+        const result = await inspectText(page);
+        for (const issue of [...result.small, ...result.faint]) failures.push(`${width} ${name}: ${issue}`);
+      };
+      for (const tab of ['출정', '무한 경쟁', '수련', '설정', '도감']) {
+        await page.getByRole('tab', { name: tab }).click();
+        await page.waitForTimeout(200);
+        await audit(`menu/${tab}`);
+      }
+      const parts = page.locator('.codexParts button');
+      for (let index = 0; index < await parts.count(); index += 1) {
+        await parts.nth(index).click();
+        await page.waitForTimeout(150);
+        await audit(`codex/${index}`);
+      }
+      await openStage(page);
+      const closer = page.getByRole('button', { name: '개발 패널 닫기' });
+      if (await closer.count()) await closer.click();
+      await page.keyboard.press('p');
+      await page.waitForTimeout(250);
+      for (const tab of ['빌드', '강화', '설정', '조작']) {
+        await page.getByRole('tab', { name: tab }).first().click();
+        await page.waitForTimeout(150);
+        await audit(`pause/${tab}`);
+      }
+      await page.close();
+    }
+    record('UI-08 every menu tab, codex part, and pause tab keeps text at 13 px and WCAG contrast', failures.length === 0, `${screens} screens${failures.length ? `: ${failures.slice(0, 4).join(' | ')}` : ''}`);
   });
 
   await probe('UI-04', async () => {
