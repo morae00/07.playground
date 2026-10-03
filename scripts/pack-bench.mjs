@@ -109,10 +109,12 @@ try {
 }
 
 const common = packs.common;
+// The skill VFX stamps (FX-06, FX-07) load with the common pack and stay for the session.
+const skills = packs.skills ?? { decodedMiB: 0 };
 const chapters = Object.keys(transitions).sort().map((chapter) => {
   const times = [...transitions[chapter]].sort((a, b) => a - b);
   const pack = packs[chapter] ?? { diskMiB: 0, decodedMiB: 0 };
-  const residentMiB = +(common.decodedMiB + pack.decodedMiB + uiArtMiB).toFixed(2);
+  const residentMiB = +(common.decodedMiB + skills.decodedMiB + pack.decodedMiB + uiArtMiB).toFixed(2);
   return {
     chapter,
     transitionMs: { first: transitions[chapter][0], median: times[Math.floor((times.length - 1) / 2)], max: times.at(-1) },
@@ -137,6 +139,6 @@ await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
 for (const chapter of chapters) {
   console.log(`${chapter.chapter}  load first ${chapter.transitionMs.first} ms, median ${chapter.transitionMs.median}, max ${chapter.transitionMs.max} | pack ${chapter.packDiskMiB} MiB on disk | resident ${chapter.residentMiB} MiB | ${chapter.passed ? 'PASS' : 'FAIL'}`);
 }
-console.log(`resident = common pack ${common.decodedMiB} MiB + UI art ${uiArtMiB} MiB + the chapter's pack (decoded RGBA)`);
+console.log(`resident = common pack ${common.decodedMiB} MiB + skills pack ${skills.decodedMiB} MiB + UI art ${uiArtMiB} MiB + the chapter's pack (decoded RGBA)`);
 console.log(`report: ${path.relative(root, reportPath)}`);
 if (!report.passed) process.exitCode = 1;
