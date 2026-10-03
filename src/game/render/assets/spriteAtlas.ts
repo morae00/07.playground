@@ -17,12 +17,31 @@ export type GroundTile = Readonly<{ image: SpriteImage; size: number; angle: num
 
 export type AnimationSpec = Readonly<{ frames: number; fps: number }>;
 
+/** FX-06, FX-07: how one skill stamp plays (API-skills-vfx §2.3); `seconds` for parts a fixed window times. */
+export type SkillVfxPart = Readonly<{
+  drive: 'prog' | 'loop' | 'idx';
+  rotate: 'vel' | 'beam' | 'radial' | 'tangent' | 'ray' | 'face' | 'none';
+  layer: 'ground' | 'body' | 'ally';
+  lod: 'info' | 'deco';
+  still: number | null;
+  flash: boolean;
+  seconds: number | null;
+}>;
+
+/** The kit's skill shapes (SPEC) and part rules, baked as data so their numbers stay out of the app JS. */
+export type SkillVfxManifest = Readonly<{
+  spec: Readonly<Record<string, unknown>>;
+  parts: Readonly<Record<string, Readonly<Record<string, SkillVfxPart>>>>;
+  render: Readonly<{ cloneAlpha: number; popRise: number; popEvery: number; rayInset: number; boltFps: number }>;
+}>;
+
 export type AtlasManifest = Readonly<{
   version: number;
   /** Atlas pixels per world unit. */
   atlasScale: number;
   packs: Readonly<Record<string, AtlasPackManifest>>;
   animations: Readonly<Record<string, Readonly<Record<string, AnimationSpec>>>>;
+  skillVfx?: SkillVfxManifest;
 }>;
 
 export type SpriteImage = CanvasImageSource & { readonly width: number; readonly height: number };
@@ -165,6 +184,11 @@ export class SpriteAtlas {
 
   animation(slot: string, state: string): AnimationSpec | undefined {
     return this.manifest?.animations[slot]?.[state];
+  }
+
+  /** The skill VFX's shapes and part rules (FX-06), once the manifest has loaded. */
+  skillVfx(): SkillVfxManifest | undefined {
+    return this.manifest?.skillVfx;
   }
 
   /** The frame for a key from any ready pack, or undefined (not baked, pack not loaded, or load failed). */

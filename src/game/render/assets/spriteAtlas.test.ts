@@ -17,7 +17,10 @@ test('the baked manifest is complete: every animation frame exists and sits insi
     for (const [key, [page, x, y, w, h, ax, ay]] of Object.entries(pack.frames)) {
       assert.ok(page < sizes.length, `${packName} ${key} page`);
       assert.ok(x >= 0 && y >= 0 && x + w <= sizes[page].width && y + h <= sizes[page].height, `${packName} ${key} is inside its page`);
-      assert.ok(ax >= 0 && ax <= w && ay >= 0 && ay <= h + 4, `${packName} ${key} anchor lies on the drawing`);
+      // Skill stamps (FX-06) anchor where they sit in the world, which can be just off the drawing: a pop's anchor is
+      // the head it floats over, a mark's the body it hangs above.
+      const slack = key.startsWith('skill/') ? 64 : 0;
+      assert.ok(ax >= -slack && ax <= w + slack && ay >= -slack && ay <= h + 4 + slack, `${packName} ${key} anchor lies on the drawing`);
     }
   }
   const allFrames = Object.values(manifest.packs).flatMap((pack) => Object.keys(pack.frames));

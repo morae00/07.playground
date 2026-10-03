@@ -340,10 +340,10 @@ export type ChainEffect = {
 
 /**
  * FX-06: a skill ring or stroke whose size no game event carries: the white chain's last burst, the black rail's
- * fissures, the bone mortar's aftershock, the eclipse step's slash, a needle shard. Drawing only.
+ * fissures, the bone mortar's aftershock, the eclipse step's slash, a needle shard, the magnet's pulse. Drawing only.
  */
 export type SkillMark = {
-  kind: 'ring' | 'slash' | 'shard';
+  kind: 'ring' | 'slash' | 'shard' | 'pulse';
   skillId: SkillId;
   x: number;
   y: number;

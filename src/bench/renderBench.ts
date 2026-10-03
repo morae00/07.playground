@@ -10,7 +10,7 @@ import { ProbedGameEngine } from '../game/engine/probe';
 import type { GameOptions, MetaState } from '../platform/save';
 import { DEFAULT_MOVE_KEYS } from '../platform/moveKeys';
 import { SpriteAtlas } from '../game/render/assets/spriteAtlas';
-import { CHAPTER_PACKS, COMMON_PACK } from '../game/render/assets/slots';
+import { CHAPTER_PACKS, COMMON_PACK, SKILLS_PACK } from '../game/render/assets/slots';
 
 export type RenderBenchResult = {
   config: { scene: string; scale: number; sprites: boolean; devicePixelRatio: number; backingStore: string; warmupSeconds: number; measureSeconds: number };
@@ -113,7 +113,7 @@ async function run(): Promise<RenderBenchResult> {
   const atlas = new SpriteAtlas();
   // The chapter on screen has its pack loaded, as in the game (ART-07); the stress scene uses Ch1 bodies.
   const chapterPack = CHAPTER_PACKS[scene === 'game' ? gameChapter : 1];
-  const spritesReady = useSprites ? (await Promise.all([atlas.load(COMMON_PACK), atlas.load(chapterPack)])).every(Boolean) : false;
+  const spritesReady = useSprites ? (await Promise.all([atlas.load(COMMON_PACK), atlas.load(SKILLS_PACK), atlas.load(chapterPack)])).every(Boolean) : false;
 
   // Record every animation-frame timestamp the engine receives.
   const stamps: number[] = [];

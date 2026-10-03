@@ -86,6 +86,8 @@ export function bossState(phase: number, pose: BossPose, enraged: boolean, phase
 /** Atlas packs per chapter; chapters without a pack draw with vectors. Only the chapter on screen stays loaded. */
 export const CHAPTER_PACKS: Readonly<Record<number, string>> = Object.freeze({ 1: 'chapter-01', 2: 'chapter-02', 3: 'chapter-03', 4: 'chapter-04', 5: 'chapter-05' });
 export const COMMON_PACK = 'common';
+/** FX-06, FX-07: the skill VFX stamps, loaded with the common pack and kept for the whole session. */
+export const SKILLS_PACK = 'skills';
 
 export function enemySlot(chapter: number, tier: EnemyTier, attackStyle: 'contact' | 'ranged') {
   return `enemy/${chapter}/${enemyRoleFor(tier, attackStyle)}`;

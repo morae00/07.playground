@@ -385,8 +385,23 @@ function chapterPack(chapter) {
   };
 }
 
+/**
+ * Skill VFX (FX-06, FX-07; kit PN.skillVfx, API-skills-vfx): the bake expands every stamp of every group from the
+ * kit's own parts(), into a pack of their own so the 188 stamps stay out of the initial download. Seconds for the
+ * parts a fixed window times (API §5), by part name without `shot-` or `-awakened`; null for parts timed by game
+ * data (a beam's or hazard's life, hit immunity, the iron frame's shield).
+ */
+export const SKILL_VFX_TIMING = Object.freeze({
+  start: 0.06, end: 0.1, shard: 0.12, burst: 0.24, flash: 0.08, fissure: 0.24, blast: 0.24, collapse: 0.3,
+  'core-start': 0.2, 'core-end': 0.3, glint: 0.12, mark: 0.3, markBoss: 0.3,
+  origin: null, slash: null, shell: null, feet: null, plates: null, shield: null,
+});
+/** Drawing constants for the renderer (brief §9 defaults): clone opacity, pop rise and rate, the eclipse slash inset. */
+export const SKILL_VFX_RENDER = Object.freeze({ cloneAlpha: 0.8, popRise: 4, popEvery: 1.5, rayInset: 2, boltFps: 12 });
+
 export const PACKS = Object.freeze({
   common: { page: 'assets/atlas/common', frames: [...heroFrames(), ...hitFrames(), ...pickupFrames()], animations: fxAnimations() },
+  skills: { page: 'assets/packs/skills/atlas', frames: [{ skillVfx: true }] },
   'chapter-01': chapterPack(1),
   'chapter-02': chapterPack(2),
   'chapter-03': chapterPack(3),

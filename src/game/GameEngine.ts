@@ -1296,7 +1296,7 @@ export class GameEngine {
       this.faultInjection = true;
       return 'LOOP FAULT ARMED';
     }
-    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO', 'TURN', 'PHASE'].includes(code)) {
+    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO', 'TURN', 'PHASE', 'VFX'].includes(code)) {
       this.invalidateInfiniteScore();
     }
     if (code === 'GOD') {
@@ -1331,6 +1331,16 @@ export class GameEngine {
     if (code === 'DRAFT') {
       this.openDraft('level', 'resume');
       return 'DRAFT OPEN';
+    }
+
+    // FX-06, FX-07: every skill at level 5 and awakened, past the slot limits, to see all the skill art at once.
+    if (code === 'VFX') {
+      for (const id of SKILL_IDS) this.skills[id] = { level: 5, awakened: true };
+      this.skillCooldowns = {};
+      this.pendingAwakenings = [];
+      this.recalculateStats(false);
+      this.emitSnapshot(true);
+      return 'ALL SKILLS AWAKENED';
     }
 
     // CON-06: takes the stage's boss to just past its next phase, to see its phase move and line.

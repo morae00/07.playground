@@ -1029,7 +1029,8 @@ export class GameRenderer {
     },
   ) {
     const alpha = normalizedLifetime(input.life, input.maxLife);
-    const expansion = this.frame.reducedMotion ? 1 : 1 + (1 - alpha) * 0.45;
+    // The player's rings keep the size they hit (V4, FX-06); a hostile ring still swells as it fades.
+    const expansion = this.frame.reducedMotion || input.owner !== 'hostile' ? 1 : 1 + (1 - alpha) * 0.45;
     ctx.save();
     ctx.translate(input.x, input.y);
     ctx.globalAlpha = this.frame.reducedMotion ? 0.82 : alpha;
@@ -1037,7 +1038,7 @@ export class GameRenderer {
       ? SIGNAL.warn
       : input.tier === 'critical'
         ? VISUAL_PALETTE.ink
-        : CHAPTER_ART[this.frame.chapter].accent;
+        : NEUTRAL.inkSoft;
     ctx.lineWidth = input.tier === 'critical' ? 4 : 2;
     if (this.frame.reducedMotion) ctx.setLineDash([7, 5]);
     const radius = input.radius * expansion;

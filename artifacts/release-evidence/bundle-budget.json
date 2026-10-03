@@ -7,13 +7,13 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 105646,
-      "kib": 103.17,
+      "bytes": 108977,
+      "kib": 106.42,
       "baselineBytes": 92420,
-      "growthRatio": 0.1431075524778187,
+      "growthRatio": 0.17914953473274187,
       "warningBytes": 106282,
       "failBytes": 115525,
-      "status": "passed",
+      "status": "warning",
       "passed": true
     },
     "vendorJs": {
@@ -35,30 +35,30 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 1913889,
-      "kib": 1869.03,
+      "bytes": 1941393,
+      "kib": 1895.89,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 22817747,
-      "kib": 22282.96,
+      "bytes": 23653005,
+      "kib": 23098.64,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
       "passed": true
     }
   },
-  "status": "passed",
+  "status": "warning",
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-heZnDZJh.js",
+      "file": "assets/App-CAmlSl_S.js",
       "category": "appJs",
-      "sourceBytes": 338132,
-      "gzipBytes": 102094
+      "sourceBytes": 347052,
+      "gzipBytes": 105425
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -69,8 +69,8 @@
     {
       "file": "assets/atlas/manifest.json",
       "category": "data",
-      "sourceBytes": 57140,
-      "gzipBytes": 9171
+      "sourceBytes": 84644,
+      "gzipBytes": 13753
     },
     {
       "file": "assets/chapter-thumbs-D_lcRDUv.webp",
@@ -139,7 +139,7 @@
       "gzipBytes": 15851
     },
     {
-      "file": "assets/index-DlweIenn.js",
+      "file": "assets/index-ByOeL8qW.js",
       "category": "appJs",
       "sourceBytes": 7500,
       "gzipBytes": 3552
@@ -941,6 +941,12 @@
       "category": "audio",
       "sourceBytes": 3662,
       "gzipBytes": 2004
+    },
+    {
+      "file": "assets/packs/skills/atlas-0.png",
+      "category": "image",
+      "sourceBytes": 807754,
+      "gzipBytes": 797134
     },
     {
       "file": "assets/packs/story/ending-1.webp",

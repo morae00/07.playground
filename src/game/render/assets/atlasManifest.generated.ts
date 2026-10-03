@@ -45,6 +45,201 @@ export const ATLAS_MANIFEST = {
         "pickup/xp3/0": [0, 857, 152, 33, 45, 15, 22]
       }
     },
+    "skills": {
+      "pages": [
+        "assets/packs/skills/atlas-0.png"
+      ],
+      "frames": {
+        "skill/blackSun/collapse-awakened/0": [0, 1450, 2, 144, 158, 77, 74],
+        "skill/blackSun/collapse-awakened/1": [0, 1151, 2, 179, 169, 81, 91],
+        "skill/blackSun/collapse-awakened/2": [0, 1309, 497, 158, 142, 72, 75],
+        "skill/blackSun/core-end/0": [0, 147, 655, 123, 125, 67, 63],
+        "skill/blackSun/core-end/1": [0, 657, 655, 100, 102, 54, 52],
+        "skill/blackSun/core-end/2": [0, 2, 786, 72, 72, 36, 36],
+        "skill/blackSun/core-hold-awakened/0": [0, 234, 2, 174, 175, 90, 89],
+        "skill/blackSun/core-hold-awakened/1": [0, 590, 2, 174, 171, 86, 86],
+        "skill/blackSun/core-hold/0": [0, 1623, 497, 135, 140, 77, 72],
+        "skill/blackSun/core-hold/1": [0, 1172, 497, 133, 143, 72, 71],
+        "skill/blackSun/core-start-awakened/0": [0, 1120, 786, 65, 62, 37, 27],
+        "skill/blackSun/core-start-awakened/1": [0, 274, 655, 121, 121, 62, 62],
+        "skill/blackSun/core-start-awakened/2": [0, 412, 2, 174, 175, 90, 89],
+        "skill/blackSun/core-start/0": [0, 1048, 862, 53, 52, 30, 28],
+        "skill/blackSun/core-start/1": [0, 1473, 655, 93, 94, 51, 49],
+        "skill/blackSun/core-start/2": [0, 1762, 497, 135, 140, 77, 72],
+        "skill/boneMortar/blast-awakened/0": [0, 2, 655, 141, 127, 64, 69],
+        "skill/boneMortar/blast-awakened/1": [0, 702, 497, 154, 148, 74, 78],
+        "skill/boneMortar/blast-awakened/2": [0, 860, 497, 152, 146, 73, 77],
+        "skill/boneMortar/blast/0": [0, 1901, 497, 127, 129, 65, 59],
+        "skill/boneMortar/blast/1": [0, 1016, 497, 152, 144, 77, 75],
+        "skill/boneMortar/blast/2": [0, 1471, 497, 148, 142, 75, 74],
+        "skill/boneMortar/dust/0": [0, 2018, 975, 28, 14, 14, 7],
+        "skill/boneMortar/dust/1": [0, 1817, 975, 29, 15, 16, 8],
+        "skill/boneMortar/shell-awakened/0": [0, 2, 2, 54, 329, 28, 323],
+        "skill/boneMortar/shell-awakened/1": [0, 118, 2, 54, 247, 28, 239],
+        "skill/boneMortar/shell-awakened/2": [0, 1334, 2, 54, 165, 28, 155],
+        "skill/boneMortar/shell-awakened/3": [0, 1337, 655, 64, 95, 32, 83],
+        "skill/boneMortar/shell/0": [0, 60, 2, 54, 329, 28, 323],
+        "skill/boneMortar/shell/1": [0, 176, 2, 54, 247, 28, 239],
+        "skill/boneMortar/shell/2": [0, 1392, 2, 54, 165, 28, 155],
+        "skill/boneMortar/shell/3": [0, 1405, 655, 64, 95, 32, 83],
+        "skill/chainSpark/burst-awakened/0": [0, 673, 786, 59, 64, 32, 33],
+        "skill/chainSpark/burst-awakened/1": [0, 1771, 655, 88, 75, 45, 40],
+        "skill/chainSpark/burst-awakened/2": [0, 1570, 655, 85, 91, 40, 44],
+        "skill/coinFever/frenzy-awakened/0": [0, 1189, 786, 160, 62, 78, 51],
+        "skill/coinFever/frenzy-awakened/1": [0, 1353, 786, 160, 62, 78, 57],
+        "skill/coinFever/frenzy-awakened/2": [0, 1700, 786, 160, 60, 78, 61],
+        "skill/coinFever/glint/0": [0, 1178, 922, 31, 31, 17, 14],
+        "skill/coinFever/glint/1": [0, 438, 975, 26, 21, 17, 9],
+        "skill/coinFever/pop-awakened/0": [0, 59, 862, 58, 55, 29, 56],
+        "skill/coinFever/pop/0": [0, 1105, 862, 52, 52, 26, 56],
+        "skill/common/stitchHead/0": [0, 1557, 1002, 47, 9, 27, 4],
+        "skill/common/stitchHead/1": [0, 1608, 1002, 46, 9, 27, 4],
+        "skill/eclipseStep/feet-awakened/0": [0, 1161, 862, 123, 52, 61, 26],
+        "skill/eclipseStep/feet-awakened/1": [0, 2, 922, 123, 49, 61, 26],
+        "skill/eclipseStep/feet-awakened/2": [0, 192, 922, 106, 46, 56, 25],
+        "skill/eclipseStep/feet/0": [0, 1676, 862, 113, 50, 57, 25],
+        "skill/eclipseStep/feet/1": [0, 1793, 862, 113, 50, 57, 25],
+        "skill/eclipseStep/feet/2": [0, 479, 922, 99, 43, 51, 19],
+        "skill/eclipseStep/slash-awakened/0": [0, 1267, 922, 239, 27, 237, 15],
+        "skill/eclipseStep/slash-awakened/1": [0, 1510, 922, 211, 27, 209, 15],
+        "skill/eclipseStep/slash/0": [0, 2, 975, 240, 23, 238, 13],
+        "skill/eclipseStep/slash/1": [0, 246, 975, 188, 23, 186, 13],
+        "skill/executionMark/mark/0": [0, 302, 922, 35, 46, 11, 48],
+        "skill/executionMark/mark/1": [0, 1568, 862, 50, 51, 25, 53],
+        "skill/executionMark/mark/2": [0, 1622, 862, 50, 51, 25, 53],
+        "skill/executionMark/markBoss-awakened/0": [0, 914, 786, 46, 63, 10, 72],
+        "skill/executionMark/markBoss-awakened/1": [0, 1863, 655, 70, 75, 33, 77],
+        "skill/executionMark/markBoss-awakened/2": [0, 1937, 655, 70, 75, 33, 77],
+        "skill/executionMark/pop-awakened/0": [0, 121, 862, 58, 55, 29, 56],
+        "skill/executionMark/pop/0": [0, 1288, 862, 52, 52, 26, 56],
+        "skill/fanKnives/end-awakened/0": [0, 981, 975, 55, 17, 38, 10],
+        "skill/fanKnives/end-awakened/1": [0, 1373, 975, 55, 16, 38, 9],
+        "skill/fanKnives/end/0": [0, 1432, 975, 55, 16, 37, 9],
+        "skill/fanKnives/end/1": [0, 1491, 975, 55, 16, 37, 9],
+        "skill/fanKnives/return-awakened/0": [0, 468, 975, 55, 19, 38, 10],
+        "skill/fanKnives/return-awakened/1": [0, 527, 975, 55, 19, 38, 10],
+        "skill/fanKnives/start-awakened/0": [0, 683, 975, 55, 18, 37, 10],
+        "skill/fanKnives/start-awakened/1": [0, 742, 975, 55, 18, 37, 10],
+        "skill/fanKnives/start/0": [0, 1040, 975, 55, 17, 37, 9],
+        "skill/fanKnives/start/1": [0, 1099, 975, 55, 17, 37, 9],
+        "skill/fanKnives/travel-awakened/0": [0, 801, 975, 55, 18, 37, 10],
+        "skill/fanKnives/travel-awakened/1": [0, 860, 975, 55, 18, 37, 10],
+        "skill/fanKnives/travel/0": [0, 1158, 975, 55, 17, 37, 9],
+        "skill/fanKnives/travel/1": [0, 1217, 975, 55, 17, 37, 9],
+        "skill/frostLine/chill12/0": [0, 1785, 922, 51, 25, 24, 13],
+        "skill/frostLine/chill19/0": [0, 1040, 922, 75, 36, 39, 18],
+        "skill/frostLine/chill28/0": [0, 1910, 862, 114, 50, 58, 25],
+        "skill/frostLine/chill38/0": [0, 78, 786, 154, 70, 75, 35],
+        "skill/frostLine/chill54/0": [0, 1114, 655, 219, 97, 109, 48],
+        "skill/frostLine/origin-awakened/0": [0, 129, 922, 59, 49, 29, 22],
+        "skill/frostLine/origin-awakened/1": [0, 1864, 786, 66, 58, 36, 26],
+        "skill/frostLine/origin/0": [0, 842, 922, 59, 38, 29, 23],
+        "skill/frostLine/origin/1": [0, 341, 922, 64, 46, 34, 27],
+        "skill/frostLine/root12-awakened/0": [0, 1725, 922, 56, 26, 28, 13],
+        "skill/frostLine/root19-awakened/0": [0, 754, 922, 84, 39, 42, 20],
+        "skill/frostLine/root28-awakened/0": [0, 694, 862, 121, 54, 60, 27],
+        "skill/frostLine/root38-awakened/0": [0, 236, 786, 161, 70, 80, 35],
+        "skill/frostLine/root54-awakened/0": [0, 885, 655, 225, 98, 112, 49],
+        "skill/ironFrame/pop-awakened/0": [0, 183, 862, 58, 55, 29, 56],
+        "skill/ironFrame/pop/0": [0, 1344, 862, 52, 52, 26, 56],
+        "skill/ironFrame/shield/0": [0, 768, 2, 119, 170, 56, 151],
+        "skill/ironFrame/shield/1": [0, 891, 2, 126, 170, 63, 151],
+        "skill/ironFrame/shield/2": [0, 1021, 2, 126, 170, 63, 151],
+        "skill/magnetSigil/pop-awakened/0": [0, 245, 862, 58, 55, 29, 56],
+        "skill/magnetSigil/pop/0": [0, 1400, 862, 52, 52, 26, 56],
+        "skill/mirrorClone/clone-hurt/0": [0, 920, 335, 117, 154, 63, 140],
+        "skill/mirrorClone/clone-hurt/1": [0, 1041, 335, 117, 154, 63, 140],
+        "skill/mirrorClone/clone-hurt/2": [0, 1162, 335, 117, 154, 63, 140],
+        "skill/mirrorClone/clone-idle/0": [0, 1283, 335, 132, 154, 74, 140],
+        "skill/mirrorClone/clone-idle/1": [0, 1419, 335, 132, 154, 74, 140],
+        "skill/mirrorClone/clone-idle/2": [0, 1555, 335, 132, 154, 74, 140],
+        "skill/mirrorClone/clone-idle/3": [0, 1691, 335, 132, 154, 74, 140],
+        "skill/mirrorClone/clone-idle/4": [0, 1827, 335, 132, 154, 74, 140],
+        "skill/mirrorClone/clone-idle/5": [0, 2, 497, 132, 154, 74, 140],
+        "skill/mirrorClone/clone-run/0": [0, 1598, 2, 149, 158, 71, 144],
+        "skill/mirrorClone/clone-run/1": [0, 1751, 2, 149, 158, 71, 144],
+        "skill/mirrorClone/clone-run/2": [0, 2, 335, 149, 158, 71, 144],
+        "skill/mirrorClone/clone-run/3": [0, 155, 335, 149, 158, 71, 144],
+        "skill/mirrorClone/clone-run/4": [0, 308, 335, 149, 158, 71, 144],
+        "skill/mirrorClone/clone-run/5": [0, 461, 335, 149, 158, 71, 144],
+        "skill/mirrorClone/clone-run/6": [0, 614, 335, 149, 158, 71, 144],
+        "skill/mirrorClone/clone-run/7": [0, 767, 335, 149, 158, 71, 144],
+        "skill/mirrorClone/clone-throw/0": [0, 138, 497, 137, 154, 72, 140],
+        "skill/mirrorClone/clone-throw/1": [0, 279, 497, 137, 154, 72, 140],
+        "skill/mirrorClone/clone-throw/2": [0, 420, 497, 137, 154, 72, 140],
+        "skill/mirrorClone/clone-throw/3": [0, 561, 497, 137, 154, 72, 140],
+        "skill/mirrorClone/shot-end-awakened/0": [0, 777, 1002, 83, 10, 69, 5],
+        "skill/mirrorClone/shot-end-awakened/1": [0, 864, 1002, 55, 10, 41, 5],
+        "skill/mirrorClone/shot-end/0": [0, 923, 1002, 55, 10, 41, 5],
+        "skill/mirrorClone/shot-end/1": [0, 982, 1002, 41, 10, 27, 5],
+        "skill/mirrorClone/shot-start-awakened/0": [0, 1027, 1002, 43, 10, 27, 5],
+        "skill/mirrorClone/shot-start-awakened/1": [0, 1074, 1002, 71, 10, 55, 5],
+        "skill/mirrorClone/shot-start/0": [0, 1149, 1002, 43, 10, 27, 5],
+        "skill/mirrorClone/shot-start/1": [0, 1196, 1002, 57, 10, 41, 5],
+        "skill/mirrorClone/shot-travel-awakened/0": [0, 1257, 1002, 85, 10, 69, 5],
+        "skill/mirrorClone/shot-travel-awakened/1": [0, 1346, 1002, 85, 10, 69, 5],
+        "skill/mirrorClone/shot-travel/0": [0, 1435, 1002, 57, 10, 41, 5],
+        "skill/mirrorClone/shot-travel/1": [0, 1496, 1002, 57, 10, 41, 5],
+        "skill/needleStorm/end-awakened/0": [0, 373, 1002, 85, 12, 71, 5],
+        "skill/needleStorm/end-awakened/1": [0, 2, 1002, 73, 14, 59, 5],
+        "skill/needleStorm/end/0": [0, 1850, 975, 86, 15, 72, 6],
+        "skill/needleStorm/end/1": [0, 1940, 975, 74, 15, 60, 5],
+        "skill/needleStorm/shard-awakened/0": [0, 1658, 1002, 56, 9, 3, 6],
+        "skill/needleStorm/shard-awakened/1": [0, 713, 1002, 60, 11, -21, 5],
+        "skill/needleStorm/start-awakened/0": [0, 462, 1002, 67, 12, 53, 6],
+        "skill/needleStorm/start-awakened/1": [0, 533, 1002, 79, 12, 65, 6],
+        "skill/needleStorm/start/0": [0, 231, 1002, 57, 13, 43, 7],
+        "skill/needleStorm/start/1": [0, 292, 1002, 77, 13, 63, 7],
+        "skill/needleStorm/travel-awakened/0": [0, 586, 975, 93, 19, 79, 13],
+        "skill/needleStorm/travel-awakened/1": [0, 616, 1002, 93, 12, 79, 6],
+        "skill/needleStorm/travel/0": [0, 1550, 975, 93, 16, 79, 9],
+        "skill/needleStorm/travel/1": [0, 1276, 975, 93, 17, 79, 8],
+        "skill/orbitScythes/blade-outer-awakened/0": [0, 964, 786, 35, 63, 8, 30],
+        "skill/orbitScythes/blade-outer-awakened/1": [0, 1003, 786, 35, 63, 8, 30],
+        "skill/orbitScythes/blade/0": [0, 1042, 786, 35, 63, 8, 33],
+        "skill/orbitScythes/blade/1": [0, 1081, 786, 35, 63, 8, 33],
+        "skill/paperWard/plate-awakened/0": [0, 919, 975, 27, 18, 14, 9],
+        "skill/paperWard/plate-awakened/1": [0, 950, 975, 27, 18, 14, 9],
+        "skill/paperWard/plates/0": [0, 1934, 786, 110, 57, 56, 105],
+        "skill/paperWard/plates/1": [0, 541, 786, 128, 66, 65, 110],
+        "skill/paperWard/plates/2": [0, 401, 786, 136, 67, 69, 110],
+        "skill/paperWard/pop-awakened/0": [0, 307, 862, 58, 55, 29, 56],
+        "skill/paperWard/pop/0": [0, 1456, 862, 52, 52, 26, 56],
+        "skill/railSpear/fissure-awakened/0": [0, 582, 922, 29, 43, 15, 16],
+        "skill/railSpear/fissure-awakened/1": [0, 1659, 655, 52, 78, 28, 29],
+        "skill/railSpear/fissure-awakened/2": [0, 1715, 655, 52, 78, 28, 29],
+        "skill/railSpear/flash-awakened/0": [0, 369, 862, 73, 55, 21, 27],
+        "skill/railSpear/flash/0": [0, 905, 922, 67, 38, 17, 20],
+        "skill/railSpear/origin-awakened/0": [0, 2, 862, 53, 56, 37, 36],
+        "skill/railSpear/origin-awakened/1": [0, 1517, 786, 44, 62, 44, 41],
+        "skill/railSpear/origin/0": [0, 819, 862, 53, 53, 37, 36],
+        "skill/railSpear/origin/1": [0, 1565, 786, 44, 62, 44, 41],
+        "skill/recoveryThread/pop-awakened/0": [0, 446, 862, 58, 55, 29, 56],
+        "skill/recoveryThread/pop/0": [0, 1512, 862, 52, 52, 26, 56],
+        "skill/recoveryThread/shot-end-awakened/0": [0, 1647, 975, 54, 16, 40, 7],
+        "skill/recoveryThread/shot-end-awakened/1": [0, 1705, 975, 48, 16, 34, 7],
+        "skill/recoveryThread/shot-start-awakened/0": [0, 79, 1002, 42, 14, 28, 7],
+        "skill/recoveryThread/shot-start-awakened/1": [0, 125, 1002, 42, 14, 28, 7],
+        "skill/recoveryThread/shot-travel-awakened/0": [0, 1757, 975, 56, 16, 42, 7],
+        "skill/recoveryThread/shot-travel-awakened/1": [0, 171, 1002, 56, 14, 42, 7],
+        "skill/voidMine/collapse-awakened/0": [0, 532, 655, 121, 115, 58, 66],
+        "skill/voidMine/collapse-awakened/1": [0, 399, 655, 129, 117, 58, 65],
+        "skill/voidMine/collapse-awakened/2": [0, 761, 655, 120, 100, 52, 61],
+        "skill/voidMine/core-end/0": [0, 876, 862, 76, 53, 38, 29],
+        "skill/voidMine/core-end/1": [0, 687, 922, 63, 40, 31, 23],
+        "skill/voidMine/core-end/2": [0, 1213, 922, 50, 30, 25, 15],
+        "skill/voidMine/core-hold-awakened/0": [0, 508, 862, 89, 55, 45, 29],
+        "skill/voidMine/core-hold-awakened/1": [0, 956, 862, 88, 53, 44, 29],
+        "skill/voidMine/core-hold/0": [0, 736, 786, 85, 64, 43, 34],
+        "skill/voidMine/core-hold/1": [0, 1613, 786, 83, 62, 41, 34],
+        "skill/voidMine/core-start-awakened/0": [0, 976, 922, 60, 37, 35, 26],
+        "skill/voidMine/core-start-awakened/1": [0, 615, 922, 68, 41, 34, 22],
+        "skill/voidMine/core-start-awakened/2": [0, 601, 862, 89, 55, 45, 29],
+        "skill/voidMine/core-start/0": [0, 1119, 922, 55, 35, 32, 24],
+        "skill/voidMine/core-start/1": [0, 409, 922, 66, 46, 33, 25],
+        "skill/voidMine/core-start/2": [0, 825, 786, 85, 64, 43, 34]
+      }
+    },
     "chapter-01": {
       "pages": [
         "assets/packs/chapter-01/atlas-0.png",
@@ -2617,6 +2812,1611 @@ export const ATLAS_MANIFEST = {
         "frames": 1,
         "fps": 1
       }
+    },
+    "skill/blackSun": {
+      "core-start": {
+        "frames": 3,
+        "fps": 0
+      },
+      "core-hold": {
+        "frames": 2,
+        "fps": 6
+      },
+      "core-end": {
+        "frames": 3,
+        "fps": 0
+      },
+      "core-start-awakened": {
+        "frames": 3,
+        "fps": 0
+      },
+      "core-hold-awakened": {
+        "frames": 2,
+        "fps": 6
+      },
+      "collapse-awakened": {
+        "frames": 3,
+        "fps": 0
+      }
+    },
+    "skill/boneMortar": {
+      "shell": {
+        "frames": 4,
+        "fps": 0
+      },
+      "shell-awakened": {
+        "frames": 4,
+        "fps": 0
+      },
+      "blast": {
+        "frames": 3,
+        "fps": 0
+      },
+      "blast-awakened": {
+        "frames": 3,
+        "fps": 0
+      },
+      "dust": {
+        "frames": 2,
+        "fps": 0
+      }
+    },
+    "skill/chainSpark": {
+      "burst-awakened": {
+        "frames": 3,
+        "fps": 0
+      }
+    },
+    "skill/coinFever": {
+      "pop": {
+        "frames": 1,
+        "fps": 0
+      },
+      "pop-awakened": {
+        "frames": 1,
+        "fps": 0
+      },
+      "glint": {
+        "frames": 2,
+        "fps": 0
+      },
+      "frenzy-awakened": {
+        "frames": 3,
+        "fps": 8
+      }
+    },
+    "skill/common": {
+      "stitchHead": {
+        "frames": 2,
+        "fps": 12
+      }
+    },
+    "skill/eclipseStep": {
+      "slash": {
+        "frames": 2,
+        "fps": 0
+      },
+      "slash-awakened": {
+        "frames": 2,
+        "fps": 0
+      },
+      "feet": {
+        "frames": 3,
+        "fps": 0
+      },
+      "feet-awakened": {
+        "frames": 3,
+        "fps": 0
+      }
+    },
+    "skill/executionMark": {
+      "pop": {
+        "frames": 1,
+        "fps": 0
+      },
+      "pop-awakened": {
+        "frames": 1,
+        "fps": 0
+      },
+      "mark": {
+        "frames": 3,
+        "fps": 0
+      },
+      "markBoss-awakened": {
+        "frames": 3,
+        "fps": 0
+      }
+    },
+    "skill/fanKnives": {
+      "start": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end": {
+        "frames": 2,
+        "fps": 0
+      },
+      "start-awakened": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel-awakened": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end-awakened": {
+        "frames": 2,
+        "fps": 0
+      },
+      "return-awakened": {
+        "frames": 2,
+        "fps": 12
+      }
+    },
+    "skill/frostLine": {
+      "origin": {
+        "frames": 2,
+        "fps": 0
+      },
+      "origin-awakened": {
+        "frames": 2,
+        "fps": 0
+      },
+      "chill12": {
+        "frames": 1,
+        "fps": 0
+      },
+      "chill19": {
+        "frames": 1,
+        "fps": 0
+      },
+      "chill28": {
+        "frames": 1,
+        "fps": 0
+      },
+      "chill38": {
+        "frames": 1,
+        "fps": 0
+      },
+      "chill54": {
+        "frames": 1,
+        "fps": 0
+      },
+      "root12-awakened": {
+        "frames": 1,
+        "fps": 0
+      },
+      "root19-awakened": {
+        "frames": 1,
+        "fps": 0
+      },
+      "root28-awakened": {
+        "frames": 1,
+        "fps": 0
+      },
+      "root38-awakened": {
+        "frames": 1,
+        "fps": 0
+      },
+      "root54-awakened": {
+        "frames": 1,
+        "fps": 0
+      }
+    },
+    "skill/ironFrame": {
+      "pop": {
+        "frames": 1,
+        "fps": 0
+      },
+      "pop-awakened": {
+        "frames": 1,
+        "fps": 0
+      },
+      "shield": {
+        "frames": 3,
+        "fps": 0
+      }
+    },
+    "skill/magnetSigil": {
+      "pop": {
+        "frames": 1,
+        "fps": 0
+      },
+      "pop-awakened": {
+        "frames": 1,
+        "fps": 0
+      }
+    },
+    "skill/mirrorClone": {
+      "clone-idle": {
+        "frames": 6,
+        "fps": 0
+      },
+      "clone-run": {
+        "frames": 8,
+        "fps": 0
+      },
+      "clone-throw": {
+        "frames": 4,
+        "fps": 0
+      },
+      "clone-hurt": {
+        "frames": 3,
+        "fps": 0
+      },
+      "shot-start": {
+        "frames": 2,
+        "fps": 0
+      },
+      "shot-travel": {
+        "frames": 2,
+        "fps": 12
+      },
+      "shot-end": {
+        "frames": 2,
+        "fps": 0
+      },
+      "shot-start-awakened": {
+        "frames": 2,
+        "fps": 0
+      },
+      "shot-travel-awakened": {
+        "frames": 2,
+        "fps": 12
+      },
+      "shot-end-awakened": {
+        "frames": 2,
+        "fps": 0
+      }
+    },
+    "skill/needleStorm": {
+      "start": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end": {
+        "frames": 2,
+        "fps": 0
+      },
+      "start-awakened": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel-awakened": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end-awakened": {
+        "frames": 2,
+        "fps": 0
+      },
+      "shard-awakened": {
+        "frames": 2,
+        "fps": 0
+      }
+    },
+    "skill/orbitScythes": {
+      "blade": {
+        "frames": 2,
+        "fps": 8
+      },
+      "blade-outer-awakened": {
+        "frames": 2,
+        "fps": 8
+      }
+    },
+    "skill/paperWard": {
+      "pop": {
+        "frames": 1,
+        "fps": 0
+      },
+      "pop-awakened": {
+        "frames": 1,
+        "fps": 0
+      },
+      "plates": {
+        "frames": 3,
+        "fps": 0
+      },
+      "plate-awakened": {
+        "frames": 2,
+        "fps": 0
+      }
+    },
+    "skill/railSpear": {
+      "origin": {
+        "frames": 2,
+        "fps": 0
+      },
+      "origin-awakened": {
+        "frames": 2,
+        "fps": 0
+      },
+      "flash": {
+        "frames": 1,
+        "fps": 0
+      },
+      "flash-awakened": {
+        "frames": 1,
+        "fps": 0
+      },
+      "fissure-awakened": {
+        "frames": 3,
+        "fps": 0
+      }
+    },
+    "skill/recoveryThread": {
+      "pop": {
+        "frames": 1,
+        "fps": 0
+      },
+      "pop-awakened": {
+        "frames": 1,
+        "fps": 0
+      },
+      "shot-start-awakened": {
+        "frames": 2,
+        "fps": 0
+      },
+      "shot-travel-awakened": {
+        "frames": 2,
+        "fps": 12
+      },
+      "shot-end-awakened": {
+        "frames": 2,
+        "fps": 0
+      }
+    },
+    "skill/voidMine": {
+      "core-start": {
+        "frames": 3,
+        "fps": 0
+      },
+      "core-hold": {
+        "frames": 2,
+        "fps": 6
+      },
+      "core-end": {
+        "frames": 3,
+        "fps": 0
+      },
+      "core-start-awakened": {
+        "frames": 3,
+        "fps": 0
+      },
+      "core-hold-awakened": {
+        "frames": 2,
+        "fps": 6
+      },
+      "collapse-awakened": {
+        "frames": 3,
+        "fps": 0
+      }
+    }
+  },
+  "skillVfx": {
+    "spec": {
+      "stitch": {
+        "layers": [
+          [
+            "ink",
+            5
+          ],
+          [
+            "ally",
+            2.8
+          ],
+          [
+            "allyG",
+            0.8
+          ]
+        ],
+        "dash": [4.5, 7.5],
+        "cap": "round",
+        "fit": 1,
+        "start": -90,
+        "dir": "cw"
+      },
+      "guide": {
+        "layers": [
+          [
+            "allyD",
+            1.2
+          ]
+        ],
+        "alpha": 0.55
+      },
+      "fill": {
+        "token": "p50",
+        "alpha": 0.25
+      },
+      "dots": {
+        "token": "ally",
+        "r": 1.5,
+        "pitch": 6,
+        "angle": 45,
+        "alphaWarn": 0.6,
+        "alphaVortex": 1,
+        "band": [34, 0.25]
+      },
+      "thread": {
+        "layers": [
+          [
+            "ink",
+            4
+          ],
+          [
+            "ally",
+            2.2
+          ],
+          [
+            "allyG",
+            0.7
+          ]
+        ],
+        "seconds": 0.24,
+        "fade": 0.6
+      },
+      "threadHeavy": {
+        "layers": [
+          [
+            "ink",
+            5
+          ],
+          [
+            "ally",
+            2.8
+          ],
+          [
+            "allyG",
+            0.8
+          ]
+        ],
+        "seconds": 0.24,
+        "fade": 0.6
+      },
+      "band": {
+        "frostLine": {
+          "edge": [
+            [
+              "ink",
+              1.2
+            ]
+          ],
+          "inner": [
+            "p50",
+            0.8,
+            1.4
+          ]
+        },
+        "railSpear": {
+          "edge": [
+            [
+              "ink",
+              1.4
+            ]
+          ]
+        }
+      },
+      "chalk": {
+        "edge": [3.5, 2],
+        "step": 12,
+        "fill": "p50",
+        "line": [
+          "ink",
+          0.8
+        ],
+        "core": [
+          "ally",
+          2.2
+        ],
+        "grow": 0.25,
+        "dust": {
+          "every": 14,
+          "r": [0.8, 1.6],
+          "fill": "p50",
+          "line": [
+            "ink",
+            0.4
+          ],
+          "inset": 3
+        }
+      },
+      "spear": {
+        "fill": "ink",
+        "half": [6, 4],
+        "grain": [
+          "p50",
+          0.9,
+          -3
+        ],
+        "core": [
+          [
+            "ally",
+            2.4
+          ],
+          [
+            "allyG",
+            0.8
+          ]
+        ],
+        "head": 18,
+        "headHalf": 6.5,
+        "grow": 0.25,
+        "fade": {
+          "token": "ink",
+          "width": 3,
+          "dash": [6, 4]
+        }
+      },
+      "spearCopy": {
+        "offset": 42,
+        "edge": [
+          "ink300",
+          1.2
+        ],
+        "edgeDash": [5, 3],
+        "shaft": {
+          "fill": "p50",
+          "alpha": 0.5,
+          "line": [
+            "ink300",
+            0.9
+          ]
+        },
+        "core": [
+          [
+            "ink",
+            2.6
+          ],
+          [
+            "ally",
+            1.6
+          ]
+        ],
+        "coreDash": [6, 4],
+        "pad": 0.6
+      },
+      "bolt": {
+        "layers": [
+          [
+            "ink",
+            6
+          ],
+          [
+            "ally",
+            3
+          ],
+          [
+            "p50",
+            1.2
+          ]
+        ],
+        "awakened": [
+          [
+            "ink",
+            7
+          ],
+          [
+            "ally",
+            3.6
+          ],
+          [
+            "p50",
+            1.4
+          ]
+        ],
+        "join": "miter",
+        "miter": 10,
+        "cap": "round",
+        "seg": 30,
+        "push": [3, 3],
+        "seeds": [11, 12],
+        "start": 0.28,
+        "end": 0.35,
+        "fade": {
+          "token": "ink",
+          "dash": [6, 4]
+        }
+      },
+      "tether": {
+        "layers": [
+          [
+            "ink",
+            3
+          ],
+          [
+            "ally",
+            1.6
+          ]
+        ],
+        "dash": [6, 4],
+        "pad": 0.6,
+        "sag": 0.06
+      },
+      "swirl": {
+        "voidMine": {
+          "arms": 3,
+          "r": [0.16, 0.88],
+          "wind": 200,
+          "width": [0.09, 0.015],
+          "token": "ink",
+          "alpha": 0.5,
+          "speed": 0.6,
+          "turn": "cw"
+        },
+        "blackSun": {
+          "arms": 4,
+          "r": [0.16, 0.88],
+          "wind": 190,
+          "width": [0.1, 0.02],
+          "token": "ink",
+          "alpha": 0.55,
+          "speed": 0.45,
+          "turn": "cw"
+        }
+      },
+      "unravel": {
+        "seconds": 0.3,
+        "gap": [1, 2],
+        "alpha": [1, 0]
+      },
+      "slashRing": {
+        "band": [
+          "p50",
+          5
+        ],
+        "edge": [
+          "ink",
+          1.2
+        ],
+        "outer": {
+          "at": 4.4,
+          "layers": [
+            [
+              "ink",
+              3
+            ],
+            [
+              "ally",
+              1.6
+            ]
+          ]
+        },
+        "seconds": 0.2
+      },
+      "wardRing": {
+        "band": [
+          "p50",
+          4
+        ],
+        "jag": [10, 2],
+        "edge": [
+          "ink",
+          1.2
+        ],
+        "outer": {
+          "at": 4.6,
+          "layers": [
+            [
+              "ink",
+              2.6
+            ],
+            [
+              "ally",
+              1.6
+            ]
+          ],
+          "dash": [6, 4],
+          "pad": 0.6
+        },
+        "seconds": 0.24,
+        "plates": {
+          "count": 6,
+          "from": 20,
+          "to": 140,
+          "seconds": 0.2,
+          "angleJitter": 10,
+          "toMin": 126,
+          "seed": 9
+        }
+      },
+      "pulse": {
+        "rings": [
+          [
+            "allyD",
+            1.2
+          ],
+          [
+            "allyG",
+            0.5
+          ]
+        ],
+        "r": [24, 150],
+        "seconds": 0.45,
+        "ease": 2,
+        "alpha": [0.6, 0],
+        "delay": 0.08,
+        "reducedR": 60
+      },
+      "orbitTrail": {
+        "arc": 0.35,
+        "layers": [
+          [
+            "p50",
+            1
+          ],
+          [
+            "ally",
+            0.8
+          ]
+        ],
+        "alpha": [0.6, 0]
+      },
+      "aura": {
+        "stitchR": 35,
+        "seconds": 0.3,
+        "centerY": -32,
+        "layer": "ally"
+      },
+      "blastDust": {
+        "every": 40,
+        "jitter": 0.35,
+        "skip": 0.25,
+        "spike": 0.33,
+        "seed": 5,
+        "reach": 7
+      },
+      "jit": {
+        "mul": 31,
+        "hash": 2654435761,
+        "mod": 1000
+      }
+    },
+    "parts": {
+      "needleStorm": {
+        "start": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        },
+        "start-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel-awakened": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        },
+        "shard-awakened": {
+          "drive": "prog",
+          "rotate": "beam",
+          "layer": "ally",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": 0.12
+        }
+      },
+      "fanKnives": {
+        "start": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        },
+        "start-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel-awakened": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        },
+        "return-awakened": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        }
+      },
+      "chainSpark": {
+        "burst-awakened": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": 0.24
+        }
+      },
+      "frostLine": {
+        "origin": {
+          "drive": "prog",
+          "rotate": "beam",
+          "layer": "ally",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "origin-awakened": {
+          "drive": "prog",
+          "rotate": "beam",
+          "layer": "ally",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "chill12": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "chill19": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "chill28": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "chill38": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "chill54": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "root12-awakened": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "root19-awakened": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "root28-awakened": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "root38-awakened": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "root54-awakened": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        }
+      },
+      "orbitScythes": {
+        "blade": {
+          "drive": "loop",
+          "rotate": "radial",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "blade-outer-awakened": {
+          "drive": "loop",
+          "rotate": "radial",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        }
+      },
+      "boneMortar": {
+        "shell": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "shell-awakened": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "blast": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": 0.24
+        },
+        "blast-awakened": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": 0.24
+        },
+        "dust": {
+          "drive": "idx",
+          "rotate": "radial",
+          "layer": "ally",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        }
+      },
+      "railSpear": {
+        "origin": {
+          "drive": "prog",
+          "rotate": "beam",
+          "layer": "ally",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "origin-awakened": {
+          "drive": "prog",
+          "rotate": "beam",
+          "layer": "ally",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "flash": {
+          "drive": "prog",
+          "rotate": "beam",
+          "layer": "ally",
+          "lod": "deco",
+          "still": null,
+          "flash": true,
+          "seconds": 0.08
+        },
+        "flash-awakened": {
+          "drive": "prog",
+          "rotate": "beam",
+          "layer": "ally",
+          "lod": "deco",
+          "still": null,
+          "flash": true,
+          "seconds": 0.08
+        },
+        "fissure-awakened": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": 0.24
+        }
+      },
+      "mirrorClone": {
+        "clone-idle": {
+          "drive": "idx",
+          "rotate": "face",
+          "layer": "body",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "clone-run": {
+          "drive": "idx",
+          "rotate": "face",
+          "layer": "body",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "clone-throw": {
+          "drive": "idx",
+          "rotate": "face",
+          "layer": "body",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "clone-hurt": {
+          "drive": "idx",
+          "rotate": "face",
+          "layer": "body",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "shot-start": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "shot-travel": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "shot-end": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        },
+        "shot-start-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "shot-travel-awakened": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "shot-end-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        }
+      },
+      "voidMine": {
+        "core-start": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.2
+        },
+        "core-hold": {
+          "drive": "loop",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "core-end": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.3
+        },
+        "core-start-awakened": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.2
+        },
+        "core-hold-awakened": {
+          "drive": "loop",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "collapse-awakened": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.3
+        }
+      },
+      "blackSun": {
+        "core-start": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.2
+        },
+        "core-hold": {
+          "drive": "loop",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "core-end": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.3
+        },
+        "core-start-awakened": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.2
+        },
+        "core-hold-awakened": {
+          "drive": "loop",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "collapse-awakened": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.3
+        }
+      },
+      "ironFrame": {
+        "pop": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "pop-awakened": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "shield": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "body",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        }
+      },
+      "magnetSigil": {
+        "pop": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "pop-awakened": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        }
+      },
+      "paperWard": {
+        "pop": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "pop-awakened": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "plates": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "body",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "plate-awakened": {
+          "drive": "idx",
+          "rotate": "radial",
+          "layer": "ally",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        }
+      },
+      "recoveryThread": {
+        "pop": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "pop-awakened": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "shot-start-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "shot-travel-awakened": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "shot-end-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        }
+      },
+      "coinFever": {
+        "pop": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "pop-awakened": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "glint": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": 0.12
+        },
+        "frenzy-awakened": {
+          "drive": "loop",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        }
+      },
+      "eclipseStep": {
+        "slash": {
+          "drive": "prog",
+          "rotate": "ray",
+          "layer": "ally",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "slash-awakened": {
+          "drive": "prog",
+          "rotate": "ray",
+          "layer": "ally",
+          "lod": "deco",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "feet": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "feet-awakened": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        }
+      },
+      "executionMark": {
+        "pop": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "pop-awakened": {
+          "drive": "idx",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": null
+        },
+        "mark": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.3
+        },
+        "markBoss-awakened": {
+          "drive": "prog",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.3
+        }
+      },
+      "common": {
+        "stitchHead": {
+          "drive": "loop",
+          "rotate": "tangent",
+          "layer": "ally",
+          "lod": "deco",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        }
+      }
+    },
+    "render": {
+      "cloneAlpha": 0.8,
+      "popRise": 4,
+      "popEvery": 1.5,
+      "rayInset": 2,
+      "boltFps": 12
     }
   }
 } as const;

@@ -37,6 +37,7 @@ import { NumberGlyphs, type NumberStyle } from './numberGlyphs.ts';
 import { shakeOffset } from '../presentation/viewCamera.ts';
 import { NEUTRAL, SIGNAL, rgba } from './palette.ts';
 import { createRenderFrameSnapshot } from './renderSnapshot.ts';
+import { SkillVfxPainter } from './skillVfx.ts';
 import { CHAPTER_VISUALS, enemyRoleFor, type VisualDetail } from './visualRegistry.ts';
 import {
   circleVisible,
@@ -73,6 +74,14 @@ const SHOCK_WINDUP_REACH = 80;
 /** A boss last drawn longer ago than this has left without a fall; how far its corpse may lie from where it stood. */
 const BOSS_SEEN_SECONDS = 0.5;
 const BOSS_FALL_MATCH = 24;
+
+/** FX-07: the passives that pop their symbol over the hero when learned, levelled up, or awakened, and for how long. */
+const PASSIVE_SKILLS: readonly SkillId[] = ['ironFrame', 'magnetSigil', 'paperWard', 'recoveryThread', 'coinFever', 'executionMark'];
+const POP_SECONDS = 1;
+/** The chalk cut's chill and root marks come in the kit's enemy radii (style bible §7.2). */
+const CHILL_RADII = Object.freeze([12, 19, 28, 38, 54]);
+/** Projectiles drawn from the skill kit; the stamp names of mirror and recovery shots start with `shot-`. */
+const SKILL_SHOTS: ReadonlySet<SkillId> = new Set(['needleStorm', 'fanKnives', 'recoveryThread']);
 
 /** Cut-outs kept per cache: far more than the frames a chapter and the hero have (TEC-09). */
 const CUTOUT_LIMIT = 1024;
@@ -273,6 +282,13 @@ export class WorldRenderer {
   private readonly trail: { x: number; y: number; at: number }[] = [];
   /** Damage number glyphs (FX-07), drawn once per style. */
   private readonly glyphs = new NumberGlyphs();
+  /** Skill VFX from the kit (FX-06, FX-07); skillArt is false while its pack or data is missing (vectors draw). */
+  private readonly vfx = new SkillVfxPainter();
+  private skillArt = false;
+  /** Each passive as last seen ("level" plus "a" once awakened), the pops showing, and the clock they were read at. */
+  private readonly passives = new Map<SkillId, string>();
+  private readonly pops: { skillId: SkillId; at: number; awakened: boolean }[] = [];
+  private passiveClock = -1;
   private readonly bodyPool: BodyDraw[] = [];
   private readonly sortedBodies: BodyDraw[] = [];
   private bodyCount = 0;
@@ -338,6 +354,8 @@ export class WorldRenderer {
     });
     this.visual.beginFrame(snapshot);
     this.stats.detail = snapshot.detail;
+    this.skillArt = this.vfx.begin(this.sprites, world.elapsed, policy.reduced, policy.flashStrength, snapshot.detail === 'minimal');
+    this.trackPassives();
     for (const key of ['silence', 'root'] as const) {
       const value = this.world.player[key];
       if (value > this.debuffLast[key] + 1e-6) this.debuffSpans[key] = value;
@@ -410,9 +428,13 @@ export class WorldRenderer {
         this.drawOverheads(ctx);
         return;
       case 'allyAttacks':
+        // The player's rings sit under enemy shots and telegraphs (V3).
+        this.drawImpactRings(ctx, 'player');
+        this.drawSkillMarks(ctx);
         this.drawBeams(ctx);
         this.drawOrbitScythes(ctx);
         this.drawFriendlyProjectiles(ctx);
+        this.drawPassivePops(ctx);
         this.drawTargetReticle(ctx);
         return;
       case 'hostileShots':
@@ -422,7 +444,6 @@ export class WorldRenderer {
         this.drawTelegraphs(ctx);
         return;
       case 'effects':
-        this.drawImpactRings(ctx, 'player');
         this.drawHitStamps(ctx);
         this.drawParticles(ctx);
         this.drawDamageNumbers(ctx);
@@ -805,6 +826,12 @@ export class WorldRenderer {
       const enemy = body.enemy;
       if (!enemy) continue;
       if (body.anim?.state === 'spawn') this.drawSpawnBloom(ctx, body.x, body.y, enemy.radius, this.spawnProgress(body.anim));
+      if (this.skillArt && (enemy.frostUntil ?? 0) > this.world.elapsed) {
+        // The chalk cut's chill, or its root (FX-07), round the enemy's feet.
+        const radius = CHILL_RADII.reduce((best, r) => (Math.abs(r - enemy.radius) < Math.abs(best - enemy.radius) ? r : best));
+        const rooted = (enemy.frostRootUntil ?? 0) > this.world.elapsed;
+        this.vfx.stamp(ctx, 'frostLine', rooted ? `root${radius}-awakened` : `chill${radius}`, body.x, body.y);
+      }
       if (body.sprite) {
         ctx.save();
         ctx.fillStyle = rgba(NEUTRAL.ink, 0.3);
@@ -1036,12 +1063,38 @@ export class WorldRenderer {
   private drawBeams(ctx: CanvasRenderingContext2D) {
     for (const beam of this.world.beams) {
       if (!segmentVisible(this.viewport, beam.x1, beam.y1, beam.x2, beam.y2, beam.width)) continue;
+      if (this.skillArt && beam.skillId === 'frostLine') {
+        // The chalk cut (FX-07): the band's edges sit on the hit capsule's edges, `width` from the axis.
+        const angle = Math.atan2(beam.y2 - beam.y1, beam.x2 - beam.x1);
+        this.vfx.chalkCut(ctx, beam.x1, beam.y1, angle, Math.hypot(beam.x2 - beam.x1, beam.y2 - beam.y1), beam.width, beam.life, beam.maxLife, beam.id);
+        const awakened = this.world.skills.frostLine?.awakened ? '-awakened' : '';
+        this.vfx.stamp(ctx, 'frostLine', `origin${awakened}`, beam.x1, beam.y1, angle, 1 - beam.life / beam.maxLife);
+        continue;
+      }
       this.visual.drawBeam(ctx, beam);
     }
 
     for (const chain of this.world.chains) {
       if (!chain.points.some((point, index) => index > 0 && segmentVisible(this.viewport, chain.points[index - 1].x, chain.points[index - 1].y, point.x, point.y, 5))) continue;
-      this.visual.drawChain(ctx, chain.points, chain.life, chain.maxLife);
+      if (this.skillArt && chain.skillId === 'chainSpark') this.vfx.bolt(ctx, chain.points, chain.life, chain.maxLife, this.world.skills.chainSpark?.awakened === true);
+      else this.visual.drawChain(ctx, chain.points, chain.life, chain.maxLife);
+    }
+  }
+
+  /** Skill rings and strokes no event sizes (FX-07): the white chain's last burst and the needles' shards. */
+  private drawSkillMarks(ctx: CanvasRenderingContext2D) {
+    if (!this.skillArt) return;
+    for (const mark of this.world.effects.skillMarks) {
+      const age = mark.maxLife - mark.life;
+      if (mark.kind === 'pulse') {
+        const player = this.interpolated(this.world.player);
+        this.vfx.pulse(ctx, player.x, player.y, age);
+      } else if (mark.skillId === 'chainSpark') {
+        this.vfx.thread(ctx, mark.x, mark.y, mark.radius, age);
+        this.vfx.stamp(ctx, 'chainSpark', 'burst-awakened', mark.x, mark.y, 0, age / (this.vfx.part('chainSpark', 'burst-awakened')?.seconds ?? 0.24));
+      } else if (mark.kind === 'shard') {
+        this.vfx.stamp(ctx, 'needleStorm', 'shard-awakened', mark.x, mark.y, Math.atan2(mark.y2 - mark.y, mark.x2 - mark.x), age / mark.maxLife);
+      }
     }
   }
 
@@ -1049,6 +1102,7 @@ export class WorldRenderer {
     for (const projectile of this.world.projectiles) {
       const point = this.interpolated(projectile);
       if (!circleVisible(this.viewport, point.x, point.y, projectile.radius * 8)) continue;
+      if (this.skillArt && SKILL_SHOTS.has(projectile.skillId) && this.drawSkillShot(ctx, projectile, point.x, point.y)) continue;
       this.visual.drawFriendlyProjectile(ctx, {
         x: point.x,
         y: point.y,
@@ -1061,6 +1115,25 @@ export class WorldRenderer {
         skillId: projectile.skillId,
       });
     }
+  }
+
+  /**
+   * A skill shot from the kit (API-skills-vfx §7): `start` over its first moments, `end` over its last, `travel`
+   * between, all turned to its velocity. An awakened fan knife coming back shows its handle first; recovery threads
+   * fly only from the awakened passive.
+   */
+  private drawSkillShot(ctx: CanvasRenderingContext2D, shot: Readonly<Projectile>, x: number, y: number) {
+    const group = shot.skillId;
+    const prefix = group === 'recoveryThread' ? 'shot-' : '';
+    const suffix = group === 'recoveryThread' || this.world.skills[group]?.awakened ? '-awakened' : '';
+    const age = shot.maxLife - shot.life;
+    const start = this.vfx.part(group, `${prefix}start${suffix}`)?.seconds ?? 0;
+    const end = this.vfx.part(group, `${prefix}end${suffix}`)?.seconds ?? 0;
+    const angle = Math.atan2(shot.vy, shot.vx);
+    if (shot.life < end) return this.vfx.stamp(ctx, group, `${prefix}end${suffix}`, x, y, angle, 1 - shot.life / end);
+    if (shot.returning) return this.vfx.stamp(ctx, group, 'return-awakened', x, y, angle, 0, 1, 1, phaseFor(shot.id));
+    if (age < start) return this.vfx.stamp(ctx, group, `${prefix}start${suffix}`, x, y, angle, age / start);
+    return this.vfx.stamp(ctx, group, `${prefix}travel${suffix}`, x, y, angle, 0, 1, 1, phaseFor(shot.id));
   }
 
   /**
@@ -1439,7 +1512,14 @@ export class WorldRenderer {
   private drawHeroMarks(ctx: CanvasRenderingContext2D, x: number, y: number, sprite: SpriteFrame) {
     const { shield } = this.world.player;
     const top = y - sprite.ay / sprite.scale;
-    if (shield > 0) {
+    if (this.skillArt) {
+      // The iron frame's lattice (FX-07): the awakened shield as it runs out, or once at α 0.6 when the frame is
+      // learned or levels up.
+      const span = SKILL_NUMBERS.ironFrame.shieldSeconds;
+      if (shield > 0) this.vfx.stamp(ctx, 'ironFrame', 'shield', x, y, 0, 1 - shield / span);
+      const aura = this.pops.find((pop) => pop.skillId === 'ironFrame' && !pop.awakened);
+      if (aura && this.world.elapsed - aura.at < span) this.vfx.stamp(ctx, 'ironFrame', 'shield', x, y, 0, (this.world.elapsed - aura.at) / span, 0.6);
+    } else if (shield > 0) {
       ctx.save();
       ctx.strokeStyle = SIGNAL.ally;
       ctx.lineWidth = 3;
@@ -1450,6 +1530,58 @@ export class WorldRenderer {
       ctx.restore();
     }
     this.drawDebuffTimers(ctx, x, top - 18);
+  }
+
+  /**
+   * A passive learned, levelled up, or awakened pops its symbol over the hero (FX-07), at most once per `popEvery`
+   * seconds each. The book resyncs without popping when the clock jumps (a new or resumed run).
+   */
+  private trackPassives() {
+    const now = this.world.elapsed;
+    const jumped = now < this.passiveClock || now - this.passiveClock > 0.5;
+    this.passiveClock = now;
+    for (let index = this.pops.length - 1; index >= 0; index -= 1) if (now - this.pops[index].at > POP_SECONDS || jumped) this.pops.splice(index, 1);
+    for (const id of PASSIVE_SKILLS) {
+      const state = this.world.skills[id];
+      const seen = state ? `${state.level}${state.awakened ? 'a' : ''}` : '';
+      if (this.passives.get(id) === seen) continue;
+      this.passives.set(id, seen);
+      if (jumped || !state || this.pops.some((pop) => pop.skillId === id && now - pop.at < (this.vfx.render?.popEvery ?? 1.5))) continue;
+      this.pops.push({ skillId: id, at: now, awakened: state.awakened });
+    }
+  }
+
+  /**
+   * The passive pops over the hero's head (above any debuff timers), rising a little as they fade, or only fading
+   * under reduced motion; and the auras that play once with an unawakened pop (FX-07): the magnet's first ring and
+   * the recovery thread's stitch round the body. The iron frame's aura is drawn with the hero (drawHeroMarks).
+   */
+  private drawPassivePops(ctx: CanvasRenderingContext2D) {
+    const body = this.playerBody;
+    if (!this.skillArt || !body || this.pops.length === 0) return;
+    const now = this.world.elapsed;
+    const render = this.vfx.render;
+    const spec = this.vfx.spec;
+    const timers = this.world.player.silence > 0 || this.world.player.root > 0;
+    const base = body.top - 4 - (timers ? 18 + DEBUFF_TIMER_RADIUS : 0);
+    this.pops.forEach((pop, index) => {
+      const u = (now - pop.at) / POP_SECONDS;
+      const alpha = Math.min(1, u * 8, (1 - u) * 3);
+      const rise = this.vfx.reduced ? 0 : (render?.popRise ?? 0) * u;
+      // Pops at the same time sit side by side, like the debuff timers.
+      const x = body.x + (index - (this.pops.length - 1) / 2) * 32;
+      this.vfx.stamp(ctx, pop.skillId, pop.awakened ? 'pop-awakened' : 'pop', x, base - rise, 0, 0, alpha);
+      if (pop.awakened || !spec) return;
+      const age = now - pop.at;
+      if (pop.skillId === 'magnetSigil') this.vfx.pulse(ctx, body.x, body.y, age, 1);
+      if (pop.skillId === 'recoveryThread') {
+        const { aura } = spec;
+        const fade = 1 - clamp((age - aura.seconds) / aura.seconds, 0, 1);
+        if (fade <= 0) return;
+        const head = this.vfx.stitch(ctx, body.x, body.y + aura.centerY, aura.stitchR, age / aura.seconds, fade);
+        if (age < aura.seconds) this.vfx.stamp(ctx, 'common', 'stitchHead', head.x, head.y, head.angle);
+      }
+    });
   }
 
   /**

@@ -28,7 +28,7 @@ const DAMAGE_NUMBER_CAP = 160;
 export const NUMBER_MERGE_SECONDS = 0.3;
 const IMPACT_RING_CAP = 32;
 /** FX-06: how long each skill mark shows (the kit's thread ring and collapse, the slash ring, a shard), and how many. */
-export const SKILL_MARK_SECONDS = Object.freeze({ ring: 0.3, slash: 0.2, shard: 0.12 });
+export const SKILL_MARK_SECONDS = Object.freeze({ ring: 0.3, slash: 0.2, shard: 0.12, pulse: 0.55 });
 const SKILL_MARK_CAP = 48;
 /** Ink stains on the floor (style bible P6): 48 at full effects, 24 at reduced; the renderer drops them at minimal detail. */
 const CORPSE_CAP_FULL = 48;
@@ -293,6 +293,7 @@ export class Presentation {
         return;
       case 'magnet/pulse':
         this.burst(event.x, event.y, 16, '#111111', 130);
+        this.addSkillMark('pulse', 'magnetSigil', event.x, event.y, 0, false, event.x, event.y);
         return;
       case 'boss/spawned':
         this.play('boss.intro', event.x);

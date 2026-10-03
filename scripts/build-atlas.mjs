@@ -4,11 +4,11 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { ATLAS_SCALE, BAKE_MARGIN, COLOR_MAP, ENEMY_ROLES, FRAME_PADDING, GROUND_TILE, HERO_STATES, PACKS, PAGE_SIZE } from '../art/atlas-spec.mjs';
+import { ATLAS_SCALE, BAKE_MARGIN, COLOR_MAP, ENEMY_ROLES, FRAME_PADDING, GROUND_TILE, HERO_STATES, PACKS, PAGE_SIZE, SKILL_VFX_RENDER, SKILL_VFX_TIMING } from '../art/atlas-spec.mjs';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const kitDir = path.join(root, 'art/concept-kit');
-const KIT_FILES = ['lib.js', 'k-hero.js', 'k-enemies.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses3.js', 'k-bosses4.js', 'k-icons.js', 'k-env.js'];
+const KIT_FILES = ['lib.js', 'k-hero.js', 'k-skills-vfx.js', 'k-enemies.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses3.js', 'k-bosses4.js', 'k-icons.js', 'k-env.js'];
 
 const browser = await chromium.launch();
 try {
@@ -47,6 +47,8 @@ try {
     console.log(`${packName}: ${frames.length} frames on ${pages.length} page(s): ${pages.map((sheet) => `${sheet.width}x${sheet.height}`).join(', ')}`);
   }
   manifest.animations.hero = Object.fromEntries(Object.entries(HERO_STATES).map(([state, spec]) => [state, spec]));
+  // The skill VFX's shapes and part rules as data (FX-06, FX-07): the renderer reads its numbers from here.
+  manifest.skillVfx = await page.evaluate(readSkillVfx, { timing: SKILL_VFX_TIMING, render: SKILL_VFX_RENDER });
   manifest.animations = Object.fromEntries(Object.entries(manifest.animations).sort(([a], [b]) => a.localeCompare(b)));
   // One line per frame keeps the generated file short and its diffs readable.
   const body = JSON.stringify(manifest, null, 2).replace(/\[\s+([-\d.,\s]+?)\s+\]/g, (_match, inner) => `[${inner.trim().split(/\s*,\s*/).join(', ')}]`);
@@ -141,9 +143,41 @@ function installBakeRecipes() {
   };
 }
 
+/** The kit's SPEC and each part's playback rules, checked: every timed part has its seconds, and no text is Korean. */
+function readSkillVfx({ timing, render }) {
+  const S = window.PN.skillVfx;
+  const parts = {};
+  for (const group of S.groups) {
+    parts[group] = {};
+    for (const p of S.parts(group)) {
+      const base = p.part.replace(/-awakened$/, '').replace(/^shot-/, '');
+      if (p.drive === 'prog' && !(base in timing)) throw new Error(`skill/${group}/${p.part} has no timing in SKILL_VFX_TIMING`);
+      parts[group][p.part] = { drive: p.drive, rotate: p.rotate, layer: p.layer, lod: p.lod, still: p.still, flash: p.flash === true, seconds: p.drive === 'prog' ? timing[base] : null };
+    }
+  }
+  const data = { spec: S.SPEC, parts, render };
+  const text = JSON.stringify(data);
+  if (/[\uAC00-\uD7A3]/.test(text)) throw new Error('skill VFX data carries Korean text; strings belong in the string tables');
+  return JSON.parse(text);
+}
+
 async function renderFrames({ frames, scale, margin, colorMap, roles }) {
   const expanded = [];
   for (const frame of frames) {
+    if (frame.skillVfx) {
+      // Every stamp of every skill group (PN.skillVfx.parts), anchored where it sits in the world.
+      const S = window.PN.skillVfx;
+      for (const group of S.groups) {
+        const parts = S.parts(group);
+        for (const p of parts) {
+          for (let index = 0; index < p.frames; index += 1) {
+            expanded.push({ key: `skill/${group}/${p.part}/${index}`, call: ['PN.skillVfx.stamp', group, p.part, { frame: index }], box: p.box, anchor: p.anchor, scale: 1 });
+          }
+        }
+        expanded.at(-1).animation = { key: `skill/${group}`, spec: Object.fromEntries(parts.map((p) => [p.part, { frames: p.frames, fps: p.drive === 'loop' ? p.fps : 0 }])) };
+      }
+      continue;
+    }
     if (!frame.enemy) {
       expanded.push(frame);
       continue;

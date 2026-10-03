@@ -44,7 +44,7 @@ import { InputAdapter } from './ui/inputAdapter';
 import { SpriteAtlas } from './game/render/assets/spriteAtlas';
 import { ErrorLog, describeError } from './platform/errorReport';
 import { copyErrorReport } from './ui/ErrorBoundary';
-import { CHAPTER_PACKS, COMMON_PACK } from './game/render/assets/slots';
+import { CHAPTER_PACKS, COMMON_PACK, SKILLS_PACK } from './game/render/assets/slots';
 import { INFINITE_BASELINE } from './game/infiniteMode';
 import { useGamepadNavigation } from './ui/useGamepadNavigation';
 import { AudioMixer, type SoundPack } from './game/audio/mixer';
@@ -236,7 +236,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     const chapterPack = CHAPTER_PACKS[artChapter];
     const nextPack = nextArtChapter === null ? undefined : CHAPTER_PACKS[nextArtChapter];
     for (const pack of Object.values(CHAPTER_PACKS)) if (pack !== chapterPack && pack !== nextPack) spriteAtlas.release(pack);
-    const packs = [COMMON_PACK, chapterPack, nextPack].filter((pack): pack is string => pack !== undefined);
+    const packs = [COMMON_PACK, SKILLS_PACK, chapterPack, nextPack].filter((pack): pack is string => pack !== undefined);
     void Promise.all(packs.map((pack) => spriteAtlas.load(pack))).then((loaded) => {
       if (cancelled) return;
       const ready = loaded.every(Boolean);

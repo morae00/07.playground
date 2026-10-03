@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "root": "/private/tmp/claude-501/-Users-kyuukkang-CT-AX-07-playground/8dda5f23-d08c-4a83-ac74-3091d8b4216f/scratchpad/bake-k5enemy/dist",
+  "root": "/Users/kyuukkang/CT_AX/07.playground/dist",
   "files": [
-    "assets/App-heZnDZJh.js",
+    "assets/App-CAmlSl_S.js",
     "assets/atlas/manifest.json",
     "assets/content/boss-titles.json",
     "assets/content/codex.json",
@@ -12,13 +12,13 @@
     "assets/content/strings/ko.json",
     "assets/content/tables.json",
     "assets/index-B_KN61Qn.css",
-    "assets/index-DlweIenn.js",
+    "assets/index-ByOeL8qW.js",
     "assets/packs/sfx-common/pack.json",
     "assets/vendor-sXpfDjey.js",
     "index.html",
     "storage-bridge.html"
   ],
-  "markersChecked": 26,
+  "markersChecked": 27,
   "findings": [],
   "passed": true
 }
