@@ -152,9 +152,10 @@ window.PN = window.PN || {};
       return `${K.circ(cx, cy, s, P)}<path d="${t}" stroke="${I}" stroke-width="${f(Math.max(0.8, s * 0.12))}"/>` +
         `<path d="M${f(cx - Math.cos(hand) * s * 0.2)},${f(cy - Math.sin(hand) * s * 0.2)} L${f(cx + Math.cos(hand) * s * 0.8)},${f(cy + Math.sin(hand) * s * 0.8)}" stroke="${I}" stroke-width="${f(Math.max(1, s * 0.24))}" stroke-linecap="round"/>${K.circ(cx, cy, s * 0.2, I)}`;
     }
-    // ch5 eclipse ring: white annulus around a black disk + one bead
+    // ch5 eclipse: the black disk sits +x of centre, so the white shows as a crescent rim (thick behind, thin in front) — not a goggle / bead.
+    // K5-E1 (R4-faces §2.7): core offset s·0.18; the bead only in art.
     const core = x.art ? 0.66 : 0.5; // game LOD: thicker white ring so it survives 1x
-    return `${K.circ(cx, cy, s, P)}${K.circ(cx, cy, s * core, I)}${K.circ(cx + s * 0.58, cy - s * 0.58, s * 0.2, P)}`;
+    return `${K.circ(cx, cy, s, P)}${K.circ(cx + s * 0.18, cy, s * core, I)}` + (x.art ? K.circ(cx + s * 0.58, cy - s * 0.58, s * 0.2, P) : '');
   };
 })(window.PN);
 // ---------------------------------------------------------------------------
@@ -472,9 +473,10 @@ window.PN = window.PN || {};
       spikes: (x) => {
         let o = S.tooth(x, 46, 74, 12, 12, -26) + S.tooth(x, 134, 72, 12, 14, -22) + S.tooth(x, 144, 74, 10, 11, -18);
         if (art) {
-          o += S.poster(x, 62, 79, 22, 32, -32, 3, `<path d="M54,59 h14 M55,64 h11 M56,69 h8" stroke="${C.ink}" stroke-width="2"/>`);
-          o += S.poster(x, 90, 77, 26, 40, -24, 7, `<rect x="80" y="46" width="17" height="13" fill="${C.ink}"/><rect x="84" y="49.5" width="9" height="3" fill="${C.p300}"/><path d="M79,64 h22 M81,69 h15" stroke="${C.ink}" stroke-width="2.2"/>`);
-          o += S.poster(x, 117, 75, 20, 30, -18, 5, `<circle cx="117" cy="58" r="4" fill="${C.ink}"/><path d="M110,66 h13" stroke="${C.ink}" stroke-width="2"/>`);
+          // K5-G10: no letter-like marks. A = print (block + 3 falling lines), B = solid block + 2 lines, C = blank with the lower-left corner torn off
+          o += S.poster(x, 62, 79, 22, 32, -32, 3, `<rect x="54" y="53" width="12.5" height="8.5" fill="${C.ink}"/><path d="M54,65 h15 M54,69.5 h11 M54,74 h7" stroke="${C.ink}" stroke-width="2"/>`);
+          o += S.poster(x, 90, 77, 26, 40, -24, 7, `<rect x="80" y="46" width="17" height="13" fill="${C.ink}"/><path d="M80,64.5 h19 M80,69.5 h12" stroke="${C.ink}" stroke-width="2.2"/>`);
+          o += S.poster(x, 117, 75, 20, 30, -18, 5, `<path d="M105,63 L109.6,64.8 L108.2,67.6 L112.4,69.6 L111,72.2 L115.6,74 L116.8,77 L105,77 Z" fill="${C.ink}"/>`);
         } else {
           o += S.poster(x, 70, 78, 22, 28, -28, 3) + S.poster(x, 104, 76, 22, 30, -22, 7);
         }
@@ -580,7 +582,7 @@ window.PN = window.PN || {};
         o += gill(156, 72, 1.1, C.ink) + x.inClip(pl([[156, 82], [148, 48], [157, 68], [160, 44], [165, 76]]), `<path d="M150,50 L158,70 L160,48 Z" fill="${C.ink5}"/>`);
         o += K.teeth(x, [199, 91], [180, 95], art ? 7 : 3, art ? 4.5 : 5.5) + K.teeth(x, [180, 97], [193, 100], art ? 5 : 2, art ? 3.8 : 4.5, true);
         o += K.eye(x, 168, 80, art ? 9.5 : 10) + K.eye(x, 183, 73, art ? 6.5 : 7.2, { noSat: true });
-        o += K.circ(158, 76, art ? 2 : 1.3 * x.u, C.p50); // single wet highlight
+        if (art) o += x.T([150, 70, 156, 67, 162, 67], 1.6, 'mid', C.p50); // K5-E2: wet highlight = a sliver on the top contour (a round dot read as a 3rd eye); none in game
         if (art) o += K.drip(170, 104, 12, 3.6) + K.drip(190, 102, 9, 3);
         return o;
       },
@@ -648,7 +650,7 @@ window.PN = window.PN || {};
         let o = earF + x.shape(H, C.ink) + x.inClip(H, `<path d="${pl([[146, 66], [162, 55], [180, 60], [199, 80], [182, 72], [162, 66]])}" fill="${C.ink5}"/>` + x.rim([150, 64, 164, 58, 182, 64]) + (art ? x.line('M162,66 L170,98 M180,62 L174,90', 1.1, C.ink3) : ''));
         o += x.shape(earN, C.ink, art ? x.W : x.u * 0.6) + `<path d="${pl([[157, 58], [158, 32], [165, 58]])}" fill="${C.ink5}"/>`;
         o += x.shape(pl([[158, 68], [172, 64], [186, 71], [182, 73, 1], [170, 70], [160, 72]]), C.ink, art ? 1.2 : x.u * 0.3);
-        o += K.eye(x, 172, 76, art ? 8.5 : 9.5) + K.eye(x, 185, 72, art ? 5.6 : 6.4);
+        o += art ? K.eye(x, 169.5, 77, 8) + K.eye(x, 186.5, 74.5, 4.6) : K.eye(x, 172, 76, 9.5); // K5-E1: game = one eye; art gap ≥ 4
         o += K.teeth(x, [197, 87], [182, 90], art ? 4 : 2, art ? 5 : 6);
         return o;
       },
@@ -903,7 +905,7 @@ window.PN = window.PN || {};
         o += x.shape(pl([[168, 84], [206, 70, 1], [180, 100]]), C.ink, x.art ? x.W : x.u * 0.8) + (art ? `<path d="${pl([[170, 86], [202, 72], [184, 90]])}" fill="${C.ink5}"/>` : '');
         o += x.T([190, 70, 200, 66, 207, 72], art ? 5 : 2.4 * x.u, 'mid', C.ink) + x.T([191, 70, 200, 67, 205, 72], art ? 2.4 : 1.1 * x.u, 'mid', C.p100);
         o += x.shape(pl([[160, 78], [176, 64, 1], [170, 84]]), C.ink7, art ? x.W * 0.7 : x.u * 0.6);
-        o += K.eye(x, 154, 88, art ? 8.5 : 9.2) + K.eye(x, 168, 85, art ? 5.8 : 6.6);
+        o += art ? K.eye(x, 153, 88.5, 8) + K.eye(x, 170, 85, 5) : K.eye(x, 154, 88, 9.2); // K5-E1: game = one eye; art gap ≥ 4
         o += K.stitch(x, [[160, 108], [170, 106], [180, 104]], 3);
         return o;
       },
@@ -1225,12 +1227,14 @@ window.PN = window.PN || {};
         o += K.stitch(x, [[90, 62], [100, 64], [110, 62]], 3);
         return o;
       },
-      shield: (x) => { // plank door with the '禁' poster, weight braced behind it
+      shield: (x) => { // plank door with a wanted poster, weight braced behind it
         const door = pl([[118, 44], [206, 36], [210, 180], [122, 192]]);
         let planks = ''; [140, 162, 186].forEach((px) => { planks += `M${px},${42 - (px - 118) * 0.09} L${px + 2},${190 - (px - 118) * 0.12} `; });
         const posterP = [[138, 70], [188, 64], [192, 116], [170, 118], [162, 124], [152, 117], [142, 120]];
-        const glyph = `<text x="165" y="${art ? 107 : 110}" text-anchor="middle" font-family="'Apple SD Gothic Neo','AppleGothic',sans-serif" font-size="${art ? 34 : 40}" font-weight="900" fill="${C.ink}" ${art ? `stroke="${C.p300}" stroke-width="4" paint-order="stroke"` : ''} transform="rotate(-4 165 95)">禁</text>`;
-        const poster = x.shape(pl(posterP), art ? C.p300 : C.ink3, art ? 2.4 : x.u * 0.8) + x.inClip(pl(posterP), (art ? x.shade2(165, 94) : '') + glyph);
+        // K5-G9: 'portrait' print instead of the '禁' glyph — ink block + 2 left-aligned lines (34 / 22 long incl. caps), all tilted −4° with the poster.
+        // game 0.4×: block ≈ 8.8 px tall, lines 1.6 px.
+        const print = `<path d="${pl([[146, 74], [179, 71], [180, 93], [147, 96]])}" fill="${C.ink}"/>` + x.line('M149.3,102.6 L179.3,100.5 M149.7,110.6 L167.7,109.3', art ? 3.2 : 4, C.ink);
+        const poster = x.shape(pl(posterP), art ? C.p300 : C.ink3, art ? 2.4 : x.u * 0.8) + x.inClip(pl(posterP), (art ? x.shade2(165, 94) : '') + print);
         return x.shape(door, C.ink7, x.W * 1.1) + x.inClip(door, x.line(planks, art ? 2.4 : 1.1 * x.u) + `<path d="M110,52 L212,44 L212,54 L110,62 Z M110,160 L212,154 L212,164 L110,170 Z" fill="${C.ink}"/>` +
           `<path d="M112,40 L210,32 L210,40 L112,48 Z" fill="${C.ink3}"/>` + (art ? `<path d="M182,30 L220,30 L220,200 L188,200 Z" fill="${x.dot(40)}"/>` + x.T([202, 50, 206, 120, 208, 178], 2.6, 'mid', C.ink3) : '')) + poster +
           R.rivets(x, [[126, 54], [202, 48], [128, 166], [206, 160]], 3);
@@ -1382,7 +1386,7 @@ window.PN = window.PN || {};
       head: (x) => { // carved block head sunk between the shoulders: brow slab + eclipse eyes (×1.4) + carved mouth slot
         const hb = pl([[82, 38], [126, 36], [128, 70], [84, 72]]);
         let o = x.shape(hb, C.ink7, x.W) + `<path d="${pl([[78, 34], [130, 32], [128, 44], [80, 46]])}" fill="${C.ink5}" stroke="${C.ink}" stroke-width="${art ? 2.4 : x.u}"/>`;
-        o += K.eye(x, 96, 55, art ? 8 : 9) + K.eye(x, 115, 55, art ? 6.2 : 7.2);
+        o += K.eye(x, 96, 55, art ? 8 : 9) + K.eye(x, 115, 53.5, art ? 6.2 : 7.2); // K5-E1: far eye up 1.5 (no '8')
         o += x.line('M92,66 L118,66', art ? 3 : 1.2 * x.u) + x.line('M98,64 L98,68 M105,64 L105,68 M112,64 L112,68', art ? 1.3 : 0.5 * x.u, C.ink3);
         return o;
       },
@@ -1481,7 +1485,7 @@ window.PN = window.PN || {};
   E.draw = function (ch, role, opts = {}) {
     const o = Object.assign({ state: 'idle', elite: false, frame: null, lod: 'art', flip: false }, opts);
     const fn = K.DRAW[role] && K.DRAW[role][ch];
-    if (!fn) return `<g><text x="10" y="20" fill="red">no ${role}/${ch}</text></g>`;
+    if (!fn) { if (typeof console !== 'undefined') console.warn(`PN.enemies.draw: no ${role}/${ch}`); return '<g/>'; } // K5-G11: no fallback lettering
     const x = K.ctx(ch, role, o), R = x.R, [px, py] = R.pivot, u = x.u, fy = py + R.r * u;
     const L = fn(x); // { g, head:[x,y], muzzle:[x,y], front:[x,y] }
     const mode = o.silhouette ? 'sil' : (o.state === 'hit' ? 'hit' : '');
