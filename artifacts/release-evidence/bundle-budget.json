@@ -35,16 +35,16 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 1910542,
-      "kib": 1865.76,
+      "bytes": 1914404,
+      "kib": 1869.54,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 22198870,
-      "kib": 21678.58,
+      "bytes": 22202732,
+      "kib": 21682.36,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -1085,6 +1085,12 @@
       "category": "vendorJs",
       "sourceBytes": 193685,
       "gzipBytes": 60279
+    },
+    {
+      "file": "favicon.png",
+      "category": "image",
+      "sourceBytes": 3862,
+      "gzipBytes": 3729
     },
     {
       "file": "storage-bridge.html",
