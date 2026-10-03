@@ -88,6 +88,7 @@ R4 interim (2ec7493: the decisions D-02, D-04, D-05, and D-09 on; the later UI-0
   - minimum hits: 0.1% of 160,321 team hits (gate 20%);
   - `maxed` in Ch5: 68% clears (72% before), lowest health median 0.39 (gate 0.70);
   - the `novice` in 1-1: 40% clears (gate 40-70%), at the band's floor: 8 of 20 runs against 10 at R3's end, within the noise of 20 runs. Its death median is 193 s.
+    A wider sample settles it (f2f1a94, 100 seeds, the same rules): 61 of 100 clear, 95% Wilson interval 51-70%, inside the band; 76% survive 3 minutes (the CON-02 target is 80%), and every death is contact (death median 144 s).
 - The hurdle stages stay low as D-01 accepted: the team personas clear 4-8 at 3%, 3-9 at 7%, and 4-3 and 4-9 at 13%; `maxed` clears 5-7 at 20%.
 
 CON-02 Ch1 tuning: by the novice proxy, 1-1 already clears within the R1 target band (40-70%), and 3-minute survival (70%) is near its 80% target. A longer opening ramp does not help (1-1, novice, 20 seeds): a 90 s ramp kept 50% clear but dropped 3-minute survival to 50%, and 120 s gave 45% and 65%. Fewer early enemies mean less XP and fewer drafts (median 14 drafts at 45 s, 5 at 90 s), so the player is weaker when the pressure arrives. The 45 s ramp stays. The R1 playtest (6 or more new players) decides the final Ch1 numbers.
