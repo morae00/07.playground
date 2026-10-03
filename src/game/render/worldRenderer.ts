@@ -37,7 +37,7 @@ import { NumberGlyphs, type NumberStyle } from './numberGlyphs.ts';
 import { shakeOffset } from '../presentation/viewCamera.ts';
 import { NEUTRAL, SIGNAL, rgba } from './palette.ts';
 import { createRenderFrameSnapshot } from './renderSnapshot.ts';
-import { SkillVfxPainter } from './skillVfx.ts';
+import { SkillVfxPainter, blastDustSpots, wardPlateSpots } from './skillVfx.ts';
 import { CHAPTER_VISUALS, enemyRoleFor, type VisualDetail } from './visualRegistry.ts';
 import {
   circleVisible,
@@ -81,7 +81,9 @@ const POP_SECONDS = 1;
 /** The chalk cut's chill and root marks come in the kit's enemy radii (style bible §7.2). */
 const CHILL_RADII = Object.freeze([12, 19, 28, 38, 54]);
 /** Projectiles drawn from the skill kit; the stamp names of mirror and recovery shots start with `shot-`. */
-const SKILL_SHOTS: ReadonlySet<SkillId> = new Set(['needleStorm', 'fanKnives', 'recoveryThread']);
+const SKILL_SHOTS: ReadonlySet<SkillId> = new Set(['needleStorm', 'fanKnives', 'recoveryThread', 'mirrorClone']);
+/** The player's zones (the bone mortar's warning, the eclipse afterimage, the vortices) lie under the enemy's (FX-06). */
+const allyZone = (hazard: Readonly<Hazard>) => hazard.kind === 'warning' || hazard.kind === 'vortex';
 
 /** Cut-outs kept per cache: far more than the frames a chapter and the hero have (TEC-09). */
 const CUTOUT_LIMIT = 1024;
@@ -289,6 +291,17 @@ export class WorldRenderer {
   private readonly passives = new Map<SkillId, string>();
   private readonly pops: { skillId: SkillId; at: number; awakened: boolean }[] = [];
   private passiveClock = -1;
+  /** The hero's baked pose and frame this frame, which the mirror clones copy (FX-06). */
+  private heroPose = 'idle';
+  private heroPoseFrame = 0;
+  /**
+   * Hit immunity as last read, how long it was when it began, and what began it (FX-06): the eclipse step's feet or
+   * the paper ward's plates; `wardAt` is when an awakened ward pushed.
+   */
+  private invulnLast = 0;
+  private invulnSpan = 0;
+  private invulnSource: 'eclipse' | 'ward' | null = null;
+  private wardAt = -1;
   private readonly bodyPool: BodyDraw[] = [];
   private readonly sortedBodies: BodyDraw[] = [];
   private bodyCount = 0;
@@ -356,6 +369,7 @@ export class WorldRenderer {
     this.stats.detail = snapshot.detail;
     this.skillArt = this.vfx.begin(this.sprites, world.elapsed, policy.reduced, policy.flashStrength, snapshot.detail === 'minimal');
     this.trackPassives();
+    this.trackInvulnerability();
     for (const key of ['silence', 'root'] as const) {
       const value = this.world.player[key];
       if (value > this.debuffLast[key] + 1e-6) this.debuffSpans[key] = value;
@@ -430,6 +444,7 @@ export class WorldRenderer {
       case 'allyAttacks':
         // The player's rings sit under enemy shots and telegraphs (V3).
         this.drawImpactRings(ctx, 'player');
+        this.drawZoneTops(ctx);
         this.drawSkillMarks(ctx);
         this.drawBeams(ctx);
         this.drawOrbitScythes(ctx);
@@ -783,11 +798,65 @@ export class WorldRenderer {
   }
 
   private drawHazards(ctx: CanvasRenderingContext2D) {
-    for (const hazard of this.world.hazards) {
-      if (!circleVisible(this.viewport, hazard.x, hazard.y, hazard.radius * 1.25 + 8)) continue;
-      const fadedRoot = hazard.kind === 'root' && this.world.player.rootImmunity > 0;
-      this.visual.drawHazard(ctx, hazard, fadedRoot ? 0.35 : 1);
+    for (const ally of [true, false]) {
+      for (const hazard of this.world.hazards) {
+        if (allyZone(hazard) !== ally || !circleVisible(this.viewport, hazard.x, hazard.y, hazard.radius * 1.25 + 8)) continue;
+        if (ally && this.skillArt) {
+          this.drawAllyZone(ctx, hazard);
+          continue;
+        }
+        const fadedRoot = hazard.kind === 'root' && this.world.player.rootImmunity > 0;
+        this.visual.drawHazard(ctx, hazard, fadedRoot ? 0.35 : 1);
+      }
     }
+  }
+
+  /**
+   * A player zone on the ground (FX-06, API-skills-vfx §7). The bone mortar's warning fills, dots its whole disc, and
+   * is sewn shut as the shell falls; the eclipse afterimage is a line copy of the hero in a sewn ring; a vortex dots
+   * its rim, turns its arms, is sewn in its first moments, and unravels as it ends unless it is awakened (then it
+   * collapses). The pieces above bodies are drawn by drawZoneTops.
+   */
+  private drawAllyZone(ctx: CanvasRenderingContext2D, hazard: Readonly<Hazard>) {
+    const { x, y, radius } = hazard;
+    const age = hazard.maxLife - hazard.life;
+    if (hazard.kind === 'warning') {
+      const eclipse = hazard.sourceSkillId === 'eclipseStep';
+      if (eclipse) this.vfx.stamp(ctx, 'mirrorClone', 'clone-throw', x, y, 0, 1, this.vfx.render?.cloneAlpha ?? 0.8, this.heroAnim?.facing ?? 1);
+      this.vfx.zone(ctx, x, y, radius, eclipse ? null : false, age / hazard.maxLife);
+      return;
+    }
+    const kind = hazard.sourceSkillId === 'blackSun' ? 'blackSun' : 'voidMine';
+    const awakened = this.world.skills[kind]?.awakened === true;
+    const spec = this.vfx.spec!;
+    const start = this.vfx.part(kind, 'core-start')?.seconds ?? 0.2;
+    const ending = !awakened && hazard.life < spec.unravel.seconds ? 1 - hazard.life / spec.unravel.seconds : 0;
+    const alpha = 1 - ending;
+    this.vfx.zone(ctx, x, y, radius, true, age / start, alpha, 1 + ending);
+    this.vfx.swirl(ctx, x, y, radius, kind, this.vfx.reduced ? 0 : spec.swirl[kind].speed * this.world.elapsed, alpha);
+    const suffix = awakened ? '-awakened' : '';
+    if (age < start) this.vfx.stamp(ctx, kind, `core-start${suffix}`, x, y, 0, age / start);
+    else if (ending > 0) this.vfx.stamp(ctx, kind, 'core-end', x, y, 0, ending);
+    else this.vfx.stamp(ctx, kind, `core-hold${suffix}`, x, y, 0, 0, 1, 1, phaseFor(hazard.id));
+  }
+
+  /** The parts of the player's zones that sit above bodies (FX-06): the stitch heads and the mortar's falling shell. */
+  private drawZoneTops(ctx: CanvasRenderingContext2D) {
+    if (!this.skillArt) return;
+    for (const hazard of this.world.hazards) {
+      if (!allyZone(hazard) || !circleVisible(this.viewport, hazard.x, hazard.y, hazard.radius + 8)) continue;
+      const age = hazard.maxLife - hazard.life;
+      const span = hazard.kind === 'vortex' ? this.vfx.part('voidMine', 'core-start')?.seconds ?? 0.2 : hazard.maxLife;
+      if (age >= span) continue;
+      const head = this.vfx.stitchHead(hazard.x, hazard.y, hazard.radius, age / span);
+      this.vfx.stamp(ctx, 'common', 'stitchHead', head.x, head.y, head.angle);
+      if (hazard.kind === 'warning' && hazard.sourceSkillId !== 'eclipseStep') {
+        this.vfx.stamp(ctx, 'boneMortar', this.world.skills.boneMortar?.awakened ? 'shell-awakened' : 'shell', hazard.x, hazard.y, 0, age / hazard.maxLife);
+      }
+    }
+    // The awakened coin fever's rush: coins rise on either side of the hero while it lasts.
+    const body = this.playerBody;
+    if (body && this.world.coinFrenzy > 0 && this.world.skills.coinFever?.awakened) this.vfx.stamp(ctx, 'coinFever', 'frenzy-awakened', body.x, body.y);
   }
 
   /** Threat warnings above every body (V3): lane telegraphs, ranged windups, and boss ring warnings. */
@@ -863,9 +932,15 @@ export class WorldRenderer {
       ctx.stroke();
       ctx.restore();
     }
+    this.drawGroundSkillMarks(ctx);
     const player = this.playerBody;
     if (!player) return;
     this.drawHeroTrail(ctx, player);
+    if (this.skillArt && this.invulnSource === 'eclipse') {
+      // The eclipse step's disc under the hero's feet while it is untouchable (FX-06).
+      const awakened = this.world.skills.eclipseStep?.awakened ? '-awakened' : '';
+      this.vfx.stamp(ctx, 'eclipseStep', `feet${awakened}`, player.x, player.y, 0, 1 - this.world.player.invuln / Math.max(1e-6, this.invulnSpan));
+    }
     if (this.hero) this.drawHeroGround(ctx, player.x, player.y);
     else this.visual.drawPlayerGround(ctx, this.playerInput(player));
   }
@@ -1063,12 +1138,8 @@ export class WorldRenderer {
   private drawBeams(ctx: CanvasRenderingContext2D) {
     for (const beam of this.world.beams) {
       if (!segmentVisible(this.viewport, beam.x1, beam.y1, beam.x2, beam.y2, beam.width)) continue;
-      if (this.skillArt && beam.skillId === 'frostLine') {
-        // The chalk cut (FX-07): the band's edges sit on the hit capsule's edges, `width` from the axis.
-        const angle = Math.atan2(beam.y2 - beam.y1, beam.x2 - beam.x1);
-        this.vfx.chalkCut(ctx, beam.x1, beam.y1, angle, Math.hypot(beam.x2 - beam.x1, beam.y2 - beam.y1), beam.width, beam.life, beam.maxLife, beam.id);
-        const awakened = this.world.skills.frostLine?.awakened ? '-awakened' : '';
-        this.vfx.stamp(ctx, 'frostLine', `origin${awakened}`, beam.x1, beam.y1, angle, 1 - beam.life / beam.maxLife);
+      if (this.skillArt && beam.skillId) {
+        this.drawSkillBeam(ctx, beam);
         continue;
       }
       this.visual.drawBeam(ctx, beam);
@@ -1077,8 +1148,34 @@ export class WorldRenderer {
     for (const chain of this.world.chains) {
       if (!chain.points.some((point, index) => index > 0 && segmentVisible(this.viewport, chain.points[index - 1].x, chain.points[index - 1].y, point.x, point.y, 5))) continue;
       if (this.skillArt && chain.skillId === 'chainSpark') this.vfx.bolt(ctx, chain.points, chain.life, chain.maxLife, this.world.skills.chainSpark?.awakened === true);
+      else if (this.skillArt) this.vfx.tether(ctx, chain.points[0].x, chain.points[0].y, chain.points[1].x, chain.points[1].y, Math.min(1, (chain.life / chain.maxLife) * 2));
       else this.visual.drawChain(ctx, chain.points, chain.life, chain.maxLife);
     }
+  }
+
+  /**
+   * A player's beam from the kit (API-skills-vfx §7): the chalk cut's band and chalk (FX-07), the black rail's band
+   * and spear with its flash, a mirror rail's hollow copy, or an eclipse ray's slash stroke anchored just inside its
+   * ring. The bands' edges sit on the hit capsule's, `width` from the axis.
+   */
+  private drawSkillBeam(ctx: CanvasRenderingContext2D, beam: Readonly<BeamEffect>) {
+    const angle = Math.atan2(beam.y2 - beam.y1, beam.x2 - beam.x1);
+    const length = Math.hypot(beam.x2 - beam.x1, beam.y2 - beam.y1);
+    const progress = 1 - beam.life / beam.maxLife;
+    const group = beam.skillId!;
+    const awakened = this.world.skills[group]?.awakened ? '-awakened' : '';
+    if (group === 'frostLine') this.vfx.chalkCut(ctx, beam.x1, beam.y1, angle, length, beam.width, beam.life, beam.maxLife, beam.id);
+    else if (group === 'railSpear' || group === 'mirrorClone') this.vfx.rail(ctx, beam.x1, beam.y1, angle, length, beam.width, beam.life, beam.maxLife, group === 'mirrorClone');
+    if (group === 'eclipseStep') {
+      const inset = this.vfx.render?.rayInset ?? 2;
+      this.vfx.stamp(ctx, group, `slash${awakened}`, beam.x2 - Math.cos(angle) * inset, beam.y2 - Math.sin(angle) * inset, angle, progress);
+      return;
+    }
+    if (group === 'mirrorClone') return;
+    this.vfx.stamp(ctx, group, `origin${awakened}`, beam.x1, beam.y1, angle, progress);
+    const flash = this.vfx.part(group, `flash${awakened}`)?.seconds;
+    const age = beam.maxLife - beam.life;
+    if (flash && age < flash) this.vfx.stamp(ctx, group, `flash${awakened}`, beam.x1, beam.y1, angle, age / flash);
   }
 
   /** Skill rings and strokes no event sizes (FX-07): the white chain's last burst and the needles' shards. */
@@ -1094,7 +1191,77 @@ export class WorldRenderer {
         this.vfx.stamp(ctx, 'chainSpark', 'burst-awakened', mark.x, mark.y, 0, age / (this.vfx.part('chainSpark', 'burst-awakened')?.seconds ?? 0.24));
       } else if (mark.kind === 'shard') {
         this.vfx.stamp(ctx, 'needleStorm', 'shard-awakened', mark.x, mark.y, Math.atan2(mark.y2 - mark.y, mark.x2 - mark.x), age / mark.maxLife);
+      } else if (mark.kind === 'slash') {
+        this.vfx.slashRing(ctx, mark.x, mark.y, mark.radius, Math.min(1, (mark.life / mark.maxLife) * 3));
+      } else if (mark.kind === 'glint') {
+        this.vfx.stamp(ctx, 'coinFever', 'glint', mark.x, mark.y, 0, age / mark.maxLife);
+      } else if (mark.kind === 'mark') {
+        // Over the struck enemy's head, or where it was struck once it is gone.
+        const body = this.sortedBodies.find((item) => item.enemy?.id === mark.target);
+        const boss = body?.enemy?.isBoss && this.world.skills.executionMark?.awakened;
+        this.vfx.stamp(ctx, 'executionMark', boss ? 'markBoss-awakened' : 'mark', body?.x ?? mark.x, (body ? body.top : mark.y) - 4, 0, age / mark.maxLife);
+      } else {
+        this.drawSkillRing(ctx, mark, age);
       }
+    }
+    this.drawWard(ctx);
+  }
+
+  /**
+   * A skill ring from a blast, collapse, fissure, or aftershock (FX-06): the closed thread at its exact radius, with
+   * the mortar's blast and dust, the vortex's collapse, or the rail's fissure (on the ground, drawGroundSkillMarks).
+   */
+  private drawSkillRing(ctx: CanvasRenderingContext2D, mark: Readonly<SkillMark>, age: number) {
+    const { skillId, x, y, radius } = mark;
+    this.vfx.thread(ctx, x, y, radius, age, mark.heavy);
+    const awakened = this.world.skills[skillId]?.awakened ? '-awakened' : '';
+    if (skillId === 'boneMortar' && !mark.heavy) {
+      const blast = this.vfx.part('boneMortar', 'blast')?.seconds ?? 0.24;
+      this.vfx.stamp(ctx, 'boneMortar', `blast${awakened}`, x, y, 0, age / blast);
+      for (const spot of blastDustSpots(this.vfx.spec!, radius)) {
+        this.vfx.stamp(ctx, 'boneMortar', 'dust', x + Math.cos(spot.angle) * radius, y + Math.sin(spot.angle) * radius, spot.angle, spot.variant);
+      }
+    }
+    if (skillId === 'voidMine' || skillId === 'blackSun') this.vfx.stamp(ctx, skillId, 'collapse-awakened', x, y, 0, age / mark.maxLife);
+  }
+
+  /** The rail's fissures lie on the ground under the bodies (FX-06). */
+  private drawGroundSkillMarks(ctx: CanvasRenderingContext2D) {
+    if (!this.skillArt) return;
+    for (const mark of this.world.effects.skillMarks) {
+      if (mark.kind !== 'ring' || (mark.skillId !== 'railSpear' && mark.skillId !== 'mirrorClone')) continue;
+      const age = mark.maxLife - mark.life;
+      this.vfx.stamp(ctx, 'railSpear', 'fissure-awakened', mark.x, mark.y, 0, age / (this.vfx.part('railSpear', 'fissure-awakened')?.seconds ?? 0.24));
+    }
+  }
+
+  /**
+   * Hit immunity (FX-06): when it starts, its length and its cause, the eclipse step (a slash mark this frame) or a
+   * hit the paper ward softens; an awakened ward also pushes.
+   */
+  private trackInvulnerability() {
+    const { invuln } = this.world.player;
+    if (invuln > this.invulnLast + 1e-6) {
+      this.invulnSpan = invuln;
+      const slash = this.world.effects.skillMarks.some((mark) => mark.kind === 'slash' && mark.maxLife - mark.life < 0.05);
+      const ward = this.world.skills.paperWard;
+      this.invulnSource = slash ? 'eclipse' : ward && this.world.effects.playerHurt > 0 ? 'ward' : null;
+      if (this.invulnSource === 'ward' && ward?.awakened) this.wardAt = this.world.elapsed;
+    }
+    if (invuln <= 0) this.invulnSource = null;
+    this.invulnLast = invuln;
+    if (this.world.elapsed < this.wardAt) this.wardAt = -1;
+  }
+
+  /** The awakened paper ward's push (FX-06): its torn ring at the push radius and six plates flying out to it. */
+  private drawWard(ctx: CanvasRenderingContext2D) {
+    const body = this.playerBody;
+    const spec = this.vfx.spec;
+    const age = this.world.elapsed - this.wardAt;
+    if (!body || !spec || this.wardAt < 0 || age > spec.wardRing.seconds) return;
+    this.vfx.wardRing(ctx, body.x, body.y, SKILL_NUMBERS.paperWard.pushRadius, Math.min(1, (1 - age / spec.wardRing.seconds) * 3));
+    for (const plate of wardPlateSpots(spec, age, this.vfx.reduced)) {
+      this.vfx.stamp(ctx, 'paperWard', 'plate-awakened', body.x + Math.cos(plate.angle) * plate.radius, body.y + Math.sin(plate.angle) * plate.radius, plate.angle, plate.variant);
     }
   }
 
@@ -1124,8 +1291,10 @@ export class WorldRenderer {
    */
   private drawSkillShot(ctx: CanvasRenderingContext2D, shot: Readonly<Projectile>, x: number, y: number) {
     const group = shot.skillId;
-    const prefix = group === 'recoveryThread' ? 'shot-' : '';
-    const suffix = group === 'recoveryThread' || this.world.skills[group]?.awakened ? '-awakened' : '';
+    const prefix = group === 'recoveryThread' || group === 'mirrorClone' ? 'shot-' : '';
+    // A mirror clone's aimed shots (awakened) wear the awakened thread; its flank shots do not.
+    const awakened = group === 'mirrorClone' ? shot.aimTargetId >= 0 : group === 'recoveryThread' || this.world.skills[group]?.awakened;
+    const suffix = awakened ? '-awakened' : '';
     const age = shot.maxLife - shot.life;
     const start = this.vfx.part(group, `${prefix}start${suffix}`)?.seconds ?? 0;
     const end = this.vfx.part(group, `${prefix}end${suffix}`)?.seconds ?? 0;
@@ -1283,6 +1452,8 @@ export class WorldRenderer {
       const angle = this.world.elapsed * speed + (Math.PI * 2 * i) / blades;
       const x = player.x + Math.cos(angle) * bladeRadius;
       const y = player.y + Math.sin(angle) * bladeRadius;
+      // The kit's blades face out from the hero; the outer ones turn the other way (FX-06).
+      if (this.skillArt && this.vfx.stamp(ctx, 'orbitScythes', reverse ? 'blade-outer-awakened' : 'blade', x, y, angle, 0, 1, 1, i / blades)) continue;
       this.visual.drawOrbitBlade(ctx, x, y, angle, reverse);
     }
   }
@@ -1290,6 +1461,8 @@ export class WorldRenderer {
   private drawMirrorClone(ctx: CanvasRenderingContext2D, x: number, y: number) {
     const skill = this.world.skills.mirrorClone;
     if (!skill) return;
+    // The kit's clone is a line copy of the hero's own pose and frame (FX-06).
+    if (this.skillArt && this.vfx.stamp(ctx, 'mirrorClone', `clone-${this.heroPose}`, x, y, 0, this.heroPoseFrame, this.vfx.render?.cloneAlpha ?? 0.8, this.heroAnim?.facing ?? 1)) return;
     if (this.hero) {
       this.blit(ctx, this.hero, x, y, (this.heroAnim?.facing ?? 1), 0.94, skill.awakened ? 0.3 : 0.38);
       return;
@@ -1328,6 +1501,8 @@ export class WorldRenderer {
       }
       this.drawHeroOutline(ctx, this.hero, body.x, body.y, this.heroAnim?.facing ?? 1);
       this.blit(ctx, this.hero, body.x, body.y, this.heroAnim?.facing ?? 1, 1);
+      // The paper ward's plates float round the hero while the softened hit's immunity runs (FX-06).
+      if (this.skillArt && this.invulnSource === 'ward') this.vfx.stamp(ctx, 'paperWard', 'plates', body.x, body.y, 0, 1 - this.world.player.invuln / Math.max(1e-6, this.invulnSpan));
       this.drawHeroMarks(ctx, body.x, body.y, this.hero);
       return;
     }
@@ -1481,7 +1656,10 @@ export class WorldRenderer {
     if (!sprites || !slotEnabled(HERO_SLOT)) return undefined;
     for (const pose of heroPoses(state)) {
       const spec = sprites.animation(HERO_SLOT, pose);
-      if (spec) return sprites.frame(frameKey(HERO_SLOT, pose, poseFrame(spec, pose, anim.startedAt, now, 0))) ?? sprites.frame(frameKey(HERO_SLOT, 'idle', 0));
+      if (!spec) continue;
+      this.heroPose = pose;
+      this.heroPoseFrame = poseFrame(spec, pose, anim.startedAt, now, 0);
+      return sprites.frame(frameKey(HERO_SLOT, pose, this.heroPoseFrame)) ?? sprites.frame(frameKey(HERO_SLOT, 'idle', 0));
     }
     return undefined;
   }

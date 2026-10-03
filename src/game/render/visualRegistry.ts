@@ -184,28 +184,6 @@ const projectile = (
   trail,
 });
 
-// Player skills are cyan, ink, and paper only; they differ by shape, never by borrowing enemy or reward colours.
-const ALLY_TRAIL = '#6ad7e8';
-export const SKILL_PROJECTILE_ART: Readonly<Record<SkillId, ProjectileArtProfile>> = Object.freeze({
-  needleStorm: projectile('needle', '#f6feff', SIGNAL.ally, ALLY_TRAIL),
-  fanKnives: projectile('knife', '#fffff8', '#343936', SIGNAL.ally),
-  chainSpark: projectile('spark', '#dffaff', SIGNAL.ally, ALLY_TRAIL),
-  frostLine: projectile('spear', '#e8fbff', SIGNAL.allyDeep, '#80d8e5'),
-  orbitScythes: projectile('knife', '#fffff8', '#101312', ALLY_TRAIL),
-  boneMortar: projectile('orb', '#ece8dc', '#343936', ALLY_TRAIL),
-  railSpear: projectile('spear', '#fffff8', '#101312', SIGNAL.ally),
-  mirrorClone: projectile('needle', '#e5faff', SIGNAL.ally, ALLY_TRAIL),
-  voidMine: projectile('sigil', '#2a2134', SIGNAL.ally, ALLY_TRAIL),
-  blackSun: projectile('orb', '#101312', SIGNAL.ally, ALLY_TRAIL),
-  ironFrame: projectile('sigil', '#d8dad3', '#343936', ALLY_TRAIL),
-  magnetSigil: projectile('sigil', '#f6feff', SIGNAL.allyDeep, SIGNAL.ally),
-  paperWard: projectile('sigil', '#fffff8', SIGNAL.ally, ALLY_TRAIL),
-  recoveryThread: projectile('needle', '#f6feff', SIGNAL.allyDeep, SIGNAL.ally),
-  coinFever: projectile('orb', '#fffff8', SIGNAL.ally, ALLY_TRAIL),
-  eclipseStep: projectile('knife', '#2a2134', SIGNAL.ally, ALLY_TRAIL),
-  executionMark: projectile('spear', '#fff0ed', '#101312', SIGNAL.ally),
-});
-
 // Every enemy shot that deals damage is coral; the kinds differ by shape and weight of the hostile outline.
 export const HOSTILE_PROJECTILE_ART: Readonly<Record<BossProjectile['kind'], ProjectileArtProfile>> = Object.freeze({
   dot: projectile('orb', SIGNAL.hostile, '#fff4f1', '#ff8b82'),

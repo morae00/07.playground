@@ -352,3 +352,26 @@ test('FX-06: skill marks age out by kind, stop at 48, and draw no ids or cosmeti
   presentation.clearRound();
   assert.equal(presentation.skillMarks.length, 0);
 });
+
+test('FX-06: blasts and collapses ring at their size, a coin glints under coin fever, and execution marks stay one per enemy', () => {
+  let id = 0;
+  const options = { ...createDefaultOptions(), volume: 0 };
+  const skills: Partial<Record<string, { level: number; awakened: boolean }>> = {};
+  const presentation = new Presentation({ nextId: () => (id += 1), options: () => options, pan: () => 0, chapter: () => 1, skills: () => skills });
+  presentation.reseed(1234);
+  presentation.handle({ type: 'area/blast', x: 0, y: 0, radius: 146, source: 'boneMortar' });
+  presentation.handle({ type: 'vortex/collapse', x: 0, y: 0, radius: 228, ring: true });
+  assert.deepEqual(presentation.skillMarks.map((mark) => [mark.skillId, mark.radius]), [['boneMortar', 146], ['blackSun', 258]]);
+  assert.equal(presentation.impactRings.length, 0, 'the skill rings replace the old impact rings');
+  presentation.handle({ type: 'pickup/collected', kind: 'coin', x: 5, y: 5 });
+  assert.equal(presentation.skillMarks.filter((mark) => mark.kind === 'glint').length, 0, 'no glint without coin fever');
+  skills.coinFever = { level: 1, awakened: false };
+  skills.executionMark = { level: 1, awakened: false };
+  presentation.handle({ type: 'pickup/collected', kind: 'coin', x: 5, y: 5 });
+  assert.equal(presentation.skillMarks.filter((mark) => mark.kind === 'glint').length, 1);
+  const crit = { type: 'enemy/hit' as const, id: 7, x: 0, y: 0, radius: 12, damage: 40, crit: true, tier: 'critical' as const, dx: 1, dy: 0 };
+  presentation.handle(crit);
+  presentation.handle(crit);
+  presentation.handle({ ...crit, id: 8 });
+  assert.deepEqual(presentation.skillMarks.filter((mark) => mark.kind === 'mark').map((mark) => mark.target), [7, 8]);
+});

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { NEUTRAL, SIGNAL, signalFamily } from './palette.ts';
-import { BOSS_ART, CHAPTER_ART, HAZARD_ART, HOSTILE_PROJECTILE_ART, SKILL_PROJECTILE_ART, VISUAL_PALETTE } from './visualRegistry.ts';
+import { BOSS_ART, CHAPTER_ART, HAZARD_ART, HOSTILE_PROJECTILE_ART, VISUAL_PALETTE } from './visualRegistry.ts';
 
 // Signal-colour ownership (BUG-14, style bible P2): each signal hue belongs to one side of the fight.
 
@@ -15,15 +15,6 @@ test('signal families classify the palette and treat low-saturation materials as
   assert.equal(signalFamily(SIGNAL.reward), 'reward');
   assert.equal(signalFamily(SIGNAL.elite), 'elite');
   for (const value of Object.values(NEUTRAL)) assert.equal(signalFamily(value), null, `${value} must stay neutral`);
-});
-
-test('player skill visuals use only ally or neutral colours', () => {
-  for (const [skill, profile] of Object.entries(SKILL_PROJECTILE_ART)) {
-    for (const color of colorsOf(profile)) {
-      const family = signalFamily(color);
-      assert.ok(family === null || family === 'ally', `${skill} uses ${color} (${family})`);
-    }
-  }
 });
 
 test('enemy damage shots use only hostile or neutral colours', () => {

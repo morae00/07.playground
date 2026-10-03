@@ -3,7 +3,7 @@ import test from 'node:test';
 import { ATLAS_MANIFEST } from './assets/atlasManifest.generated.ts';
 import type { AtlasManifest } from './assets/spriteAtlas.ts';
 import { signalFamily } from './palette.ts';
-import { boltPoints, jit, stitchDash, threadAlpha, tokenColor, type SkillSpec, type Token } from './skillVfx.ts';
+import { blastDustSpots, boltPoints, jit, stitchDash, threadAlpha, tokenColor, wardPlateSpots, type SkillSpec, type Token } from './skillVfx.ts';
 
 const manifest = ATLAS_MANIFEST as unknown as AtlasManifest;
 const data = manifest.skillVfx!;
@@ -63,4 +63,21 @@ test('FX-07: the white chain keeps every jump point and kinks in between, the sa
   assert.notDeepEqual(boltPoints(spec, points, spec.bolt.seeds[1]), bolt);
   assert.equal(jit(11, 64), jit(11, 64));
   assert.ok(jit(11, 64) >= 0 && jit(11, 64) < 1);
+});
+
+test('FX-06: the mortar dust and the ward plates sit unevenly, never as evenly spaced ticks (API §6)', () => {
+  const dust = blastDustSpots(spec, 146);
+  const slots = Math.max(6, Math.round((Math.PI * 2 * 146) / spec.blastDust.every));
+  assert.ok(dust.length < slots && dust.length > slots / 2, `${dust.length} of ${slots} slots keep dust`);
+  const gaps = dust.slice(1).map((spot, index) => spot.angle - dust[index].angle);
+  assert.ok(Math.max(...gaps) - Math.min(...gaps) > 0.05, 'the gaps differ');
+  assert.ok(dust.some((spot) => spot.variant === 0) && dust.some((spot) => spot.variant === 1));
+  assert.deepEqual(blastDustSpots(spec, 146), dust);
+  const { plates } = spec.wardRing;
+  const start = wardPlateSpots(spec, 0, false);
+  const end = wardPlateSpots(spec, plates.seconds, false);
+  assert.equal(end.length, plates.count);
+  assert.ok(start.every((plate) => plate.radius === plates.from));
+  assert.ok(end.every((plate) => plate.radius >= plates.toMin && plate.radius <= plates.to));
+  assert.deepEqual(wardPlateSpots(spec, 0, true), end, 'reduced motion puts the plates at their ends at once');
 });

@@ -37,6 +37,22 @@ export type SkillSpec = Readonly<{
   bolt: Readonly<{ layers: Layers; awakened: Layers; miter: number; seg: number; push: Pair; seeds: Pair; start: number; end: number; fade: Readonly<{ token: Token; dash: Pair }> }>;
   pulse: Readonly<{ rings: Layers; r: Pair; seconds: number; ease: number; alpha: Pair; delay: number; reducedR: number }>;
   aura: Readonly<{ stitchR: number; seconds: number; centerY: number }>;
+  guide: Readonly<{ layers: Layers; alpha: number }>;
+  dots: Readonly<{ token: Token; r: number; pitch: number; angle: number; alphaWarn: number; alphaVortex: number; band: Pair }>;
+  swirl: Readonly<Record<'voidMine' | 'blackSun', Readonly<{ arms: number; r: Pair; wind: number; width: Pair; token: Token; alpha: number; speed: number }>>>;
+  unravel: Readonly<{ seconds: number; gap: Pair; alpha: Pair }>;
+  spear: Readonly<{
+    fill: Token; half: Pair; grain: readonly [Token, number, number]; core: Layers; head: number; headHalf: number; grow: number;
+    fade: Readonly<{ token: Token; width: number; dash: Pair }>;
+  }>;
+  spearCopy: Readonly<{ edge: readonly [Token, number]; edgeDash: Pair; shaft: Readonly<{ fill: Token; alpha: number; line: readonly [Token, number] }>; core: Layers; coreDash: Pair; pad: number }>;
+  tether: Readonly<{ layers: Layers; dash: Pair; pad: number; sag: number }>;
+  slashRing: Readonly<{ band: readonly [Token, number]; edge: readonly [Token, number]; outer: Readonly<{ at: number; layers: Layers }>; seconds: number }>;
+  wardRing: Readonly<{
+    band: readonly [Token, number]; jag: Pair; edge: readonly [Token, number]; outer: Readonly<{ at: number; layers: Layers; dash: Pair; pad: number }>; seconds: number;
+    plates: Readonly<{ count: number; from: number; seconds: number; angleJitter: number; toMin: number; to: number; seed: number }>;
+  }>;
+  blastDust: Readonly<{ every: number; jitter: number; skip: number; spike: number; seed: number }>;
 }>;
 
 export type SkillVfxRender = SkillVfxManifest['render'];
@@ -102,6 +118,35 @@ function cutPoints(points: readonly Readonly<{ x: number; y: number }>[], length
 
 const polylineLength = (points: readonly Readonly<{ x: number; y: number }>[]) => points.reduce((total, point, i) => (i ? total + Math.hypot(point.x - points[i - 1].x, point.y - points[i - 1].y) : 0), 0);
 
+/** Where the bone mortar's dust sits round a blast of radius R (SPEC.blastDust): angle, and variant 0 (with a spike) or 1. */
+export function blastDustSpots(spec: SkillSpec, radius: number) {
+  const { every, jitter, skip, spike, seed } = spec.blastDust;
+  const count = Math.max(6, Math.round((TAU * radius) / every));
+  const spots: { angle: number; variant: number }[] = [];
+  for (let k = 0; k < count; k += 1) {
+    if (jit(seed, k + 100) < skip) continue;
+    spots.push({ angle: -Math.PI / 2 + ((k + 0.5 + (jit(seed, k) - 0.5) * 2 * jitter) * TAU) / count, variant: jit(seed, k + 200) < spike ? 0 : 1 });
+  }
+  return spots;
+}
+
+/**
+ * The paper ward's plates `age` seconds after the push (SPEC.wardRing.plates): each flies out at its jittered angle to
+ * its own end radius, easing out; reduced motion puts them there at once.
+ */
+export function wardPlateSpots(spec: SkillSpec, age: number, reduced: boolean) {
+  const { count, from, seconds, angleJitter, toMin, to, seed } = spec.wardRing.plates;
+  const u = reduced ? 1 : clamp01(age / seconds);
+  return Array.from({ length: count }, (_, i) => {
+    const end = toMin + (to - toMin) * jit(seed, i + 50);
+    return {
+      angle: -Math.PI / 2 + (TAU * (i + 0.5)) / count + (jit(seed, i) - 0.5) * 2 * angleJitter * (Math.PI / 180),
+      radius: from + (end - from) * (1 - (1 - u) ** 2),
+      variant: i % 2,
+    };
+  });
+}
+
 function capsule(ctx: CanvasRenderingContext2D, length: number, half: number) {
   ctx.beginPath();
   ctx.moveTo(0, -half);
@@ -111,6 +156,27 @@ function capsule(ctx: CanvasRenderingContext2D, length: number, half: number) {
   ctx.arc(0, 0, half, Math.PI / 2, (Math.PI * 3) / 2);
   ctx.closePath();
 }
+
+/** The black spear's outline (SPEC.spear): a shaft tapering to a concave leaf head, never a triangular arrowhead. */
+function spearPath(ctx: CanvasRenderingContext2D, spec: SkillSpec, length: number) {
+  const { half, head, headHalf: q } = spec.spear;
+  const xb = length - head;
+  ctx.beginPath();
+  ctx.moveTo(0, -half[0]);
+  ctx.lineTo(xb, -half[1]);
+  ctx.bezierCurveTo(xb + 2, -q, xb + 6, -q, xb + 8, -q + 0.9);
+  ctx.bezierCurveTo(xb + 12, -3.4, length - 3, -1, length, 0);
+  ctx.bezierCurveTo(length - 3, 1, xb + 12, 3.4, xb + 8, q - 0.9);
+  ctx.bezierCurveTo(xb + 6, q, xb + 2, q, xb, half[1]);
+  ctx.lineTo(0, half[0]);
+  ctx.closePath();
+}
+
+const line = (ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number) => {
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+};
 
 export class SkillVfxPainter {
   spec: SkillSpec | null = null;
@@ -122,6 +188,8 @@ export class SkillVfxPainter {
   reduced = false;
   private flashStrength = 1;
   minimal = false;
+  /** The cyan halftone (SPEC.dots), drawn once: a 45° lattice of the pitch, oversampled for the zoomed canvas. */
+  private dotPattern: CanvasPattern | null | undefined;
 
   /** Picks up the frame's settings; false while the skill art or its data is missing (callers keep their fallback). */
   begin(atlas: SpriteAtlas | null, time: number, reduced: boolean, flashStrength: number, minimal: boolean) {
@@ -203,13 +271,12 @@ export class SkillVfxPainter {
    */
   stitch(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, progress: number, alpha = 1, gapScale = 1) {
     const spec = this.spec;
-    const end = -Math.PI / 2 + TAU * clamp01(progress);
     if (spec && progress > 0.001) {
       ctx.beginPath();
-      ctx.arc(x, y, radius, -Math.PI / 2, end);
+      ctx.arc(x, y, radius, -Math.PI / 2, -Math.PI / 2 + TAU * clamp01(progress));
       this.layers(ctx, spec.stitch.layers, alpha, stitchDash(spec, radius, gapScale), 0, 'round');
     }
-    return { x: x + Math.cos(end) * radius, y: y + Math.sin(end) * radius, angle: end + Math.PI / 2 };
+    return this.stitchHead(x, y, radius, progress);
   }
 
   /**
@@ -310,6 +377,208 @@ export class SkillVfxPainter {
         ctx.stroke();
       });
     }
+    ctx.restore();
+  }
+
+  private dots(ctx: CanvasRenderingContext2D, spec: SkillSpec) {
+    if (this.dotPattern !== undefined) return this.dotPattern;
+    const { dots } = spec;
+    const tile = typeof document !== 'undefined' && typeof document.createElement === 'function' ? document.createElement('canvas') : null;
+    const tileCtx = tile?.getContext('2d');
+    this.dotPattern = null;
+    if (!tile || !tileCtx) return null;
+    // A square lattice turned 45° is a diagonal checkerboard: tile side pitch·√2 with dots at the corners and centre.
+    const scale = 4;
+    const side = Math.round(dots.pitch * Math.SQRT2 * scale);
+    tile.width = side;
+    tile.height = side;
+    tileCtx.fillStyle = TOKENS[dots.token];
+    tileCtx.beginPath();
+    for (const [x, y] of [[0, 0], [side, 0], [0, side], [side, side], [side / 2, side / 2]]) {
+      tileCtx.moveTo(x + dots.r * scale, y);
+      tileCtx.arc(x, y, dots.r * scale, 0, TAU);
+    }
+    tileCtx.fill();
+    this.dotPattern = ctx.createPattern(tile, 'repeat');
+    const shrink = (dots.pitch * Math.SQRT2) / side;
+    this.dotPattern?.setTransform?.({ a: shrink, b: 0, c: 0, d: shrink, e: 0, f: 0 });
+    return this.dotPattern;
+  }
+
+  /**
+   * An ally zone of radius R (API §7): the light fill and the cyan halftone over the whole disc (`band` false, the
+   * mortar's warning) or in the rim band only (true, the vortex zones), or neither (null, the eclipse afterimage);
+   * then the guide circle and the stitch sewn up to `progress`.
+   */
+  zone(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, band: boolean | null, progress: number, alpha = 1, gapScale = 1) {
+    const spec = this.spec!;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    if (band !== null) this.zoneGround(ctx, spec, x, y, radius, band);
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, TAU);
+    this.layers(ctx, spec.guide.layers, spec.guide.alpha);
+    ctx.restore();
+    this.stitch(ctx, x, y, radius, progress, alpha, gapScale);
+  }
+
+  private zoneGround(ctx: CanvasRenderingContext2D, spec: SkillSpec, x: number, y: number, radius: number, band: boolean) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, TAU);
+    ctx.fillStyle = TOKENS[spec.fill.token];
+    ctx.save();
+    ctx.globalAlpha *= spec.fill.alpha;
+    ctx.fill();
+    ctx.restore();
+    const pattern = this.dots(ctx, spec);
+    if (pattern) {
+      const width = Math.min(spec.dots.band[0], spec.dots.band[1] * radius);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, TAU);
+      if (band) ctx.arc(0, 0, radius - width, 0, TAU, true);
+      ctx.globalAlpha *= band ? spec.dots.alphaVortex : spec.dots.alphaWarn;
+      ctx.fillStyle = pattern;
+      ctx.fill('evenodd');
+      ctx.restore();
+    }
+  }
+
+  /** Where a stitch sewn to `progress` has its head, and the way the head faces (clockwise along the ring). */
+  stitchHead(x: number, y: number, radius: number, progress: number) {
+    const end = -Math.PI / 2 + TAU * clamp01(progress);
+    return { x: x + Math.cos(end) * radius, y: y + Math.sin(end) * radius, angle: end + Math.PI / 2 };
+  }
+
+  /** A vortex's ink arms (SPEC.swirl): thick inside, thin outside, wound clockwise; turning by `rot` draws them in. */
+  swirl(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, kind: 'voidMine' | 'blackSun', rot: number, alpha = 1) {
+    const arm = this.spec!.swirl[kind];
+    ctx.save();
+    ctx.globalAlpha *= arm.alpha * alpha;
+    ctx.fillStyle = TOKENS[arm.token];
+    const steps = 24;
+    for (let i = 0; i < arm.arms; i += 1) {
+      const edge: [number, number][] = [];
+      const other: [number, number][] = [];
+      for (let s = 0; s <= steps; s += 1) {
+        const t = s / steps;
+        const r = radius * (arm.r[0] + (arm.r[1] - arm.r[0]) * t);
+        const theta = rot + (TAU * i) / arm.arms + arm.wind * (Math.PI / 180) * t;
+        const half = (radius * (arm.width[0] + (arm.width[1] - arm.width[0]) * t ** 0.8)) / 2;
+        edge.push([x + Math.cos(theta) * (r + half), y + Math.sin(theta) * (r + half)]);
+        other.push([x + Math.cos(theta) * (r - half), y + Math.sin(theta) * (r - half)]);
+      }
+      ctx.beginPath();
+      [...edge, ...other.reverse()].forEach(([px, py], index) => (index ? ctx.lineTo(px, py) : ctx.moveTo(px, py)));
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /**
+   * The black rail (SPEC.band railSpear + spear) from (x1, y1) along `angle`: the band at once, the spear grown over
+   * the first `grow` of its life and broken into ink dashes over the last 35%. A mirror copy is the hollow spearCopy.
+   */
+  rail(ctx: CanvasRenderingContext2D, x1: number, y1: number, angle: number, length: number, half: number, life: number, maxLife: number, copy: boolean) {
+    const spec = this.spec!;
+    const { spear } = spec;
+    const age = maxLife - life;
+    const fading = age / maxLife > 0.65;
+    const fade = 1 - clamp01((age / maxLife - 0.65) / 0.35);
+    const drawn = length * clamp01(age / (spear.grow * maxLife));
+    ctx.save();
+    ctx.translate(x1, y1);
+    ctx.rotate(angle);
+    ctx.globalAlpha *= fade;
+    capsule(ctx, length, half);
+    if (copy) {
+      this.layers(ctx, [spec.spearCopy.edge], 1, spec.spearCopy.edgeDash);
+    } else {
+      ctx.save();
+      ctx.globalAlpha *= spec.fill.alpha;
+      ctx.fillStyle = TOKENS[spec.fill.token];
+      ctx.fill();
+      ctx.restore();
+      this.layers(ctx, spec.band.railSpear.edge);
+    }
+    ctx.restore();
+    if (drawn < spear.head + 4) return;
+    ctx.save();
+    ctx.translate(x1, y1);
+    ctx.rotate(angle);
+    const xb = drawn - spear.head;
+    if (fading && !copy) {
+      line(ctx, 0, 0, drawn, 0);
+      this.layers(ctx, [[spear.fade.token, spear.fade.width]], fade, spear.fade.dash);
+    } else if (copy) {
+      const { shaft, core, coreDash, pad } = spec.spearCopy;
+      ctx.globalAlpha *= fade;
+      spearPath(ctx, spec, drawn);
+      ctx.save();
+      ctx.globalAlpha *= shaft.alpha;
+      ctx.fillStyle = TOKENS[shaft.fill];
+      ctx.fill();
+      ctx.restore();
+      this.layers(ctx, [shaft.line]);
+      line(ctx, 0, 0, xb, 0);
+      this.layers(ctx, core, 1, coreDash, pad);
+    } else {
+      spearPath(ctx, spec, drawn);
+      ctx.fillStyle = TOKENS[spear.fill];
+      ctx.fill();
+      line(ctx, 2, spear.grain[2], xb - 2, spear.grain[2] + 0.6);
+      this.layers(ctx, [[spear.grain[0], spear.grain[1]]]);
+      line(ctx, 0, 0, xb + 2, 0);
+      this.layers(ctx, spear.core);
+    }
+    ctx.restore();
+  }
+
+  /** The thread from the hero to a mirror clone (SPEC.tether): a dotted sandwich sagging in the middle. */
+  tether(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, alpha = 1) {
+    const { tether } = this.spec!;
+    const length = Math.hypot(x2 - x1, y2 - y1);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.quadraticCurveTo((x1 + x2) / 2, (y1 + y2) / 2 + 2 * tether.sag * length, x2, y2);
+    this.layers(ctx, tether.layers, alpha, tether.dash, tether.pad);
+  }
+
+  /** The eclipse step's hit ring (SPEC.slashRing): a paper band on R, ink edges, and cyan riding on ink outside. */
+  slashRing(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, alpha = 1) {
+    const { band, edge, outer } = this.spec!.slashRing;
+    for (const [r, layers] of [[radius, [band]], [radius - band[1] / 2, [edge]], [radius + band[1] / 2, [edge]], [radius + outer.at, outer.layers]] as const) {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, TAU);
+      this.layers(ctx, layers, alpha);
+    }
+  }
+
+  /** The paper ward's push ring (SPEC.wardRing): a torn paper band, ink edges, and a dotted cyan sandwich outside. */
+  wardRing(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, alpha = 1) {
+    const { band, jag, edge, outer } = this.spec!.wardRing;
+    const half = band[1] / 2;
+    const count = Math.max(12, Math.round((TAU * radius) / jag[0]));
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.beginPath();
+    ctx.arc(x, y, radius + half, 0, TAU);
+    for (let i = count; i >= 0; i -= 1) {
+      const r = radius - half - (i % 2 ? jag[1] * (0.4 + 0.6 * jit(3, i % count)) : 0.3 * jit(3, i % count));
+      const a = -Math.PI / 2 + ((i % count) * TAU) / count;
+      // The torn inner edge is a subpath of its own, so evenodd cuts it out of the band.
+      if (i === count) ctx.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+      else ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+    }
+    ctx.closePath();
+    ctx.fillStyle = TOKENS[band[0]];
+    ctx.fill('evenodd');
+    this.layers(ctx, [edge]);
+    ctx.beginPath();
+    ctx.arc(x, y, radius + outer.at, 0, TAU);
+    this.layers(ctx, outer.layers, 1, outer.dash, outer.pad);
     ctx.restore();
   }
 

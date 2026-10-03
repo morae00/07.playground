@@ -4,7 +4,6 @@ import {
   BOSS_ART,
   HAZARD_ART,
   HOSTILE_PROJECTILE_ART,
-  SKILL_PROJECTILE_ART,
   enemyRoleFor,
 } from './visualRegistry.ts';
 import { ILLUSTRATION_SLOTS, visualRegistryIssues } from './illustrationManifest.ts';
@@ -24,7 +23,7 @@ test('enemy role selection is stable and gameplay-semantic', () => {
 });
 
 test('every combat visual exposes a future illustration slot without collisions', () => {
-  assert.equal(Object.keys(SKILL_PROJECTILE_ART).length, 17);
+  assert.equal(ILLUSTRATION_SLOTS.filter((slot) => slot.key.startsWith('game/projectile/skill-')).length, 17);
   assert.equal(Object.keys(HOSTILE_PROJECTILE_ART).length, 5);
   assert.equal(Object.keys(HAZARD_ART).length, 9);
   const slots = ILLUSTRATION_SLOTS.map((slot) => slot.key);

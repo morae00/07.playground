@@ -1018,7 +1018,7 @@ export class GameEngine {
     PICKUP_HARD_CAP,
   );
   /** Cosmetic state (particles, damage numbers, rings, shake, sound) lives here and only consumes events (TEC-02). */
-  protected presentation = new Presentation({ nextId: () => this.nextCosmeticId(), options: () => this.options, pan: (x) => this.screenPan(x), chapter: () => this.shownChapter });
+  protected presentation = new Presentation({ nextId: () => this.nextCosmeticId(), options: () => this.options, pan: (x) => this.screenPan(x), chapter: () => this.shownChapter, skills: () => this.skills });
   protected eventListeners = new Set<GameEventListener>();
   protected playerAimAngle = -Math.PI / 2;
   protected aimTargetId: number | null = null;

@@ -76,12 +76,21 @@ The music code ships only in a build with `public/assets/packs/music/pack.json` 
 
 `WorldRenderer` draws the world in the fixed layer order `WORLD_LAYERS` (`src/game/render/worldRenderer.ts`):
 
-- ground, hazards, ground marks (foot shadows, the player's foot ring, ranged-enemy rings), pickups, target guide, and obstacle shadows;
+- ground, hazards (the player's zones first, under the enemy's), ground marks (foot shadows, the player's foot ring, ranged-enemy rings, the chalk cut's chill and the rail's fissures), pickups, target guide, and obstacle shadows;
 - bodies, depth-sorted by the y of their feet (enemies, bosses, the player, mirror clones, and obstacle blocks by their bottom edge);
-- overheads (health bars and ranged markers in one batch), ally attacks, hostile shots, telegraphs (lane telegraphs, ranged windups, boss ring warnings), and effects (player impact rings, particles, damage numbers);
+- overheads (health bars and ranged markers in one batch), ally attacks (the player's impact and skill rings, beams, chains, blades, shots, and passive pops), hostile shots, telegraphs (lane telegraphs, ranged windups, boss ring warnings), and effects (hit stars, particles, damage numbers);
 - the player x-ray pass.
 
 No body sprite can hide a threat, because shots and telegraphs draw above every body (V3). Particles and damage numbers draw above bodies so hits read on enemies. The x-ray pass redraws the hero half-transparent with its hit ring whenever at least 5% of the player's body box is covered by something drawn after it, or the player stands on a boss or large body (V4, BUG-12). The renderer exposes the last frame's `stats` (sorted bodies, player coverage, x-ray), which the diagnostics and the visual gate record. `test/layers.integration.test.mjs` checks the contract through a layer hook (`onLayer`).
+
+## Skill VFX (FX-06, FX-07)
+
+The 17 skills draw from the kit (`PN.skillVfx`, `art/concept-kit/API-skills-vfx.md`):
+- The bake puts its 188 stamps in a `skills` pack of their own (`assets/packs/skills/`, loaded with the common pack and kept), keyed `skill/<group>/<part>/<frame>`. The kit's shapes (`SPEC`), each part's playback rule (drive, rotation, layer, detail, still frame), and the timings in `art/atlas-spec.mjs` go into the atlas manifest as data (`manifest.skillVfx`), so their numbers stay out of the app JS.
+- `src/game/render/skillVfx.ts` (`SkillVfxPainter`) blits the stamps (progress, loop, or index frames) and draws the shapes on the canvas: thread rings, stitched zone rims, the cyan halftone, vortex arms, the chalk cut and the black rail on the hit capsule (half-width = `width`), the white chain's bolt, the clone's thread, and the slash, ward, and pulse rings. Colours are token names resolved to the palette; cyan always rides on ink.
+- The engine adds render-only data that replays never see: the skill on each player beam and chain, when the chalk cut's chill and root end on an enemy, the coin fever's rush, and `skillMark` rings the events do not size (the chain's burst, rail fissures, the mortar's aftershock, the eclipse slash, needle shards), handed straight to presentation. Presentation turns blasts, collapses, the magnet's pulse, coin pickups under the coin fever, and crits under the execution mark into the same `skillMarks`.
+- Reduced motion holds loops on their still frame, stops the vortex arms and the bolt's flicker, keeps the pulse at radius 60, and puts the ward's plates in place; reduced flash dims the rail's flash; minimal detail drops decoration (dust, stitch heads, shards, bursts). Hit shapes never change.
+- The developer cheat `VFX` awakens every skill at level 5 to see them all.
 
 ## Animation states and motion (FX-01)
 
@@ -394,7 +403,8 @@ Every character and prop has kit art, so the vector drawings that stood in durin
 - The hero is a paper disc in the ally rim on its hit circle, with an ink chevron toward the aim. A shield adds a dashed outer ring. The mirror clone is the same disc with a dashed rim, drawn faint.
 - An enemy is its hit circle in ink with the hostile rim and a paper role glyph turned to its heading: a small wedge for the stalker, a long one for the charger, a barrel on a stock for the shooter, and a square for the warden. A hit inverts it to paper, so a strike still reads.
 - An obstacle is a plain inked block with a lighter top face.
-- Round bosses without kit art (the Ch2-5 mid bosses and the field bosses) keep their vector bodies until the kit draws them; so do projectiles, beams, hazards, and telegraphs.
+- Round bosses without kit art keep their vector bodies; so do hostile projectiles, beams, hazards, and telegraphs.
+- Without the skills pack, a player's shot is a cyan bead on ink at its hit size, a player's beam an ink band twice its hit half-width with a cyan core, a chain a cyan polyline on ink, a blade the old paper crescent, and a zone the hazard art; the mirror clones are the hero's own frame, faint.
 - Other uncaught errors are logged and raise the same notice.
 
 Copied reports replace the home folder in paths. Nothing is sent anywhere. In the desktop app, `electron/crashLog.cjs` appends the renderer's `[blackline:error]` console lines and renderer or child process exits to `logs/errors.log` in the app's data folder, rotating at 512 KiB. `crashReporter` keeps native crash dumps there with uploads off. A crashed renderer reloads to the menu, at most three times in five minutes. Developer builds add the cheats `FAULT` (the next frame throws) and `UIFAULT` (the next render throws) to exercise these paths.

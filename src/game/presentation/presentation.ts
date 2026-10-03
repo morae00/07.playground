@@ -1,6 +1,6 @@
 // Presentation layer (TEC-02): turns game events into particles, damage numbers, impact rings, screen shake,
 // and sound cues for the app's mixer (AUD-01). It owns only cosmetic state; the simulation never reads it back.
-import type { Corpse, DamageNumber, EffectOwner, HitStamp, ImpactRing, Particle, Recoil, SkillId, SkillMark } from '../engine/worldTypes.ts';
+import type { Corpse, DamageNumber, EffectOwner, HitStamp, ImpactRing, Particle, Recoil, SkillId, SkillMark, SkillState } from '../engine/worldTypes.ts';
 import type { GameOptions } from '../../platform/save.ts';
 import { CUES, HIT_CUES, KILL_CUES, type CueId, type SoundOutput } from '../audioPolicy.ts';
 import type { GameEvent } from '../engine/events.ts';
@@ -19,6 +19,8 @@ export type PresentationHost = {
   pan(x: number): number;
   /** The chapter on screen, for its material's sounds (AUD-04). */
   chapter(): number;
+  /** The player's skills (FX-06): a coin's glint and the execution mark show only with their passive. */
+  skills?(): Readonly<Partial<Record<SkillId, Readonly<SkillState>>>>;
 };
 
 const PARTICLE_CAP_FULL = 520;
@@ -28,8 +30,10 @@ const DAMAGE_NUMBER_CAP = 160;
 export const NUMBER_MERGE_SECONDS = 0.3;
 const IMPACT_RING_CAP = 32;
 /** FX-06: how long each skill mark shows (the kit's thread ring and collapse, the slash ring, a shard), and how many. */
-export const SKILL_MARK_SECONDS = Object.freeze({ ring: 0.3, slash: 0.2, shard: 0.12, pulse: 0.55 });
+export const SKILL_MARK_SECONDS = Object.freeze({ ring: 0.3, slash: 0.2, shard: 0.12, pulse: 0.55, glint: 0.12, mark: 0.3 });
 const SKILL_MARK_CAP = 48;
+/** The execution mark shows at most once per enemy per its 0.3 s, and this many at once. */
+const EXECUTION_MARK_CAP = 12;
 /** Ink stains on the floor (style bible P6): 48 at full effects, 24 at reduced; the renderer drops them at minimal detail. */
 const CORPSE_CAP_FULL = 48;
 const CORPSE_CAP_REDUCED = 24;
@@ -187,7 +191,9 @@ export class Presentation {
         this.pickupComboWait = PICKUP_COMBO_SECONDS;
         this.play(event.kind === 'xp' ? 'pickup.xp' : 'pickup.coin', event.x, 1 + this.pickupCombo * PICKUP_COMBO_STEP);
         // The glint is new cosmetic work: classic rules draw nothing new, because their cosmetic draws feed gameplay ids.
-        if (!this.legacyHitDraws) this.burst(event.x, event.y, 4, event.kind === 'xp' ? '#86b82d' : '#111111', 90);
+        // A coin picked up under the coin fever glints with the kit's stamp instead (FX-06).
+        if (event.kind === 'coin' && this.host.skills?.().coinFever && !this.legacyHitDraws) this.addSkillMark('glint', 'coinFever', event.x, event.y, 0, false, event.x, event.y);
+        else if (!this.legacyHitDraws) this.burst(event.x, event.y, 4, event.kind === 'xp' ? '#86b82d' : '#111111', 90);
         return;
       case 'draft/opened':
         if (event.reason === 'level') this.play('run.levelUp');
@@ -227,6 +233,7 @@ export class Presentation {
         // Light hits skip the star at reduced effect density.
         if (event.tier !== 'light' || effects > 0.65) this.addHitStamp(event.x, event.y, event.radius, Math.atan2(event.dy, event.dx), event.tier === 'critical');
         if (event.tier === 'critical') this.addShake(4);
+        if (event.crit && this.host.skills?.().executionMark) this.addExecutionMark(event.id, event.x, event.y);
         this.addRecoil(event.id, event.dx, event.dy, RECOIL_SIZE[event.tier] * (this.host.options().hitReaction ?? 1));
         if (this.legacyHitDraws && this.legacyHitWait <= 0) {
           this.random();
@@ -265,11 +272,12 @@ export class Presentation {
         this.burst(event.x, event.y, Math.round(22 * effects), '#050505', 230);
         return;
       case 'area/blast':
-        this.addImpactRing(event.x, event.y, event.radius, 'critical');
+        this.addSkillMark('ring', event.source, event.x, event.y, event.radius, false, event.x, event.y);
         if (event.source === 'boneMortar') this.addShake(8);
         return;
       case 'vortex/collapse':
-        if (event.ring) this.addImpactRing(event.x, event.y, event.radius + 30, 'critical');
+        // Only awakened vortices collapse; the ring flag marks the black sun's (FX-06: both collapse at R + 30).
+        this.addSkillMark('ring', event.ring ? 'blackSun' : 'voidMine', event.x, event.y, event.radius + 30, false, event.x, event.y);
         this.addShake(12);
         return;
       case 'shock/burst':
@@ -465,10 +473,16 @@ export class Presentation {
   }
 
   /** FX-06: a skill ring or stroke from the engine; it draws no ids or cosmetic random numbers. */
-  addSkillMark(kind: SkillMark['kind'], skillId: SkillId, x: number, y: number, radius: number, heavy: boolean, x2: number, y2: number) {
+  addSkillMark(kind: SkillMark['kind'], skillId: SkillId, x: number, y: number, radius: number, heavy: boolean, x2: number, y2: number, target = -1) {
     if (this.skillMarks.length >= SKILL_MARK_CAP) this.skillMarks.shift();
     const life = SKILL_MARK_SECONDS[kind];
-    this.skillMarks.push({ kind, skillId, x, y, radius, heavy, x2, y2, life, maxLife: life });
+    this.skillMarks.push({ kind, skillId, x, y, radius, heavy, x2, y2, target, life, maxLife: life });
+  }
+
+  private addExecutionMark(target: number, x: number, y: number) {
+    const marks = this.skillMarks.filter((mark) => mark.kind === 'mark');
+    if (marks.length >= EXECUTION_MARK_CAP || marks.some((mark) => mark.target === target)) return;
+    this.addSkillMark('mark', 'executionMark', x, y, 0, false, x, y, target);
   }
 
   addShake(amount: number) {

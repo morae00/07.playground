@@ -16,7 +16,6 @@ import {
   CHAPTER_ART,
   HAZARD_ART,
   HOSTILE_PROJECTILE_ART,
-  SKILL_PROJECTILE_ART,
   VISUAL_PALETTE,
   bossArtFor,
   enemyRoleFor,
@@ -606,27 +605,16 @@ export class GameRenderer {
     }
   }
 
-  drawFriendlyProjectile(
-    ctx: CanvasRenderingContext2D,
-    input: FriendlyProjectileVisualInput,
-  ) {
-    const profile = SKILL_PROJECTILE_ART[input.skillId];
-    const angle = Math.atan2(input.vy, input.vx) + (input.returning ? Math.PI : 0);
-    const alpha = normalizedLifetime(input.life, input.maxLife);
+  /** A player's shot while the skill art is missing (FX-06): a cyan bead on ink at its hit size. */
+  drawFriendlyProjectile(ctx: CanvasRenderingContext2D, input: FriendlyProjectileVisualInput) {
     ctx.save();
-    ctx.translate(input.x, input.y);
-    ctx.rotate(angle);
-    if (this.frame.detail !== 'minimal') {
-      ctx.globalAlpha = 0.18 + alpha * 0.18;
-      ctx.strokeStyle = profile.trail;
-      ctx.lineWidth = Math.max(2, input.radius * 0.7);
-      ctx.beginPath();
-      ctx.moveTo(-input.radius * 7, 0);
-      ctx.lineTo(-input.radius * 1.2, 0);
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-    this.drawProjectileShape(ctx, profile, input.radius, false);
+    ctx.fillStyle = VISUAL_PALETTE.player;
+    ctx.strokeStyle = VISUAL_PALETTE.ink;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(input.x, input.y, input.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -649,7 +637,8 @@ export class GameRenderer {
     ctx.globalAlpha = hostile ? Math.max(0.55, alpha) : alpha;
     ctx.lineCap = 'round';
     ctx.strokeStyle = VISUAL_PALETTE.ink;
-    ctx.lineWidth = input.width;
+    // A player's beam hits `width` either side of its axis (FX-06), so its ink band is twice that wide.
+    ctx.lineWidth = hostile ? input.width : input.width * 2;
     ctx.beginPath();
     ctx.moveTo(input.x1, input.y1);
     ctx.lineTo(input.x2, input.y2);
@@ -663,10 +652,10 @@ export class GameRenderer {
       ctx.setLineDash([]);
     } else {
       ctx.strokeStyle = VISUAL_PALETTE.player;
-      ctx.lineWidth = Math.max(3, input.width * 0.42);
+      ctx.lineWidth = Math.max(3, input.width * 0.84);
       ctx.stroke();
       ctx.strokeStyle = VISUAL_PALETTE.paperBright;
-      ctx.lineWidth = Math.max(1.5, input.width * 0.16);
+      ctx.lineWidth = Math.max(1.5, input.width * 0.32);
       ctx.stroke();
     }
     ctx.restore();

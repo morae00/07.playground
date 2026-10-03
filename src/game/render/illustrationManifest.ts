@@ -1,10 +1,10 @@
 import { CAMPAIGN_CHAPTER_IDS } from '../../content/campaign.ts';
+import catalog from '../../content/data/catalog.ts';
 import {
   BOSS_ART,
   ENEMY_VISUAL_ROLES,
   HAZARD_ART,
   HOSTILE_PROJECTILE_ART,
-  SKILL_PROJECTILE_ART,
   type VisualChapter,
 } from './visualRegistry.ts';
 
@@ -27,7 +27,7 @@ export const ILLUSTRATION_SLOTS: readonly IllustrationSlot[] = Object.freeze([
     category: 'boss' as const,
     chapter: profile.chapter,
   })),
-  ...Object.keys(SKILL_PROJECTILE_ART).map((skillId) => Object.freeze({
+  ...Object.keys(catalog.skills).map((skillId) => Object.freeze({
     key: `game/projectile/skill-${skillId}`,
     category: 'projectile' as const,
   })),
