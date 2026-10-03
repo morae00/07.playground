@@ -594,7 +594,7 @@ window.PN = window.PN || {};
   D[4] = (x) => {
     const art = x.art, fr = K.fr(x, 4) || 0;
     const T = [[30, 92], [38, 76], [60, 69], [100, 68], [130, 68], [148, 72], [156, 82], [154, 98], [140, 108], [110, 106], [80, 106], [52, 108], [36, 102]];
-    const midLeg = (hx, hy, kx, ky, fx, near) => { const d = `M${hx},${hy} L${kx},${ky} L${fx},${S.GY - (near ? 0 : 4)}`; return x.line(d, art ? 5 : 2 * x.u, near ? C.ink : C.ink7, 'stroke-linejoin="miter" stroke-linecap="butt"') + (art ? x.line(d, 1.2, C.ink5) : ''); };
+    const midLeg = (hx, hy, kx, ky, fx, near) => { const d = `M${hx},${hy} L${kx},${ky} L${fx},${S.GY - (near ? 0 : 4)}`; return x.line(d, art ? 5 : 2 * x.u, near ? C.ink : C.ink7) + (art ? x.line(d, 1.2, C.ink5) : ''); }; // K5-D: x.line already sets round cap + x.join (miter in Ch4)
     const sx = [1, 0.55, 0.1, 0.55][fr];
     return S.rig(x, {
       torso: T, poly: true, rim: [40, 74, 96, 67, 146, 70], drips: [[118, 106, 13, 4.4], [66, 107, 10, 3.8], [146, 104, 9, 3.4]],
@@ -1098,7 +1098,7 @@ window.PN = window.PN || {};
       muzzle: [196, 80], legs: false, drips: [[58, 128, 10, 3.6], [102, 126, 10, 3.6], [96, 88, 8, 3]],
       body: (x, P) => {
         const sw = P.wind ? -14 : [0, 5][P.fr || 0], s = P.step * 3;
-        const hand = (x0, y0, kx, ky, x1, y1, col) => { const d = `M${x0},${y0} L${kx},${ky} L${x1},${y1}`; return x.line(d, art ? 7 : 2.6 * x.u, C.ink, 'stroke-linecap="butt" stroke-linejoin="miter"') + (art ? x.line(d, 2, col) : '') + x.shape(pl([[x1 - 8, y1 + 2], [x1, y1 - 10], [x1 + 8, y1 + 2]]), C.ink, art ? x.W * 0.5 : x.u * 0.5) + K.gear(x, kx, ky, art ? 6 : 2.6 * x.u, 7, null, 12); };
+        const hand = (x0, y0, kx, ky, x1, y1, col) => { const d = `M${x0},${y0} L${kx},${ky} L${x1},${y1}`; return x.line(d, art ? 7 : 2.6 * x.u, C.ink) + (art ? x.line(d, 2, col) : '') + x.shape(pl([[x1 - 8, y1 + 2], [x1, y1 - 10], [x1 + 8, y1 + 2]]), C.ink, art ? x.W * 0.5 : x.u * 0.5) + K.gear(x, kx, ky, art ? 6 : 2.6 * x.u, 7, null, 12); };
         let o = hand(70, 76, 56 - s, 130, 48 - s, 184, C.ink5) + hand(86, 76, 104 + s, 128, 110 + s, 184, C.ink5);
         o += `<g transform="rotate(${sw} 78 80)">${x.line('M78,80 L78,112', art ? 7 : 2.6 * x.u)}${art ? x.line('M78,80 L78,112', 2, x.E.deep) : ''}` +
           `<circle cx="78" cy="132" r="24" fill="${C.ink}" stroke="${C.ink}" stroke-width="${f(x.W * (x.art ? 2 : 1.25))}"/><circle cx="78" cy="132" r="17" fill="${x.E.deep}" stroke="${C.ink}" stroke-width="${art ? 2.4 : 1.1 * x.u}"/>` +
@@ -1121,7 +1121,7 @@ window.PN = window.PN || {};
         o += x.shape(pl([[70, 18], [78, 6], [86, 18]]), C.ink, art ? x.W * 0.6 : x.u * 0.5) + x.line('M78,6 L78,0', art ? 3 : 1.2 * x.u);
         return o;
       },
-      front: (x) => x.line('M62,76 L56,96 L72,94', art ? 6.5 : 2.4 * x.u, C.ink7, 'stroke-linejoin="miter"') + x.line('M96,74 L110,98 L128,92', art ? 7 : 2.6 * x.u, C.ink, 'stroke-linecap="round" stroke-linejoin="miter"') +
+      front: (x) => x.line('M62,76 L56,96 L72,94', art ? 6.5 : 2.4 * x.u, C.ink7) + x.line('M96,74 L110,98 L128,92', art ? 7 : 2.6 * x.u, C.ink) + // K5-D: no duplicate cap/join attrs
         x.shape(pl([[124, 86], [134, 84], [134, 96], [124, 98]]), C.ink, art ? x.W * 0.5 : x.u * 0.4) + K.gear(x, 110, 98, art ? 5 : 2.2 * x.u, 7, null, 0),
       anchor: [78, -4]
     });
