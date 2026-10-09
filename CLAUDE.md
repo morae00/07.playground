@@ -36,6 +36,7 @@ Heavier gates (see `docs/QUALITY_GATES.md` for when each is required and what pa
 - Balance: `npm run test:balance:smoke`, `test:balance:pilot` (6 stages), `test:balance:full` (all 50 stages × 4 personas × 10 seeds, release candidates), `test:balance:infinite`. `BALANCE_RULE_PATCH` and the `BALANCE_FULL_*` env vars narrow a run.
 - Browser/desktop: `npm run test:visual` (Playwright captures; `VISUAL_UPDATE_GOLDENS=1` only with explicit review), `test:ui-probes` (drives the developer build), `test:dev-smoke` (Vite dev server loads cleanly), `test:electron-smoke`, `test:soak:smoke`.
 - Performance: `npm run test:perf` (release gate, TEC-04 D-3), `bench:render`, `bench:packs`.
+- Audio levels: `npm run measure:loudness` (BS.1770 loudness of WAV files and packs, as played), `measure:mix` (records the developer build's buses in Chromium); findings and the open mix decision in `docs/decisions/AUD-05-loudness.md`.
 - Render refactors: `npm run fingerprint:draw > before.json` on the base and after the change, then `node scripts/draw-fingerprint.mjs --compare before.json after.json` must say SAME.
 - Asset bakes (deterministic, outputs are committed): `npm run build:atlas`, `build:ui-art` (`node scripts/build-ui-art.mjs story` for story panels only), `build:sfx`. `node scripts/art-review-sheet.mjs <subject>` renders kit art enlarged into a temp folder for review.
 - Packaging: `npm run package:mac:developer` (ad-hoc signed dev app, never distribute), `package:mac:release`; release steps in `docs/RELEASE_CHECKLIST.md`.

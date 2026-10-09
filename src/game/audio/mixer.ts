@@ -28,7 +28,7 @@ const CUT_FADE = 0.012;
 /** Samples vary their pitch by up to 4% each play so repeats do not sound mechanical. */
 const SAMPLE_PITCH_JITTER = 0.04;
 /** AUD-04 ambience beds: their level on the ambience bus, and how long one fades into the next. */
-const AMBIENCE_LEVEL = 0.3;
+export const AMBIENCE_LEVEL = 0.3;
 const AMBIENCE_FADE = 1.2;
 /** Music commands kept while audio is closed; the title's play is among the first. */
 const MUSIC_QUEUE = 64;

@@ -39,6 +39,8 @@
     "test:electron-fuse-smoke": "node scripts/electron-fuse-smoke.mjs",
     "test:electron-soak": "node scripts/electron-soak.mjs",
     "bench:render": "node scripts/render-bench.mjs",
+    "measure:loudness": "node scripts/measure-loudness.mjs",
+    "measure:mix": "node scripts/record-mix.mjs",
     "bench:packs": "node scripts/pack-bench.mjs",
     "test:perf": "BENCH_ONLY='^(unlocked )?stress DPR2 2.0 sprites$' BENCH_GATE=1 node scripts/render-bench.mjs",
     "fingerprint:draw": "npm run build:test-bundles && node scripts/draw-fingerprint.mjs",

@@ -19,6 +19,7 @@ artifacts/visual/
 artifacts/performance/
 artifacts/release/
 artifacts/electron-smoke/
+artifacts/audio/
 
 # Local environment and signing credentials.
 .env
