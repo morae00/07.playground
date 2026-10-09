@@ -17,9 +17,7 @@ import {
   HAZARD_ART,
   HOSTILE_PROJECTILE_ART,
   VISUAL_PALETTE,
-  bossArtFor,
   enemyRoleFor,
-  type BossArtProfile,
   type HazardArtProfile,
   type HazardGlyph,
   type ProjectileArtProfile,
@@ -369,203 +367,33 @@ export class GameRenderer {
     ctx.fill();
   }
 
+  /**
+   * A boss when its sprite is missing (TEC-10): every boss has kit art now, so this draws only while its pack is
+   * missing. Like an enemy, the hit circle in ink with the hostile rim, heavier, and an upright paper crown; the
+   * phase rings and the enraged spikes still show what the boss bar says. A hit inverts it to paper.
+   */
   private drawBoss(ctx: CanvasRenderingContext2D, input: EnemyVisualInput) {
-    const profile = bossArtFor(input.bossId, this.frame.chapter);
     const radius = input.radius;
     const hit = input.hitFlash > 0;
-
-    if (this.frame.detail !== 'minimal') {
-      ctx.save();
-      ctx.globalAlpha = 0.24;
-      ctx.fillStyle = VISUAL_PALETTE.ink;
-      ctx.beginPath();
-      ctx.ellipse(5, radius * 0.64, radius, radius * 0.38, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    // Bosses stand upright (FX-01: no spinning bodies).
+    const crown = radius * 0.5;
     ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.fillStyle = hit ? VISUAL_PALETTE.paperBright : profile.fill;
-    ctx.strokeStyle = VISUAL_PALETTE.ink;
+    ctx.fillStyle = hit ? VISUAL_PALETTE.paperBright : VISUAL_PALETTE.ink;
+    ctx.strokeStyle = VISUAL_PALETTE.danger;
     ctx.lineWidth = 5;
-    this.drawBossHull(ctx, profile, radius);
-    ctx.fill();
-    ctx.stroke();
-    this.drawBossArchitecture(ctx, profile, radius);
-    this.drawBossState(ctx, profile, radius, input.bossPhase, input.legacyBoss);
-  }
-
-  private drawBossHull(
-    ctx: CanvasRenderingContext2D,
-    profile: BossArtProfile,
-    radius: number,
-  ) {
-    if (profile.body === 'commander') {
-      pathPolygon(ctx, [[0, -radius], [radius, -radius * 0.4], [radius * 0.72, radius * 0.82], [0, radius], [-radius * 0.72, radius * 0.82], [-radius, -radius * 0.4]]);
-    } else if (profile.body === 'reliquary') {
-      pathStar(ctx, 8, radius * 1.08, radius * 0.82, Math.PI / 8);
-    } else if (profile.body === 'architect') {
-      pathPolygon(ctx, [[-radius, -radius * 0.72], [radius, -radius * 0.72], [radius * 0.82, radius], [-radius * 0.82, radius]]);
-    } else if (profile.body === 'executioner') {
-      pathPolygon(ctx, [[0, -radius * 1.18], [radius * 0.7, -radius * 0.42], [radius, radius * 0.92], [0, radius * 0.64], [-radius, radius * 0.92], [-radius * 0.7, -radius * 0.42]]);
-    } else if (profile.body === 'judge') {
-      pathPolygon(ctx, [[0, -radius], [radius * 0.74, -radius * 0.62], [radius * 1.06, radius * 0.22], [radius * 0.52, radius], [-radius * 0.52, radius], [-radius * 1.06, radius * 0.22], [-radius * 0.74, -radius * 0.62]]);
-    } else if (profile.body === 'butcher') {
-      pathPolygon(ctx, [[-radius * 0.82, -radius], [radius * 0.5, -radius * 0.7], [radius, -radius * 0.12], [radius * 0.68, radius], [-radius * 0.94, radius * 0.72]]);
-    } else if (profile.body === 'gaoler') {
-      pathPolygon(ctx, [[0, -radius * 1.08], [radius * 0.9, -radius * 0.72], [radius, radius * 0.76], [0, radius], [-radius, radius * 0.76], [-radius * 0.9, -radius * 0.72]]);
-    } else if (profile.body === 'bishop') {
-      pathPolygon(ctx, [[0, -radius * 1.2], [radius * 0.3, -radius * 0.54], [radius, -radius * 0.24], [radius * 0.62, radius], [0, radius * 0.72], [-radius * 0.62, radius], [-radius, -radius * 0.24], [-radius * 0.3, -radius * 0.54]]);
-    } else if (profile.body === 'maw') {
-      pathStar(ctx, 7, radius * 1.1, radius * 0.72, -Math.PI / 2);
-    } else if (profile.body === 'tide-king') {
-      pathPolygon(ctx, [[-radius * 1.12, -radius * 0.3], [-radius * 0.38, -radius], [radius * 0.38, -radius], [radius * 1.12, -radius * 0.3], [radius * 0.72, radius * 0.76], [0, radius], [-radius * 0.72, radius * 0.76]]);
-    } else if (profile.body === 'empress') {
-      pathPolygon(ctx, [[0, -radius * 1.2], [radius * 0.62, -radius * 0.68], [radius * 0.48, -radius * 0.12], [radius, radius], [-radius, radius], [-radius * 0.48, -radius * 0.12], [-radius * 0.62, -radius * 0.68]]);
-    } else if (profile.body === 'tyrant') {
-      pathStar(ctx, 12, radius * 1.08, radius * 0.82, -Math.PI / 2);
-    } else if (profile.body === 'herald') {
-      pathStar(ctx, 10, radius * 1.14, radius * 0.66, -Math.PI / 2);
-    } else if (profile.body === 'director') {
-      pathPolygon(ctx, [[0, -radius * 1.25], [radius * 0.58, -radius * 0.72], [radius * 0.86, radius * 0.82], [0, radius], [-radius * 0.86, radius * 0.82], [-radius * 0.58, -radius * 0.72]]);
-    } else {
-      pathPolygon(ctx, [[-radius * 1.12, -radius * 0.74], [radius * 1.12, -radius * 0.74], [radius * 0.62, radius * 0.88], [0, radius * 0.6], [-radius * 0.62, radius * 0.88]]);
-    }
-  }
-
-  private drawBossArchitecture(
-    ctx: CanvasRenderingContext2D,
-    profile: BossArtProfile,
-    radius: number,
-  ) {
-    ctx.save();
-    ctx.strokeStyle = profile.accent;
-    ctx.fillStyle = profile.core;
-    ctx.lineWidth = 3;
-
-    if (profile.body === 'commander') {
-      ctx.beginPath();
-      ctx.moveTo(-radius, -radius * 0.35);
-      ctx.lineTo(-radius * 1.34, radius * 0.08);
-      ctx.moveTo(radius, -radius * 0.35);
-      ctx.lineTo(radius * 1.34, radius * 0.08);
-      ctx.stroke();
-    } else if (profile.body === 'reliquary' || profile.body === 'gaoler') {
-      for (let x = -2; x <= 2; x += 1) {
-        ctx.beginPath();
-        ctx.moveTo(x * radius * 0.24, -radius * 0.72);
-        ctx.lineTo(x * radius * 0.24, radius * 0.76);
-        ctx.stroke();
-      }
-    } else if (profile.body === 'architect') {
-      ctx.strokeRect(-radius * 0.68, -radius * 0.5, radius * 1.36, radius * 1.16);
-      ctx.beginPath();
-      ctx.moveTo(-radius * 0.68, -radius * 0.5);
-      ctx.lineTo(radius * 0.68, radius * 0.66);
-      ctx.moveTo(radius * 0.68, -radius * 0.5);
-      ctx.lineTo(-radius * 0.68, radius * 0.66);
-      ctx.stroke();
-    } else if (profile.body === 'executioner' || profile.body === 'butcher') {
-      ctx.beginPath();
-      ctx.moveTo(-radius * 0.78, -radius * 0.76);
-      ctx.lineTo(radius * 0.72, radius * 0.72);
-      ctx.stroke();
-      pathPolygon(ctx, [[radius * 0.56, radius * 0.48], [radius * 1.22, radius * 0.72], [radius * 0.72, radius * 1.04]]);
-      ctx.fill();
-      ctx.stroke();
-    } else if (profile.body === 'judge' || profile.body === 'balance') {
-      ctx.beginPath();
-      ctx.moveTo(0, -radius * 0.64);
-      ctx.lineTo(0, radius * 0.62);
-      ctx.moveTo(-radius * 0.76, -radius * 0.18);
-      ctx.lineTo(radius * 0.76, -radius * 0.18);
-      ctx.stroke();
-      for (const side of [-1, 1]) {
-        ctx.beginPath();
-        ctx.arc(side * radius * 0.62, radius * 0.22, radius * 0.22, 0, Math.PI);
-        ctx.stroke();
-      }
-    } else if (profile.body === 'bishop') {
-      ctx.beginPath();
-      ctx.moveTo(0, -radius * 0.95);
-      ctx.lineTo(0, radius * 0.72);
-      ctx.moveTo(-radius * 0.62, -radius * 0.28);
-      ctx.lineTo(radius * 0.62, -radius * 0.28);
-      ctx.stroke();
-    } else if (profile.body === 'maw') {
-      ctx.beginPath();
-      ctx.ellipse(0, radius * 0.08, radius * 0.66, radius * 0.34, 0, 0, Math.PI * 2);
-      ctx.stroke();
-      for (let tooth = -2; tooth <= 2; tooth += 1) {
-        ctx.beginPath();
-        ctx.moveTo(tooth * radius * 0.2, -radius * 0.18);
-        ctx.lineTo((tooth + 0.35) * radius * 0.17, radius * 0.16);
-        ctx.stroke();
-      }
-    } else if (profile.body === 'tide-king') {
-      for (let line = -1; line <= 1; line += 1) {
-        ctx.beginPath();
-        ctx.moveTo(-radius * 0.78, line * radius * 0.28);
-        ctx.bezierCurveTo(-radius * 0.25, line * radius * 0.28 - radius * 0.3, radius * 0.25, line * radius * 0.28 + radius * 0.3, radius * 0.78, line * radius * 0.28);
-        ctx.stroke();
-      }
-    } else if (profile.body === 'empress') {
-      pathPolygon(ctx, [[0, -radius], [radius * 0.45, -radius * 0.58], [radius * 0.18, -radius * 0.32], [-radius * 0.18, -radius * 0.32], [-radius * 0.45, -radius * 0.58]]);
-      ctx.fill();
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(-radius * 0.66, radius * 0.72);
-      ctx.lineTo(radius * 0.66, radius * 0.72);
-      ctx.stroke();
-    } else if (profile.body === 'tyrant') {
-      ctx.beginPath();
-      ctx.arc(0, 0, radius * 0.64, 0, Math.PI * 2);
-      ctx.stroke();
-      for (let hand = 0; hand < 4; hand += 1) {
-        const angle = hand * Math.PI / 2 + this.frame.elapsed * (this.frame.reducedMotion ? 0 : 0.45);
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(Math.cos(angle) * radius * 0.58, Math.sin(angle) * radius * 0.58);
-        ctx.stroke();
-      }
-    } else if (profile.body === 'herald') {
-      ctx.beginPath();
-      ctx.arc(0, 0, radius * 0.52, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(-radius * 0.4, -radius * 0.4);
-      ctx.lineTo(radius * 0.4, radius * 0.4);
-      ctx.moveTo(radius * 0.4, -radius * 0.4);
-      ctx.lineTo(-radius * 0.4, radius * 0.4);
-      ctx.stroke();
-    } else if (profile.body === 'director') {
-      ctx.beginPath();
-      ctx.arc(-radius * 0.08, 0, radius * 0.62, Math.PI * 0.25, Math.PI * 1.75);
-      ctx.arc(radius * 0.2, 0, radius * 0.52, Math.PI * 0.25, Math.PI * 1.75);
-      ctx.stroke();
-    }
-
     ctx.beginPath();
-    ctx.arc(0, 0, radius * 0.23, 0, Math.PI * 2);
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = VISUAL_PALETTE.paperBright;
-    ctx.lineWidth = 1.5;
     ctx.stroke();
-    ctx.restore();
+    ctx.fillStyle = hit ? VISUAL_PALETTE.ink : VISUAL_PALETTE.paperBright;
+    pathPolygon(ctx, [[-crown, crown * 0.5], [-crown, -crown * 0.5], [-crown * 0.5, 0], [0, -crown * 0.7], [crown * 0.5, 0], [crown, -crown * 0.5], [crown, crown * 0.5]]);
+    ctx.fill();
+    this.drawBossState(ctx, radius, input.bossPhase, input.legacyBoss);
   }
 
-  private drawBossState(
-    ctx: CanvasRenderingContext2D,
-    profile: BossArtProfile,
-    radius: number,
-    phase: 1 | 2 | 3,
-    legacyBoss: boolean,
-  ) {
+  private drawBossState(ctx: CanvasRenderingContext2D, radius: number, phase: 1 | 2 | 3, legacyBoss: boolean) {
     if (phase > 1) {
       ctx.save();
-      ctx.strokeStyle = phase === 3 ? VISUAL_PALETTE.danger : profile.accent;
+      ctx.strokeStyle = VISUAL_PALETTE.danger;
       ctx.lineWidth = phase === 3 ? 5 : 3;
       if (phase === 2) ctx.setLineDash([9, 7]);
       ctx.beginPath();
@@ -595,7 +423,7 @@ export class GameRenderer {
 
     if (legacyBoss) {
       ctx.save();
-      ctx.strokeStyle = profile.accent;
+      ctx.strokeStyle = VISUAL_PALETTE.paperBright;
       ctx.lineWidth = 2;
       ctx.setLineDash([4, 6]);
       ctx.beginPath();

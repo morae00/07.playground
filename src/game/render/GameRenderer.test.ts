@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { GameRenderer } from './GameRenderer.ts';
-import { BOSS_ART } from './visualRegistry.ts';
 import { createRenderFrameSnapshot } from './renderSnapshot.ts';
 
 function createRecordingContext() {
@@ -46,37 +45,38 @@ function frame(chapter: number, enemyCount = 1, reducedMotion = false) {
   });
 }
 
-test('all fifteen boss profiles produce distinct code-rendered silhouettes', () => {
+const boss = (overrides: Record<string, unknown> = {}) => ({
+  id: 1, x: 100, y: 100, vx: 0, vy: 0, radius: 48, tier: 'boss' as const, variant: 0, isBoss: true,
+  attackStyle: 'contact' as const, hitFlash: 0, bossId: 's3-final-traps', bossPattern: 'dash' as const, bossPhase: 1 as const,
+  legacyBoss: false, heading: 0, ...overrides,
+});
+
+test('a boss without its sprite is the heavy hit circle with a paper crown, and still shows its phase and enrage (TEC-10)', () => {
   const recorder = createRecordingContext();
   const renderer = new GameRenderer();
-  const fingerprints = new Set<string>();
+  renderer.beginFrame(frame(3));
+  renderer.drawEnemy(recorder.context, boss());
+  const calm = recorder.calls.join('|');
+  assert.match(calm, /arc:0\.00,0\.00,48\.00/, 'the body is the hit circle');
+  assert.match(calm, /set:strokeStyle:#ef5b4f\|set:lineWidth:5/, 'in a heavy hostile rim');
+  assert.match(calm, /set:fillStyle:#101312.*set:fillStyle:#fffff8/, 'an ink body with a paper crown');
+  assert.ok(recorder.calls.length < 40, `one silhouette, not a drawing (${recorder.calls.length} commands)`);
+  // Every boss looks the same without its art: the body no longer depends on the boss.
+  recorder.reset();
+  renderer.drawEnemy(recorder.context, boss({ bossId: 's1-mid-dash' }));
+  assert.equal(recorder.calls.join('|'), calm);
 
-  for (const [id, profile] of Object.entries(BOSS_ART)) {
-    renderer.beginFrame(frame(profile.chapter));
-    renderer.drawEnemy(recorder.context, {
-      id: 1,
-      x: 100,
-      y: 100,
-      vx: 0,
-      vy: 0,
-      radius: 48,
-      tier: 'boss',
-      variant: 0,
-      isBoss: true,
-      attackStyle: 'contact',
-      hitFlash: 0,
-      bossId: id,
-      bossPattern: 'dash',
-      bossPhase: 1,
-      legacyBoss: false,
-      heading: 0,
-    });
-    assert.ok(recorder.calls.length > 20, `${id} should emit a complete silhouette`);
-    fingerprints.add(recorder.calls.join('|'));
-    recorder.reset();
-  }
+  recorder.reset();
+  renderer.drawEnemy(recorder.context, boss({ hitFlash: 0.05 }));
+  assert.match(recorder.calls.join('|'), /set:fillStyle:#fffff8.*set:fillStyle:#101312/, 'a hit flashes the body paper with an ink crown');
 
-  assert.equal(fingerprints.size, 15);
+  recorder.reset();
+  renderer.drawEnemy(recorder.context, boss({ bossPhase: 3 }));
+  assert.match(recorder.calls.join('|'), /arc:0\.00,0\.00,63\.36/, 'phase 3 rings the body');
+  recorder.reset();
+  renderer.beginFrame({ ...frame(3), bossEnraged: true });
+  renderer.drawEnemy(recorder.context, boss());
+  assert.ok(recorder.calls.filter((call) => call.startsWith('lineTo:')).length >= 14, 'the enraged spikes');
 });
 
 const mob = (overrides: Record<string, unknown> = {}) => ({

@@ -403,7 +403,7 @@ Every character and prop has kit art, so the vector drawings that stood in durin
 - The hero is a paper disc in the ally rim on its hit circle, with an ink chevron toward the aim. A shield adds a dashed outer ring. The mirror clone is the same disc with a dashed rim, drawn faint.
 - An enemy is its hit circle in ink with the hostile rim and a paper role glyph turned to its heading: a small wedge for the stalker, a long one for the charger, a barrel on a stock for the shooter, and a square for the warden. A hit inverts it to paper, so a strike still reads.
 - An obstacle is a plain inked block with a lighter top face.
-- Round bosses without kit art keep their vector bodies; so do hostile projectiles, beams, hazards, and telegraphs.
+- A boss is the same hit circle in ink, with a heavier hostile rim and an upright paper crown; its phase rings and enraged spikes still show what the boss bar says. Every boss has kit art, so the per-boss vector bodies are gone too (`BOSS_ART` stays as the illustration registry's data). Hostile projectiles, beams, hazards, and telegraphs keep their vector art.
 - Without the skills pack, a player's shot is a cyan bead on ink at its hit size, a player's beam an ink band twice its hit half-width with a cyan core, a chain a cyan polyline on ink, a blade the old paper crescent, and a zone the hazard art; the mirror clones are the hero's own frame, faint.
 - Other uncaught errors are logged and raise the same notice.
 

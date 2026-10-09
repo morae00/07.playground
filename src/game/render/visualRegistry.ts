@@ -151,18 +151,6 @@ export const BOSS_ART: Readonly<Record<string, BossArtProfile>> = Object.freeze(
   's5-final-null': bossProfile(5, 'balance'),
 });
 
-export function bossArtFor(id: string | undefined, chapter: number): BossArtProfile {
-  if (id && BOSS_ART[id]) return BOSS_ART[id];
-  const safeChapter = Math.min(5, Math.max(1, Math.round(chapter))) as VisualChapter;
-  return Object.freeze({
-    chapter: safeChapter,
-    body: 'commander',
-    fill: '#111513',
-    accent: CHAPTER_ART[safeChapter].accent,
-    core: CHAPTER_ART[safeChapter].secondary,
-  });
-}
-
 export type ProjectileShape = 'needle' | 'knife' | 'spark' | 'orb' | 'spear' | 'sigil';
 
 export type ProjectileArtProfile = Readonly<{
