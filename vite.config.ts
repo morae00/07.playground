@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { build as esbuild } from 'esbuild';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import { foldRuleReads } from './scripts/lib/fold-rules.mjs';
+import { REMASTER_RULES } from './src/game/rules';
 
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string };
 
@@ -48,6 +50,24 @@ function contentTables(): Plugin {
   };
 }
 
+// TEC-05: the app always plays the remaster rules (only tests, the balance harness, and benches switch rule sets), so
+// app builds read GameEngine's rule flags as constants and the minifier drops the classic branches. Tests and tools
+// build the engine unfolded; scripts/verify-folded-rules.mjs checks the folded one plays the same.
+function shippedRules(): Plugin {
+  const engine = fileURLToPath(new URL('./src/game/GameEngine.ts', import.meta.url));
+  return {
+    name: 'blackline-shipped-rules',
+    apply: 'build',
+    enforce: 'pre',
+    transform(code, id) {
+      if (id !== engine) return null;
+      const folded = foldRuleReads(code, REMASTER_RULES);
+      if (folded.count === 0) this.error('GameEngine.ts has no rule reads to fold');
+      return { code: folded.code, map: null };
+    },
+  };
+}
+
 export default defineConfig(({ command, mode }) => {
   const packagedDeveloperBuild = command === 'build' && mode === 'developer';
   const developerUiAvailable = command === 'serve' || packagedDeveloperBuild;
@@ -62,7 +82,7 @@ export default defineConfig(({ command, mode }) => {
       // AUD-03: the music code ships with a music pack, so a build without one requests nothing and carries none.
       __MUSIC_PACK__: JSON.stringify(existsSync(fileURLToPath(new URL('./public/assets/packs/music/pack.json', import.meta.url)))),
     },
-    plugins: [react(), devContentSecurityPolicy(), contentTables()],
+    plugins: [shippedRules(), react(), devContentSecurityPolicy(), contentTables()],
     build: {
       // Electron 43 runs Chromium 142, and the gates run current Chromium. Native class fields and other ES2022
       // syntax are smaller than esbuild's down-levelled helpers (about 1.1 KiB gzip of app JS).

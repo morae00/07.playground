@@ -38,6 +38,7 @@
     "test:electron-smoke": "node scripts/electron-smoke.mjs",
     "test:electron-fuse-smoke": "node scripts/electron-fuse-smoke.mjs",
     "test:electron-soak": "node scripts/electron-soak.mjs",
+    "test:folded-rules": "node scripts/verify-folded-rules.mjs",
     "bench:render": "node scripts/render-bench.mjs",
     "measure:loudness": "node scripts/measure-loudness.mjs",
     "measure:mix": "node scripts/record-mix.mjs",
