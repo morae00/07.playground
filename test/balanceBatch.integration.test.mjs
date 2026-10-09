@@ -3,7 +3,11 @@ import test from 'node:test';
 import { runBalanceBatch } from '../scripts/lib/balance-runner.mjs';
 import { personasById, runFullBalanceBatch } from '../scripts/lib/full-balance-runner.mjs';
 
+// Every batch runs the bundle the other integration tests use (npm run build:test-bundles, or BLACKLINE_TEST_BUNDLE).
+const bundlePath = process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs';
+
 const smokeConfig = {
+  bundlePath,
   frames: 180,
   seeds: [41, 43],
   stages: [{ chapter: 1, stage: 1 }, { chapter: 5, stage: 10 }],
@@ -24,6 +28,7 @@ test('seed batch balance output is deterministic and bounded', async () => {
 
 test('different seeds produce separately traceable scenarios', async () => {
   const report = await runBalanceBatch({
+    bundlePath,
     frames: 180,
     seeds: [7, 8],
     stages: [{ chapter: 3, stage: 5 }],
@@ -35,7 +40,7 @@ test('different seeds produce separately traceable scenarios', async () => {
 
 test('the novice persona plays a stage with the analog stick and reports like the others', async () => {
   const report = await runFullBalanceBatch({
-    bundlePath: process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs',
+    bundlePath,
     seeds: [17],
     stages: [{ chapter: 1, stage: 1 }],
     personas: personasById(['novice']),
