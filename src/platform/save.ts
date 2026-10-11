@@ -148,7 +148,7 @@ export const createDefaultMeta = (): MetaState => ({
 
 export const createDefaultOptions = (): GameOptions => ({
   healthBars: 'elite',
-  volume: 0.32,
+  volume: 0.8,
   effects: 0.9,
   damageNumbers: true,
   screenShake: true,

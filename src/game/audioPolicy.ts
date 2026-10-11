@@ -38,10 +38,25 @@ export const HIT_CUES: Readonly<Record<ImpactTier, CueId>> = { light: 'hit.light
 
 /** Most voices sounding at once across every bus. */
 export const MAX_VOICES = 16;
-/** Peak level of one synth voice before the bus and master gains (0.1.0's tone level). */
-export const SYNTH_PEAK = 0.055;
+/**
+ * Peak level of one synth voice before the bus and master gains. 0.1.0 played its tones at 0.055 (−25 dBFS), which
+ * left the effects 14-18 LU under the ambience and the whole mix near −35 LUFS at the default volume (AUD-05); the
+ * mix plan B raises the effects 16 dB, so pile-ups now reach the limiter it was built to catch them with.
+ */
+export const SYNTH_PEAK = 0.347;
 /** Peak the sound pack files are normalized to (art/sfx-spec.mjs SFX_PEAK); samples play back at the synth level. */
 export const SAMPLE_PEAK = 0.9;
+/**
+ * Each chapter's ambience bed level on the ambience bus (AUD-05 plan B): about 10 LU under the effects, set per bed
+ * because the beds' own loudness spans 6.7 LU (docs/decisions/AUD-05-loudness.md).
+ */
+export const AMBIENCE_LEVELS: Readonly<Partial<Record<CueId, number>>> = Object.freeze({
+  'ambience.ch1': 0.122,
+  'ambience.ch2': 0.07,
+  'ambience.ch3': 0.081,
+  'ambience.ch4': 0.152,
+  'ambience.ch5': 0.074,
+});
 /** How far a sound at the screen edge sits toward that speaker (1 would be hard left or right). */
 export const PAN_SPREAD = 0.6;
 /** Limiter on the master bus: catches pile-ups without touching a single voice. */

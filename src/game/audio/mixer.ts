@@ -1,7 +1,7 @@
 // Audio mixer (AUD-01): one AudioContext for the whole app session, created on the first user gesture. Every
 // sound goes through its bus (music, sfx, ui, ambience) into the master gain and a limiter, under the voice
 // rules in audioPolicy. A cue plays a sample once a sound pack supplies one and its synth tone until then.
-import { CUES, LIMITER, LIMITER_MAKEUP, MAX_VOICES, PAN_SPREAD, SAMPLE_PEAK, SYNTH_PEAK, VoiceLedger, mixLevels, type CueId, type SoundBus, type SoundLevels, type SoundOutput, type VoiceSlot } from '../audioPolicy.ts';
+import { AMBIENCE_LEVELS, CUES, LIMITER, LIMITER_MAKEUP, MAX_VOICES, PAN_SPREAD, SAMPLE_PEAK, SYNTH_PEAK, VoiceLedger, mixLevels, type CueId, type SoundBus, type SoundLevels, type SoundOutput, type VoiceSlot } from '../audioPolicy.ts';
 import type { MusicCommand } from './musicDirector.ts';
 import type { MusicPack, MusicPlayer } from './musicPlayer.ts';
 
@@ -27,8 +27,7 @@ const LEVEL_GLIDE = 0.015;
 const CUT_FADE = 0.012;
 /** Samples vary their pitch by up to 4% each play so repeats do not sound mechanical. */
 const SAMPLE_PITCH_JITTER = 0.04;
-/** AUD-04 ambience beds: their level on the ambience bus, and how long one fades into the next. */
-export const AMBIENCE_LEVEL = 0.3;
+/** AUD-04 ambience beds: how long one fades into the next (their levels are AMBIENCE_LEVELS). */
 const AMBIENCE_FADE = 1.2;
 /** Music commands kept while audio is closed; the title's play is among the first. */
 const MUSIC_QUEUE = 64;
@@ -160,14 +159,15 @@ export class AudioMixer implements SoundOutput {
       old.source.stop(now + AMBIENCE_FADE);
       this.ambienceVoice = null;
     }
-    const buffer = this.ambienceCue ? this.samples.get(this.ambienceCue)?.[0] : undefined;
-    if (!buffer) return;
+    const cue = this.ambienceCue;
+    const buffer = cue ? this.samples.get(cue)?.[0] : undefined;
+    if (!cue || !buffer) return;
     const source = context.createBufferSource();
     source.buffer = buffer;
     source.loop = true;
     const gain = context.createGain();
     gain.gain.value = 0.0001;
-    gain.gain.exponentialRampToValueAtTime(AMBIENCE_LEVEL, now + AMBIENCE_FADE);
+    gain.gain.exponentialRampToValueAtTime(AMBIENCE_LEVELS[cue] ?? 0.1, now + AMBIENCE_FADE);
     source.connect(gain);
     gain.connect(bus);
     source.addEventListener('ended', () => {

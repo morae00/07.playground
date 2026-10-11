@@ -5,8 +5,7 @@
 //   With no paths it measures the SFX pack and, when there is one, the music pack.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { CUES, SAMPLE_PEAK, SYNTH_PEAK } from '../src/game/audioPolicy.ts';
-import { AMBIENCE_LEVEL } from '../src/game/audio/mixer.ts';
+import { AMBIENCE_LEVELS, CUES, SAMPLE_PEAK, SYNTH_PEAK } from '../src/game/audioPolicy.ts';
 import { MUSIC_LEVEL } from '../src/game/audio/musicPlayer.ts';
 import { measureLoudness, readWav } from '../src/game/audio/loudness.ts';
 import { createDefaultOptions } from '../src/platform/save.ts';
@@ -25,7 +24,7 @@ function playbackGain(pack, file) {
   const cue = Object.entries(pack.cues).find(([, files]) => files.includes(file))?.[0];
   const spec = cue ? CUES[cue] : null;
   if (!spec) return null;
-  if (spec.bus === 'ambience') return AMBIENCE_LEVEL * DEFAULT_OPTIONS.musicVolume;
+  if (spec.bus === 'ambience') return (AMBIENCE_LEVELS[cue] ?? 0.1) * DEFAULT_OPTIONS.musicVolume;
   return spec.synth.gain * (SYNTH_PEAK / SAMPLE_PEAK) * (spec.bus === 'music' ? DEFAULT_OPTIONS.musicVolume : DEFAULT_OPTIONS.sfxVolume);
 }
 

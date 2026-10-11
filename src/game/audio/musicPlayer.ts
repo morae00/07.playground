@@ -19,11 +19,10 @@ export type MusicTrackSpec = {
 export type MusicPack = { id: string; base: string; tracks: Partial<Record<MusicTrackId, MusicTrackSpec>> };
 
 /**
- * The decks' level on the music bus (cue sheet §5.1): a −16 LUFS master peaks near −19 dBFS here, about 16 dB under
- * the limiter, so the music sits under the effects and the limiter only catches pile-ups. A start until the mix is
- * measured with the real tracks.
+ * The decks' level on the music bus (AUD-05 plan B): a −16 LUFS stereo master plays about 4 LU under the effects'
+ * flow at the default options. Measure again with the real tracks (npm run measure:mix).
  */
-export const MUSIC_LEVEL = 0.12;
+export const MUSIC_LEVEL = 0.32;
 const QUIET = 0.0001;
 const OPEN_FILTER_HZ = 20_000;
 const STING_DUCK_DB = -10;
