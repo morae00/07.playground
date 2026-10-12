@@ -51,6 +51,7 @@ import ELITES from '../content/data/elites';
 import BOSS_TOUGHNESS from '../content/data/bossToughness';
 import HORDE from '../content/data/horde';
 import { ARSENAL, ARSENAL_AWAKENING, ARSENAL_IDS, arsenalStats, isArsenal } from './arsenal';
+import { CHARACTERS, applyCharacterPerk, characterStartLevel, type CharacterLoadout } from './characters';
 import BOMBERS from '../content/data/bombers';
 import { CHARGER, STALKER_FLOCK, SeparationGrid, WARDEN_SHIELD, enemyRole, flockSteer, leadAim, shieldCovers, turnToward } from './enemyBehaviors';
 import { LOGICAL_VIEW, SPAWN_MARGIN, classicViewFrame, logicalViewFrame, spawnFrameOrigin, type ViewFrame } from './viewPolicy';
@@ -284,6 +285,8 @@ export type SuspendedRun = Readonly<{
   seed: number;
   meta: MetaState;
   options: GameOptions;
+  /** CON-10: the character the run started as (absent in runs from before characters). */
+  character?: CharacterLoadout;
   ticks: number;
   log: readonly RunLogEntry[];
   kills: number;
@@ -776,6 +779,7 @@ export function buildStats(
   meta: MetaState,
   runUpgrades: Record<RunUpgradeId, number>,
   skills: Partial<Record<SkillId, SkillState>>,
+  character: CharacterLoadout | null = null,
 ) {
   const stats: StatBlock = { ...BASE_STATS };
   stats.attack *= 1 + meta.upgrades.attack * 0.08 + runUpgrades.attack * 0.12;
@@ -796,6 +800,8 @@ export function buildStats(
     const { tier, next } = META_PASSIVES[id];
     if (meta.passives[id] > tier) stats[next.stat] += (meta.passives[id] - tier) * next.perPoint;
   }
+  // CON-10: the character's perk on the account's stats, before the run's skills add theirs.
+  applyCharacterPerk(stats, character);
 
   const ironFrame = skills.ironFrame;
   if (ironFrame) {
@@ -920,7 +926,9 @@ export class GameEngine {
   /** CON-04: simulation steps this run, the commands that changed it, and what it started from. */
   protected ticks = 0;
   protected runLog: RunLogEntry[] = [];
-  protected runStart: { meta: MetaState; options: GameOptions } | null = null;
+  protected runStart: { meta: MetaState; options: GameOptions; character: CharacterLoadout | null } | null = null;
+  /** CON-10: the character the next run starts as (set from the menu; null plays 0.1.0's start). */
+  protected character: CharacterLoadout | null = null;
   protected replaying = false;
   protected cheatsUsed = false;
   protected activeDraftReason: DraftReason = 'level';
@@ -1125,6 +1133,11 @@ export class GameEngine {
     this.recalculateStats(false);
   }
 
+  /** CON-10: the character the next run starts as, and its upgrade level. */
+  setCharacter(loadout: CharacterLoadout | null) {
+    this.character = loadout && CHARACTERS[loadout.id] ? { id: loadout.id, level: loadout.level } : null;
+  }
+
   /** Selects the simulation rule set for the next started run (classic reproduces the 0.1.0 rules for A/B runs). */
   setRuleSet(id: RuleSetId) {
     this.rules = ruleSetFor(id);
@@ -1170,9 +1183,11 @@ export class GameEngine {
     this.hitStopBudget = createHitStopBudget();
     this.chapter = chapter;
     this.stage = stageNo;
-    this.skills = {
-      needleStorm: { level: 1, awakened: false },
-    };
+    // CON-10: the character's weapon at its starting level; 0.1.0 always started with the needle storm at Lv1.
+    const character = this.rules.characters && this.character ? CHARACTERS[this.character.id] : undefined;
+    this.skills = character
+      ? { [character.weapon]: { level: characterStartLevel(this.character!.level), awakened: false } }
+      : { needleStorm: { level: 1, awakened: false } };
     this.runUpgrades = makeRunUpgrades();
     this.skillCooldowns = {};
     this.pendingAwakenings = [];
@@ -1234,7 +1249,7 @@ export class GameEngine {
     this.assistedRun = false;
     this.ticks = 0;
     this.runLog = [];
-    this.runStart = { meta: this.meta, options: this.options };
+    this.runStart = { meta: this.meta, options: this.options, character: this.character };
     this.cheatsUsed = false;
     this.beginRound();
     this.running = true;
@@ -1518,6 +1533,7 @@ export class GameEngine {
       seed: this.runSeed,
       meta: this.runStart.meta,
       options: this.runStart.options,
+      ...(this.runStart.character ? { character: this.runStart.character } : {}),
       ticks: this.ticks,
       log: this.runLog.slice(),
       kills: this.stageKills,
@@ -1534,6 +1550,7 @@ export class GameEngine {
   async resumeRun(run: SuspendedRun, slice = 1800) {
     this.setMeta(run.meta);
     this.setOptions(run.options);
+    this.setCharacter(run.character ?? null);
     if (run.mode === 'infinite') this.startInfiniteRun(run.seed, false);
     else this.startRun(run.chapter, run.stage, run.seed);
     // Steps run as in play, paused only while a draft waits for its choice; the frame loop stays out meanwhile.
@@ -5472,7 +5489,7 @@ export class GameEngine {
 
   protected recalculateStats(fullHeal: boolean) {
     const previousMax = this.player.stats.maxHp;
-    this.player.stats = buildStats(this.meta, this.runUpgrades, this.skills);
+    this.player.stats = buildStats(this.meta, this.runUpgrades, this.skills, this.rules.characters ? this.character : null);
     if (fullHeal) {
       this.player.hp = this.player.stats.maxHp;
     } else if (previousMax > 0) {

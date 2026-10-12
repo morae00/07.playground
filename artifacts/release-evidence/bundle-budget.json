@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 112863,
-      "kib": 110.22,
+      "bytes": 114081,
+      "kib": 111.41,
       "baselineBytes": 92420,
-      "growthRatio": 0.2211967106686865,
+      "growthRatio": 0.23437567626054956,
       "warningBytes": 106282,
       "failBytes": 115525,
       "status": "warning",
@@ -27,24 +27,24 @@
       "passed": true
     },
     "css": {
-      "bytes": 18422,
-      "kib": 17.99,
+      "bytes": 18525,
+      "kib": 18.09,
       "warningBytes": 32768,
       "failBytes": 49152,
       "status": "passed",
       "passed": true
     },
     "initialAssets": {
-      "bytes": 1973373,
-      "kib": 1927.12,
+      "bytes": 1978824,
+      "kib": 1932.45,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 27072699,
-      "kib": 26438.18,
+      "bytes": 27078150,
+      "kib": 26443.51,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-Z09OaVqQ.js",
+      "file": "assets/App-Dt0KeGUt.js",
       "category": "appJs",
-      "sourceBytes": 357227,
-      "gzipBytes": 109308
+      "sourceBytes": 361386,
+      "gzipBytes": 110529
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -105,20 +105,20 @@
     {
       "file": "assets/content/strings/en.json",
       "category": "data",
-      "sourceBytes": 40452,
-      "gzipBytes": 12474
+      "sourceBytes": 42675,
+      "gzipBytes": 13058
     },
     {
       "file": "assets/content/strings/ko.json",
       "category": "data",
-      "sourceBytes": 44114,
-      "gzipBytes": 14298
+      "sourceBytes": 46460,
+      "gzipBytes": 14918
     },
     {
       "file": "assets/content/tables.json",
       "category": "data",
-      "sourceBytes": 48919,
-      "gzipBytes": 9720
+      "sourceBytes": 49801,
+      "gzipBytes": 9977
     },
     {
       "file": "assets/enemy-icons-BEkQ6ASU.webp",
@@ -133,16 +133,16 @@
       "gzipBytes": 113032
     },
     {
-      "file": "assets/index-DQU_h8xN.css",
+      "file": "assets/index-Cs8dY8PP.css",
       "category": "css",
-      "sourceBytes": 83544,
-      "gzipBytes": 18422
+      "sourceBytes": 84180,
+      "gzipBytes": 18525
     },
     {
-      "file": "assets/index-nYn92cTN.js",
+      "file": "assets/index-DqpJGPt8.js",
       "category": "appJs",
       "sourceBytes": 7500,
-      "gzipBytes": 3555
+      "gzipBytes": 3552
     },
     {
       "file": "assets/keyart-DFQzyQdB.webp",

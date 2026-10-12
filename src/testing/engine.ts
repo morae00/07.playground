@@ -6,6 +6,7 @@ export { default as BOSS_TOUGHNESS } from '../content/data/bossToughness';
 export { default as HORDE } from '../content/data/horde';
 export { default as BOMBERS } from '../content/data/bombers';
 export { ARSENAL, ARSENAL_IDS, arsenalStats } from '../game/arsenal';
+export { CHARACTERS, CHARACTER_IDS, characterPerk, characterStartLevel } from '../game/characters';
 export { ProbedGameEngine } from '../game/engine/probe';
 export { createEngineHarness, replaySnapshot } from '../game/engine/harness';
 export * from '../game/engine/replay';

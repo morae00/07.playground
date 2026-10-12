@@ -183,7 +183,9 @@ test('the v3 profile round-trips and rejects impossible records', () => {
   const clean = sanitizeProfile(profile);
   assert.deepEqual(Object.keys(clean.stageRecords), ['1-1']);
   assert.equal(clean.stageRecords['1-1'].clears, 3, 'clears never exceed attempts');
-  assert.deepEqual(clean.characters, { selected: 'gyeol', unlocked: ['gyeol', 'other'] });
+  assert.deepEqual(clean.characters, { selected: 'gyeol', unlocked: ['gyeol', 'other'], levels: {} });
+  // CON-10: upgrade levels keep whole numbers in range.
+  assert.deepEqual(sanitizeProfile({ ...profile, characters: { selected: 'dan', unlocked: ['dan'], levels: { dan: 3.6, gyeol: 99, bad: 'x' } } }).characters, { selected: 'dan', unlocked: ['gyeol', 'dan'], levels: { dan: 3, gyeol: 10, bad: 0 } });
   // A codex from before CON-07 also gets what the 1-1 record shows (G17): its chapter and that chapter's enemies.
   assert.deepEqual(clean.codex, { enemies: ['a', '1-stalker', '1-charger', '1-shooter', '1-warden'], bosses: [], skills: ['needleStorm'], terrain: [], chapters: ['1'] });
   assert.deepEqual(clean.achievements, { first: { unlockedAt: 5 } });

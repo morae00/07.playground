@@ -87,7 +87,8 @@ export type CareerStats = { runs: number; clears: number; kills: number; bossKil
  */
 export type ProfileData = {
   stageRecords: Record<string, StageRecord>;
-  characters: { selected: string; unlocked: string[] };
+  /** CON-10: the character played, those unlocked with gold, and each one's upgrade level. */
+  characters: { selected: string; unlocked: string[]; levels: Record<string, number> };
   /** CON-07: codex entries found (src/content/data/codex.ts ids). */
   codex: { enemies: string[]; bosses: string[]; skills: string[]; terrain: string[]; chapters: string[] };
   achievements: Record<string, { unlockedAt: number }>;
@@ -171,7 +172,7 @@ export const assistsOn = (options: GameOptions) => options.assistDamage < 1 || o
 
 export const createDefaultProfile = (): ProfileData => ({
   stageRecords: {},
-  characters: { selected: DEFAULT_CHARACTER, unlocked: [DEFAULT_CHARACTER] },
+  characters: { selected: DEFAULT_CHARACTER, unlocked: [DEFAULT_CHARACTER], levels: {} },
   codex: { enemies: [], bosses: [], skills: [], terrain: [], chapters: [] },
   achievements: {},
   runSuspend: null,
@@ -284,7 +285,12 @@ export function sanitizeProfile(value: unknown): ProfileData {
   const characters = isRecord(value.characters) ? value.characters : {};
   const unlocked = stringList(characters.unlocked);
   if (!unlocked.includes(DEFAULT_CHARACTER)) unlocked.unshift(DEFAULT_CHARACTER);
+  // CON-10: selecting a character adds it to the list (one opened by its chapter too), so the selection is always in it.
   const selected = typeof characters.selected === 'string' && unlocked.includes(characters.selected) ? characters.selected : DEFAULT_CHARACTER;
+  const levels: Record<string, number> = {};
+  if (isRecord(characters.levels)) {
+    for (const [id, level] of Object.entries(characters.levels)) if (id.length <= 32) levels[id] = finiteNumber(level, 0, 0, 10, true);
+  }
   const codex = isRecord(value.codex) ? value.codex : {};
   const achievements: Record<string, { unlockedAt: number }> = {};
   if (isRecord(value.achievements)) {
@@ -299,7 +305,7 @@ export function sanitizeProfile(value: unknown): ProfileData {
     : null;
   return {
     stageRecords,
-    characters: { selected, unlocked },
+    characters: { selected, unlocked, levels },
     codex: sanitizeCodex(codex, stageRecords),
     achievements,
     runSuspend,

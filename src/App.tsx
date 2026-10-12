@@ -38,6 +38,8 @@ import { StoryPanels } from './ui/screens/StoryPanels';
 import { appendDevRunLog, devRunEntry } from './platform/devRunLog';
 import { moveKeyMap, setMoveKeysInUse } from './platform/moveKeys';
 import { beatsAfterClear, beatsBeforeRun, type StoryBeatId } from './ui/story';
+import { CHARACTERS, CHARACTER_COSTS, CHARACTER_MAX_LEVEL } from './game/characters';
+import { characterOpen, type CharacterAction } from './ui/screens/CharactersView';
 import { NAV as MENU_NAV, MenuScreen, type MenuView } from './ui/screens/MenuScreen';
 import { nextRovingId, watchReducedMotion, type RovingKey } from './ui/inputContracts';
 import { InputAdapter } from './ui/inputAdapter';
@@ -303,6 +305,29 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     setMeta((previous) => ({ ...previous, gold: previous.gold - price }));
     setProfile((previous) => ({ ...previous, cosmetics: { ...previous.cosmetics, owned: [...previous.cosmetics.owned, id] } }));
   }, []);
+  // CON-10: selects a playable character (keeping one unlocked by its chapter), or spends gold to unlock or upgrade.
+  const characterAction = useCallback((action: CharacterAction, id: string) => {
+    const def = CHARACTERS[id];
+    const { characters } = profileRef.current;
+    if (!def) return;
+    if (action === 'select') {
+      if (!characterOpen(id, profileRef.current, developerAccess)) return;
+      setProfile((previous) => ({ ...previous, characters: { ...previous.characters, selected: id, unlocked: previous.characters.unlocked.includes(id) ? previous.characters.unlocked : [...previous.characters.unlocked, id] } }));
+      return;
+    }
+    const level = characters.levels[id] ?? 0;
+    const price = action === 'unlock'
+      ? (characters.unlocked.includes(id) ? Infinity : def.unlock?.gold ?? Infinity)
+      : (characterOpen(id, profileRef.current, developerAccess) && level < CHARACTER_MAX_LEVEL ? CHARACTER_COSTS[level] : Infinity);
+    if (!(metaRef.current.gold >= price)) return;
+    setMeta((previous) => ({ ...previous, gold: previous.gold - price }));
+    setProfile((previous) => ({
+      ...previous,
+      characters: action === 'unlock'
+        ? { ...previous.characters, unlocked: [...previous.characters.unlocked, id] }
+        : { ...previous.characters, levels: { ...previous.characters.levels, [id]: level + 1 } },
+    }));
+  }, [developerAccess]);
   const wearCosmetic = useCallback((id: CosmeticId, wear: boolean) => {
     const { kind } = COSMETICS.cosmetics[id];
     setProfile((previous) => (previous.cosmetics.owned.includes(id) ? { ...previous, cosmetics: { ...previous.cosmetics, [kind]: wear ? id : null } } : previous));
@@ -501,7 +526,9 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     [developerAccess, errorLog, grantSettlement, recordInfiniteSettlement],
   );
 
-  const visibleStats = useMemo(() => buildStats(meta, makeRunUpgrades(), {}), [meta]);
+  const selectedCharacter = profile.characters.selected;
+  const characterLevel = profile.characters.levels[selectedCharacter] ?? 0;
+  const visibleStats = useMemo(() => buildStats(meta, makeRunUpgrades(), {}, { id: selectedCharacter, level: characterLevel }), [meta, selectedCharacter, characterLevel]);
   const selectedChapter = useMemo(() => CHAPTERS.find((chapter) => chapter.id === selectedChapterId) ?? CHAPTERS[0], [selectedChapterId]);
   const selectedStage = useMemo(
     () => selectedChapter.stages.find((stage) => stage.id === selectedStageNo) ?? selectedChapter.stages[0],
@@ -528,6 +555,9 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     engineRef.current = engine;
     engine.setSprites(spriteAtlas);
     engine.setSound(appMixer);
+    // CON-10: the run starts as the selected character, if it is playable here.
+    const { characters } = profileRef.current;
+    engine.setCharacter(characterOpen(characters.selected, profileRef.current, developerAccess) ? { id: characters.selected, level: characters.levels[characters.selected] ?? 0 } : null);
     if (MUSIC_PACK) engine.subscribe((event) => appMusic?.event(event));
     releaseReducedMotionRef.current = watchReducedMotion(
       typeof window.matchMedia === 'function' ? window.matchMedia.bind(window) : undefined,
@@ -553,7 +583,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     setLoopFault(null);
     setPhase('playing');
     launch(engine);
-  }, [callbacks, meta, options, spriteAtlas]);
+  }, [callbacks, developerAccess, meta, options, spriteAtlas]);
 
   /** CON-06: plays the story beats due first, if any, then goes on. */
   const afterStory = useCallback((beats: StoryBeatId[], then: () => void) => {
@@ -896,6 +926,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
           profile={profile}
           bestInfiniteSeconds={bestInfiniteSeconds}
           onBuyCosmetic={buyCosmetic}
+          onCharacter={characterAction}
           onWearCosmetic={wearCosmetic}
           onPlayStory={(beats) => setStory({ beats })}
           inlineNotice={<>{achievementBanner}{suspendBanner}{noticeBanner('inline')}</>}

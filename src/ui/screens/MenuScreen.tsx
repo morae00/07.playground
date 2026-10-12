@@ -31,6 +31,7 @@ import {
 import { Glyph } from '../Glyph';
 import { ProgressBar } from '../ProgressBar';
 import { STAGE_PATH, chapterCleared, passiveEffect, smoothPath, stageBoss, stageObjective, stageRewardFloor, stageStatus, upgradeEffect } from '../menuStage';
+import { CharactersView, type CharacterAction } from './CharactersView';
 import { CodexView } from './CodexView';
 import { DevRunLog } from './DevPanel';
 import type { StoryBeatId } from '../story';
@@ -43,7 +44,7 @@ const ENEMY_ROLES = ['stalker', 'charger', 'shooter', 'warden'] as const;
 /** The chapter still to come, shown small after the five (lore bible §7). */
 const NEXT_CHAPTER = CHAPTERS.length + 1;
 
-export type MenuView = 'play' | 'infinite' | 'growth' | 'settings' | 'codex';
+export type MenuView = 'play' | 'infinite' | 'characters' | 'growth' | 'settings' | 'codex';
 
 /** "Chapter 1: 먹선 골목" from the chapter's strings (UI-10). */
 export const chapterName = (id: number) => t('chapter.name', { n: id, theme: t(`chapter.${id as ChapterId}`) });
@@ -58,6 +59,8 @@ export type MenuScreenProps = {
   onWearCosmetic: (id: CosmeticId, wear: boolean) => void;
   /** CON-06: plays story beats again from the codex. */
   onPlayStory: (beats: StoryBeatId[]) => void;
+  /** CON-10: selects, unlocks, or upgrades a character. */
+  onCharacter: (action: CharacterAction, id: string) => void;
   inlineNotice: ReactNode;
   /** CON-04: a run left in play, offered first so a crash or a quit never loses it. */
   suspended: SuspendedRun | null;
@@ -98,7 +101,7 @@ export type MenuScreenProps = {
   buyPassive: (id: PassiveId) => void;
 };
 
-export const NAV: readonly MenuView[] = ['play', 'infinite', 'growth', 'settings', 'codex'];
+export const NAV: readonly MenuView[] = ['play', 'infinite', 'characters', 'growth', 'settings', 'codex'];
 
 type PlayProps = Pick<MenuScreenProps, 'meta' | 'records' | 'developerAccess' | 'developerMode' | 'setDeveloperMode' | 'options' | 'selectedChapterId' | 'setSelectedChapterId' | 'selectedStageNo' | 'setSelectedStageNo' | 'selectedChapter' | 'selectedStage' | 'selectedStageLocked' | 'visibleStats' | 'startRun' | 'setMenuView' | 'cheatCode' | 'setCheatCode' | 'cheatMessage' | 'applyCheat'>;
 
@@ -536,6 +539,9 @@ export function MenuScreen(props: MenuScreenProps) {
         </div>
         <div className="menuPanel infiniteColumn" id="menu-panel-infinite" role="tabpanel" aria-labelledby="menu-tab-infinite" hidden={menuView !== 'infinite'}>
           <InfiniteView {...props} />
+        </div>
+        <div className="menuPanel upgradeColumn" id="menu-panel-characters" role="tabpanel" aria-labelledby="menu-tab-characters" hidden={menuView !== 'characters'}>
+          <CharactersView profile={props.profile} meta={meta} developerAccess={props.developerAccess} onCharacter={props.onCharacter} />
         </div>
         <div className="menuPanel upgradeColumn" id="menu-panel-growth" role="tabpanel" aria-labelledby="menu-tab-growth" hidden={menuView !== 'growth'}>
           <GrowthView {...props} />

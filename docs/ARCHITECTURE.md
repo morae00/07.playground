@@ -388,6 +388,14 @@ The user asked for five times the weapons (2026-10-12). The `arsenal` rule (rema
 - Art: until the kit draws them, each weapon fires with its look (an active skill's art: shots, rings, beams, chains) and wears its look's tile with a two-syllable badge (`scripts/build-arsenal-art.mjs` writes `src/ui/art/arsenalArt.generated.css`). A projectile carries its weapon's id for hits and its look for the art.
 - Balance bots count every non-passive skill as active, so they take arsenal weapons when their favourites are not offered.
 
+## Characters (CON-10)
+
+The user asked for characters with their own starting weapons, not one for every weapon, whose upgrades raise the starting weapon's level (2026-10-12; this replaces D-13's single character for 1.0). The `characters` rule (remaster on, classic off) has its numbers in `src/content/data/characters.ts`:
+- Eight characters, each starting with a different weapon (three of the 0.1.0 skills, five arsenal weapons) and a perk: attack, attack speed, crit chance, move speed, max health, defence, boss damage, or regen. 결 is free; three unlock with gold and four when a chapter's tenth stage is cleared (developer access opens all).
+- Upgrades (5, for 400 to 6,000 gold) start the weapon at Lv.1, 2, 2, 3, 3, 4 and add a perk step each (`src/game/characters.ts`); the perk applies to the account's stats before the run's skills (`buildStats`).
+- The menu's 캐릭터 tab (`src/ui/screens/CharactersView.tsx`) selects, unlocks, and upgrades. The save keeps the selection, the unlocked list, and each level (`profile.characters.levels`). The run starts as the selected character (`GameEngine.setCharacter`), and a suspended run keeps its character so it replays exactly. Without a character the engine starts as 0.1.0 did, with the needle storm at Lv.1.
+- Art: every character still wears the hero's art; the kit draws them as a work order.
+
 ## Story beats (CON-06)
 
 The campaign had no story on screen: clearing 5-10 showed a banner and nothing else. CON-06 adds the lore bible's drafts (docs/lore §7) as story beats, all skippable, none over play (G15):

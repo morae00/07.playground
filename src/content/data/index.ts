@@ -9,6 +9,7 @@ import bossPhaseMoves from './bossPhaseMoves.ts';
 import bossToughness from './bossToughness.ts';
 import buildDepth from './buildDepth.ts';
 import catalog from './catalog.ts';
+import characters from './characters.ts';
 import codex from './codex.ts';
 import cosmetics from './cosmetics.ts';
 import elites from './elites.ts';
@@ -18,7 +19,7 @@ import objectives from './objectives.ts';
 import skillNumbers from './skillNumbers.ts';
 import soundCues from './soundCues.ts';
 
-const CONTENT_TABLES = { achievements, arsenal, bombers, bossPhaseMoves, bossToughness, buildDepth, catalog, codex, cosmetics, elites, encounterGrammars, horde, objectives, skillNumbers, soundCues };
+const CONTENT_TABLES = { achievements, arsenal, bombers, bossPhaseMoves, bossToughness, buildDepth, catalog, characters, codex, cosmetics, elites, encounterGrammars, horde, objectives, skillNumbers, soundCues };
 
 export type ContentTables = typeof CONTENT_TABLES;
 export default CONTENT_TABLES;

@@ -3583,3 +3583,63 @@ h2 {
   padding: 4px 10px;
   box-shadow: none;
 }
+
+/* CON-10: the characters tab. */
+.menuNote {
+  margin: 0 0 14px;
+  color: #444;
+}
+
+.characterGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.characterCard {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 2px solid var(--ink);
+  background: var(--paper-raised);
+}
+
+.characterCard.selected {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.characterCard header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.characterCard header b {
+  font-size: 22px;
+}
+
+.characterCard p {
+  margin: 0;
+}
+
+.characterWeapon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+}
+
+.characterWeapon .artSlot {
+  width: 40px;
+}
+
+.characterPerk {
+  font-weight: 700;
+}
+
+.characterActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

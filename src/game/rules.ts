@@ -177,6 +177,12 @@ export type RuleSet = Readonly<{
    * and boss damage.
    */
   arsenal: boolean;
+  /**
+   * CON-10 (user request 2026-10-12): characters. The run starts with the chosen character's weapon, at a higher level
+   * the more the character is upgraded, and the character's perk joins the stats. Numbers in
+   * src/content/data/characters.ts.
+   */
+  characters: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -218,6 +224,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   horde: false,
   bombers: false,
   arsenal: false,
+  characters: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -259,6 +266,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   horde: true,
   bombers: true,
   arsenal: true,
+  characters: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {
