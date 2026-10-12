@@ -1,9 +1,10 @@
 // Engine content tables (TEC-05): base stats, skills, the economy, and the bosses. Data, not code: built apps read
 // them from assets/content/tables.json, and tests and tools import this module (see ./index.ts).
-import type { BossDef, SkillId } from '../../game/engine/worldTypes.ts';
+import type { BossDef, CoreSkillId, SkillId } from '../../game/engine/worldTypes.ts';
 import type { RunUpgradeId, SkillDef, StatBlock } from '../../game/GameEngine.ts';
 import type { MetaUpgradeId, PassiveId } from '../../platform/save.ts';
 import { deepFreeze } from '../deepFreeze.ts';
+import ARSENAL from './arsenal.ts';
 
 const baseStats: StatBlock = {
   attack: 12,
@@ -19,7 +20,7 @@ const baseStats: StatBlock = {
   coinGain: 1,
 };
 
-const skills: Record<SkillId, SkillDef> = {
+const coreSkills: Record<CoreSkillId, SkillDef> = {
   needleStorm: { id: 'needleStorm', rarity: 'common', active: true, chapterMin: 1, tags: ['projectile', 'single'] },
   fanKnives: { id: 'fanKnives', rarity: 'common', active: true, chapterMin: 1, tags: ['projectile', 'fan'] },
   chainSpark: { id: 'chainSpark', rarity: 'rare', active: true, chapterMin: 1, tags: ['chain', 'instant'] },
@@ -38,6 +39,12 @@ const skills: Record<SkillId, SkillDef> = {
   eclipseStep: { id: 'eclipseStep', rarity: 'mythic', active: true, chapterMin: 5, tags: ['area', 'invulnerable'] },
   executionMark: { id: 'executionMark', rarity: 'legendary', active: false, chapterMin: 2, tags: ['crit', 'boss'] },
 };
+
+// SYS-15: the arsenal's weapons join the skills as active skills, after the 17 of 0.1.0.
+const skills: Record<SkillId, SkillDef> = {
+  ...coreSkills,
+  ...Object.fromEntries(Object.entries(ARSENAL.weapons).map(([id, weapon]) => [id, { id, rarity: weapon.rarity, active: true, chapterMin: weapon.chapterMin, tags: weapon.tags }])),
+} as Record<SkillId, SkillDef>;
 
 /** Permanent upgrades; each shows as the strings upgrade.<id> and upgrade.<id>.line. */
 const metaUpgrades: Record<MetaUpgradeId, { max: number; baseCost: number; growth: number }> = {

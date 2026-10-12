@@ -1,5 +1,6 @@
 // Presentation layer (TEC-02): turns game events into particles, damage numbers, impact rings, screen shake,
 // and sound cues for the app's mixer (AUD-01). It owns only cosmetic state; the simulation never reads it back.
+import { lookOf } from '../arsenal.ts';
 import type { Corpse, DamageNumber, EffectOwner, HitStamp, ImpactRing, Particle, Recoil, SkillId, SkillMark, SkillState } from '../engine/worldTypes.ts';
 import type { GameOptions } from '../../platform/save.ts';
 import { CUES, HIT_CUES, KILL_CUES, type CueId, type SoundOutput } from '../audioPolicy.ts';
@@ -216,7 +217,8 @@ export class Presentation {
         return;
       case 'skill/cast': {
         this.playerCast = PLAYER_CAST_POSE_SECONDS;
-        const cast = CAST_EFFECTS[event.skillId];
+        // SYS-15: an arsenal weapon sounds like its look.
+        const cast = CAST_EFFECTS[lookOf(event.skillId)];
         if (cast?.burst) this.playerBurst = PLAYER_BURST_POSE_SECONDS;
         if (cast?.shake !== undefined) this.addShake(cast.shake);
         if (cast?.sound) this.play(cast.sound, event.x);

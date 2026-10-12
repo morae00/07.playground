@@ -50,6 +50,7 @@ import BUILD_DEPTH, { type FusionId } from '../content/data/buildDepth';
 import ELITES from '../content/data/elites';
 import BOSS_TOUGHNESS from '../content/data/bossToughness';
 import HORDE from '../content/data/horde';
+import { ARSENAL, ARSENAL_AWAKENING, ARSENAL_IDS, arsenalStats, isArsenal } from './arsenal';
 import BOMBERS from '../content/data/bombers';
 import { CHARGER, STALKER_FLOCK, SeparationGrid, WARDEN_SHIELD, enemyRole, flockSteer, leadAim, shieldCovers, turnToward } from './enemyBehaviors';
 import { LOGICAL_VIEW, SPAWN_MARGIN, classicViewFrame, logicalViewFrame, spawnFrameOrigin, type ViewFrame } from './viewPolicy';
@@ -142,6 +143,7 @@ import type {
   PendingHostileShot,
   Pickup,
   Projectile,
+  ArsenalId,
   SkillId,
   SkillMark,
   SkillState,
@@ -890,6 +892,9 @@ export class GameEngine {
   protected damageBySkill: Partial<Record<SkillId, number>> = {};
   /** SYS-12: how fast the player felled infinite bosses lately (health per second, blended over the fights). */
   protected bossDps = 0;
+  /** SYS-15: lobbed blasts on their way down, and the way the player last moved (for the weapons that fire behind). */
+  protected arsenalLobs: { at: number; x: number; y: number; radius: number; damage: number; id: ArsenalId }[] = [];
+  protected lastMove = { x: 1, y: 0 };
   /** SYS-13: the fractions of XP and coins the horde scaling carries to the next spawned enemy. */
   protected hordeCarry = { xp: 0, coin: 0 };
   protected infiniteEventScore = 0;
@@ -1011,7 +1016,7 @@ export class GameEngine {
   protected enemyIndex = new SpatialIndex<Entity>(96);
   protected deadEnemyScratch: Entity[] = [];
   protected projectilePool = new ObjectPool<Projectile>(
-    () => ({ id: 0, x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0, radius: 0, damage: 0, life: 0, maxLife: 0, returning: false, pierce: 0, knockback: 0, skillId: 'needleStorm', blockedBySolid: false, hitEnemyIds: new Set(), aimTargetId: -1 }),
+    () => ({ id: 0, x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0, radius: 0, damage: 0, life: 0, maxLife: 0, returning: false, pierce: 0, knockback: 0, skillId: 'needleStorm', look: 'needleStorm', blockedBySolid: false, hitEnemyIds: new Set(), aimTargetId: -1 }),
     (projectile) => { projectile.life = 0; projectile.hitEnemyIds.clear(); },
     384,
   );
@@ -1186,6 +1191,7 @@ export class GameEngine {
     this.damageBySkill = {};
     this.bossDps = 0;
     this.hordeCarry = { xp: 0, coin: 0 };
+    this.arsenalLobs = [];
     this.infiniteEventScore = 0;
     this.infiniteBossKills = 0;
     this.infiniteBossRespawnTimer = 0;
@@ -1820,6 +1826,7 @@ export class GameEngine {
     this.damageBySkill = {};
     this.bossDps = 0;
     this.hordeCarry = { xp: 0, coin: 0 };
+    this.arsenalLobs = [];
     this.draftQueue = [];
     this.elapsed = 0;
     this.enemies = [];
@@ -1992,6 +1999,7 @@ export class GameEngine {
     }
     this.rebuildEnemyIndex();
     this.updateSkills(dt);
+    this.landArsenalLobs();
     this.flushDeadEnemies();
     if (this.endStepIfInterrupted()) return;
     this.spawnEnemies(dt);
@@ -2357,7 +2365,139 @@ export class GameEngine {
       ['voidMine', (skill) => this.updateVoidMine(skill)],
       ['blackSun', (skill) => this.updateBlackSun(skill)],
       ['eclipseStep', (skill) => this.updateEclipseStep(skill)],
+      // SYS-15: the arsenal's weapons the build holds, in the table's order.
+      ...ARSENAL_IDS.filter((id) => this.skills[id]).map((id): [SkillId, (skill: SkillState) => void] => [id, (skill) => this.fireArsenal(id, skill)]),
     ];
+  }
+
+  /**
+   * SYS-15: fires an arsenal weapon from its row (src/content/data/arsenal.ts). Shots carry the weapon's id for hits
+   * and the settlement, and its look for the art; its effects land in dealDamage. A weapon with nothing to hit waits.
+   */
+  protected fireArsenal(id: ArsenalId, skill: SkillState) {
+    if ((this.skillCooldowns[id] ?? 0) > 0) return;
+    const weapon = ARSENAL[id];
+    const stats = arsenalStats(weapon, skill.level, skill.awakened);
+    const { x: px, y: py } = this.player;
+    const range = weapon.range ?? 900;
+    const damage = this.player.stats.attack * stats.damage;
+    const knockback = weapon.knockback ?? 0;
+    const speed = weapon.speed ?? 700;
+    const shoot = (angle: number, aim = -1) => this.spawnProjectile(id, px, py, Math.cos(angle) * speed, Math.sin(angle) * speed, weapon.size ?? 5, damage, weapon.life ?? 1, weapon.pierce ?? 0, knockback, true, aim, weapon.look);
+    const fan = (angle: number, aim: number) => {
+      for (let index = 0; index < stats.count; index += 1) shoot(angle + (index - (stats.count - 1) / 2) * (weapon.spread ?? 0.2), index === Math.floor((stats.count - 1) / 2) ? aim : -1);
+    };
+    const moved = Math.hypot(px - this.player.prevX, py - this.player.prevY);
+    if (moved > 0.2) this.lastMove = { x: (px - this.player.prevX) / moved, y: (py - this.player.prevY) / moved };
+    const near = this.findNearestEnemyFrom(px, py, range, new Set());
+    if (!near) return;
+    switch (weapon.kind) {
+      case 'volley':
+      case 'spray': {
+        const target = this.acquireTarget(range, { projectileSpeed: speed, blockedBySolid: true, projectileRadius: weapon.size ?? 5 });
+        if (!target) return;
+        const angle = Math.atan2(target.y - py, target.x - px);
+        if (weapon.kind === 'volley') fan(angle, target.enemy.id);
+        else for (let index = 0; index < stats.count; index += 1) shoot(angle + (this.gameplayRandom() * 2 - 1) * (weapon.spread ?? 0.3));
+        break;
+      }
+      case 'burst': {
+        const turn = this.elapsed * 1.3;
+        for (let index = 0; index < stats.count; index += 1) shoot(turn + (index * Math.PI * 2) / stats.count);
+        break;
+      }
+      case 'rear':
+        fan(Math.atan2(-this.lastMove.y, -this.lastMove.x), -1);
+        break;
+      case 'seeker': {
+        const hit = new Set<number>();
+        const boss = weapon.bossFirst ? this.enemies.find((enemy) => enemy.isBoss && enemy.hp > 0 && distance(enemy, this.player) < range) : undefined;
+        for (let index = 0; index < stats.count; index += 1) {
+          const target = index === 0 && boss ? boss : this.findNearestEnemyFrom(px, py, range, hit);
+          if (!target) break;
+          hit.add(target.id);
+          shoot(Math.atan2(target.y - py, target.x - px), target.id);
+        }
+        break;
+      }
+      case 'strike': {
+        const pool = this.enemyIndex.queryCircle(px, py, range).filter((enemy) => enemy.hp > 0);
+        for (let index = 0; index < stats.count && pool.length > 0; index += 1) {
+          const [target] = pool.splice(Math.floor(this.gameplayRandom() * pool.length), 1);
+          this.arsenalBlast(id, target.x, target.y, weapon.radius ? stats.radius : 56, damage);
+        }
+        break;
+      }
+      case 'nova':
+        if (distance(near, this.player) > stats.radius + near.radius) return;
+        this.arsenalBlast(id, px, py, stats.radius, damage);
+        break;
+      case 'lob':
+        for (let index = 0; index < stats.count; index += 1) {
+          const angle = (index * Math.PI * 2) / stats.count;
+          const spread = stats.count > 1 ? weapon.scatter ?? 0 : 0;
+          this.arsenalLobs.push({ at: this.elapsed + (weapon.delay ?? 0.6), x: near.x + Math.cos(angle) * spread, y: near.y + Math.sin(angle) * spread, radius: stats.radius, damage, id });
+        }
+        break;
+      case 'chain': {
+        const points = [{ x: px, y: py }];
+        const hit = new Set<number>();
+        let target: Entity | undefined = near;
+        for (let jump = 0; jump <= stats.jumps && target; jump += 1) {
+          hit.add(target.id);
+          points.push({ x: target.x, y: target.y });
+          this.dealDamage(target, damage, id, knockback, false);
+          target = this.findNearestEnemyFrom(target.x, target.y, weapon.hop ?? 260, hit);
+        }
+        this.chains.push({ id: this.nextId(), points, life: 0.18, maxLife: 0.18, skillId: weapon.look });
+        break;
+      }
+      case 'beam': {
+        const aim = Math.atan2(near.y - py, near.x - px);
+        const width = (weapon.width ?? 12) * (skill.awakened ? ARSENAL_AWAKENING.reach : 1);
+        for (let direction = 0; direction < (weapon.directions ?? 1); direction += 1) {
+          const angle = aim + (direction * Math.PI) / 2;
+          const x2 = px + Math.cos(angle) * stats.length;
+          const y2 = py + Math.sin(angle) * stats.length;
+          this.beams.push({ id: this.nextId(), x1: px, y1: py, x2, y2, width, life: 0.28, maxLife: 0.28, owner: 'player', skillId: weapon.look });
+          for (const enemy of this.querySegmentEnemies(px, py, x2, y2, width)) {
+            if (enemy.hp > 0 && distancePointToSegment(enemy.x, enemy.y, px, py, x2, y2) < enemy.radius + width) this.dealDamage(enemy, damage, id, knockback, false);
+          }
+        }
+        break;
+      }
+      case 'halo': {
+        const inner = weapon.inner ?? 0;
+        let struck = false;
+        for (const enemy of this.enemyIndex.queryCircle(px, py, stats.radius)) {
+          const gap = distance(enemy, this.player);
+          if (enemy.hp <= 0 || gap > stats.radius + enemy.radius || gap + enemy.radius < inner) continue;
+          this.dealDamage(enemy, damage, id, knockback, false);
+          struck = true;
+        }
+        if (!struck) return;
+        this.skillMark('ring', weapon.look, px, py, stats.radius);
+        break;
+      }
+    }
+    this.skillCooldowns[id] = stats.cooldown / this.effectiveAttackSpeed();
+    this.emit({ type: 'skill/cast', skillId: id, x: px, y: py });
+  }
+
+  /** SYS-15: an arsenal blast: area damage under the weapon's id, drawn as its look's ring. */
+  protected arsenalBlast(id: ArsenalId, x: number, y: number, radius: number, damage: number) {
+    const weapon = ARSENAL[id];
+    this.areaDamage(x, y, radius, damage, id, weapon.knockback ?? 0);
+    this.emit({ type: 'area/blast', x, y, radius, source: weapon.look });
+  }
+
+  /** SYS-15: lobbed blasts land when their time comes. */
+  protected landArsenalLobs() {
+    if (this.arsenalLobs.length === 0) return;
+    const landing = this.arsenalLobs.filter((lob) => lob.at <= this.elapsed);
+    if (landing.length === 0) return;
+    this.arsenalLobs = this.arsenalLobs.filter((lob) => lob.at > this.elapsed);
+    for (const lob of landing) this.arsenalBlast(lob.id, lob.x, lob.y, lob.radius, lob.damage);
   }
 
   protected updateNeedleStorm(skill: SkillState) {
@@ -4551,6 +4691,7 @@ export class GameEngine {
     knockback: number,
     blockedBySolid: boolean,
     aimTargetId = -1,
+    look: SkillId = skillId,
   ) {
     const projectile = this.projectilePool.acquire();
     projectile.hitEnemyIds.clear();
@@ -4570,6 +4711,7 @@ export class GameEngine {
       pierce,
       knockback,
       skillId,
+      look,
       blockedBySolid,
       aimTargetId,
     });
@@ -4729,6 +4871,22 @@ export class GameEngine {
   }
 
   /** `source` is where the hit comes from (the player unless a projectile, blast, or chain carries it), for shields. */
+  /** SYS-15: an arsenal weapon's effects on an enemy it hit: execution, slow, and stun (bosses shrug off the last two). */
+  protected applyArsenalEffects(weapon: (typeof ARSENAL)[ArsenalId], enemy: Entity) {
+    if (enemy.hp <= 0) return;
+    if (weapon.execute && !enemy.isBoss && enemy.hp < enemy.maxHp * weapon.execute) {
+      enemy.hp = 0;
+      return;
+    }
+    if (enemy.isBoss) return;
+    if (weapon.slow) {
+      const slow = applyTimedSlow({ multiplier: enemy.slowMultiplier ?? 1, remaining: enemy.slowTimer ?? 0 }, weapon.slow[0], weapon.slow[1]);
+      enemy.slowMultiplier = slow.multiplier;
+      enemy.slowTimer = slow.remaining;
+    }
+    if (weapon.stun && this.gameplayRandom() < weapon.stun[0]) enemy.stun = Math.max(enemy.stun, weapon.stun[1]);
+  }
+
   /** SYS-14: whether a small contact spawn comes as a bomber, and which kind; `smallShare` is the small spawns' share. */
   protected rollBomber(smallShare: number): 'fuse' | 'burst' | undefined {
     const table = this.runMode === 'infinite' ? BOMBERS.infinite : BOMBERS.campaign;
@@ -4763,8 +4921,10 @@ export class GameEngine {
     if (enemy.hp <= 0) return;
     const hpRatio = enemy.hp / enemy.maxHp;
     const execution = this.skills.executionMark?.awakened && enemy.isBoss ? 1 + (1 - hpRatio) * SKILL_NUMBERS.executionMark.lowHpBossBonus : 1;
-    const targetMultiplier = enemy.isBoss ? this.player.stats.bossDamage : 1;
-    const crit = forceCrit || this.gameplayRandom() < this.player.stats.critChance;
+    // SYS-15: an arsenal weapon's boss damage and extra crit chance.
+    const weapon = isArsenal(skillId) ? ARSENAL[skillId] : undefined;
+    const targetMultiplier = (enemy.isBoss ? this.player.stats.bossDamage * (weapon?.boss ?? 1) : 1);
+    const crit = forceCrit || this.gameplayRandom() < this.player.stats.critChance + (weapon?.crit ?? 0);
     const critMultiplier = crit ? this.player.stats.critDamage : 1;
     let damage = Math.max(1, rawDamage * targetMultiplier * critMultiplier * execution);
     // SYS-02: a warden's front shield takes most of a hit that lands inside its arc.
@@ -4789,6 +4949,7 @@ export class GameEngine {
     // UI-05: the health this hit actually took, for the settlement's damage bars (presentation only).
     this.damageBySkill[skillId] = (this.damageBySkill[skillId] ?? 0) + Math.min(damage, enemy.hp);
     enemy.hp -= damage;
+    if (weapon) this.applyArsenalEffects(weapon, enemy);
     const impactTier = classifyImpact(damage, enemy.maxHp, crit, enemy.hp <= 0, {
       classification: this.rules.hitStopBudget ? 'budgeted' : 'classic',
       notableTarget: enemy.isBoss,
@@ -5141,7 +5302,8 @@ export class GameEngine {
       ? clamp(this.elapsed / 1_800, 0, 1)
       : (stageIndex(this.chapter, this.stage) - 1) / (TOTAL_STAGE_COUNT - 1);
     const skillChapter = this.runMode === 'infinite' ? CHAPTER_COUNT : this.chapter;
-    const availableSkills = filterSkillsForChapter(SKILL_IDS.map((id) => SKILLS[id]), skillChapter);
+    // SYS-15: the arsenal joins the drafts only under its rule.
+    const availableSkills = filterSkillsForChapter(SKILL_IDS.filter((id) => this.rules.arsenal || !isArsenal(id)).map((id) => SKILLS[id]), skillChapter);
     const entries = availableSkills.map(({ id }) => {
       const rarity = SKILLS[id].rarity;
       const luckBonus =

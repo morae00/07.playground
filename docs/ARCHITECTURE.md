@@ -379,6 +379,15 @@ The user asked for self-destructing monsters from a certain level, more of them 
 - Sounds: `bomber.fuse` (a hiss ticking faster) and `bomber.blast`, appended to the SFX recipes. The blast flashes its reach as a hostile ring and shakes the screen, harder when it caught the player.
 - Striker bot, 25 minutes of the infinite run: maxed runs take 9-25 blasts and two of three reach minute 24; mid builds last 8.5-18.3 minutes (one died to a blast). Kit art for the two bombers is a work order; until then they draw as the chapter's stalker with their marks.
 
+## The arsenal (SYS-15)
+
+The user asked for five times the weapons (2026-10-12). The `arsenal` rule (remaster on, classic off) adds 44 weapons to the 11 active skills, 55 in all. Each is a row of data in `src/content/data/arsenal.ts`, generated with its names from one spec, and `GameEngine.fireArsenal` fires every row the same way:
+- Eleven kinds: volley (shots at the nearest enemy), burst (all around), spray (a wobbling stream), rear (behind the way the player moves), seeker (one shot at each of the nearest different enemies, or the boss first), strike (blows from above on enemies in range), nova (a blast around the player), lob (a blast where the target stood, after a delay), chain (hops between enemies), beam (an instant line, one way or four), and halo (a sweep of a band around the player).
+- Effects on every hit, in `dealDamage`: slow, stun, knockback, execution of an ordinary enemy left low, extra crit chance, and boss damage. Bosses shrug off slows and stuns.
+- The weapons are skills: `SkillId` is the 17 skills of 0.1.0 (`CoreSkillId`) and the arsenal's ids (`ArsenalId`). The catalog lists them as active skills, so drafts, slots, levels, awakenings, the HUD, the pause hub, and the settlement take them as they are. Cards print their damage and the number their kind grows by (`src/game/arsenal.ts`), and an awakening adds 35% damage, one more of its count, and 20% reach. Classic drafts never offer them.
+- Art: until the kit draws them, each weapon fires with its look (an active skill's art: shots, rings, beams, chains) and wears its look's tile with a two-syllable badge (`scripts/build-arsenal-art.mjs` writes `src/ui/art/arsenalArt.generated.css`). A projectile carries its weapon's id for hits and its look for the art.
+- Balance bots count every non-passive skill as active, so they take arsenal weapons when their favourites are not offered.
+
 ## Story beats (CON-06)
 
 The campaign had no story on screen: clearing 5-10 showed a banner and nothing else. CON-06 adds the lore bible's drafts (docs/lore §7) as story beats, all skippable, none over play (G15):

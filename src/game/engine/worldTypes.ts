@@ -5,7 +5,8 @@ import type { StringKey } from '../../i18n/text.ts';
 /** Which side an effect belongs to; signal colours follow ownership (BUG-14). */
 export type EffectOwner = 'player' | 'hostile';
 
-export type SkillId =
+/** The 17 skills of 0.1.0 (11 active, 6 passive). */
+export type CoreSkillId =
   | 'needleStorm'
   | 'fanKnives'
   | 'chainSpark'
@@ -23,6 +24,55 @@ export type SkillId =
   | 'coinFever'
   | 'eclipseStep'
   | 'executionMark';
+
+/** SYS-15: the arsenal's 44 weapons (src/content/data/arsenal.ts), active skills fired from data. */
+export type ArsenalId =
+  | 'inkDarts'
+  | 'brushQuills'
+  | 'sealArrows'
+  | 'frostNeedles'
+  | 'thunderNeedles'
+  | 'twinBlades'
+  | 'ghostVolley'
+  | 'headsmanDarts'
+  | 'paperStorm'
+  | 'inkBloom'
+  | 'thornHalo'
+  | 'starShards'
+  | 'sunNeedles'
+  | 'inkDrizzle'
+  | 'pinHail'
+  | 'tailGuard'
+  | 'smokeTail'
+  | 'gravePins'
+  | 'trackingSeals'
+  | 'huntersMarks'
+  | 'crowFeathers'
+  | 'bossbane'
+  | 'inkLightning'
+  | 'brushDownpour'
+  | 'fallingScroll'
+  | 'seventhSeal'
+  | 'inkPulse'
+  | 'frostRing'
+  | 'thunderclap'
+  | 'silenceBell'
+  | 'inkPots'
+  | 'clusterPots'
+  | 'tarJar'
+  | 'meteorBrush'
+  | 'sparkThread'
+  | 'stormThread'
+  | 'frostChainlet'
+  | 'inkLance'
+  | 'wideBrush'
+  | 'crossStrokes'
+  | 'judgmentLine'
+  | 'inkOrbit'
+  | 'wardRing'
+  | 'eclipseHalo';
+
+export type SkillId = CoreSkillId | ArsenalId;
 
 export type SkillState = {
   level: number;
@@ -164,6 +214,8 @@ export type Projectile = {
   pierce: number;
   knockback: number;
   skillId: SkillId;
+  /** SYS-15: the skill whose art draws this shot (an arsenal weapon's look; otherwise its own skill). */
+  look: SkillId;
   blockedBySolid: boolean;
   hitEnemyIds: Set<number>;
   /** SYS-01: the enemy this shot was aimed at (-1 for spread or flank shots); a miss counts against it. */

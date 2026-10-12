@@ -1334,7 +1334,7 @@ export class WorldRenderer {
     for (const projectile of this.world.projectiles) {
       const point = this.interpolated(projectile);
       if (!circleVisible(this.viewport, point.x, point.y, projectile.radius * 8)) continue;
-      if (this.skillArt && SKILL_SHOTS.has(projectile.skillId) && this.drawSkillShot(ctx, projectile, point.x, point.y)) continue;
+      if (this.skillArt && SKILL_SHOTS.has(projectile.look) && this.drawSkillShot(ctx, projectile, point.x, point.y)) continue;
       this.visual.drawFriendlyProjectile(ctx, {
         x: point.x,
         y: point.y,
@@ -1355,10 +1355,11 @@ export class WorldRenderer {
    * fly only from the awakened passive.
    */
   private drawSkillShot(ctx: CanvasRenderingContext2D, shot: Readonly<Projectile>, x: number, y: number) {
-    const group = shot.skillId;
+    // SYS-15: an arsenal weapon's shots wear its look's art, awakened when the weapon itself is.
+    const group = shot.look;
     const prefix = group === 'recoveryThread' || group === 'mirrorClone' ? 'shot-' : '';
     // A mirror clone's aimed shots (awakened) wear the awakened thread; its flank shots do not.
-    const awakened = group === 'mirrorClone' ? shot.aimTargetId >= 0 : group === 'recoveryThread' || this.world.skills[group]?.awakened;
+    const awakened = group === 'mirrorClone' ? shot.aimTargetId >= 0 : group === 'recoveryThread' || this.world.skills[shot.skillId]?.awakened;
     const suffix = awakened ? '-awakened' : '';
     const age = shot.maxLife - shot.life;
     const start = this.vfx.part(group, `${prefix}start${suffix}`)?.seconds ?? 0;

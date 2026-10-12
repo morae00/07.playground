@@ -23,7 +23,8 @@ test('enemy role selection is stable and gameplay-semantic', () => {
 });
 
 test('every combat visual exposes a future illustration slot without collisions', () => {
-  assert.equal(ILLUSTRATION_SLOTS.filter((slot) => slot.key.startsWith('game/projectile/skill-')).length, 17);
+  // The 17 skills of 0.1.0 and the arsenal's 44 weapons (SYS-15), each a future illustration.
+  assert.equal(ILLUSTRATION_SLOTS.filter((slot) => slot.key.startsWith('game/projectile/skill-')).length, 17 + 44);
   assert.equal(Object.keys(HOSTILE_PROJECTILE_ART).length, 5);
   assert.equal(Object.keys(HAZARD_ART).length, 9);
   const slots = ILLUSTRATION_SLOTS.map((slot) => slot.key);

@@ -47,7 +47,8 @@ test('UI-03: a skill card carries the level before the pick', () => {
 });
 
 test('UI-03: every card a draft can show has a baked tile, and skills have one or two tag chips', () => {
-  const css = readFileSync(new URL('../src/ui/art/uiArt.generated.css', import.meta.url), 'utf8');
+  // The arsenal's weapons (SYS-15) wear their look's tile through their own generated sheet.
+  const css = ['uiArt', 'arsenalArt'].map((sheet) => readFileSync(new URL(`../src/ui/art/${sheet}.generated.css`, import.meta.url), 'utf8')).join('\n');
   const tiles = new Set([...css.matchAll(/\.artTile\[data-art="([\w-]+)"\]/g)].map((match) => match[1]));
   withEngine((engine) => {
     for (const reason of ['level', 'boss']) {

@@ -170,6 +170,13 @@ export type RuleSet = Readonly<{
    * matters without crowding out the other roles. Numbers in src/content/data/bombers.ts.
    */
   bombers: boolean;
+  /**
+   * SYS-15 (user request 2026-10-12): five times the weapons. The arsenal's 44 weapons (src/content/data/arsenal.ts)
+   * join the drafts beside the 11 active skills, each fired from its row of data: volleys, bursts, sprays, shots
+   * behind, seekers, strikes, novas, lobs, chains, beams, and halos, with slows, stuns, knockback, execution, crits,
+   * and boss damage.
+   */
+  arsenal: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -210,6 +217,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   bossToughness: false,
   horde: false,
   bombers: false,
+  arsenal: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -250,6 +258,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   bossToughness: true,
   horde: true,
   bombers: true,
+  arsenal: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

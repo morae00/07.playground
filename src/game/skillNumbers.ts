@@ -4,7 +4,8 @@
 // the skill does in any language.
 // Damage entries are coefficients of the player's attack; per-level entries are the total at that level.
 import SKILL_NUMBER_TABLE from '../content/data/skillNumbers.ts';
-import type { SkillId } from './engine/worldTypes.ts';
+import type { ArsenalId, CoreSkillId, SkillId } from './engine/worldTypes.ts';
+import { ARSENAL, ARSENAL_AWAKENING as AWAKENING, ARSENAL_IDS, arsenalStats } from './arsenal.ts';
 import { text, type StringKey, type Text, type TextParam } from '../i18n/text.ts';
 import {
   COIN_FEVER_FRENZY_ATTACK_SPEED_MULTIPLIER,
@@ -66,7 +67,7 @@ const count = (n: number | string) => text('unit.count', { n });
 const times = (n: number | string) => text('unit.times', { n });
 
 /** A skill's numbers at a level. The level copy and the draft card's change rows (UI-03) both read these. */
-export const SKILL_LEVEL_STATS: Record<SkillId, (level: number) => SkillStats> = {
+const CORE_LEVEL_STATS: Record<CoreSkillId, (level: number) => SkillStats> = {
   needleStorm: (level) => [['stat.damage', `+${pct(gain(N.needleStorm.damage, level))}%`], ['stat.projectiles', count(needleCount(level, false))]],
   fanKnives: (level) => [['stat.knives', count(num(scaleAt(N.fanKnives.knives, level)))], ['stat.cooldown', `-${num(level * N.fanKnives.cooldownPerLevel)}s`]],
   chainSpark: (level) => [['stat.jumps', times(num(scaleAt(N.chainSpark.jumps, level)))], ['stat.damage', `+${pct(gain(N.chainSpark.damage, level))}%`]],
@@ -86,6 +87,24 @@ export const SKILL_LEVEL_STATS: Record<SkillId, (level: number) => SkillStats> =
   executionMark: (level) => [['stat.crit', `+${pct(scaleAt(N.executionMark.critChance, level))}%`], ['stat.bossDamage', `+${pct(scaleAt(N.executionMark.bossDamage, level))}%`]],
 };
 
+/** SYS-15: an arsenal weapon's card prints its damage and the number its kind grows by. */
+function arsenalLevelStats(id: ArsenalId) {
+  const weapon = ARSENAL[id];
+  return (level: number): SkillStats => {
+    const stats = arsenalStats(weapon, level, false);
+    const damage: StatLine = ['stat.damage', `${pct(stats.damage)}%`];
+    if (weapon.kind === 'chain') return [damage, ['stat.jumps', times(stats.jumps)]];
+    if (weapon.kind === 'nova' || weapon.kind === 'lob' || weapon.kind === 'halo') return [damage, ['stat.blastRadius', num(stats.radius)]];
+    if (weapon.kind === 'beam') return [damage, ['stat.cooldown', `${num(stats.cooldown)}s`]];
+    return [damage, ['stat.projectiles', count(stats.count)]];
+  };
+}
+
+export const SKILL_LEVEL_STATS: Record<SkillId, (level: number) => SkillStats> = {
+  ...CORE_LEVEL_STATS,
+  ...Object.fromEntries(ARSENAL_IDS.map((id) => [id, arsenalLevelStats(id)])),
+} as Record<SkillId, (level: number) => SkillStats>;
+
 /** The level copy: a skill's two numbers at a level on one line. */
 export function skillLevelText(id: SkillId, level: number): Text {
   const [[a, av], [b, bv]] = SKILL_LEVEL_STATS[id](level);
@@ -95,7 +114,7 @@ export function skillLevelText(id: SkillId, level: number): Text {
 const bonus = (scaling: Scaling) => scaling.awakened ?? 0;
 
 /** The awakening copy: each skill's template (skill.<id>.awakening) filled with the numbers it names. */
-export const SKILL_AWAKENING_TEXT: Record<SkillId, Text> = {
+const CORE_AWAKENING_TEXT: Record<CoreSkillId, Text> = {
   needleStorm: text('skill.needleStorm.awakening', { needles: N.needleStorm.awakenedNeedles, damage: pct(bonus(N.needleStorm.damage)), pierce: N.needleStorm.awakenedPierce, shard: pct(N.needleStorm.shardDamage) }),
   fanKnives: text('skill.fanKnives.awakening', { knives: num(bonus(N.fanKnives.knives)) }),
   chainSpark: text('skill.chainSpark.awakening', { jumps: num(bonus(N.chainSpark.jumps)), damage: pct(bonus(N.chainSpark.damage)), stun: num(N.chainSpark.stunSeconds) }),
@@ -114,6 +133,19 @@ export const SKILL_AWAKENING_TEXT: Record<SkillId, Text> = {
   eclipseStep: text('skill.eclipseStep.awakening', { radius: num(bonus(N.eclipseStep.radius)), damage: pct(N.eclipseStep.afterimageDamage) }),
   executionMark: text('skill.executionMark.awakening', { crit: pct(bonus(N.executionMark.critChance)), boss: pct(bonus(N.executionMark.bossDamage)), bonus: pct(N.executionMark.lowHpBossBonus) }),
 };
+
+/** SYS-15: an arsenal weapon's awakening names the count its kind grows (shots, blasts, or hops), if it has one. */
+function arsenalAwakening(id: ArsenalId): Text {
+  const { kind } = ARSENAL[id];
+  const numbers = { damage: pct(AWAKENING.damage - 1), reach: pct(AWAKENING.reach - 1) };
+  if (kind === 'nova' || kind === 'halo' || kind === 'beam') return text('skill.arsenal.awakening.reach', numbers);
+  return text('skill.arsenal.awakening', { ...numbers, count: text(kind === 'chain' ? 'stat.jumps' : 'stat.projectiles') });
+}
+
+export const SKILL_AWAKENING_TEXT: Record<SkillId, Text> = {
+  ...CORE_AWAKENING_TEXT,
+  ...Object.fromEntries(ARSENAL_IDS.map((id) => [id, arsenalAwakening(id)])),
+} as Record<SkillId, Text>;
 
 /** Classic rules (0.1.0) keep the old mirror clone awakening, which only copies rail shots. */
 export const CLASSIC_AWAKENING_TEXT: Partial<Record<SkillId, Text>> = {

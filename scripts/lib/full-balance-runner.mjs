@@ -43,10 +43,9 @@ export function personasById(ids) {
   });
 }
 
-const ACTIVE_SKILLS = new Set([
-  'needleStorm', 'fanKnives', 'chainSpark', 'frostLine', 'orbitScythes',
-  'boneMortar', 'railSpear', 'mirrorClone', 'voidMine', 'blackSun', 'eclipseStep',
-]);
+// Every skill but these six passives is active, the arsenal's weapons (SYS-15) included.
+const PASSIVE_SKILLS = new Set(['ironFrame', 'magnetSigil', 'paperWard', 'recoveryThread', 'coinFever', 'executionMark']);
+const ACTIVE_SKILLS = { has: (id) => typeof id === 'string' && !PASSIVE_SKILLS.has(id) };
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));

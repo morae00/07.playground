@@ -5,6 +5,7 @@ import { DEVELOPER_UI_AVAILABLE } from './platform/developerAccess';
 import { ErrorLog, crashLogLine, installGlobalErrorHandlers } from './platform/errorReport';
 import { ErrorBoundary, RecoveryScreen } from './ui/ErrorBoundary';
 import './ui/art/uiArt.generated.css';
+import './ui/art/arsenalArt.generated.css';
 import './styles.css';
 
 // Error resilience (TEC-14): the log and the global handlers exist before the app module loads, so even a
