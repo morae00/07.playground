@@ -50,6 +50,7 @@ import BUILD_DEPTH, { type FusionId } from '../content/data/buildDepth';
 import ELITES from '../content/data/elites';
 import BOSS_TOUGHNESS from '../content/data/bossToughness';
 import HORDE from '../content/data/horde';
+import BOMBERS from '../content/data/bombers';
 import { CHARGER, STALKER_FLOCK, SeparationGrid, WARDEN_SHIELD, enemyRole, flockSteer, leadAim, shieldCovers, turnToward } from './enemyBehaviors';
 import { LOGICAL_VIEW, SPAWN_MARGIN, classicViewFrame, logicalViewFrame, spawnFrameOrigin, type ViewFrame } from './viewPolicy';
 import {
@@ -2879,6 +2880,13 @@ export class GameEngine {
     const attackStyle = tier !== 'large' && rangedCount < rangedCap && this.gameplayRandom() < rangedChance
       ? 'ranged'
       : 'contact';
+    // SYS-14: some small contact spawns come as bombers.
+    const bomber = this.rules.bombers && tier === 'small' && attackStyle === 'contact' ? this.rollBomber(tierRoll.small) : undefined;
+    const bomberSpec = bomber ? BOMBERS[bomber] : null;
+    const bomberHp = bomber ? byMinute(infiniteDifficulty ? BOMBERS.infinite.hp : BOMBERS.campaign.hp, infiniteDifficulty ? this.elapsed / 60 : (this.chapter - 1) * 10 + this.stage) : 1;
+    let health = hpBase * effectiveDifficulty * (this.rules.horde ? HORDE.hp : 1) * (bomberSpec?.hp ?? 1) * bomberHp;
+    // SYS-14: an infinite bomber outlasts a moment of the player's focused fire (the boss pace, SYS-12).
+    if (bomber && infiniteDifficulty) health = Math.max(health, this.bossDps * BOMBERS.infinite.paceSeconds);
     // Breathers pay more for each kill (SYS-03).
     const rewardScale = director ? director.rewardScale(stageTime) : 1;
     const baseDamage = TIER_STATS.damage[mobTier(tier)]
@@ -2894,10 +2902,11 @@ export class GameEngine {
       vx: 0,
       vy: 0,
       radius,
-      hp: hpBase * effectiveDifficulty * (this.rules.horde ? HORDE.hp : 1),
-      maxHp: hpBase * effectiveDifficulty * (this.rules.horde ? HORDE.hp : 1),
-      speed,
+      hp: health,
+      maxHp: health,
+      speed: speed * (bomberSpec?.speed ?? 1),
       damage: baseDamage * (infiniteDifficulty?.enemyDamageScale ?? 1) * (this.rules.horde ? HORDE.damage : 1),
+      ...(bomber && bomberSpec ? { bomber, blastDamage: baseDamage * (infiniteDifficulty?.enemyDamageScale ?? 1) * bomberSpec.damage } : {}),
       xp: this.hordeReward(Math.round(TIER_STATS.xp[mobTier(tier)] * rewardScale), 'xp'),
       coin: this.hordeReward(Math.round(TIER_STATS.coin[mobTier(tier)] * rewardScale), 'coin'),
       tier,
@@ -3211,6 +3220,13 @@ export class GameEngine {
       enemy.slowMultiplier = slow.multiplier;
       enemy.slowTimer = slow.remaining;
       if (this.rules.terrainOnEnemies && !enemy.isBoss) this.applyTerrainToEnemy(enemy, dt);
+      // SYS-14: a planted bomber stands on its fuse, then goes off.
+      if (enemy.fuseAt !== undefined) {
+        enemy.vx = 0;
+        enemy.vy = 0;
+        if (this.elapsed - enemy.fuseAt >= BOMBERS.fuse.seconds) this.detonate(enemy);
+        continue;
+      }
       if (enemy.isBoss && enemy.boss) this.updateBossPattern(enemy, dt);
       if (enemy.stun > 0 || enemy.root > 0) continue;
       const role = enemy.isBoss ? null : enemyRole(enemy.tier, enemy.attackStyle);
@@ -3403,6 +3419,16 @@ export class GameEngine {
       }
 
       const touching = distance(enemy, this.player) < enemy.radius + HIT_RADIUS.playerContact;
+      if (touching && enemy.bomber) {
+        // SYS-14: a fuse bomber plants itself where it touched; a burst bomber goes off at once.
+        if (enemy.bomber === 'burst') {
+          this.detonate(enemy);
+        } else {
+          enemy.fuseAt = this.elapsed;
+          this.emit({ type: 'enemy/armed', x: enemy.x, y: enemy.y, radius: BOMBERS.fuse.radius, seconds: BOMBERS.fuse.seconds });
+        }
+        continue;
+      }
       if (touching && enemy.contactTimer <= 0) {
         enemy.contactTimer = enemy.isBoss ? 0.78 : 1;
         this.damagePlayer(enemy.damage, true, enemy.isBoss ? 'bossContact' : 'contact', enemy);
@@ -4703,6 +4729,29 @@ export class GameEngine {
   }
 
   /** `source` is where the hit comes from (the player unless a projectile, blast, or chain carries it), for shields. */
+  /** SYS-14: whether a small contact spawn comes as a bomber, and which kind; `smallShare` is the small spawns' share. */
+  protected rollBomber(smallShare: number): 'fuse' | 'burst' | undefined {
+    const table = this.runMode === 'infinite' ? BOMBERS.infinite : BOMBERS.campaign;
+    const at = this.runMode === 'infinite' ? this.elapsed / 60 : (this.chapter - 1) * 10 + this.stage;
+    if (at < table.share[0][0]) return undefined;
+    let alive = 0;
+    for (const enemy of this.enemies) if (enemy.bomber && enemy.hp > 0) alive += 1;
+    if (alive >= Math.round(byMinute(table.maxAlive, at))) return undefined;
+    if (this.gameplayRandom() >= byMinute(table.share, at) / Math.max(0.01, smallShare)) return undefined;
+    return this.gameplayRandom() < BOMBERS.fuseShare ? 'fuse' : 'burst';
+  }
+
+  /** SYS-14: a bomber goes off: everything in its reach is hit, and it is gone without paying anything. */
+  protected detonate(enemy: Entity) {
+    const kind = enemy.bomber ?? 'burst';
+    const { radius } = BOMBERS[kind];
+    const hit = distance(enemy, this.player) <= radius + HIT_RADIUS.playerContact;
+    if (hit) this.damagePlayer(enemy.blastDamage ?? enemy.damage, false, 'blast', enemy);
+    this.emit({ type: 'enemy/blast', x: enemy.x, y: enemy.y, radius, kind, hit });
+    enemy.detonated = true;
+    enemy.hp = 0;
+  }
+
   protected dealDamage(
     enemy: Entity,
     rawDamage: number,
@@ -4831,6 +4880,8 @@ export class GameEngine {
   }
 
   protected onEnemyKilled(enemy: Entity, suppressBossDraft = false) {
+    // SYS-14: a bomber that went off was not felled: no kill, no XP, no coins.
+    if (enemy.detonated) return;
     // SYS-13: while a strong build keeps the infinite run's field thin, each kill brings more, so the horde stays one.
     if (this.rules.horde && this.runMode === 'infinite' && !enemy.isBoss && this.elapsed > HORDE.fill.afterSeconds && this.enemies.length < this.enemyCap() * HORDE.fill.share) {
       this.spawnBudget += HORDE.fill.perKill;

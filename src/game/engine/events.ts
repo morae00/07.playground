@@ -5,7 +5,7 @@ import type { BossPattern, EnemyTier, SkillId } from './worldTypes.ts';
 
 export type ImpactTier = 'light' | 'heavy' | 'critical';
 /** What hurt the player: enemy bodies, ranged enemy shots, boss shots, shock zones, or fire ground. */
-export type PlayerDamageSource = 'contact' | 'bossContact' | 'shot' | 'bossShot' | 'shock' | 'fire';
+export type PlayerDamageSource = 'contact' | 'bossContact' | 'shot' | 'bossShot' | 'shock' | 'fire' | 'blast';
 export type AppliedOfferKind = 'skill' | 'awakening' | 'heal' | 'coins' | 'overdrive';
 
 export type GameEvent =
@@ -33,6 +33,9 @@ export type GameEvent =
   | { type: 'area/blast'; x: number; y: number; radius: number; source: SkillId }
   | { type: 'vortex/collapse'; x: number; y: number; radius: number; ring: boolean }
   | { type: 'shock/burst'; x: number; y: number }
+  /** SYS-14: a fuse bomber planted itself (its blast reach and fuse length), and a bomber went off. */
+  | { type: 'enemy/armed'; x: number; y: number; radius: number; seconds: number }
+  | { type: 'enemy/blast'; x: number; y: number; radius: number; kind: 'fuse' | 'burst'; hit: boolean }
   | { type: 'trap/sprung'; x: number; y: number }
   | { type: 'shot/blocked'; x: number; y: number }
   /** SYS-02: a warden's shield took a hit, and a charger ran into a wall. */

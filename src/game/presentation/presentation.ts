@@ -284,6 +284,16 @@ export class Presentation {
         this.burst(event.x, event.y, Math.round(28 * effects), '#050505', 280);
         this.addShake(11);
         return;
+      case 'enemy/armed':
+        this.play('bomber.fuse', event.x);
+        return;
+      case 'enemy/blast':
+        // SYS-14: the blast's reach flashes as a hostile ring, and a blast that caught the player shakes harder.
+        this.impactRings.push({ x: event.x, y: event.y, radius: event.radius, life: 0.3, maxLife: 0.3, tier: 'heavy', owner: 'hostile' });
+        this.burst(event.x, event.y, Math.round((event.kind === 'fuse' ? 30 : 18) * effects), '#050505', event.kind === 'fuse' ? 300 : 220);
+        this.addShake(event.hit ? 14 : 6);
+        this.play('bomber.blast', event.x);
+        return;
       case 'trap/sprung':
         this.burst(event.x, event.y, 12, '#111111', 120);
         return;

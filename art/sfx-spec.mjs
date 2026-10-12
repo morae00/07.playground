@@ -98,4 +98,8 @@ export const RECIPES = Object.freeze({
   'ambience.ch3': { variants: 1, loop: 8, layers: [{ noise: 'white', filter: 'bandpass', hz: 700, q: 0.6, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.8, lfo: { hz: 0.375, depth: 0.45 } }, { noise: 'white', filter: 'lowpass', hz: 220, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.6, lfo: { hz: 0.125, depth: 0.3 } }] },
   'ambience.ch4': { variants: 1, loop: 8, layers: [{ noise: 'white', filter: 'lowpass', hz: 300, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.35 }, ...Array.from({ length: 16 }, (_, index) => ({ tone: 'square', hz: index % 2 ? 1320 : 1760, attack: 0.001, decay: 0.012, gain: 0.18, at: index * 0.5 }))] },
   'ambience.ch5': { variants: 1, loop: 8, layers: [{ tone: 'sine', hz: 55, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.5, lfo: { hz: 0.125, depth: 0.5 } }, { noise: 'white', filter: 'highpass', hz: 4800, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.08, lfo: { hz: 0.5, depth: 0.8 } }] },
+  // SYS-14 bombers (appended, so every earlier file stays byte-identical): a fuse that hisses and ticks faster over
+  // its 1.15 s, and a blast with a low body under a burst of crackle.
+  'bomber.fuse': { variants: 2, layers: [{ noise: 'white', filter: 'highpass', hz: 4200, attack: 0.02, hold: 0.95, decay: 0.15, gain: 0.3 }, ...[0, 0.45, 0.75, 0.95].map((at, index) => ({ tone: 'square', hz: 1200 + index * 260, attack: 0.001, decay: 0.03, gain: 0.35, at }))] },
+  'bomber.blast': { variants: 3, layers: [{ noise: 'white', filter: 'lowpass', hz: 2400, to: 180, attack: 0.002, decay: 0.5, gain: 1 }, thud(90, 38, 0.4, 0.9), { noise: 'crackle', filter: 'highpass', hz: 2400, attack: 0.001, decay: 0.22, gain: 0.45 }] },
 });

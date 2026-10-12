@@ -73,6 +73,9 @@ const SOUND_CUES = {
   'ambience.ch3': cue('ambience', 1, 1, 0, [0, 0, 'sine', 0]),
   'ambience.ch4': cue('ambience', 1, 1, 0, [0, 0, 'sine', 0]),
   'ambience.ch5': cue('ambience', 1, 1, 0, [0, 0, 'sine', 0]),
+  // SYS-14 bombers: a planted fuse hisses and ticks toward its blast; the blast is the loudest thing on the field.
+  'bomber.fuse': cue('sfx', 4, 3, 0.08, [1500, 0.08, 'square', 0.7]),
+  'bomber.blast': cue('sfx', 5, 3, 0.05, [70, 0.32, 'sawtooth', 1.4]),
 } satisfies Record<string, CueSpec>;
 
 export default deepFreeze(SOUND_CUES);

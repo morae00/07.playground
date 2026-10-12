@@ -163,6 +163,13 @@ export type RuleSet = Readonly<{
    * flooding the economy. Numbers in src/content/data/horde.ts.
    */
   horde: boolean;
+  /**
+   * SYS-14 (user request 2026-10-12): bombers. From Ch1 St4 and from the infinite run's second minute, some small
+   * contact enemies come as bombers: a fuse kind plants itself on touch and blows a shown circle a second later, a
+   * burst kind blows up on touch. Their share grows with the stage and the minute, under a cap, so dodging them
+   * matters without crowding out the other roles. Numbers in src/content/data/bombers.ts.
+   */
+  bombers: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -202,6 +209,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   enrageOvertime: false,
   bossToughness: false,
   horde: false,
+  bombers: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -241,6 +249,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   enrageOvertime: true,
   bossToughness: true,
   horde: true,
+  bombers: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

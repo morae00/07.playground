@@ -96,6 +96,11 @@ export type Entity = {
   fieldBossAt?: number;
   /** SYS-12: the run time an infinite boss arrived, for the pace boss toughness measures. */
   bossAt?: number;
+  /** SYS-14: a bomber's kind, when a fuse bomber was planted (run time), its blast damage, and whether it went off. */
+  bomber?: 'fuse' | 'burst';
+  fuseAt?: number;
+  blastDamage?: number;
+  detonated?: boolean;
   /** SYS-10: an elite's affix; its shield, and when it was last hit (the shield comes back after a while untouched). */
   elite?: 'haste' | 'split' | 'shield' | 'drain';
   eliteShield?: number;

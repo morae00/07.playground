@@ -221,6 +221,15 @@
   ],
   "ambience.ch5": [
    "ambience.ch5-0.wav"
+  ],
+  "bomber.fuse": [
+   "bomber.fuse-0.wav",
+   "bomber.fuse-1.wav"
+  ],
+  "bomber.blast": [
+   "bomber.blast-0.wav",
+   "bomber.blast-1.wav",
+   "bomber.blast-2.wav"
   ]
  }
 }

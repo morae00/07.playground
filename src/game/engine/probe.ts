@@ -121,6 +121,8 @@ export type ProbeEnemySpec = {
   speed?: number;
   damage?: number;
   attackStyle?: Entity['attackStyle'];
+  /** SYS-14: a probe spawn is a plain enemy unless asked for a bomber ('rolled' keeps whatever the spawner rolled). */
+  bomber?: Entity['bomber'] | 'rolled';
 };
 
 export type ProbeBossRole = 'field' | 'mid' | 'final';
@@ -363,6 +365,11 @@ export class ProbedGameEngine extends GameEngine {
         if (spec.speed !== undefined) enemy.speed = spec.speed;
         if (spec.damage !== undefined) enemy.damage = spec.damage;
         if (spec.attackStyle !== undefined) enemy.attackStyle = spec.attackStyle;
+        if (spec.bomber !== 'rolled') {
+          delete enemy.bomber;
+          delete enemy.blastDamage;
+          if (spec.bomber) Object.assign(enemy, { bomber: spec.bomber, blastDamage: enemy.damage * 4 });
+        }
         this.rebuildEnemyIndex();
         return enemy.id;
       },

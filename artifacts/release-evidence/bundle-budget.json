@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 110246,
-      "kib": 107.66,
+      "bytes": 111053,
+      "kib": 108.45,
       "baselineBytes": 92420,
-      "growthRatio": 0.19288032893313134,
+      "growthRatio": 0.20161220515040035,
       "warningBytes": 106282,
       "failBytes": 115525,
       "status": "warning",
@@ -35,16 +35,16 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 1947079,
-      "kib": 1901.44,
+      "bytes": 1947793,
+      "kib": 1902.14,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 26877281,
-      "kib": 26247.34,
+      "bytes": 27047119,
+      "kib": 26413.2,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-CToCZJoB.js",
+      "file": "assets/App-CIGHIv1s.js",
       "category": "appJs",
-      "sourceBytes": 349270,
-      "gzipBytes": 106694
+      "sourceBytes": 352019,
+      "gzipBytes": 107500
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -117,8 +117,8 @@
     {
       "file": "assets/content/tables.json",
       "category": "data",
-      "sourceBytes": 33719,
-      "gzipBytes": 7063
+      "sourceBytes": 34433,
+      "gzipBytes": 7254
     },
     {
       "file": "assets/enemy-icons-BEkQ6ASU.webp",
@@ -133,16 +133,16 @@
       "gzipBytes": 113032
     },
     {
-      "file": "assets/index-BZzWQE5A.js",
-      "category": "appJs",
-      "sourceBytes": 7500,
-      "gzipBytes": 3552
-    },
-    {
       "file": "assets/index-B_KN61Qn.css",
       "category": "css",
       "sourceBytes": 61084,
       "gzipBytes": 15851
+    },
+    {
+      "file": "assets/index-DLuAtnNx.js",
+      "category": "appJs",
+      "sourceBytes": 7500,
+      "gzipBytes": 3553
     },
     {
       "file": "assets/keyart-DFQzyQdB.webp",
@@ -293,6 +293,36 @@
       "category": "audio",
       "sourceBytes": 352844,
       "gzipBytes": 345907
+    },
+    {
+      "file": "assets/packs/sfx-common/bomber.blast-0.wav",
+      "category": "audio",
+      "sourceBytes": 23020,
+      "gzipBytes": 12060
+    },
+    {
+      "file": "assets/packs/sfx-common/bomber.blast-1.wav",
+      "category": "audio",
+      "sourceBytes": 21868,
+      "gzipBytes": 11240
+    },
+    {
+      "file": "assets/packs/sfx-common/bomber.blast-2.wav",
+      "category": "audio",
+      "sourceBytes": 23468,
+      "gzipBytes": 12411
+    },
+    {
+      "file": "assets/packs/sfx-common/bomber.fuse-0.wav",
+      "category": "audio",
+      "sourceBytes": 50654,
+      "gzipBytes": 47028
+    },
+    {
+      "file": "assets/packs/sfx-common/bomber.fuse-1.wav",
+      "category": "audio",
+      "sourceBytes": 49944,
+      "gzipBytes": 46793
     },
     {
       "file": "assets/packs/sfx-common/boss.clock-0.wav",
@@ -825,8 +855,8 @@
     {
       "file": "assets/packs/sfx-common/pack.json",
       "category": "data",
-      "sourceBytes": 4185,
-      "gzipBytes": 819
+      "sourceBytes": 4355,
+      "gzipBytes": 851
     },
     {
       "file": "assets/packs/sfx-common/pickup.coin-0.wav",

@@ -29,6 +29,7 @@ import { motionPolicy } from '../visualContracts.ts';
 import { clamp, distance } from '../worldMath.ts';
 import { CORPSE_FALL_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HURT_VIGNETTE_SECONDS, STAIN_DRY_SECONDS, STAIN_FADE_SECONDS, STAIN_SECONDS } from '../presentation/presentation.ts';
 import { WARDEN_SHIELD } from '../enemyBehaviors.ts';
+import BOMBERS from '../../content/data/bombers.ts';
 import { AnimationBook, SPAWN_SECONDS, enemyPoses, heroPoses, poseFrame, stepBossAnim, stepEnemyAnim, stepPlayerAnim, type AnimState, type EnemyAnim } from './animation.ts';
 import { phaseFor, type GroundTile, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
 import { CHAPTER_PACKS, COMMON_PACK, FX_SLOT, HERO_SLOT, PICKUP_SLOT, bossSlot, bossState, enemyDrawScale, enemySlot, frameKey, pickupState, slotEnabled, type BossPose, type BossSlot } from './assets/slots.ts';
@@ -883,7 +884,39 @@ export class WorldRenderer {
       ctx.stroke();
       ctx.restore();
     }
+    this.drawBomberFuses(ctx);
     this.drawImpactRings(ctx, 'hostile');
+  }
+
+  /**
+   * SYS-14: a planted fuse bomber's blast reach, in the amber warning family: the circle's edge from the moment it
+   * plants, and a fill growing from the centre to the edge as the fuse burns, so how long and how far both read.
+   * The rim thickens for the last third (V3).
+   */
+  private drawBomberFuses(ctx: CanvasRenderingContext2D) {
+    const { radius, seconds } = BOMBERS.fuse;
+    for (const enemy of this.world.enemies) {
+      if (enemy.fuseAt === undefined || enemy.hp <= 0) continue;
+      if (!circleVisible(this.viewport, enemy.x, enemy.y, radius)) continue;
+      const progress = clamp((this.world.elapsed - enemy.fuseAt) / seconds, 0, 1);
+      ctx.save();
+      ctx.fillStyle = SIGNAL.warn;
+      ctx.globalAlpha = 0.12;
+      ctx.beginPath();
+      ctx.arc(enemy.x, enemy.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.28;
+      ctx.beginPath();
+      ctx.arc(enemy.x, enemy.y, radius * progress, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.9;
+      ctx.strokeStyle = SIGNAL.warn;
+      ctx.lineWidth = progress > 0.66 ? 5 : 3;
+      ctx.beginPath();
+      ctx.arc(enemy.x, enemy.y, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   /** Marks on the floor under every body: foot shadows, the player's foot ring, and ranged-enemy rings. */
@@ -1008,7 +1041,39 @@ export class WorldRenderer {
       const over = body.top - (showHealth ? 26 : 12);
       if (enemy.elite) this.drawEliteMark(ctx, enemy.elite, body.x, over);
       if (enemy.stun > 0 && !enemy.isBoss) this.drawStunMark(ctx, body.x, enemy.elite ? over - 14 : over, enemy.id);
+      if (enemy.bomber && enemy.fuseAt === undefined) this.drawBomberMark(ctx, enemy.bomber, body.x, body.y, enemy.radius, over, enemy.id);
     }
+  }
+
+  /**
+   * SYS-14: a bomber reads from afar. A fuse bomber wears the amber warning ring and a lit spark over its head; a
+   * burst bomber a doubled hostile ring that throbs (steady when motion is reduced).
+   */
+  private drawBomberMark(ctx: CanvasRenderingContext2D, kind: 'fuse' | 'burst', x: number, y: number, radius: number, over: number, id: number) {
+    const policy = motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion);
+    const beat = policy.reduced ? 0.5 : 0.5 + 0.5 * Math.sin(this.world.elapsed * 9 + phaseFor(id) * Math.PI * 2);
+    ctx.save();
+    ctx.lineWidth = 2.5;
+    if (kind === 'fuse') {
+      ctx.strokeStyle = SIGNAL.warn;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.arc(x, y, radius + 5, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = SIGNAL.warn;
+      ctx.beginPath();
+      ctx.arc(x, over - 3, 3 + beat * 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.strokeStyle = SIGNAL.hostile;
+      for (const reach of [radius + 4, radius + 9 + beat * 3]) {
+        ctx.beginPath();
+        ctx.arc(x, y, reach, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
   }
 
   /** Three ink dots circling over a stunned enemy's head (SYS-02 wall stun, chain spark stun). */

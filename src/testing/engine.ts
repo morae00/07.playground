@@ -4,6 +4,7 @@ export { GameEngine, SKILLS, SKILL_IDS, suspendedRunReward } from '../game/GameE
 export { default as BUILD_DEPTH } from '../content/data/buildDepth';
 export { default as BOSS_TOUGHNESS } from '../content/data/bossToughness';
 export { default as HORDE } from '../content/data/horde';
+export { default as BOMBERS } from '../content/data/bombers';
 export { ProbedGameEngine } from '../game/engine/probe';
 export { createEngineHarness, replaySnapshot } from '../game/engine/harness';
 export * from '../game/engine/replay';

@@ -370,6 +370,15 @@ The user asked for far more monsters (2026-10-12). The `horde` rule (remaster on
 - Measured with the striker bot (Ch4 St7 and the infinite run): campaign fields peak near 190 instead of 95; a maxed infinite run keeps 85-105 enemies on the field instead of 11-36 and fells about 47,000 instead of 5,400 in 20 minutes. Mid builds survive as long as with boss toughness alone.
 - The release performance gate's stress scene has 400 enemies now (docs/QUALITY_GATES.md).
 
+## Bombers (SYS-14)
+
+The user asked for self-destructing monsters from a certain level, more of them later and over time, whose dodging decides clears without erasing the other roles (2026-10-12). The `bombers` rule (remaster on, classic off) has its numbers in `src/content/data/bombers.ts`:
+- Some small contact spawns come as bombers: from Ch1 St4 (4% of spawns, 10% at Ch2 St10, 18% at Ch5 St10) and from the infinite run's second minute (4%, 10% at minute 10, 20% at minute 25), with at most 4-18 (campaign) or 4-28 (infinite) alive. 70% are fuses.
+- A fuse bomber that touches the player plants itself: it stops, and an amber circle of its 100-unit reach fills from the centre over 1.15 s (the rim thickens for the last third); then everything inside is hit. Stepping out dodges it; killing it first defuses it. A burst bomber is faster and goes off the moment it touches, over 60 units. Unplanted bombers wear marks that read from afar: the fuse an amber dashed ring and a lit spark, the burst a throbbing doubled hostile ring (steady under reduced motion).
+- A blast deals 5 (fuse) or 3 (burst) times a small enemy's contact damage there as a non-physical hit, and pays no XP or coins (`enemy/blast`, no kill). Bombers have 2.5 (fuse) or 1.6 (burst) times a small enemy's health, more on later stages and minutes, and in the infinite run at least half a second of the pace the player fells bosses at (SYS-12), so a strong build cannot melt them all at the screen edge.
+- Sounds: `bomber.fuse` (a hiss ticking faster) and `bomber.blast`, appended to the SFX recipes. The blast flashes its reach as a hostile ring and shakes the screen, harder when it caught the player.
+- Striker bot, 25 minutes of the infinite run: maxed runs take 9-25 blasts and two of three reach minute 24; mid builds last 8.5-18.3 minutes (one died to a blast). Kit art for the two bombers is a work order; until then they draw as the chapter's stalker with their marks.
+
 ## Story beats (CON-06)
 
 The campaign had no story on screen: clearing 5-10 showed a banner and nothing else. CON-06 adds the lore bible's drafts (docs/lore §7) as story beats, all skippable, none over play (G15):
