@@ -315,6 +315,8 @@ export async function runFullBalanceBatch({
         let lowestHp = 1;
         let hits = 0;
         let minimumHits = 0;
+        // SYS-12: on a boss stage, the run time when the stage boss fell.
+        let bossKillSeconds = null;
         engine = new ProbedGameEngine(createHeadlessCanvas(), progressionMeta(address.chapter, persona), standardOptions(), {
           onSnapshot(snapshot) {
             latestSnapshot = snapshot;
@@ -345,6 +347,7 @@ export async function runFullBalanceBatch({
         if (process.env.BALANCE_RULE_PATCH) engine.probe.patchRules(JSON.parse(process.env.BALANCE_RULE_PATCH));
         engine.subscribe((event) => {
           if (event.type === 'player/died') death = event;
+          if (event.type === 'enemy/killed' && event.isBoss && bossKillSeconds === null && latestSnapshot?.stageKind !== 'normal') bossKillSeconds = engine.probe.hud().elapsed;
           if (event.type === 'player/hurt') {
             hits += 1;
             if (event.damage <= 1 + 1e-9) minimumHits += 1;
@@ -380,6 +383,7 @@ export async function runFullBalanceBatch({
           coins: settlement?.coins ?? world.player.coins,
           hpRatio: round(world.player.hp / Math.max(1, world.player.stats.maxHp), 5),
           bossHpRatio: mainBoss ? round(mainBoss.hp / mainBoss.maxHp, 5) : null,
+          bossKillSeconds: bossKillSeconds === null ? null : round(bossKillSeconds),
           // CON-03: whether the stage's bonus goal was met (null on stages without one).
           bonus: settlement?.bonus ? settlement.bonus.met : null,
           lowestHpRatio: round(Math.max(0, lowestHp), 4),

@@ -151,6 +151,12 @@ export type RuleSet = Readonly<{
    * the bosses deal 25% more damage and move 8% faster, so a boss fight that neither side ends ends anyway.
    */
   enrageOvertime: boolean;
+  /**
+   * SYS-12 (user request 2026-10-12): bosses are much harder to fell. Boss stage and field bosses take more health
+   * and hit harder, and the infinite run's round bosses take a health factor by the minute they arrive, aimed at
+   * 20-35 s fights for a strong build. Numbers in src/content/data/bossToughness.ts.
+   */
+  bossToughness: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -188,6 +194,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   eliteAffixes: false,
   infiniteRotation: false,
   enrageOvertime: false,
+  bossToughness: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -225,6 +232,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   eliteAffixes: true,
   infiniteRotation: true,
   enrageOvertime: true,
+  bossToughness: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

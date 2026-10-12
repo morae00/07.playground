@@ -95,6 +95,20 @@ export function infiniteDifficultyAt(elapsedSeconds: number, bossKills = 0): Inf
   };
 }
 
+/** A value from (minute, value) points: straight lines between them, flat before the first and after the last. */
+export function byMinute(points: readonly (readonly [number, number])[], minute: number) {
+  if (points.length === 0) return 1;
+  if (minute <= points[0][0]) return points[0][1];
+  for (let index = 1; index < points.length; index += 1) {
+    const [x1, y1] = points[index];
+    if (minute <= x1) {
+      const [x0, y0] = points[index - 1];
+      return y0 + ((y1 - y0) * (minute - x0)) / (x1 - x0);
+    }
+  }
+  return points[points.length - 1][1];
+}
+
 export function infiniteKillScore(tier: InfiniteEnemyTier, elapsedSeconds: number, bossKillsBefore = 0) {
   const base = tier === 'small' ? 30 : tier === 'medium' ? 75 : tier === 'large' ? 180 : tier === 'fieldBoss' ? 900 : 2_500;
   const timeMultiplier = 1 + Math.min(2.5, finiteNonNegative(elapsedSeconds) / 1_800);

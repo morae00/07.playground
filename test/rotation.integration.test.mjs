@@ -8,7 +8,7 @@ import { createHeadlessCanvas, holdDirection, installHeadlessPlatform, localeTab
 // seeds come from the local date, and their runs are as deterministic as any seed (G14).
 installHeadlessPlatform();
 Object.defineProperty(globalThis, 'performance', { value: { now: () => 0 }, configurable: true });
-const { ProbedGameEngine, OBSTACLE_CATALOGUE, INFINITE_ROTATION, dailySeed, infiniteKillScore, installStrings, weeklySeed } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
+const { ProbedGameEngine, OBSTACLE_CATALOGUE, BOSS_TOUGHNESS, INFINITE_ROTATION, dailySeed, infiniteKillScore, installStrings, weeklySeed } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
 installStrings(localeTable('ko'));
 
 function run({ rules = 'remaster', seed = 4242, viewport = [1440, 900], options = {}, god = true } = {}) {
@@ -99,11 +99,12 @@ test('CON-08: 150 s into a chapter its field boss comes beside the round boss, a
     assert.equal(field?.boss.id, 'field-shock', 'the chapter on screen sends its own');
     assert.equal(probe.hud().bossId, roundBoss(probe).boss.id, 'the boss bar keeps to the round boss');
 
-    // The round bosses keep coming while it lives, and it stands at a share of one that came at the same minute.
+    // The round bosses keep coming while it lives, and it stands at a share of one that came at the same minute
+    // (SYS-12 toughens field bosses by their own factor, round bosses by at least 1).
     fellRoundBoss(probe);
     assert.ok(fieldBoss(probe));
     const share = fieldBoss(probe).maxHp / roundBoss(probe).maxHp;
-    assert.ok(share > 0.35 && share < INFINITE_ROTATION.fieldBossHp + 0.01, `${(share * 100).toFixed(1)}% of a round boss`);
+    assert.ok(share > 0.35 && share < INFINITE_ROTATION.fieldBossHp * BOSS_TOUGHNESS.infinite.fieldHp + 0.01, `${(share * 100).toFixed(1)}% of a round boss`);
     const before = probe.hud();
     probe.removeEnemies(probe.read().enemies.filter((enemy) => !enemy.isBoss).map((enemy) => enemy.id));
     probe.patchEnemy(fieldBoss(probe).id, { hp: 0 });

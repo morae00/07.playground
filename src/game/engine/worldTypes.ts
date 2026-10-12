@@ -94,6 +94,8 @@ export type Entity = {
   bossPhaseFlash: number;
   /** CON-03, D-04: the stage time a stage objective's field boss appeared at (timed field boss goals). */
   fieldBossAt?: number;
+  /** SYS-12: the run time an infinite boss arrived, for the pace boss toughness measures. */
+  bossAt?: number;
   /** SYS-10: an elite's affix; its shield, and when it was last hit (the shield comes back after a while untouched). */
   elite?: 'haste' | 'split' | 'shield' | 'drain';
   eliteShield?: number;

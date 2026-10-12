@@ -354,6 +354,14 @@ The infinite run kept Ch1's look for good, had no field bosses, and had no daily
 - `test/rotation.integration.test.mjs` covers the turn, the pillars, the rosters, the field boss, the classic run, and the codex. It pins the date seeds for 2026-10-01 and replays a scripted daily run in another window and with other options to the same state (G14).
 - The result copy already names the rules version (`rulesLabel`). No build has shipped the remaster rules yet, so CON-08 stays under RULES_VERSION 2 (`src/game/rules.ts`), and the v1 records stay apart as legacy.
 
+## Boss toughness (SYS-12)
+
+Bosses fell in seconds: a maxed build killed the infinite run's round bosses in a median 2.8-3.7 s between minutes 5 and 20. The `bossToughness` rule (remaster on, classic off; user request 2026-10-12) makes them fights, with the numbers in `src/content/data/bossToughness.ts`:
+- Boss stage bosses take 1.6 times the health and deal 1.2 times the damage; field bosses on normal stages 2 and 1.15.
+- An infinite boss takes a factor by the minute it arrives (1 at the start, 1.5 by minute 25; field bosses 1.2) and deals 1.15 times the damage. Its health is also at least 25 s (field bosses 15 s) of the pace the player felled the last bosses at (each fight's health per second, blended half and half). A strong build meets real fights, a weaker one only the minute factor, and the run's first boss has no pace yet. The pace is measured from the run, so replays stay exact.
+- A boss pays its health over its untoughened health in XP and coins, up to three times. Without that, slower boss kills starved the run of levels, and a mid build died to the crowd by minute 8.
+- Measured with the striker bot, three seeds, 25 minutes: maxed round bosses fall in a median 18-25 s in every five-minute span and all three runs reach minute 24; mid builds (half the upgrades) take 21-31 s and one of three runs reaches minute 24 (before: all three past minute 22). Maxed boss stage bosses take 66-145 s instead of 51-114 s, and boss stage clears barely move. `scripts/lib/full-balance-runner.mjs` reports `bossKillSeconds` for boss stages.
+
 ## Story beats (CON-06)
 
 The campaign had no story on screen: clearing 5-10 showed a banner and nothing else. CON-06 adds the lore bible's drafts (docs/lore §7) as story beats, all skippable, none over play (G15):

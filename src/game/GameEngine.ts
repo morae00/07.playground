@@ -48,6 +48,7 @@ import { CHECK_CONTENT_AT_LOAD } from '../content/checks';
 import CATALOG from '../content/data/catalog';
 import BUILD_DEPTH, { type FusionId } from '../content/data/buildDepth';
 import ELITES from '../content/data/elites';
+import BOSS_TOUGHNESS from '../content/data/bossToughness';
 import { CHARGER, STALKER_FLOCK, SeparationGrid, WARDEN_SHIELD, enemyRole, flockSteer, leadAim, shieldCovers, turnToward } from './enemyBehaviors';
 import { LOGICAL_VIEW, SPAWN_MARGIN, classicViewFrame, logicalViewFrame, spawnFrameOrigin, type ViewFrame } from './viewPolicy';
 import {
@@ -100,6 +101,7 @@ import type { SoundOutput } from './audioPolicy';
 import {
   INFINITE_BASELINE,
   INFINITE_ROTATION,
+  byMinute,
   infiniteDifficultyAt,
   infiniteKillScore,
   infiniteScoreWithSurvival,
@@ -884,6 +886,8 @@ export class GameEngine {
   /** UI-05 settlement tallies, per stage; presentation only, the simulation never reads them. */
   protected damageTakenTotal = 0;
   protected damageBySkill: Partial<Record<SkillId, number>> = {};
+  /** SYS-12: how fast the player felled infinite bosses lately (health per second, blended over the fights). */
+  protected bossDps = 0;
   protected infiniteEventScore = 0;
   protected infiniteBossKills = 0;
   protected infiniteBossRespawnTimer = 0;
@@ -1176,6 +1180,7 @@ export class GameEngine {
     this.stageCoinsEarned = 0;
     this.damageTakenTotal = 0;
     this.damageBySkill = {};
+    this.bossDps = 0;
     this.infiniteEventScore = 0;
     this.infiniteBossKills = 0;
     this.infiniteBossRespawnTimer = 0;
@@ -1808,6 +1813,7 @@ export class GameEngine {
     this.chapterShownAt = 0;
     this.chapterTurns = 0;
     this.damageBySkill = {};
+    this.bossDps = 0;
     this.draftQueue = [];
     this.elapsed = 0;
     this.enemies = [];
@@ -3022,6 +3028,10 @@ export class GameEngine {
     const hunted = kind === 'normal' && !legacy ? this.stageObjective?.fieldBossScale : undefined;
     const scale = (kind === 'normal' ? (legacy ? 0.42 : 0.34) : 0.72) * (hunted?.hp ?? 1);
     const stageScale = kind === 'normal' ? 1 + (this.chapter - 1) * 0.18 + (this.stage - 1) * 0.08 : 1;
+    // SYS-12: tougher bosses (not the classic legacy boss).
+    const tough = this.rules.bossToughness && !legacy ? BOSS_TOUGHNESS.campaign : null;
+    const toughHp = tough ? (kind === 'normal' ? tough.fieldHp : tough.roundHp) : 1;
+    const toughDamage = tough ? (kind === 'normal' ? tough.fieldDamage : tough.roundDamage) : 1;
     const boss: Entity = {
       id: this.nextId(),
       x,
@@ -3031,10 +3041,10 @@ export class GameEngine {
       vx: 0,
       vy: 0,
       radius: kind === 'normal' ? ENEMY_RADIUS.fieldBoss : ENEMY_RADIUS.boss,
-      hp: def.hp * stageScale * scale,
-      maxHp: def.hp * stageScale * scale,
+      hp: def.hp * stageScale * scale * toughHp,
+      maxHp: def.hp * stageScale * scale * toughHp,
       speed: def.speed * (kind === 'normal' ? 1.06 : 1),
-      damage: def.damage * stageScale * (kind === 'normal' ? 0.72 : 0.62) * (hunted?.damage ?? 1),
+      damage: def.damage * stageScale * (kind === 'normal' ? 0.72 : 0.62) * (hunted?.damage ?? 1) * toughDamage,
       xp: kind === 'normal' ? 90 : 220 + this.chapter * 45,
       coin: kind === 'normal' ? 24 + this.chapter * 5 : 80 + this.chapter * 18,
       tier: 'boss',
@@ -3104,7 +3114,15 @@ export class GameEngine {
     const { x, y } = this.bossSpawnPoint(this.gameplayRandom() * Math.PI * 2);
     const patternHealth = 1 + (def.role === 'final' ? 0.12 : 0) + (def.chapter - 1) * 0.025;
     const patternDamage = 1 + (def.role === 'final' ? 0.08 : 0) + (def.chapter - 1) * 0.015;
-    const hp = INFINITE_BASELINE.bossHp * (field ? difficulty.enemyHealthScale * INFINITE_ROTATION.fieldBossHp : difficulty.bossHealthScale) * patternHealth;
+    // SYS-12: round bosses take the toughness of the minute they arrive and field bosses a flat factor, and none can
+    // fall faster than the target fight at the pace the player felled the last bosses.
+    const tough = this.rules.bossToughness ? BOSS_TOUGHNESS.infinite : null;
+    const toughHp = tough ? (field ? tough.fieldHp : byMinute(tough.roundHp, difficulty.minute)) : 1;
+    const scaledHp = INFINITE_BASELINE.bossHp * (field ? difficulty.enemyHealthScale * INFINITE_ROTATION.fieldBossHp : difficulty.bossHealthScale) * patternHealth * toughHp;
+    const floorHp = tough ? this.bossDps * tough.focus.seconds * (field ? tough.focus.fieldScale : 1) : 0;
+    const hp = Math.max(scaledHp, floorHp);
+    // A tougher boss pays for the longer fight, so the run's XP and coins keep their pace.
+    const reward = tough ? Math.min(tough.rewardCap, hp / (scaledHp / toughHp)) : 1;
     const boss: Entity = {
       id: this.nextId(),
       x,
@@ -3117,9 +3135,10 @@ export class GameEngine {
       hp,
       maxHp: hp,
       speed: Math.min(178, def.speed * difficulty.enemySpeedScale),
-      damage: INFINITE_BASELINE.bossDamage * (field ? difficulty.enemyDamageScale * INFINITE_ROTATION.fieldBossDamage : difficulty.bossDamageScale) * patternDamage,
-      xp: field ? 90 : 220 + this.infiniteBossKills * 18,
-      coin: field ? 24 + this.chapterTurns * 5 : 80 + this.infiniteBossKills * 6,
+      damage: INFINITE_BASELINE.bossDamage * (field ? difficulty.enemyDamageScale * INFINITE_ROTATION.fieldBossDamage : difficulty.bossDamageScale) * patternDamage * (tough?.damage ?? 1),
+      ...(tough ? { bossAt: this.elapsed } : {}),
+      xp: (field ? 90 : 220 + this.infiniteBossKills * 18) * reward,
+      coin: Math.round((field ? 24 + this.chapterTurns * 5 : 80 + this.infiniteBossKills * 6) * reward),
       tier: 'boss',
       variant: Math.floor(this.gameplayRandom() * 5),
       isBoss: true,
@@ -4794,6 +4813,12 @@ export class GameEngine {
   }
 
   protected onEnemyKilled(enemy: Entity, suppressBossDraft = false) {
+    // SYS-12: the pace this boss fell at, blended into the estimate the next boss's health floor reads.
+    if (enemy.bossAt !== undefined) {
+      const pace = enemy.maxHp / Math.max(1, this.elapsed - enemy.bossAt);
+      const blend = BOSS_TOUGHNESS.infinite.focus.blend;
+      this.bossDps = this.bossDps > 0 ? this.bossDps * (1 - blend) + pace * blend : pace;
+    }
     this.player.kills += 1;
     this.stageKills += 1;
     if (enemy.isBoss) this.bossesDefeated += 1;
