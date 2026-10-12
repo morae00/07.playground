@@ -83,7 +83,7 @@
 - S2 · `sound-designer`: "작업 요청: `art/audio/sfx-audit.md`에서 승인된 항목 `<목록>`만 `art/sfx-spec.mjs`에 반영하고 다시 굽고 테스트해라. 기존 큐의 `variants` 수는 바꾸지 말고, 새 레시피는 끝에 붙여라." 메인 세션이 AUD-02 항목으로 커밋한다.
 - 음악 파일은 작곡가나 음악 도구가 `public/assets/packs/music/`에 넣는다(파일 이름은 handoff §3). 들어오면 S3 · `sound-designer`가 `afinfo`로 형식·길이를 확인하고, 메인 세션이 AUD-03 재생 코드를 만든다.
 
-## 6단계 (보류) — D-15 이야기 패널 6장
+## 6단계 — D-15 이야기 패널 6장 (2026-10-12 사용자 "모두 권장값으로": (b)로 진행, R5 실행서 B4·K6)
 
 - **[확인]** D-15는 "프롤로그 4장과 엔딩 핵심 2장을 손그림으로"였다. 에이전트가 그리면 전용 일러스트(새 모듈 `k-story.js`)가 되고, 스타일 바이블 §15에 따라 여전히 잠정 아트다. 이 방식으로 바꿀지 사용자에게 확인한 뒤에 시작한다.
 - 시작하면 순서는 같다: `art-director` 작업 지시서(`docs/art/briefs/story-panels.md`, 1200×675, 글자 없음, `story.json`의 문구와 로어 바이블 §7) → `kit-artist` K6(`k-story.js`) → 검수 → 메인 세션이 `art/ui-art-spec.mjs`의 `STORY_PANELS`를 새 모듈로 바꾸고 `node scripts/build-ui-art.mjs story`로 굽는다(CON-06).

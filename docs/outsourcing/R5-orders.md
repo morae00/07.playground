@@ -1,0 +1,51 @@
+# R5 외주 발주 실행서
+
+| 항목 | 내용 |
+|---|---|
+| 상태 | 발주 준비 완료. R4 실행서(`docs/outsourcing/R4-orders.md`) §0의 규칙과 단계 순서를 그대로 쓴다 |
+| 근거 | 2026-10-12 사용자 요청: 자폭 몹(SYS-14, 6d3901c), 무기 44종(SYS-15, e5d9464), 캐릭터 8명(CON-10, 43ecd8b). 같은 날 "모두 권장값으로": D-15 (b) 이야기 패널은 프롤로그 4장과 엔딩 핵심 2장만 손그림 |
+| 지금 그림 | 자폭 몹은 그 장의 추적자(stalker) 그림에 표식만 얹는다. 무기 44종은 비슷한 기존 스킬(look)의 그림과 타일에 두 글자 배지를 단다. 캐릭터 7명은 주인공 '결'의 그림을 그대로 쓴다. 게임 동작은 모두 끝났고 그림만 기다린다 |
+| 담당 | `art-director`(지시서·검수), `kit-artist`(킷 모듈만), `sound-designer`(소리) |
+
+**시작하는 법:** 새 Claude Code 세션에서 "docs/outsourcing/R5-orders.md 순서대로 외주를 진행해줘"라고 요청한다.
+
+## 1단계 — 작업 지시서 (`art-director`, 서로 기다리지 않음)
+
+공통 머리말: "작업 지시서 요청. `.claude/agents/CONTEXT.md`, 스타일 바이블, 아래 게임 쪽 정의를 읽고 네 정의의 지시서 형식으로 돌려라. 파일은 고치지 마라."
+
+| # | 지시서 저장 경로 | 무엇을 | 게임 쪽 정의 |
+|---|---|---|---|
+| B1 | `docs/art/briefs/bombers.md` | 자폭 몹 2종 × 5장: 심지형(닿으면 멈춰 심지가 타는 자세)과 즉시형(빠르게 달려드는 자세). 이동 프레임, 심은 자세, 터지는 순간 1장. 멀리서도 일반 추적자와 구별되는 실루엣(심지·도화선·몸통의 터질 듯한 형태). 표식(호박색 점선 고리·불꽃, 겹 적색 고리)은 렌더러가 따로 그리므로 그림에 넣지 않는다 | `src/content/data/bombers.ts`, `docs/ARCHITECTURE.md` "Bombers (SYS-14)" |
+| B2 | `docs/art/briefs/characters.md` | 캐릭터 7명(단·노을·서리·독·휘·령·월)의 게임 스프라이트(주인공과 같은 상태·프레임: idle·move·hurt·throw·death)와 초상(HUD·메뉴 카드). 시작 무기와 성격이 실루엣에 드러나게(예: 독은 먹단지 짐, 휘는 큰 붓). 얼굴은 R4 얼굴 리뷰 처방대로 한 시점에서 | `src/content/data/characters.ts`, 이름·칭호·한 줄 소개는 `public/assets/content/strings/ko.json`의 `character.*` |
+| B3 | `docs/art/briefs/arsenal-icons.md` | 무기 44종 타일(평상·각성 88칸)과, 투사체가 있는 무기의 탄 모양. 같은 look을 쓰는 무기끼리 한눈에 구별되게(무기 이름 두 글자 배지는 그림이 들어오면 뗀다) | `src/content/data/arsenal.ts`(kind·look·효과), 이름·요약은 `skill.<id>`·`skill.<id>.summary` |
+| B4 | `docs/art/briefs/story-panels.md` | D-15 (b): 프롤로그 4장과 엔딩 핵심 2장, 1200×675, 글자 없음. 에이전트 그림은 스타일 바이블 §15에 따라 여전히 잠정 아트다 | `public/assets/content/story.json`, 로어 바이블 §7, R4 실행서 6단계 |
+
+## 2단계 — 제작 (`kit-artist`, 모듈마다 한 작업자)
+
+| # | 맡을 파일 | 지시서 | 납품서 |
+|---|---|---|---|
+| K6 | `art/concept-kit/k-story.js`, `API-story.md` (새 모듈) | B4 | `docs/art/deliveries/K6-story.md` |
+| K7 | `art/concept-kit/k-bombers.js`, `API-bombers.md` (새 모듈) | B1 | `docs/art/deliveries/K7-bombers.md` |
+| K8 | `art/concept-kit/k-characters.js`, `API-characters.md` (새 모듈) | B2 | `docs/art/deliveries/K8-characters.md` |
+| K9 | `art/concept-kit/k-icons2.js`, `API-icons2.md` (새 모듈) | B3 | `docs/art/deliveries/K9-arsenal-icons.md` |
+
+권장 순서: K7·K8 먼저(플레이 중 가장 자주 보인다), 그 다음 K9, K6. 무거운 에이전트는 동시에 3개 이하.
+
+## 3단계 — 검수 (`art-director`)
+
+R4 실행서 3단계와 같다. 판정은 납품서 끝에 "검수 N차"로 붙이고, 수정은 2회까지.
+
+## 4단계 — 반영 (메인 세션)
+
+| 모듈 | 등록 | 렌더·UI | 커밋 항목 |
+|---|---|---|---|
+| K7 | `art/atlas-spec.mjs`에 장마다 `enemy/<ch>/bomber-fuse`, `bomber-burst` 슬롯; `slots.ts`의 적 슬롯 선택이 `enemy.bomber`를 본다 | `worldRenderer.enemySprite`가 폭탄병 슬롯을 고른다. 표식은 그대로 둔다 | ART-11 (SYS-14) |
+| K8 | 공통 팩에 `hero/<id>/…` 슬롯, `art/ui-art-spec.mjs`에 초상 | 렌더러가 고른 캐릭터의 슬롯으로 주인공을 그린다(`RenderWorld`에 캐릭터 id), 메뉴 카드·HUD 초상 | ART-12 (CON-10) |
+| K9 | `art/ui-art-spec.mjs`의 스킬 타일 시트에 44종 | `scripts/build-arsenal-art.mjs`의 별칭·배지를 걷어 낸다. 탄 모양은 `SKILL_SHOTS`와 VFX 그룹에 | FX-08 (SYS-15) |
+| K6 | `art/ui-art-spec.mjs`의 `STORY_PANELS`를 새 모듈로 | `node scripts/build-ui-art.mjs story` | CON-06 (D-15) |
+
+확인: `npm test`, `npm run build`(설치 에셋 예산), `npm run test:visual`, `npm run test:perf`(적 400마리 장면).
+
+## 5단계 — 소리 (`sound-designer`)
+
+- S4: "점검 요청: `art/sfx-spec.mjs` 끝의 `bomber.fuse`·`bomber.blast` 레시피(SYS-14)를 들어 보고, 심지가 1.15초 동안 타오르다 터진다는 것이 들리는지, 폭발이 효과음 흐름(`docs/decisions/AUD-05-loudness.md` §5) 위로 지나치게 튀지 않는지 판정하고 고칠 레시피를 제안해라." 승인된 수정만 반영한다(새 레시피는 끝에, 기존 `variants` 수는 그대로).
