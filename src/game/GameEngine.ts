@@ -49,6 +49,7 @@ import CATALOG from '../content/data/catalog';
 import BUILD_DEPTH, { type FusionId } from '../content/data/buildDepth';
 import ELITES from '../content/data/elites';
 import BOSS_TOUGHNESS from '../content/data/bossToughness';
+import HORDE from '../content/data/horde';
 import { CHARGER, STALKER_FLOCK, SeparationGrid, WARDEN_SHIELD, enemyRole, flockSteer, leadAim, shieldCovers, turnToward } from './enemyBehaviors';
 import { LOGICAL_VIEW, SPAWN_MARGIN, classicViewFrame, logicalViewFrame, spawnFrameOrigin, type ViewFrame } from './viewPolicy';
 import {
@@ -888,6 +889,8 @@ export class GameEngine {
   protected damageBySkill: Partial<Record<SkillId, number>> = {};
   /** SYS-12: how fast the player felled infinite bosses lately (health per second, blended over the fights). */
   protected bossDps = 0;
+  /** SYS-13: the fractions of XP and coins the horde scaling carries to the next spawned enemy. */
+  protected hordeCarry = { xp: 0, coin: 0 };
   protected infiniteEventScore = 0;
   protected infiniteBossKills = 0;
   protected infiniteBossRespawnTimer = 0;
@@ -1181,6 +1184,7 @@ export class GameEngine {
     this.damageTakenTotal = 0;
     this.damageBySkill = {};
     this.bossDps = 0;
+    this.hordeCarry = { xp: 0, coin: 0 };
     this.infiniteEventScore = 0;
     this.infiniteBossKills = 0;
     this.infiniteBossRespawnTimer = 0;
@@ -1814,6 +1818,7 @@ export class GameEngine {
     this.chapterTurns = 0;
     this.damageBySkill = {};
     this.bossDps = 0;
+    this.hordeCarry = { xp: 0, coin: 0 };
     this.draftQueue = [];
     this.elapsed = 0;
     this.enemies = [];
@@ -2718,9 +2723,9 @@ export class GameEngine {
     if (this.stageFinished || this.spawnsHalted) return;
     if (this.runMode === 'infinite') {
       const difficulty = infiniteDifficultyAt(this.elapsed, this.infiniteBossKills);
-      const cap = difficulty.enemyCap;
+      const cap = this.enemyCap();
       if (this.enemies.length < cap) {
-        this.spawnBudget += dt * 2.25 * INFINITE_BASELINE.mobDifficulty * difficulty.spawnRateScale;
+        this.spawnBudget += dt * 2.25 * INFINITE_BASELINE.mobDifficulty * difficulty.spawnRateScale * (this.rules.horde ? HORDE.rate : 1);
         while (this.spawnBudget >= 1 && this.enemies.length < cap) {
           this.spawnBudget -= 1;
           this.spawnEnemy(INFINITE_BASELINE.mobDifficulty);
@@ -2757,7 +2762,7 @@ export class GameEngine {
       if (moved > 0.2) this.playerHeading = { x: (this.player.x - this.player.prevX) / moved, y: (this.player.y - this.player.prevY) / moved };
       const stageTime = this.duration - this.timeLeft;
       if (this.enemies.length < cap) {
-        this.spawnBudget += dt * 1.8 * difficulty * director.rateFactor(stageTime) * (this.stageObjective?.spawnRate ?? 1);
+        this.spawnBudget += dt * 1.8 * difficulty * director.rateFactor(stageTime) * (this.stageObjective?.spawnRate ?? 1) * (this.rules.horde ? HORDE.rate : 1);
         const burst = director.burstSize(stageTime);
         while (this.spawnBudget >= burst) {
           this.spawnBudget -= burst;
@@ -2765,7 +2770,7 @@ export class GameEngine {
         }
       }
     } else if (this.enemies.length < cap) {
-      const rate = (this.kind === 'normal' ? 1.8 : 2.25) * difficulty;
+      const rate = (this.kind === 'normal' ? 1.8 : 2.25) * difficulty * (this.rules.horde ? HORDE.rate : 1);
       this.spawnBudget += dt * rate;
       while (this.spawnBudget >= 1) {
         this.spawnBudget -= 1;
@@ -2803,8 +2808,21 @@ export class GameEngine {
   }
 
   protected enemyCap() {
-    if (this.runMode === 'infinite') return infiniteDifficultyAt(this.elapsed, this.infiniteBossKills).enemyCap;
-    return 90 + this.chapter * 18 + (this.kind === 'normal' ? 0 : 24);
+    if (this.runMode === 'infinite') {
+      const cap = infiniteDifficultyAt(this.elapsed, this.infiniteBossKills).enemyCap;
+      return this.rules.horde ? Math.min(HORDE.infiniteCapMax, Math.round(cap * HORDE.cap)) : cap;
+    }
+    const cap = 90 + this.chapter * 18 + (this.kind === 'normal' ? 0 : 24);
+    return this.rules.horde ? Math.round(cap * HORDE.cap) : cap;
+  }
+
+  /** SYS-13: a reward scaled by the horde, with the fraction carried to the next kill so the average stays exact. */
+  protected hordeReward(amount: number, kind: 'xp' | 'coin') {
+    if (!this.rules.horde) return amount;
+    const carried = this.hordeCarry[kind] + amount * HORDE[kind];
+    const paid = Math.floor(carried);
+    this.hordeCarry[kind] = carried - paid;
+    return paid;
   }
 
   protected spawnEnemy(difficulty: number, forcedTier?: EnemyTier, forcedEdge?: SpawnEdge) {
@@ -2876,12 +2894,12 @@ export class GameEngine {
       vx: 0,
       vy: 0,
       radius,
-      hp: hpBase * effectiveDifficulty,
-      maxHp: hpBase * effectiveDifficulty,
+      hp: hpBase * effectiveDifficulty * (this.rules.horde ? HORDE.hp : 1),
+      maxHp: hpBase * effectiveDifficulty * (this.rules.horde ? HORDE.hp : 1),
       speed,
-      damage: baseDamage * (infiniteDifficulty?.enemyDamageScale ?? 1),
-      xp: Math.round(TIER_STATS.xp[mobTier(tier)] * rewardScale),
-      coin: Math.round(TIER_STATS.coin[mobTier(tier)] * rewardScale),
+      damage: baseDamage * (infiniteDifficulty?.enemyDamageScale ?? 1) * (this.rules.horde ? HORDE.damage : 1),
+      xp: this.hordeReward(Math.round(TIER_STATS.xp[mobTier(tier)] * rewardScale), 'xp'),
+      coin: this.hordeReward(Math.round(TIER_STATS.coin[mobTier(tier)] * rewardScale), 'coin'),
       tier,
       variant: Math.floor(this.gameplayRandom() * 5),
       isBoss: false,
@@ -4813,6 +4831,10 @@ export class GameEngine {
   }
 
   protected onEnemyKilled(enemy: Entity, suppressBossDraft = false) {
+    // SYS-13: while a strong build keeps the infinite run's field thin, each kill brings more, so the horde stays one.
+    if (this.rules.horde && this.runMode === 'infinite' && !enemy.isBoss && this.elapsed > HORDE.fill.afterSeconds && this.enemies.length < this.enemyCap() * HORDE.fill.share) {
+      this.spawnBudget += HORDE.fill.perKill;
+    }
     // SYS-12: the pace this boss fell at, blended into the estimate the next boss's health floor reads.
     if (enemy.bossAt !== undefined) {
       const pace = enemy.maxHp / Math.max(1, this.elapsed - enemy.bossAt);
@@ -5308,7 +5330,7 @@ export class GameEngine {
       coins: this.player.coins,
       kills: this.player.kills,
       enemyCount: this.enemies.length,
-      enemyCap: infiniteDifficulty?.enemyCap ?? this.enemyCap(),
+      enemyCap: this.enemyCap(),
       elapsed: this.elapsed,
       score: this.runMode === 'infinite' ? infiniteScoreWithSurvival(this.infiniteEventScore, this.elapsed) : 0,
       bossKills: this.infiniteBossKills,

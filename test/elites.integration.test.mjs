@@ -19,6 +19,8 @@ function run(chapter, stage, { rules = 'remaster', seed = 909 } = {}) {
     onGameOver(result) { settlements.push(result); },
   });
   engine.setRuleSet(rules);
+  // The elites' own numbers, without the horde's reward scaling (SYS-13).
+  if (rules === 'remaster') engine.probe.patchRules({ horde: false });
   engine.startRun(chapter, stage, seed);
   engine.probe.setGodMode();
   engine.probe.haltSpawns();

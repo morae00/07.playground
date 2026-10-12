@@ -391,11 +391,11 @@ The first desktop soak (2026-10-02) found that frames fell apart in the infinite
 - 5-10 at double speed, 15 minutes: 50,410 frames, 0.01% missed, interval p50 16.7 / p95 18.5 / p99 18.7 / max 115.7 ms, 1 long task, heap after GC 8.9 to 8.5 MiB;
 - infinite, 30 minutes: 104,370 frames, 0.02% missed, interval p50 16.7 / p95 18.2 / p99 18.6 / max 66.0 ms, 1 long task, heap after GC 7.6 to 10.7 MiB.
 
-`npm run bench:render` (desktop session) measures the real renderer in Electron at 1440x900. It covers the TEC-04 stress scene (204 enemies, 240 hostile shots, 520 particles, 160 damage numbers) at DPR 1 and 2 and render scales 2.0 and 1.5, with sprites and vectors, plus the final boss stage of every chapter with its pack and runs with the frame rate unlocked. The first results and the provisional Canvas2D decision are in `docs/decisions/TEC-04-render-backend.md`. Headless Chromium can rasterize in software, so its frame times are not performance evidence.
+`npm run bench:render` (desktop session) measures the real renderer in Electron at 1440x900. It covers the TEC-04 stress scene (400 enemies since the SYS-13 horde, 204 before; 240 hostile shots, 520 particles, 160 damage numbers) at DPR 1 and 2 and render scales 2.0 and 1.5, with sprites and vectors, plus the final boss stage of every chapter with its pack and runs with the frame rate unlocked. The first results and the provisional Canvas2D decision are in `docs/decisions/TEC-04-render-backend.md`. Headless Chromium can rasterize in software, so its frame times are not performance evidence.
 
 `npm run bench:packs` (after `npm run build`) opens the production build in Electron and switches the menu's chapter to time each chapter pack's load, and adds up the resident textures (the common pack, the skill VFX pack, the UI art, and the chapter's pack, decoded) and each pack's size. The R2 targets are a 1.5 s transition, 96 MiB resident, and 12 MiB per pack. The R2-end numbers are in the TEC-04 record.
 
-`npm run test:perf` (desktop session, about 45 s) is the release performance gate (decision D-22): the TEC-04 stress scene at DPR 2 and render scale 2.0 with sprites, once with vsync and once with the frame rate unlocked. It fails the run when a target below is missed.
+`npm run test:perf` (desktop session, about 45 s) is the release performance gate (decision D-22): the TEC-04 stress scene at DPR 2 and render scale 2.0 with sprites, once with vsync and once with the frame rate unlocked. The SYS-13 horde raised the scene from 204 to 400 enemies (the infinite run's cap); on this Mac it passes with work p95 7.0 ms and unlocked interval p95 5.2 ms (204 enemies: 5.7 and 3.4). It fails the run when a target below is missed.
 
 Targets (TEC-04 D-3, one wording for every gate since D-22):
 

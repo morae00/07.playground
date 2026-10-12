@@ -61,7 +61,7 @@ export class NumberGlyphs {
   }
 
   private build(spec: StyleSpec): Sheet | null {
-    const canvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+    const canvas = typeof document !== 'undefined' && typeof document.createElement === 'function' ? document.createElement('canvas') : null;
     const context = canvas?.getContext('2d');
     if (!canvas || !context) return null;
     const font = `800 ${spec.size * SCALE}px ${FONT}`;

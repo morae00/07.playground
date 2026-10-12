@@ -2,7 +2,7 @@
 // versus WebGL2 decision rests on measured frames. Built and driven by scripts/render-bench.mjs; the app never
 // imports this file.
 //
-// Scenes: `stress` (backlog TEC-04) keeps 204 enemies of the four Ch1 roles, 240 hostile shots, 520 particles,
+// Scenes: `stress` (backlog TEC-04; 400 since the SYS-13 horde, 204 before) keeps 400 enemies of the four Ch1 roles, 240 hostile shots, 520 particles,
 // and 160 damage numbers around the player, topped up every simulation step. `game` plays a real stage late in
 // its clock (spawns, boss, hazards, and a mid-game build) in god mode. Query: scene, chapter, stage, progress,
 // scale (render scale cap), sprites (on/off), warmup and seconds (measurement window).
@@ -31,7 +31,7 @@ export type RenderBenchResult = {
   spritesReady: boolean;
 };
 
-const TARGET = { enemies: 204, hostileShots: 240, particles: 520, damageNumbers: 160 };
+const TARGET = { enemies: 400, hostileShots: 240, particles: 520, damageNumbers: 160 };
 
 const params = new URLSearchParams(window.location.search);
 const scene = params.get('scene') === 'game' ? 'game' : 'stress';

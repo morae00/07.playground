@@ -157,6 +157,12 @@ export type RuleSet = Readonly<{
    * 20-35 s fights for a strong build. Numbers in src/content/data/bossToughness.ts.
    */
   bossToughness: boolean;
+  /**
+   * SYS-13 (user request 2026-10-12): far more monsters. The field holds about twice the enemies and they come twice
+   * as fast; each ordinary enemy has less health and pays less XP and fewer coins, so kills come faster without
+   * flooding the economy. Numbers in src/content/data/horde.ts.
+   */
+  horde: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -195,6 +201,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   infiniteRotation: false,
   enrageOvertime: false,
   bossToughness: false,
+  horde: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -233,6 +240,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   infiniteRotation: true,
   enrageOvertime: true,
   bossToughness: true,
+  horde: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

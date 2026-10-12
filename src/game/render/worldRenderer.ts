@@ -1987,7 +1987,7 @@ export class WorldRenderer {
       // A bound in case frames ever stop being shared: every cut-out is a canvas, and the GPU keeps each one.
       if (cache.size >= CUTOUT_LIMIT) cache.clear();
       cutout = null;
-      const canvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+      const canvas = typeof document !== 'undefined' && typeof document.createElement === 'function' ? document.createElement('canvas') : null;
       const context = canvas?.getContext('2d');
       if (canvas && context) {
         canvas.width = frame.sw;

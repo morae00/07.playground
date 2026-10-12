@@ -362,6 +362,14 @@ Bosses fell in seconds: a maxed build killed the infinite run's round bosses in 
 - A boss pays its health over its untoughened health in XP and coins, up to three times. Without that, slower boss kills starved the run of levels, and a mid build died to the crowd by minute 8.
 - Measured with the striker bot, three seeds, 25 minutes: maxed round bosses fall in a median 18-25 s in every five-minute span and all three runs reach minute 24; mid builds (half the upgrades) take 21-31 s and one of three runs reaches minute 24 (before: all three past minute 22). Maxed boss stage bosses take 66-145 s instead of 51-114 s, and boss stage clears barely move. `scripts/lib/full-balance-runner.mjs` reports `bossKillSeconds` for boss stages.
 
+## The horde (SYS-13)
+
+The user asked for far more monsters (2026-10-12). The `horde` rule (remaster on, classic off) has its numbers in `src/content/data/horde.ts`:
+- The field holds 1.9 times the enemies (the infinite run at most 400) and they come 1.9 times as fast. Each ordinary enemy has half the health and 0.6 of the damage, so twice the bodies do not mean twice the hits, and pays 0.55 of the XP and coins; the fractions carry from kill to kill (`hordeReward`), so the averages are exact. Bosses are untouched.
+- A strong build clears the infinite field as fast as it fills. After the first minute, while the field holds under 35% of its cap, each ordinary kill adds one spawn, so the field refills as fast as it is cleared and a slow build meets no more than before. A spawn-rate boost by how empty the field was overwhelmed mid builds by minute 2 and was dropped.
+- Measured with the striker bot (Ch4 St7 and the infinite run): campaign fields peak near 190 instead of 95; a maxed infinite run keeps 85-105 enemies on the field instead of 11-36 and fells about 47,000 instead of 5,400 in 20 minutes. Mid builds survive as long as with boss toughness alone.
+- The release performance gate's stress scene has 400 enemies now (docs/QUALITY_GATES.md).
+
 ## Story beats (CON-06)
 
 The campaign had no story on screen: clearing 5-10 showed a banner and nothing else. CON-06 adds the lore bible's drafts (docs/lore §7) as story beats, all skippable, none over play (G15):

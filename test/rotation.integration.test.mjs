@@ -175,7 +175,8 @@ function dailyRun(seed, viewport, options) {
       if (tick === 300) probe.setClock({ elapsed: INFINITE_ROTATION.fieldBossAt - 2 });
       if (tick === 900) {
         probe.setClock({ elapsed: INFINITE_ROTATION.chapterSeconds - 1 });
-        probe.patchEnemy(roundBoss(probe).id, { hp: 1 });
+        // Felled outright: in the horde (SYS-13) the auto-aim may not reach a boss left at 1 health in time.
+        probe.patchEnemy(roundBoss(probe).id, { hp: 0 });
       }
       probe.step(1);
     }

@@ -19,6 +19,8 @@ const meta = () => ({
 function stage(rules, chapter, stageNo, seed = 3030) {
   const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), meta(), standardOptions(), { onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver() {} });
   engine.setRuleSet(rules);
+  // The director's own numbers, without the horde's multipliers (SYS-13; horde.integration.test covers those).
+  if (rules === 'remaster') engine.probe.patchRules({ horde: false });
   engine.startRun(chapter, stageNo, seed);
   engine.probe.setSkills({});
   engine.probe.setGodMode();
