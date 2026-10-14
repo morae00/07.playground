@@ -29,7 +29,7 @@ Chapter packs (`assets/packs/<chapter>/`) have a 12 MiB per-pack target and resi
 
 `npm run test:balance:smoke` is a deterministic pressure smoke test, not a difficulty verdict. `npm run test:balance:pilot` checks representative chapter boundaries and boss stages. A release candidate uses `npm run test:balance:full` across all 50 stages, four build policies, and ten fixed seeds. Three policies are representative builds whose permanent upgrades grow by chapter. The fourth, `fresh`, is a new player with no upgrades or passives (CON-09). Seed shards run through a bounded worker pool, then merge in canonical stage/persona/seed order. The JSON report records clear/death/timeout rates, simulated and wall-clock time percentiles, death causes (contact, shot, boss contact, boss shot, shock, fire, each marked when the boss was enraged), economy percentiles, build growth, scenario details, and a deterministic fingerprint.
 
-The remaster baseline is `artifacts/balance-remaster-baseline.json`: 2,000 scenarios under the remaster rules on commit 3171af0, the end of R3 (fingerprint 25cd131c5d4ca2aa). Earlier full runs used the same seeds and personas:
+The remaster baseline is `artifacts/balance-remaster-baseline.json`: 2,000 scenarios under the remaster rules on commit 216de64, after the R5 features and their tuning (fingerprint 33f84fc7a300e1c4; the R5 runs are below). Before it came 2ec7493 (R4 interim, cda5998b1edf8203) and 3171af0 (R3 end, 25cd131c5d4ca2aa). Earlier full runs used the same seeds and personas:
 
 | | bf13b46 (CON-09) | 565e8b2 (SYS-03) | 73d367c (SYS-02, SYS-04) | bf4d474 (boss fixes) | f05b83e (R1 end) | 3d0c5d3 (R2 end) | 3171af0 (R3 end) |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -90,6 +90,57 @@ R4 interim (2ec7493: the decisions D-02, D-04, D-05, and D-09 on; the later UI-0
   - the `novice` in 1-1: 40% clears (gate 40-70%), at the band's floor: 8 of 20 runs against 10 at R3's end, within the noise of 20 runs. Its death median is 193 s.
     A wider sample settles it (f2f1a94, 100 seeds, the same rules): 61 of 100 clear, 95% Wilson interval 51-70%, inside the band; 76% survive 3 minutes (the CON-02 target is 80%), and every death is contact (death median 144 s).
 - The hurdle stages stay low as D-01 accepted: the team personas clear 4-8 at 3%, 3-9 at 7%, and 4-3 and 4-9 at 13%; `maxed` clears 5-7 at 20%.
+
+R5 (the user's request of 2026-10-12: much tougher bosses, above all in the infinite run's first 25 minutes; far more monsters; bombers whose dodging decides clears; five times the weapons; characters). The rules are `bossToughness` (SYS-12), `horde` (SYS-13), `bombers` (SYS-14), `arsenal` (SYS-15), and `characters` (CON-10). Full runs on the same 2,000 scenarios, 10 workers, about 65 minutes each:
+
+| | 2ec7493 (R4 interim) | f99baae (R5 features) | 216de64 (R5 tuned, the baseline) |
+|---|---:|---:|---:|
+| clear, all 2,000 | 28.6% | 40.0% | 25.1% |
+| clears: striker / survivor / collector / fresh (of 500) | 122 / 365 / 85 / 0 | 227 / 443 / 131 / 0 | 109 / 339 / 53 / 0 |
+| team normal stage clears by chapter (%) | 28.3 / 41.7 / 33.3 / 36.7 / 39.2 | 28.8 / 42.1 / 49.6 / 64.6 / 69.6 | 22.5 / 35.4 / 30.0 / 38.8 / 37.5 |
+| team boss stage clears by chapter (%) | 28.3 / 51.7 / 31.7 / 53.3 / 71.7 | 28.3 / 73.3 / 51.7 / 80.0 / 83.3 | 15.0 / 35.0 / 20.0 / 48.3 / 60.0 |
+| hits at the minimum (team) | 0.06% | 7.2% | 3.0% |
+| deaths: contact / shots / boss / blast | 1,329 / 59 / 36 / 0 | 1,019 / 10 / 50 / 117 | 1,283 / 28 / 71 / 113 |
+| boss stage clear time p50 / max (s) | 206 / 993 | 242 / 1,005 | 366 / 990 |
+| team level at a clear, median by chapter | 15 / 17 / 21 / 26 / 28 | 19 / 23 / 29 / 31 / 33 | 16 / 21 / 26 / 27 / 29 |
+| timeouts | 0 | 0 | 0 |
+
+- The features alone made the campaign easier, and the later chapters most: the inverted curve came back. Two causes:
+  - The horde cut each enemy's damage to 0.6 before the flat defence, so once the personas' defence grew, its hits fell to the damage floor.
+  - A big crowd dies faster than it comes, about three kills a minute for every one before, so 0.55 of the rewards paid 1.5-2 times the XP and 2-3 times the coins per minute. Stages ended about 5 levels higher.
+- The tuning:
+  - ef388ec (SYS-13) scales an ordinary enemy's hit after defence and pays 0.4 of the XP and 0.35 of the coins. The infinite run takes its own shares, hits 0.35 and rewards 0.55: at 0.6 a half-upgraded build died at a median 8 minutes (6 seeds), at 0.45 9, at 0.35 14.
+  - 8b5280c and 216de64 (SYS-12) give boss stage bosses their chapter's factor: 1.6 times the health and 1.2 times the damage in Ch1, 1.8 and 1.35 in Ch2, 2 and 1.5 from Ch3. With 1.6 and 1.2 everywhere the boss stages stayed easier than at R4. With 2 and 1.5 everywhere the Ch1 final boss stopped every team run, and the novice cleared 1-10 in 1 of 20 runs (4 of 20 now, 10 of 20 with the R5 rules off).
+- Pilot sets for the tuning (25 stages, the first five seeds, the team personas, 375 runs):
+
+| | R4 interim | f99baae | hits after defence | + rewards 0.4 / 0.35 | + bosses 2 / 1.5 |
+|---|---:|---:|---:|---:|---:|
+| clear | 41.6% | 58.1% | 47.2% | 37.6% | 34.7% |
+| normal clears by chapter (%) | 33 / 51 / 29 / 49 / 36 | 31 / 51 / 47 / 73 / 73 | 29 / 47 / 38 / 56 / 47 | 22 / 47 / 31 / 47 / 40 | 22 / 47 / 31 / 47 / 40 |
+| boss clears by chapter (%) | 27 / 47 / 23 / 57 / 70 | 30 / 73 / 47 / 83 / 80 | 23 / 57 / 43 / 70 / 73 | 13 / 27 / 27 / 57 / 67 | 13 / 20 / 17 / 47 / 57 |
+| novice 1-1 (20 seeds) | 8 of 20 | | 16 of 20 | 14 of 20 | 14 of 20 |
+| maxed Ch5: clears, lowest health p50 | 68%, 0.39 | | 81%, 0.65 | 69%, 0.43 | 69%, 0.43 |
+
+- The R3 gates on 216de64:
+  - normal stage clears by chapter for the team personas, adjacent steps +12.9 / -5.4 / +8.8 / -1.2 points (gate ±25);
+  - minimum hits: 3.0% of 243,694 team hits (gate 20%);
+  - `maxed` in all ten Ch5 stages × 10 seeds: 69% clears, lowest health median 0.43 (gate 0.70), minimum hits 3.2%;
+  - the `novice` in 1-1 × 100 seeds (1-100): 55 clear, 95% Wilson interval 45-64%, inside the 40-70% band. 66% survive 3 minutes (76% at R4; the CON-02 target is 80%), and the death median is 114 s (144 s at R4). Contact causes nearly every death: the crowd of the opening minutes is the new player's wall, not the bosses.
+- Bosses now end runs: 71 boss deaths against 36, and boss stage clears take a median 366 s instead of 206 s. Bombers end 113 runs (5 / 12 / 33 / 29 / 34 by chapter), about one death in 13, and contact still causes most.
+- The hurdle stages: the team personas clear 1-10 at 0% (6 of 30 at R4; 0 to 3 of 30 with any one R5 rule off, so no single rule makes it), 3-9 at 3%, 1-7 at 7%, and 3-7, 4-3, and 4-9 at 13%; `maxed` clears 5-7 at 20%, 5-8 at 30%, and 5-9 at 20%. The persona's fixed walk dies about 35 s into 1-10 at level 3; the novice, who steers away from threats, clears it 4 times in 20.
+- `fresh` still clears 0 of 500, so `personaClearsObserved` fails as before; its 1-1 death median is 79 s (74 s at R4).
+
+The infinite run on 216de64 (`npm run test:balance:infinite`, six seeds, at most 30 minutes; the CON-08 rotation columns above are the R4 reference):
+
+| | max, R4 | max, R5 | mid, R4 | mid, R5 |
+|---|---:|---:|---:|---:|
+| survival p50 (simulated s) | 1,750 | 1,471 | 1,574 | 890 |
+| runs that died before the cap | 2 of 6 | 5 of 6 | 5 of 6 | 6 of 6 |
+| round bosses defeated p50 | 196 | 48 | 84 | 22.5 |
+| score p50 | 6,019,020 | 4,262,800 | 1,915,807 | 1,795,672 |
+
+- A round boss is a fight now: with a maxed build the median kill takes about 20-45 s in each five minutes of the first 25 (2.8-3.7 s between minutes 5 and 20 before SYS-12; six seeds), so a run fells a quarter as many. Scores fall 29% (max) and 6% (mid).
+- The half-upgraded runs end between 10 and 25 minutes (10.4, 10.5, 10.8, 18.9, 22.3, 24.7); the maxed ones between 18 and 30 (one reaches the cap). In 25-minute runs of the same build that record the cause, bosses ended three of the maxed runs and a blast one, and the crowd ended most half-upgraded ones.
 
 CON-02 Ch1 tuning: by the novice proxy, 1-1 already clears within the R1 target band (40-70%), and 3-minute survival (70%) is near its 80% target. A longer opening ramp does not help (1-1, novice, 20 seeds): a 90 s ramp kept 50% clear but dropped 3-minute survival to 50%, and 120 s gave 45% and 65%. Fewer early enemies mean less XP and fewer drafts (median 14 drafts at 45 s, 5 at 90 s), so the player is weaker when the pressure arrives. The 45 s ramp stays. The R1 playtest (6 or more new players) decides the final Ch1 numbers.
 
