@@ -365,9 +365,11 @@ Bosses fell in seconds: a maxed build killed the infinite run's round bosses in 
 ## The horde (SYS-13)
 
 The user asked for far more monsters (2026-10-12). The `horde` rule (remaster on, classic off) has its numbers in `src/content/data/horde.ts`:
-- The field holds 1.9 times the enemies (the infinite run at most 400) and they come 1.9 times as fast. Each ordinary enemy has half the health and 0.6 of the damage, so twice the bodies do not mean twice the hits, and pays 0.55 of the XP and coins; the fractions carry from kill to kill (`hordeReward`), so the averages are exact. Bosses are untouched.
+- The field holds 1.9 times the enemies (the infinite run at most 400) and they come 1.9 times as fast. Each ordinary enemy has half the health. Its contact and shots deal 0.6 of what gets through the player's defence (`damagePlayer`), so twice the bodies do not mean twice the hits. It pays 0.4 of the XP and 0.35 of the coins; the fractions carry from kill to kill (`hordeReward`), so the averages are exact. Bosses and bomber blasts are untouched.
+- The infinite run has its own shares (`hordeShare`): hits 0.35, XP and coins 0.55, since its enemies grow stronger by the minute.
+- Why after defence, and why rewards below 1 / 1.9: the first full balance run with the horde (2026-10-12) cleared 40% instead of 29%, and the later chapters most. Cut before defence, a hit fell to the damage floor once the personas' defence grew (7% of hits at the minimum against 0.06%), and a crowd that dies faster than it comes paid 1.5-2 times the XP and 2-3 times the coins per minute (stages ended 5 levels higher). docs/QUALITY_GATES.md has the R5 runs.
 - A strong build clears the infinite field as fast as it fills. After the first minute, while the field holds under 35% of its cap, each ordinary kill adds one spawn, so the field refills as fast as it is cleared and a slow build meets no more than before. A spawn-rate boost by how empty the field was overwhelmed mid builds by minute 2 and was dropped.
-- Measured with the striker bot (Ch4 St7 and the infinite run): campaign fields peak near 190 instead of 95; a maxed infinite run keeps 85-105 enemies on the field instead of 11-36 and fells about 47,000 instead of 5,400 in 20 minutes. Mid builds survive as long as with boss toughness alone.
+- Measured with the striker bot (Ch4 St7 and the infinite run): campaign fields peak near 190 instead of 95; a maxed infinite run keeps 85-105 enemies on the field instead of 11-36 and fells about 47,000 instead of 5,400 in 20 minutes. Mid builds survive as long as with boss toughness alone (before the after-defence change; see the R5 runs).
 - The release performance gate's stress scene has 400 enemies now (docs/QUALITY_GATES.md).
 
 ## Bombers (SYS-14)

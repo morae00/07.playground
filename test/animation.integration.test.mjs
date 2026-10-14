@@ -237,6 +237,8 @@ test('the player hears where hits come from and when health runs low (FX-03)', (
   engine.subscribe((event) => events.push(event));
   try {
     probe.setGodMode(false);
+    // One hit of 80% health; the horde would take its share of it (SYS-13).
+    probe.patchRules({ horde: false });
     const { player } = probe.read();
     const maxHp = player.stats.maxHp;
     probe.setPlayer({ hp: maxHp, stats: { defense: 0 } });

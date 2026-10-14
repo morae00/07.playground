@@ -2974,10 +2974,15 @@ export class GameEngine {
     return this.rules.horde ? Math.round(cap * HORDE.cap) : cap;
   }
 
+  /** SYS-13: the horde's share of an ordinary enemy's hits or rewards; the infinite run has its own. */
+  protected hordeShare(kind: 'damage' | 'xp' | 'coin') {
+    return this.runMode === 'infinite' ? HORDE.infinite[kind] : HORDE[kind];
+  }
+
   /** SYS-13: a reward scaled by the horde, with the fraction carried to the next kill so the average stays exact. */
   protected hordeReward(amount: number, kind: 'xp' | 'coin') {
     if (!this.rules.horde) return amount;
-    const carried = this.hordeCarry[kind] + amount * HORDE[kind];
+    const carried = this.hordeCarry[kind] + amount * this.hordeShare(kind);
     const paid = Math.floor(carried);
     this.hordeCarry[kind] = carried - paid;
     return paid;
@@ -3062,7 +3067,7 @@ export class GameEngine {
       hp: health,
       maxHp: health,
       speed: speed * (bomberSpec?.speed ?? 1),
-      damage: baseDamage * (infiniteDifficulty?.enemyDamageScale ?? 1) * (this.rules.horde ? HORDE.damage : 1),
+      damage: baseDamage * (infiniteDifficulty?.enemyDamageScale ?? 1),
       ...(bomber && bomberSpec ? { bomber, blastDamage: baseDamage * (infiniteDifficulty?.enemyDamageScale ?? 1) * bomberSpec.damage } : {}),
       xp: this.hordeReward(Math.round(TIER_STATS.xp[mobTier(tier)] * rewardScale), 'xp'),
       coin: this.hordeReward(Math.round(TIER_STATS.coin[mobTier(tier)] * rewardScale), 'coin'),
@@ -5011,7 +5016,10 @@ export class GameEngine {
     const reduced = this.rules.difficultyCurve
       ? hybridHitDamage(rawDamage, this.player.stats.defense, physical, CATALOG.difficulty)
       : Math.max(1, rawDamage - this.player.stats.defense * (physical ? 0.72 : 0.42));
-    const taken = reduced * this.assist().damage;
+    // SYS-13: an ordinary enemy's hit (contact or shot) is scaled after defence, so the horde's lighter hits keep the
+    // same share of a defended player's health instead of falling to the damage floor.
+    const horde = this.rules.horde && (source === 'contact' || source === 'shot') ? this.hordeShare('damage') : 1;
+    const taken = reduced * horde * this.assist().damage;
     this.damageTakenTotal += Math.min(taken, Math.max(0, this.player.hp));
     this.player.hp -= taken;
     const paperWard = this.skills.paperWard;

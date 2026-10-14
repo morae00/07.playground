@@ -3,7 +3,8 @@ import test from 'node:test';
 import { createHeadlessCanvas, installHeadlessPlatform, maxMeta, standardOptions } from '../scripts/lib/headless-engine.mjs';
 
 // The horde (SYS-13, horde rule; remaster on, classic off): about twice the enemies, coming twice as fast, each with
-// less health and damage and smaller rewards carried exactly; a strong build's thin infinite field refills by kills.
+// less health, lighter hits (after defence), and smaller rewards carried exactly; a strong build's thin infinite
+// field refills by kills.
 installHeadlessPlatform();
 Object.defineProperty(globalThis, 'performance', { value: { now: () => 0 }, configurable: true });
 const { ProbedGameEngine, HORDE } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
@@ -36,7 +37,7 @@ test('SYS-13: the field holds about twice the enemies, and they come about twice
   assert.ok(counts.true > counts.false * 1.5, `${counts.true} enemies against ${counts.false}`);
 });
 
-test('SYS-13: each enemy has the horde share of health and damage, and its rewards average out exactly', () => {
+test('SYS-13: each enemy has the horde share of health, and its rewards average out exactly', () => {
   const made = {};
   for (const horde of [false, true]) {
     const engine = engineWith(horde);
@@ -46,17 +47,48 @@ test('SYS-13: each enemy has the horde share of health and damage, and its rewar
       engine.probe.clear('enemies');
       const ids = Array.from({ length: 20 }, () => engine.probe.spawnEnemy({ tier: 'small' }));
       const byId = new Map(engine.probe.read().enemies.map((enemy) => [enemy.id, enemy]));
-      const enemies = ids.map((id) => byId.get(id));
-      made[horde] = { hp: enemies[0].maxHp, damage: enemies[0].damage, xp: enemies.reduce((sum, enemy) => sum + enemy.xp, 0), coin: enemies.reduce((sum, enemy) => sum + enemy.coin, 0) };
+      // Elites multiply their already scaled reward, so they leave the carried total; the same ones roll either way.
+      const enemies = ids.map((id) => byId.get(id)).filter((enemy) => !enemy.elite);
+      made[horde] = { count: enemies.length, hp: enemies[0].maxHp, damage: enemies[0].damage, xp: enemies.reduce((sum, enemy) => sum + enemy.xp, 0), coin: enemies.reduce((sum, enemy) => sum + enemy.coin, 0) };
     } finally {
       engine.dispose();
     }
   }
+  assert.equal(made.true.count, made.false.count);
   assert.ok(Math.abs(made.true.hp / made.false.hp - HORDE.hp) < 1e-9);
-  assert.ok(Math.abs(made.true.damage / made.false.damage - HORDE.damage) < 1e-9);
+  // The damage share applies to the hit after defence (next test), not to the enemy.
+  assert.equal(made.true.damage, made.false.damage);
   // Twenty small enemies: the carried fractions land within one of the exact scaled total.
   assert.ok(Math.abs(made.true.xp - made.false.xp * HORDE.xp) <= 1, `${made.true.xp} XP against ${made.false.xp} x ${HORDE.xp}`);
   assert.ok(Math.abs(made.true.coin - made.false.coin * HORDE.coin) <= 1, `${made.true.coin} coins against ${made.false.coin} x ${HORDE.coin}`);
+});
+
+test('SYS-13: an ordinary enemy\'s hit takes the horde share after the player\'s defence, the infinite run its own', () => {
+  for (const [mode, share] of [['campaign', HORDE.damage], ['infinite', HORDE.infinite.damage]]) {
+    const taken = {};
+    for (const horde of [false, true]) {
+      const engine = engineWith(horde);
+      try {
+        if (mode === 'infinite') engine.startInfiniteRun(5353, true);
+        else engine.startRun(5, 4, 5353);
+        const { probe } = engine;
+        probe.haltSpawns();
+        probe.clear('enemies', 'hazards', 'obstacles', 'pickups', 'projectiles', 'hostileShots');
+        probe.setSkills({});
+        // No regeneration, so the health lost is exactly the damage taken; with this defence a hit scaled before
+        // defence would lose more than the horde share.
+        probe.setPlayer({ nextXp: 1e12, stats: { hpRegen: 0, defense: 10 } });
+        const { player } = probe.read();
+        probe.spawnEnemy({ tier: 'small', x: player.x + 4, y: player.y, speed: 0, damage: 60 });
+        probe.step(2);
+        taken[horde] = player.hp - probe.read().player.hp;
+      } finally {
+        engine.dispose();
+      }
+    }
+    assert.ok(taken.false > 1, `${mode}: a hit lands above the damage floor (${taken.false})`);
+    assert.ok(Math.abs(taken.true - taken.false * share) < 1e-6, `${mode}: ${taken.true} against ${taken.false} x ${share}`);
+  }
 });
 
 test('SYS-13: in the infinite run a kill on a thin field brings another, and not on a full one', () => {
