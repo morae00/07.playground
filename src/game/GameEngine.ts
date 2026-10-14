@@ -3219,8 +3219,9 @@ export class GameEngine {
     const stageScale = kind === 'normal' ? 1 + (this.chapter - 1) * 0.18 + (this.stage - 1) * 0.08 : 1;
     // SYS-12: tougher bosses (not the classic legacy boss).
     const tough = this.rules.bossToughness && !legacy ? BOSS_TOUGHNESS.campaign : null;
-    const toughHp = tough ? (kind === 'normal' ? tough.fieldHp : tough.roundHp) : 1;
-    const toughDamage = tough ? (kind === 'normal' ? tough.fieldDamage : tough.roundDamage) : 1;
+    const toughChapter = Math.min(this.chapter, 5) - 1;
+    const toughHp = tough ? (kind === 'normal' ? tough.fieldHp : tough.roundHp[toughChapter]) : 1;
+    const toughDamage = tough ? (kind === 'normal' ? tough.fieldDamage : tough.roundDamage[toughChapter]) : 1;
     const boss: Entity = {
       id: this.nextId(),
       x,

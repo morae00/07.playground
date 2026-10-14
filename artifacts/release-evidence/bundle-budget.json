@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 114133,
-      "kib": 111.46,
+      "bytes": 114150,
+      "kib": 111.47,
       "baselineBytes": 96803,
-      "growthRatio": 0.1790233773746681,
+      "growthRatio": 0.179198991766784,
       "warningBytes": 111323,
       "failBytes": 121003,
       "status": "warning",
@@ -35,16 +35,16 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 1978870,
-      "kib": 1932.49,
+      "bytes": 1978903,
+      "kib": 1932.52,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 27078196,
-      "kib": 26443.55,
+      "bytes": 27078229,
+      "kib": 26443.58,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-B-cBqjwT.js",
+      "file": "assets/App-C8tcPqAA.js",
       "category": "appJs",
-      "sourceBytes": 361519,
-      "gzipBytes": 110580
+      "sourceBytes": 361554,
+      "gzipBytes": 110597
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -117,8 +117,8 @@
     {
       "file": "assets/content/tables.json",
       "category": "data",
-      "sourceBytes": 49847,
-      "gzipBytes": 9989
+      "sourceBytes": 49880,
+      "gzipBytes": 10007
     },
     {
       "file": "assets/enemy-icons-BEkQ6ASU.webp",
@@ -133,16 +133,16 @@
       "gzipBytes": 113032
     },
     {
-      "file": "assets/index-CgNMtMfi.js",
-      "category": "appJs",
-      "sourceBytes": 7500,
-      "gzipBytes": 3553
-    },
-    {
       "file": "assets/index-Cs8dY8PP.css",
       "category": "css",
       "sourceBytes": 84180,
       "gzipBytes": 18525
+    },
+    {
+      "file": "assets/index-DVJOZwXL.js",
+      "category": "appJs",
+      "sourceBytes": 7500,
+      "gzipBytes": 3553
     },
     {
       "file": "assets/keyart-DFQzyQdB.webp",

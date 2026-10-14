@@ -31,29 +31,29 @@ test('SYS-12: byMinute draws straight lines between its points and holds flat ou
   assert.equal(byMinute([], 3), 1);
 });
 
-test('SYS-12: a boss stage boss takes the campaign factors under the remaster rules, and the classic boss does not', () => {
-  const stats = {};
-  for (const rules of ['classic', 'remaster']) {
+test('SYS-12: a boss stage boss takes its chapter\'s campaign factors under the remaster rules, and the classic boss does not', () => {
+  const boss = (rules, chapter, patch) => {
     const engine = engineWith(rules);
     try {
-      engine.startRun(2, 10, 77);
-      const boss = stageBoss(engine);
-      stats[rules] = { hp: boss.maxHp, damage: boss.damage };
+      if (patch) engine.probe.patchRules(patch);
+      engine.startRun(chapter, 10, 77);
+      const found = stageBoss(engine);
+      return { hp: found.maxHp, damage: found.damage };
     } finally {
       engine.dispose();
     }
+  };
+  for (const chapter of [1, 2, 4]) {
+    // The remaster rules move other numbers too (difficultyCurve), so compare against the same rules with the flag off.
+    const on = boss('remaster', chapter);
+    const off = boss('remaster', chapter, { bossToughness: false });
+    assert.ok(Math.abs(on.hp / off.hp - BOSS_TOUGHNESS.campaign.roundHp[chapter - 1]) < 1e-9, `Ch${chapter} health`);
+    assert.ok(Math.abs(on.damage / off.damage - BOSS_TOUGHNESS.campaign.roundDamage[chapter - 1]) < 1e-9, `Ch${chapter} damage`);
   }
-  // The remaster rules move other numbers too (difficultyCurve), so compare against the same rules with the flag off.
-  const off = engineWith('remaster');
-  try {
-    off.probe.patchRules({ bossToughness: false });
-    off.startRun(2, 10, 77);
-    const boss = stageBoss(off);
-    assert.ok(Math.abs(stats.remaster.hp / boss.maxHp - BOSS_TOUGHNESS.campaign.roundHp) < 1e-9);
-    assert.ok(Math.abs(stats.remaster.damage / boss.damage - BOSS_TOUGHNESS.campaign.roundDamage) < 1e-9);
-  } finally {
-    off.dispose();
-  }
+  assert.ok(BOSS_TOUGHNESS.campaign.roundHp[0] < BOSS_TOUGHNESS.campaign.roundHp[4], 'later chapters\' bosses are tougher');
+  const classic = boss('classic', 2);
+  const classicOff = boss('classic', 2, { bossToughness: false });
+  assert.deepEqual(classic, classicOff, 'the classic rules leave the boss alone');
 });
 
 test('SYS-12: an infinite boss felled fast sets a floor for the next: it lasts the target fight at that pace, and pays more', () => {
