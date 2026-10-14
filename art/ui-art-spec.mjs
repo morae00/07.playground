@@ -15,6 +15,14 @@ export const SKILL_ART = Object.freeze([
   'executionMark',
 ]);
 
+/**
+ * Arsenal weapons the kit has drawn (SYS-15, K9; PN.arsenal META `done`), in arsenal.ts order. The rest wear their
+ * look's tile and a two-syllable badge (scripts/build-arsenal-art.mjs) until their delivery is accepted.
+ */
+export const ARSENAL_ART = Object.freeze([
+  'inkDarts', 'brushQuills', 'sealArrows', 'frostNeedles', 'thunderNeedles', 'twinBlades', 'ghostVolley', 'headsmanDarts',
+]);
+
 /** Bonus draft cards (makeBonusOffers) have no skill icon: a kit glyph on the frame of the rarity they come in. */
 export const BONUS_ART = Object.freeze([
   { bonus: 'heal', rarity: 'common' },
@@ -71,6 +79,11 @@ function skillTiles() {
   return items;
 }
 
+const arsenalCells = (recipe) => ARSENAL_ART.flatMap((id) => [
+  { key: id, recipe, args: [id, false] },
+  { key: `${id}-awakened`, recipe, args: [id, true] },
+]);
+
 function hudSlots() {
   return SKILL_ART.flatMap((id) => [
     { key: id, recipe: 'slot', args: [id, false] },
@@ -90,6 +103,8 @@ function portraits() {
 /**
  * Sheets. `cell` is the CSS size of one cell, `origin` the drawing's point at the cell's top-left, both in CSS
  * pixels of the drawing as the recipe returns it.
+ * - arsenalTiles, arsenalSlots (keyed): the drawn arsenal weapons (ARSENAL_ART) on the tiles' and slots' cells, in
+ *   sheets of their own (brief K9 Q1) that share the tiles' and slots' classes: each key names its sheet itself.
  * - tiles: the 160 kit card drawn at 150 (a 120 icon, the draft card size in UI-03), with room for the 4 unit
  *   offset shadow and the awakened ink blots. The card sits 8 px inside the cell.
  * - slots: the kit's 52×56 HUD slot at 40 (API-icons hudSlot) without the level pips, which the HUD draws, so one
@@ -105,6 +120,8 @@ function portraits() {
 export const UI_SHEETS = Object.freeze({
   tiles: { file: 'skill-tiles', className: 'artTile', columns: 8, cell: [166, 166], origin: [-8, -8], items: skillTiles() },
   slots: { file: 'hud-slots', className: 'artSlot', columns: 9, cell: [56, 60], origin: [-2, -2], items: hudSlots() },
+  arsenalTiles: { file: 'arsenal-tiles', className: 'artTile', keyed: true, columns: 8, cell: [166, 166], origin: [-8, -8], items: arsenalCells('arsenalTile') },
+  arsenalSlots: { file: 'arsenal-slots', className: 'artSlot', keyed: true, columns: 9, cell: [56, 60], origin: [-2, -2], items: arsenalCells('arsenalSlot') },
   portraits: { file: 'portraits', className: 'artPortrait', columns: 5, cell: [98, 98], origin: [-1, -1], items: portraits() },
   pickups: { file: 'pickups', className: 'artPickup', columns: 4, cell: [28, 28], origin: [-2, -2], items: PICKUP_ART.map((kind) => ({ key: kind, recipe: 'pickup', args: [kind] })) },
   keyart: { file: 'keyart', className: 'artKeyart', columns: 1, cell: [360, 576], origin: [0, 0], items: [{ key: 'hero', recipe: 'keyart', args: ['threeQuarter'] }] },

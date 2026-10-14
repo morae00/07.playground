@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ATLAS_MANIFEST } from './assets/atlasManifest.generated.ts';
 import type { AtlasManifest } from './assets/spriteAtlas.ts';
+import { ARSENAL_IDS } from '../arsenal.ts';
 import { signalFamily } from './palette.ts';
 import { blastDustSpots, boltPoints, jit, stitchDash, threadAlpha, tokenColor, wardPlateSpots, type SkillSpec, type Token } from './skillVfx.ts';
 
@@ -21,7 +22,12 @@ test('FX-06: the bake carries the kit SPEC and a rule for every skill stamp, and
       assert.equal(rule.drive === 'loop', animation[part].fps > 0, `${group}/${part} loops on the clock only when it is a loop`);
     }
   }
-  assert.equal(Object.keys(pack.frames).length, 188);
+  // The kit's 17 skills bake 188 stamps; each arsenal weapon it has drawn (K9) adds its six shot parts of two frames.
+  const arsenal = new Set<string>(ARSENAL_IDS);
+  const drawn = Object.keys(data.parts).filter((group) => arsenal.has(group));
+  const core = Object.keys(pack.frames).filter((key) => !arsenal.has(key.split('/')[1]));
+  assert.equal(core.length, 188);
+  assert.equal(Object.keys(pack.frames).length - core.length, drawn.length * 12);
   assert.doesNotMatch(JSON.stringify(data), /[가-힣]/);
 });
 

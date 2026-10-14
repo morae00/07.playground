@@ -14,7 +14,7 @@ const kitDir = path.join(root, 'art/concept-kit');
 const outDir = path.join(root, 'src/ui/art');
 const storyDir = path.join(root, 'public/assets/packs/story');
 const only = process.argv[2];
-const KIT_FILES = ['lib.js', 'k-hero.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses3.js', 'k-bosses4.js', 'k-icons.js', 'k-enemies.js', 'k-env.js'];
+const KIT_FILES = ['lib.js', 'k-hero.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses3.js', 'k-bosses4.js', 'k-icons.js', 'k-icons2.js', 'k-enemies.js', 'k-env.js'];
 
 const browser = await chromium.launch();
 try {
@@ -47,11 +47,21 @@ async function bakeSheets(page) {
     writeFileSync(path.join(outDir, `${sheet.file}.webp`), Buffer.from(result.webp.split(',')[1], 'base64'));
     const rows = Math.ceil(sheet.items.length / sheet.columns);
     const [cellWidth, cellHeight] = sheet.cell;
-    css += `\n.${sheet.className} {\n  aspect-ratio: ${cellWidth} / ${cellHeight};\n  background-image: url("./${sheet.file}.webp");\n  background-repeat: no-repeat;\n  background-size: ${sheet.columns * 100}% ${rows * 100}%;\n}\n`;
+    // A keyed sheet shares another sheet's class and cell: each of its keys names the image and its size itself.
+    if (sheet.keyed) {
+      const base = Object.values(UI_SHEETS).find((other) => !other.keyed && other.className === sheet.className);
+      if (!base || base.cell.join() !== sheet.cell.join()) throw new Error(`${name}: a keyed sheet needs a ${sheet.className} sheet with its cell`);
+      css += '\n';
+    } else {
+      css += `\n.${sheet.className} {\n  aspect-ratio: ${cellWidth} / ${cellHeight};\n  background-image: url("./${sheet.file}.webp");\n  background-repeat: no-repeat;\n  background-size: ${sheet.columns * 100}% ${rows * 100}%;\n}\n`;
+    }
     sheet.items.forEach((item, index) => {
       const column = index % sheet.columns;
       const row = Math.floor(index / sheet.columns);
-      css += `.${sheet.className}[data-art="${item.key}"] { background-position: ${percent(column, sheet.columns)} ${percent(row, rows)}; }\n`;
+      const position = `background-position: ${percent(column, sheet.columns)} ${percent(row, rows)};`;
+      css += sheet.keyed
+        ? `.${sheet.className}[data-art="${item.key}"] { background-image: url("./${sheet.file}.webp"); background-size: ${sheet.columns * 100}% ${rows * 100}%; ${position} }\n`
+        : `.${sheet.className}[data-art="${item.key}"] { ${position} }\n`;
     });
     console.log(`${name}: ${sheet.items.length} cells, ${result.width}x${result.height}, ${Math.round(result.bytes / 1024)} KiB`);
   }
@@ -109,6 +119,9 @@ async function renderSheet({ sheet, density, quality, colorMap }) {
     tile: (id, awakened) => PN.icons.tile(id, { awakened, metal: true, size: 150 }),
     // The frame's window centre is (80, 80) of 160, which is 75 at 150.
     bonusTile: (bonus, rarity) => `${PN.icons.frame(rarity, { metal: true, size: 150 })}<g transform="translate(75 74)">${bonusGlyph[bonus]()}</g>`,
+    // SYS-15 (K9): the arsenal's own tiles and slots, framed like the core skills'.
+    arsenalTile: (id, awakened) => PN.arsenal.tile(id, { awakened, metal: true, size: 150 }),
+    arsenalSlot: (id, awakened) => PN.arsenal.hudSlot(id, { size: 40, awakened }).replace(/<rect x="46\.4"[^>]*\/>/g, ''),
     slot: (id, awakened) => {
       // hudSlot draws the plain icon; an awakened skill shows its awakened icon in the same slot.
       const skill = PN.icons.skill;

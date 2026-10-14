@@ -1382,7 +1382,7 @@ export class WorldRenderer {
     for (const projectile of this.world.projectiles) {
       const point = this.interpolated(projectile);
       if (!circleVisible(this.viewport, point.x, point.y, projectile.radius * 8)) continue;
-      if (this.skillArt && SKILL_SHOTS.has(projectile.look) && this.drawSkillShot(ctx, projectile, point.x, point.y)) continue;
+      if (this.skillArt && (SKILL_SHOTS.has(projectile.look) || this.ownShot(projectile)) && this.drawSkillShot(ctx, projectile, point.x, point.y)) continue;
       this.visual.drawFriendlyProjectile(ctx, {
         x: point.x,
         y: point.y,
@@ -1402,9 +1402,15 @@ export class WorldRenderer {
    * between, all turned to its velocity. An awakened fan knife coming back shows its handle first; recovery threads
    * fly only from the awakened passive.
    */
+  /** SYS-15 (K9): an arsenal weapon the kit has drawn has shot stamps of its own, under its id. */
+  private ownShot(shot: Readonly<Projectile>) {
+    return shot.skillId !== shot.look && this.vfx.part(shot.skillId, 'travel') !== undefined;
+  }
+
   private drawSkillShot(ctx: CanvasRenderingContext2D, shot: Readonly<Projectile>, x: number, y: number) {
-    // SYS-15: an arsenal weapon's shots wear its look's art, awakened when the weapon itself is.
-    const group = shot.look;
+    // SYS-15: an arsenal weapon's shots wear its own art once the kit draws it (K9), else its look's, awakened when
+    // the weapon itself is.
+    const group = this.ownShot(shot) ? shot.skillId : shot.look;
     const prefix = group === 'recoveryThread' || group === 'mirrorClone' ? 'shot-' : '';
     // A mirror clone's aimed shots (awakened) wear the awakened thread; its flank shots do not.
     const awakened = group === 'mirrorClone' ? shot.aimTargetId >= 0 : group === 'recoveryThread' || this.world.skills[shot.skillId]?.awakened;

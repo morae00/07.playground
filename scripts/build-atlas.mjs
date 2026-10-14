@@ -8,7 +8,7 @@ import { ATLAS_SCALE, BAKE_MARGIN, COLOR_MAP, ENEMY_ROLES, FRAME_PADDING, GROUND
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const kitDir = path.join(root, 'art/concept-kit');
-const KIT_FILES = ['lib.js', 'k-hero.js', 'k-skills-vfx.js', 'k-enemies.js', 'k-bombers.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses3.js', 'k-bosses4.js', 'k-icons.js', 'k-env.js'];
+const KIT_FILES = ['lib.js', 'k-hero.js', 'k-skills-vfx.js', 'k-enemies.js', 'k-bombers.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses3.js', 'k-bosses4.js', 'k-icons.js', 'k-icons2.js', 'k-env.js'];
 
 const browser = await chromium.launch();
 try {
@@ -160,6 +160,17 @@ function readSkillVfx({ timing, render }) {
       parts[group][p.part] = { drive: p.drive, rotate: p.rotate, layer: p.layer, lod: p.lod, still: p.still, flash: p.flash === true, seconds: p.drive === 'prog' ? timing[base] : null };
     }
   }
+  // SYS-15 (K9): each arsenal weapon the kit has drawn is a group of its own, named by the weapon. Its parts carry a
+  // Korean `window` note for review; only the playback fields travel.
+  const A = window.PN.arsenal;
+  for (const id of A.shots.filter((shotId) => A.META[shotId].done)) {
+    parts[id] = {};
+    for (const p of A.parts(id)) {
+      const base = p.part.replace(/-awakened$/, '');
+      if (p.drive === 'prog' && !(base in timing)) throw new Error(`skill/${id}/${p.part} has no timing in SKILL_VFX_TIMING`);
+      parts[id][p.part] = { drive: p.drive, rotate: p.rotate, layer: p.layer, lod: p.lod, still: p.still, flash: p.flash === true, seconds: p.drive === 'prog' ? timing[base] : null };
+    }
+  }
   const data = { spec: S.SPEC, parts, render };
   const text = JSON.stringify(data);
   if (/[\uAC00-\uD7A3]/.test(text)) throw new Error('skill VFX data carries Korean text; strings belong in the string tables');
@@ -180,6 +191,17 @@ async function renderFrames({ frames, scale, margin, colorMap, roles }) {
           }
         }
         expanded.at(-1).animation = { key: `skill/${group}`, spec: Object.fromEntries(parts.map((p) => [p.part, { frames: p.frames, fps: p.drive === 'loop' ? p.fps : 0 }])) };
+      }
+      // SYS-15 (K9): the shots of every arsenal weapon the kit has drawn (PN.arsenal META done), under the weapon's id.
+      const A = window.PN.arsenal;
+      for (const id of A.shots.filter((shotId) => A.META[shotId].done)) {
+        const parts = A.parts(id);
+        for (const p of parts) {
+          for (let index = 0; index < p.frames; index += 1) {
+            expanded.push({ key: `skill/${id}/${p.part}/${index}`, call: ['PN.arsenal.stamp', id, p.part, { frame: index }], box: p.box, anchor: p.anchor, scale: 1 });
+          }
+        }
+        expanded.at(-1).animation = { key: `skill/${id}`, spec: Object.fromEntries(parts.map((p) => [p.part, { frames: p.frames, fps: p.drive === 'loop' ? p.fps : 0 }])) };
       }
       continue;
     }

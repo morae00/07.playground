@@ -168,6 +168,27 @@ test('bombers draw from their own frames: standing, planted by the fuse\'s progr
   }
 });
 
+test('a weapon the kit has drawn fires its own shot stamps from the skills pack (SYS-15, K9)', async () => {
+  const atlas = await loadedAtlas();
+  assert.equal(await atlas.load('skills'), true);
+  const { engine, images } = arena(1, 2, atlas);
+  try {
+    const { player } = engine.probe.read();
+    engine.probe.spawnEnemy({ tier: 'large', x: player.x + 260, y: player.y, speed: 0, damage: 0, hp: 1e6 });
+    engine.probe.setSkills({ inkDarts: { level: 1 } });
+    for (let step = 0; step < 240 && !engine.probe.read().projectiles.some((shot) => shot.skillId === 'inkDarts'); step += 1) engine.probe.step(1);
+    engine.probe.step(4);
+    images.length = 0;
+    engine.probe.render(1);
+    const pack = ATLAS_MANIFEST.packs.skills;
+    const own = new Set(Object.entries(pack.frames).filter(([key]) => key.startsWith('skill/inkDarts/')).map(([, frame]) => `${pack.pages[frame[0]]}:${frame[1]},${frame[2]}`));
+    assert.ok(own.size > 0, 'the ink darts have baked shots');
+    assert.ok(images.some((draw) => own.has(`${draw.image.url}:${draw.sx},${draw.sy}`)), 'an ink dart in flight draws its own stamp');
+  } finally {
+    engine.dispose();
+  }
+});
+
 test('without an atlas nothing is blitted (vector fallback)', () => {
   const { engine, images } = arena(1, 2, null);
   try {

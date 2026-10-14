@@ -72,8 +72,8 @@ export const ATLAS_MANIFEST = {
         "skill/boneMortar/blast/0": [0, 1901, 497, 127, 129, 65, 59],
         "skill/boneMortar/blast/1": [0, 1016, 497, 152, 144, 77, 75],
         "skill/boneMortar/blast/2": [0, 1471, 497, 148, 142, 75, 74],
-        "skill/boneMortar/dust/0": [0, 2018, 975, 28, 14, 14, 7],
-        "skill/boneMortar/dust/1": [0, 1817, 975, 29, 15, 16, 8],
+        "skill/boneMortar/dust/0": [0, 1163, 1057, 28, 14, 14, 7],
+        "skill/boneMortar/dust/1": [0, 670, 1057, 29, 15, 16, 8],
         "skill/boneMortar/shell-awakened/0": [0, 2, 2, 54, 329, 28, 323],
         "skill/boneMortar/shell-awakened/1": [0, 118, 2, 54, 247, 28, 239],
         "skill/boneMortar/shell-awakened/2": [0, 1334, 2, 54, 165, 28, 155],
@@ -82,28 +82,40 @@ export const ATLAS_MANIFEST = {
         "skill/boneMortar/shell/1": [0, 176, 2, 54, 247, 28, 239],
         "skill/boneMortar/shell/2": [0, 1392, 2, 54, 165, 28, 155],
         "skill/boneMortar/shell/3": [0, 1405, 655, 64, 95, 32, 83],
+        "skill/brushQuills/end-awakened/0": [0, 1324, 975, 54, 24, 41, 15],
+        "skill/brushQuills/end-awakened/1": [0, 1382, 975, 54, 24, 41, 15],
+        "skill/brushQuills/end/0": [0, 1146, 1033, 51, 18, 38, 11],
+        "skill/brushQuills/end/1": [0, 54, 1033, 51, 19, 38, 11],
+        "skill/brushQuills/start-awakened/0": [0, 1440, 975, 49, 24, 36, 15],
+        "skill/brushQuills/start-awakened/1": [0, 1493, 975, 49, 24, 36, 15],
+        "skill/brushQuills/start/0": [0, 1940, 1033, 43, 16, 30, 11],
+        "skill/brushQuills/start/1": [0, 1987, 1033, 47, 16, 34, 11],
+        "skill/brushQuills/travel-awakened/0": [0, 1546, 975, 54, 24, 41, 15],
+        "skill/brushQuills/travel-awakened/1": [0, 1604, 975, 54, 24, 41, 15],
+        "skill/brushQuills/travel/0": [0, 2, 1057, 51, 16, 38, 11],
+        "skill/brushQuills/travel/1": [0, 57, 1057, 51, 16, 38, 11],
         "skill/chainSpark/burst-awakened/0": [0, 673, 786, 59, 64, 32, 33],
         "skill/chainSpark/burst-awakened/1": [0, 1771, 655, 88, 75, 45, 40],
         "skill/chainSpark/burst-awakened/2": [0, 1570, 655, 85, 91, 40, 44],
         "skill/coinFever/frenzy-awakened/0": [0, 1189, 786, 160, 62, 78, 51],
         "skill/coinFever/frenzy-awakened/1": [0, 1353, 786, 160, 62, 78, 57],
         "skill/coinFever/frenzy-awakened/2": [0, 1700, 786, 160, 60, 78, 61],
-        "skill/coinFever/glint/0": [0, 1178, 922, 31, 31, 17, 14],
-        "skill/coinFever/glint/1": [0, 438, 975, 26, 21, 17, 9],
+        "skill/coinFever/glint/0": [0, 1315, 922, 31, 31, 17, 14],
+        "skill/coinFever/glint/1": [0, 739, 1006, 26, 21, 17, 9],
         "skill/coinFever/pop-awakened/0": [0, 59, 862, 58, 55, 29, 56],
         "skill/coinFever/pop/0": [0, 1105, 862, 52, 52, 26, 56],
-        "skill/common/stitchHead/0": [0, 1557, 1002, 47, 9, 27, 4],
-        "skill/common/stitchHead/1": [0, 1608, 1002, 46, 9, 27, 4],
+        "skill/common/stitchHead/0": [0, 1238, 1077, 47, 9, 27, 4],
+        "skill/common/stitchHead/1": [0, 1289, 1077, 46, 9, 27, 4],
         "skill/eclipseStep/feet-awakened/0": [0, 1161, 862, 123, 52, 61, 26],
         "skill/eclipseStep/feet-awakened/1": [0, 2, 922, 123, 49, 61, 26],
         "skill/eclipseStep/feet-awakened/2": [0, 192, 922, 106, 46, 56, 25],
         "skill/eclipseStep/feet/0": [0, 1676, 862, 113, 50, 57, 25],
         "skill/eclipseStep/feet/1": [0, 1793, 862, 113, 50, 57, 25],
         "skill/eclipseStep/feet/2": [0, 479, 922, 99, 43, 51, 19],
-        "skill/eclipseStep/slash-awakened/0": [0, 1267, 922, 239, 27, 237, 15],
-        "skill/eclipseStep/slash-awakened/1": [0, 1510, 922, 211, 27, 209, 15],
-        "skill/eclipseStep/slash/0": [0, 2, 975, 240, 23, 238, 13],
-        "skill/eclipseStep/slash/1": [0, 246, 975, 188, 23, 186, 13],
+        "skill/eclipseStep/slash-awakened/0": [0, 1793, 922, 239, 27, 237, 15],
+        "skill/eclipseStep/slash-awakened/1": [0, 2, 975, 211, 27, 209, 15],
+        "skill/eclipseStep/slash/0": [0, 2, 1006, 240, 23, 238, 13],
+        "skill/eclipseStep/slash/1": [0, 246, 1006, 188, 23, 186, 13],
         "skill/executionMark/mark/0": [0, 302, 922, 35, 46, 11, 48],
         "skill/executionMark/mark/1": [0, 1568, 862, 50, 51, 25, 53],
         "skill/executionMark/mark/2": [0, 1622, 862, 50, 51, 25, 53],
@@ -112,21 +124,21 @@ export const ATLAS_MANIFEST = {
         "skill/executionMark/markBoss-awakened/2": [0, 1937, 655, 70, 75, 33, 77],
         "skill/executionMark/pop-awakened/0": [0, 121, 862, 58, 55, 29, 56],
         "skill/executionMark/pop/0": [0, 1288, 862, 52, 52, 26, 56],
-        "skill/fanKnives/end-awakened/0": [0, 981, 975, 55, 17, 38, 10],
-        "skill/fanKnives/end-awakened/1": [0, 1373, 975, 55, 16, 38, 9],
-        "skill/fanKnives/end/0": [0, 1432, 975, 55, 16, 37, 9],
-        "skill/fanKnives/end/1": [0, 1491, 975, 55, 16, 37, 9],
-        "skill/fanKnives/return-awakened/0": [0, 468, 975, 55, 19, 38, 10],
-        "skill/fanKnives/return-awakened/1": [0, 527, 975, 55, 19, 38, 10],
-        "skill/fanKnives/start-awakened/0": [0, 683, 975, 55, 18, 37, 10],
-        "skill/fanKnives/start-awakened/1": [0, 742, 975, 55, 18, 37, 10],
-        "skill/fanKnives/start/0": [0, 1040, 975, 55, 17, 37, 9],
-        "skill/fanKnives/start/1": [0, 1099, 975, 55, 17, 37, 9],
-        "skill/fanKnives/travel-awakened/0": [0, 801, 975, 55, 18, 37, 10],
-        "skill/fanKnives/travel-awakened/1": [0, 860, 975, 55, 18, 37, 10],
-        "skill/fanKnives/travel/0": [0, 1158, 975, 55, 17, 37, 9],
-        "skill/fanKnives/travel/1": [0, 1217, 975, 55, 17, 37, 9],
-        "skill/frostLine/chill12/0": [0, 1785, 922, 51, 25, 24, 13],
+        "skill/fanKnives/end-awakened/0": [0, 1548, 1033, 55, 17, 38, 10],
+        "skill/fanKnives/end-awakened/1": [0, 112, 1057, 55, 16, 38, 9],
+        "skill/fanKnives/end/0": [0, 171, 1057, 55, 16, 37, 9],
+        "skill/fanKnives/end/1": [0, 230, 1057, 55, 16, 37, 9],
+        "skill/fanKnives/return-awakened/0": [0, 109, 1033, 55, 19, 38, 10],
+        "skill/fanKnives/return-awakened/1": [0, 168, 1033, 55, 19, 38, 10],
+        "skill/fanKnives/start-awakened/0": [0, 1201, 1033, 55, 18, 37, 10],
+        "skill/fanKnives/start-awakened/1": [0, 1260, 1033, 55, 18, 37, 10],
+        "skill/fanKnives/start/0": [0, 1607, 1033, 55, 17, 37, 9],
+        "skill/fanKnives/start/1": [0, 1666, 1033, 55, 17, 37, 9],
+        "skill/fanKnives/travel-awakened/0": [0, 1319, 1033, 55, 18, 37, 10],
+        "skill/fanKnives/travel-awakened/1": [0, 1378, 1033, 55, 18, 37, 10],
+        "skill/fanKnives/travel/0": [0, 1725, 1033, 55, 17, 37, 9],
+        "skill/fanKnives/travel/1": [0, 1784, 1033, 55, 17, 37, 9],
+        "skill/frostLine/chill12/0": [0, 1161, 975, 51, 25, 24, 13],
         "skill/frostLine/chill19/0": [0, 1040, 922, 75, 36, 39, 18],
         "skill/frostLine/chill28/0": [0, 1910, 862, 114, 50, 58, 25],
         "skill/frostLine/chill38/0": [0, 78, 786, 154, 70, 75, 35],
@@ -135,11 +147,59 @@ export const ATLAS_MANIFEST = {
         "skill/frostLine/origin-awakened/1": [0, 1864, 786, 66, 58, 36, 26],
         "skill/frostLine/origin/0": [0, 842, 922, 59, 38, 29, 23],
         "skill/frostLine/origin/1": [0, 341, 922, 64, 46, 34, 27],
-        "skill/frostLine/root12-awakened/0": [0, 1725, 922, 56, 26, 28, 13],
+        "skill/frostLine/root12-awakened/0": [0, 217, 975, 56, 26, 28, 13],
         "skill/frostLine/root19-awakened/0": [0, 754, 922, 84, 39, 42, 20],
         "skill/frostLine/root28-awakened/0": [0, 694, 862, 121, 54, 60, 27],
         "skill/frostLine/root38-awakened/0": [0, 236, 786, 161, 70, 80, 35],
         "skill/frostLine/root54-awakened/0": [0, 885, 655, 225, 98, 112, 49],
+        "skill/frostNeedles/end-awakened/0": [0, 876, 1006, 76, 20, 62, 10],
+        "skill/frostNeedles/end-awakened/1": [0, 956, 1006, 76, 20, 62, 10],
+        "skill/frostNeedles/end/0": [0, 1195, 1057, 68, 14, 54, 6],
+        "skill/frostNeedles/end/1": [0, 289, 1057, 68, 16, 54, 6],
+        "skill/frostNeedles/start-awakened/0": [0, 1036, 1006, 47, 20, 33, 10],
+        "skill/frostNeedles/start-awakened/1": [0, 1087, 1006, 53, 20, 39, 10],
+        "skill/frostNeedles/start/0": [0, 1714, 1057, 41, 13, 27, 7],
+        "skill/frostNeedles/start/1": [0, 1267, 1057, 49, 14, 35, 7],
+        "skill/frostNeedles/travel-awakened/0": [0, 507, 1006, 76, 22, 62, 12],
+        "skill/frostNeedles/travel-awakened/1": [0, 1144, 1006, 79, 20, 65, 10],
+        "skill/frostNeedles/travel/0": [0, 1320, 1057, 68, 14, 54, 7],
+        "skill/frostNeedles/travel/1": [0, 1759, 1057, 71, 13, 57, 7],
+        "skill/ghostVolley/end-awakened/0": [0, 1227, 1006, 65, 20, 50, 10],
+        "skill/ghostVolley/end-awakened/1": [0, 1296, 1006, 65, 20, 50, 10],
+        "skill/ghostVolley/end/0": [0, 703, 1057, 59, 15, 44, 7],
+        "skill/ghostVolley/end/1": [0, 766, 1057, 59, 15, 44, 6],
+        "skill/ghostVolley/start-awakened/0": [0, 1365, 1006, 46, 20, 31, 10],
+        "skill/ghostVolley/start-awakened/1": [0, 1415, 1006, 56, 20, 41, 10],
+        "skill/ghostVolley/start/0": [0, 829, 1057, 43, 15, 28, 9],
+        "skill/ghostVolley/start/1": [0, 876, 1057, 52, 15, 37, 9],
+        "skill/ghostVolley/travel-awakened/0": [0, 438, 1006, 65, 23, 50, 13],
+        "skill/ghostVolley/travel-awakened/1": [0, 1475, 1006, 65, 20, 50, 10],
+        "skill/ghostVolley/travel/0": [0, 932, 1057, 59, 15, 44, 9],
+        "skill/ghostVolley/travel/1": [0, 1976, 1057, 59, 12, 44, 6],
+        "skill/headsmanDarts/end-awakened/0": [0, 277, 975, 63, 26, 49, 16],
+        "skill/headsmanDarts/end-awakened/1": [0, 344, 975, 62, 26, 48, 16],
+        "skill/headsmanDarts/end/0": [0, 227, 1033, 59, 19, 45, 12],
+        "skill/headsmanDarts/end/1": [0, 290, 1033, 58, 19, 44, 12],
+        "skill/headsmanDarts/start-awakened/0": [0, 410, 975, 48, 26, 34, 16],
+        "skill/headsmanDarts/start-awakened/1": [0, 462, 975, 56, 26, 42, 16],
+        "skill/headsmanDarts/start/0": [0, 352, 1033, 47, 19, 33, 12],
+        "skill/headsmanDarts/start/1": [0, 403, 1033, 54, 19, 40, 12],
+        "skill/headsmanDarts/travel-awakened/0": [0, 522, 975, 62, 26, 48, 16],
+        "skill/headsmanDarts/travel-awakened/1": [0, 588, 975, 68, 26, 54, 16],
+        "skill/headsmanDarts/travel/0": [0, 461, 1033, 58, 19, 44, 12],
+        "skill/headsmanDarts/travel/1": [0, 523, 1033, 63, 19, 49, 12],
+        "skill/inkDarts/end-awakened/0": [0, 1662, 975, 54, 24, 41, 12],
+        "skill/inkDarts/end-awakened/1": [0, 1216, 975, 54, 25, 41, 12],
+        "skill/inkDarts/end/0": [0, 769, 1006, 50, 21, 37, 9],
+        "skill/inkDarts/end/1": [0, 823, 1006, 49, 21, 36, 8],
+        "skill/inkDarts/start-awakened/0": [0, 1720, 975, 40, 24, 27, 12],
+        "skill/inkDarts/start-awakened/1": [0, 1764, 975, 47, 24, 34, 12],
+        "skill/inkDarts/start/0": [0, 361, 1057, 38, 16, 25, 8],
+        "skill/inkDarts/start/1": [0, 1437, 1033, 45, 18, 32, 9],
+        "skill/inkDarts/travel-awakened/0": [0, 1815, 975, 53, 24, 40, 12],
+        "skill/inkDarts/travel-awakened/1": [0, 1872, 975, 60, 24, 47, 12],
+        "skill/inkDarts/travel/0": [0, 1544, 1006, 49, 20, 36, 10],
+        "skill/inkDarts/travel/1": [0, 1597, 1006, 55, 20, 42, 10],
         "skill/ironFrame/pop-awakened/0": [0, 183, 862, 58, 55, 29, 56],
         "skill/ironFrame/pop/0": [0, 1344, 862, 52, 52, 26, 56],
         "skill/ironFrame/shield/0": [0, 768, 2, 119, 170, 56, 151],
@@ -168,38 +228,38 @@ export const ATLAS_MANIFEST = {
         "skill/mirrorClone/clone-throw/1": [0, 279, 497, 137, 154, 72, 140],
         "skill/mirrorClone/clone-throw/2": [0, 420, 497, 137, 154, 72, 140],
         "skill/mirrorClone/clone-throw/3": [0, 561, 497, 137, 154, 72, 140],
-        "skill/mirrorClone/shot-end-awakened/0": [0, 777, 1002, 83, 10, 69, 5],
-        "skill/mirrorClone/shot-end-awakened/1": [0, 864, 1002, 55, 10, 41, 5],
-        "skill/mirrorClone/shot-end/0": [0, 923, 1002, 55, 10, 41, 5],
-        "skill/mirrorClone/shot-end/1": [0, 982, 1002, 41, 10, 27, 5],
-        "skill/mirrorClone/shot-start-awakened/0": [0, 1027, 1002, 43, 10, 27, 5],
-        "skill/mirrorClone/shot-start-awakened/1": [0, 1074, 1002, 71, 10, 55, 5],
-        "skill/mirrorClone/shot-start/0": [0, 1149, 1002, 43, 10, 27, 5],
-        "skill/mirrorClone/shot-start/1": [0, 1196, 1002, 57, 10, 41, 5],
-        "skill/mirrorClone/shot-travel-awakened/0": [0, 1257, 1002, 85, 10, 69, 5],
-        "skill/mirrorClone/shot-travel-awakened/1": [0, 1346, 1002, 85, 10, 69, 5],
-        "skill/mirrorClone/shot-travel/0": [0, 1435, 1002, 57, 10, 41, 5],
-        "skill/mirrorClone/shot-travel/1": [0, 1496, 1002, 57, 10, 41, 5],
-        "skill/needleStorm/end-awakened/0": [0, 373, 1002, 85, 12, 71, 5],
-        "skill/needleStorm/end-awakened/1": [0, 2, 1002, 73, 14, 59, 5],
-        "skill/needleStorm/end/0": [0, 1850, 975, 86, 15, 72, 6],
-        "skill/needleStorm/end/1": [0, 1940, 975, 74, 15, 60, 5],
-        "skill/needleStorm/shard-awakened/0": [0, 1658, 1002, 56, 9, 3, 6],
-        "skill/needleStorm/shard-awakened/1": [0, 713, 1002, 60, 11, -21, 5],
-        "skill/needleStorm/start-awakened/0": [0, 462, 1002, 67, 12, 53, 6],
-        "skill/needleStorm/start-awakened/1": [0, 533, 1002, 79, 12, 65, 6],
-        "skill/needleStorm/start/0": [0, 231, 1002, 57, 13, 43, 7],
-        "skill/needleStorm/start/1": [0, 292, 1002, 77, 13, 63, 7],
-        "skill/needleStorm/travel-awakened/0": [0, 586, 975, 93, 19, 79, 13],
-        "skill/needleStorm/travel-awakened/1": [0, 616, 1002, 93, 12, 79, 6],
-        "skill/needleStorm/travel/0": [0, 1550, 975, 93, 16, 79, 9],
-        "skill/needleStorm/travel/1": [0, 1276, 975, 93, 17, 79, 8],
+        "skill/mirrorClone/shot-end-awakened/0": [0, 458, 1077, 83, 10, 69, 5],
+        "skill/mirrorClone/shot-end-awakened/1": [0, 545, 1077, 55, 10, 41, 5],
+        "skill/mirrorClone/shot-end/0": [0, 604, 1077, 55, 10, 41, 5],
+        "skill/mirrorClone/shot-end/1": [0, 663, 1077, 41, 10, 27, 5],
+        "skill/mirrorClone/shot-start-awakened/0": [0, 708, 1077, 43, 10, 27, 5],
+        "skill/mirrorClone/shot-start-awakened/1": [0, 755, 1077, 71, 10, 55, 5],
+        "skill/mirrorClone/shot-start/0": [0, 830, 1077, 43, 10, 27, 5],
+        "skill/mirrorClone/shot-start/1": [0, 877, 1077, 57, 10, 41, 5],
+        "skill/mirrorClone/shot-travel-awakened/0": [0, 938, 1077, 85, 10, 69, 5],
+        "skill/mirrorClone/shot-travel-awakened/1": [0, 1027, 1077, 85, 10, 69, 5],
+        "skill/mirrorClone/shot-travel/0": [0, 1116, 1077, 57, 10, 41, 5],
+        "skill/mirrorClone/shot-travel/1": [0, 1177, 1077, 57, 10, 41, 5],
+        "skill/needleStorm/end-awakened/0": [0, 2, 1077, 85, 12, 71, 5],
+        "skill/needleStorm/end-awakened/1": [0, 1392, 1057, 73, 14, 59, 5],
+        "skill/needleStorm/end/0": [0, 995, 1057, 86, 15, 72, 6],
+        "skill/needleStorm/end/1": [0, 1085, 1057, 74, 15, 60, 5],
+        "skill/needleStorm/shard-awakened/0": [0, 1339, 1077, 56, 9, 3, 6],
+        "skill/needleStorm/shard-awakened/1": [0, 394, 1077, 60, 11, -21, 5],
+        "skill/needleStorm/start-awakened/0": [0, 91, 1077, 67, 12, 53, 6],
+        "skill/needleStorm/start-awakened/1": [0, 162, 1077, 79, 12, 65, 6],
+        "skill/needleStorm/start/0": [0, 1834, 1057, 57, 13, 43, 7],
+        "skill/needleStorm/start/1": [0, 1895, 1057, 77, 13, 63, 7],
+        "skill/needleStorm/travel-awakened/0": [0, 590, 1033, 93, 19, 79, 13],
+        "skill/needleStorm/travel-awakened/1": [0, 245, 1077, 93, 12, 79, 6],
+        "skill/needleStorm/travel/0": [0, 403, 1057, 93, 16, 79, 9],
+        "skill/needleStorm/travel/1": [0, 1843, 1033, 93, 17, 79, 8],
         "skill/orbitScythes/blade-outer-awakened/0": [0, 964, 786, 35, 63, 8, 30],
         "skill/orbitScythes/blade-outer-awakened/1": [0, 1003, 786, 35, 63, 8, 30],
         "skill/orbitScythes/blade/0": [0, 1042, 786, 35, 63, 8, 33],
         "skill/orbitScythes/blade/1": [0, 1081, 786, 35, 63, 8, 33],
-        "skill/paperWard/plate-awakened/0": [0, 919, 975, 27, 18, 14, 9],
-        "skill/paperWard/plate-awakened/1": [0, 950, 975, 27, 18, 14, 9],
+        "skill/paperWard/plate-awakened/0": [0, 1486, 1033, 27, 18, 14, 9],
+        "skill/paperWard/plate-awakened/1": [0, 1517, 1033, 27, 18, 14, 9],
         "skill/paperWard/plates/0": [0, 1934, 786, 110, 57, 56, 105],
         "skill/paperWard/plates/1": [0, 541, 786, 128, 66, 65, 110],
         "skill/paperWard/plates/2": [0, 401, 786, 136, 67, 69, 110],
@@ -216,18 +276,54 @@ export const ATLAS_MANIFEST = {
         "skill/railSpear/origin/1": [0, 1565, 786, 44, 62, 44, 41],
         "skill/recoveryThread/pop-awakened/0": [0, 446, 862, 58, 55, 29, 56],
         "skill/recoveryThread/pop/0": [0, 1512, 862, 52, 52, 26, 56],
-        "skill/recoveryThread/shot-end-awakened/0": [0, 1647, 975, 54, 16, 40, 7],
-        "skill/recoveryThread/shot-end-awakened/1": [0, 1705, 975, 48, 16, 34, 7],
-        "skill/recoveryThread/shot-start-awakened/0": [0, 79, 1002, 42, 14, 28, 7],
-        "skill/recoveryThread/shot-start-awakened/1": [0, 125, 1002, 42, 14, 28, 7],
-        "skill/recoveryThread/shot-travel-awakened/0": [0, 1757, 975, 56, 16, 42, 7],
-        "skill/recoveryThread/shot-travel-awakened/1": [0, 171, 1002, 56, 14, 42, 7],
+        "skill/recoveryThread/shot-end-awakened/0": [0, 500, 1057, 54, 16, 40, 7],
+        "skill/recoveryThread/shot-end-awakened/1": [0, 558, 1057, 48, 16, 34, 7],
+        "skill/recoveryThread/shot-start-awakened/0": [0, 1469, 1057, 42, 14, 28, 7],
+        "skill/recoveryThread/shot-start-awakened/1": [0, 1515, 1057, 42, 14, 28, 7],
+        "skill/recoveryThread/shot-travel-awakened/0": [0, 610, 1057, 56, 16, 42, 7],
+        "skill/recoveryThread/shot-travel-awakened/1": [0, 1561, 1057, 56, 14, 42, 7],
+        "skill/sealArrows/end-awakened/0": [0, 660, 975, 105, 26, 89, 13],
+        "skill/sealArrows/end-awakened/1": [0, 769, 975, 105, 26, 89, 13],
+        "skill/sealArrows/end/0": [0, 1656, 1006, 96, 20, 80, 9],
+        "skill/sealArrows/end/1": [0, 587, 1006, 96, 22, 80, 9],
+        "skill/sealArrows/start-awakened/0": [0, 878, 975, 74, 26, 58, 13],
+        "skill/sealArrows/start-awakened/1": [0, 956, 975, 92, 26, 76, 13],
+        "skill/sealArrows/start/0": [0, 687, 1033, 72, 19, 56, 9],
+        "skill/sealArrows/start/1": [0, 763, 1033, 86, 19, 70, 9],
+        "skill/sealArrows/travel-awakened/0": [0, 1684, 922, 105, 28, 89, 15],
+        "skill/sealArrows/travel-awakened/1": [0, 1052, 975, 105, 26, 89, 13],
+        "skill/sealArrows/travel/0": [0, 853, 1033, 96, 19, 80, 9],
+        "skill/sealArrows/travel/1": [0, 953, 1033, 96, 19, 80, 10],
+        "skill/thunderNeedles/end-awakened/0": [0, 1756, 1006, 48, 20, 34, 10],
+        "skill/thunderNeedles/end-awakened/1": [0, 1808, 1006, 48, 20, 34, 10],
+        "skill/thunderNeedles/end/0": [0, 1621, 1057, 48, 14, 34, 7],
+        "skill/thunderNeedles/end/1": [0, 342, 1077, 48, 12, 34, 6],
+        "skill/thunderNeedles/start-awakened/0": [0, 1860, 1006, 47, 20, 33, 10],
+        "skill/thunderNeedles/start-awakened/1": [0, 1911, 1006, 47, 20, 33, 10],
+        "skill/thunderNeedles/start/0": [0, 1673, 1057, 37, 14, 23, 6],
+        "skill/thunderNeedles/start/1": [0, 1053, 1033, 37, 19, 23, 9],
+        "skill/thunderNeedles/travel-awakened/0": [0, 687, 1006, 48, 22, 34, 12],
+        "skill/thunderNeedles/travel-awakened/1": [0, 1962, 1006, 48, 20, 34, 10],
+        "skill/thunderNeedles/travel/0": [0, 2, 1033, 48, 20, 34, 10],
+        "skill/thunderNeedles/travel/1": [0, 1094, 1033, 48, 19, 34, 9],
+        "skill/twinBlades/end-awakened/0": [0, 1400, 922, 46, 30, 31, 12],
+        "skill/twinBlades/end-awakened/1": [0, 1119, 922, 46, 36, 31, 18],
+        "skill/twinBlades/end/0": [0, 1274, 975, 46, 25, 31, 9],
+        "skill/twinBlades/end/1": [0, 1350, 922, 46, 31, 31, 15],
+        "skill/twinBlades/start-awakened/0": [0, 1169, 922, 33, 36, 18, 18],
+        "skill/twinBlades/start-awakened/1": [0, 1450, 922, 46, 30, 31, 12],
+        "skill/twinBlades/start/0": [0, 1500, 922, 26, 30, 11, 15],
+        "skill/twinBlades/start/1": [0, 1936, 975, 42, 24, 27, 9],
+        "skill/twinBlades/travel-awakened/0": [0, 1206, 922, 46, 36, 31, 18],
+        "skill/twinBlades/travel-awakened/1": [0, 1530, 922, 46, 30, 31, 12],
+        "skill/twinBlades/travel/0": [0, 1580, 922, 46, 30, 31, 15],
+        "skill/twinBlades/travel/1": [0, 1982, 975, 46, 24, 31, 9],
         "skill/voidMine/collapse-awakened/0": [0, 532, 655, 121, 115, 58, 66],
         "skill/voidMine/collapse-awakened/1": [0, 399, 655, 129, 117, 58, 65],
         "skill/voidMine/collapse-awakened/2": [0, 761, 655, 120, 100, 52, 61],
         "skill/voidMine/core-end/0": [0, 876, 862, 76, 53, 38, 29],
         "skill/voidMine/core-end/1": [0, 687, 922, 63, 40, 31, 23],
-        "skill/voidMine/core-end/2": [0, 1213, 922, 50, 30, 25, 15],
+        "skill/voidMine/core-end/2": [0, 1630, 922, 50, 30, 25, 15],
         "skill/voidMine/core-hold-awakened/0": [0, 508, 862, 89, 55, 45, 29],
         "skill/voidMine/core-hold-awakened/1": [0, 956, 862, 88, 53, 44, 29],
         "skill/voidMine/core-hold/0": [0, 736, 786, 85, 64, 43, 34],
@@ -235,7 +331,7 @@ export const ATLAS_MANIFEST = {
         "skill/voidMine/core-start-awakened/0": [0, 976, 922, 60, 37, 35, 26],
         "skill/voidMine/core-start-awakened/1": [0, 615, 922, 68, 41, 34, 22],
         "skill/voidMine/core-start-awakened/2": [0, 601, 862, 89, 55, 45, 29],
-        "skill/voidMine/core-start/0": [0, 1119, 922, 55, 35, 32, 24],
+        "skill/voidMine/core-start/0": [0, 1256, 922, 55, 35, 32, 24],
         "skill/voidMine/core-start/1": [0, 409, 922, 66, 46, 33, 25],
         "skill/voidMine/core-start/2": [0, 825, 786, 85, 64, 43, 34]
       }
@@ -3381,6 +3477,32 @@ export const ATLAS_MANIFEST = {
         "fps": 0
       }
     },
+    "skill/brushQuills": {
+      "start": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end": {
+        "frames": 2,
+        "fps": 0
+      },
+      "start-awakened": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel-awakened": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end-awakened": {
+        "frames": 2,
+        "fps": 0
+      }
+    },
     "skill/chainSpark": {
       "burst-awakened": {
         "frames": 3,
@@ -3524,6 +3646,110 @@ export const ATLAS_MANIFEST = {
       },
       "root54-awakened": {
         "frames": 1,
+        "fps": 0
+      }
+    },
+    "skill/frostNeedles": {
+      "start": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end": {
+        "frames": 2,
+        "fps": 0
+      },
+      "start-awakened": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel-awakened": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end-awakened": {
+        "frames": 2,
+        "fps": 0
+      }
+    },
+    "skill/ghostVolley": {
+      "start": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end": {
+        "frames": 2,
+        "fps": 0
+      },
+      "start-awakened": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel-awakened": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end-awakened": {
+        "frames": 2,
+        "fps": 0
+      }
+    },
+    "skill/headsmanDarts": {
+      "start": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end": {
+        "frames": 2,
+        "fps": 0
+      },
+      "start-awakened": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel-awakened": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end-awakened": {
+        "frames": 2,
+        "fps": 0
+      }
+    },
+    "skill/inkDarts": {
+      "start": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end": {
+        "frames": 2,
+        "fps": 0
+      },
+      "start-awakened": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel-awakened": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end-awakened": {
+        "frames": 2,
         "fps": 0
       }
     },
@@ -3691,6 +3917,84 @@ export const ATLAS_MANIFEST = {
         "fps": 12
       },
       "shot-end-awakened": {
+        "frames": 2,
+        "fps": 0
+      }
+    },
+    "skill/sealArrows": {
+      "start": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end": {
+        "frames": 2,
+        "fps": 0
+      },
+      "start-awakened": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel-awakened": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end-awakened": {
+        "frames": 2,
+        "fps": 0
+      }
+    },
+    "skill/thunderNeedles": {
+      "start": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end": {
+        "frames": 2,
+        "fps": 0
+      },
+      "start-awakened": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel-awakened": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end-awakened": {
+        "frames": 2,
+        "fps": 0
+      }
+    },
+    "skill/twinBlades": {
+      "start": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end": {
+        "frames": 2,
+        "fps": 0
+      },
+      "start-awakened": {
+        "frames": 2,
+        "fps": 0
+      },
+      "travel-awakened": {
+        "frames": 2,
+        "fps": 12
+      },
+      "end-awakened": {
         "frames": 2,
         "fps": 0
       }
@@ -4928,6 +5232,454 @@ export const ATLAS_MANIFEST = {
           "still": 0,
           "flash": false,
           "seconds": null
+        }
+      },
+      "inkDarts": {
+        "start": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        },
+        "start-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel-awakened": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        }
+      },
+      "brushQuills": {
+        "start": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        },
+        "start-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel-awakened": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        }
+      },
+      "sealArrows": {
+        "start": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        },
+        "start-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel-awakened": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        }
+      },
+      "frostNeedles": {
+        "start": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        },
+        "start-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel-awakened": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        }
+      },
+      "thunderNeedles": {
+        "start": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        },
+        "start-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel-awakened": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        }
+      },
+      "twinBlades": {
+        "start": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        },
+        "start-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel-awakened": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        }
+      },
+      "ghostVolley": {
+        "start": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        },
+        "start-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel-awakened": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        }
+      },
+      "headsmanDarts": {
+        "start": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
+        },
+        "start-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.06
+        },
+        "travel-awakened": {
+          "drive": "loop",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": 0,
+          "flash": false,
+          "seconds": null
+        },
+        "end-awakened": {
+          "drive": "prog",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "still": null,
+          "flash": false,
+          "seconds": 0.1
         }
       }
     },

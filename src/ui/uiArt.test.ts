@@ -4,6 +4,7 @@ import test from 'node:test';
 import { BOSS_SLOTS, FIELD_BOSS_KITS } from '../game/render/assets/slots.ts';
 import { SKILL_NUMBERS } from '../game/skillNumbers.ts';
 import CODEX from '../content/data/codex.ts';
+import { ARSENAL_IDS } from '../game/arsenal.ts';
 
 // The baked UI art (ART-09): art/ui-art-spec.mjs -> scripts/build-ui-art.mjs -> src/ui/art.
 const artDir = new URL('./art/', import.meta.url);
@@ -53,6 +54,27 @@ test('every sheet is a grid of equal @2x cells, and each key shows its own cell'
 test('draft tiles and HUD slots cover every skill, plain and awakened, and every bonus card', () => {
   assert.deepEqual(sheet('artTile').keys, [...withAwakened, 'bonus-heal-common', 'bonus-coins-rare', 'bonus-overdrive-rare', 'bonus-overdrive-epic']);
   assert.deepEqual(sheet('artSlot').keys, withAwakened);
+});
+
+test('drawn arsenal weapons (K9) have their own tile and slot cells in keyed sheets, and only the others wear badges', () => {
+  const keyed = (className: string, file: string) => [...css.matchAll(new RegExp(`\\.${className}\\[data-art="([\\w-]+)"\\] \\{ background-image: url\\("\\./${file}"\\); background-size: (\\d+)% (\\d+)%; background-position: [\\d.]+% [\\d.]+%; \\}`, 'g'))];
+  const tiles = keyed('artTile', 'arsenal-tiles.webp');
+  const slots = keyed('artSlot', 'arsenal-slots.webp');
+  const drawn = tiles.map((match) => match[1]).filter((key) => !key.endsWith('-awakened'));
+  assert.ok(drawn.length > 0, 'some weapons are drawn');
+  assert.deepEqual(tiles.map((match) => match[1]), drawn.flatMap((id) => [id, `${id}-awakened`]), 'plain and awakened cells in pairs');
+  assert.deepEqual(slots.map((match) => match[1]), tiles.map((match) => match[1]), 'every drawn tile has its slot');
+  for (const id of drawn) assert.ok((ARSENAL_IDS as readonly string[]).includes(id), `${id} is an arsenal weapon`);
+  for (const [cells, file, [cellWidth, cellHeight]] of [[tiles, 'arsenal-tiles.webp', [166, 166]], [slots, 'arsenal-slots.webp', [56, 60]]] as const) {
+    const [width, height] = webpSize(file);
+    assert.equal(width, cellWidth * 2 * (Number(cells[0][2]) / 100), `${file}: its columns at @2x`);
+    assert.equal(height, cellHeight * 2 * (Number(cells[0][3]) / 100), `${file}: its rows at @2x`);
+  }
+  const arsenalCss = readFileSync(new URL('arsenalArt.generated.css', artDir), 'utf8');
+  for (const id of ARSENAL_IDS) {
+    const badged = arsenalCss.includes(`.artTile[data-art^="${id}"]::after { content:`);
+    assert.equal(badged, !drawn.includes(id), `${id} wears a badge only until it is drawn`);
+  }
 });
 
 test('portraits cover the hero expressions and every boss the kit draws; pickups the four kinds', () => {

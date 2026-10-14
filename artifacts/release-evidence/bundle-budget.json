@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 114567,
-      "kib": 111.88,
+      "bytes": 114609,
+      "kib": 111.92,
       "baselineBytes": 96803,
-      "growthRatio": 0.18350670950280468,
+      "growthRatio": 0.1839405803539147,
       "warningBytes": 111323,
       "failBytes": 121003,
       "status": "warning",
@@ -27,24 +27,24 @@
       "passed": true
     },
     "css": {
-      "bytes": 18525,
-      "kib": 18.09,
+      "bytes": 18442,
+      "kib": 18.01,
       "warningBytes": 32768,
       "failBytes": 49152,
       "status": "passed",
       "passed": true
     },
     "initialAssets": {
-      "bytes": 1985561,
-      "kib": 1939.02,
+      "bytes": 1998404,
+      "kib": 1951.57,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 27700613,
-      "kib": 27051.38,
+      "bytes": 28227184,
+      "kib": 27565.61,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-CjwzhUXg.js",
+      "file": "assets/App-e_9leqZe.js",
       "category": "appJs",
-      "sourceBytes": 362988,
-      "gzipBytes": 111014
+      "sourceBytes": 363114,
+      "gzipBytes": 111057
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -69,8 +69,8 @@
     {
       "file": "assets/atlas/manifest.json",
       "category": "data",
-      "sourceBytes": 96595,
-      "gzipBytes": 15734
+      "sourceBytes": 109438,
+      "gzipBytes": 16965
     },
     {
       "file": "assets/chapter-thumbs-D_lcRDUv.webp",
@@ -133,16 +133,16 @@
       "gzipBytes": 113032
     },
     {
-      "file": "assets/index-Cs8dY8PP.css",
-      "category": "css",
-      "sourceBytes": 84180,
-      "gzipBytes": 18525
-    },
-    {
-      "file": "assets/index-zRP9zTNT.js",
+      "file": "assets/index-CTW0EV53.js",
       "category": "appJs",
       "sourceBytes": 7500,
-      "gzipBytes": 3553
+      "gzipBytes": 3552
+    },
+    {
+      "file": "assets/index-Dpe2rpG1.css",
+      "category": "css",
+      "sourceBytes": 84990,
+      "gzipBytes": 18442
     },
     {
       "file": "assets/keyart-DFQzyQdB.webp",
@@ -987,8 +987,8 @@
     {
       "file": "assets/packs/skills/atlas-0.png",
       "category": "image",
-      "sourceBytes": 807754,
-      "gzipBytes": 797134
+      "sourceBytes": 924668,
+      "gzipBytes": 913582
     },
     {
       "file": "assets/packs/story/ending-1.webp",
@@ -1109,6 +1109,18 @@
       "category": "image",
       "sourceBytes": 69412,
       "gzipBytes": 69303
+    },
+    {
+      "file": "assets/packs/ui/arsenal-slots-CJsR21uP.webp",
+      "category": "image",
+      "sourceBytes": 48960,
+      "gzipBytes": 48599
+    },
+    {
+      "file": "assets/packs/ui/arsenal-tiles-BFsBHIVM.webp",
+      "category": "image",
+      "sourceBytes": 347854,
+      "gzipBytes": 347224
     },
     {
       "file": "assets/portraits-BkRMzvVM.webp",

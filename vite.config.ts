@@ -6,6 +6,7 @@ import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { foldRuleReads } from './scripts/lib/fold-rules.mjs';
 import { REMASTER_RULES } from './src/game/rules';
+import { UI_SHEETS } from './art/ui-art-spec.mjs';
 
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string };
 
@@ -68,6 +69,8 @@ function shippedRules(): Plugin {
   };
 }
 
+const LAZY_UI_ART = new Set(Object.values(UI_SHEETS).filter((sheet) => 'keyed' in sheet && sheet.keyed).map((sheet) => `${sheet.file}.webp`));
+
 export default defineConfig(({ command, mode }) => {
   const packagedDeveloperBuild = command === 'build' && mode === 'developer';
   const developerUiAvailable = command === 'serve' || packagedDeveloperBuild;
@@ -93,6 +96,13 @@ export default defineConfig(({ command, mode }) => {
           manualChunks(id) {
             if (id.includes('/node_modules/')) return 'vendor';
             return undefined;
+          },
+          // A keyed UI art sheet (art/ui-art-spec.mjs: the arsenal's tiles and slots, K9) shows only where an element
+          // asks for one of its keys, so the browser fetches it then: it lives under assets/packs/ and stays out of the
+          // initial download in the bundle budget.
+          assetFileNames(info) {
+            const name = info.names[0] ?? '';
+            return LAZY_UI_ART.has(name) ? 'assets/packs/ui/[name]-[hash][extname]' : 'assets/[name]-[hash][extname]';
           },
         },
       },
