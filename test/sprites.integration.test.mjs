@@ -189,6 +189,30 @@ test('a weapon the kit has drawn fires its own shot stamps from the skills pack 
   }
 });
 
+test('the chosen character draws from its own pack once it is loaded, and as Gyeol until then (CON-10, K8)', async () => {
+  const atlas = await loadedAtlas();
+  const fixture = recordingCanvas();
+  const engine = new ProbedGameEngine(fixture.canvas, maxMeta(), standardOptions(), { onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver() {} });
+  try {
+    engine.setCharacter({ id: 'dan', level: 0 });
+    engine.startRun(1, 1, 4040);
+    engine.probe.haltSpawns();
+    engine.probe.clear('enemies', 'hazards', 'obstacles', 'pickups', 'projectiles', 'hostileShots', 'effects');
+    engine.setSprites(atlas);
+    engine.probe.render(1);
+    assert.equal(fixture.images.filter((draw) => draw.image.url === 'assets/atlas/common-0.png').length, 1, 'Gyeol stands in while the pack is out');
+    assert.equal(await atlas.load('hero-dan'), true);
+    fixture.images.length = 0;
+    engine.probe.render(1);
+    const pack = ATLAS_MANIFEST.packs['hero-dan'];
+    const idle = pack.frames['hero/dan/idle/0'];
+    assert.ok(fixture.images.some((draw) => draw.image.url === pack.pages[idle[0]] && draw.sx === idle[1] && draw.sy === idle[2]), 'Dan draws his own idle frame');
+    assert.equal(engine.probe.hud().character, 'dan', 'the HUD shows whose portrait');
+  } finally {
+    engine.dispose();
+  }
+});
+
 test('without an atlas nothing is blitted (vector fallback)', () => {
   const { engine, images } = arena(1, 2, null);
   try {

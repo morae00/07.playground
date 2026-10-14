@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 
 import { DEVELOPER_UI_AVAILABLE } from '../../platform/developerAccess';
 import { LOW_HEALTH_RATIO, SKILLS, SKILL_IDS, formatClock, type HudSnapshot } from '../../game/GameEngine';
 import { MAX_SKILL_LEVEL } from '../../game/grammar';
+import { portraitArt } from '../../game/render/assets/slots';
 import { formatCount, t, tx } from '../../i18n/strings';
 import { glyph } from '../Glyph';
 import { useInputDevice } from '../inputDevice';
@@ -198,7 +199,7 @@ export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen,
       <div className="gameHud">
         <section className="hudHero" aria-label={t('hud.hero')}>
           <div className="heroFace" data-frame={frame ?? undefined}>
-            <span className="artPortrait" data-art={`hero-${face}`} aria-hidden="true" />
+            <span className="artPortrait" data-art={portraitArt(snapshot.character, face)} aria-hidden="true" />
             <b className="levelSeal" aria-label={t('hud.level', { level: snapshot.level })}>{snapshot.level}</b>
           </div>
           <div className="heroBody">

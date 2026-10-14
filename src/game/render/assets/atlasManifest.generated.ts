@@ -1260,6 +1260,202 @@ export const ATLAS_MANIFEST = {
         "file": "assets/packs/chapter-05/ground-0.webp",
         "size": 512
       }
+    },
+    "hero-dan": {
+      "pages": [
+        "assets/packs/hero-dan/atlas-0.png"
+      ],
+      "frames": {
+        "hero/dan/hurt/0": [0, 588, 2, 116, 127, 50, 118],
+        "hero/dan/hurt/1": [0, 708, 2, 113, 127, 46, 118],
+        "hero/dan/hurt/2": [0, 825, 2, 110, 127, 41, 118],
+        "hero/dan/idle/0": [0, 1242, 2, 104, 126, 33, 118],
+        "hero/dan/idle/1": [0, 939, 2, 104, 127, 33, 119],
+        "hero/dan/idle/2": [0, 177, 2, 104, 128, 33, 120],
+        "hero/dan/idle/3": [0, 285, 2, 104, 128, 33, 120],
+        "hero/dan/idle/4": [0, 393, 2, 104, 128, 33, 120],
+        "hero/dan/idle/5": [0, 1047, 2, 104, 127, 33, 119],
+        "hero/dan/run/0": [0, 2, 136, 97, 118, 37, 108],
+        "hero/dan/run/1": [0, 1764, 2, 97, 121, 39, 113],
+        "hero/dan/run/2": [0, 2, 2, 84, 130, 27, 122],
+        "hero/dan/run/3": [0, 501, 2, 83, 128, 25, 118],
+        "hero/dan/run/4": [0, 103, 136, 96, 118, 36, 108],
+        "hero/dan/run/5": [0, 1865, 2, 96, 121, 38, 113],
+        "hero/dan/run/6": [0, 90, 2, 83, 130, 26, 122],
+        "hero/dan/run/7": [0, 1155, 2, 83, 127, 25, 118],
+        "hero/dan/throw/0": [0, 1350, 2, 86, 126, 31, 118],
+        "hero/dan/throw/1": [0, 1440, 2, 71, 126, 37, 118],
+        "hero/dan/throw/2": [0, 1515, 2, 117, 125, 26, 117],
+        "hero/dan/throw/3": [0, 1636, 2, 124, 125, 28, 117]
+      }
+    },
+    "hero-noeul": {
+      "pages": [
+        "assets/packs/hero-noeul/atlas-0.png"
+      ],
+      "frames": {
+        "hero/noeul/hurt/0": [0, 806, 2, 83, 137, 40, 129],
+        "hero/noeul/hurt/1": [0, 1478, 2, 84, 136, 41, 128],
+        "hero/noeul/hurt/2": [0, 893, 2, 84, 137, 41, 129],
+        "hero/noeul/idle/0": [0, 981, 2, 85, 137, 41, 129],
+        "hero/noeul/idle/1": [0, 1070, 2, 89, 137, 42, 129],
+        "hero/noeul/idle/2": [0, 625, 2, 89, 138, 42, 130],
+        "hero/noeul/idle/3": [0, 432, 2, 85, 139, 41, 131],
+        "hero/noeul/idle/4": [0, 718, 2, 84, 138, 41, 130],
+        "hero/noeul/idle/5": [0, 1163, 2, 84, 137, 41, 129],
+        "hero/noeul/run/0": [0, 1920, 2, 100, 133, 43, 123],
+        "hero/noeul/run/1": [0, 1706, 2, 103, 135, 46, 127],
+        "hero/noeul/run/2": [0, 110, 2, 105, 142, 50, 134],
+        "hero/noeul/run/3": [0, 328, 2, 100, 140, 46, 130],
+        "hero/noeul/run/4": [0, 2, 151, 100, 133, 43, 123],
+        "hero/noeul/run/5": [0, 1813, 2, 103, 135, 46, 127],
+        "hero/noeul/run/6": [0, 219, 2, 105, 142, 50, 134],
+        "hero/noeul/run/7": [0, 521, 2, 100, 139, 46, 130],
+        "hero/noeul/throw/0": [0, 2, 2, 104, 145, 41, 137],
+        "hero/noeul/throw/1": [0, 1251, 2, 84, 137, 41, 129],
+        "hero/noeul/throw/2": [0, 1566, 2, 136, 136, 42, 128],
+        "hero/noeul/throw/3": [0, 1339, 2, 135, 137, 42, 129]
+      }
+    },
+    "hero-seori": {
+      "pages": [
+        "assets/packs/hero-seori/atlas-0.png"
+      ],
+      "frames": {
+        "hero/seori/hurt/0": [0, 962, 2, 87, 134, 44, 125],
+        "hero/seori/hurt/1": [0, 529, 2, 85, 135, 42, 126],
+        "hero/seori/hurt/2": [0, 618, 2, 82, 135, 39, 126],
+        "hero/seori/idle/0": [0, 1053, 2, 79, 134, 39, 126],
+        "hero/seori/idle/1": [0, 704, 2, 81, 135, 40, 127],
+        "hero/seori/idle/2": [0, 188, 2, 81, 136, 40, 128],
+        "hero/seori/idle/3": [0, 273, 2, 79, 136, 39, 128],
+        "hero/seori/idle/4": [0, 356, 2, 78, 136, 39, 128],
+        "hero/seori/idle/5": [0, 789, 2, 78, 135, 39, 127],
+        "hero/seori/run/0": [0, 1705, 2, 89, 127, 41, 117],
+        "hero/seori/run/1": [0, 1523, 2, 87, 131, 43, 123],
+        "hero/seori/run/2": [0, 2, 2, 89, 140, 46, 132],
+        "hero/seori/run/3": [0, 438, 2, 87, 136, 43, 126],
+        "hero/seori/run/4": [0, 1798, 2, 87, 127, 41, 117],
+        "hero/seori/run/5": [0, 1614, 2, 87, 131, 43, 123],
+        "hero/seori/run/6": [0, 95, 2, 89, 140, 46, 132],
+        "hero/seori/run/7": [0, 871, 2, 87, 135, 43, 126],
+        "hero/seori/throw/0": [0, 1136, 2, 94, 134, 40, 126],
+        "hero/seori/throw/1": [0, 1234, 2, 77, 134, 38, 126],
+        "hero/seori/throw/2": [0, 1315, 2, 121, 133, 40, 125],
+        "hero/seori/throw/3": [0, 1440, 2, 79, 133, 40, 125]
+      }
+    },
+    "hero-dok": {
+      "pages": [
+        "assets/packs/hero-dok/atlas-0.png"
+      ],
+      "frames": {
+        "hero/dok/hurt/0": [0, 1797, 2, 100, 131, 56, 122],
+        "hero/dok/hurt/1": [0, 1695, 2, 98, 132, 53, 123],
+        "hero/dok/hurt/2": [0, 1207, 2, 97, 133, 51, 124],
+        "hero/dok/idle/0": [0, 1308, 2, 96, 133, 49, 125],
+        "hero/dok/idle/1": [0, 692, 2, 96, 134, 49, 126],
+        "hero/dok/idle/2": [0, 491, 2, 96, 135, 49, 127],
+        "hero/dok/idle/3": [0, 391, 2, 96, 136, 49, 128],
+        "hero/dok/idle/4": [0, 591, 2, 97, 135, 50, 127],
+        "hero/dok/idle/5": [0, 792, 2, 97, 134, 50, 126],
+        "hero/dok/run/0": [0, 1901, 2, 98, 129, 46, 119],
+        "hero/dok/run/1": [0, 1408, 2, 94, 133, 44, 125],
+        "hero/dok/run/2": [0, 2, 2, 92, 143, 44, 135],
+        "hero/dok/run/3": [0, 194, 2, 93, 139, 46, 129],
+        "hero/dok/run/4": [0, 2, 149, 93, 129, 46, 119],
+        "hero/dok/run/5": [0, 1506, 2, 91, 133, 44, 125],
+        "hero/dok/run/6": [0, 98, 2, 92, 143, 44, 135],
+        "hero/dok/run/7": [0, 291, 2, 96, 138, 46, 129],
+        "hero/dok/throw/0": [0, 893, 2, 88, 134, 48, 126],
+        "hero/dok/throw/1": [0, 1601, 2, 90, 133, 51, 125],
+        "hero/dok/throw/2": [0, 985, 2, 119, 134, 45, 126],
+        "hero/dok/throw/3": [0, 1108, 2, 95, 134, 46, 126]
+      }
+    },
+    "hero-hwi": {
+      "pages": [
+        "assets/packs/hero-hwi/atlas-0.png"
+      ],
+      "frames": {
+        "hero/hwi/hurt/0": [0, 1849, 2, 128, 123, 77, 114],
+        "hero/hwi/hurt/1": [0, 1725, 2, 120, 129, 70, 120],
+        "hero/hwi/hurt/2": [0, 1398, 2, 111, 136, 62, 127],
+        "hero/hwi/idle/0": [0, 669, 2, 95, 143, 49, 135],
+        "hero/hwi/idle/1": [0, 471, 2, 95, 145, 49, 137],
+        "hero/hwi/idle/2": [0, 2, 2, 95, 146, 49, 138],
+        "hero/hwi/idle/3": [0, 570, 2, 95, 145, 49, 137],
+        "hero/hwi/idle/4": [0, 768, 2, 98, 143, 51, 135],
+        "hero/hwi/idle/5": [0, 870, 2, 98, 142, 51, 134],
+        "hero/hwi/run/0": [0, 1513, 2, 102, 133, 51, 123],
+        "hero/hwi/run/1": [0, 1186, 2, 102, 138, 53, 130],
+        "hero/hwi/run/2": [0, 101, 2, 105, 146, 56, 138],
+        "hero/hwi/run/3": [0, 972, 2, 103, 142, 53, 132],
+        "hero/hwi/run/4": [0, 1619, 2, 102, 133, 51, 123],
+        "hero/hwi/run/5": [0, 1292, 2, 102, 138, 53, 130],
+        "hero/hwi/run/6": [0, 210, 2, 105, 146, 56, 138],
+        "hero/hwi/run/7": [0, 1079, 2, 103, 141, 53, 132],
+        "hero/hwi/throw/0": [0, 319, 2, 148, 146, 72, 138],
+        "hero/hwi/throw/1": [0, 2, 152, 148, 120, 65, 112],
+        "hero/hwi/throw/2": [0, 154, 152, 157, 119, 60, 111],
+        "hero/hwi/throw/3": [0, 315, 152, 132, 119, 50, 111]
+      }
+    },
+    "hero-ryeong": {
+      "pages": [
+        "assets/packs/hero-ryeong/atlas-0.png"
+      ],
+      "frames": {
+        "hero/ryeong/hurt/0": [0, 212, 2, 92, 132, 43, 123],
+        "hero/ryeong/hurt/1": [0, 308, 2, 90, 131, 39, 122],
+        "hero/ryeong/hurt/2": [0, 508, 2, 88, 130, 35, 121],
+        "hero/ryeong/idle/0": [0, 1324, 2, 97, 127, 42, 119],
+        "hero/ryeong/idle/1": [0, 1009, 2, 97, 128, 42, 120],
+        "hero/ryeong/idle/2": [0, 706, 2, 97, 129, 42, 121],
+        "hero/ryeong/idle/3": [0, 807, 2, 97, 129, 42, 121],
+        "hero/ryeong/idle/4": [0, 908, 2, 97, 129, 42, 121],
+        "hero/ryeong/idle/5": [0, 1110, 2, 97, 128, 42, 120],
+        "hero/ryeong/run/0": [0, 2, 141, 107, 120, 38, 110],
+        "hero/ryeong/run/1": [0, 1770, 2, 107, 124, 40, 116],
+        "hero/ryeong/run/2": [0, 2, 2, 101, 135, 35, 127],
+        "hero/ryeong/run/3": [0, 402, 2, 102, 131, 35, 121],
+        "hero/ryeong/run/4": [0, 113, 141, 106, 120, 37, 110],
+        "hero/ryeong/run/5": [0, 1881, 2, 106, 124, 39, 116],
+        "hero/ryeong/run/6": [0, 107, 2, 101, 135, 35, 127],
+        "hero/ryeong/run/7": [0, 600, 2, 102, 130, 35, 121],
+        "hero/ryeong/throw/0": [0, 1560, 2, 106, 126, 40, 118],
+        "hero/ryeong/throw/1": [0, 1211, 2, 109, 128, 43, 120],
+        "hero/ryeong/throw/2": [0, 1425, 2, 131, 127, 37, 119],
+        "hero/ryeong/throw/3": [0, 1670, 2, 96, 125, 38, 117]
+      }
+    },
+    "hero-wol": {
+      "pages": [
+        "assets/packs/hero-wol/atlas-0.png"
+      ],
+      "frames": {
+        "hero/wol/hurt/0": [0, 650, 153, 120, 122, 72, 113],
+        "hero/wol/hurt/1": [0, 259, 153, 123, 124, 73, 115],
+        "hero/wol/hurt/2": [0, 1563, 2, 126, 125, 73, 116],
+        "hero/wol/idle/0": [0, 1693, 2, 127, 125, 73, 117],
+        "hero/wol/idle/1": [0, 1025, 2, 127, 126, 73, 118],
+        "hero/wol/idle/2": [0, 632, 2, 127, 127, 73, 119],
+        "hero/wol/idle/3": [0, 763, 2, 127, 127, 73, 119],
+        "hero/wol/idle/4": [0, 894, 2, 127, 127, 73, 119],
+        "hero/wol/idle/5": [0, 1156, 2, 127, 126, 73, 118],
+        "hero/wol/run/0": [0, 386, 153, 128, 124, 71, 114],
+        "hero/wol/run/1": [0, 1824, 2, 126, 125, 70, 117],
+        "hero/wol/run/2": [0, 114, 2, 125, 131, 69, 123],
+        "hero/wol/run/3": [0, 372, 2, 126, 130, 70, 120],
+        "hero/wol/run/4": [0, 518, 153, 128, 124, 71, 114],
+        "hero/wol/run/5": [0, 2, 153, 126, 125, 70, 117],
+        "hero/wol/run/6": [0, 243, 2, 125, 131, 69, 123],
+        "hero/wol/run/7": [0, 502, 2, 126, 129, 70, 120],
+        "hero/wol/throw/0": [0, 132, 153, 123, 125, 70, 117],
+        "hero/wol/throw/1": [0, 2, 2, 108, 147, 68, 139],
+        "hero/wol/throw/2": [0, 1287, 2, 159, 126, 85, 118],
+        "hero/wol/throw/3": [0, 1450, 2, 109, 126, 53, 118]
+      }
     }
   },
   "animations": {
@@ -3394,6 +3590,132 @@ export const ATLAS_MANIFEST = {
       }
     },
     "hero": {
+      "idle": {
+        "frames": 6,
+        "fps": 8
+      },
+      "run": {
+        "frames": 8,
+        "fps": 14
+      },
+      "throw": {
+        "frames": 4,
+        "fps": 16
+      },
+      "hurt": {
+        "frames": 3,
+        "fps": 12
+      }
+    },
+    "hero/dan": {
+      "idle": {
+        "frames": 6,
+        "fps": 8
+      },
+      "run": {
+        "frames": 8,
+        "fps": 14
+      },
+      "throw": {
+        "frames": 4,
+        "fps": 16
+      },
+      "hurt": {
+        "frames": 3,
+        "fps": 12
+      }
+    },
+    "hero/dok": {
+      "idle": {
+        "frames": 6,
+        "fps": 8
+      },
+      "run": {
+        "frames": 8,
+        "fps": 14
+      },
+      "throw": {
+        "frames": 4,
+        "fps": 16
+      },
+      "hurt": {
+        "frames": 3,
+        "fps": 12
+      }
+    },
+    "hero/hwi": {
+      "idle": {
+        "frames": 6,
+        "fps": 8
+      },
+      "run": {
+        "frames": 8,
+        "fps": 14
+      },
+      "throw": {
+        "frames": 4,
+        "fps": 16
+      },
+      "hurt": {
+        "frames": 3,
+        "fps": 12
+      }
+    },
+    "hero/noeul": {
+      "idle": {
+        "frames": 6,
+        "fps": 8
+      },
+      "run": {
+        "frames": 8,
+        "fps": 14
+      },
+      "throw": {
+        "frames": 4,
+        "fps": 16
+      },
+      "hurt": {
+        "frames": 3,
+        "fps": 12
+      }
+    },
+    "hero/ryeong": {
+      "idle": {
+        "frames": 6,
+        "fps": 8
+      },
+      "run": {
+        "frames": 8,
+        "fps": 14
+      },
+      "throw": {
+        "frames": 4,
+        "fps": 16
+      },
+      "hurt": {
+        "frames": 3,
+        "fps": 12
+      }
+    },
+    "hero/seori": {
+      "idle": {
+        "frames": 6,
+        "fps": 8
+      },
+      "run": {
+        "frames": 8,
+        "fps": 14
+      },
+      "throw": {
+        "frames": 4,
+        "fps": 16
+      },
+      "hurt": {
+        "frames": 3,
+        "fps": 12
+      }
+    },
+    "hero/wol": {
       "idle": {
         "frames": 6,
         "fps": 8

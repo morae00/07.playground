@@ -93,6 +93,20 @@ export function enemySlot(chapter: number, tier: EnemyTier, attackStyle: 'contac
   return `enemy/${chapter}/${enemyRoleFor(tier, attackStyle)}`;
 }
 
+/** CON-10 (K8): a character's own pack and slot. Gyeol is the hero of the common pack; the rest have packs of their own. */
+export function characterPack(id: string) {
+  return id === 'gyeol' ? undefined : `hero-${id}`;
+}
+
+/** CON-10 (K8): a character's portrait cell (art/ui-art-spec.mjs): Gyeol's are the hero's, the rest their own. */
+export function portraitArt(character: string, expr: string) {
+  return `${character === 'gyeol' ? 'hero' : character}-${expr}`;
+}
+
+export function characterSlot(id: string) {
+  return id === 'gyeol' ? HERO_SLOT : `${HERO_SLOT}/${id}`;
+}
+
 /** SYS-14 (K7): a bomber's own drawing in its chapter pack. Its kill and decal frames stay its role's (stalker). */
 export function bomberSlot(chapter: number, kind: 'fuse' | 'burst') {
   return `enemy/${chapter}/bomber-${kind}`;

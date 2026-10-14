@@ -31,6 +31,9 @@ export const BONUS_ART = Object.freeze([
   { bonus: 'overdrive', rarity: 'epic' },
 ]);
 
+/** CON-10 (K8): the other characters, whose portraits sit in a keyed sheet of their own (`<id>-<expr>`). */
+export const CHARACTER_PORTRAITS = Object.freeze(['dan', 'noeul', 'seori', 'dok', 'hwi', 'ryeong', 'wol']);
+
 /** HUD portrait expressions of the hero (API-hero §3). */
 export const HERO_EXPRESSIONS = Object.freeze(['calm', 'focus', 'hurt', 'lowhp', 'awakened', 'victory']);
 
@@ -123,6 +126,15 @@ export const UI_SHEETS = Object.freeze({
   arsenalTiles: { file: 'arsenal-tiles', className: 'artTile', keyed: true, columns: 8, cell: [166, 166], origin: [-8, -8], items: arsenalCells('arsenalTile') },
   arsenalSlots: { file: 'arsenal-slots', className: 'artSlot', keyed: true, columns: 9, cell: [56, 60], origin: [-2, -2], items: arsenalCells('arsenalSlot') },
   portraits: { file: 'portraits', className: 'artPortrait', columns: 5, cell: [98, 98], origin: [-1, -1], items: portraits() },
+  characterPortraits: {
+    file: 'character-portraits',
+    className: 'artPortrait',
+    keyed: true,
+    columns: 6,
+    cell: [98, 98],
+    origin: [-1, -1],
+    items: CHARACTER_PORTRAITS.flatMap((id) => HERO_EXPRESSIONS.map((expr) => ({ key: `${id}-${expr}`, recipe: 'characterPortrait', args: [id, expr] }))),
+  },
   pickups: { file: 'pickups', className: 'artPickup', columns: 4, cell: [28, 28], origin: [-2, -2], items: PICKUP_ART.map((kind) => ({ key: kind, recipe: 'pickup', args: [kind] })) },
   keyart: { file: 'keyart', className: 'artKeyart', columns: 1, cell: [360, 576], origin: [0, 0], items: [{ key: 'hero', recipe: 'keyart', args: ['threeQuarter'] }] },
   chapters: { file: 'chapter-thumbs', className: 'artChapter', columns: 5, cell: [168, 90], origin: [0, 0], bleed: true, items: MENU_CHAPTERS.map((ch) => ({ key: `chapter-${ch}`, recipe: 'landmark', args: [ch] })) },

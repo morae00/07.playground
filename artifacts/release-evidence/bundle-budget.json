@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 114609,
-      "kib": 111.92,
+      "bytes": 114837,
+      "kib": 112.15,
       "baselineBytes": 96803,
-      "growthRatio": 0.1839405803539147,
+      "growthRatio": 0.1862958792599403,
       "warningBytes": 111323,
       "failBytes": 121003,
       "status": "warning",
@@ -27,24 +27,24 @@
       "passed": true
     },
     "css": {
-      "bytes": 18442,
-      "kib": 18.01,
+      "bytes": 18819,
+      "kib": 18.38,
       "warningBytes": 32768,
       "failBytes": 49152,
       "status": "passed",
       "passed": true
     },
     "initialAssets": {
-      "bytes": 1998404,
-      "kib": 1951.57,
+      "bytes": 2006237,
+      "kib": 1959.22,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 28227184,
-      "kib": 27565.61,
+      "bytes": 29931119,
+      "kib": 29229.61,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-e_9leqZe.js",
+      "file": "assets/App-BzYjb0pv.js",
       "category": "appJs",
-      "sourceBytes": 363114,
-      "gzipBytes": 111057
+      "sourceBytes": 363863,
+      "gzipBytes": 111284
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -69,8 +69,8 @@
     {
       "file": "assets/atlas/manifest.json",
       "category": "data",
-      "sourceBytes": 109438,
-      "gzipBytes": 16965
+      "sourceBytes": 117271,
+      "gzipBytes": 18706
     },
     {
       "file": "assets/chapter-thumbs-D_lcRDUv.webp",
@@ -133,16 +133,16 @@
       "gzipBytes": 113032
     },
     {
-      "file": "assets/index-CTW0EV53.js",
-      "category": "appJs",
-      "sourceBytes": 7500,
-      "gzipBytes": 3552
+      "file": "assets/index-COaoX68k.css",
+      "category": "css",
+      "sourceBytes": 91789,
+      "gzipBytes": 18819
     },
     {
-      "file": "assets/index-Dpe2rpG1.css",
-      "category": "css",
-      "sourceBytes": 84990,
-      "gzipBytes": 18442
+      "file": "assets/index-DvHIyhGv.js",
+      "category": "appJs",
+      "sourceBytes": 7500,
+      "gzipBytes": 3553
     },
     {
       "file": "assets/keyart-DFQzyQdB.webp",
@@ -263,6 +263,48 @@
       "category": "image",
       "sourceBytes": 23558,
       "gzipBytes": 23432
+    },
+    {
+      "file": "assets/packs/hero-dan/atlas-0.png",
+      "category": "image",
+      "sourceBytes": 172170,
+      "gzipBytes": 168449
+    },
+    {
+      "file": "assets/packs/hero-dok/atlas-0.png",
+      "category": "image",
+      "sourceBytes": 222467,
+      "gzipBytes": 218061
+    },
+    {
+      "file": "assets/packs/hero-hwi/atlas-0.png",
+      "category": "image",
+      "sourceBytes": 199546,
+      "gzipBytes": 195879
+    },
+    {
+      "file": "assets/packs/hero-noeul/atlas-0.png",
+      "category": "image",
+      "sourceBytes": 221748,
+      "gzipBytes": 217071
+    },
+    {
+      "file": "assets/packs/hero-ryeong/atlas-0.png",
+      "category": "image",
+      "sourceBytes": 173598,
+      "gzipBytes": 169948
+    },
+    {
+      "file": "assets/packs/hero-seori/atlas-0.png",
+      "category": "image",
+      "sourceBytes": 147152,
+      "gzipBytes": 146798
+    },
+    {
+      "file": "assets/packs/hero-wol/atlas-0.png",
+      "category": "image",
+      "sourceBytes": 238705,
+      "gzipBytes": 235043
     },
     {
       "file": "assets/packs/sfx-common/ambience.ch1-0.wav",
@@ -1121,6 +1163,12 @@
       "category": "image",
       "sourceBytes": 347854,
       "gzipBytes": 347224
+    },
+    {
+      "file": "assets/packs/ui/character-portraits-ecH57XVd.webp",
+      "category": "image",
+      "sourceBytes": 320716,
+      "gzipBytes": 311969
     },
     {
       "file": "assets/portraits-BkRMzvVM.webp",

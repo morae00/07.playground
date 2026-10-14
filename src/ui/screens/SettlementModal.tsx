@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { FINAL_CHAPTER } from '../../content/campaign';
 import { CHAPTERS, formatClock, type Settlement, type SkillId, type StageProgress } from '../../game/GameEngine';
+import { portraitArt } from '../../game/render/assets/slots';
 import { formatCount, t, tx } from '../../i18n/strings';
 import type { StringKey } from '../../i18n/text';
 import { Glyph } from '../Glyph';
@@ -28,6 +29,8 @@ export type SettlementModalProps = {
   nextStageOpen: boolean;
   onNextStage: (address: StageProgress) => void;
   onMenu: () => void;
+  /** CON-10 (K8): the character the run was played as, whose portrait heads the result. */
+  character: string;
   onRetry: () => void;
   onCopyInfiniteResult: () => void;
 };
@@ -86,7 +89,7 @@ function DamageBars({ damage }: { damage: Settlement['damageBySkill'] }) {
   );
 }
 
-export function SettlementModal({ settlement, defeated, notes, reducedMotion, leaderboardStatus, seedCopyStatus, nextStage, nextStageOpen, onNextStage, onMenu, onRetry, onCopyInfiniteResult }: SettlementModalProps) {
+export function SettlementModal({ settlement, defeated, notes, reducedMotion, leaderboardStatus, seedCopyStatus, nextStage, nextStageOpen, onNextStage, onMenu, onRetry, onCopyInfiniteResult, character }: SettlementModalProps) {
   const infinite = settlement.runMode === 'infinite';
   const reduced = reducedMotion || (typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const gold = useCountUp(settlement.gold, reduced);
@@ -120,7 +123,7 @@ export function SettlementModal({ settlement, defeated, notes, reducedMotion, le
     <ModalDialog className={won ? 'settlementBox settlementWon' : 'settlementBox settlementLost'} labelledBy="settlement-dialog-title" onEscape={onMenu} inputGuardMs={SETTLEMENT_INPUT_GUARD_MS}>
       <header className="settlementHead">
         <span className="settlementFace" aria-hidden="true">
-          <span className="artPortrait" data-art={won ? 'hero-victory' : 'hero-hurt'} />
+          <span className="artPortrait" data-art={portraitArt(character, won ? 'victory' : 'hurt')} />
           {won && <span className="settlementSeal">{t('settle.seal')}</span>}
         </span>
         <div>

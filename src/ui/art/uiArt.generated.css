@@ -166,6 +166,49 @@
 .artPortrait[data-art="field-null"] { background-position: 100% 85.7143%; }
 .artPortrait[data-art="field-null-enraged"] { background-position: 0% 100%; }
 
+.artPortrait[data-art="dan-calm"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 0% 0%; }
+.artPortrait[data-art="dan-focus"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 20% 0%; }
+.artPortrait[data-art="dan-hurt"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 40% 0%; }
+.artPortrait[data-art="dan-lowhp"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 60% 0%; }
+.artPortrait[data-art="dan-awakened"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 80% 0%; }
+.artPortrait[data-art="dan-victory"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 100% 0%; }
+.artPortrait[data-art="noeul-calm"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 0% 16.6667%; }
+.artPortrait[data-art="noeul-focus"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 20% 16.6667%; }
+.artPortrait[data-art="noeul-hurt"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 40% 16.6667%; }
+.artPortrait[data-art="noeul-lowhp"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 60% 16.6667%; }
+.artPortrait[data-art="noeul-awakened"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 80% 16.6667%; }
+.artPortrait[data-art="noeul-victory"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 100% 16.6667%; }
+.artPortrait[data-art="seori-calm"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 0% 33.3333%; }
+.artPortrait[data-art="seori-focus"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 20% 33.3333%; }
+.artPortrait[data-art="seori-hurt"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 40% 33.3333%; }
+.artPortrait[data-art="seori-lowhp"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 60% 33.3333%; }
+.artPortrait[data-art="seori-awakened"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 80% 33.3333%; }
+.artPortrait[data-art="seori-victory"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 100% 33.3333%; }
+.artPortrait[data-art="dok-calm"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 0% 50%; }
+.artPortrait[data-art="dok-focus"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 20% 50%; }
+.artPortrait[data-art="dok-hurt"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 40% 50%; }
+.artPortrait[data-art="dok-lowhp"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 60% 50%; }
+.artPortrait[data-art="dok-awakened"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 80% 50%; }
+.artPortrait[data-art="dok-victory"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 100% 50%; }
+.artPortrait[data-art="hwi-calm"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 0% 66.6667%; }
+.artPortrait[data-art="hwi-focus"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 20% 66.6667%; }
+.artPortrait[data-art="hwi-hurt"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 40% 66.6667%; }
+.artPortrait[data-art="hwi-lowhp"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 60% 66.6667%; }
+.artPortrait[data-art="hwi-awakened"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 80% 66.6667%; }
+.artPortrait[data-art="hwi-victory"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 100% 66.6667%; }
+.artPortrait[data-art="ryeong-calm"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 0% 83.3333%; }
+.artPortrait[data-art="ryeong-focus"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 20% 83.3333%; }
+.artPortrait[data-art="ryeong-hurt"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 40% 83.3333%; }
+.artPortrait[data-art="ryeong-lowhp"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 60% 83.3333%; }
+.artPortrait[data-art="ryeong-awakened"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 80% 83.3333%; }
+.artPortrait[data-art="ryeong-victory"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 100% 83.3333%; }
+.artPortrait[data-art="wol-calm"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 0% 100%; }
+.artPortrait[data-art="wol-focus"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 20% 100%; }
+.artPortrait[data-art="wol-hurt"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 40% 100%; }
+.artPortrait[data-art="wol-lowhp"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 60% 100%; }
+.artPortrait[data-art="wol-awakened"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 80% 100%; }
+.artPortrait[data-art="wol-victory"] { background-image: url("./character-portraits.webp"); background-size: 600% 700%; background-position: 100% 100%; }
+
 .artPickup {
   aspect-ratio: 28 / 28;
   background-image: url("./pickups.webp");

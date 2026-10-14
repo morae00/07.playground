@@ -89,6 +89,15 @@ test('portraits cover the hero expressions and every boss the kit draws; pickups
   assert.deepEqual(sheet('artPickup').keys, ['xp', 'coin', 'magnet', 'heal']);
 });
 
+test('the other characters (K8) have their six portraits in a keyed sheet of their own', () => {
+  const cells = [...css.matchAll(/\.artPortrait\[data-art="([\w-]+)"\] \{ background-image: url\("\.\/character-portraits\.webp"\); background-size: (\d+)% (\d+)%;/g)];
+  const expressions = ['calm', 'focus', 'hurt', 'lowhp', 'awakened', 'victory'];
+  assert.deepEqual(cells.map((match) => match[1]), ['dan', 'noeul', 'seori', 'dok', 'hwi', 'ryeong', 'wol'].flatMap((id) => expressions.map((expr) => `${id}-${expr}`)));
+  const [width, height] = webpSize('character-portraits.webp');
+  assert.equal(width, 98 * 2 * (Number(cells[0][2]) / 100));
+  assert.equal(height, 98 * 2 * (Number(cells[0][3]) / 100));
+});
+
 test('the menu sheets (UI-06) cover the key art, the five chapters, and every chapter role', () => {
   assert.deepEqual(sheet('artKeyart').keys, ['hero']);
   assert.deepEqual(sheet('artChapter').keys, [1, 2, 3, 4, 5].map((chapter) => `chapter-${chapter}`));

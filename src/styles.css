@@ -3619,6 +3619,18 @@ h2 {
   font-size: 22px;
 }
 
+/* CON-10 (K8): the character's calm portrait heads its card; one not yet open is an ink silhouette, like an unfound
+   codex entry. */
+.characterCard .characterPortrait {
+  width: 56px;
+  flex: none;
+  align-self: center;
+}
+
+.characterCard.locked .characterPortrait {
+  filter: brightness(0) opacity(0.22);
+}
+
 .characterCard p {
   margin: 0;
 }

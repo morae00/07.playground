@@ -14,7 +14,7 @@ const kitDir = path.join(root, 'art/concept-kit');
 const outDir = path.join(root, 'src/ui/art');
 const storyDir = path.join(root, 'public/assets/packs/story');
 const only = process.argv[2];
-const KIT_FILES = ['lib.js', 'k-hero.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses3.js', 'k-bosses4.js', 'k-icons.js', 'k-icons2.js', 'k-enemies.js', 'k-env.js'];
+const KIT_FILES = ['lib.js', 'k-hero.js', 'k-characters.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses3.js', 'k-bosses4.js', 'k-icons.js', 'k-icons2.js', 'k-enemies.js', 'k-env.js'];
 
 const browser = await chromium.launch();
 try {
@@ -133,6 +133,8 @@ async function renderSheet({ sheet, density, quality, colorMap }) {
       }
     },
     heroPortrait: (expr) => `<g transform="scale(0.6)">${PN.heroKit.portrait(expr)}</g>`,
+    // CON-10 (K8): the other characters' portraits, framed like Gyeol's (the same 160 box, API-characters).
+    characterPortrait: (id, expr) => `<g transform="scale(0.6)">${PN.characters.portrait(id, expr)}</g>`,
     // Framed like PN.heroKit.portrait: a 74 disc with a paper halftone vignette, a 6 ink ring and a paper ring.
     // Enraged bosses get the coral dashed ring (the kit shows coral on bosses only when they are enraged).
     bossPortrait: ({ kit, module = 'bossesA', center, scale, detail = 'game' }, enraged) => {

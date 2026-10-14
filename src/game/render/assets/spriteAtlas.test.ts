@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ATLAS_MANIFEST } from './atlasManifest.generated.ts';
 import { ATLAS_MANIFEST_URL, SpriteAtlas, loopFrame, phaseFor, type AtlasManifest } from './spriteAtlas.ts';
-import { BOSS_SLOTS, CHAPTER_PACKS, COMMON_PACK, FIELD_BOSS_KITS, HERO_SLOT, bossSlot, enemyDrawScale, enemySlot, frameKey } from './slots.ts';
+import { BOSS_SLOTS, CHAPTER_PACKS, COMMON_PACK, FIELD_BOSS_KITS, HERO_SLOT, bossSlot, characterPack, characterSlot, enemyDrawScale, enemySlot, frameKey } from './slots.ts';
 
 const manifest = ATLAS_MANIFEST as AtlasManifest;
 const fakeImage = (width: number, height: number) => ({ width, height }) as unknown as CanvasImageSource & { width: number; height: number };
@@ -57,6 +57,15 @@ test('the baked manifest is complete: every animation frame exists and sits insi
     }
   }
   assert.deepEqual(Object.keys(manifest.animations[HERO_SLOT]).sort(), ['hurt', 'idle', 'run', 'throw']);
+  // CON-10 (K8): every other character has Gyeol's states and frame counts, in a pack of its own under packs/.
+  for (const id of ['dan', 'noeul', 'seori', 'dok', 'hwi', 'ryeong', 'wol']) {
+    const pack = characterPack(id)!;
+    assert.deepEqual(manifest.animations[characterSlot(id)], manifest.animations[HERO_SLOT], `${id} plays Gyeol's states`);
+    assert.ok(manifest.packs[pack].pages.every((page) => page.startsWith('assets/packs/')), `${pack} stays out of the initial download`);
+    assert.equal(Object.keys(manifest.packs[pack].frames).length, 21, `${pack} holds its 21 frames`);
+  }
+  assert.equal(characterPack('gyeol'), undefined);
+  assert.equal(characterSlot('gyeol'), HERO_SLOT);
   assert.equal(manifest.atlasScale, 2, 'atlas pixels per world unit');
 });
 

@@ -38,7 +38,7 @@ import { StoryPanels } from './ui/screens/StoryPanels';
 import { appendDevRunLog, devRunEntry } from './platform/devRunLog';
 import { moveKeyMap, setMoveKeysInUse } from './platform/moveKeys';
 import { beatsAfterClear, beatsBeforeRun, type StoryBeatId } from './ui/story';
-import { CHARACTERS, CHARACTER_COSTS, CHARACTER_MAX_LEVEL } from './game/characters';
+import { CHARACTERS, CHARACTER_COSTS, CHARACTER_IDS, CHARACTER_MAX_LEVEL } from './game/characters';
 import { characterOpen, type CharacterAction } from './ui/screens/CharactersView';
 import { NAV as MENU_NAV, MenuScreen, type MenuView } from './ui/screens/MenuScreen';
 import { nextRovingId, watchReducedMotion, type RovingKey } from './ui/inputContracts';
@@ -46,7 +46,7 @@ import { InputAdapter } from './ui/inputAdapter';
 import { SpriteAtlas } from './game/render/assets/spriteAtlas';
 import { ErrorLog, describeError } from './platform/errorReport';
 import { copyErrorReport } from './ui/ErrorBoundary';
-import { CHAPTER_PACKS, COMMON_PACK, SKILLS_PACK } from './game/render/assets/slots';
+import { CHAPTER_PACKS, COMMON_PACK, SKILLS_PACK, characterPack } from './game/render/assets/slots';
 import { INFINITE_BASELINE } from './game/infiniteMode';
 import { useGamepadNavigation } from './ui/useGamepadNavigation';
 import { AudioMixer, type SoundPack } from './game/audio/mixer';
@@ -225,6 +225,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   // CON-08: an infinite run turns through the chapters; the next one's pack loads as its turn comes due.
   const lookChapter = phase === 'menu' ? null : snapshot?.lookChapter ?? null;
   const nextArtChapter = phase === 'menu' ? null : snapshot?.nextLookChapter ?? null;
+  // CON-10 (K8): the character on screen: the run's (a resumed run keeps its own), else the one selected in the menu.
+  const artCharacter = phase === 'menu' ? profile.characters.selected : snapshot?.character ?? profile.characters.selected;
   const reportedPacks = useRef(new Set<string>());
   useEffect(() => {
     if (lookChapter === null) return;
@@ -238,7 +240,12 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     const chapterPack = CHAPTER_PACKS[artChapter];
     const nextPack = nextArtChapter === null ? undefined : CHAPTER_PACKS[nextArtChapter];
     for (const pack of Object.values(CHAPTER_PACKS)) if (pack !== chapterPack && pack !== nextPack) spriteAtlas.release(pack);
-    const packs = [COMMON_PACK, SKILLS_PACK, chapterPack, nextPack].filter((pack): pack is string => pack !== undefined);
+    const heroPack = characterPack(artCharacter);
+    for (const id of CHARACTER_IDS) {
+      const pack = characterPack(id);
+      if (pack && pack !== heroPack) spriteAtlas.release(pack);
+    }
+    const packs = [COMMON_PACK, SKILLS_PACK, heroPack, chapterPack, nextPack].filter((pack): pack is string => pack !== undefined);
     void Promise.all(packs.map((pack) => spriteAtlas.load(pack))).then((loaded) => {
       if (cancelled) return;
       const ready = loaded.every(Boolean);
@@ -254,7 +261,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     return () => {
       cancelled = true;
     };
-  }, [artChapter, nextArtChapter, errorLog, spriteAtlas]);
+  }, [artChapter, nextArtChapter, artCharacter, errorLog, spriteAtlas]);
 
   useEffect(() => errorLog.subscribe((entry) => {
     if (entry.source === 'window' || entry.source === 'promise') setNotice('error');
@@ -1028,6 +1035,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
           onMenu={toMenu}
           onRetry={settlement.runMode === 'infinite' ? startInfiniteRun : startRun}
           onCopyInfiniteResult={() => void copyInfiniteResult()}
+          character={snapshot?.character ?? 'gyeol'}
         />
       )}
 

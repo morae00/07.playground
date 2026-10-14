@@ -352,6 +352,8 @@ export type HudSnapshot = {
   /** CON-08: the chapter the run looks like (an infinite run turns through all five), and the next one when due soon. */
   lookChapter: number;
   nextLookChapter: number | null;
+  /** CON-10 (K8): the character played, whose portrait the HUD and settlement show ('gyeol' without one). */
+  character: string;
   stage: number;
   stageKind: StageKind;
   objective: Text;
@@ -5562,6 +5564,7 @@ export class GameEngine {
       seed: this.runSeed,
       chapter: this.chapter,
       lookChapter: this.shownChapter,
+      character: this.shownCharacter(),
       nextLookChapter: turnDue ? (this.shownChapter % INFINITE_ROTATION.chapters) + 1 : null,
       stage: this.stage,
       stageKind: this.kind,
@@ -5665,7 +5668,13 @@ export class GameEngine {
       objectiveMarks: this.stageObjective?.marks() ?? NO_MARKS,
       effects: this.presentation,
       cosmetics: this.cosmetics,
+      character: this.shownCharacter(),
     };
+  }
+
+  /** CON-10 (K8): the character the run is played as, for its art; Gyeol when none is chosen or the rule is off. */
+  protected shownCharacter() {
+    return this.rules.characters ? this.character?.id ?? 'gyeol' : 'gyeol';
   }
 
   /** Reports a game event to presentation and subscribers; events never change the simulation. */

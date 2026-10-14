@@ -4,6 +4,7 @@
 import { t } from '../../i18n/strings';
 import { formatPercent } from '../../game/skillNumbers';
 import { CHARACTERS, CHARACTER_COSTS, CHARACTER_IDS, CHARACTER_MAX_LEVEL, characterPerk, characterStartLevel } from '../../game/characters';
+import { portraitArt } from '../../game/render/assets/slots';
 import type { MetaState, ProfileData } from '../../platform/save';
 
 export type CharacterAction = 'select' | 'unlock' | 'upgrade';
@@ -33,8 +34,9 @@ export function CharactersView({ profile, meta, developerAccess, onCharacter }: 
           const selected = profile.characters.selected === id;
           const cost = level < CHARACTER_MAX_LEVEL ? CHARACTER_COSTS[level] : null;
           return (
-            <article className={selected ? 'characterCard selected' : 'characterCard'} data-character={id} key={id}>
+            <article className={`characterCard${selected ? ' selected' : ''}${open ? '' : ' locked'}`} data-character={id} key={id}>
               <header>
+                <span className="artPortrait characterPortrait" data-art={portraitArt(id, 'calm')} aria-hidden="true" />
                 <b>{t(`character.${id}` as 'character.gyeol')}</b>
                 <small>{t(`character.${id}.title` as 'character.gyeol.title')}</small>
               </header>

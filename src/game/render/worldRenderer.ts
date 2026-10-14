@@ -33,7 +33,7 @@ import { WARDEN_SHIELD } from '../enemyBehaviors.ts';
 import BOMBERS from '../../content/data/bombers.ts';
 import { AnimationBook, SPAWN_SECONDS, enemyPoses, heroPoses, poseFrame, stepBossAnim, stepEnemyAnim, stepPlayerAnim, type AnimState, type EnemyAnim } from './animation.ts';
 import { phaseFor, type GroundTile, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
-import { CHAPTER_PACKS, COMMON_PACK, FX_SLOT, HERO_SLOT, PICKUP_SLOT, bomberSlot, bossSlot, bossState, enemyDrawScale, enemySlot, frameKey, pickupState, slotEnabled, type BossPose, type BossSlot } from './assets/slots.ts';
+import { CHAPTER_PACKS, COMMON_PACK, FX_SLOT, HERO_SLOT, PICKUP_SLOT, bomberSlot, characterPack, characterSlot, bossSlot, bossState, enemyDrawScale, enemySlot, frameKey, pickupState, slotEnabled, type BossPose, type BossSlot } from './assets/slots.ts';
 import { GameRenderer } from './GameRenderer.ts';
 import { NumberGlyphs, type NumberStyle } from './numberGlyphs.ts';
 import { shakeOffset } from '../presentation/viewCamera.ts';
@@ -261,6 +261,8 @@ export type RenderWorld = {
   readonly effects: RenderEffects;
   /** CON-07: the cosmetics the hero wears in play: an outline colour and an ink trail (null for none). Looks only. */
   readonly cosmetics: Readonly<{ outline: string | null; trail: Readonly<{ id: string; color: string }> | null }>;
+  /** CON-10 (K8): the character played; its own frames when its pack is loaded, else Gyeol's. */
+  readonly character: string;
 };
 
 export class WorldRenderer {
@@ -831,7 +833,7 @@ export class WorldRenderer {
     const age = hazard.maxLife - hazard.life;
     if (hazard.kind === 'warning') {
       const eclipse = hazard.sourceSkillId === 'eclipseStep';
-      if (eclipse) this.vfx.stamp(ctx, 'mirrorClone', 'clone-throw', x, y, 0, 1, this.vfx.render?.cloneAlpha ?? 0.8, this.heroAnim?.facing ?? 1);
+      if (eclipse && this.world.character === 'gyeol') this.vfx.stamp(ctx, 'mirrorClone', 'clone-throw', x, y, 0, 1, this.vfx.render?.cloneAlpha ?? 0.8, this.heroAnim?.facing ?? 1);
       this.vfx.zone(ctx, x, y, radius, eclipse ? null : false, age / hazard.maxLife);
       return;
     }
@@ -1581,8 +1583,9 @@ export class WorldRenderer {
   private drawMirrorClone(ctx: CanvasRenderingContext2D, x: number, y: number) {
     const skill = this.world.skills.mirrorClone;
     if (!skill) return;
-    // The kit's clone is a line copy of the hero's own pose and frame (FX-06).
-    if (this.skillArt && this.vfx.stamp(ctx, 'mirrorClone', `clone-${this.heroPose}`, x, y, 0, this.heroPoseFrame, this.vfx.render?.cloneAlpha ?? 0.8, this.heroAnim?.facing ?? 1)) return;
+    // The kit's clone is a line copy of Gyeol's own pose and frame (FX-06); another character's clone is its own
+    // sprite, faint (CON-10, K8).
+    if (this.world.character === 'gyeol' && this.skillArt && this.vfx.stamp(ctx, 'mirrorClone', `clone-${this.heroPose}`, x, y, 0, this.heroPoseFrame, this.vfx.render?.cloneAlpha ?? 0.8, this.heroAnim?.facing ?? 1)) return;
     if (this.hero) {
       this.blit(ctx, this.hero, x, y, (this.heroAnim?.facing ?? 1), 0.94, skill.awakened ? 0.3 : 0.38);
       return;
@@ -1774,12 +1777,15 @@ export class WorldRenderer {
     const state = stepPlayerAnim(anim, player, effects, moving, now);
     const sprites = this.sprites;
     if (!sprites || !slotEnabled(HERO_SLOT)) return undefined;
+    // CON-10 (K8): the character's own frames once its pack is in; Gyeol's meanwhile.
+    const pack = characterPack(this.world.character);
+    const slot = pack && sprites.status(pack) === 'ready' ? characterSlot(this.world.character) : HERO_SLOT;
     for (const pose of heroPoses(state)) {
-      const spec = sprites.animation(HERO_SLOT, pose);
+      const spec = sprites.animation(slot, pose);
       if (!spec) continue;
       this.heroPose = pose;
       this.heroPoseFrame = poseFrame(spec, pose, anim.startedAt, now, 0);
-      return sprites.frame(frameKey(HERO_SLOT, pose, this.heroPoseFrame)) ?? sprites.frame(frameKey(HERO_SLOT, 'idle', 0));
+      return sprites.frame(frameKey(slot, pose, this.heroPoseFrame)) ?? sprites.frame(frameKey(slot, 'idle', 0));
     }
     return undefined;
   }

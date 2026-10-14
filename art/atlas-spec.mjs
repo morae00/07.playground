@@ -49,6 +49,22 @@ export const ENEMY_ROLES = Object.freeze({
   warden: { walkFps: 6, fit: 1, pad: [40, 20, 0, 0] },
 });
 
+/**
+ * CON-10 (K8): the seven other characters (PN.characters, API-characters), each with Gyeol's states and box, in a
+ * pack of its own (brief Q6) that loads only for the character played. Gyeol stays the hero of the common pack.
+ */
+export const CHARACTER_ART = Object.freeze(['dan', 'noeul', 'seori', 'dok', 'hwi', 'ryeong', 'wol']);
+
+function characterFrames(id) {
+  return Object.entries(HERO_STATES).flatMap(([state, { frames }]) => Array.from({ length: frames }, (_, frame) => ({
+    key: `hero/${id}/${state}/${frame}`,
+    call: ['PN.characters.sprite', id, state, frame, { ring: false, shadow: false, halo: true }],
+    box: [96, 96],
+    anchor: [48, 75],
+    scale: 1,
+  })));
+}
+
 function heroFrames() {
   const frames = [];
   for (const [state, { frames: count }] of Object.entries(HERO_STATES)) {
@@ -414,4 +430,9 @@ export const PACKS = Object.freeze({
   'chapter-03': chapterPack(3),
   'chapter-04': chapterPack(4),
   'chapter-05': chapterPack(5),
+  ...Object.fromEntries(CHARACTER_ART.map((id) => [`hero-${id}`, {
+    page: `assets/packs/hero-${id}/atlas`,
+    frames: characterFrames(id),
+    animations: { [`hero/${id}`]: HERO_STATES },
+  }])),
 });
