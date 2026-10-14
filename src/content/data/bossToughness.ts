@@ -2,7 +2,8 @@
 // bosses died in a median 2.8-3.7 s between minutes 5 and 20, and boss stages ended almost as they began. Data, not
 // code (TEC-05).
 // - campaign: boss stage bosses (round) and the field bosses of normal stages take `hp` times their health and deal
-//   `damage` times their damage.
+//   `damage` times their damage. Boss stages were raised from 1.6 and 1.2 once the horde's hits and rewards were
+//   fixed (SYS-13): at 1.6 the team personas still cleared boss stages more often than at the R4 baseline.
 // - infinite: a round boss takes the `roundHp` factor of the minute it arrives (straight lines between the points,
 //   flat after the last) and field bosses `fieldHp`; both deal `damage` times their damage. Neither can have less
 //   health than `focus.seconds` of the pace the player felled the last bosses at (health per second of each fight,
@@ -12,7 +13,7 @@
 import { deepFreeze } from '../deepFreeze.ts';
 
 export default deepFreeze({
-  campaign: { roundHp: 1.6, roundDamage: 1.2, fieldHp: 2, fieldDamage: 1.15 },
+  campaign: { roundHp: 2, roundDamage: 1.5, fieldHp: 2, fieldDamage: 1.15 },
   infinite: {
     roundHp: [[0, 1], [5, 1.2], [15, 1.4], [25, 1.5]] as [number, number][],
     fieldHp: 1.2,

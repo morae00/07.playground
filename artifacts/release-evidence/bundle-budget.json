@@ -35,7 +35,7 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 1978872,
+      "bytes": 1978870,
       "kib": 1932.49,
       "warningBytes": 3145728,
       "failBytes": 4194304,
@@ -43,7 +43,7 @@
       "passed": true
     },
     "installAssets": {
-      "bytes": 27078198,
+      "bytes": 27078196,
       "kib": 26443.55,
       "warningBytes": 209715200,
       "failBytes": 262144000,
@@ -117,7 +117,7 @@
     {
       "file": "assets/content/tables.json",
       "category": "data",
-      "sourceBytes": 49849,
+      "sourceBytes": 49847,
       "gzipBytes": 9989
     },
     {
