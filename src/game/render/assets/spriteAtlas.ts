@@ -42,6 +42,14 @@ export type AtlasManifest = Readonly<{
   packs: Readonly<Record<string, AtlasPackManifest>>;
   animations: Readonly<Record<string, Readonly<Record<string, AnimationSpec>>>>;
   skillVfx?: SkillVfxManifest;
+  /** SYS-14 (K7): the fuse bomber's wick tip per state and frame, in kit units around its feet (API-bombers §4.2). */
+  bombers?: BomberManifest;
+}>;
+
+export type BomberManifest = Readonly<{
+  feet: readonly [number, number];
+  displayScale: number;
+  wick: Readonly<Record<string, readonly (readonly [number, number])[]>>;
 }>;
 
 export type SpriteImage = CanvasImageSource & { readonly width: number; readonly height: number };
@@ -187,6 +195,10 @@ export class SpriteAtlas {
   }
 
   /** The skill VFX's shapes and part rules (FX-06), once the manifest has loaded. */
+  bombers(): BomberManifest | undefined {
+    return this.manifest?.bombers;
+  }
+
   skillVfx(): SkillVfxManifest | undefined {
     return this.manifest?.skillVfx;
   }

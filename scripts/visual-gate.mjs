@@ -12,7 +12,7 @@ const requireGoldens = process.env.VISUAL_REQUIRE_GOLDENS !== '0';
 const maxDiffRatio = Number.parseFloat(process.env.VISUAL_MAX_DIFF_RATIO ?? '0.005');
 const pixelTolerance = Number.parseInt(process.env.VISUAL_PIXEL_TOLERANCE ?? '24', 10);
 // The default matrix is the platform decision (TEC-01: minimum 1024x720, reference 1280x720 and 1440x900,
-// largest verified 1920x1080): 4 viewports x DPR 1/2 x 3 modes x 9 states = 216 captures. The modes are full
+// largest verified 1920x1080): 4 viewports x DPR 1/2 x 3 modes x 10 states = 240 captures. The modes are full
 // motion, the system's reduced motion, and the reduced flash setting, which UI-08 separates from reduced motion.
 // The small sizes stay selectable by name (VISUAL_VIEWPORTS) to check the responsive layout.
 const viewportCatalog = [
@@ -24,7 +24,7 @@ const viewportCatalog = [
   { name: '1440x900', width: 1440, height: 900 },
   { name: '1920x1080', width: 1920, height: 1080 },
 ];
-const stateNames = ['menu', 'infinite-menu', 'infinite-playing', 'story', 'playing', 'paused', 'draft', 'settlement', 'boss'];
+const stateNames = ['menu', 'infinite-menu', 'infinite-playing', 'story', 'playing', 'paused', 'draft', 'bombers', 'settlement', 'boss'];
 
 const defaultViewports = ['1024x720', '1280x720', '1440x900', '1920x1080'];
 
@@ -446,6 +446,14 @@ async function runScenario(page, viewport, dpr, motion) {
   await passInputGuard(page);
   await (await unique(page.locator('[aria-keyshortcuts="1"]'), 'first draft card')).click();
   await settle(page, 80);
+
+  // SYS-14 (K7): bombers around the hero, one fuse planted with its blast reach on the floor.
+  await openCheatPanel(page);
+  await enterCheat(page, 'GOD');
+  await enterCheat(page, 'BOMB');
+  await page.keyboard.press('Escape');
+  await settle(page, 120);
+  await captureEvidence(page, viewport, dpr, motion, 'bombers');
 
   await openCheatPanel(page);
   await enterCheat(page, 'CLEAR');

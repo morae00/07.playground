@@ -1,13 +1,16 @@
 // Presentation layer (TEC-02): turns game events into particles, damage numbers, impact rings, screen shake,
 // and sound cues for the app's mixer (AUD-01). It owns only cosmetic state; the simulation never reads it back.
 import { lookOf } from '../arsenal.ts';
-import type { Corpse, DamageNumber, EffectOwner, HitStamp, ImpactRing, Particle, Recoil, SkillId, SkillMark, SkillState } from '../engine/worldTypes.ts';
+import type { BlastFlash, Corpse, DamageNumber, EffectOwner, HitStamp, ImpactRing, Particle, Recoil, SkillId, SkillMark, SkillState } from '../engine/worldTypes.ts';
 import type { GameOptions } from '../../platform/save.ts';
 import { CUES, HIT_CUES, KILL_CUES, type CueId, type SoundOutput } from '../audioPolicy.ts';
 import type { GameEvent } from '../engine/events.ts';
 import { ObjectPool, compactWhere, recycleWhere } from '../objectPool.ts';
 import { createSeededRandom } from '../p0Core.ts';
 import { CHAPTER_VISUALS } from '../render/visualRegistry.ts';
+
+/** SYS-14 (K7): how long a bomber's blast drawing shows (API-bombers §3). */
+const BLAST_SECONDS = 0.15;
 
 export type PresentationHost = {
   /**
@@ -91,6 +94,8 @@ export class Presentation {
   readonly particles: Particle[] = [];
   readonly damageNumbers: DamageNumber[] = [];
   readonly impactRings: ImpactRing[] = [];
+  /** SYS-14 (K7): bombers' blast drawings, a moment each. */
+  readonly blasts: BlastFlash[] = [];
   readonly skillMarks: SkillMark[] = [];
   readonly corpses: Corpse[] = [];
   readonly hitStamps: HitStamp[] = [];
@@ -172,6 +177,7 @@ export class Presentation {
     this.corpses.length = 0;
     this.hitStamps.length = 0;
     this.impactRings.length = 0;
+    this.blasts.length = 0;
     this.skillMarks.length = 0;
     this.playerHurt = 0;
     this.playerBurst = 0;
@@ -292,6 +298,7 @@ export class Presentation {
       case 'enemy/blast':
         // SYS-14: the blast's reach flashes as a hostile ring, and a blast that caught the player shakes harder.
         this.impactRings.push({ x: event.x, y: event.y, radius: event.radius, life: 0.3, maxLife: 0.3, tier: 'heavy', owner: 'hostile' });
+        this.blasts.push({ x: event.x, y: event.y, kind: event.kind, life: BLAST_SECONDS, maxLife: BLAST_SECONDS });
         this.burst(event.x, event.y, Math.round((event.kind === 'fuse' ? 30 : 18) * effects), '#050505', event.kind === 'fuse' ? 300 : 220);
         this.addShake(event.hit ? 14 : 6);
         this.play('bomber.blast', event.x);
@@ -389,12 +396,14 @@ export class Presentation {
     this.playerBurst = Math.max(0, this.playerBurst - dt);
     this.playerCast = Math.max(0, this.playerCast - dt);
     for (const ring of this.impactRings) ring.life -= dt;
+    for (const blast of this.blasts) blast.life -= dt;
     for (const mark of this.skillMarks) mark.life -= dt;
     for (const number of this.damageNumbers) {
       number.life -= dt;
       number.y -= dt * 38;
     }
     compactWhere(this.impactRings, (ring) => ring.life > 0);
+    compactWhere(this.blasts, (blast) => blast.life > 0);
     compactWhere(this.skillMarks, (mark) => mark.life > 0);
     recycleWhere(this.damageNumbers, (number) => number.life > 0, this.damageNumberPool);
   }

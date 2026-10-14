@@ -418,6 +418,15 @@ export type SkillMark = {
   maxLife: number;
 };
 
+/** SYS-14 (K7): a bomber's blast drawing, shown for a moment where it went off. */
+export type BlastFlash = {
+  x: number;
+  y: number;
+  kind: 'fuse' | 'burst';
+  life: number;
+  maxLife: number;
+};
+
 export type ImpactRing = {
   x: number;
   y: number;

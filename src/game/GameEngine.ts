@@ -162,6 +162,7 @@ export type {
   EnemyTier,
   Entity,
   Hazard,
+  BlastFlash,
   ImpactRing,
   LaneTelegraph,
   Obstacle,
@@ -1327,7 +1328,7 @@ export class GameEngine {
       this.faultInjection = true;
       return 'LOOP FAULT ARMED';
     }
-    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO', 'TURN', 'PHASE', 'VFX'].includes(code)) {
+    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO', 'TURN', 'PHASE', 'VFX', 'BOMB'].includes(code)) {
       this.invalidateInfiniteScore();
     }
     if (code === 'GOD') {
@@ -1372,6 +1373,23 @@ export class GameEngine {
       this.recalculateStats(false);
       this.emitSnapshot(true);
       return 'ALL SKILLS AWAKENED';
+    }
+
+    // SYS-14 (K7): two of each bomber around the player, the first fuse planted halfway, to see their art, marks, and blast.
+    if (code === 'BOMB') {
+      (['fuse', 'burst', 'fuse', 'burst'] as const).forEach((kind, index) => {
+        this.spawnEnemy(1, 'small');
+        const enemy = this.enemies[this.enemies.length - 1];
+        const angle = Math.PI / 4 + (index * Math.PI) / 2;
+        enemy.x = enemy.prevX = this.player.x + Math.cos(angle) * 170;
+        enemy.y = enemy.prevY = this.player.y + Math.sin(angle) * 170;
+        enemy.attackStyle = 'contact';
+        // Tough enough that the opening build's skills do not fell them before they are seen.
+        Object.assign(enemy, { bomber: kind, blastDamage: enemy.damage * BOMBERS[kind].damage, hp: enemy.maxHp * 40, maxHp: enemy.maxHp * 40 });
+        if (index === 0) enemy.fuseAt = this.elapsed - BOMBERS.fuse.seconds / 2;
+      });
+      this.rebuildEnemyIndex();
+      return 'BOMBERS';
     }
 
     // CON-06: takes the stage's boss to just past its next phase, to see its phase move and line.

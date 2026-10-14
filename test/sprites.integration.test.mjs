@@ -7,7 +7,7 @@ import { installHeadlessPlatform, maxMeta, standardOptions } from '../scripts/li
 
 installHeadlessPlatform();
 Object.defineProperty(globalThis, 'performance', { value: { now: () => 0 }, configurable: true });
-const { ProbedGameEngine, SpriteAtlas, ATLAS_MANIFEST } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
+const { ProbedGameEngine, SpriteAtlas, ATLAS_MANIFEST, BOMBERS } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
 
 function recordingCanvas() {
   const images = [];
@@ -129,6 +129,42 @@ test('Ch1 enemies, round bosses, and the field boss draw from the chapter pack; 
     assert.equal(ch2.images.filter((draw) => draw.image.url === 'assets/atlas/common-0.png').length, 1, 'the hero still uses the common pack');
   } finally {
     ch2.engine.dispose();
+  }
+});
+
+test('bombers draw from their own frames: standing, planted by the fuse\'s progress, and the blast for a moment (SYS-14, K7)', async () => {
+  const atlas = await loadedAtlas();
+  const { engine, images } = arena(1, 4, atlas);
+  try {
+    const pack = ATLAS_MANIFEST.packs['chapter-01'];
+    const shows = (key) => {
+      const frame = pack.frames[key];
+      assert.ok(frame, `${key} is baked`);
+      return images.some((draw) => draw.image.url === pack.pages[frame[0]] && draw.sx === frame[1] && draw.sy === frame[2]);
+    };
+    engine.probe.setGodMode();
+    const { player } = engine.probe.read();
+    engine.probe.spawnEnemy({ tier: 'small', bomber: 'burst', x: player.x + 200, y: player.y, speed: 0, damage: 0 });
+    const fuse = engine.probe.spawnEnemy({ tier: 'small', bomber: 'fuse', x: player.x - 200, y: player.y, speed: 0, damage: 0 });
+    engine.probe.render(1);
+    assert.ok(shows('enemy/1/bomber-burst/idle/0'), 'the burst bomber stands in its own drawing');
+    assert.ok(shows('enemy/1/bomber-fuse/idle/0'), 'so does the fuse bomber');
+    const { elapsed } = engine.probe.read();
+    engine.probe.patchEnemy(fuse, { fuseAt: elapsed - BOMBERS.fuse.seconds * 0.6 });
+    images.length = 0;
+    engine.probe.render(1);
+    assert.ok(shows('enemy/1/bomber-fuse/plant/2'), 'planted 60% of the way, it shows the third plant frame');
+    engine.probe.patchEnemy(fuse, { fuseAt: elapsed - BOMBERS.fuse.seconds - 0.01 });
+    engine.probe.step(1);
+    images.length = 0;
+    engine.probe.render(1);
+    assert.ok(shows('enemy/1/bomber-fuse/blast/0'), 'it goes off and its blast shows');
+    engine.probe.step(12);
+    images.length = 0;
+    engine.probe.render(1);
+    assert.ok(!shows('enemy/1/bomber-fuse/blast/0'), 'for a moment only');
+  } finally {
+    engine.dispose();
   }
 });
 

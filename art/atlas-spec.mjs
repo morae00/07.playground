@@ -367,12 +367,18 @@ function envAnimations(chapter) {
   return { [`env/${chapter}`]: Object.fromEntries([...states, 'boundary'].map((state) => [state, { frames: 1, fps: 1 }])) };
 }
 
+/** SYS-14 (K7): the two bombers, drawn by the kit at the small contact size (API-bombers). */
+export const BOMBER_KINDS = Object.freeze(['fuse', 'burst']);
+
 /** Filled from the kit's own metadata at bake time (box, pivot, feet, displayScale, walk frame count). */
 function enemyFrames(chapter) {
-  return Object.entries(ENEMY_ROLES).map(([role, { fit }]) => ({
-    enemy: { chapter, role, fit },
-    keyPrefix: `enemy/${chapter}/${role}`,
-  }));
+  return [
+    ...Object.entries(ENEMY_ROLES).map(([role, { fit }]) => ({
+      enemy: { chapter, role, fit },
+      keyPrefix: `enemy/${chapter}/${role}`,
+    })),
+    ...BOMBER_KINDS.map((kind) => ({ bomber: { chapter, kind }, keyPrefix: `enemy/${chapter}/bomber-${kind}` })),
+  ];
 }
 
 /** One pack per chapter: its enemy roles, round bosses with kit art, kill bursts and decals, props, edge, and ground. */

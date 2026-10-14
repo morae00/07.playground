@@ -93,6 +93,11 @@ export function enemySlot(chapter: number, tier: EnemyTier, attackStyle: 'contac
   return `enemy/${chapter}/${enemyRoleFor(tier, attackStyle)}`;
 }
 
+/** SYS-14 (K7): a bomber's own drawing in its chapter pack. Its kill and decal frames stay its role's (stalker). */
+export function bomberSlot(chapter: number, kind: 'fuse' | 'burst') {
+  return `enemy/${chapter}/bomber-${kind}`;
+}
+
 /**
  * Extra draw scale on top of the baked role size. Shooters come in several tiers from one drawing: the kit
  * places the medium shooter at x1.26 so its feet land on the r19 hit circle (API-enemies).

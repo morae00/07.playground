@@ -10,6 +10,7 @@ import {
   GameEngine,
   type BeamEffect,
   type DamageNumber,
+  type BlastFlash,
   type ImpactRing,
   type Particle,
   type BossProjectile,
@@ -98,6 +99,7 @@ export type ProbeEffects = {
   particles: Particle[];
   damageNumbers: DamageNumber[];
   impactRings: ImpactRing[];
+  blasts: BlastFlash[];
   skillMarks: SkillMark[];
   corpses: Corpse[];
   hitStamps: HitStamp[];
@@ -280,6 +282,7 @@ export class ProbedGameEngine extends GameEngine {
         particles: copy(this.presentation.particles),
         damageNumbers: copy(this.presentation.damageNumbers),
         impactRings: copy(this.presentation.impactRings),
+        blasts: copy(this.presentation.blasts),
         skillMarks: copy(this.presentation.skillMarks),
         corpses: copy(this.presentation.corpses),
         hitStamps: copy(this.presentation.hitStamps),
@@ -466,6 +469,7 @@ export class ProbedGameEngine extends GameEngine {
             particles: effects.particles,
             damageNumbers: effects.damageNumbers,
             impactRings: effects.impactRings,
+            blasts: effects.blasts,
             skillMarks: effects.skillMarks,
             corpses: effects.corpses,
             hitStamps: effects.hitStamps,

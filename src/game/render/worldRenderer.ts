@@ -9,6 +9,7 @@ import type {
   HitStamp,
   Entity,
   Hazard,
+  BlastFlash,
   ImpactRing,
   LaneTelegraph,
   Obstacle,
@@ -32,7 +33,7 @@ import { WARDEN_SHIELD } from '../enemyBehaviors.ts';
 import BOMBERS from '../../content/data/bombers.ts';
 import { AnimationBook, SPAWN_SECONDS, enemyPoses, heroPoses, poseFrame, stepBossAnim, stepEnemyAnim, stepPlayerAnim, type AnimState, type EnemyAnim } from './animation.ts';
 import { phaseFor, type GroundTile, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
-import { CHAPTER_PACKS, COMMON_PACK, FX_SLOT, HERO_SLOT, PICKUP_SLOT, bossSlot, bossState, enemyDrawScale, enemySlot, frameKey, pickupState, slotEnabled, type BossPose, type BossSlot } from './assets/slots.ts';
+import { CHAPTER_PACKS, COMMON_PACK, FX_SLOT, HERO_SLOT, PICKUP_SLOT, bomberSlot, bossSlot, bossState, enemyDrawScale, enemySlot, frameKey, pickupState, slotEnabled, type BossPose, type BossSlot } from './assets/slots.ts';
 import { GameRenderer } from './GameRenderer.ts';
 import { NumberGlyphs, type NumberStyle } from './numberGlyphs.ts';
 import { shakeOffset } from '../presentation/viewCamera.ts';
@@ -85,6 +86,11 @@ const CHILL_RADII = Object.freeze([12, 19, 28, 38, 54]);
 const SKILL_SHOTS: ReadonlySet<SkillId> = new Set(['needleStorm', 'fanKnives', 'recoveryThread', 'mirrorClone']);
 /** The player's zones (the bone mortar's warning, the eclipse afterimage, the vortices) lie under the enemy's (FX-06). */
 const allyZone = (hazard: Readonly<Hazard>) => hazard.kind === 'warning' || hazard.kind === 'vortex';
+
+/** SYS-14 (K7): a bomber's blast drawing fades over its last moment (API-bombers §3). */
+const BLAST_FADE_SECONDS = 0.05;
+/** The plant frame for a fuse burning this long: the fuse's progress, in the frames there are (API-bombers §3). */
+const plantFrame = (frames: number, age: number) => Math.min(frames - 1, Math.max(0, Math.floor((age / BOMBERS.fuse.seconds) * frames)));
 
 /** Cut-outs kept per cache: far more than the frames a chapter and the hero have (TEC-09). */
 const CUTOUT_LIMIT = 1024;
@@ -193,6 +199,8 @@ export type RenderEffects = {
   readonly particles: readonly Readonly<Particle>[];
   readonly damageNumbers: readonly Readonly<DamageNumber>[];
   readonly impactRings: readonly Readonly<ImpactRing>[];
+  /** SYS-14 (K7): bombers' blast drawings, a moment each. */
+  readonly blasts: readonly Readonly<BlastFlash>[];
   /** Skill rings and strokes no event sizes (FX-06). */
   readonly skillMarks: readonly Readonly<SkillMark>[];
   /** Fallen enemies (FX-03): falling bodies and their fading ink stains. */
@@ -919,10 +927,28 @@ export class WorldRenderer {
     }
   }
 
+  /**
+   * SYS-14 (K7): a bomber's blast drawing for a moment where it went off, fading over its last 0.05 s, on the floor
+   * layer so it never covers the hero (V4). Not at minimal detail; at half strength when flashes are reduced.
+   */
+  private drawBlastFlashes(ctx: CanvasRenderingContext2D) {
+    const sprites = this.sprites;
+    const pack = CHAPTER_PACKS[this.world.chapter];
+    if (!sprites || !pack || sprites.status(pack) !== 'ready' || this.stats.detail === 'minimal') return;
+    const strength = this.world.options.reducedFlash ? 0.5 : 1;
+    for (const blast of this.world.effects.blasts) {
+      const slot = bomberSlot(this.world.chapter, blast.kind);
+      const frame = sprites.animation(slot, 'blast') && sprites.frame(frameKey(slot, 'blast', 0));
+      if (!frame) continue;
+      this.blit(ctx, frame, blast.x, blast.y, 1, 1, Math.min(1, blast.life / BLAST_FADE_SECONDS) * strength);
+    }
+  }
+
   /** Marks on the floor under every body: foot shadows, the player's foot ring, and ranged-enemy rings. */
   private drawGroundMarks(ctx: CanvasRenderingContext2D) {
     this.drawObjectiveMarks(ctx);
     this.drawFallingBodies(ctx);
+    this.drawBlastFlashes(ctx);
     if (this.world.airShots) this.drawShotShadows(ctx);
     for (const body of this.sortedBodies) {
       const enemy = body.enemy;
@@ -1041,31 +1067,53 @@ export class WorldRenderer {
       const over = body.top - (showHealth ? 26 : 12);
       if (enemy.elite) this.drawEliteMark(ctx, enemy.elite, body.x, over);
       if (enemy.stun > 0 && !enemy.isBoss) this.drawStunMark(ctx, body.x, enemy.elite ? over - 14 : over, enemy.id);
-      if (enemy.bomber && enemy.fuseAt === undefined) this.drawBomberMark(ctx, enemy.bomber, body.x, body.y, enemy.radius, over, enemy.id);
+      if (enemy.bomber) this.drawBomberMark(ctx, enemy, body, over);
     }
+  }
+
+  /**
+   * SYS-14 (K7): where a fuse bomber's spark sits: on its wick tip when its own drawing is on screen (the wick table
+   * the bake carries), following the burning fuse down once planted; else over its head.
+   */
+  private bomberSpark(enemy: Readonly<Entity>, body: Readonly<BodyDraw>, over: number) {
+    const data = this.sprites?.bombers();
+    const own = body.sprite && this.sprites?.animation(bomberSlot(this.world.chapter, 'fuse'), 'idle');
+    if (!data || !own) return { x: body.x, y: over - 3 };
+    const tips = enemy.fuseAt === undefined ? data.wick.idle : data.wick.plant;
+    const tip = tips?.[enemy.fuseAt === undefined ? 0 : plantFrame(tips.length, this.world.elapsed - enemy.fuseAt)];
+    if (!tip) return { x: body.x, y: over - 3 };
+    const facing = body.sprite?.facing ?? 1;
+    return { x: body.x + facing * (tip[0] - data.feet[0]) * data.displayScale, y: body.y - (data.feet[1] - tip[1]) * data.displayScale };
   }
 
   /**
    * SYS-14: a bomber reads from afar. A fuse bomber wears the amber warning ring and a lit spark over its head; a
    * burst bomber a doubled hostile ring that throbs (steady when motion is reduced).
    */
-  private drawBomberMark(ctx: CanvasRenderingContext2D, kind: 'fuse' | 'burst', x: number, y: number, radius: number, over: number, id: number) {
+  private drawBomberMark(ctx: CanvasRenderingContext2D, enemy: Readonly<Entity>, body: Readonly<BodyDraw>, over: number) {
+    const { x, y } = body;
+    const radius = enemy.radius;
+    const planted = enemy.fuseAt !== undefined;
     const policy = motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion);
-    const beat = policy.reduced ? 0.5 : 0.5 + 0.5 * Math.sin(this.world.elapsed * 9 + phaseFor(id) * Math.PI * 2);
+    const beat = policy.reduced ? 0.5 : 0.5 + 0.5 * Math.sin(this.world.elapsed * 9 + phaseFor(enemy.id) * Math.PI * 2);
     ctx.save();
     ctx.lineWidth = 2.5;
-    if (kind === 'fuse') {
-      ctx.strokeStyle = SIGNAL.warn;
-      ctx.setLineDash([5, 4]);
-      ctx.beginPath();
-      ctx.arc(x, y, radius + 5, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
+    if (enemy.bomber === 'fuse') {
+      // Planted, the blast reach on the floor takes over from the ring (drawBomberFuses); the spark stays lit.
+      if (!planted) {
+        ctx.strokeStyle = SIGNAL.warn;
+        ctx.setLineDash([5, 4]);
+        ctx.beginPath();
+        ctx.arc(x, y, radius + 5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      const spark = this.bomberSpark(enemy, body, over);
       ctx.fillStyle = SIGNAL.warn;
       ctx.beginPath();
-      ctx.arc(x, over - 3, 3 + beat * 2, 0, Math.PI * 2);
+      ctx.arc(spark.x, spark.y, 3 + beat * 2, 0, Math.PI * 2);
       ctx.fill();
-    } else {
+    } else if (!planted) {
       ctx.strokeStyle = SIGNAL.hostile;
       for (const reach of [radius + 4, radius + 9 + beat * 3]) {
         ctx.beginPath();
@@ -2159,8 +2207,17 @@ export class WorldRenderer {
     if (enemy.isBoss) return this.bossSprite(enemy, anim, sprites);
     const pack = CHAPTER_PACKS[this.world.chapter];
     if (!pack || sprites.status(pack) !== 'ready') return undefined;
-    const slot = enemySlot(this.world.chapter, enemy.tier, enemy.attackStyle);
+    // SYS-14 (K7): a bomber wears its own drawing when the chapter pack has it, else its role's.
+    const own = enemy.bomber ? bomberSlot(this.world.chapter, enemy.bomber) : undefined;
+    const slot = own && sprites.animation(own, 'idle') ? own : enemySlot(this.world.chapter, enemy.tier, enemy.attackStyle);
     if (!slotEnabled(slot)) return undefined;
+    // A planted fuse bomber shows its fuse burning down by the fuse's progress, not the clock, at every level of
+    // detail: it is the countdown (V3, V5). It holds through hits, like any threat.
+    if (slot === own && enemy.fuseAt !== undefined) {
+      const spec = sprites.animation(slot, 'plant');
+      const frame = spec && sprites.frame(frameKey(slot, 'plant', plantFrame(spec.frames, this.world.elapsed - enemy.fuseAt)));
+      if (frame) return { frame, facing: anim.facing, scale: 1 };
+    }
     const moving = Math.hypot(enemy.vx, enemy.vy) > 5;
     // Reduced flash keeps a struck body in its pose: the negative hit frame is the brightest flash (UI-08).
     const flashPose = anim.state === 'hurt' && !motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion).invertFlash;

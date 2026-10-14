@@ -8,7 +8,7 @@ import { ATLAS_SCALE, BAKE_MARGIN, COLOR_MAP, ENEMY_ROLES, FRAME_PADDING, GROUND
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const kitDir = path.join(root, 'art/concept-kit');
-const KIT_FILES = ['lib.js', 'k-hero.js', 'k-skills-vfx.js', 'k-enemies.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses3.js', 'k-bosses4.js', 'k-icons.js', 'k-env.js'];
+const KIT_FILES = ['lib.js', 'k-hero.js', 'k-skills-vfx.js', 'k-enemies.js', 'k-bombers.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses3.js', 'k-bosses4.js', 'k-icons.js', 'k-env.js'];
 
 const browser = await chromium.launch();
 try {
@@ -49,6 +49,11 @@ try {
   manifest.animations.hero = Object.fromEntries(Object.entries(HERO_STATES).map(([state, spec]) => [state, spec]));
   // The skill VFX's shapes and part rules as data (FX-06, FX-07): the renderer reads its numbers from here.
   manifest.skillVfx = await page.evaluate(readSkillVfx, { timing: SKILL_VFX_TIMING, render: SKILL_VFX_RENDER });
+  // SYS-14 (K7): where the fuse bomber's wick ends in each frame (the same rig in every chapter), for the spark.
+  manifest.bombers = await page.evaluate(() => {
+    const { feet, displayScale, wick } = window.PN.bombers.meta(1, 'fuse');
+    return { feet, displayScale, wick };
+  });
   manifest.animations = Object.fromEntries(Object.entries(manifest.animations).sort(([a], [b]) => a.localeCompare(b)));
   // One line per frame keeps the generated file short and its diffs readable.
   const body = JSON.stringify(manifest, null, 2).replace(/\[\s+([-\d.,\s]+?)\s+\]/g, (_match, inner) => `[${inner.trim().split(/\s*,\s*/).join(', ')}]`);
@@ -176,6 +181,28 @@ async function renderFrames({ frames, scale, margin, colorMap, roles }) {
         }
         expanded.at(-1).animation = { key: `skill/${group}`, spec: Object.fromEntries(parts.map((p) => [p.part, { frames: p.frames, fps: p.drive === 'loop' ? p.fps : 0 }])) };
       }
+      continue;
+    }
+    if (frame.bomber) {
+      // SYS-14 (K7): a bomber's every state from the kit at its own size (fit 1, API-bombers §7). Plant frames are
+      // picked by the fuse's progress, so they carry no clock rate; idle and hit are stills.
+      const { chapter, kind } = frame.bomber;
+      const meta = window.PN.bombers.meta(chapter, kind);
+      const spec = {};
+      for (const [state, count] of Object.entries(meta.states)) {
+        for (let index = 0; index < count; index += 1) {
+          expanded.push({
+            key: `${frame.keyPrefix}/${state}/${index}`,
+            call: ['PN.bombers.draw', chapter, kind, { lod: 'game', shadow: false, halo: true, state, frame: index }],
+            box: meta.box,
+            anchor: [meta.feet[0], meta.feet[1]],
+            scale: meta.displayScale,
+            extraPad: meta.pad[state],
+          });
+        }
+        spec[state] = { frames: count, fps: state === 'walk' ? meta.walkFps : state === 'idle' || state === 'hit' ? 1 : 0 };
+      }
+      expanded.at(-1).animation = { key: frame.keyPrefix, spec };
       continue;
     }
     if (!frame.enemy) {

@@ -48,6 +48,7 @@ The regular `npm run build` pipeline still audits `dist` for forbidden developer
 - Menu and in-run cheat inputs are available. In a run, the HUD's ⚙ button (developer mode on) opens the developer panel with the cheat input; the run keeps going while it is open.
 - Every settled run is kept in a run log (decision D-07): mode, stage, outcome, time, kills, level, coins earned and left, damage taken, max health, the bonus goal, and skills held. The menu's Cheat Code section shows how many runs it holds and their median coin balance share, copies them as JSON (`런 기록 복사`), and clears them. It lives in localStorage (`blackline-survivor-dev-runlog`, the newest 500 runs) and shipped builds have none of it.
 - `TURN` makes an endless run's chapter turn due and fells its round boss, so the next chapter (CON-08) comes as soon as its boss draft is picked. It takes the run off the board like the other cheats.
+- `BOMB` puts two fuse and two burst bombers around the player, the first fuse already planted halfway (SYS-14), to see their art, marks, and blast. It takes the run off the board like the other cheats.
 - `PHASE` takes the stage's boss to just past its next phase (60% then 30% of its health), to see its phase move and the line it brings (CON-06).
 - Chapter 6 remains unavailable.
 - Developer-mode clears do not advance normal Stage unlock progress.
