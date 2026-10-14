@@ -183,6 +183,11 @@ export type RuleSet = Readonly<{
    * src/content/data/characters.ts.
    */
   characters: boolean;
+  /**
+   * User request 2026-10-15: the heal card offered when the growth cards run out restores 15% of max health instead
+   * of 50%, which undid most of a run's danger whenever it came.
+   */
+  lightBonusHeal: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -225,6 +230,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   bombers: false,
   arsenal: false,
   characters: false,
+  lightBonusHeal: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -267,6 +273,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   bombers: true,
   arsenal: true,
   characters: true,
+  lightBonusHeal: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

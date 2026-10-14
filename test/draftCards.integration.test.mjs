@@ -62,3 +62,24 @@ test('UI-03: every card a draft can show has a baked tile, and skills have one o
     assert.ok(SKILLS[id].tags.length >= 1 && SKILLS[id].tags.length <= 2, `${id} has one or two tags`);
   }
 });
+
+test('the heal card restores 15% of max health under the remaster rules, half under the classic (user request 2026-10-15)', () => {
+  for (const [rules, share] of [['remaster', 0.15], ['classic', 0.5]]) {
+    let draft;
+    const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), meta(), options, { onSnapshot() {}, onDraft(next) { draft = next; }, onRoundClear() {}, onGameOver() {} });
+    try {
+      engine.setRuleSet(rules);
+      engine.startRun(1, 1, 4242);
+      const maxHp = engine.probe.read().player.stats.maxHp;
+      engine.probe.setPlayer({ hp: maxHp * 0.2, stats: { hpRegen: 0 } });
+      engine.probe.openDraft('level', 'resume');
+      const heal = engine.probe.previewBonusOffers('level').find((offer) => offer.bonus === 'heal');
+      assert.match(tx(heal.body), rules === 'remaster' ? /15%/ : /%/);
+      engine.completeDraft(heal, draft.id);
+      const { hp } = engine.probe.read().player;
+      assert.ok(Math.abs(hp - maxHp * (0.2 + share)) < 1e-6, `${rules}: ${hp} of ${maxHp}`);
+    } finally {
+      engine.dispose();
+    }
+  }
+});

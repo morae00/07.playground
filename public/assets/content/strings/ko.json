@@ -145,7 +145,7 @@
  "bonus.coins.body": "즉시 엽전을 획득합니다. 획득량은 현재 단계와 라운드에 따라 증가합니다.",
  "bonus.coins.line": "라운드 내 강화 재료",
  "bonus.heal": "응급 봉합",
- "bonus.heal.body": "최대 체력의 50%를 즉시 회복합니다.",
+ "bonus.heal.body": "최대 체력의 15%를 즉시 회복합니다.",
  "bonus.heal.line": "생존 보정 보상",
  "effect.invulnerable": "피격 무적",
  "effect.shield": "보호막",

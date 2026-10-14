@@ -1500,7 +1500,8 @@ export class GameEngine {
 
   protected chooseBonusOffer(offer: Extract<SkillOffer, { kind: 'bonus' }>) {
     if (offer.bonus === 'heal') {
-      this.player.hp = Math.min(this.player.stats.maxHp, this.player.hp + this.player.stats.maxHp * 0.5);
+      // The remaster's card heals 15% (user request 2026-10-15); the 0.1.0 card healed half.
+      this.player.hp = Math.min(this.player.stats.maxHp, this.player.hp + this.player.stats.maxHp * (this.rules.lightBonusHeal ? 0.15 : 0.5));
       this.emit({ type: 'draft/applied', kind: 'heal', x: this.player.x, y: this.player.y });
       return;
     }

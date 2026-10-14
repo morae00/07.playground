@@ -145,7 +145,7 @@
  "bonus.coins.body": "Gain coins at once. The amount grows with the stage and the round.",
  "bonus.coins.line": "Upgrade money for this round",
  "bonus.heal": "Field stitches",
- "bonus.heal.body": "Restores 50% of your max health at once.",
+ "bonus.heal.body": "Restores 15% of your max health at once.",
  "bonus.heal.line": "A reward to keep you going",
  "effect.invulnerable": "Invulnerable",
  "effect.shield": "Shield",
