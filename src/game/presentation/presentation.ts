@@ -1,6 +1,5 @@
 // Presentation layer (TEC-02): turns game events into particles, damage numbers, impact rings, screen shake,
 // and sound cues for the app's mixer (AUD-01). It owns only cosmetic state; the simulation never reads it back.
-import { lookOf } from '../arsenal.ts';
 import type { BlastFlash, Corpse, DamageNumber, EffectOwner, HitStamp, ImpactRing, Particle, Recoil, SkillId, SkillMark, SkillState } from '../engine/worldTypes.ts';
 import type { GameOptions } from '../../platform/save.ts';
 import { CUES, HIT_CUES, KILL_CUES, type CueId, type SoundOutput } from '../audioPolicy.ts';
@@ -8,6 +7,7 @@ import type { GameEvent } from '../engine/events.ts';
 import { ObjectPool, compactWhere, recycleWhere } from '../objectPool.ts';
 import { createSeededRandom } from '../p0Core.ts';
 import { CHAPTER_VISUALS } from '../render/visualRegistry.ts';
+import { lookOf } from '../arsenal.ts';
 
 /** SYS-14 (K7): how long a bomber's blast drawing shows (API-bombers §3). */
 const BLAST_SECONDS = 0.15;
@@ -281,7 +281,7 @@ export class Presentation {
         return;
       case 'area/blast':
         this.addSkillMark('ring', event.source, event.x, event.y, event.radius, false, event.x, event.y);
-        if (event.source === 'boneMortar') this.addShake(8);
+        if (lookOf(event.source) === 'boneMortar') this.addShake(8);
         return;
       case 'vortex/collapse':
         // Only awakened vortices collapse; the ring flag marks the black sun's (FX-06: both collapse at R + 30).

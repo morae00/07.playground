@@ -1,5 +1,6 @@
 // World renderer (TEC-02): draws one frame from a read-only RenderWorld. It never sees the engine, so drawing
 // cannot change outcomes and a test can render any hand-built world.
+import { lookOf } from '../arsenal.ts';
 import type {
   BeamEffect,
   BossProjectile,
@@ -1262,7 +1263,7 @@ export class WorldRenderer {
 
     for (const chain of this.world.chains) {
       if (!chain.points.some((point, index) => index > 0 && segmentVisible(this.viewport, chain.points[index - 1].x, chain.points[index - 1].y, point.x, point.y, 5))) continue;
-      if (this.skillArt && chain.skillId === 'chainSpark') this.vfx.bolt(ctx, chain.points, chain.life, chain.maxLife, this.world.skills.chainSpark?.awakened === true);
+      if (this.skillArt && lookOf(chain.skillId) === 'chainSpark') this.vfx.bolt(ctx, chain.points, chain.life, chain.maxLife, this.world.skills[chain.skillId]?.awakened === true);
       else if (this.skillArt) this.vfx.tether(ctx, chain.points[0].x, chain.points[0].y, chain.points[1].x, chain.points[1].y, Math.min(1, (chain.life / chain.maxLife) * 2));
       else this.visual.drawChain(ctx, chain.points, chain.life, chain.maxLife);
     }
@@ -1277,8 +1278,9 @@ export class WorldRenderer {
     const angle = Math.atan2(beam.y2 - beam.y1, beam.x2 - beam.x1);
     const length = Math.hypot(beam.x2 - beam.x1, beam.y2 - beam.y1);
     const progress = 1 - beam.life / beam.maxLife;
-    const group = beam.skillId!;
-    const awakened = this.world.skills[group]?.awakened ? '-awakened' : '';
+    // SYS-15: an arsenal beam draws its look's art, awakened when the weapon itself is.
+    const group = lookOf(beam.skillId!);
+    const awakened = this.world.skills[beam.skillId!]?.awakened ? '-awakened' : '';
     if (group === 'frostLine') this.vfx.chalkCut(ctx, beam.x1, beam.y1, angle, length, beam.width, beam.life, beam.maxLife, beam.id);
     else if (group === 'railSpear' || group === 'mirrorClone') this.vfx.rail(ctx, beam.x1, beam.y1, angle, length, beam.width, beam.life, beam.maxLife, group === 'mirrorClone');
     if (group === 'eclipseStep') {
@@ -1301,7 +1303,7 @@ export class WorldRenderer {
       if (mark.kind === 'pulse') {
         const player = this.interpolated(this.world.player);
         this.vfx.pulse(ctx, player.x, player.y, age);
-      } else if (mark.skillId === 'chainSpark') {
+      } else if (lookOf(mark.skillId) === 'chainSpark') {
         this.vfx.thread(ctx, mark.x, mark.y, mark.radius, age);
         this.vfx.stamp(ctx, 'chainSpark', 'burst-awakened', mark.x, mark.y, 0, age / (this.vfx.part('chainSpark', 'burst-awakened')?.seconds ?? 0.24));
       } else if (mark.kind === 'shard') {
@@ -1327,9 +1329,11 @@ export class WorldRenderer {
    * the mortar's blast and dust, the vortex's collapse, or the rail's fissure (on the ground, drawGroundSkillMarks).
    */
   private drawSkillRing(ctx: CanvasRenderingContext2D, mark: Readonly<SkillMark>, age: number) {
-    const { skillId, x, y, radius } = mark;
+    // SYS-15: an arsenal blast or halo draws its look's art, awakened when the weapon itself is.
+    const { x, y, radius } = mark;
+    const skillId = lookOf(mark.skillId);
     this.vfx.thread(ctx, x, y, radius, age, mark.heavy);
-    const awakened = this.world.skills[skillId]?.awakened ? '-awakened' : '';
+    const awakened = this.world.skills[mark.skillId]?.awakened ? '-awakened' : '';
     if (skillId === 'boneMortar' && !mark.heavy) {
       const blast = this.vfx.part('boneMortar', 'blast')?.seconds ?? 0.24;
       this.vfx.stamp(ctx, 'boneMortar', `blast${awakened}`, x, y, 0, age / blast);
@@ -1344,7 +1348,8 @@ export class WorldRenderer {
   private drawGroundSkillMarks(ctx: CanvasRenderingContext2D) {
     if (!this.skillArt) return;
     for (const mark of this.world.effects.skillMarks) {
-      if (mark.kind !== 'ring' || (mark.skillId !== 'railSpear' && mark.skillId !== 'mirrorClone')) continue;
+      const look = lookOf(mark.skillId);
+      if (mark.kind !== 'ring' || (look !== 'railSpear' && look !== 'mirrorClone')) continue;
       const age = mark.maxLife - mark.life;
       this.vfx.stamp(ctx, 'railSpear', 'fissure-awakened', mark.x, mark.y, 0, age / (this.vfx.part('railSpear', 'fissure-awakened')?.seconds ?? 0.24));
     }

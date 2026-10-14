@@ -97,7 +97,8 @@ test('SYS-15: lobs land after their delay, and the classic rules never offer the
     assert.ok(cast, 'thrown');
     assert.ok(!r.events.some((event) => event.type === 'area/blast'), 'not landed yet');
     r.probe.step(Math.ceil(ARSENAL.meteorBrush.delay * 60) + 2);
-    assert.ok(r.events.some((event) => event.type === 'area/blast' && event.source === ARSENAL.meteorBrush.look), 'landed');
+    // The blast carries the weapon, whose look the renderer draws.
+    assert.ok(r.events.some((event) => event.type === 'area/blast' && event.source === 'meteorBrush'), 'landed');
   } finally {
     r.engine.dispose();
   }

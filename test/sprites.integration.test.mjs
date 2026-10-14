@@ -213,6 +213,32 @@ test('the chosen character draws from its own pack once it is loaded, and as Gye
   }
 });
 
+test('a weapon without shots draws its look\'s art, awakened when the weapon itself is (SYS-15)', async () => {
+  const atlas = await loadedAtlas();
+  assert.equal(await atlas.load('skills'), true);
+  const pack = ATLAS_MANIFEST.packs.skills;
+  const blits = (images, prefix) => {
+    const keys = new Set(Object.entries(pack.frames).filter(([key]) => key.startsWith(prefix)).map(([, frame]) => `${pack.pages[frame[0]]}:${frame[1]},${frame[2]}`));
+    return images.some((draw) => keys.has(`${draw.image.url}:${draw.sx},${draw.sy}`));
+  };
+  for (const awakened of [false, true]) {
+    const { engine, images } = arena(1, 2, atlas);
+    try {
+      const { player } = engine.probe.read();
+      engine.probe.spawnEnemy({ tier: 'large', x: player.x + 60, y: player.y, speed: 0, damage: 0, hp: 1e6 });
+      // The ink pulse is a nova that borrows the bone mortar's blast; the mortar itself is not held.
+      engine.probe.setSkills({ inkPulse: { level: 5, awakened } });
+      for (let step = 0; step < 240 && !engine.probe.effects().skillMarks.some((mark) => mark.skillId === 'inkPulse'); step += 1) engine.probe.step(1);
+      images.length = 0;
+      engine.probe.render(1);
+      assert.equal(blits(images, 'skill/boneMortar/blast-awakened/'), awakened, `awakened blast art only when the pulse is awakened (${awakened})`);
+      assert.equal(blits(images, 'skill/boneMortar/blast/'), !awakened, `plain blast art when it is not (${awakened})`);
+    } finally {
+      engine.dispose();
+    }
+  }
+});
+
 test('without an atlas nothing is blitted (vector fallback)', () => {
   const { engine, images } = arena(1, 2, null);
   try {

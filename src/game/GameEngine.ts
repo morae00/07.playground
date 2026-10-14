@@ -2487,7 +2487,7 @@ export class GameEngine {
           this.dealDamage(target, damage, id, knockback, false);
           target = this.findNearestEnemyFrom(target.x, target.y, weapon.hop ?? 260, hit);
         }
-        this.chains.push({ id: this.nextId(), points, life: 0.18, maxLife: 0.18, skillId: weapon.look });
+        this.chains.push({ id: this.nextId(), points, life: 0.18, maxLife: 0.18, skillId: id });
         break;
       }
       case 'beam': {
@@ -2497,7 +2497,7 @@ export class GameEngine {
           const angle = aim + (direction * Math.PI) / 2;
           const x2 = px + Math.cos(angle) * stats.length;
           const y2 = py + Math.sin(angle) * stats.length;
-          this.beams.push({ id: this.nextId(), x1: px, y1: py, x2, y2, width, life: 0.28, maxLife: 0.28, owner: 'player', skillId: weapon.look });
+          this.beams.push({ id: this.nextId(), x1: px, y1: py, x2, y2, width, life: 0.28, maxLife: 0.28, owner: 'player', skillId: id });
           for (const enemy of this.querySegmentEnemies(px, py, x2, y2, width)) {
             if (enemy.hp > 0 && distancePointToSegment(enemy.x, enemy.y, px, py, x2, y2) < enemy.radius + width) this.dealDamage(enemy, damage, id, knockback, false);
           }
@@ -2514,7 +2514,7 @@ export class GameEngine {
           struck = true;
         }
         if (!struck) return;
-        this.skillMark('ring', weapon.look, px, py, stats.radius);
+        this.skillMark('ring', id, px, py, stats.radius);
         break;
       }
     }
@@ -2522,11 +2522,14 @@ export class GameEngine {
     this.emit({ type: 'skill/cast', skillId: id, x: px, y: py });
   }
 
-  /** SYS-15: an arsenal blast: area damage under the weapon's id, drawn as its look's ring. */
+  /**
+   * SYS-15: an arsenal blast: area damage under the weapon's id. The effect carries the weapon too, so the renderer
+   * draws the weapon's own art when the kit has it, else its look's, awakened when the weapon is.
+   */
   protected arsenalBlast(id: ArsenalId, x: number, y: number, radius: number, damage: number) {
     const weapon = ARSENAL[id];
     this.areaDamage(x, y, radius, damage, id, weapon.knockback ?? 0);
-    this.emit({ type: 'area/blast', x, y, radius, source: weapon.look });
+    this.emit({ type: 'area/blast', x, y, radius, source: id });
   }
 
   /** SYS-15: lobbed blasts land when their time comes. */
