@@ -31,6 +31,7 @@ import {
 import { SpatialIndex } from './spatialIndex';
 import { CAMPAIGN_CHAPTER_COUNT, FINAL_CHAPTER, FINAL_STAGE, STAGES_PER_CHAPTER, stageKind, type StageKind } from '../content/campaign';
 import {
+  ARSENAL_GIMMICK_TEXT,
   CLASSIC_AWAKENING_TEXT,
   SKILL_AWAKENING_TEXT,
   SKILL_NUMBERS,
@@ -51,6 +52,7 @@ import ELITES from '../content/data/elites';
 import BOSS_TOUGHNESS from '../content/data/bossToughness';
 import HORDE from '../content/data/horde';
 import { ARSENAL, ARSENAL_AWAKENING, ARSENAL_IDS, arsenalStats, isArsenal } from './arsenal';
+import AWAKENINGS from '../content/data/awakenings';
 import { CHARACTERS, applyCharacterPerk, characterStartLevel, type CharacterLoadout } from './characters';
 import BOMBERS from '../content/data/bombers';
 import { CHARGER, STALKER_FLOCK, SeparationGrid, WARDEN_SHIELD, enemyRole, flockSteer, leadAim, shieldCovers, turnToward } from './enemyBehaviors';
@@ -126,6 +128,8 @@ import {
 
 import type {
   ArmedPattern,
+  AwakenedMarks,
+  AwakeningZone,
   DashStep,
   BeamEffect,
   BossDef,
@@ -593,6 +597,8 @@ const SAW_LIFE = 3.6;
 /** Boss-made terrain kinds the encounter director budgets (SYS-03). */
 const DYNAMIC_TERRAIN: ReadonlySet<Hazard['kind']> = new Set(['fire', 'slow', 'root', 'null']);
 const NO_MARKS: readonly ObjectiveMark[] = [];
+/** SYS-16: the marks an awakened weapon's own hit leaves for its row's `seconds` (src/content/data/awakenings.ts). */
+const TIMED_MARKS: Partial<Record<ArsenalId, 'domino' | 'bump' | 'silence' | 'weak' | 'thorn'>> = { sealArrows: 'domino', inkPulse: 'bump', silenceBell: 'silence', wardRing: 'weak', thornHalo: 'thorn' };
 /** CON-03: the ground the terrain goal counts time in. */
 const TERRAIN_KINDS: ReadonlySet<Hazard['kind']> = new Set(['water', 'slow', 'trap', 'root', 'fire', 'null']);
 /** SYS-11: after silence ends, ready skills fire one at a time this far apart instead of all at once. */
@@ -906,6 +912,18 @@ export class GameEngine {
   /** SYS-15: lobbed blasts on their way down, and the way the player last moved (for the weapons that fire behind). */
   protected arsenalLobs: { at: number; x: number; y: number; radius: number; damage: number; id: ArsenalId }[] = [];
   protected lastMove = { x: 1, y: 0 };
+  /**
+   * SYS-16: awakening gimmicks' state: actions coming due, the ground they leave, each weapon's casts so far, the
+   * tracking seals' last cast, whether a gimmick's own damage is under way (it runs no gimmick or weapon effect), whether
+   * a chain link is sharing damage, and the shot now hitting.
+   */
+  protected later: { at: number; run: () => void }[] = [];
+  protected zones: AwakeningZone[] = [];
+  protected casts: Partial<Record<ArsenalId, number>> = {};
+  protected seals: { shots: Set<number>; hit: Entity[] } | null = null;
+  protected echo = false;
+  protected sharing = false;
+  protected shot: Projectile | null = null;
   /** SYS-13: the fractions of XP and coins the horde scaling carries to the next spawned enemy. */
   protected hordeCarry = { xp: 0, coin: 0 };
   protected infiniteEventScore = 0;
@@ -1031,7 +1049,7 @@ export class GameEngine {
   protected enemyIndex = new SpatialIndex<Entity>(96);
   protected deadEnemyScratch: Entity[] = [];
   protected projectilePool = new ObjectPool<Projectile>(
-    () => ({ id: 0, x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0, radius: 0, damage: 0, life: 0, maxLife: 0, returning: false, pierce: 0, knockback: 0, skillId: 'needleStorm', look: 'needleStorm', blockedBySolid: false, hitEnemyIds: new Set(), aimTargetId: -1 }),
+    () => ({ id: 0, x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0, radius: 0, damage: 0, life: 0, maxLife: 0, returning: false, pierce: 0, knockback: 0, skillId: 'needleStorm', look: 'needleStorm', blockedBySolid: false, hitEnemyIds: new Set(), aimTargetId: -1, echo: false }),
     (projectile) => { projectile.life = 0; projectile.hitEnemyIds.clear(); },
     384,
   );
@@ -1878,6 +1896,10 @@ export class GameEngine {
     this.bossDps = 0;
     this.hordeCarry = { xp: 0, coin: 0 };
     this.arsenalLobs = [];
+    this.later = [];
+    this.zones = [];
+    this.casts = {};
+    this.seals = null;
     this.draftQueue = [];
     this.elapsed = 0;
     this.enemies = [];
@@ -2057,6 +2079,7 @@ export class GameEngine {
     this.updateEnemies(dt);
     this.rebuildEnemyIndex();
     if (this.rules.eliteAffixes) this.updateElites(dt);
+    if (this.rules.awakeningGimmicks) this.updateAwakenings(dt);
     this.updatePlayerAim();
     this.flushDeadEnemies();
     if (this.endStepIfInterrupted()) return;
@@ -2372,10 +2395,12 @@ export class GameEngine {
    */
   protected updateSkillsReworked(dt: number) {
     const silenced = this.player.silence > 0;
+    // SYS-16 별똥 자국: standing in a meteor's glowing mark, every cooldown runs faster.
+    const haste = this.rules.awakeningGimmicks && this.zones.some((zone) => zone.weapon === 'meteorBrush' && distance(zone, this.player) <= zone.radius) ? 1 + AWAKENINGS.meteorBrush.haste : 1;
     for (const id of Object.keys(this.skillCooldowns) as SkillId[]) {
       // The recovery thread's counter runs in updatePlayer while at full health; counting it here too halved it.
       if (id === 'recoveryThread') continue;
-      this.skillCooldowns[id] = Math.max(0, (this.skillCooldowns[id] ?? 0) - dt);
+      this.skillCooldowns[id] = Math.max(0, (this.skillCooldowns[id] ?? 0) - dt * haste);
     }
     this.castGap = Math.max(0, this.castGap - dt);
     if (silenced) {
@@ -2425,11 +2450,16 @@ export class GameEngine {
   /**
    * SYS-15: fires an arsenal weapon from its row (src/content/data/arsenal.ts). Shots carry the weapon's id for hits
    * and the settlement, and its look for the art; its effects land in dealDamage. A weapon with nothing to hit waits.
+   * SYS-16: an awakened weapon adds its gimmick under the awakeningGimmicks rule (src/content/data/awakenings.ts): the
+   * ones that change how it fires here, the ones that act on a hit in afterHit, the ones at a shot's end in shotEnded.
    */
   protected fireArsenal(id: ArsenalId, skill: SkillState) {
     if ((this.skillCooldowns[id] ?? 0) > 0) return;
     const weapon = ARSENAL[id];
     const stats = arsenalStats(weapon, skill.level, skill.awakened);
+    const awake = this.rules.awakeningGimmicks && skill.awakened;
+    const A = AWAKENINGS;
+    const cast = this.casts[id] ?? 0;
     const { x: px, y: py } = this.player;
     const range = weapon.range ?? 900;
     const damage = this.player.stats.attack * stats.damage;
@@ -2448,7 +2478,9 @@ export class GameEngine {
       case 'spray': {
         const target = this.acquireTarget(range, { projectileSpeed: speed, blockedBySolid: true, projectileRadius: weapon.size ?? 5 });
         if (!target) return;
-        const angle = Math.atan2(target.y - py, target.x - px);
+        // SYS-16 두 줄기: every other spray of the drizzle goes to the second nearest enemy.
+        const aimed = awake && id === 'inkDrizzle' && cast % 2 === 1 ? this.findNearestEnemyFrom(px, py, range, new Set([target.enemy.id])) ?? target : target;
+        const angle = Math.atan2(aimed.y - py, aimed.x - px);
         if (weapon.kind === 'volley') fan(angle, target.enemy.id);
         else for (let index = 0; index < stats.count; index += 1) shoot(angle + (this.gameplayRandom() * 2 - 1) * (weapon.spread ?? 0.3));
         break;
@@ -2462,6 +2494,7 @@ export class GameEngine {
         fan(Math.atan2(-this.lastMove.y, -this.lastMove.x), -1);
         break;
       case 'seeker': {
+        const first = this.projectiles.length;
         const hit = new Set<number>();
         const boss = weapon.bossFirst ? this.enemies.find((enemy) => enemy.isBoss && enemy.hp > 0 && distance(enemy, this.player) < range) : undefined;
         for (let index = 0; index < stats.count; index += 1) {
@@ -2470,19 +2503,36 @@ export class GameEngine {
           hit.add(target.id);
           shoot(Math.atan2(target.y - py, target.x - px), target.id);
         }
+        // SYS-16 삼각 봉인: this cast's seals; the first three different enemies they pin make a triangle.
+        if (awake && id === 'trackingSeals') this.seals = { shots: new Set(this.projectiles.slice(first).map((shot) => shot.id)), hit: [] };
         break;
       }
       case 'strike': {
         const pool = this.enemyIndex.queryCircle(px, py, range).filter((enemy) => enemy.hp > 0);
+        let sumX = 0;
+        let sumY = 0;
+        let marks = 0;
         for (let index = 0; index < stats.count && pool.length > 0; index += 1) {
           const [target] = pool.splice(Math.floor(this.gameplayRandom() * pool.length), 1);
-          this.arsenalBlast(id, target.x, target.y, weapon.radius ? stats.radius : 56, damage);
+          const { x, y } = target;
+          // SYS-16 거세지는 폭우: each mark of a downpour lands wider than the last.
+          this.arsenalBlast(id, x, y, (weapon.radius ? stats.radius : 56) * (awake && id === 'brushDownpour' ? 1 + A.brushDownpour.growth * index : 1), damage);
+          sumX += x;
+          sumY += y;
+          marks += 1;
+          // SYS-16 번개 기둥 and 펼쳐지는 족자: the lightning leaves a pillar; the scroll unrolls away from the player.
+          if (awake && id === 'inkLightning') this.addZone(id, x, y, A.inkLightning.radius, A.inkLightning.seconds);
+          if (awake && id === 'fallingScroll') this.echoing(() => this.sweep(id, x, y, Math.atan2(y - py, x - px), A.fallingScroll.length, A.fallingScroll.width, damage * A.fallingScroll.damage, 0));
         }
+        // SYS-16 여덟째 인장: one more seal goes off in the middle of the seven.
+        if (awake && id === 'seventhSeal' && marks > 0) this.after(A.seventhSeal.delay, () => this.echoBlast(id, sumX / marks, sumY / marks, A.seventhSeal.radius, damage * A.seventhSeal.damage));
         break;
       }
       case 'nova':
         if (distance(near, this.player) > stats.radius + near.radius) return;
         this.arsenalBlast(id, px, py, stats.radius, damage);
+        // SYS-16 메아리: the clap echoes wider and weaker, and stuns nothing.
+        if (awake && id === 'thunderclap') this.after(A.thunderclap.delay, () => this.echoBlast(id, px, py, stats.radius * A.thunderclap.reach, damage * A.thunderclap.damage));
         break;
       case 'lob':
         for (let index = 0; index < stats.count; index += 1) {
@@ -2494,46 +2544,74 @@ export class GameEngine {
       case 'chain': {
         const points = [{ x: px, y: py }];
         const hit = new Set<number>();
+        const chained: Entity[] = [];
         let target: Entity | undefined = near;
         for (let jump = 0; jump <= stats.jumps && target; jump += 1) {
           hit.add(target.id);
+          chained.push(target);
           points.push({ x: target.x, y: target.y });
-          this.dealDamage(target, damage, id, knockback, false);
+          // SYS-16 증폭: the storm thread hits harder with every jump.
+          this.dealDamage(target, awake && id === 'stormThread' ? damage * (1 + A.stormThread.damage * jump) : damage, id, knockback, false);
           target = this.findNearestEnemyFrom(target.x, target.y, weapon.hop ?? 260, hit);
         }
         this.chains.push({ id: this.nextId(), points, life: 0.18, maxLife: 0.18, skillId: id });
-        break;
-      }
-      case 'beam': {
-        const aim = Math.atan2(near.y - py, near.x - px);
-        const width = (weapon.width ?? 12) * (skill.awakened ? ARSENAL_AWAKENING.reach : 1);
-        for (let direction = 0; direction < (weapon.directions ?? 1); direction += 1) {
-          const angle = aim + (direction * Math.PI) / 2;
-          const x2 = px + Math.cos(angle) * stats.length;
-          const y2 = py + Math.sin(angle) * stats.length;
-          this.beams.push({ id: this.nextId(), x1: px, y1: py, x2, y2, width, life: 0.28, maxLife: 0.28, owner: 'player', skillId: id });
-          for (const enemy of this.querySegmentEnemies(px, py, x2, y2, width)) {
-            if (enemy.hp > 0 && distancePointToSegment(enemy.x, enemy.y, px, py, x2, y2) < enemy.radius + width) this.dealDamage(enemy, damage, id, knockback, false);
-          }
+        const [head] = chained;
+        const tail = chained[chained.length - 1];
+        if (awake && id === 'sparkThread' && tail !== head) {
+          // SYS-16 되감김: the thread runs back from the last enemy to the first.
+          this.chains.push({ id: this.nextId(), points: [{ x: tail.x, y: tail.y }, { x: head.x, y: head.y }], life: 0.18, maxLife: 0.18, skillId: id });
+          this.echoHit(head, damage * A.sparkThread.damage, id, tail);
+        } else if (awake && id === 'frostChainlet') {
+          // SYS-16 묶인 사슬: the chained enemies share what each of them takes for a while.
+          const link = { until: this.elapsed + A.frostChainlet.seconds, members: chained, flashAt: 0 };
+          for (const enemy of chained) this.marks(enemy).link = link;
         }
         break;
       }
+      case 'beam': {
+        // SYS-16 도는 십자: the awakened cross turns a step each cast instead of aiming.
+        const aim = awake && id === 'crossStrokes' ? (cast * A.crossStrokes.turn * Math.PI) / 180 : Math.atan2(near.y - py, near.x - px);
+        const width = (weapon.width ?? 12) * (skill.awakened ? ARSENAL_AWAKENING.reach : 1);
+        for (let direction = 0; direction < (weapon.directions ?? 1); direction += 1) this.sweep(id, px, py, aim + (direction * Math.PI) / 2, stats.length, width, damage, knockback);
+        // SYS-16 가지창: two branches fork from the lance's tip.
+        if (awake && id === 'inkLance') {
+          for (const side of [-1, 1]) this.echoing(() => this.sweep(id, px + Math.cos(aim) * stats.length, py + Math.sin(aim) * stats.length, aim + (side * A.inkLance.angle * Math.PI) / 180, stats.length * A.inkLance.branch, width, damage * A.inkLance.damage, 0));
+        }
+        // SYS-16 되쓸기: a moment later the brush sweeps back the other way.
+        if (awake && id === 'wideBrush') this.after(A.wideBrush.delay, () => this.echoing(() => this.sweep(id, this.player.x, this.player.y, aim + Math.PI, stats.length, width, damage * A.wideBrush.damage, 0)));
+        break;
+      }
       case 'halo': {
-        const inner = weapon.inner ?? 0;
+        // SYS-16 개기일식: every fourth sweep of the awakened eclipse halo fills its hollow middle and hits harder.
+        const total = awake && id === 'eclipseHalo' && cast % A.eclipseHalo.every === A.eclipseHalo.every - 1;
+        const inner = total ? 0 : weapon.inner ?? 0;
         let struck = false;
         for (const enemy of this.enemyIndex.queryCircle(px, py, stats.radius)) {
           const gap = distance(enemy, this.player);
           if (enemy.hp <= 0 || gap > stats.radius + enemy.radius || gap + enemy.radius < inner) continue;
-          this.dealDamage(enemy, damage, id, knockback, false);
+          this.dealDamage(enemy, total ? damage * A.eclipseHalo.damage : damage, id, knockback, false);
           struck = true;
         }
+        // SYS-16 되받기: the awakened ink orbit turns the enemy shots in its band back as the player's.
+        if (awake && id === 'inkOrbit' && this.turnShots(id, stats.radius, inner)) struck = true;
         if (!struck) return;
-        this.skillMark('ring', id, px, py, stats.radius);
+        this.skillMark('ring', id, px, py, stats.radius, total);
         break;
       }
     }
     this.skillCooldowns[id] = stats.cooldown / this.effectiveAttackSpeed();
+    if (awake) this.casts[id] = cast + 1;
     this.emit({ type: 'skill/cast', skillId: id, x: px, y: py });
+  }
+
+  /** SYS-15: a straight stroke of `width` either side of its line: the arsenal's beams, and SYS-16's lines. */
+  protected sweep(id: ArsenalId, x1: number, y1: number, angle: number, length: number, width: number, damage: number, knockback: number) {
+    const x2 = x1 + Math.cos(angle) * length;
+    const y2 = y1 + Math.sin(angle) * length;
+    this.beams.push({ id: this.nextId(), x1, y1, x2, y2, width, life: 0.28, maxLife: 0.28, owner: 'player', skillId: id });
+    for (const enemy of this.querySegmentEnemies(x1, y1, x2, y2, width)) {
+      if (enemy.hp > 0 && distancePointToSegment(enemy.x, enemy.y, x1, y1, x2, y2) < enemy.radius + width) this.dealDamage(enemy, damage, id, knockback, false);
+    }
   }
 
   /**
@@ -2552,7 +2630,245 @@ export class GameEngine {
     const landing = this.arsenalLobs.filter((lob) => lob.at <= this.elapsed);
     if (landing.length === 0) return;
     this.arsenalLobs = this.arsenalLobs.filter((lob) => lob.at > this.elapsed);
-    for (const lob of landing) this.arsenalBlast(lob.id, lob.x, lob.y, lob.radius, lob.damage);
+    for (const lob of landing) {
+      this.arsenalBlast(lob.id, lob.x, lob.y, lob.radius, lob.damage);
+      if (this.rules.awakeningGimmicks && this.skills[lob.id]?.awakened) this.lobLanded(lob);
+    }
+  }
+
+  /**
+   * SYS-16: an awakened lob lands: the ink pot leaves burning ink, the cluster pot splits in two, the tar jar gathers
+   * what stands round it, and the meteor leaves a glowing mark that hastens the player.
+   */
+  protected lobLanded({ id, x, y, radius, damage }: { id: ArsenalId; x: number; y: number; radius: number; damage: number }) {
+    const A = AWAKENINGS;
+    if (id === 'inkPots') this.addZone(id, x, y, radius * A.inkPots.area, A.inkPots.seconds, damage * A.inkPots.damage * A.inkPots.tick);
+    if (id === 'tarJar') this.addZone(id, x, y, radius, A.tarJar.seconds);
+    if (id === 'meteorBrush') this.addZone(id, x, y, radius * A.meteorBrush.area, A.meteorBrush.seconds);
+    if (id !== 'clusterPots') return;
+    const away = normalize(x - this.player.x, y - this.player.y);
+    for (const side of [-1, 1]) {
+      const offset = side * A.clusterPots.offset;
+      this.after(A.clusterPots.delay, () => this.echoBlast(id, x - away.y * offset, y + away.x * offset, radius * A.clusterPots.area, damage * A.clusterPots.damage));
+    }
+  }
+
+  /** SYS-16: runs `run` once `seconds` of run time have passed (before the next round). */
+  protected after(seconds: number, run: () => void) {
+    this.later.push({ at: this.elapsed + seconds, run });
+  }
+
+  /** SYS-16: a gimmick's own damage runs no gimmick and no weapon effect (slow, stun, execution) of its own. */
+  protected echoing(run: () => void) {
+    const was = this.echo;
+    this.echo = true;
+    run();
+    this.echo = was;
+  }
+
+  protected echoHit(enemy: Entity, damage: number, id: ArsenalId, source?: Readonly<{ x: number; y: number }>) {
+    this.echoing(() => this.dealDamage(enemy, damage, id, 0, false, source));
+  }
+
+  protected echoBlast(id: ArsenalId, x: number, y: number, radius: number, damage: number) {
+    this.echoing(() => this.arsenalBlast(id, x, y, radius, damage));
+  }
+
+  /** SYS-16: an awakened weapon's own hit at its level, the base its gimmick's damage is a share of. */
+  protected weaponHit(id: ArsenalId) {
+    return this.player.stats.attack * arsenalStats(ARSENAL[id], this.skills[id]?.level ?? 1, true).damage;
+  }
+
+  /** SYS-16: what awakened weapons left on an enemy, made on first use. */
+  protected marks(enemy: Entity): AwakenedMarks {
+    return (enemy.awk ??= {});
+  }
+
+  /** SYS-16: a gimmick's stun; bosses shrug it off like every weapon stun. */
+  protected stun(enemy: Entity, seconds: number, source: ArsenalId) {
+    if (enemy.isBoss || enemy.hp <= 0) return;
+    enemy.stun = Math.max(enemy.stun, seconds);
+    this.emit({ type: 'enemy/stunned', x: enemy.x, y: enemy.y, source });
+  }
+
+  /** SYS-16: ground an awakened weapon leaves; at `cap` of that weapon's pieces, the oldest goes. */
+  protected addZone(weapon: ArsenalId, x: number, y: number, radius: number, seconds: number, damage = 0, cap = 0) {
+    if (cap > 0 && this.zones.filter((zone) => zone.weapon === weapon).length >= cap) this.zones.splice(this.zones.findIndex((zone) => zone.weapon === weapon), 1);
+    this.zones.push({ weapon, x, y, radius, life: seconds, maxLife: seconds, damage, next: this.elapsed, hit: [] });
+  }
+
+  /** SYS-16 되받기: enemy shots in the ink orbit's band turn back as the player's shots, at their own damage. */
+  protected turnShots(id: ArsenalId, radius: number, inner: number) {
+    const { speed, life } = AWAKENINGS.inkOrbit;
+    let turned = false;
+    for (const shot of this.bossProjectiles) {
+      const gap = distance(shot, this.player);
+      if (shot.kind !== 'enemy' || shot.fading || gap > radius || gap < inner) continue;
+      shot.fading = true;
+      shot.life = 0;
+      this.spawnProjectile(id, shot.x, shot.y, -shot.vx * speed, -shot.vy * speed, shot.radius, shot.damage, life, 0, 0, true, -1, ARSENAL[id].look, true);
+      turned = true;
+    }
+    return turned;
+  }
+
+  /** SYS-16: a follow-up of `shot` from an enemy it hit to another: the ghost volley's next arrow, a star shard's bounce. */
+  protected fireEcho(shot: Projectile, from: Entity, to: Entity) {
+    const speed = Math.hypot(shot.vx, shot.vy);
+    const angle = Math.atan2(to.y - from.y, to.x - from.x);
+    this.spawnProjectile(shot.skillId, from.x, from.y, Math.cos(angle) * speed, Math.sin(angle) * speed, shot.radius, shot.damage, shot.maxLife, 0, 0, true, -1, shot.look, true);
+    this.projectiles[this.projectiles.length - 1].hitEnemyIds.add(from.id);
+  }
+
+  /** SYS-16: how far through its flight a shot is, 0 to 1. */
+  protected flight(shot: Projectile) {
+    return 1 - Math.max(0, shot.life) / shot.maxLife;
+  }
+
+  /** SYS-16: awakened paper storms curl clockwise as they fly, and awakened sun needles grow. */
+  protected steerShot(shot: Projectile, dt: number) {
+    const id = shot.skillId;
+    if ((id !== 'paperStorm' && id !== 'sunNeedles') || shot.echo || !this.skills[id]?.awakened) return;
+    if (id === 'sunNeedles') {
+      shot.radius = (ARSENAL.sunNeedles.size ?? 5) * (1 + (AWAKENINGS.sunNeedles.size - 1) * this.flight(shot));
+      return;
+    }
+    const turn = AWAKENINGS.paperStorm.turn * dt;
+    const { vx, vy } = shot;
+    shot.vx = vx * Math.cos(turn) - vy * Math.sin(turn);
+    shot.vy = vx * Math.sin(turn) + vy * Math.cos(turn);
+  }
+
+  /** SYS-16: where an awakened shot ends: a twin blade spins on at its range; pins leave caltrops, smoke, or graves. */
+  protected shotEnded(shot: Projectile, spent: boolean) {
+    const id = shot.skillId;
+    const A = AWAKENINGS;
+    if (shot.echo || !this.skills[id]?.awakened) return;
+    if (id === 'twinBlades' && spent) this.addZone(id, shot.x, shot.y, A.twinBlades.radius, A.twinBlades.seconds, this.weaponHit(id) * A.twinBlades.damage);
+    if (id === 'pinHail' || id === 'smokeTail' || id === 'gravePins') this.addZone(id, shot.x, shot.y, A[id].radius, A[id].seconds, id === 'pinHail' ? this.weaponHit(id) * A.pinHail.damage : 0, A[id].cap);
+  }
+
+  /** SYS-16 삼각 봉인: three seals of one cast pinned a triangle: its edges show at once, and it strikes a moment later. */
+  protected sealTriangle(corners: readonly Entity[]) {
+    const A = AWAKENINGS.trackingSeals;
+    const [a, b, c] = corners.map(({ x, y }) => ({ x, y }));
+    const damage = this.weaponHit('trackingSeals') * A.damage;
+    const edges = (width: number, life: number) => {
+      for (const [p, q] of [[a, b], [b, c], [c, a]]) this.beams.push({ id: this.nextId(), x1: p.x, y1: p.y, x2: q.x, y2: q.y, width, life, maxLife: life, owner: 'player', skillId: 'trackingSeals' });
+    };
+    const cross = (p: typeof a, q: typeof a, r: Entity) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+    edges(2, A.delay);
+    this.after(A.delay, () => {
+      edges(8, 0.28);
+      const left = Math.min(a.x, b.x, c.x);
+      const top = Math.min(a.y, b.y, c.y);
+      for (const enemy of this.enemyIndex.queryRect(left, top, Math.max(a.x, b.x, c.x) - left, Math.max(a.y, b.y, c.y) - top)) {
+        const sides = [cross(a, b, enemy), cross(b, c, enemy), cross(c, a, enemy)];
+        // Inside, or on an edge: the three never disagree in sign.
+        if (!(Math.min(...sides) < 0 && Math.max(...sides) > 0)) this.echoHit(enemy, damage, 'trackingSeals');
+      }
+    });
+  }
+
+  /** SYS-16: what awakened weapons left behind, each step: actions coming due, ground at work, and marks on enemies. */
+  protected updateAwakenings(dt: number) {
+    const t = this.elapsed;
+    if (this.later.some((entry) => entry.at <= t)) {
+      const due = this.later.filter((entry) => entry.at <= t);
+      this.later = this.later.filter((entry) => entry.at > t);
+      for (const entry of due) entry.run();
+    }
+    for (const zone of this.zones) {
+      zone.life -= dt;
+      if (zone.life > 0) this.updateZone(zone, dt, t);
+    }
+    compactWhere(this.zones, (zone) => zone.life > 0);
+    for (const enemy of this.enemies) if (enemy.awk && enemy.hp > 0) this.updateMarks(enemy, enemy.awk, t);
+  }
+
+  /**
+   * SYS-16: one piece of ground at work. Spinning blades and burning ink hit what stands in them on their ticks; a
+   * caltrop hurts and a grave binds the first to step on it; smoke loses, tar gathers, and a pillar stuns once each.
+   */
+  protected updateZone(zone: AwakeningZone, dt: number, t: number) {
+    const A = AWAKENINGS;
+    const id = zone.weapon;
+    if (id === 'meteorBrush') return;
+    const tick = zone.next <= t;
+    if (tick) zone.next += id === 'twinBlades' ? A.twinBlades.tick : A.inkPots.tick;
+    for (const enemy of this.enemyIndex.queryCircle(zone.x, zone.y, zone.radius)) {
+      const gap = distance(enemy, zone);
+      if (enemy.hp <= 0 || gap > zone.radius + enemy.radius) continue;
+      if (id === 'twinBlades' || id === 'inkPots') {
+        if (id === 'inkPots') enemy.burn = BURN_SHOW_SECONDS;
+        if (tick) this.echoHit(enemy, zone.damage, id, zone);
+      } else if (id === 'pinHail') {
+        this.echoHit(enemy, zone.damage, id, zone);
+        zone.life = 0;
+        return;
+      } else if (enemy.isBoss) {
+        continue;
+      } else if (id === 'smokeTail') {
+        this.marks(enemy).wander = t + A.smokeTail.wander;
+      } else if (id === 'tarJar') {
+        const step = gap > 0 ? Math.min(gap, A.tarJar.pull * dt) / gap : 0;
+        enemy.x += (zone.x - enemy.x) * step;
+        enemy.y += (zone.y - enemy.y) * step;
+      } else if (id === 'gravePins') {
+        enemy.root = Math.max(enemy.root, A.gravePins.root);
+        zone.life = 0;
+        return;
+      } else if (!zone.hit.includes(enemy.id)) {
+        zone.hit.push(enemy.id);
+        this.stun(enemy, A.inkLightning.stun, id);
+      }
+    }
+  }
+
+  /**
+   * SYS-16: marks at work. A seal arrow's pushed enemy topples one it touches; an ink pulse's pushed enemy that meets a
+   * wall is stunned; pollen spreads the bloom's slow; thorns hurt as their enemy moves; a crow pecks.
+   */
+  protected updateMarks(enemy: Entity, marks: AwakenedMarks, t: number) {
+    const A = AWAKENINGS;
+    if ((marks.domino ?? 0) > t) {
+      const other = this.enemyIndex.queryCircle(enemy.x, enemy.y, enemy.radius).find((body) => body !== enemy && body.hp > 0 && distance(body, enemy) <= body.radius + enemy.radius);
+      if (other) {
+        marks.domino = 0;
+        const damage = this.weaponHit('sealArrows') * A.sealArrows.damage;
+        for (const [body, from] of [[enemy, other], [other, enemy]]) {
+          this.echoHit(body, damage, 'sealArrows', from);
+          this.stun(body, A.sealArrows.stun, 'sealArrows');
+        }
+      }
+    }
+    if ((marks.bump ?? 0) > t && this.againstWall(enemy)) {
+      marks.bump = 0;
+      this.stun(enemy, A.inkPulse.stun, 'inkPulse');
+    }
+    if ((marks.pollen ?? 0) > t && (marks.pollenAt ?? 0) <= t) {
+      marks.pollenAt = t + A.inkBloom.tick;
+      for (const other of this.enemyIndex.queryCircle(enemy.x, enemy.y, A.inkBloom.radius)) {
+        if (other !== enemy && other.hp > 0 && !other.isBoss && distance(other, enemy) <= A.inkBloom.radius + other.radius) this.slowBy(other, ARSENAL.inkBloom.slow!);
+      }
+      this.skillMark('ring', 'inkBloom', enemy.x, enemy.y, A.inkBloom.radius);
+    }
+    if ((marks.thorn ?? 0) > t) {
+      marks.run = (marks.run ?? 0) + Math.hypot(enemy.x - enemy.prevX, enemy.y - enemy.prevY);
+      for (; marks.run >= A.thornHalo.step; marks.run -= A.thornHalo.step) this.echoHit(enemy, this.weaponHit('thornHalo') * A.thornHalo.damage, 'thornHalo');
+    }
+    if ((marks.pecks ?? 0) > 0 && (marks.crowAt ?? 0) <= t) {
+      marks.pecks = (marks.pecks ?? 0) - 1;
+      marks.crowAt = (marks.crowAt ?? t) + A.crowFeathers.tick;
+      this.echoHit(enemy, this.weaponHit('crowFeathers') * A.crowFeathers.damage, 'crowFeathers');
+    }
+  }
+
+  /** SYS-16: whether an enemy touches an obstacle or the arena's edge. */
+  protected againstWall(enemy: Entity) {
+    const reach = enemy.radius + 2;
+    return enemy.x < reach || enemy.y < reach || enemy.x > WORLD_W - reach || enemy.y > WORLD_H - reach
+      || this.obstacles.some((block) => enemy.x > block.x - reach && enemy.x < block.x + block.w + reach && enemy.y > block.y - reach && enemy.y < block.y + block.h + reach);
   }
 
   protected updateNeedleStorm(skill: SkillState) {
@@ -3178,6 +3494,7 @@ export class GameEngine {
         attackStyle: 'contact',
         elite: undefined,
         eliteShield: undefined,
+        awk: undefined,
         damageCooldowns: {},
       });
     }
@@ -3432,6 +3749,9 @@ export class GameEngine {
       if (enemy.isBoss && enemy.boss) this.updateBossPattern(enemy, dt);
       if (enemy.stun > 0 || enemy.root > 0) continue;
       const role = enemy.isBoss ? null : enemyRole(enemy.tier, enemy.attackStyle);
+      // SYS-16: an enemy an awakened weapon silenced, frightened, or lost starts no shot, dash, or fuse.
+      const marks = enemy.awk;
+      const held = marks !== undefined && Math.max(marks.silence ?? 0, marks.fear ?? 0, marks.wander ?? 0) > this.elapsed;
 
       const dir = normalize(this.player.x - enemy.x, this.player.y - enemy.y);
       const playerDistance = distance(enemy, this.player);
@@ -3491,12 +3811,12 @@ export class GameEngine {
               shotDirection.x * projectileSpeed,
               shotDirection.y * projectileSpeed,
               7,
-              enemy.damage * 0.72,
+              enemy.damage * 0.72 * this.weakened(enemy),
               4.2,
               'enemy',
             );
           }
-        } else if (enemy.rangedCooldown <= 0 && playerDistance <= 760 && !(seekingSight = this.rules.obstacleCover && !this.clearShot(enemy, this.player, 7))) {
+        } else if (enemy.rangedCooldown <= 0 && playerDistance <= 760 && !(seekingSight = this.rules.obstacleCover && !this.clearShot(enemy, this.player, 7)) && !held) {
           // SYS-02: the telegraph line points where a moving player will be when the shot arrives.
           const aim = shooterLeadAim ? leadAim(enemy, this.player, playerVelocity, RANGED_ENEMY.telegraphSeconds, projectileSpeed) : this.player;
           enemy.patternX = aim.x;
@@ -3538,6 +3858,15 @@ export class GameEngine {
         moveY = steer.y;
         neighbours.length = 0;
       }
+      // SYS-16: a frightened enemy runs from the player; a lost one wanders a way that turns every half second.
+      if (held && (marks.fear ?? 0) > this.elapsed) {
+        moveX = -dir.x;
+        moveY = -dir.y;
+      } else if (held && (marks.wander ?? 0) > this.elapsed) {
+        const way = enemy.id * 2.4 + Math.floor(this.elapsed * 2) * 2.1;
+        moveX = Math.cos(way);
+        moveY = Math.sin(way);
+      }
 
       // SYS-02 chargers: stand and telegraph, then dash straight along the locked lane.
       let charging = false;
@@ -3561,7 +3890,7 @@ export class GameEngine {
           if (enemy.patternTimer <= 0) dashEnded = true;
         } else {
           enemy.dashCooldown = Math.max(0, enemy.dashCooldown - dt);
-          if (enemy.dashCooldown <= 0 && playerDistance <= CHARGER.range && windups < CHARGER.maxWindups) {
+          if (enemy.dashCooldown <= 0 && playerDistance <= CHARGER.range && windups < CHARGER.maxWindups && !held) {
             const dashSpeed = enemy.speed * (enemy.slowMultiplier ?? 1) * CHARGER.speedMultiple;
             const reach = dashSpeed * CHARGER.dashSeconds;
             enemy.patternPhase = 'warn';
@@ -3623,7 +3952,9 @@ export class GameEngine {
       const touching = distance(enemy, this.player) < enemy.radius + HIT_RADIUS.playerContact;
       if (touching && enemy.bomber) {
         // SYS-14: a fuse bomber plants itself where it touched; a burst bomber goes off at once.
-        if (enemy.bomber === 'burst') {
+        if (held) {
+          // SYS-16: not while silenced, frightened, or lost.
+        } else if (enemy.bomber === 'burst') {
           this.detonate(enemy);
         } else {
           enemy.fuseAt = this.elapsed;
@@ -4479,9 +4810,11 @@ export class GameEngine {
   }
 
   protected updateProjectiles(dt: number) {
+    const gimmicks = this.rules.awakeningGimmicks;
     for (const projectile of this.projectiles) {
       const start = { x: projectile.x, y: projectile.y };
       projectile.life -= dt;
+      const spent = projectile.life <= 0;
       if (projectile.skillId === 'fanKnives' && this.skills.fanKnives?.awakened && !projectile.returning && projectile.life <= projectile.maxLife * 0.5) {
         projectile.returning = true;
         projectile.hitEnemyIds.clear();
@@ -4492,6 +4825,7 @@ export class GameEngine {
         projectile.vx = direction.x * 720;
         projectile.vy = direction.y * 720;
       }
+      if (gimmicks) this.steerShot(projectile, dt);
       projectile.x += projectile.vx * dt;
       projectile.y += projectile.vy * dt;
       let obstacleHitTime: number | null = null;
@@ -4517,10 +4851,12 @@ export class GameEngine {
         if (obstacleHitTime !== null && obstacleHitTime <= time) break;
         projectile.hitEnemyIds.add(enemy.id);
         // The shot's own path, a tenth of a second back, tells a shield which way it came from (SYS-02).
+        this.shot = projectile;
         this.dealDamage(enemy, projectile.damage, projectile.skillId, projectile.knockback, false, {
           x: projectile.x - projectile.vx * 0.1,
           y: projectile.y - projectile.vy * 0.1,
         });
+        this.shot = null;
         projectile.pierce -= 1;
         if (projectile.skillId === 'needleStorm' && this.skills.needleStorm?.awakened) {
           const extra = this.findNearestEnemyFrom(enemy.x, enemy.y, SKILL_NUMBERS.needleStorm.shardRange, new Set([enemy.id]));
@@ -4540,6 +4876,7 @@ export class GameEngine {
         projectile.life = 0;
         this.emit({ type: 'shot/blocked', x: projectile.x, y: projectile.y });
       }
+      if (gimmicks && projectile.life <= 0) this.shotEnded(projectile, spent);
     }
     const inFlight = (projectile: Projectile) => projectile.life > 0 && projectile.x > -120 && projectile.x < WORLD_W + 120 && projectile.y > -120 && projectile.y < WORLD_H + 120;
     if (this.rules.reliableAim) this.recordAimResults(inFlight);
@@ -4755,6 +5092,7 @@ export class GameEngine {
     blockedBySolid: boolean,
     aimTargetId = -1,
     look: SkillId = skillId,
+    echo = false,
   ) {
     const projectile = this.projectilePool.acquire();
     projectile.hitEnemyIds.clear();
@@ -4777,6 +5115,7 @@ export class GameEngine {
       look,
       blockedBySolid,
       aimTargetId,
+      echo,
     });
     this.projectiles.push(projectile);
   }
@@ -4934,20 +5273,26 @@ export class GameEngine {
   }
 
   /** `source` is where the hit comes from (the player unless a projectile, blast, or chain carries it), for shields. */
-  /** SYS-15: an arsenal weapon's effects on an enemy it hit: execution, slow, and stun (bosses shrug off the last two). */
+  /**
+   * SYS-15: an arsenal weapon's effects on an enemy it hit: execution, slow, and stun (bosses shrug off the last two).
+   * Whether it executed the enemy.
+   */
   protected applyArsenalEffects(weapon: (typeof ARSENAL)[ArsenalId], enemy: Entity) {
-    if (enemy.hp <= 0) return;
+    if (enemy.hp <= 0) return false;
     if (weapon.execute && !enemy.isBoss && enemy.hp < enemy.maxHp * weapon.execute) {
       enemy.hp = 0;
-      return;
+      return true;
     }
-    if (enemy.isBoss) return;
-    if (weapon.slow) {
-      const slow = applyTimedSlow({ multiplier: enemy.slowMultiplier ?? 1, remaining: enemy.slowTimer ?? 0 }, weapon.slow[0], weapon.slow[1]);
-      enemy.slowMultiplier = slow.multiplier;
-      enemy.slowTimer = slow.remaining;
-    }
+    if (enemy.isBoss) return false;
+    if (weapon.slow) this.slowBy(enemy, weapon.slow);
     if (weapon.stun && this.gameplayRandom() < weapon.stun[0]) enemy.stun = Math.max(enemy.stun, weapon.stun[1]);
+    return false;
+  }
+
+  protected slowBy(enemy: Entity, [multiplier, seconds]: readonly [number, number]) {
+    const slow = applyTimedSlow({ multiplier: enemy.slowMultiplier ?? 1, remaining: enemy.slowTimer ?? 0 }, multiplier, seconds);
+    enemy.slowMultiplier = slow.multiplier;
+    enemy.slowTimer = slow.remaining;
   }
 
   /** SYS-14: whether a small contact spawn comes as a bomber, and which kind; `smallShare` is the small spawns' share. */
@@ -4986,6 +5331,10 @@ export class GameEngine {
     const execution = this.skills.executionMark?.awakened && enemy.isBoss ? 1 + (1 - hpRatio) * SKILL_NUMBERS.executionMark.lowHpBossBonus : 1;
     // SYS-15: an arsenal weapon's boss damage and extra crit chance.
     const weapon = isArsenal(skillId) ? ARSENAL[skillId] : undefined;
+    // SYS-16: an awakened weapon's own hit runs its gimmick; a gimmick's damage (or its shot's) runs none.
+    const echo = this.echo || this.shot?.echo === true;
+    const awoken = weapon && !echo && this.rules.awakeningGimmicks && this.skills[skillId]?.awakened ? (skillId as ArsenalId) : undefined;
+    if (this.rules.awakeningGimmicks) rawDamage *= this.hitScale(enemy, awoken);
     const targetMultiplier = (enemy.isBoss ? this.player.stats.bossDamage * (weapon?.boss ?? 1) : 1);
     const crit = forceCrit || this.gameplayRandom() < this.player.stats.critChance + (weapon?.crit ?? 0);
     const critMultiplier = crit ? this.player.stats.critDamage : 1;
@@ -5012,7 +5361,7 @@ export class GameEngine {
     // UI-05: the health this hit actually took, for the settlement's damage bars (presentation only).
     this.damageBySkill[skillId] = (this.damageBySkill[skillId] ?? 0) + Math.min(damage, enemy.hp);
     enemy.hp -= damage;
-    if (weapon) this.applyArsenalEffects(weapon, enemy);
+    const executed = weapon && !echo ? this.applyArsenalEffects(weapon, enemy) : false;
     const impactTier = classifyImpact(damage, enemy.maxHp, crit, enemy.hp <= 0, {
       classification: this.rules.hitStopBudget ? 'budgeted' : 'classic',
       notableTarget: enemy.isBoss,
@@ -5020,12 +5369,149 @@ export class GameEngine {
     enemy.hitFlash = 0.08;
     if (knockback > 0 && !enemy.isBoss) {
       const dir = normalize(enemy.x - this.player.x, enemy.y - this.player.y);
-      enemy.x += dir.x * knockback * 0.035;
-      enemy.y += dir.y * knockback * 0.035;
+      // SYS-16 밀쳐 부딪힘: the awakened ink pulse pushes further (a factor last, so other pushes stay bit for bit).
+      const push = awoken === 'inkPulse' ? AWAKENINGS.inkPulse.push : 1;
+      enemy.x += dir.x * knockback * 0.035 * push;
+      enemy.y += dir.y * knockback * 0.035 * push;
     }
     const travel = normalize(enemy.x - source.x, enemy.y - source.y);
     this.emit({ type: 'enemy/hit', id: enemy.id, x: enemy.x, y: enemy.y, radius: enemy.radius, damage: shown, crit, tier: impactTier, dx: travel.x, dy: travel.y });
     if (impactTier !== 'light' && !this.rules.rareHitStop) this.requestHitStop(impactTier === 'critical' ? 0.035 : 0.025);
+    if (this.rules.awakeningGimmicks) this.afterHit(enemy, awoken, shown, crit, executed);
+  }
+
+  /**
+   * SYS-16: what awakening does to a hit before it lands. Prey takes more from everything; the frost ring hits slowed
+   * enemies harder, the tail guard enemies behind the player, and a sun needle the farther it flew. A thunder needle
+   * that hits a stunned enemy leaps on to the next.
+   */
+  protected hitScale(enemy: Entity, awoken: ArsenalId | undefined) {
+    const A = AWAKENINGS;
+    const scale = (enemy.awk?.prey ?? 0) > this.elapsed ? 1 + A.huntersMarks.prey : 1;
+    if (awoken === 'frostRing' && enemy.slowTimer > 0 && enemy.slowMultiplier < 1) return scale * A.frostRing.times;
+    if (awoken === 'sunNeedles' && this.shot) return scale * (1 + A.sunNeedles.damage * this.flight(this.shot));
+    if (awoken === 'tailGuard') {
+      const dx = enemy.x - this.player.x;
+      const dy = enemy.y - this.player.y;
+      const gap = Math.hypot(dx, dy);
+      if (gap > A.tailGuard.reach || -(dx * this.lastMove.x + dy * this.lastMove.y) < gap * Math.cos((A.tailGuard.arc * Math.PI) / 180)) return scale;
+      this.skillMark('ring', awoken, enemy.x, enemy.y, enemy.radius + 8);
+      return scale * A.tailGuard.times;
+    }
+    const next = awoken === 'thunderNeedles' && enemy.stun > 0 ? this.findNearestEnemyFrom(enemy.x, enemy.y, A.thunderNeedles.range, new Set([enemy.id])) : undefined;
+    if (next) {
+      this.chains.push({ id: this.nextId(), points: [{ x: enemy.x, y: enemy.y }, { x: next.x, y: next.y }], life: 0.18, maxLife: 0.18, skillId: 'thunderNeedles' });
+      this.echoHit(next, this.weaponHit('thunderNeedles') * A.thunderNeedles.damage, 'thunderNeedles', enemy);
+    }
+    return scale;
+  }
+
+  /** SYS-16: an enemy a ward ring weakened deals the player less (its shots carry the cut from when they leave). */
+  protected weakened(from: Readonly<{ x: number; y: number }>) {
+    return ((from as Partial<Entity>).awk?.weak ?? 0) > this.elapsed ? 1 - AWAKENINGS.wardRing.weaken : 1;
+  }
+
+  /** SYS-16: after a hit lands: a linked enemy shares it, and an awakened weapon's own hit runs its gimmick. */
+  protected afterHit(enemy: Entity, awoken: ArsenalId | undefined, dealt: number, crit: boolean, executed: boolean) {
+    const t = this.elapsed;
+    const link = enemy.awk?.link;
+    if (link && link.until > t && !this.sharing) {
+      this.sharing = true;
+      for (const other of link.members) if (other !== enemy) this.echoHit(other, dealt * AWAKENINGS.frostChainlet.share, 'frostChainlet', enemy);
+      this.sharing = false;
+      if (link.flashAt <= t) {
+        link.flashAt = t + 0.15;
+        this.chains.push({ id: this.nextId(), points: link.members.filter((member) => member.hp > 0).map(({ x, y }) => ({ x, y })), life: 0.18, maxLife: 0.18, skillId: 'frostChainlet' });
+      }
+    }
+    if (!awoken) return;
+    const shot = this.shot;
+    const first = shot?.hitEnemyIds.size === 1;
+    const boss = enemy.isBoss;
+    const marks = this.marks(enemy);
+    const row: Readonly<Record<string, number>> = AWAKENINGS[awoken];
+    const { x, y } = enemy;
+    const burst = () => this.echoBlast(awoken, x, y, row.radius, this.weaponHit(awoken) * row.damage);
+    // Marks that last the row's `seconds`: thorns on anyone, the ones that hold an enemy back on ordinary enemies only.
+    const timed = TIMED_MARKS[awoken];
+    if (timed && (timed === 'thorn' || !boss)) marks[timed] = t + row.seconds;
+    switch (awoken) {
+      case 'inkDarts':
+        // 먹 얼룩: stains stack while they are fresh; enough of them burst.
+        marks.stain = (marks.stainUntil ?? 0) > t ? (marks.stain ?? 0) + 1 : 1;
+        marks.stainUntil = t + row.seconds;
+        if (marks.stain >= row.stacks) {
+          marks.stain = 0;
+          burst();
+        }
+        break;
+      case 'bossbane':
+        // 균열: cracks on a boss burst once there are enough.
+        if (boss && (marks.crack = (marks.crack ?? 0) + 1) >= row.cracks) {
+          marks.crack = 0;
+          burst();
+        }
+        break;
+      case 'brushQuills':
+        // 늦게 터지는 붓자국: where a quill first strikes bursts a moment later.
+        if (first) this.after(row.delay, burst);
+        break;
+      case 'ghostVolley':
+      case 'starShards': {
+        // 혼령 이어쏘기 and 튕김: a kill sends a new arrow on; a star shard's first hit bounces to the next enemy.
+        const next = shot && (awoken === 'ghostVolley' ? enemy.hp <= 0 : first) ? this.findNearestEnemyFrom(x, y, row.range, shot.hitEnemyIds) : undefined;
+        if (next) this.fireEcho(shot!, enemy, next);
+        break;
+      }
+      case 'frostNeedles':
+        // 동결: hits on a slowed enemy count within the window; enough of them freeze it.
+        if (boss || enemy.slowTimer <= 0) break;
+        if (!(t - (marks.frostAt ?? -1e9) <= row.window)) {
+          marks.frost = 0;
+          marks.frostAt = t;
+        }
+        marks.frost = (marks.frost ?? 0) + 1;
+        if (marks.frost < row.hits) break;
+        marks.frost = 0;
+        marks.frostAt = t;
+        this.stun(enemy, row.freeze, awoken);
+        enemy.frostUntil = enemy.frostRootUntil = t + row.freeze;
+        break;
+      case 'judgmentLine':
+        // 심판의 값: what the line executes leaves twice the XP and coins.
+        if (!executed) break;
+        enemy.xp *= row.bounty;
+        enemy.coin *= row.bounty;
+        this.skillMark('glint', awoken, x, y, 0);
+        break;
+      case 'headsmanDarts':
+        // 공포: an execution frightens the ordinary enemies round it.
+        if (!executed) break;
+        for (const other of this.enemyIndex.queryCircle(x, y, row.radius)) if (!other.isBoss) this.marks(other).fear = t + row.seconds;
+        this.skillMark('ring', awoken, x, y, row.radius);
+        break;
+      case 'trackingSeals': {
+        // 삼각 봉인: the first three different enemies this cast's seals pin.
+        const seals = this.seals;
+        if (shot && seals?.shots.has(shot.id) && !seals.hit.includes(enemy) && seals.hit.push(enemy) === row.seals) this.sealTriangle(seals.hit);
+        break;
+      }
+      case 'crowFeathers':
+        // 까마귀 떼: one crow an enemy, pecking on its ticks.
+        if (!marks.pecks) marks.crowAt = t + row.tick;
+        marks.pecks = Math.round(row.seconds / row.tick);
+        marks.crow = t + row.seconds;
+        break;
+      case 'inkBloom':
+        // 번지는 꽃가루: a petal's enemy spreads the slow for a while (those it spreads to do not carry it on).
+        if (boss) break;
+        if (!((marks.pollen ?? 0) > t)) marks.pollenAt = t + row.tick;
+        marks.pollen = t + row.seconds;
+        break;
+      case 'huntersMarks':
+        if (crit) marks.prey = t + row.seconds;
+        break;
+    }
   }
 
   protected requestHitStop(seconds: number) {
@@ -5054,6 +5540,7 @@ export class GameEngine {
       return;
     }
     if (this.player.invuln > 0 || this.player.shield > 0) return;
+    rawDamage *= this.weakened(from);
     const reduced = this.rules.difficultyCurve
       ? hybridHitDamage(rawDamage, this.player.stats.defense, physical, CATALOG.difficulty)
       : Math.max(1, rawDamage - this.player.stats.defense * (physical ? 0.72 : 0.42));
@@ -5426,7 +5913,9 @@ export class GameEngine {
 
   protected awakeningText(skillId: SkillId): Text {
     const classic = this.rules.mirrorAwakeningRework ? undefined : CLASSIC_AWAKENING_TEXT[skillId];
-    return classic ?? SKILL_AWAKENING_TEXT[skillId];
+    const base = classic ?? SKILL_AWAKENING_TEXT[skillId];
+    // SYS-16: an arsenal weapon's card adds its own gimmick after the common boost.
+    return this.rules.awakeningGimmicks && isArsenal(skillId) ? text('skill.arsenal.awakening.gimmick', { base, gimmick: ARSENAL_GIMMICK_TEXT[skillId] }) : base;
   }
 
   protected makeBonusOffers(reason: DraftReason): SkillOffer[] {
@@ -5682,6 +6171,7 @@ export class GameEngine {
       bossProjectiles: this.bossProjectiles,
       pickups: this.pickups,
       hazards: this.hazards,
+      zones: this.zones,
       obstacles: this.obstacles,
       beams: this.beams,
       laneTelegraphs: this.laneTelegraphs,

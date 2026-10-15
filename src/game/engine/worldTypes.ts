@@ -179,6 +179,58 @@ export type Entity = {
   /** SYS-04: where an anchoring boss holds. */
   anchorX?: number;
   anchorY?: number;
+  /** SYS-16: what awakened weapons left on this enemy. */
+  awk?: AwakenedMarks;
+};
+
+/**
+ * SYS-16: what awakened weapons (src/content/data/awakenings.ts) left on an enemy. Times are the run time a state ends
+ * (or its next tick comes); counts are stacks. Statuses that hold an enemy back never land on bosses.
+ */
+export type AwakenedMarks = {
+  /** inkDarts: ink stains and when they dry; frostNeedles: frost hits and when their count began. */
+  stain?: number;
+  stainUntil?: number;
+  frost?: number;
+  frostAt?: number;
+  /** sealArrows: pushed, a touch topples another; inkPulse: pushed, a wall stuns. */
+  domino?: number;
+  bump?: number;
+  /** headsmanDarts: runs away; smokeTail: wanders lost; silenceBell: starts no shot, dash, or fuse. */
+  fear?: number;
+  wander?: number;
+  silence?: number;
+  /** wardRing: deals less to the player; huntersMarks: takes more from everything. */
+  weak?: number;
+  prey?: number;
+  /** inkBloom: spreads its slow (next spread at pollenAt); thornHalo: hurts as it moves (run: distance so far). */
+  pollen?: number;
+  pollenAt?: number;
+  thorn?: number;
+  run?: number;
+  /** crowFeathers: a crow circles until `crow`, pecking at crowAt, `pecks` more times. */
+  crow?: number;
+  crowAt?: number;
+  pecks?: number;
+  /** bossbane: cracks on a boss. */
+  crack?: number;
+  /** frostChainlet: the enemies one chain linked, which share what each takes until `until`. */
+  link?: { until: number; members: Entity[]; flashAt: number };
+};
+
+/** SYS-16: ground an awakened weapon leaves: it acts on enemies (never on the player) and draws as the player's. */
+export type AwakeningZone = {
+  weapon: ArsenalId;
+  x: number;
+  y: number;
+  radius: number;
+  life: number;
+  maxLife: number;
+  /** Damage per hit or tick, and the run time of the next tick. */
+  damage: number;
+  next: number;
+  /** Enemies it already acted on once. */
+  hit: number[];
 };
 
 /** SYS-04: one more dash in a chain: re-aimed at the player (tracked) or along a lane shown in advance. */
@@ -222,6 +274,8 @@ export type Projectile = {
   hitEnemyIds: Set<number>;
   /** SYS-01: the enemy this shot was aimed at (-1 for spread or flank shots); a miss counts against it. */
   aimTargetId: number;
+  /** SYS-16: an awakening gimmick fired it (a bounce, a follow-up, a turned shot): it runs no gimmick of its own. */
+  echo: boolean;
 };
 
 export type BossProjectile = {

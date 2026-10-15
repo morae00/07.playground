@@ -4,6 +4,7 @@
 // the skill does in any language.
 // Damage entries are coefficients of the player's attack; per-level entries are the total at that level.
 import SKILL_NUMBER_TABLE from '../content/data/skillNumbers.ts';
+import AWAKENINGS from '../content/data/awakenings.ts';
 import type { ArsenalId, CoreSkillId, SkillId } from './engine/worldTypes.ts';
 import { ARSENAL, ARSENAL_AWAKENING as AWAKENING, ARSENAL_IDS, arsenalStats } from './arsenal.ts';
 import { text, type StringKey, type Text, type TextParam } from '../i18n/text.ts';
@@ -146,6 +147,15 @@ export const SKILL_AWAKENING_TEXT: Record<SkillId, Text> = {
   ...CORE_AWAKENING_TEXT,
   ...Object.fromEntries(ARSENAL_IDS.map((id) => [id, arsenalAwakening(id)])),
 } as Record<SkillId, Text>;
+
+/** SYS-16: the gimmick numbers a card prints as percents (src/content/data/awakenings.ts); the rest print as they are. */
+const GIMMICK_SHARES: ReadonlySet<string> = new Set(['damage', 'share', 'haste', 'growth', 'area', 'branch', 'weaken', 'prey']);
+
+/** SYS-16: each weapon's awakening gimmick (skill.<id>.awakeningGimmick), filled from its row of the awakenings table. */
+export const ARSENAL_GIMMICK_TEXT = Object.fromEntries(ARSENAL_IDS.map((id) => [
+  id,
+  text(`skill.${id}.awakeningGimmick`, Object.fromEntries(Object.entries(AWAKENINGS[id]).map(([key, value]: [string, number]) => [key, GIMMICK_SHARES.has(key) ? pct(value) : num(value)]))),
+])) as Record<ArsenalId, Text>;
 
 /** Classic rules (0.1.0) keep the old mirror clone awakening, which only copies rail shots. */
 export const CLASSIC_AWAKENING_TEXT: Partial<Record<SkillId, Text>> = {

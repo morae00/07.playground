@@ -5,7 +5,7 @@
 import { FIXED_TIMESTEP } from '../p0Core';
 import type { RuleSet } from '../rules';
 import type { RenderEffects, RenderFrameStats, RenderWorld, WorldLayer } from '../render/worldRenderer';
-import type { Corpse, HitStamp, Recoil, SkillMark } from './worldTypes';
+import type { AwakeningZone, Corpse, HitStamp, Recoil, SkillMark } from './worldTypes';
 import {
   GameEngine,
   type BeamEffect,
@@ -88,6 +88,8 @@ export type ProbeWorld = {
   pendingHostileShots: PendingHostileShot[];
   pickups: Pickup[];
   hazards: Hazard[];
+  /** SYS-16: ground awakened weapons left. */
+  zones: AwakeningZone[];
   obstacles: Obstacle[];
   beams: BeamEffect[];
   laneTelegraphs: LaneTelegraph[];
@@ -274,6 +276,7 @@ export class ProbedGameEngine extends GameEngine {
         pendingHostileShots: copy(this.pendingHostileShots),
         pickups: copy(this.pickups),
         hazards: copy(this.hazards),
+        zones: copy(this.zones),
         obstacles: copy(this.obstacles),
         beams: copy(this.beams),
         laneTelegraphs: copy(this.laneTelegraphs),

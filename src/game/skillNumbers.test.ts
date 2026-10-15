@@ -6,6 +6,7 @@ import type { SkillId } from './engine/worldTypes.ts';
 import { installLocaleFile } from '../i18n/localeFile.ts';
 import { t, tp, tx } from '../i18n/strings.ts';
 import {
+  ARSENAL_GIMMICK_TEXT,
   CLASSIC_AWAKENING_TEXT,
   SKILL_AWAKENING_TEXT,
   SKILL_LEVEL_STATS,
@@ -36,6 +37,8 @@ function currentSnapshot() {
     levelText,
     awakeningText: resolved(SKILL_AWAKENING_TEXT),
     classicAwakeningText: resolved(CLASSIC_AWAKENING_TEXT),
+    // SYS-16: the arsenal's awakening gimmicks, printed after the common boost.
+    gimmickText: resolved(ARSENAL_GIMMICK_TEXT),
   };
 }
 
@@ -50,6 +53,7 @@ test('card copy never prints float noise', () => {
   const lines = [
     ...SKILL_IDS.flatMap((id) => [1, 2, 3, 4, 5].map((level) => levelLine(id, level))),
     ...Object.values(SKILL_AWAKENING_TEXT).map(tx),
+    ...Object.values(ARSENAL_GIMMICK_TEXT).map(tx),
   ];
   for (const line of lines) assert.doesNotMatch(line, /\d\.\d{3,}/, line);
   assert.equal(formatNumber(3 * 0.35), '1.05');
@@ -74,6 +78,15 @@ test('a skill prints the same stat rows at every level, so a draft card can show
   }
   assert.deepEqual(SKILL_LEVEL_STATS.needleStorm(3).map(([label, value]) => [t(label), tp(value)]), [['피해', '+54%'], ['투사체', '2개']]);
   assert.equal(levelLine('needleStorm', 3), '피해 +54%, 투사체 2개');
+});
+
+test('SYS-16: every arsenal weapon prints its own gimmick, filled from its row, with no placeholder left', () => {
+  const lines = Object.values(ARSENAL_GIMMICK_TEXT).map(tx);
+  assert.equal(lines.length, 44);
+  assert.equal(new Set(lines).size, 44, 'no two gimmicks read alike');
+  for (const line of lines) assert.doesNotMatch(line, /\{\w+\}/, line);
+  assert.match(tx(ARSENAL_GIMMICK_TEXT.inkDarts), /3겹.*반경 70.*피해 120%/);
+  assert.match(tx(ARSENAL_GIMMICK_TEXT.meteorBrush), /4초.*30% 빨리/);
 });
 
 test('the reworked mirror clone awakening always adds shots and pierce', () => {

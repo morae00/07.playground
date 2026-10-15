@@ -188,6 +188,13 @@ export type RuleSet = Readonly<{
    * of 50%, which undid most of a run's danger whenever it came.
    */
   lightBonusHeal: boolean;
+  /**
+   * SYS-16 (user request 2026-10-15): each of the 44 arsenal weapons, once awakened, gains a gimmick of its own beside
+   * the common awakening boost: marks that burst, shots that bounce or come back, ground it leaves behind, enemies
+   * frightened, lost, or silenced, and so on (docs/decisions/SYS-16-awakening-gimmicks.md). Numbers in
+   * src/content/data/awakenings.ts.
+   */
+  awakeningGimmicks: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -231,6 +238,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   arsenal: false,
   characters: false,
   lightBonusHeal: false,
+  awakeningGimmicks: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -274,6 +282,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   arsenal: true,
   characters: true,
   lightBonusHeal: true,
+  awakeningGimmicks: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

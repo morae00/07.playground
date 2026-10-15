@@ -40,7 +40,8 @@ export type GameEvent =
   | { type: 'shot/blocked'; x: number; y: number }
   /** SYS-02: a warden's shield took a hit, and a charger ran into a wall. */
   | { type: 'enemy/blocked'; x: number; y: number }
-  | { type: 'enemy/stunned'; x: number; y: number }
+  /** source: the awakened weapon whose gimmick stunned it (SYS-16), none for walls and chargers. */
+  | { type: 'enemy/stunned'; x: number; y: number; source?: SkillId }
   | { type: 'magnet/pulse'; x: number; y: number }
   | { type: 'boss/spawned'; x: number; y: number; infinite: boolean }
   /** CON-08: an infinite run turned to the next chapter's look. */

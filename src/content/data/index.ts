@@ -4,6 +4,7 @@
 // tools, and the dev server import the modules directly. Each module holds one default export of plain JSON data.
 import achievements from './achievements.ts';
 import arsenal from './arsenal.ts';
+import awakenings from './awakenings.ts';
 import bombers from './bombers.ts';
 import bossPhaseMoves from './bossPhaseMoves.ts';
 import bossToughness from './bossToughness.ts';
@@ -19,7 +20,7 @@ import objectives from './objectives.ts';
 import skillNumbers from './skillNumbers.ts';
 import soundCues from './soundCues.ts';
 
-const CONTENT_TABLES = { achievements, arsenal, bombers, bossPhaseMoves, bossToughness, buildDepth, catalog, characters, codex, cosmetics, elites, encounterGrammars, horde, objectives, skillNumbers, soundCues };
+const CONTENT_TABLES = { achievements, arsenal, awakenings, bombers, bossPhaseMoves, bossToughness, buildDepth, catalog, characters, codex, cosmetics, elites, encounterGrammars, horde, objectives, skillNumbers, soundCues };
 
 export type ContentTables = typeof CONTENT_TABLES;
 export default CONTENT_TABLES;

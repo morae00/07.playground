@@ -2,6 +2,8 @@
 // cannot change outcomes and a test can render any hand-built world.
 import { lookOf } from '../arsenal.ts';
 import type {
+  AwakenedMarks,
+  AwakeningZone,
   BeamEffect,
   BossProjectile,
   ChainEffect,
@@ -41,7 +43,7 @@ import { shakeOffset } from '../presentation/viewCamera.ts';
 import { NEUTRAL, SIGNAL, rgba } from './palette.ts';
 import { createRenderFrameSnapshot } from './renderSnapshot.ts';
 import { SkillVfxPainter, blastDustSpots, wardPlateSpots } from './skillVfx.ts';
-import { CHAPTER_VISUALS, enemyRoleFor, type VisualDetail } from './visualRegistry.ts';
+import { CHAPTER_VISUALS, HAZARD_ART, enemyRoleFor, type HazardArtProfile, type HazardGlyph, type VisualDetail } from './visualRegistry.ts';
 import {
   circleVisible,
   interpolatePosition,
@@ -87,6 +89,18 @@ const CHILL_RADII = Object.freeze([12, 19, 28, 38, 54]);
 const SKILL_SHOTS: ReadonlySet<SkillId> = new Set(['needleStorm', 'fanKnives', 'recoveryThread', 'mirrorClone']);
 /** The player's zones (the bone mortar's warning, the eclipse afterimage, the vortices) lie under the enemy's (FX-06). */
 const allyZone = (hazard: Readonly<Hazard>) => hazard.kind === 'warning' || hazard.kind === 'vortex';
+/** SYS-16: the ground awakened weapons leave is the player's, each with its sign until the kit draws its own (K10). */
+const ZONE_ART: Partial<Record<SkillId, HazardArtProfile>> = Object.fromEntries(
+  Object.entries({ twinBlades: 'shatter', pinHail: 'shatter', smokeTail: 'wave', gravePins: 'chain', inkLightning: 'star', inkPots: 'flame', tarJar: 'spiral', meteorBrush: 'star' } satisfies Partial<Record<SkillId, HazardGlyph>>)
+    .map(([id, glyph]) => [id, { ...HAZARD_ART.warning, glyph }]),
+);
+/** SYS-16: the states awakened weapons put on an enemy, each a small sign over its head: its sides and turn. */
+const MARK_SIGNS: readonly (readonly [keyof AwakenedMarks, number, number])[] = [
+  ['fear', 3, -Math.PI / 2], ['weak', 3, Math.PI / 2], ['prey', 4, 0], ['thorn', 4, Math.PI / 4],
+  ['wander', 5, -Math.PI / 2], ['pollen', 6, 0], ['silence', 8, 0], ['crow', 2, Math.PI / 2],
+];
+/** The beam groups the kit draws (FX-06); other lines (SYS-16's) draw as ink bands. */
+const BEAM_ART: ReadonlySet<SkillId> = new Set(['frostLine', 'railSpear', 'mirrorClone', 'eclipseStep']);
 
 /** SYS-14 (K7): a bomber's blast drawing fades over its last moment (API-bombers §3). */
 const BLAST_FADE_SECONDS = 0.05;
@@ -253,6 +267,8 @@ export type RenderWorld = {
   readonly bossProjectiles: readonly Readonly<BossProjectile>[];
   readonly pickups: readonly Readonly<Pickup>[];
   readonly hazards: readonly Readonly<Hazard>[];
+  /** SYS-16: ground awakened weapons left. */
+  readonly zones: readonly Readonly<AwakeningZone>[];
   readonly obstacles: readonly Readonly<Obstacle>[];
   readonly beams: readonly Readonly<BeamEffect>[];
   readonly laneTelegraphs: readonly Readonly<LaneTelegraph>[];
@@ -815,6 +831,10 @@ export class WorldRenderer {
   }
 
   private drawHazards(ctx: CanvasRenderingContext2D) {
+    // SYS-16: the ground awakened weapons leave, the player's, under everything else.
+    for (const zone of this.world.zones) {
+      if (circleVisible(this.viewport, zone.x, zone.y, zone.radius + 8)) this.visual.drawHazard(ctx, zone, 1, ZONE_ART[zone.weapon]);
+    }
     for (const ally of [true, false]) {
       for (const hazard of this.world.hazards) {
         if (allyZone(hazard) !== ally || !circleVisible(this.viewport, hazard.x, hazard.y, hazard.radius * 1.25 + 8)) continue;
@@ -1076,6 +1096,7 @@ export class WorldRenderer {
       if (enemy.elite) this.drawEliteMark(ctx, enemy.elite, body.x, over);
       if (enemy.stun > 0 && !enemy.isBoss) this.drawStunMark(ctx, body.x, enemy.elite ? over - 14 : over, enemy.id);
       if (enemy.bomber) this.drawBomberMark(ctx, enemy, body, over);
+      if (enemy.awk) this.drawAwakenedMarks(ctx, enemy.awk, body.x, over - (enemy.elite ? 14 : 0) - (enemy.stun > 0 ? 12 : 0));
     }
   }
 
@@ -1128,6 +1149,36 @@ export class WorldRenderer {
         ctx.arc(x, y, reach, 0, Math.PI * 2);
         ctx.stroke();
       }
+    }
+    ctx.restore();
+  }
+
+  /**
+   * SYS-16: what awakened weapons left on an enemy, over its head: ink dots for stains or cracks, then a small sign for
+   * each state in the player's colour (violet for silence; a crow is a stroke).
+   */
+  private drawAwakenedMarks(ctx: CanvasRenderingContext2D, marks: Readonly<AwakenedMarks>, x: number, y: number) {
+    const t = this.world.elapsed;
+    const dots = ((marks.stainUntil ?? 0) > t ? marks.stain ?? 0 : 0) + (marks.crack ?? 0);
+    let shown = 0;
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = NEUTRAL.ink;
+    for (const [key, sides, turn] of MARK_SIGNS) {
+      if (!((marks[key] as number | undefined ?? 0) > t)) continue;
+      const cx = x + (shown % 2 ? 1 : -1) * Math.ceil(shown / 2) * 13;
+      shown += 1;
+      ctx.fillStyle = key === 'silence' ? SIGNAL.elite : SIGNAL.ally;
+      ctx.beginPath();
+      for (let corner = 0; corner <= sides; corner += 1) ctx.lineTo(cx + Math.cos(turn + (corner * Math.PI * 2) / sides) * 5.5, y + Math.sin(turn + (corner * Math.PI * 2) / sides) * 5.5);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.fillStyle = NEUTRAL.ink;
+    for (let dot = 0; dot < dots; dot += 1) {
+      ctx.beginPath();
+      ctx.arc(x + (dot - (dots - 1) / 2) * 6, y - (shown > 0 ? 10 : 0), 2.2, 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.restore();
   }
@@ -1259,7 +1310,7 @@ export class WorldRenderer {
   private drawBeams(ctx: CanvasRenderingContext2D) {
     for (const beam of this.world.beams) {
       if (!segmentVisible(this.viewport, beam.x1, beam.y1, beam.x2, beam.y2, beam.width)) continue;
-      if (this.skillArt && beam.skillId) {
+      if (this.skillArt && beam.skillId && BEAM_ART.has(lookOf(beam.skillId))) {
         this.drawSkillBeam(ctx, beam);
         continue;
       }

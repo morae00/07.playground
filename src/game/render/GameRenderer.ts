@@ -598,12 +598,12 @@ export class GameRenderer {
    * is hatched in its signal colour inside an ink ring with an amber rim; ally ground is dotted inside a cyan running
    * stitch; neutral ground is an ink wash. A glyph at the centre names the effect. Timed hazards (shock, and the
    * ally landing warning) draw their outline as it fills: a dashed arc during preview, a heavy ring with ticks once
-   * imminent, and a coral (or ally) fill when active.
+   * imminent, and a coral (or ally) fill when active. SYS-16's ground of awakened weapons comes with its own profile
+   * and no kind.
    */
-  drawHazard(ctx: CanvasRenderingContext2D, hazard: Hazard, opacity = 1) {
-    const profile = HAZARD_ART[hazard.kind];
+  drawHazard(ctx: CanvasRenderingContext2D, hazard: Pick<Hazard, 'x' | 'y' | 'radius' | 'life' | 'maxLife'> & Partial<Hazard>, opacity = 1, profile = HAZARD_ART[hazard.kind!]) {
     const timed = Number.isFinite(hazard.maxLife) && (hazard.kind === 'shock' || hazard.kind === 'warning');
-    const phase = timed ? telegraphPhase(hazard.life, hazard.maxLife, hazard.triggered) : 'active';
+    const phase = timed ? telegraphPhase(hazard.life, hazard.maxLife, hazard.triggered === true) : 'active';
     const progress = timed ? clamp(1 - hazard.life / hazard.maxLife, 0, 1) : 1;
     const { x, y, radius } = hazard;
     const ally = profile.owner === 'ally';
