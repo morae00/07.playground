@@ -52,6 +52,7 @@ export type ProbePlayer = {
   silence: number;
   shield: number;
   rootImmunity: number;
+  burn: number;
   stats: StatBlock;
 };
 

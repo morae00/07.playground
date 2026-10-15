@@ -131,6 +131,8 @@ export type Entity = {
   legacyBoss?: boolean;
   contactTimer: number;
   hitFlash: number;
+  /** Seconds this body still shows burning (it stood in fire); looks only. */
+  burn?: number;
   stun: number;
   root: number;
   slowMultiplier: number;

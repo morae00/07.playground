@@ -553,6 +553,8 @@ const ANCHOR_RADIUS = 60;
 /** SYS-05 fix: an anchoring boss holds its spot only while the player is this close (about the view's reach). */
 const ANCHOR_LEASH = 720;
 /** Bosses enter this far from the player; under bossSpacing never closer than the minimum (SYS-04). */
+/** How long a body keeps showing it burns after the fire last touched it (looks only). */
+const BURN_SHOW_SECONDS = 0.3;
 const BOSS_SPAWN_DISTANCE = 620;
 const BOSS_MIN_SPAWN_DISTANCE = 420;
 /** SYS-04: the speed a boss recoils at after a contact hit. */
@@ -1006,6 +1008,8 @@ export class GameEngine {
     silence: 0,
     shield: 0,
     rootImmunity: 0,
+    /** Seconds the hero still shows burning (standing in fire); looks only, the simulation never reads it. */
+    burn: 0,
     stats: { ...BASE_STATS },
   };
 
@@ -1245,6 +1249,7 @@ export class GameEngine {
       silence: 0,
       shield: 0,
       rootImmunity: 0,
+      burn: 0,
       stats: { ...BASE_STATS },
     };
     this.recalculateStats(true);
@@ -1330,7 +1335,7 @@ export class GameEngine {
       this.faultInjection = true;
       return 'LOOP FAULT ARMED';
     }
-    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO', 'TURN', 'PHASE', 'VFX', 'BOMB'].includes(code)) {
+    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO', 'TURN', 'PHASE', 'VFX', 'BOMB', 'FIRE'].includes(code)) {
       this.invalidateInfiniteScore();
     }
     if (code === 'GOD') {
@@ -1392,6 +1397,14 @@ export class GameEngine {
       });
       this.rebuildEnemyIndex();
       return 'BOMBERS';
+    }
+
+    // A burning floor under the player and one beside it, to see fire and a body burning in it (2026-10-15).
+    if (code === 'FIRE') {
+      for (const [dx, radius] of [[0, 92], [220, 74]] as const) {
+        this.hazards.push({ id: this.nextId(), kind: 'fire', x: this.player.x + dx, y: this.player.y, radius, life: 12, maxLife: 12, damage: 3, slow: 1, triggered: false });
+      }
+      return 'FIRE';
     }
 
     // CON-06: takes the stage's boss to just past its next phase, to see its phase move and line.
@@ -2198,6 +2211,7 @@ export class GameEngine {
     this.player.invuln = Math.max(0, this.player.invuln - dt);
     this.player.shield = Math.max(0, this.player.shield - dt);
     this.player.silence = Math.max(0, this.player.silence - dt);
+    this.player.burn = Math.max(0, this.player.burn - dt);
     this.coinFeverRushTimer = advanceCoinFeverFrenzy(this.coinFeverRushTimer, dt);
     this.player.slow = 1;
 
@@ -3400,6 +3414,7 @@ export class GameEngine {
     for (const enemy of this.enemies) {
       if (enemy.hp <= 0) continue;
       enemy.hitFlash = Math.max(0, enemy.hitFlash - dt);
+      if (enemy.burn) enemy.burn = Math.max(0, enemy.burn - dt);
       enemy.contactTimer = Math.max(0, enemy.contactTimer - dt);
       enemy.stun = Math.max(0, enemy.stun - dt);
       enemy.root = Math.max(0, enemy.root - dt);
@@ -3678,6 +3693,7 @@ export class GameEngine {
       if (distance(enemy, hazard) > hazard.radius) continue;
       if (hazard.kind === 'fire') {
         enemy.hp -= hazard.damage * TERRAIN_ENEMY_SCALE * dt;
+        enemy.burn = BURN_SHOW_SECONDS;
       } else if (hazard.kind === 'water' || hazard.kind === 'slow' || hazard.kind === 'root') {
         // A binding zone slows enemies instead of holding them, since they get no immunity to walk out on.
         const strength = hazard.kind === 'root' ? 0 : hazard.slow;
@@ -5066,6 +5082,8 @@ export class GameEngine {
   }
 
   protected damagePlayerOverTime(damagePerSecond: number, dt: number, source: PlayerDamageSource) {
+    // The hero shows it burns while it stands in fire, and a moment after (looks only).
+    if (source === 'fire') this.player.burn = BURN_SHOW_SECONDS;
     if (this.cheatGodMode) {
       this.player.hp = this.player.stats.maxHp;
       return;

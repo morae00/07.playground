@@ -193,6 +193,8 @@ export type RenderPlayer = Readonly<{
   rootImmunity: number;
   /** Seconds left of hit immunity (the paper ward's plates and the eclipse step's feet, FX-06). */
   invuln: number;
+  /** Seconds the hero still shows burning (it stood in fire). */
+  burn: number;
 }>;
 
 /** Cosmetic state from the presentation layer; random() is its cosmetic stream (shake jitter). */
@@ -282,6 +284,8 @@ export class WorldRenderer {
   private readonly silhouettes = new Map<SpriteFrame, SpriteFrame | null>();
   /** SYS-10: elite purple cut-outs of enemy frames, built once per frame on first use. */
   private readonly eliteCutouts = new Map<SpriteFrame, SpriteFrame | null>();
+  /** Coral cut-outs of the frames of bodies standing in fire. */
+  private readonly burnCutouts = new Map<SpriteFrame, SpriteFrame | null>();
   /** CON-07: cut-outs in the hero's outline colour, rebuilt when the colour changes. */
   private readonly outlines = new Map<SpriteFrame, SpriteFrame | null>();
   private outlineColor: string | null = null;
@@ -342,6 +346,7 @@ export class WorldRenderer {
   private clearCutouts() {
     this.silhouettes.clear();
     this.eliteCutouts.clear();
+    this.burnCutouts.clear();
     this.outlines.clear();
   }
 
@@ -1484,6 +1489,7 @@ export class WorldRenderer {
       const flash = hitFlashAlpha(enemy.hitFlash) * motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion).flashStrength;
       const silhouette = flash > 0 ? this.silhouette(frame) : null;
       if (silhouette) this.blit(ctx, silhouette, x, y, facing, scale, flash * rise);
+      if (enemy.burn) this.drawBurning(ctx, frame, x, y, facing, scale, enemy.burn, enemy.id);
       return;
     }
     if (rise < 1) {
@@ -1629,6 +1635,7 @@ export class WorldRenderer {
       }
       this.drawHeroOutline(ctx, this.hero, body.x, body.y, this.heroAnim?.facing ?? 1);
       this.blit(ctx, this.hero, body.x, body.y, this.heroAnim?.facing ?? 1, 1);
+      this.drawBurning(ctx, this.hero, body.x, body.y, this.heroAnim?.facing ?? 1, 1, this.world.player.burn, 0);
       // The paper ward's plates float round the hero while the softened hit's immunity runs (FX-06).
       if (this.skillArt && this.invulnSource === 'ward') this.vfx.stamp(ctx, 'paperWard', 'plates', body.x, body.y, 0, 1 - this.world.player.invuln / Math.max(1e-6, this.invulnSpan));
       this.drawHeroMarks(ctx, body.x, body.y, this.hero);
@@ -1636,6 +1643,42 @@ export class WorldRenderer {
     }
     this.visual.drawPlayerBody(ctx, this.playerInput(body));
     this.drawDebuffTimers(ctx, body.x, body.top - 18);
+  }
+
+  /**
+   * A body standing in fire glows coral and sheds embers (user request 2026-10-15: "it should feel like taking damage").
+   * The coral overlay throbs, steady when flashes are reduced; embers rise from the body unless motion is reduced. It
+   * fades over the last moment after the fire let go.
+   */
+  private drawBurning(ctx: CanvasRenderingContext2D, frame: SpriteFrame, x: number, y: number, facing: 1 | -1, scale: number, burn: number, id: number) {
+    if (burn <= 0) return;
+    const policy = motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion);
+    const fade = Math.min(1, burn / 0.3);
+    const phase = phaseFor(id) * Math.PI * 2;
+    const throb = policy.flashStrength < 1 ? 0.5 : 0.5 + 0.18 * Math.sin(this.world.elapsed * 13 + phase);
+    const overlay = this.silhouette(frame, SIGNAL.hostile, this.burnCutouts);
+    if (overlay) {
+      // A coral rim round the body, then the body itself washed coral.
+      for (const [dx, dy] of ELITE_NUDGES) this.blit(ctx, overlay, x + dx * 1.5, y + dy * 1.5, facing, scale, 0.55 * fade);
+      this.blit(ctx, overlay, x, y, facing, scale, throb * fade);
+    }
+    if (policy.reduced) return;
+    ctx.save();
+    ctx.lineWidth = 1.4;
+    ctx.strokeStyle = NEUTRAL.ink;
+    for (let index = 0; index < 6; index += 1) {
+      const t = (this.world.elapsed * 1.5 + index / 6 + phaseFor(id + index)) % 1;
+      const ex = x + Math.sin(index * 2.4 + this.world.elapsed * 3 + phase) * 12 * scale;
+      const ey = y - (6 + t * 52) * scale;
+      const r = (3.6 - 2.4 * t) * scale;
+      ctx.globalAlpha = fade * (1 - t);
+      ctx.fillStyle = index % 2 ? SIGNAL.warn : SIGNAL.hostile;
+      ctx.beginPath();
+      ctx.arc(ex, ey, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   /** The hero falls back over the death moment (FX-03) and lies still until the settlement; upright otherwise. */
@@ -1660,7 +1703,8 @@ export class WorldRenderer {
    */
   private drawPlayerFeedback(ctx: CanvasRenderingContext2D, pulse: boolean) {
     const { effects, view, options } = this.world;
-    if (effects.hurtVignette <= 0 && !effects.lowHealth) return;
+    const burning = this.world.player.burn > 0;
+    if (effects.hurtVignette <= 0 && !effects.lowHealth && !burning) return;
     const left = view.frame.offsetX;
     const top = view.frame.offsetY;
     const width = view.width - left * 2;
@@ -1681,6 +1725,11 @@ export class WorldRenderer {
     if (effects.lowHealth) {
       const beat = pulse ? 0.07 * Math.max(0, Math.sin((this.world.elapsed / HEARTBEAT_SECONDS) * Math.PI * 2)) : 0;
       glow(cx, cy, reach * 0.55, reach, 0, (0.2 + beat) * strength);
+    }
+    // Standing in fire: the whole edge glows coral and throbs with the burn (steady when motion is reduced).
+    if (burning) {
+      const throb = pulse ? 0.06 * (1 + Math.sin(this.world.elapsed * 13)) : 0.06;
+      glow(cx, cy, reach * 0.5, reach, 0, (0.16 + throb) * Math.min(1, this.world.player.burn / 0.3) * strength);
     }
     if (effects.hurtVignette > 0) {
       const x = cx + Math.cos(effects.hurtAngle) * width * 0.62;

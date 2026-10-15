@@ -239,6 +239,27 @@ test('a weapon without shots draws its look\'s art, awakened when the weapon its
   }
 });
 
+test('a body in fire shows it burns while it stands there and a moment after, and the drawing survives it', async () => {
+  const atlas = await loadedAtlas();
+  const { engine } = arena(1, 2, atlas);
+  try {
+    engine.probe.setGodMode();
+    const { player } = engine.probe.read();
+    const enemy = engine.probe.spawnEnemy({ tier: 'small', x: player.x + 30, y: player.y, speed: 0, damage: 0, hp: 1e6 });
+    engine.probe.addHazard({ kind: 'fire', x: player.x, y: player.y, radius: 90, life: 5, maxLife: 5, damage: 4, slow: 1, triggered: false });
+    engine.probe.step(6);
+    assert.ok(engine.probe.read().player.burn > 0, 'the hero burns in the fire');
+    assert.ok(engine.probe.read().enemies.find((body) => body.id === enemy).burn > 0, 'so does an enemy in it');
+    engine.probe.render(1);
+    engine.probe.clear('hazards');
+    engine.probe.step(30);
+    assert.equal(engine.probe.read().player.burn, 0, 'and stops a moment after the fire is gone');
+    engine.probe.render(1);
+  } finally {
+    engine.dispose();
+  }
+});
+
 test('without an atlas nothing is blitted (vector fallback)', () => {
   const { engine, images } = arena(1, 2, null);
   try {
