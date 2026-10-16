@@ -121,6 +121,17 @@ DOM 화면(드래프트 카드, HUD 스킬 슬롯, 초상, 칩 아이콘)이 쓰
   - 챕터 키아트·썸네일
   - 한글 웹폰트(다운로드 승인 필요)
 
+## 이야기 패널 (CON-06, D-15)
+
+- 20장을 `node scripts/build-ui-art.mjs story`로 `public/assets/packs/story/`에 한 장씩 WebP(1200×675)로 굽는다. 아틀라스에는 들어가지 않는다.
+- 14장은 키트 조합(랜드마크 비네트, 주인공 포즈, 장의 적, 쓰러진 지배자, 공백·꿰맴)이다.
+- 6장(prologue-1~4, ending-2, ending-4)은 D-15 (b)의 손그림 자리이고 지금은 킷 모듈 `k-story.js`(`PN.story`, K6)가 그린다. `STORY_PANELS`에서 `kit: 'story'`로 표시하고, `grain: true`면 종이결(α 0.055, 배경만)을 넣는다. 결을 켠 6장은 38~81 KiB다.
+- **출처 기록**(바이블 §15):
+
+  | 슬롯 | 제작 | AI 사용 단계 | 사람 클린업 |
+  |---|---|---|---|
+  | `story/prologue-1`~`prologue-4`, `story/ending-2`, `story/ending-4` | kit-artist(에이전트), 지시서 `docs/art/briefs/story-panels.md`, 납품·검수 `docs/art/deliveries/K6-story.md` | 러프(잠정 아트) | 없음. 할 일은 지시서 §10과 검수 2차 §9 |
+
 ## 최종 원화로 교체하기
 
 손으로 정리한 원화가 오면 같은 키(`hero/run/3`, `enemy/1/warden/walk/2` …)로 굽도록 사양만 바꾼다. 앵커·크기 규칙과 매니페스트 형식이 같으면 코드는 바꾸지 않는다. 교체 후 `npm run test:unit`의 매니페스트 검사와 `npm run test:visual`로 확인한다.

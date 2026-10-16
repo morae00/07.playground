@@ -160,6 +160,8 @@ export const UI_SHEETS = Object.freeze({
  *   `margin`: the void become a margin, ruled off with a double ink line (§7.2); `seam`: stitches down x;
  * - `hero`: a full-body pose (API-hero §1) standing on `ground` at x, scaled; `enemies`: [role, x, scale, flip];
  * - `boss`: the chapter's ruler, `fallen` (its fall's second frame, faded) after its defeat; `drop`: one ink drop at [x, y].
+ * The six beats D-15 (b) gave hand-drawn panels (the prologue and ending-2, ending-4) are instead `kit: 'story'`: the
+ * kit's own panel (K6, art/concept-kit/k-story.js), with its paper grain when `grain` is set.
  */
 export const STORY_PANEL = Object.freeze({ size: [480, 270], density: 2.5, ground: 252 });
 
@@ -174,10 +176,10 @@ const RULERS = Object.freeze({
 const outro = (ch) => ({ ch, boss: { ...RULERS[ch], x: 340, scale: ch >= 3 ? 0.56 : 0.52, fallen: true }, hero: storyHero('threeQuarter', 118, 0.32) });
 
 export const STORY_PANELS = Object.freeze({
-  'prologue-1': { ch: 1, hero: storyHero('back', 120) },
-  'prologue-2': { ch: 1, blank: { from: 300 }, hero: storyHero('back', 120) },
-  'prologue-3': { ch: 1, blank: { from: 410 }, enemies: [['stalker', 236, 0.62], ['charger', 318, 0.54], ['warden', 388, 0.48]], hero: storyHero('threeQuarter', 96, 0.3) },
-  'prologue-4': { ch: 1, hero: storyHero('throw', 168, 0.38) },
+  'prologue-1': { kit: 'story', grain: true },
+  'prologue-2': { kit: 'story', grain: true },
+  'prologue-3': { kit: 'story', grain: true },
+  'prologue-4': { kit: 'story', grain: true },
   'intro-2': { ch: 2, hero: storyHero('run', 104, 0.3), enemies: [['warden', 400, 0.48, true]] },
   'intro-3': { ch: 3, hero: storyHero('run', 104, 0.3), enemies: [['charger', 404, 0.56, true]] },
   'intro-4': { ch: 4, hero: storyHero('run', 104, 0.3), enemies: [['shooter', 404, 0.56, true]] },
@@ -188,9 +190,9 @@ export const STORY_PANELS = Object.freeze({
   'outro-4': outro(4),
   'outro-5': outro(5),
   'ending-1': { ch: 5, blank: { from: 228 }, hero: storyHero('back', 118) },
-  'ending-2': { ch: 5, blank: { from: 262 }, seam: 262, hero: storyHero('throw', 150, 0.36) },
+  'ending-2': { kit: 'story', grain: true },
   'ending-3': { ch: 5, margin: 262, hero: storyHero('front', 144, 0.34) },
-  'ending-4': { ch: 1, hero: storyHero('levelup', 210, 0.36) },
+  'ending-4': { kit: 'story', grain: true },
   'ending-5': { paper: true, hero: storyHero('front', 240, 0.4) },
   'ending-6': { ch: 1 },
   'ending-7': { paper: true, drop: [392, 66] },

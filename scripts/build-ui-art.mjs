@@ -14,7 +14,7 @@ const kitDir = path.join(root, 'art/concept-kit');
 const outDir = path.join(root, 'src/ui/art');
 const storyDir = path.join(root, 'public/assets/packs/story');
 const only = process.argv[2];
-const KIT_FILES = ['lib.js', 'k-hero.js', 'k-characters.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses3.js', 'k-bosses4.js', 'k-icons.js', 'k-icons2.js', 'k-enemies.js', 'k-env.js'];
+const KIT_FILES = ['lib.js', 'k-hero.js', 'k-characters.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses3.js', 'k-bosses4.js', 'k-icons.js', 'k-icons2.js', 'k-enemies.js', 'k-env.js', 'k-story.js'];
 
 const browser = await chromium.launch();
 try {
@@ -216,7 +216,10 @@ async function renderPanel({ key, scene, panel, quality, colorMap }) {
   const f = (value) => Math.round(value * 100) / 100;
   const [W, H] = panel.size;
   const ground = panel.ground;
-  const parts = [scene.ch && !scene.paper ? PN.env.landmark(scene.ch, { w: W, h: H }) : `<rect width="${W}" height="${H}" fill="${K.paper}"/>`];
+  // D-15 (b): a hand-drawn panel (K6, PN.story) is the whole scene, drawn at 1200x675 and scaled to the panel.
+  const parts = scene.kit === 'story'
+    ? [`<g transform="scale(${W / PN.story.SIZE[0]})">${PN.story.panel(key, { grain: scene.grain === true })}</g>`]
+    : [scene.ch && !scene.paper ? PN.env.landmark(scene.ch, { w: W, h: H }) : `<rect width="${W}" height="${H}" fill="${K.paper}"/>`];
   if (scene.blank) {
     // The void: plain paper over the scene from `from` rightwards, its edge torn by turbulence and fringed in ink.
     const x = scene.blank.from;

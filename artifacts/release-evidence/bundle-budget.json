@@ -43,8 +43,8 @@
       "passed": true
     },
     "installAssets": {
-      "bytes": 29945305,
-      "kib": 29243.46,
+      "bytes": 29960919,
+      "kib": 29258.71,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -1041,8 +1041,8 @@
     {
       "file": "assets/packs/story/ending-2.webp",
       "category": "image",
-      "sourceBytes": 44200,
-      "gzipBytes": 43654
+      "sourceBytes": 38894,
+      "gzipBytes": 38287
     },
     {
       "file": "assets/packs/story/ending-3.webp",
@@ -1053,8 +1053,8 @@
     {
       "file": "assets/packs/story/ending-4.webp",
       "category": "image",
-      "sourceBytes": 72530,
-      "gzipBytes": 72418
+      "sourceBytes": 83400,
+      "gzipBytes": 83294
     },
     {
       "file": "assets/packs/story/ending-5.webp",
@@ -1131,26 +1131,26 @@
     {
       "file": "assets/packs/story/prologue-1.webp",
       "category": "image",
-      "sourceBytes": 63124,
-      "gzipBytes": 63007
+      "sourceBytes": 59578,
+      "gzipBytes": 59401
     },
     {
       "file": "assets/packs/story/prologue-2.webp",
       "category": "image",
-      "sourceBytes": 46726,
-      "gzipBytes": 46241
+      "sourceBytes": 58236,
+      "gzipBytes": 57983
     },
     {
       "file": "assets/packs/story/prologue-3.webp",
       "category": "image",
-      "sourceBytes": 71874,
-      "gzipBytes": 71736
+      "sourceBytes": 68356,
+      "gzipBytes": 68134
     },
     {
       "file": "assets/packs/story/prologue-4.webp",
       "category": "image",
-      "sourceBytes": 69412,
-      "gzipBytes": 69303
+      "sourceBytes": 75016,
+      "gzipBytes": 74897
     },
     {
       "file": "assets/packs/ui/arsenal-slots-CJsR21uP.webp",
