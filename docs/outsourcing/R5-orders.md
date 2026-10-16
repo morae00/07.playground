@@ -21,6 +21,7 @@
 | B3 무기 아이콘 (§9) | Q1 무기 타일은 기존 시트와 따로 둔다. Q2 투사체 없는 22종의 전장 효과, Q3 lob 비행 그림은 다음 발주(K10). Q4 각성 타일의 覺 낙관은 기존 문법대로 둔다. Q5 이름은 그대로, 그림이 상징을 피한다. Q6 도감에 무기는 1.0 뒤로. Q7 20px 전용판은 T3 결과를 본 뒤 정한다 |
 | B4 이야기 패널 (§11) | Q1 엔딩은 ending-2와 ending-4. Q2 흑립은 P1·P2 못걸이(뒷모습만) → P3부터 씀 → P4 눌러씀 → E4 올림. Q3 스승은 노년 필경사, 탕건과 도포, 얼굴은 끝내 보이지 않고 성별은 정하지 않는다. Q4 흉터는 가까운 뺨이 보이는 패널마다. Q5 먹귀는 지워진 선에서만 생긴다. Q6 엔딩의 화풍 섞임은 반영 때 이음을 줄이고, 플레이테스트에서 튀면 K6b로 추가 발주한다. Q7 이야기 패널을 바이블 §3 '키아트' 줄과 §6-8 종이결 예외에 적는다. Q8 정지 그림(키아트·이야기 패널)은 코트 망점 허용, 스프라이트와 움직이는 그림만 금지로 문구를 정리한다. Q9 해상도는 이번에 그대로. Q10 출처 기록은 `docs/art/pipeline.md` |
 | B6 위험지형 (§11, 2026-10-16 추가) | Q1~Q13 모두 권고안. 불 테는 먹 + 산호(해칭 없음), 그림이 있을 때는 가운데 기호를 빼고 바닥 그림으로 구분, null 산호 링은 끈다, 불 위 적은 발밑 불길만(몸 물듦 없음), 주인공은 곱하기 산호 물듦, 수명 페이드 대신 끝 상태 그림, 꺼진 불 그을음 1.5초, 0.5초마다 불 피해 숫자(리마스터 규칙만). FX-03(fb4ece9)의 불 위 몸 그림을 바꾸는 법은 지시서 §12 |
+| B7 무기 전장 효과 (§11, 2026-10-16 추가) | Q1~Q13 모두 권고안: 새 `arsenal-fx` 팩, 그림 전용 엔진 필드, 적에게 건 침묵은 아군 소속(자수정 금지), 불먹 안 적은 먹 불길(청록 심), 무기 감속 표시와 P3 기믹 그림은 하지 않음, 무기별 소리는 sound-designer 따로. 지금 렌더러의 위반 셋(밝은 땅 조각, 자수정 침묵 표식, 불먹의 산호 물듦)은 메인 세션이 먼저 고친다(지시서 §12) |
 
 ## 1단계 — 작업 지시서 (`art-director`, 서로 기다리지 않음)
 
@@ -33,6 +34,7 @@
 | B3 | `docs/art/briefs/arsenal-icons.md` | 무기 44종 타일(평상·각성 88칸)과, 투사체가 있는 무기의 탄 모양. 같은 look을 쓰는 무기끼리 한눈에 구별되게(무기 이름 두 글자 배지는 그림이 들어오면 뗀다) | `src/content/data/arsenal.ts`(kind·look·효과), 이름·요약은 `skill.<id>`·`skill.<id>.summary` |
 | B4 | `docs/art/briefs/story-panels.md` | D-15 (b): 프롤로그 4장과 엔딩 핵심 2장, 1200×675, 글자 없음. 에이전트 그림은 스타일 바이블 §15에 따라 여전히 잠정 아트다 | `public/assets/content/story.json`, 로어 바이블 §7, R4 실행서 6단계 |
 | B6 | `docs/art/briefs/terrain-hazards.md` | 2026-10-15 사용자 요청 "불타는 지형은 실제 불 그림으로, 그 위 캐릭터는 피해를 입는 느낌으로"(경로 지시선·구분선은 그대로). 적·맵이 만드는 지형 7종(fire, shock, slow, water, root, trap, null)의 바닥 그림과 불 위 주인공·적 오버레이 | `src/game/engine/worldTypes.ts`(Hazard), `GameEngine.ts` 지형 효과·생성, `encounterGrammars.ts` |
+| B7 | `docs/art/briefs/arsenal-fx.md` | 2026-10-15 사용자 요청 "같은 계열 무기가 구분이 안 됨, 각성 기믹이 더 특별했으면". 투사체 없는 22종의 전장 효과(평상·각성), lob 비행 4종, SYS-16 각성 기믹 44종의 전장 그림(우선순위 P1·P2) | `src/content/data/arsenal.ts`, `src/content/data/awakenings.ts`, `docs/decisions/SYS-16-awakening-gimmicks.md`, `GameEngine.ts` 무기·기믹 함수 |
 
 ## 2단계 — 제작 (`kit-artist`, 모듈마다 한 작업자)
 
@@ -43,6 +45,7 @@
 | K8 | `art/concept-kit/k-characters.js`, `API-characters.md` (새 모듈) | B2 | `docs/art/deliveries/K8-characters.md` |
 | K9 | `art/concept-kit/k-icons2.js`, `API-icons2.md` (새 모듈) | B3 | `docs/art/deliveries/K9-arsenal-icons.md` |
 | K11 | `art/concept-kit/k-hazards.js`, `API-hazards.md` (새 모듈) | B6 | `docs/art/deliveries/K11-hazards.md` |
+| K10 | `art/concept-kit/k-arsenal-fx.js`, `API-arsenal-fx.md` (새 모듈) | B7 | `docs/art/deliveries/K10-arsenal-fx.md` |
 
 권장 순서: K7·K8 먼저(플레이 중 가장 자주 보인다), 그 다음 K9, K6. 무거운 에이전트는 동시에 3개 이하.
 
@@ -59,6 +62,7 @@ R4 실행서 3단계와 같다. 판정은 납품서 끝에 "검수 N차"로 붙�
 | K9 | `art/ui-art-spec.mjs`의 스킬 타일 시트에 44종 | `scripts/build-arsenal-art.mjs`의 별칭·배지를 걷어 낸다. 탄 모양은 `SKILL_SHOTS`와 VFX 그룹에 | FX-08 (SYS-15) |
 | K6 | `art/ui-art-spec.mjs`의 `STORY_PANELS`를 새 모듈로 | `node scripts/build-ui-art.mjs story` | CON-06 (D-15) |
 | K11 | 새 `hazards` 팩(`art/atlas-spec.mjs` PACKS, `build-atlas.mjs` KIT_FILES) | 새 `hazardArt.ts`(HazardPainter), `drawHazards`·주인공·적 오버레이, 팩 없으면 지금 벡터 그림. 지시서 §9·§12 | ART-06 (FX-03) |
+| K10 | 새 `arsenal-fx` 팩(skills 팩과 함께 읽음) | 무기 자신의 그룹을 고르는 렌더러, lob 비행, `RenderWorld.zones`·`Entity.awk` 그림, 그림 전용 엔진 필드. 지시서 §9 | FX-08 (SYS-15, SYS-16) |
 
 확인: `npm test`, `npm run build`(설치 에셋 예산), `npm run test:visual`, `npm run test:perf`(적 400마리 장면).
 
