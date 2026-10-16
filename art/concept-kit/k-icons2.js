@@ -4,8 +4,8 @@
 //   the length of one PN.icons.skill / tile / hudSlot call (brief §1.3). The rarity frames, knots and the awakened
 //   grammar are k-icons' own; nothing is left behind in PN.icons or PN._ki.
 // - Shots: stamps for the 22 weapons that fire projectiles (parts / stamp, the K4 PN.skillVfx contract), ids 'kar<N>_'.
-// - Delivery 1 of 3: skeleton, META for all 44, the volley weapons (8) drawn. The rest wear placeholders (META done:
-//   false): the look's core icon, and a plain paper needle for shots.
+// - Delivery 2 of 3: skeleton, META for all 44; drawn: volley (8, delivery 1) and burst · spray · rear · seeker (14,
+//   delivery 2), so all 22 shots are done. The rest (22 icons) wear placeholders (META done: false): the look's core icon.
 // Deterministic: no Math.random / Date. Load after lib.js and k-icons.js.
 window.PN = window.PN || {};
 (function (PN) {
@@ -113,7 +113,10 @@ window.PN = window.PN || {};
   const IDS = ROWS.map((r) => r[0]);
   const KINDS = ['volley', 'burst', 'spray', 'rear', 'seeker', 'strike', 'nova', 'lob', 'chain', 'beam', 'halo'];
   const SHOT_KINDS = ['volley', 'burst', 'spray', 'rear', 'seeker'];
-  const DONE = new Set(['inkDarts', 'brushQuills', 'sealArrows', 'frostNeedles', 'thunderNeedles', 'twinBlades', 'ghostVolley', 'headsmanDarts']);
+  const DONE = new Set(['inkDarts', 'brushQuills', 'sealArrows', 'frostNeedles', 'thunderNeedles', 'twinBlades', 'ghostVolley', 'headsmanDarts',
+    // delivery 2: burst · spray · rear · seeker
+    'paperStorm', 'inkBloom', 'thornHalo', 'starShards', 'sunNeedles', 'inkDrizzle', 'pinHail', 'tailGuard', 'smokeTail', 'gravePins',
+    'trackingSeals', 'huntersMarks', 'crowFeathers', 'bossbane']);
   const META = {};
   ROWS.forEach(([id, name, rarity, kind, look, count, awakenedCount, r]) => {
     META[id] = Object.freeze({ name, rarity, kind, look, count, awakenedCount, r, shot: SHOT_KINDS.indexOf(kind) >= 0, done: DONE.has(id), mass: MASS[id][0], cyan: MASS[id][1] });
@@ -247,7 +250,27 @@ window.PN = window.PN || {};
     return s;
   }
 
-  // (deliveries 2–3: helpers for the other kinds go here)
+  // ---- delivery 2 helpers (burst · spray · rear · seeker) ----
+  /** Points turned by deg about c0. */
+  const rotP = (pts, deg, c0 = [0, 0]) => {
+    const a = rad(deg), cs = Math.cos(a), sn = Math.sin(a);
+    return pts.map(([x, y]) => [c0[0] + (x - c0[0]) * cs - (y - c0[1]) * sn, c0[1] + (x - c0[0]) * sn + (y - c0[1]) * cs]);
+  };
+  const polyD = (pts) => ptsD(pts, true);
+  /** Points along a cubic bezier p0 → p3 (n + 1 points). */
+  const bez = (p0, c1, c2, p3, n = 8) => {
+    const o = [];
+    for (let i = 0; i <= n; i++) { const t = i / n, v = 1 - t; o.push([0, 1].map((j) => v * v * v * p0[j] + 3 * v * v * t * c1[j] + 3 * v * t * t * c2[j] + t * t * t * p3[j])); }
+    return o;
+  };
+  /** A hanging drop: pointed top, round bottom (never a round ink ball with a paper dot, the enemy shot grammar). */
+  const dropD = (x, y, h, w) => `M${f(x)},${f(y - h * 0.55)} C${f(x + w)},${f(y - h * 0.05)} ${f(x + w * 0.95)},${f(y + h * 0.45)} ${f(x)},${f(y + h * 0.45)} ` +
+    `C${f(x - w * 0.95)},${f(y + h * 0.45)} ${f(x - w)},${f(y - h * 0.05)} ${f(x)},${f(y - h * 0.55)} Z`;
+  /** Point at angle deg (screen degrees, y down) and radius r from c. */
+  const polar = (c0, deg, r) => [c0[0] + Math.cos(rad(deg)) * r, c0[1] + Math.sin(rad(deg)) * r];
+  /** Pierce (§3.2): the motif under the ghoul, the ghoul, a paper hole where it comes out, then the part that came out. */
+  const pierced = (c, G, gr, seed, under, exit, out) => under + ghoul(c, G[0], G[1], gr, seed) +
+    `<path d="${splashD(exit[0], exit[1], gr * 0.42, 5, seed + 30, 0.5)}" fill="${K.p50}" stroke="${K.ink}" stroke-width="1.5" stroke-linejoin="round"/>` + out;
 
   // ==== 3. icon drawings (DRAW[id] = { draw(c, A) → {bg, fg, top}, halo? }) ====
   const DRAW = {};
@@ -593,7 +616,552 @@ window.PN = window.PN || {};
     return { bg, fg };
   } };
 
-  // (delivery 2: burst · spray · rear · seeker; delivery 3: strike · nova · lob · chain · beam · halo)
+  // ---- burst (§3.1): an origin at the centre (64, 66), the motif bursting outward at r 22–60 (lengths ±15%, angles ±6°).
+  // Nothing long points into the seal corner: toward −45° motifs stop inside r 44. ----
+  const BC = [64, 66];
+
+  /** 종이 폭풍 blade: a folded paper triangle from its base centre B along deg (len, base wid): the folded half p300, the
+   *  fold an ink.300 line; the base is skewed so no two blades match. */
+  function foldBlade(B, deg, len, wid, flip) {
+    const at = axis(B, deg), s = flip ? -1 : 1;
+    const tip = at(len, 0), b1 = at(-len * 0.04, -wid * 0.5 * s), b2 = at(len * 0.12, wid * 0.5 * s), mid = at(len * 0.03, wid * 0.05 * s);
+    return { s: S(polyD([tip, b1, b2]), K.p50, 2.2, 1.1) + P(polyD([tip, mid, b2]), K.p300) + L(ptsD([at(len * 0.9, 0), mid]), K.ink3, 1.2), tip };
+  }
+  DRAW.paperStorm = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, ln = A ? K.p300 : K.ink;
+    // the black spot: the ink smudge at the centre (ragged, r about 15) and the wind's heavy brush sweeps between the blades,
+    // of different lengths and radii (one continuous ink spiral read as '@')
+    let bg = P(blob(64, 66, 15, 10, 0.5, 31), col);
+    [[188, 296, 25, 13, col], [22, 118, 39, 10, col], [-120, -66, 46, 4, ln]].concat(A ? [[136, 206, 55, 3.4, ln]] : []).forEach(([a0, a1, r, w, cl]) => {
+      const p = []; for (let i = 0; i <= 18; i++) { const t = i / 18; p.push(polar(BC, lerp(a0, a1, t), r + 7 * t)); }
+      bg += taperFn(p, (t) => w * Math.pow(1 - t, 0.85) + 0.6, cl);
+    });
+    // the cyan wind stroke curling out of the centre (drawn over the blades): it starts inside the smudge and opens out
+    // fast, so it is a spiral arm, never a ring round the centre
+    const wind = []; for (let i = 0; i <= 18; i++) { const t = i / 18; wind.push(polar(BC, 160 + 140 * t, 4 + 38 * Math.pow(t, 1.3))); }
+    let fg = '';
+    // [base angle, base r, length, flip]: a pinwheel that spins open — inner blades leave the smudge tilted 40–55°
+    // clockwise off the radius, the outer ones have already flown out; uneven sizes and steps, nothing long toward the
+    // seal corner
+    const bl = [[-170, 15, 27, 0, 48], [-96, 14, 27, 1, 44], [-22, 16, 26, 0, 52], [50, 15, 28, 1, 46], [118, 17, 25, 0, 54],
+      [-134, 36, 21, 1, 50], [158, 38, 23, 0, 42], [84, 40, 20, 1, 50]];
+    if (A) bl.push([-78, 34, 17, 0, 40], [10, 40, 22, 1, 44]);
+    bl.forEach(([a, r, len, fl, pitch]) => { fg += foldBlade(polar(BC, a, r), a + pitch, len, len * 0.46, !!fl).s; });
+    fg += cyanLine(ptsD(wind), 2.4, false);
+    // 관통: a blade that went through a ghoul at the lower right and comes out of its paper hole
+    const G = [100, 103], gr = 11, pd = 48, ex = polar(G, pd, gr * 0.62);
+    fg += pierced(c, G, gr, 3, '', ex, foldBlade(polar(ex, pd + 180, 2), pd, 22, 10, true).s);
+    // paper crumbs
+    [[30, 32, 3.2, 41], [108, 54, 2.6, 42], [18, 78, 2.4, 43], [58, 114, 2.8, 44]].forEach(([x, y, r, s]) => { fg += `<path d="${splashD(x, y, r, 4, s, 0.7)}" fill="${K.p50}" stroke="${K.ink}" stroke-width="1.2" stroke-linejoin="round"/>`; });
+    return { bg, fg };
+  } };
+
+  /** 먹꽃 petal: an ink petal from O (round back) to the tip along deg, with one ink.500 light stroke; a drop hangs from its
+   *  tip (pointing down whatever the petal's direction). bend (units at the tip, + = the n side) curves the petal's axis
+   *  (검수 4차 R4: one petal bent). */
+  function inkPetal(O, deg, len, wid, col, bend = 0) {
+    const at = axis(O, deg), w = wid / 2, M = (a) => a.map(([t, s]) => at(t * len, s * w + bend * t * t));
+    const top = smooth(M([[0, -0.45], [0.16, -0.95], [0.45, -1], [0.78, -0.55], [1, 0]]), 6);
+    const bot = smooth(M([[1, 0], [0.8, 0.4], [0.47, 0.85], [0.17, 0.8], [0, 0.4]]), 6);
+    const back = smooth(M([[0, 0.4], [-0.12, 0], [0, -0.45]]), 4);
+    const d = ptsD(top.concat(bot.slice(1), back.slice(1)), true), tip = at(len, bend);
+    return S(d, col, 2, 1.2) + L(ptsD(smooth(M([[0.2, -0.5], [0.42, -0.47], [0.64, -0.36]]), 3)), K.ink5, 1.8) + P(dropD(tip[0] + 0.4, tip[1] + 3.9, 7, 2.3), col);
+  }
+  DRAW.inkBloom = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink;
+    // [deg, length, width, bend]: six petals at uneven angles (steps 37–84°) and lengths, the lower left one bent (the
+    // upper right one short, clear of the seal corner). 검수 4차 R4: steps of 60° ± 4° read as '✻' at 20 px.
+    const pe = [[-171, 27, 11, 0], [-109, 33, 12, 0], [-33, 24, 10, 0], [9, 31, 12, 0], [93, 28, 11, 0], [130, 30, 12, -9]];
+    if (A) pe.push([51, 22, 9, 0]);
+    let bg = '', fg = '';
+    // 먹 감속: a ghoul at the lower right stands in ink up to its ankles and trails drops
+    const G = [104, 100], gr = 11;
+    fg += ghoul(c, G[0], G[1], gr, 5) + P(blob(G[0] + 1, G[1] + gr * 0.9, 15, 9, 0.35, 61, 0.3), col) +
+      P(dropD(86, 107, 6, 2) + dropD(79, 102, 4.6, 1.6) + (A ? dropD(73, 108, 4, 1.4) : ''), col);
+    pe.forEach(([deg, len, wid, bend]) => { fg += inkPetal(polar(BC, deg, 9), deg, len, wid, col, bend); });
+    // scattered drops (awakened: more)
+    (A ? [[40, 30], [86, 28], [24, 104], [64, 116], [114, 64]] : [[38, 32], [26, 106]]).forEach(([x, y]) => { fg += P(dropD(x, y, 5, 1.7), col); });
+    // the stamen: an irregular paper blob (r about 10, no centre dot), the cyan part of its rim half a turn at most
+    const R = rng(77), st = [];
+    for (let i = 0; i < 10; i++) { const a = -90 + i * 36 + (R() - 0.5) * 14; st.push(polar(BC, a, 10 * (0.82 + 0.36 * R()))); }
+    const stD = ptsD(smooth(st.concat([st[0]]), 5), true);
+    // (the cyan part runs half the rim, about 30 long, cyan 3.4 in ink 5.8: at 32 px a four-tenths arc of 2.4 faded into
+    // the ink petals, 검수 2차 §7-1)
+    fg += `<path d="${stD}" fill="${K.p50}" stroke="${K.ink}" stroke-width="2.4" stroke-linejoin="round"/>` + cyanLine(ptsD(smooth(st.slice(4, 10), 5)), 3.4, false);
+    return { bg, fg };
+  } };
+
+  /** 가시 테 rose thorn standing on P0, pointing along deg: a wide base (len × 0.6), concave sides, the tip curled to the
+   *  curl side (±1). */
+  function roseThorn(P0, deg, len, curl) {
+    const at = axis(P0, deg), b = len * 0.3;
+    const a = smooth([at(-1.5, -b), at(len * 0.35, -b * 0.42 + curl * 0.04 * len), at(len * 0.72, curl * 0.12 * len), at(len, curl * 0.3 * len)], 5);
+    const z = smooth([at(len, curl * 0.3 * len), at(len * 0.62, b * 0.32 + curl * 0.12 * len), at(len * 0.28, b * 0.62), at(-1.5, b)], 5);
+    return polyD(a.concat(z.slice(1)));
+  }
+  DRAW.thornHalo = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, R0 = 38, k = A ? 1.2 : 1;
+    // the vine: three uneven pieces (the gaps never close the ring; one gap sits on the seal corner); nothing at the
+    // centre (a dot inside the ring read as an eye). 검수 4차 R7: the gaps open to 24·28·33° and one piece ends in a curling
+    // tendril, so it reads as a rose vine and stays clear of a crown of thorns (16·18° gaps all but closed the ring)
+    const segs = [[-29, 64], [88, 146], [174, 298]];
+    const vr = (a) => R0 + 1.8 * Math.sin(rad(a) * 3 + 0.7);
+    const vw = (t) => (t < 0.1 ? 2.4 + 80 * t : t > 0.9 ? 2.4 + 80 * (1 - t) : 9.6 + 2.6 * Math.sin(t * 7.3));
+    let bg = '', fg = '';
+    const arcs = segs.map(([a0, a1]) => { const p = []; for (let i = 0; i <= 24; i++) { const a = lerp(a0, a1, i / 24); p.push(polar(BC, a, vr(a))); } return p; });
+    // [angle on the ring, length, curl]: thorns at uneven steps and lengths, curled the way the vine grows
+    const th = [[-20, 15, 1], [6, 10, -1], [31, 19, 1], [54, 12, 1], [96, 17, -1], [118, 10, 1], [138, 15, 1], [182, 11, -1], [204, 19, 1], [231, 13, -1], [258, 17, 1], [286, 10, 1]];
+    if (A) th.push([43, 11, -1], [192, 13, 1]);
+    let thorns = '';
+    th.forEach(([a, len, cu]) => { const r = vr(a) + 3.6; thorns += P(roseThorn(polar(BC, a, r), a + cu * 8, len * k * 1.15, cu), col); });
+    // thorns torn loose and flying off (with a short speed stroke behind each)
+    const fly = [[-72, 55, 13], [116, 57, 11], [214, 56, 14]].concat(A ? [[22, 59, 12]] : []);
+    fly.forEach(([a, r, len]) => { const p = polar(BC, a, r); thorns += P(roseThorn(p, a + 10, len * k, 1), col) + speed(polar(BC, a - 3, r - 2), polar(BC, a - 6, r - 13), 2, A ? K.p300 : K.ink); });
+    fg += thorns + arcs.map((p) => taperFn(p, vw, col)).join('');
+    // the tendril off the second piece's end (146°): it leaves along the vine and curls out, away from the ring, in an
+    // open hook of 250° (never a closed '@'), tapering 3.2 → 0.6
+    const tp = [polar(BC, 145.5, vr(145.5))];
+    for (let i = 1; i <= 14; i++) { const s = i / 14; tp.push(polar(tp[i - 1], 236 - 250 * Math.pow(s, 1.3), 2 * k * (1 - 0.55 * s))); }
+    fg += taperFn(tp, (t) => 3.2 * (1 - t) + 0.6, col);
+    // the cyan thread running inside one piece of the vine (clear of its tapered ends)
+    const inner = []; for (let i = 0; i <= 16; i++) { const a = lerp(95, 139, i / 16); inner.push(polar(BC, a, vr(a) - 0.4)); }
+    fg += cyanLine(ptsD(inner), 2.4, false);
+    return { bg, fg };
+  } };
+
+  /** 별조각 shard: an irregular polygon (points around its own centre, turned by deg), thick rim, one face p300. */
+  function shard(C0, deg, pts, faceTo) {
+    const P0 = rotP(pts.map(([x, y]) => [C0[0] + x, C0[1] + y]), deg, C0), d = polyD(P0);
+    return S(d, K.p50, 3, 1.4) + P(polyD([P0[0], P0[faceTo], C0]), K.p300);
+  }
+  DRAW.starShards = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink;
+    // the black spot: the blast behind the shards, burst to one side (검수 4차 M1) — a ragged ink splat centred (60, 70),
+    // a little left of and below the flash, squashed to 0.86: seven lobes at uneven steps, each torn with a side notch,
+    // long and broad to the left and the lower left, short and blunt toward the seal corner and the ghoul. (An 8-spike
+    // splash centred on the flash read as a star; clean triangle spikes read as a black star, thin streaks as a mine.)
+    // [angle, radius] around the splat
+    const BO = [60, 70];
+    const sp = [[-178, 46], [-168, 30], [-160, 37], [-147, 22], [-133, 33], [-121, 21], [-105, 34], [-93, 20], [-70, 22], [-55, 27], [-41, 18],
+      [-15, 21], [5, 33], [17, 20], [40, 22], [61, 27], [79, 20], [100, 23], [117, 22], [129, 45], [139, 30], [153, 40], [166, 25]];
+    let bg = P(polyD(sp.map(([a, r]) => { const p = polar(BO, a, r); return [p[0], BO[1] + (p[1] - BO[1]) * 0.86]; })), col), fg = '';
+    // shards of 4–5 sides, each with one sharp vertex (vertex 0) pointing out
+    const SH = [
+      [[13, 0], [2, -8], [-9, -7], [-11, 5], [1, 9]],
+      [[12, 1], [-1, -9], [-10, -2], [-6, 8]],
+      [[14, -1], [4, -9], [-8, -8], [-12, 3], [-2, 10]],
+      [[11, 0], [0, -8], [-9, -1], [-3, 9]],
+      [[13, 2], [3, -7], [-8, -6], [-10, 6], [3, 8]]
+    ];
+    // [angle, distance, shape, size, tilt]: five shards at uneven steps (56·44·66·94·100°) and distances (36–50), each
+    // turned 16–26° off its radius, so they never settle into a regular five-pointed star (검수 4차 M1: 70–74° steps at
+    // one distance, every shard pointing straight out, read as a star); the awakened sixth goes in the empty lower left
+    const pos = [[-160, 36, 0, 1.2, 22], [-104, 50, 1, 0.85, -18], [-60, 36, 2, 1, -20], [6, 43, 3, 1.25, 16], [100, 40, 4, 0.95, -26]];
+    if (A) pos.push([152, 52, 1, 0.8, -16]);
+    pos.forEach(([a, r, s, kk, tl]) => { fg += shard(polar(BC, a, r), a + tl, SH[s].map(([x, y]) => [x * kk, y * kk]), 2); });
+    // the centre: ink cracks, the irregular paper flash with its cyan core
+    fg += L('M64,66 L56,58 L52,60 L46,54 M64,66 L72,74 L70,80 M64,66 L74,60 L80,61 M64,66 L60,76 L54,80', K.ink, 1.8) +
+      `<path d="${splashD(64, 66, 19, 7, 83, 0.4)}" fill="${K.p50}" stroke="${K.ink}" stroke-width="2.4" stroke-linejoin="round"/>` +
+      `<path d="${splashD(64, 66, 9, 6, 84, 0.5)}" fill="${K.ally}" stroke="${K.ink}" stroke-width="2" stroke-linejoin="round"/>`;
+    // 관통: a shard that tore through a ghoul at the lower right comes out of its paper hole
+    const G = [104, 102], gr = 11, pd = 42, ex = polar(G, pd, gr * 0.6);
+    fg += pierced(c, G, gr, 7, '', ex, shard(polar(ex, pd, 5), pd, [[10, 0], [1, -6], [-6, -1], [-2, 6]], 1));
+    return { bg, fg };
+  } };
+
+  DRAW.sunNeedles = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink;
+    // the cushion's shadow on the ground (the black spot with the ink points)
+    let bg = `<ellipse cx="70" cy="88" rx="30" ry="7.5" fill="${col}"/>`, fg = '';
+    // [angle, start r, length, width, tilt]: needles thrown out tumbling — uneven angles (±30%), start radii (24–46) and
+    // lengths, tilted 15–35° off the radius so they never line up into rays (no rising-sun pattern); two still stuck
+    // half way in the cushion (start inside it, the eye outward)
+    const nd = [[-170, 30, 26, 5, 24], [-146, 42, 20, 4.4, -30], [-121, 26, 31, 5.2, 18], [-99, 40, 22, 4.4, -26], [-80, 27, 27, 5, 32], [-58, 36, 18, 4.2, -20],
+      [-20, 28, 30, 5.2, 26], [3, 41, 21, 4.4, -32], [22, 27, 26, 5, 20], [44, 38, 19, 4.2, -24], [66, 29, 25, 5, 30], [100, 26, 30, 5.2, -18],
+      [124, 39, 21, 4.4, 28], [148, 28, 27, 5, -22], [162, 13, 21, 4.6, 0], [-36, 13, 19, 4.4, 0]];
+    if (A) nd.push([-110, 52, 16, 4, 34], [12, 54, 15, 4, -30], [82, 47, 17, 4, 26], [-158, 52, 15, 4, -28], [136, 52, 16, 4, 22], [-68, 50, 14, 4, -34]);
+    let under = '';
+    nd.forEach(([a, r0, len, w, tl]) => {
+      const B = polar(BC, a, r0), Tp = polar(B, a + tl, len);
+      // stuck: the eye outward, the point inside the cushion (drawn under it, so only the part outside shows)
+      under += r0 < 20 ? KI.slimNeedle(Tp, B, w, 2) : KI.slimNeedle(B, Tp, w, 2.1);
+    });
+    // the cushion (3/4 view): paper with a heavy rim, a p300 underside, quilting seams; one seam is the cyan thread
+    const cu = `M44,66 C44,52 54,46 64,46 C76,46 85,53 85,66 C85,79 76,86 64,86 C52,86 44,79 44,66 Z`;
+    fg += under + S(cu, K.p50, 3, 1.8) + `<path d="M46,70 C50,82 78,84 83,70 C82,80 74,86 64,86 C54,86 47,80 46,70 Z" fill="${K.p300}"/>` +
+      L('M58,47.4 C54,56 53,74 57,85 M71,47.6 C75,56 76,74 72,85', K.ink3, 1.4) + cyanLine('M64.6,46.6 C63,58 63.4,74 65,85.4', 2.4, false);
+    // 관통: a needle through a ghoul at the lower left
+    const G = [24, 102], gr = 10, pa = 152, B0 = polar(BC, pa, 24), T0 = polar(G, pa, gr + 9);
+    fg += pierced(c, G, gr, 9, KI.slimNeedle(B0, T0, 5, 2), polar(G, pa, gr * 0.7), '');
+    return { bg, fg };
+  } };
+
+  // ---- spray (§3.1): from an object at the lower left (6–20, 100–124), small things fan out in a cone, rising, smaller
+  // the farther they go, the centre line wobbling (S); spaced at least their own length apart, never a single row ----
+
+  /** 먹 이슬비 drop: an elongated ink drop flying along deg from its back point B (len, width len × 0.64), pointed front. */
+  function flyDrop(B, deg, len, col) {
+    const at = axis(B, deg), w = len * 0.35, M = (a) => a.map(([t, s]) => at(t * len, s * w));
+    return S(ptsD(smooth(M([[1, 0], [0.62, -0.62], [0.24, -1], [0.02, -0.7], [0, 0], [0.02, 0.7], [0.24, 1], [0.62, 0.62], [1, 0]]), 5), true), col, 1.2, 0.8);
+  }
+  DRAW.inkDrizzle = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, O = [26, 104], u = axis(O, -16);
+    let bg = '', fg = '';
+    // the brush at the lower left (B2 §6.5: paper ferrule, heavy ink bristles, a fine point), flicking up and to the right;
+    // a wet ink splash where the flick leaves the bristles (the black spot with the drops: 검수 R1 lower bound)
+    const br = axis([-12, 122], -24), BM = (a) => a.map(([t, s]) => br(t, s));
+    fg += S(ptsD(BM([[0, -6.6], [18, -6.6], [18, 6.6], [0, 6.6]]), true), K.p50, 2.6, 1.3) + L(ptsD(BM([[5, -6.6], [5, 6.6]])) + ' ' + ptsD(BM([[11, -6.6], [11, 6.6]])), K.ink3, 1.4) +
+      S(ptsD(smooth(BM([[18, -10.4], [31, -11.4], [44, -6.4], [53, 0], [44, 5.2], [31, 9.8], [18, 10.4]]), 5), true), col, 2, 1.4) +
+      L(ptsD(BM([[22, -4.2], [42, -2.2]])), K.ink5, 2.2) + P(splashD(O[0] + 3, O[1] - 1, 18.5, 7, 95, 0.52), col);
+    // the flick itself: a short dry-brush stroke off the bristle tip under the first drops
+    fg += inkTrail([O[0] + 4, O[1] + 2], [O[0] + 37, O[1] - 7], 13.5, col);
+    // [distance along the S centre line, side offset, length]: twelve drops (fourteen and two outer branches awakened),
+    // the near ones big, the far ones small, spaced at least their own length apart; the cone 34°, rising 16°
+    const dr = [[20, 1, 17], [31, -11, 16], [37, 11, 15], [49, -1, 14.5], [56, -20, 13.5], [62, 17, 13], [73, 3, 12.5], [81, -16, 12], [88, 22, 11], [98, -4, 10.5], [104, 14, 10], [110, -18, 9.5]];
+    if (A) dr.push([66, 31, 11], [92, 33, 10], [72, -31, 11.5], [98, -32, 9.5]);
+    const front = dr.length - (A ? 4 : 0);
+    // the front three's wet streaks [length, turn off the drop's axis, bow]: 26 / 14 / 20 long, splayed 11–13° apart and
+    // bent different ways (검수 4차 R2: three straight streaks of 20–22 lying almost parallel read as '≡')
+    const wet = [[26, -6, 2.2], [14, 3, -1.6], [20, 5, -2.6]];
+    dr.forEach(([d, s, len], i) => {
+      const wob = 4.5 * Math.sin(d / 22), p = u(d, s + wob), a = Math.atan2(p[1] - O[1], p[0] - O[0]) * 180 / Math.PI + (i % 3 - 1) * 4;
+      // the front three: a wet cyan streak trailing each (ink under the cyan, §5.3; 32 px reading)
+      if (i >= front - 3 && i < front) {
+        const [sl, tw, bw] = wet[i - front + 3], s0 = polar(p, a + 180, len * 0.4), s1 = polar(s0, a + 180 + tw, sl), mc = polar(polar(s0, a + 180 + tw, sl / 2), a + 270 + tw, bw * 2);
+        fg += cyanLine(`M${q(s0)} Q${q(mc)} ${q(s1)}`, 2.4, false);
+      }
+      fg += flyDrop(polar(p, a + 180, len / 2), a, len, col);
+    });
+    return { bg, fg };
+  } };
+
+  /** 핀 우박 pin: a kunai-like dagger pin from its ring end B along deg: a diamond paper blade and a hollow ink ring
+   *  handle; groove = the cyan groove (largest pin only). */
+  function daggerPin(B, deg, len, groove) {
+    const at = axis(B, deg), w = len * 0.17, rr = len * 0.13;
+    const blade = ptsD([at(len, 0), at(len * 0.56, -w), at(rr * 2 + 1, 0), at(len * 0.56, w)], true), rc = at(rr, 0);
+    return `<ellipse cx="${f(rc[0])}" cy="${f(rc[1])}" rx="${f(rr * 1.05)}" ry="${f(rr * 0.75)}" transform="rotate(${f(deg)} ${f(rc[0])} ${f(rc[1])})" fill="none" stroke="${K.ink}" stroke-width="3"/>` +
+      S(blade, K.p50, 2, 1) + P(ptsD([at(len, 0), at(len * 0.56, w), at(rr * 2 + 1, 0), at(len * 0.56, w * 0.3)], true), K.p300) +
+      // the cyan groove (biggest pin only): about 20 long, full width (2.4 cyan in 4.8 ink) where the blade is wide,
+      // tapering toward the point so it stays inside the blade
+      (groove ? taperPoly([at(rr * 2 + 1.6, -0.2), at(len * 0.56, -0.2), at(len * 0.9, -0.1)], 4.8, 1.8, K.ink) + taperPoly([at(rr * 2 + 2.4, -0.2), at(len * 0.56, -0.2), at(len * 0.86, -0.1)], 2.4, 0.6, K.ally)
+        : L(ptsD([at(rr * 2 + 3, 0), at(len - 4, 0)]), K.ink3, 1));
+  }
+  DRAW.pinHail = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, O = [26, 104];
+    let bg = '', fg = '';
+    // the pin tube: a big tilted ink cylinder at the lower left, its open mouth (paper rim) toward the cone, a burst of ink
+    // flung from the mouth behind the first pins (the black spot: 검수 R1 lower bound)
+    const tb = axis([-8, 126], -26), TM = (a) => a.map(([t, s]) => tb(t, s));
+    const mo = tb(38, 0);
+    fg += P(splashD(mo[0] + 8, mo[1] - 5, 19, 7, 97, 0.48, -0.5), col);
+    fg += S(ptsD(TM([[0, -13], [38, -13], [38, 13], [0, 13]]), true), col, 2, 1.6) + L(ptsD(TM([[3, -8.4], [34, -8.4]])), K.ink5, 3.2);
+    fg += `<ellipse cx="${f(mo[0])}" cy="${f(mo[1])}" rx="5" ry="13.4" transform="rotate(-26 ${f(mo[0])} ${f(mo[1])})" fill="${K.ink5}" stroke="${K.p50}" stroke-width="2.4"/>`;
+    // [deg, distance, length]: dagger pins in a wide cone (−42° … +14°, 56°), nearer ones bigger, spaced apart;
+    // [deg, distance, size]: paper hail grains
+    const pins = [[-30, 37, 38], [-6, 30, 25], [12, 38, 23], [-24, 64, 24], [0, 64, 22], [-42, 76, 20], [-14, 88, 21], [8, 92, 19], [-30, 100, 18]];
+    if (A) pins.push([-46, 46, 19], [22, 62, 18], [-4, 112, 16], [-20, 112, 15]);
+    const grains = [[-18, 44, 4.6], [-38, 54, 3.8], [-6, 78, 4], [14, 70, 3.6], [-26, 82, 3.4]].concat(A ? [[22, 46, 3.4], [-44, 88, 3.2]] : []);
+    grains.forEach(([a, d, r], i) => { const p = polar(O, a, d); fg += `<path d="${splashD(p[0], p[1], r * 1.5, 4, 90 + i, 0.75, i)}" fill="${K.p50}" stroke="${K.ink}" stroke-width="1.8" stroke-linejoin="round"/>`; });
+    pins.forEach(([a, d, len], i) => { const B = polar(O, a, d - len * 0.5); fg += daggerPin(B, a + (i % 2 ? 6 : -5), len, i === 0); });
+    return { bg, fg };
+  } };
+
+  // ---- rear (§3.1): the 結 knot at the right middle (where the hero is), the cyan scarf tail waving off to the upper left
+  // (the cyan element of all three), the motif flying behind (left / lower left) in a fan, its points to the LEFT ----
+  const KN = [97, 60];
+  /** The scarf knot (結, §3.3): paper, two loops and two ends, ink rim 2.4 — unlike the card's ink knots — and the long
+   *  cyan scarf tail waving to the upper left (ink ≥ 2 under the cyan, a glow line on it). */
+  function knotScarf(A) {
+    const [x, y] = KN;
+    const tail = smooth([[x - 4, y - 3], [x - 16, y - 11], [x - 30, y - 13], [x - 43, y - 22], [x - 59, y - 27]], 7);
+    const wf = (t) => 9 * (1 - t) + 3.2;
+    let s = taperFn(tail, (t) => wf(t) + 4.8, K.ink) + taperFn(tail, wf, K.ally) + taperPoly(tail.slice(4, 26), 1.2, 0.3, K.allyG, 'opacity="0.9"');
+    const loop = (a, len, w) => { const at = axis([x, y], a), M = (q2) => q2.map(([t, sd]) => at(t * len, sd * w)); return ptsD(smooth(M([[0, -0.5], [0.5, -1], [1, -0.4], [1.05, 0.4], [0.5, 0.9], [0, 0.5]]), 5), true); };
+    const end = (a, len) => { const at = axis([x, y], a); return ptsD([at(1, -2.2), at(len, -1.4), at(len + 1.5, 1.4), at(1, 2.2)], true); };
+    // one fold line inside the left loop, following its outline (검수 4차 R8: two ink.300 strokes on the loops slanting
+    // in toward the knot read as frowning brows — a small angry face — at 2x and up)
+    const fold = (() => { const at = axis([x, y], -150); return ptsD(smooth([[0.3, 0.1], [0.55, -0.42], [0.86, -0.05]].map(([t, sd]) => at(t * 9, sd * 4.4)), 4)); })();
+    s += S(end(70, 9) + ' ' + end(112, 7), K.p50, 2.4, 1) + S(loop(-150, 9, 4.4) + ' ' + loop(-38, 8, 4.2), K.p50, 2.4, 1.1) +
+      `<path d="M${x - 3.2},${y - 2.8} L${x + 3.2},${y - 3.2} L${x + 3.4},${y + 2.8} L${x - 3},${y + 3.2} Z" fill="${K.p50}" stroke="${K.ink}" stroke-width="2.4" stroke-linejoin="round"/>` +
+      L(fold, K.ink3, 1.1);
+    return s;
+  }
+
+  /** 꼬리 방패 dagger, grip end B → point along deg (len): a paper blade, a round paper guard seen a little edge-on (no
+   *  centre dot), an ink grip. */
+  function guardDagger(B, deg, len) {
+    const at = axis(B, deg), g = len * 0.3, M = (a) => a.map(([t, s]) => at(t, s));
+    const blade = ptsD(M([[g + 2, -3.8], [len * 0.72, -3.5], [len, 0], [len * 0.72, 3.5], [g + 2, 3.8]]), true);
+    const gc = at(g, 0);
+    const pm = at(-1.6, 0);
+    return `<circle cx="${f(pm[0])}" cy="${f(pm[1])}" r="3.6" fill="${K.ink}"/>` +
+      `<path d="${ptsD(M([[0, -3.1], [g, -3.4], [g, 3.4], [0, 3.1]]), true)}" fill="${K.ink}" stroke="${K.ink}" stroke-width="2" stroke-linejoin="round"/>` +
+      S(blade, K.p50, 2.3, 1.2) + P(ptsD(M([[g + 2, 0.8], [len * 0.72, 0.8], [len, 0], [len * 0.72, 3.5], [g + 2, 3.8]]), true), K.p300) +
+      `<g transform="rotate(${f(deg)} ${f(gc[0])} ${f(gc[1])})"><ellipse cx="${f(gc[0])}" cy="${f(gc[1])}" rx="2.9" ry="6.6" fill="${K.p50}" stroke="${K.ink}" stroke-width="2.4"/>` +
+      `<path d="M${f(gc[0] - 1.2)},${f(gc[1] - 4)} A2,4.8 0 0 0 ${f(gc[0] - 1.2)},${f(gc[1] + 3)}" fill="none" stroke="${K.ink3}" stroke-width="1"/></g>`;
+  }
+  DRAW.tailGuard = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink;
+    // [grip end, deg, length]: three daggers under the knot, grips stacked, fanned ±18° so the points spread to the LEFT
+    // into a shield shape (one pivot bunched them into a shuttlecock); the lowest, the one that struck, flew farthest
+    const dg = A ? [[[90, 70], 200, 48], [[92, 79], 188, 51], [[92, 88], 176, 53], [[90, 98], 163, 64]] : [[[90, 72], 198, 50], [[92, 84], 180, 54], [[90, 97], 163, 64]];
+    let bg = '', fg = knotScarf(A);
+    // speed strokes behind the grips, starting 3 past the round grip end (−5.2): 검수 4차 R5 — drawn from the grip end
+    // itself, each stroke and its dagger read as one long pen or syringe
+    dg.forEach(([B, deg]) => { bg += speed(polar(B, deg + 180, 8.2), polar(B, deg + 180, 21), 3.4, A ? K.p300 : K.ink); });
+    // the ghoul they meet at the lower left: blocked and knocked back (leaning away, drag strokes behind its feet, its
+    // shadow, ink flung on), the lowest dagger through its body and out (관통)
+    const low = dg[dg.length - 1], lu = axis(low[0], low[1]), gr = 13, G = lu(low[2] - gr - 5, -1.5), ft = [G[0], G[1] + gr * 0.9];
+    const tx = low[2] - 5 - gr + Math.sqrt(gr * gr - 2.25), ex = lu(tx, 0);
+    dg.slice(0, -1).forEach(([B, deg, len]) => { fg += guardDagger(B, deg, len); });
+    fg += `<ellipse cx="${f(G[0] + 4)}" cy="${f(ft[1] + 1.2)}" rx="21" ry="4.6" fill="${col}"/>` +
+      speed([G[0] + 6, ft[1] - 0.4], [G[0] + 30, ft[1] - 0.6], 4.4, col) + speed([G[0] + 8, ft[1] + 2.8], [G[0] + 21, ft[1] + 3], 3, col) +
+      P(blob(G[0] - gr - 4, G[1] - 3, 4.2, 6, 0.5, 161) + blob(G[0] - gr - 10, G[1] + 2.5, 3, 6, 0.5, 162) + blob(G[0] - gr - 2, G[1] - 11.5, 2.4, 6, 0.5, 163), col) +
+      guardDagger(low[0], low[1], low[2]) + `<g transform="rotate(-12 ${f(ft[0])} ${f(ft[1])})">${ghoul(c, G[0], G[1], gr, 5)}</g>` +
+      `<path d="${splashD(ex[0] + 0.6, ex[1] - 0.6, gr * 0.42, 5, 35, 0.5)}" fill="${K.p50}" stroke="${K.ink}" stroke-width="1.5" stroke-linejoin="round"/>` +
+      P(ptsD([lu(tx - 1, -2.6), lu(low[2], 0), lu(tx - 1, 2.6)], true), K.p50, `stroke="${K.ink}" stroke-width="2" stroke-linejoin="round"`);
+    return { bg, fg };
+  } };
+
+  /** One smoke silhouette over overlapping lumps [cx, cy, r] (검수 4차 M2): the lumps' upper envelope (the wavy top) and
+   *  their lower envelope filled down to floor(x) and never below the ground line gy (a flat bottom along the ground,
+   *  a smooth underside where the smoke comes down from the knot). Sampled every unit. */
+  function smokeD(lumps, gy, floor) {
+    const x0 = Math.min(...lumps.map(([x, , r]) => x - r)), x1 = Math.max(...lumps.map(([x, , r]) => x + r)), n = Math.ceil(x1 - x0), top = [], bot = [];
+    for (let i = 0; i <= n; i++) {
+      const x = lerp(x0, x1, i / n);
+      let t = Infinity, b = -Infinity;
+      lumps.forEach(([cx, cy, r]) => { const dx = x - cx; if (Math.abs(dx) <= r) { const h = Math.sqrt(r * r - dx * dx); t = Math.min(t, cy - h); b = Math.max(b, cy + h); } });
+      if (t < Infinity) { top.push([x, t]); bot.push([x, Math.min(gy, Math.max(b, Math.min(floor(x), gy)))]); }
+    }
+    return ptsD(top.concat(bot.reverse()), true);
+  }
+  /** An open smoke curl: an arc of radius r from a0 to a1 (deg) about (x, y) that tightens at its end (never a closed
+   *  '@'), thin → thick → thin. */
+  function smokeCurl(x, y, r, a0, a1, col, w = 2.2) {
+    const p = []; for (let i = 0; i <= 12; i++) { const t = i / 12; p.push(polar([x, y], lerp(a0, a1, t), r * (1 - 0.35 * t * t))); }
+    return taperFn(p, (t) => 0.5 + w * Math.sin(Math.PI * Math.min(1, t * 1.15)), col);
+  }
+  DRAW.smokeTail = { draw(c, A) {
+    const k = A ? 1.2 : 1, gy = 104;
+    let bg = '', fg = '';
+    // [start, deg, length]: paper smoke needles that come out of the smoke bank's left end to the LEFT, above the ghoul
+    // (three when awakened); drawn first, so the smoke covers their backs (the front 57% shows; about half awakened,
+    // where the bank is 1.2 ×)
+    const nd = A ? [[[63, 76], 188, 60], [[72, 71], 197, 56], [[78, 68], 209, 44]] : [[[63, 76], 188, 60], [[72, 71], 196, 56]];
+    nd.forEach(([B, deg, len]) => { fg += KI.slimNeedle(B, polar(B, deg, len), 6.4, 2.3); });
+    // the black spot: the smoke trailing off the knot to the left, ONE silhouette (검수 4차 M2: lumps with their own
+    // shadows in alternating tones, growing evenly, read as a caterpillar / a row of pebbles): a thin wisp at the knot
+    // that settles into a bank on the ground, wider to the left and rising a little at its left end (the needles leave
+    // it there, the ghoul stands at its foot), the top wavy over lumps of uneven sizes (5·8·9·13·14 + a low 8 rounding
+    // the foot, each overlapping the next by about half), the bottom flat along the ground and a smooth underside up to
+    // the knot. ink.500 in one tone, ink.700 billows on three lumps' shadow sides, open ink.300 curls, and one ink.300
+    // copy of the silhouette showing only along its lower edge (the shot's one-puff grammar).
+    const lumps = [[91, 64, 5], [83, 68, 8], [74, 73, 9], [62, 81, 13], [50, 78, 14], [40, 96, 8]].map(([x, y, r]) => [x, y, r * k]);
+    const back = smokeD(lumps, gy, (x) => (x <= 62 ? gy : gy - 33 * Math.pow(Math.min(1, (x - 62) / 30), 0.8)));
+    let sm = `<path d="${back}" fill="${K.ink3}" transform="translate(0.8,2.2)"/>` + P(back, K.ink5);
+    const bc = c.clip('smk', back);
+    sm += `<g clip-path="${bc}">${P(blob(68, 92, 9 * k, 9, 0.3, 111, 0.8) + blob(55, 88, 7 * k, 9, 0.3, 112, 0.8) + blob(86, 74, 4.6 * k, 8, 0.3, 113, 0.8), K.ink7)}</g>`;
+    [[46, 76, 7, 200, 296], [64, 80, 6, 204, 300], [81, 66, 4.6, 200, 296]].forEach(([x, y, r, a0, a1]) => { sm += smokeCurl(x, y - (k - 1) * 8, r * k, a0, a1, K.ink3); });
+    fg += sm;
+    // 먹 감속 (검수 4차 M2: the ghoul was drawn under the smoke and lost its eyes): the ghoul stands at the bank's foot in
+    // front of it — a paper rim parts it from the smoke behind — with only its feet in a front skirt of the same smoke,
+    // its slit eyes and upper body clear, two ink drops dragging behind it (to the left)
+    const G = [22, 88], gr = 11;
+    fg += `<path d="${blob(G[0], G[1], gr, 9, 0.22, 7)}" fill="none" stroke="${K.p50}" stroke-width="5.6" stroke-linejoin="round"/>` + ghoul(c, G[0], G[1], gr, 7);
+    const skirt = smokeD([[6, 100, 6], [19, 100, 8], [34, 100.5, 7], [44, 101, 5]].map(([x, y, r]) => [x, y, r * Math.min(k, 1.1)]), gy, () => gy);
+    fg += `<path d="${skirt}" fill="${K.ink3}" transform="translate(0.8,2.2)"/>` + P(skirt, K.ink5) + smokeCurl(18, 97, 4.4, 205, 300, K.ink3, 1.6);
+    fg += P(dropD(7.5, 86, 5, 1.7) + dropD(3.8, 80, 3.8, 1.3), A ? K.ink7 : K.ink);
+    fg += knotScarf(A);
+    return { bg, fg };
+  } };
+
+  /** 묘침 pin: point P (stuck in the ground) back along deg to a small headstone (round-topped paper plate with an ink
+   *  rim and a base step; no glyph). */
+  function gravePin(P0, deg, len) {
+    const at = axis(P0, deg), M = (a) => a.map(([t, s]) => at(t, s)), h = len - 12;
+    const shaft = ptsD(M([[0, -0.6], [h, -2], [h, 2], [0, 0.6]]), true);
+    // headstone: a plate 13 long (along the pin) × 9.4, the far end a full half circle — taller than wide, so it reads as a
+    // grave marker, not a block
+    const arc = []; for (let i = 0; i <= 10; i++) { const a = -90 + 180 * i / 10; arc.push([h + 8.3 + Math.cos(rad(a)) * 4.7, Math.sin(rad(a)) * 4.7]); }
+    const plate = ptsD(M([[h + 1.4, -4.7]].concat(arc, [[h + 1.4, 4.7]])), true);
+    return S(shaft, K.p50, 2, 1) + `<path d="${ptsD(M([[h - 1, -6], [h + 1.4, -6], [h + 1.4, 6], [h - 1, 6]]), true)}" fill="${K.ink}"/>` +
+      S(plate, K.p50, 2.4, 1.2) + P(ptsD(M([[h + 1.4, 1.2], [h + 8.3, 1.2], [h + 12.6, 2.2], [h + 8.3, 4.7], [h + 1.4, 4.7]]), true), K.p300);
+  }
+  DRAW.gravePins = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink;
+    // the black spot: the ground band behind (lower left) the pins are thrown into, its top edge ragged
+    let bg = `<path d="M-4,100 C12,96 26,101 40,97 C54,93 66,99 80,98 C86,98 92,104 96,112 L100,132 L-4,132 Z" fill="${col}"/>`, fg = knotScarf(A);
+    // [point in the ground, deg back to the head, length]: five pins flung behind in a fan, stuck at different depths and
+    // tilts (never a row); the head of each is a small headstone
+    const pins = [[[14, 106], -52, 42], [[34, 112], -38, 46], [[54, 104], -64, 38], [[72, 110], -30, 40]];
+    if (A) pins.push([[90, 116], -48, 34]);
+    pins.forEach(([p, deg, len]) => { fg += P(splashD(p[0], p[1] - 1, 7, 6, 120 + p[0], 0.45), A ? K.p300 : K.p50) + gravePin(p, deg, len); });
+    // one still flying (down to the left), its point through a ghoul at the far left (관통)
+    const G = [18, 76], gr = 10, fd = 160, Tp = polar(G, fd, gr + 7), B0 = polar(Tp, fd - 180, 40);
+    fg += speed(polar(B0, fd - 180, 2), polar(B0, fd - 180, 14), 2.4, A ? K.p300 : K.ink) + gravePin(Tp, fd - 180, 40) + ghoul(c, G[0], G[1], gr, 9) +
+      `<path d="${splashD(G[0] - gr * 0.6, G[1] + 2, gr * 0.42, 5, 39, 0.5)}" fill="${K.p50}" stroke="${K.ink}" stroke-width="1.5" stroke-linejoin="round"/>` +
+      P(ptsD([polar(Tp, fd + 90, 1.2), Tp, polar(Tp, fd - 90, 1.2), polar(Tp, fd - 180, 5)], true), K.p50, `stroke="${K.ink}" stroke-width="1.6"`);
+    return { bg, fg };
+  } };
+
+  // ---- seeker (§3.1): from the left middle (8–20, 60–76), `count` paths bending at least 15° part to different targets
+  // (x 60–118, y 24–112, r 7–12, sizes different, never touching: 검수 2차 §10-2); the motif at each path's end ----
+  const SO = [14, 68];
+  /** A seeker path from a to b bulging sideways by bow (±), as points (quadratic bezier). */
+  function seekPath(a, b, bow, n = 16) {
+    const m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], d = Math.hypot(b[0] - a[0], b[1] - a[1]), nx = -(b[1] - a[1]) / d, ny = (b[0] - a[0]) / d;
+    const cpt = [m[0] + nx * bow, m[1] + ny * bow], o = [];
+    for (let i = 0; i <= n; i++) { const t = i / n, v = 1 - t; o.push([v * v * a[0] + 2 * v * t * cpt[0] + t * t * b[0], v * v * a[1] + 2 * v * t * cpt[1] + t * t * b[1]]); }
+    return o;
+  }
+  const endDeg = (p) => Math.atan2(p[p.length - 1][1] - p[p.length - 3][1], p[p.length - 1][0] - p[p.length - 3][0]) * 180 / Math.PI;
+
+  /** 추적 인장 seal, flying along deg with its face at F: a small cylinder seen from the side (paper body, an ink face band
+   *  pressed on the target, a p300 underside) and a round ink knob behind. */
+  function trackSeal(F, deg, s = 1) {
+    const at = axis(F, deg), M = (a) => a.map(([t, sd]) => at(t * s, sd * s));
+    return `<circle cx="${f(at(-17 * s)[0])}" cy="${f(at(-17 * s)[1])}" r="${f(3.6 * s)}" fill="${K.ink}"/>` + P(ptsD(M([[-17, -1.8], [-12, -2.2], [-12, 2.2], [-17, 1.8]]), true), K.ink) +
+      S(ptsD(M([[-12.6, -5.4], [-2.6, -5.4], [-2.6, 5.4], [-12.6, 5.4]]), true), K.p50, 2.2, 1) + P(ptsD(M([[-12.6, 1.8], [-2.6, 1.8], [-2.6, 5.4], [-12.6, 5.4]]), true), K.p300) +
+      `<path d="${ptsD(M([[-2.6, -5.4], [-0.6, -5], [0, -4], [0, 4], [-0.6, 5], [-2.6, 5.4]]), true)}" fill="${K.ink}" stroke="${K.ink}" stroke-width="1.6" stroke-linejoin="round"/>`;
+  }
+  DRAW.trackingSeals = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink;
+    // [ghoul centre, r, seed, path bow]: three targets of different sizes (four awakened), a seal pressed on each
+    const tg = [[[90, 47], 10.5, 3, -16], [[109, 80], 11.5, 5, 12], [[76, 106], 10, 7, 20]];
+    if (A) tg.push([[52, 30], 8.5, 9, -14]);
+    // the black spot: the ink pad the seals leapt from (with a drip), at the left middle
+    let bg = P(blob(SO[0] - 1, SO[1], 15.5, 10, 0.4, 131, 0.86), col) + P(dropD(SO[0] - 5, SO[1] + 16.5, 6.4, 2.4) + blob(SO[0] + 10, SO[1] + 13, 2.2, 6, 0.5, 132), col), fg = '';
+    tg.forEach(([G, r, seed, bow]) => {
+      const a = Math.atan2(G[1] - SO[1], G[0] - SO[0]), E = [G[0] - Math.cos(a) * (r + 1), G[1] - Math.sin(a) * (r + 1)];
+      const p = seekPath(polar(SO, a * 180 / Math.PI, 7), E, bow), d = endDeg(p);
+      // the dotted cyan tracking thread (ink under the cyan, dashed) up to the seal's knob
+      const th = ptsD(p.slice(0, p.length - 4));
+      fg += L(th, K.ink, 4.8, 'stroke-dasharray="5.5 3.4"') + L(th, K.ally, 2.4, 'stroke-dasharray="5.5 3.4"');
+      // the stamped ghoul: a hollow paper square on the lower back of its body, the side the seal came from (검수 4차 R6:
+      // beside and under the slit eyes it read as an open mouth at 120 px)
+      const sq = [G[0] - r * 0.5, G[1] + r * 0.5], sqs = r * 0.24;
+      fg += ghoul(c, G[0], G[1], r, seed) + `<g transform="rotate(${f(d + 30)} ${f(sq[0])} ${f(sq[1])})"><rect x="${f(sq[0] - sqs)}" y="${f(sq[1] - sqs)}" width="${f(sqs * 2)}" height="${f(sqs * 2)}" fill="none" stroke="${K.p50}" stroke-width="1.3"/></g>` +
+        trackSeal(polar(E, d + 180, 0.4), d, 0.92);
+    });
+    return { bg, fg };
+  } };
+
+  /** 사냥꾼 표식 dart stuck at T (its point) along deg, with a paper tag (8 × 6, one hole) on a cyan string from its tail:
+   *  the string swings out to side sd (±1) and sags tagDrop to the tag, or blows UP when tagDrop < 0 (the tag above the
+   *  string, its hole near its lower edge). */
+  function markDart(T, deg, len, tagDrop, sd) {
+    const at = axis(T, deg + 180), M = (a) => a.map(([t, s]) => at(t, s));
+    const body = ptsD(M([[0, 0], [5, -2.4], [len - 3, -2.1], [len, -1.4], [len, 1.4], [len - 3, 2.1], [5, 2.4]]), true);
+    const vane = (sg) => ptsD(M([[len - 9, sg * 2], [len - 3, sg * 6.4], [len + 1.5, sg * 6], [len - 1, sg * 2]]), true);
+    // the string swings out behind the dart and to the tag in one curve, about 20–28 long (32 px reading); 검수 4차 R1:
+    // the side alternates and the sag differs per dart (four equal J hooks repeated one sign at 32 px), one blown up
+    const up = tagDrop < 0, S0 = at(len - 2, 0), H = [S0[0] + sd * 8, S0[1] + tagDrop], hole = [H[0], H[1] + (up ? -1.8 : 1.8)];
+    const tag = `<g transform="rotate(${f(sd * (up ? 14 : -10))} ${f(H[0])} ${f(H[1])})"><rect x="${f(H[0] - 4)}" y="${f(up ? H[1] - 6.2 : H[1])}" width="8" height="6.2" rx="0.8" fill="${K.p50}" stroke="${K.ink}" stroke-width="1.8"/>` +
+      `<circle cx="${f(hole[0])}" cy="${f(hole[1])}" r="0.9" fill="${K.ink}"/></g>`;
+    return S(vane(1) + ' ' + vane(-1), K.p50, 1.8, 0.8) + S(body, K.p50, 2.2, 1.1) + P(ptsD(M([[0, 0], [5, -2.4], [5, 2.4]]), true), K.ink) +
+      cyanLine(`M${q(S0)} Q${f(S0[0] + sd * 15)},${f(S0[1] + tagDrop * 0.3)} ${q(hole)}`, 2.4, false) + tag;
+  }
+  DRAW.huntersMarks = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, ln = A ? K.p300 : K.ink;
+    // [ghoul, r, seed, bow, dart length, tag drop (< 0: blown up), string side]: four targets of different sizes and
+    // heights (five awakened); the nearest takes the critical flash. The strings swing to alternating sides and sag
+    // 9–20, one tag blown up (검수 4차 R1)
+    const tg = [[[50, 90], 12, 3, 10, 26, 12, 1], [[70, 34], 8, 5, -12, 22, 20, -1], [[104, 60], 11, 7, -14, 25, -12, 1], [[104, 100], 9, 9, 16, 23, 9, -1]];
+    if (A) tg.push([[84, 80], 7, 11, 8, 20, -10, -1]);
+    let bg = P(blob(SO[0], SO[1], 7, 9, 0.5, 141), col), fg = '';
+    tg.forEach(([G, r, seed, bow, len, drop, side], i) => {
+      const a = Math.atan2(G[1] - SO[1], G[0] - SO[0]), E = [G[0] - Math.cos(a) * r * 0.2, G[1] - Math.sin(a) * r * 0.2];
+      const p = seekPath(polar(SO, a * 180 / Math.PI, 8), E, bow), d = endDeg(p);
+      bg += taperPoly(p.slice(1, p.length - 6), 0.4, 2.4, ln);
+      fg += ghoul(c, G[0], G[1], r, seed);
+      // 치명 (§3.2): an irregular paper flash of 6–7 rays where the dart went in, over the ghoul's dark body, and ink
+      // flung off behind
+      if (i === 0) {
+        const H = polar(G, d + 180, r * 0.55);
+        fg += P(blob(G[0] + r * 1.05, G[1] + r * 0.6, 3, 6, 0.5, 148) + blob(G[0] + r * 1.3, G[1] - r * 0.5, 2.2, 6, 0.5, 149) + blob(G[0] + r * 0.3, G[1] + r * 1.35, 1.8, 6, 0.5, 150), col) +
+          `<path d="${splashD(H[0], H[1], r * 1.5, 7, 147, 0.56)}" fill="${K.p50}" stroke="${K.ink}" stroke-width="1.4" stroke-linejoin="round"/>`;
+      }
+      fg += markDart(polar(G, d + 180, r * 0.2), d, len, drop, side);
+    });
+    return { bg, fg };
+  } };
+
+  /** 까마귀 깃 feather dagger from its quill end B along deg (len): a long ink vane on a paper shaft (rachis) running its
+   *  whole length, the point sharp as a blade, the edge split in two or three places (paper notches) and a p300 light edge
+   *  on the upper side; cyan = the shaft core (one feather). */
+  function crowFeather(B, deg, len, cyan, col) {
+    const at = axis(B, deg), M = (a) => a.map(([t, s]) => at(t * len, s));
+    // lopsided like a real flight feather: the vane wide on one side of the shaft, narrow on the other; a bare paper quill
+    // sticks out behind it (a symmetric vane read as a leaf)
+    const vane = ptsD(smooth(M([[0.2, -0.6], [0.3, -4.4], [0.56, -5.4], [0.82, -3.4], [1, 0], [0.84, 1.8], [0.56, 2.4], [0.3, 1.8], [0.2, 0.6]]), 5), true);
+    const splits = [[0.5, -5.4, -2.8], [0.7, -4.4, -2.4], [0.46, 2.4, 2.2]].map(([t, s, dd]) => ptsD(M([[t, s * 0.6], [t - 0.06, s + dd], [t - 0.015, s * 1.08]]), true)).join(' ');
+    return `<path d="${ptsD(M([[0, -1.1], [0.22, -1.4], [0.22, 1.4], [0, 1.1]]), true)}" fill="${K.p50}" stroke="${K.ink}" stroke-width="1.6" stroke-linejoin="round"/>` +
+      S(vane, col, 1.8, 1.1) + P(splits, K.p50) + L(ptsD(M([[0.34, -3.8], [0.74, -3.1]])), K.p300, 1.1) +
+      (cyan ? cyanLine(ptsD(M([[0.2, -0.3], [0.9, -0.3]])), 2.4, false) : L(ptsD(M([[0.2, -0.3], [0.88, -0.3]])), K.p50, 1.8));
+  }
+  DRAW.crowFeathers = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, O = [36, 70];
+    // [deg from the origin, ghoul distance, r, seed, feather length]: five near ghouls in a right half circle (six
+    // awakened); each feather is caught mid-flight a little short of its ghoul, so black feather and black ghoul never merge
+    const tg = [[-68, 50, 8, 3, 30], [-30, 56, 9, 5, 33], [5, 60, 10, 7, 33], [40, 52, 9, 9, 30], [74, 44, 8, 11, 28]];
+    if (A) tg.push([-48, 32, 6, 13, 20]);
+    let bg = P(blob(O[0], O[1], 6, 8, 0.5, 151), col), fg = '';
+    tg.forEach(([a, dist, r, seed]) => { const G = polar(O, a, dist); fg += ghoul(c, G[0], G[1], r, seed); });
+    tg.forEach(([a, dist, r, , len], i) => {
+      const G = polar(O, a, dist), tip = polar(G, a + 180, r + 3.4), B = polar(tip, a + 180 + (i % 2 ? 5 : -5), len), d = Math.atan2(tip[1] - B[1], tip[0] - B[0]) * 180 / Math.PI;
+      fg += speed(polar(B, d + 180, 1), polar(B, d + 180, 9), 2, A ? K.p300 : K.ink) + crowFeather(B, d, len, i === 1, col);
+    });
+    return { bg, fg };
+  } };
+
+  /** 보스 사냥침 harpoon from its tail B along deg (len): paper shaft, ink leaf head, one hooked barb swept back. */
+  function harpoon(B, deg, len) {
+    const at = axis(B, deg), M = (a) => a.map(([t, s]) => at(t, s)), h = len - 13;
+    return S(ptsD(M([[0, -1.8], [h, -2.2], [h, 2.2], [0, 1.8]]), true), K.p50, 2.2, 1.1) +
+      `<path d="${ptsD(M([[h - 1, -4.2], [h + 6, -4], [len, 0], [h + 6, 4], [h - 1, 4.2]]), true)}" fill="${K.ink}" stroke="${K.ink}" stroke-width="2" stroke-linejoin="round"/>` +
+      `<path d="${ptsD(M([[h + 1, -3.6], [h - 7, -9.4], [h - 4.6, -4.2]]), true)}" fill="${K.ink}" stroke="${K.ink}" stroke-width="1.6" stroke-linejoin="round"/>` +
+      L(ptsD(M([[h + 1, -1.6], [len - 3, -0.6]])), K.ink5, 1.4);
+  }
+  DRAW.bossbane = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink;
+    // the black spot: the boss — a big ink mass filling the right 40%, the paper mask (§3.3: one three-quarter view
+    // turned to the left, toward the harpoon — the far eye on the left 0.6 as wide as the near one, the mask's left side
+    // narrower; a thick ink rim, a white glint in each eye, no nose or mouth; about 4.5% of the icon); everything stays
+    // below the seal corner. 검수 4차 R3 (a hooded ghost, the No-Face silhouette): a plated pauldron bulges off the left
+    // shoulder, the one great horn is its own piece — parted from the head by a paper groove, ringed in three segments,
+    // curving back — and the mask has a cut, straight brow and an angular jaw in place of the egg outline. (Two upright
+    // points read as cat ears.)
+    const boss = 'M76,128 C74,118 74,110 77,104 C71,101 70,91 76,87 C79,84 84,83 87,84 C85,74 86,62 92,54 ' +
+      'C97,48 104,45 111,45 C116,45 120,48 123,52 C127,57 130,62 132,68 L132,128 Z';
+    let bg = '', fg = S(boss, col, 2.4, 2) + L('M76.6,100.8 C73.6,97.2 73.8,91.4 78.2,88.8 M77.4,104 C80.4,103 83,100.4 84.4,97', K.p300, 1.3);
+    // the horn: a centre line from the head's upper right, curving up and back (tip 126.5, 37.6), width 10.6 → 0.6
+    const hp = smooth([[112, 51], [115.4, 43.6], [120.4, 39.2], [126.5, 37.6]], 6), hw = (t) => 10 * Math.pow(1 - t, 0.9) + 0.6;
+    fg += taperFn(hp, (t) => hw(t) + 3.2, K.p50) + taperFn(hp, hw, col);
+    [0.24, 0.45, 0.64].forEach((t) => {
+      const i = Math.round(t * (hp.length - 1)), a = hp[i - 1], b = hp[i + 1], dir = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI, w = hw(t) / 2 - 0.5;
+      fg += L(`M${q(polar(hp[i], dir + 90, w))} Q${q(polar(hp[i], dir, -1.4))} ${q(polar(hp[i], dir - 90, w))}`, K.p300, 1.2);
+    });
+    const mask = 'M91.6,55.8 L117.4,53.6 C118.4,57.6 119.2,61.6 119.2,66 L115.4,79 L101,86.5 L93.5,79 L90.8,66 C90.8,62.4 91,59 91.6,55.8 Z';
+    fg += `<path d="${mask}" fill="${K.p50}" stroke="${K.ink}" stroke-width="3.4" stroke-linejoin="round"/>` +
+      `<path d="M117.3,66.6 L113.9,77.9 L102,84 C105.2,82.2 109.8,79.6 112.4,76.8 C114.4,74 115.6,70.6 117.3,66.6 Z" fill="${K.p300}"/>` +
+      `<path d="M95.2,62.8 C96.6,60.8 99.4,60.4 100.8,61.8 C99.6,64 97,64.8 95.2,62.8 Z" fill="${K.ink}"/>` +
+      `<path d="M104.6,62.4 C106.6,59.4 111.2,58.8 113.8,61 C112,64.4 107.6,65.2 104.6,62.4 Z" fill="${K.ink}"/>` +
+      `<circle cx="98.8" cy="62" r="0.7" fill="${K.p50}"/><circle cx="110.8" cy="61.4" r="1.05" fill="${K.p50}"/>`;
+    // two small ghouls the harpoon passes between
+    fg += ghoul(c, 40, 50, 8, 3) + ghoul(c, 54, 94, 9, 5);
+    // [tail, bow, length]: the harpoon flies from the left middle on a bent path and sticks in the boss beside the mask;
+    // its cyan line bends once behind it (two harpoons awakened)
+    const hs = A ? [[[14, 64], -10, 74], [[12, 86], 12, 70]] : [[[14, 70], -10, 78]];
+    hs.forEach(([B0, bow, len], i) => {
+      const T = i ? [86, 96] : [90, 76], p = seekPath(B0, T, bow, 20), d = endDeg(p), tail = polar(T, d + 180, len);
+      fg += cyanLine(ptsD(seekPath([2, B0[1] + 8], tail, 7, 12)), 2.4, false) + harpoon(tail, d, len + 3);
+    });
+    return { bg, fg };
+  } };
+
+  // (delivery 3: strike · nova · lob · chain · beam · halo)
 
   // ==== 4. lending the k-icons frame (brief §1.3) ====
   function defOf(id) {
@@ -807,7 +1375,201 @@ window.PN = window.PN || {};
     return { art, outline: blade, lw: 1.5, front: 6 };
   });
 
-  // (delivery 2: the shots of burst · spray · rear · seeker go here)
+  // ---- delivery 2: the shots of burst · spray · rear · seeker ----
+  // (turns are baked into the points with rotP: a rotated group is measured by its turned local box in C7)
+
+  // 종이 폭풍 r 5: a folded paper blade (an uneven triangle +6.5 … −5.5, half 4.5) whose fold is the cyan line; the travel
+  // frames show it flipped (the shaded flap changes sides, paper ↔ p300); tail = 1–2 paper crumbs (−8 … −16)
+  SHOT.paperStorm = shot((o) => {
+    const t = o.tail, sag = o.end ? 0.7 * o.end : 0, fl = o.ph === 1, k = clamp(t, 0.6, 1.25);
+    const A0 = [6.5, fl ? -0.4 : 0.4], B0 = fl ? [-4.3, -4.3] : [-5.5, -4.5], C0 = fl ? [-5.5, 4.5] : [-4.2, 4.3], M0 = [-5, fl ? 0.6 : -0.6];
+    const tri = polyD([A0, B0, C0]), flap = polyD(fl ? [A0, B0, M0] : [A0, M0, C0]);
+    const cr = (fl ? [[-10, -1.8, 1.9], [-14.5, 1.2, 1.3]] : [[-9.5, 1.6, 1.8], [-14, -1.4, 1.4]]).slice(0, t < 0.5 ? 1 : 2);
+    let art = '';
+    cr.forEach(([x, y, s], i) => {
+      const cx = -6 + (x + 6) * k, cy = y + sag * (i + 1) * 0.6;
+      art += FP(polyD([[cx - s * 0.6, cy - s * 0.4], [cx + s * 0.5, cy - s * 0.55], [cx + s * 0.6, cy + s * 0.3], [cx - s * 0.3, cy + s * 0.55]]), o.body, o.ln, 0.6);
+    });
+    art += FP(tri, o.body, o.ln, 1.5) + FP(flap, K.p300) + SW(`M${f(A0[0] - 1.8)},${f(A0[1] * 0.8)} L${f(M0[0] + 0.9)},${f(M0[1])}`, [[K.ink, 1.7], [o.cy, 0.9]]);
+    return { art, outline: tri, lw: 1.5, front: 6.5 };
+  });
+
+  // 먹꽃 r 4.5 (검수 4차 M3): a leaf-shaped petal with a split base — widest at x +1 (half 3.6 above, 3.3 below), its sides
+  // drawn in toward a narrow base (half 1.0 at −8.5) where a V notch 1.3 deep splits it, pointed front +6 (14.5 long, at
+  // least twice as long as wide, §4.3); paper with ink on the front 19% only (C9 ink 62%) and one ink.500 light stroke,
+  // the cyan vein down the middle line; one ink drop hangs UNDER it on a short ink thread pulled back from its underside
+  // (thread from x −2.6 … −4.4, drop centre x −4.4 … −5.8, y +4.4 … +5.0). (The round-backed petal with drops trailing
+  // behind was the 먹 이슬비 drop at 1x — same look, so the two must differ; two drops under it read as legs, a
+  // straight-down thread as a lollipop stick.) The travel frames move the drop, the start frames lower it, the end
+  // frames stretch it.
+  SHOT.inkBloom = shot((o) => {
+    const t = o.tail, sag = o.end ? 0.35 * o.end : 0;
+    const petal = 'M6,0 C4.6,-1.9 2.9,-3.6 1,-3.6 C-2.8,-3.6 -5.4,-1.7 -8.5,-1 L-7.2,0 L-8.5,1 C-5.4,1.6 -2.8,3.3 1,3.3 C2.9,3.3 4.6,1.8 6,0 Z';
+    const inkF = 'M6,0 C5.2,-1.2 4.4,-2.2 3.3,-2.9 C3.7,-1.9 3.1,-1.1 3.6,-0.2 C3.1,0.7 3.8,1.7 3.3,2.65 C4.4,2.2 5.2,1.1 6,0 Z';
+    // [thread top x, its y (the underside there), drop centre x, y, h, w]
+    const [x0, y0, x, y, h, w] = o.ph ? [-4.4, 2.1, -5.8, 4.4, 2.2, 0.95] : [-2.6, 2.9, -4.4, 4.4 + 0.6 * Math.min(1, t), 2.4, 1.05];
+    let art = L(`M${f(x0)},${f(y0)} Q${f(x0 - 0.3)},${f(y - h * 0.3 + sag)} ${f(x)},${f(y - h * 0.4 + sag)}`, o.dark, 0.75) + FP(dropD(x, y + sag, h + sag * 0.3, w), o.dark);
+    art += FP(petal, o.body, o.ln, 1.5) + FP(inkF, o.dark) + L('M4.2,-1.25 L5.3,-0.55', K.ink5, 0.7) + SW('M-6.4,0.05 Q-3.6,0.2 -0.6,-0.25', [[K.ink, 1.3], [o.cy, 0.75]]);
+    return { art, outline: petal, lw: 1.5, front: 6 };
+  });
+
+  // 가시 테 r 4: a curved rose thorn (wide base −5.6, sharp tip +5.8 hooking up, half 3.9 / 3.6): paper with a narrow ink
+  // base band at the back (the brief's 35% ink base put this smallest shot at ink 82% in C9) and the cyan band just in
+  // front of it; no tail (short range); the travel frames tilt it ±6°
+  SHOT.thornHalo = shot((o) => {
+    const a = o.base === 'travel' ? (o.ph ? -6 : 6) : o.end ? 4 * o.end : 0;
+    const top = bez([-5.6, -3.9], [-1.6, -2.2], [2.6, -2], [5.8, -2.4], 8), bot = bez([5.8, -2.4], [3.2, 0.5], [-0.8, 2.8], [-5.6, 3.6], 8);
+    const body = polyD(rotP(top.concat(bot.slice(1)), a));
+    const base = rotP([[-5.6, -3.9], [-4.9, -3.6], [-4.9, 3.45], [-5.6, 3.6]], a);
+    const art = FP(body, o.body, o.ln, 1.4) + FP(polyD(base), o.dark) + FP(polyD(rotP([[-4.6, 0.9], [1.4, 0.7], [-0.8, 2.75], [-4.6, 3.35]], a)), K.p300) +
+      SW(ptsD(rotP([[-3.9, -2.8], [-3.9, 2.7]], a)), [[K.ink, 1.3], [o.cy, 0.8]]);
+    return { art, outline: body, lw: 1.5, front: 5.8 };
+  });
+
+  // 별조각 r 5.5: an irregular five-sided shard (+7 … −5, half 5) with one p300 face and the cyan line along one edge; the
+  // travel frames turn it 15°; tail = one short stroke (−8 … −16)
+  SHOT.starShards = shot((o) => {
+    const t = o.tail, sag = o.end ? 0.8 * o.end : 0, a = o.base === 'travel' ? (o.ph ? 15 : 0) : o.end ? 6 * o.end : 0;
+    const pts = rotP([[7, -0.3], [1.8, -4.9], [-4.6, -3.4], [-5, 2.6], [0.4, 4.8]], a);
+    const face = rotP([[7, -0.3], [0.4, 4.8], [-1.3, 0.5]], a), edge = rotP([[5.7, -0.75], [2.1, -3.95]], a);
+    const art = taper([-8, 0.6], [-8 - 8 * t, 1 + sag * 2], 1.5, 0.2, K.ink3) + FP(polyD(pts), o.body, o.ln, 1.6) + FP(polyD(face), K.p300) +
+      SW(ptsD(edge), [[K.ink, 1.7], [o.cy, 0.9]]);
+    return { art, outline: polyD(pts), lw: 1.6, front: 7 };
+  });
+
+  // 해바늘 r 5: a paper needle (+6.5 … −11, eye, ink point) with the cyan core and a tuft of cushion cotton caught at its
+  // eye (irregular lump r 2.2, ink rim); tail = two short light strokes of different lengths (−14 … −24)
+  SHOT.sunNeedles = shot((o) => {
+    const t = o.tail, sag = o.end ? 0.7 * o.end : 0, l1 = (o.ph ? 7 : 10) * t, l2 = (o.ph ? 10 : 6) * t;
+    const body = 'M-11,-1.5 C-11.8,-1.45 -11.8,1.45 -11,1.5 L-4,2.3 L2.4,1.5 L6.5,0 L2.4,-1.5 L-4,-2.3 Z';
+    const art = taper([-14, -1.5], [-14 - l1, -2.1 + sag], 1.3, 0.2, K.ink3) + taper([-14.5, 1.4], [-14.5 - l2, 1.9 + sag * 1.4], 1.1, 0.2, K.ink3) +
+      FP(body, o.body, o.ln, 1.5) + FP('M-4,1.2 L2.4,0.8 L2.4,1.5 L-4,2.3 Z', K.p300) + FP('M2.4,-1.5 L6.5,0 L2.4,1.5 C2.9,0.5 2.9,-0.5 2.4,-1.5 Z', o.dark) +
+      SW('M-6.6,-0.1 L0.6,-0.1', [[K.ink, 1.5], [o.cy, 0.8]]) +
+      FP(blob(-11.4, 0.3, 2.2, 7, 0.45, o.ph ? 62 : 61), o.body, o.ln, 0.8) + `<ellipse cx="-9" cy="0" rx="1" ry="0.38" fill="${o.ln}"/>`;
+    return { art, outline: body, lw: 1.5, front: 6.5 };
+  });
+
+  // 먹 이슬비 r 3.5: an elongated drop (pointed front +5.2, round back −7, half 2.7; the brief's 10.5 × 5.6 is stretched so
+  // it stays twice as long as wide, and a rounder drop with its glint read as an eye): paper with an ink tip (the front
+  // 25%; the brief's 40% put the body at ink 74% in C9) and a straight cyan glint stroke; tail = one small ink drop that
+  // stretches and gathers between the travel frames (about −10)
+  SHOT.inkDrizzle = shot((o) => {
+    const t = o.tail, k = clamp(t, 0.6, 1.25), sag = o.end ? 0.6 * o.end : 0;
+    const body = 'M5.2,0 C3.3,-1 0.6,-2.6 -2.8,-2.7 C-5.6,-2.7 -7,-1.5 -7,0 C-7,1.5 -5.6,2.7 -2.8,2.7 C0.6,2.6 3.3,1 5.2,0 Z';
+    const inkF = 'M5.2,0 C4.1,-0.6 3.1,-1.2 2.1,-1.7 C2.5,-0.9 1.7,-0.3 2.3,0.4 C1.9,1 2.4,1.4 2.1,1.7 C3.1,1.2 4.1,0.6 5.2,0 Z';
+    const dl = o.ph ? 2.2 : 3.2, dw = o.ph ? 1.15 : 0.85, dx = -7.5 + (o.ph ? -3.2 : -2.6) * k, dy = 0.2 + sag;
+    const drop = `M${f(dx + dl * 0.5)},${f(dy)} C${f(dx)},${f(dy - dw)} ${f(dx - dl * 0.5)},${f(dy - dw * 0.8)} ${f(dx - dl * 0.5)},${f(dy)} ` +
+      `C${f(dx - dl * 0.5)},${f(dy + dw * 0.8)} ${f(dx)},${f(dy + dw)} ${f(dx + dl * 0.5)},${f(dy)} Z`;
+    const art = (t < 0.5 ? '' : FP(drop, o.dark)) + FP(body, o.body, o.ln, 1.5) + FP('M-6,1 C-4.6,2 -1.4,2.1 1.6,1.6 L1.2,2.3 C-1.6,2.6 -4.8,2.5 -6.2,1.6 Z', K.p300) +
+      FP(inkF, o.dark) + SW('M-5,-1.25 L-1.4,-1.55', [[K.ink, 1.2], [o.cy, 0.7]]);
+    return { art, outline: body, lw: 1.5, front: 5.2 };
+  });
+
+  // 핀 우박 r 4.5: a diamond pin blade (+6 … −3.4, half 2.9) with a fine cyan groove and a hollow oval loop handle (about
+  // −5.4; an ink loop only — a paper ring round a dark hole read as the 5-장 eclipse eye); tail = one speed stroke; the
+  // travel frames wobble it ±8°
+  SHOT.pinHail = shot((o) => {
+    const t = o.tail, sag = o.end ? 0.7 * o.end : 0, a = o.base === 'travel' ? (o.ph ? -8 : 8) : o.end ? 5 * o.end : 0;
+    const blade = polyD(rotP([[6, 0], [1.4, -2.9], [-3.4, 0], [1.4, 2.9]], a));
+    const loopP = []; for (let i = 0; i < 16; i++) { const b = i / 16 * Math.PI * 2; loopP.push([-5.5 + Math.cos(b) * 2.1, Math.sin(b) * 1.45]); }
+    const loop = polyD(rotP(loopP, a));
+    const art = taper([-8.9, 0.4], [-8.9 - 8 * t, 0.7 + sag * 2], 1.3, 0.2, K.ink3) + `<path d="${loop}" fill="none" stroke="${o.ln}" stroke-width="1.1" stroke-linejoin="round"/>` +
+      FP(blade, o.body, o.ln, 1.4) + FP(polyD(rotP([[6, 0], [1.4, 2.9], [-3.4, 0], [1.4, 0.9]], a)), K.p300) + SW(ptsD(rotP([[-1.2, -0.2], [3.6, -0.2]], a)), [[K.ink, 1.1], [o.cy, 0.7]]);
+    return { art, outline: blade + ' ' + loop, lw: 1.5, front: 6 };
+  });
+
+  // 꼬리 방패 r 5: a dagger — blade (+6.5 … −1.2, half 2.2) with the cyan edge line, a round guard behind it (paper disc
+  // r 3.6 centred at −4.4, seen a little edge-on so 2.4 × 3.6; ink rim, no centre dot) and a short ink grip (to −9.4); no
+  // tail; the guard's glint stroke moves between the travel frames. (A full round disc on the blade read as a lollipop.)
+  SHOT.tailGuard = shot((o) => {
+    const sag = o.end ? 0.5 * o.end : 0, gx = -4.4, gr = 3.6, gw = 2.4;
+    const blade = 'M-1.2,-2.2 L3.2,-1.8 L6.5,0 L3.2,1.8 L-1.2,2.2 Z';
+    const guard = `M${f(gx + gw)},0 A${gw},${gr} 0 1 0 ${f(gx - gw)},0 A${gw},${gr} 0 1 0 ${f(gx + gw)},0 Z`;
+    const ga = o.ph ? [150, 200] : [205, 255], gp = (d) => [gx + Math.cos(rad(d)) * gw * 0.62, Math.sin(rad(d)) * gr * 0.66 + sag * 0.2];
+    const art = FP('M-6.8,-1 L-8.8,-0.9 C-9.4,-0.85 -9.4,0.85 -8.8,0.9 L-6.8,1 Z', o.dark, o.ln, 0.8) + FP(blade, o.body, o.ln, 1.4) +
+      FP('M-1.2,0.8 L3.2,0.6 L6.5,0 L3.2,1.8 L-1.2,2.2 Z', K.p300) + SW('M0.8,1.25 L5.2,0.45', [[K.ink, 1.2], [o.cy, 0.75]]) +
+      FP(guard, o.body, o.ln, 1.2) + L(`M${q(gp(ga[0]))} A${f(gw * 0.62)},${f(gr * 0.66)} 0 0 1 ${q(gp(ga[1]))}`, K.ink3, 0.8);
+    return { art, outline: blade + ' ' + guard, lw: 1.5, front: 6.5 };
+  });
+
+  // 연막 꼬리 r 4.5: the plain paper needle with the cyan point; tail = one puff of smoke built from three overlapping lumps
+  // (r 2 → 4 toward the back, −10 … −27, staggered up and down) under one shared ink.300 outline: p300 with an ink.300
+  // shadow along its underside; crisp edges, no gradient. (Separate round lumps read as pebbles in a row, and a dark
+  // core inside one lump as an eye.)
+  SHOT.smokeTail = shot((o) => {
+    const t = o.tail, k = clamp(t, 0.6, 1.25), sag = o.end ? 0.8 * o.end : 0;
+    const LU = (o.ph ? [[-11.2, -0.6, 2.1, 71], [-15.4, 1, 2.9, 72], [-21.6, -0.7, 3.7, 73]] : [[-11.4, 0.6, 2.2, 74], [-15.8, -0.9, 3, 75], [-22, 0.8, 3.8, 76]]).slice(0, t < 0.5 ? 1 : t < 0.9 ? 2 : 3);
+    const ds = LU.map(([x, y, r, s], i) => blob(-10 + (x + 10) * k, y + sag * (i + 1) * 0.5, r, 7, 0.3, s));
+    const art = ds.map((d) => `<path d="${d}" fill="${K.ink3}" stroke="${K.ink3}" stroke-width="1.4" stroke-linejoin="round"/>`).join('') +
+      ds.map((d) => `<path d="${d}" fill="${K.p300}" transform="translate(0.3,-0.9)"/>`).join('');
+    return { art: art + needleShot(o, o.cy), outline: NEEDLE_D, lw: 1.5, front: 6 };
+  });
+
+  // 묘침 r 4.5: a pin (paper shaft −3.6 … +3.4, half 1.3, cyan point to +6) with a small headstone at the back: an ink.300
+  // base step and a round-topped plate 4 × 6 facing back (paper + ink rim, p300 lower half; no glyph); no tail; the
+  // stone tilts between the travel frames
+  SHOT.gravePins = shot((o) => {
+    const a = o.base === 'travel' ? (o.ph ? -9 : 7) : o.end ? 6 * o.end : 0, c0 = [-4, 0];
+    const shaft = 'M-3.6,-1.3 L3.4,-1.15 L3.4,1.15 L-3.6,1.3 Z';
+    const step = polyD(rotP([[-3.5, -3.4], [-4.5, -3.4], [-4.5, 3.4], [-3.5, 3.4]], a, c0));
+    const plate = polyD(rotP([[-4.5, -3], [-6.4, -3]].concat(bez([-6.4, -3], [-9.2, -3], [-9.2, 3], [-6.4, 3], 8).slice(1), [[-4.5, 3]]), a, c0));
+    const low = polyD(rotP([[-4.5, 0.7], [-8.5, 0.7], [-8.1, 2.1], [-6.4, 3], [-4.5, 3]], a, c0));
+    const art = FP(shaft, o.body, o.ln, 1.1) + FP('M3.4,-1.7 L6,0 L3.4,1.7 C3.9,0.6 3.9,-0.6 3.4,-1.7 Z', o.cy, K.ink, 0.6) +
+      FP(plate, o.body, o.ln, 1.2) + FP(low, K.p300) + FP(step, K.ink3, o.ln, 0.5);
+    return { art, outline: shaft + ' ' + plate, lw: 1.4, front: 6 };
+  });
+
+  // 추적 인장 r 4.5: a small seal seen from the side — paper body (−4 … +4.6, half 3.6) with the ink face band (+4.6 … +6)
+  // and a round ink knob (−6, r 2); tail = the dotted cyan tracking thread (−8 … −30, one bend that flips between the travel
+  // frames; the 1.25 × awakened thread ends at −35.5, inside 8r)
+  SHOT.trackingSeals = shot((o) => {
+    const t = o.tail, sag = o.end ? 0.8 * o.end : 0, sg = o.ph ? -1 : 1, x1 = -8 - 22 * t;
+    const body = 'M-4,-3.3 Q-4,-3.6 -3.6,-3.6 L4.6,-3.6 L4.6,3.6 L-3.6,3.6 Q-4,3.6 -4,3.3 Z';
+    const th = `M-7.6,0 Q${f(-8 - 11 * t)},${f(sg * 4.6 + sag)} ${f(x1)},${f(sg * 1.2 + sag * 1.5)}`;
+    const art = SW(th, [[K.ink, 2.6], [o.cy, 1.6], [K.allyG, 0.5]], ' stroke-dasharray="2.6 1.8"') +
+      `<circle cx="-6" cy="0" r="2" fill="${o.dark}"/>` + FP('M-6,-0.9 L-3.8,-1.2 L-3.8,1.2 L-6,0.9 Z', o.dark) +
+      FP(body, o.body, o.ln, 1.5) + FP('M-4,1.3 L4.6,1.3 L4.6,3.6 L-3.6,3.6 Q-4,3.6 -4,3.3 Z', K.p300) + FP('M4.6,-3.6 L5.4,-3.4 L6,-2.8 L6,2.8 L5.4,3.4 L4.6,3.6 Z', o.dark, o.ln, 0.6);
+    return { art, outline: body, lw: 1.5, front: 6 };
+  });
+
+  // 사냥꾼 표식 r 5: a marker dart (paper body +6.5 … −6, half 2.4, ink point) with a paper tag (4.5 × 3.5, one hole) on a
+  // cyan string trailing behind; the tag flaps ±20° between the travel frames (−8 … −18)
+  SHOT.huntersMarks = shot((o) => {
+    const t = o.tail, k = clamp(t, 0.6, 1.25), sag = o.end ? 0.9 * o.end : 0, a = o.base === 'travel' ? (o.ph ? -20 : 20) : 10;
+    const body = 'M-6,-1.3 C-6.4,-1.2 -6.4,1.2 -6,1.3 L-1,2.4 L3,1.9 L6.5,0 L3,-1.9 L-1,-2.4 Z';
+    const H = [-6 - 6.4 * k, 2.2 + sag], tag = rotP([[0, -0.6], [-4.5, -0.6], [-4.5, 2.9], [0, 2.9]].map(([x, y]) => [H[0] + x, H[1] + y]), a, H);
+    const hole = rotP([[H[0] - 0.9, H[1] + 0.4]], a, H)[0];
+    const art = SW(`M-5.6,0.6 Q${f(-6 - 3 * k)},${f(2.4 + sag * 0.5)} ${f(H[0] + 0.3)},${f(H[1])}`, [[K.ink, 1.8], [o.cy, 1]]) +
+      FP(polyD(tag), o.body, o.ln, 0.8) + `<circle cx="${f(hole[0])}" cy="${f(hole[1])}" r="0.55" fill="${o.ln}"/>` +
+      FP(body, o.body, o.ln, 1.5) + FP('M-6,0.4 L-1,1 L3,0.8 L3,1.9 L-1,2.4 L-6,1.3 Z', K.p300) + FP('M3,-1.9 L6.5,0 L3,1.9 C3.6,0.6 3.6,-0.6 3,-1.9 Z', o.dark);
+    return { art, outline: body, lw: 1.5, front: 6.5 };
+  });
+
+  // 까마귀 깃 r 5: a crow-feather blade (+6.5 … −12): a lopsided paper vane (3.8 above the shaft, 1.9 below) with an ink
+  // upper edge and an ink point, the cyan shaft core; tail = two split fibres off the upper back edge (−12 … −20) that
+  // wobble between the travel frames. (A symmetric vane with a forked tail read as a fish.)
+  SHOT.crowFeathers = shot((o) => {
+    const t = o.tail, sag = o.end ? 0.8 * o.end : 0, w = o.ph ? 0.6 : -0.5;
+    const vane = 'M6.5,-0.2 C4.4,-2 0.6,-3.8 -3.4,-3.8 C-7.2,-3.6 -10.4,-2.6 -12,-1.6 L-11,-0.6 L-12.2,0.3 L-11.4,0.9 C-7.8,1.6 -3,1.9 0.6,1.5 C3,1.2 5,0.5 6.5,-0.2 Z';
+    const fib =`M-10.8,-2.4 Q${f(-10.8 - 3.2 * t)},${f(-3 + w)} ${f(-10.8 - 7.2 * t)},${f(-3.4 + w + sag)} M-11.6,-1.2 Q${f(-11.6 - 2.8 * t)},${f(-1.4 - w)} ${f(-11.6 - 6 * t)},${f(-1.6 - w + sag)}`;
+    const edgeThin = 'M6.5,-0.2 C4.4,-2 0.6,-3.8 -3.4,-3.8 C-7.2,-3.6 -10.4,-2.6 -12,-1.6 L-11.4,-1.1 C-9.9,-2 -6.9,-3 -3.4,-3 C0.2,-3 3.6,-1.6 5.8,-0.25 Z';
+    const art = SW(fib, [[o.ln, 1.1]]) + FP(vane, o.body, o.ln, 1.4) + FP(edgeThin, o.dark) + FP('M6.5,-0.2 L4.2,-1.2 C4.5,-0.6 4.5,0.3 4.1,0.85 Z', o.dark) +
+      L('M-2.6,0.9 L-8.4,0.7', K.p300, 1) + SW('M-10.6,-0.2 Q-4,-0.6 2.4,-0.3', [[K.ink, 1.2], [o.cy, 0.7]]);
+    return { art, outline: vane, lw: 1.5, front: 6.5 };
+  });
+
+  // 보스 사냥침 r 5.5: a harpoon needle — paper shaft (−14 … +1, half 1.7, p300 underside), paper leaf head (+1 … +7, half
+  // 2.6) and one ink barb swept back from the head; tail = the cyan line [ink 2.3, cyan 1.4, glow 0.5] (−14 … −38, one bend
+  // that flips between the travel frames; the awakened 1.25 × is capped at −43, inside 8r = 44)
+  SHOT.bossbane = shot((o) => {
+    const t = o.tail, sag = o.end ? 0.9 * o.end : 0, sg = o.ph ? -1 : 1, L1 = Math.min(24 * t, 29.4);
+    const head = 'M1,-2.2 C3,-2.6 5.4,-1.4 7,0 C5.4,1.4 3,2.6 1,2.2 C0.4,1.2 0.4,-1.2 1,-2.2 Z';
+    const th = `M-13.6,0 C${f(-13.6 - L1 * 0.4)},0 ${f(-13.6 - L1 * 0.6)},${f(sg * 4.4 + sag)} ${f(-13.6 - L1)},${f(sg * 3.6 + sag * 1.5)}`;
+    const art = SW(th, [[K.ink, 2.3], [o.cy, 1.4], [K.allyG, 0.5]]) + FP('M-14,-1.7 L1,-1.35 L1,1.35 L-14,1.7 Z', o.body, o.ln, 1.2) +
+      FP('M-14,0.6 L1,0.45 L1,1.35 L-14,1.7 Z', K.p300) +
+      FP(head, o.body, o.ln, 1.4) + FP('M2.4,-1.9 L-2.6,-4.4 L-1.6,-2.2 L0.6,-1.3 Z', o.dark, o.ln, 0.6) + L('M1.6,0.9 L5.6,0.2', K.p300, 0.9);
+    return { art, outline: 'M-14,-1.7 L1,-1.35 L1,-2.2 C3,-2.6 5.4,-1.4 7,0 C5.4,1.4 3,2.6 1,2.2 L1,1.35 L-14,1.7 Z', lw: 1.5, front: 7 };
+  });
 
   /** Placeholder shot (not drawn yet): a plain paper needle, front r + 1, ink 1.5, cyan eye (allyD when ending). */
   function placeholderShot(part, fr, c, r) {

@@ -8,7 +8,8 @@
 | 1차 | 2026-10-14 | 뼈대 전부(틀 빌리기, META 44, `parts`·`stamp`, 자리표시) + volley 8종의 아이콘(평상·각성)과 탄 |
 | 1차 수정 1회차 | 2026-10-14 | 검수 1차(`docs/art/deliveries/K9-arsenal-icons.md` '## 검수 1차') 필수 F1~F4와 권장 R1~R8. 바뀐 곳은 §6·§7·§9의 '수정 1회차' 표시 |
 | 1차 수정 2회차 | 2026-10-15 | 검수 2차 F2b: 각성 망나니 침 아이콘만(§6, §9-16). 다른 출력은 보존 해시로 같음을 확인 |
-| 2차 | — | burst·spray·rear·seeker 14종의 아이콘과 탄 |
+| 2차 | 2026-10-16 | burst·spray·rear·seeker 14종의 아이콘(평상·각성)과 탄. 이로써 탄 22종이 모두 그려졌다. volley 8종의 출력은 보존 해시로 같음을 확인(§8) |
+| 2차 수정 1회차 | 2026-10-16 | 검수 4차(`docs/art/deliveries/K9-arsenal-icons.md` '## 검수 4차') 필수 M1~M3와 권장 R1~R8. 바뀐 출력은 아이콘 10종(평상·각성)과 먹꽃 탄뿐이다(§9.5 표). volley 8종과 나머지 2차 4종·탄 21종은 보존 해시로 같음을 확인(§8) |
 | 3차 | — | strike·nova·lob·chain·beam·halo 22종의 아이콘 + 이 문서 완성 |
 
 ## 1. 로드와 의존
@@ -31,7 +32,7 @@
 무기 그림은 모듈 안의 자기 표(`DRAW`)에 두고, `PN.icons.skill`·`tile`·`hudSlot`을 **한 번 부르는 동안에만** `PN._ki.ICON[id]`에 빌려 넣었다가 `finally`에서 지운다.
 
 ```js
-function borrow(id, fn) {            // k-icons2.js:601
+function borrow(id, fn) {            // k-icons2.js:1175
   const ICON = PN._ki.ICON, def = defOf(id);          // 모르는 id면 throw
   if (Object.prototype.hasOwnProperty.call(ICON, id)) throw new Error(`${id} clashes with a core icon`);
   ICON[id] = def;
@@ -86,20 +87,20 @@ PN.arsenal = {
 | twinBlades | 쌍날 | common | volley | fanKnives | 2 | 3 | 6 | 크게 휜 흰 초승 날 둘 + 회전 호 | 위 날의 안쪽 날선 | ✓ |
 | ghostVolley | 혼령 일제사격 | epic | volley | mirrorClone | 4 | 5 | 5 | 선만 있는 화살 넷의 부채 + 청록 불꽃 깃 | 불꽃 깃 넷 | ✓ |
 | headsmanDarts | 망나니 침 | legendary | volley | needleStorm | 1 | 2 | 4.5 | 큰 외날 칼 머리 + 찢긴 먹귀 | 칼 날선 | ✓ |
-| paperStorm | 종이 폭풍 | rare | burst | fanKnives | 8 | 10 | 5 | 감겨 퍼지는 흰 종이 바람개비 | 가운데에서 감겨 나오는 바람 획 한 줄 | — |
-| inkBloom | 먹꽃 | rare | burst | needleStorm | 6 | 7 | 4.5 | 검은 꽃잎 여섯 | 꽃술 테 일부(반 바퀴 이하) | — |
-| thornHalo | 가시 테 | epic | burst | needleStorm | 12 | 14 | 4 | 끊긴 먹 덩굴 고리 + 휜 가시 | 덩굴 한 토막 안쪽 실 | — |
-| starShards | 별조각 | epic | burst | mirrorClone | 5 | 6 | 5.5 | 깨져 흩어지는 각진 흰 조각 | 섬광 심 | — |
-| sunNeedles | 해바늘 | mythic | burst | needleStorm | 16 | 20 | 5 | 가운데 흰 바늘꽂이 + 흩어져 튀는 바늘 | 누빔 실 한 줄 | — |
-| inkDrizzle | 먹 이슬비 | common | spray | needleStorm | — | — | 3.5 | 오른쪽으로 흩뿌린 작은 먹 방울 원뿔 | 맨 앞 방울 셋의 젖은 반짝 획 | — |
-| pinHail | 핀 우박 | rare | spray | fanKnives | — | — | 4.5 | 넓은 원뿔의 흰 핀 무리 | 가장 큰 핀의 날 홈 | — |
-| tailGuard | 꼬리 방패 | common | rear | fanKnives | 3 | 4 | 5 | 왼쪽으로 펼친 흰 단검 셋(방패꼴) | 목도리 꼬리 | — |
-| smokeTail | 연막 꼬리 | rare | rear | needleStorm | 2 | 3 | 4.5 | 왼쪽으로 길게 퍼진 먹 연기 덩어리 | 목도리 꼬리 | — |
-| gravePins | 묘침 | epic | rear | needleStorm | 5 | 6 | 4.5 | 왼쪽 아래 땅에 박힌 긴 핀 다섯 | 목도리 꼬리 | — |
-| trackingSeals | 추적 인장 | rare | seeker | needleStorm | 3 | 4 | 4.5 | 갈라져 휘는 청록 실 셋 + 끝마다 작은 도장 | 추적 실 셋 | — |
-| huntersMarks | 사냥꾼 표식 | epic | seeker | mirrorClone | 4 | 5 | 5 | 네 과녁에 꽂힌 흰 표식 패 | 패를 묶은 끈 | — |
-| crowFeathers | 까마귀 깃 | rare | seeker | fanKnives | 5 | 6 | 5 | 오른쪽 반원으로 짧게 흩어진 검은 깃 다섯 | 한 깃의 깃대 심 | — |
-| bossbane | 보스 사냥침 | legendary | seeker | needleStorm | 1 | 2 | 5.5 | 오른쪽 40%를 차지한 큰 보스 먹 덩어리(흰 가면) + 작살 침 | 침 꼬리 실(한 번 휨) | — |
+| paperStorm | 종이 폭풍 | rare | burst | fanKnives | 8 | 10 | 5 | 감겨 퍼지는 흰 종이 바람개비 | 가운데에서 감겨 나오는 바람 획 한 줄 | ✓ |
+| inkBloom | 먹꽃 | rare | burst | needleStorm | 6 | 7 | 4.5 | 검은 꽃잎 여섯 | 꽃술 테 일부(반 바퀴 이하) | ✓ |
+| thornHalo | 가시 테 | epic | burst | needleStorm | 12 | 14 | 4 | 끊긴 먹 덩굴 고리 + 휜 가시 | 덩굴 한 토막 안쪽 실 | ✓ |
+| starShards | 별조각 | epic | burst | mirrorClone | 5 | 6 | 5.5 | 깨져 흩어지는 각진 흰 조각 | 섬광 심 | ✓ |
+| sunNeedles | 해바늘 | mythic | burst | needleStorm | 16 | 20 | 5 | 가운데 흰 바늘꽂이 + 흩어져 튀는 바늘 | 누빔 실 한 줄 | ✓ |
+| inkDrizzle | 먹 이슬비 | common | spray | needleStorm | — | — | 3.5 | 오른쪽으로 흩뿌린 작은 먹 방울 원뿔 | 맨 앞 방울 셋의 젖은 반짝 획 | ✓ |
+| pinHail | 핀 우박 | rare | spray | fanKnives | — | — | 4.5 | 넓은 원뿔의 흰 핀 무리 | 가장 큰 핀의 날 홈 | ✓ |
+| tailGuard | 꼬리 방패 | common | rear | fanKnives | 3 | 4 | 5 | 왼쪽으로 펼친 흰 단검 셋(방패꼴) | 목도리 꼬리 | ✓ |
+| smokeTail | 연막 꼬리 | rare | rear | needleStorm | 2 | 3 | 4.5 | 왼쪽으로 길게 퍼진 먹 연기 덩어리 | 목도리 꼬리 | ✓ |
+| gravePins | 묘침 | epic | rear | needleStorm | 5 | 6 | 4.5 | 왼쪽 아래 땅에 박힌 긴 핀 다섯 | 목도리 꼬리 | ✓ |
+| trackingSeals | 추적 인장 | rare | seeker | needleStorm | 3 | 4 | 4.5 | 갈라져 휘는 청록 실 셋 + 끝마다 작은 도장 | 추적 실 셋 | ✓ |
+| huntersMarks | 사냥꾼 표식 | epic | seeker | mirrorClone | 4 | 5 | 5 | 네 과녁에 꽂힌 흰 표식 패 | 패를 묶은 끈 | ✓ |
+| crowFeathers | 까마귀 깃 | rare | seeker | fanKnives | 5 | 6 | 5 | 오른쪽 반원으로 짧게 흩어진 검은 깃 다섯 | 한 깃의 깃대 심 | ✓ |
+| bossbane | 보스 사냥침 | legendary | seeker | needleStorm | 1 | 2 | 5.5 | 오른쪽 40%를 차지한 큰 보스 먹 덩어리(흰 가면) + 작살 침 | 침 꼬리 실(한 번 휨) | ✓ |
 | inkLightning | 먹번개 | rare | strike | chainSpark | 2 | 3 | — | 위 먹구름 띠 + 내리꽂는 굵은 번개 둘 | 번개 하나의 심 | — |
 | brushDownpour | 붓 폭우 | epic | strike | boneMortar | 4 | 5 | — | 비스듬히 쏟아지는 굵은 붓 획 넷 + 바닥 붓자국 | 붓 획 하나의 젖은 결 | — |
 | fallingScroll | 족자 낙하 | epic | strike | boneMortar | 1 | 2 | — | 크게 떨어지는 세로 족자 | 걸이 끈 | — |
@@ -124,7 +125,7 @@ PN.arsenal = {
 | eclipseHalo | 일식 테 | legendary | halo | eclipseStep | — | — | — | 넓고 가는 타원 테 + 먹 초승 그림자 | 리본 두 가닥 | — |
 
 - beam의 각성 수: 각성은 `count`·`jumps`에만 +1을 더하고 beam은 방향 수가 그대로라 `count`와 같다(지시서 §3.4의 beam 각성은 길이·폭 1.2배).
-- `done: false`인 36종은 아이콘이 look의 핵심 그림, 탄은 §7의 자리표시다. 메인 세션은 `done`인 것만 등록한다.
+- `done: false`인 22종(투사체 없는 6 kind)은 아이콘이 look의 핵심 그림이다. 탄 22종은 2차로 모두 `done`이다. 메인 세션은 `done`인 것만 등록한다.
 
 ## 5. 타일·HUD 슬롯 규격과 아이콘 창 규칙
 
@@ -156,6 +157,46 @@ PN.arsenal = {
 | ghostVolley | 혼령 화살 넷(출발 (−10, 92), −24°/−17°/−10°/−3.5°, 길이 58~66): 선 그림 — 촉은 잎맥 있는 버들잎 윤곽, 자루는 담묵 테의 종이 선, 깃은 두 갈래 청록 불꽃(먹 테 2). −10° 화살이 과녁 (98, 64) r 14를 꿰뚫어 나오고(종이 구멍), −17° 화살은 박힌다. 블랙 스팟은 다발 뒤 왼쪽 아래의 부채꼴 먹 번짐(과녁 앞에서 거칠게 끝남). `halo: false` | 관통 · 불꽃 깃 넷 | 5발, 불꽃 1.35배 |
 | headsmanDarts | 굵은 침(먹 자루 6 + 종이 테 8.6, 깃 2장, (6, 89)에서 −16°, 길이 56) 끝의 외날 칼 머리(1.12배. 칼날 공간 x −4~40 · s −11.6~8.6, 약 49 × 23): 곧은 등, 끝 쪽이 가장 넓은 배(팔치온 꼴), 등선 끝에서 3~4 더 나간 마이터 끝(종이 삼각 + 먹 테 2.6), 위 가장자리만 덮는 먹 등 띠(두께 3~4)와 종이 날 몸, 배를 따라 2~3 안쪽의 p300 그늘, 날과 자루 사이의 먹 칼 목(x −4~0). 칼 머리는 대략 (53~101, 48~84). 과녁 (100, 80) r 16이 눈 아래 0.22r 지점을 지나는 7계단 찢김선을 따라 두 쪽으로 갈라지고, 위 조각이 (6, −8)·−22° 비스듬히 벌어진다. 먹 튐 셋은 찢김선의 t −0.75·0.15·0.9 r에서 찢김선에 거의 수직으로 아래 조각의 윤곽 밖으로 떨어진다(길이 9·5.5·11, 굵기 3·2.6·3.4, 가장 긴 가닥 끝에 떨어진 먹 방울). 평상판에는 먹귀 오른쪽 아래 땅에 납작하고 거친 먹 튐(중심 (108, 102), r 32, 세로 0.32, 방울 셋). **수정 1회차**: 칼 머리(F1), 먹 튐(F2), 땅의 먹 튐과 자루 5 → 6(F1-5·R1) | 처형(종이처럼 찢김, 깔끔한 절단면·✕ 없음) · 칼 날선(청록 2.4 + 먹 테, 배를 따라 2~3 안쪽) | 2발. 작은 칼 머리 0.72배는 (−4, 111)에서 −6°, 길이 38.6이고, 칼끝이 둘째 먹귀 윤곽에 닿는다. 찢긴 먹귀 둘째는 (71, 110) r 11, `open` (4, −5)·−12°다. 첫째와 중심 사이 41.7이고, 위 조각을 벌린 뒤에도 실루엣 사이는 약 9.5(각성 1.1배·종이 테 포함 약 6)다. 두 먹귀 모두 먹 튐이 없다(`tornGhoul` 옵션 `flicks: false`). 평상판과 같은 땅 먹 튐을 ink7로 깐다. **수정 2회차 F2b**: 1차·수정 1회차의 둘째 먹귀 (90, 106)은 첫째와 맞닿았다(중심 사이 27.9). 각성 종이 테가 둘을 머리·배 마디로 묶고, 테 두른 먹 튐과 둥근 끝이 다리처럼 보여 '다리 달린 벌레'로 읽혔다(§9-16) |
 
+## 6b. 그린 아이콘 (2차: burst·spray·rear·seeker 14종)
+
+좌표는 128 창 기준이다. 1차 문법을 그대로 쓴다: 주 덩어리 하나, 블랙 스팟(주 덩어리 자체이거나 그 바탕), 청록 요소 하나(늘 먹 위), 낙관 구역 (94~128, 0~34)과 네 모서리 10 비움, 각성은 수 + 1과 ink7·p300 규칙. 먹귀는 `PN._ki.inkDot` 그대로이고, 한 그림 안의 먹귀끼리 실루엣이 닿지 않게(종이 테까지 4 이상) 띄웠다(검수 2차 §10-2). 먹 튐은 몸 윤곽에 붙여 시작하거나 땅에 떨어진 튐으로 그리고, 끝을 둥근 공으로 맺는 떨어진 가닥은 쓰지 않았다. 관통 표지는 공용 도우미 `pierced()`(먹귀 + 나온 자리 종이 구멍 + 빠져나온 부분)다.
+
+**burst** (가운데 (64, 66) 발원, r 22~60에서 바깥으로)
+
+| id | 평상 | 효과 표지 · 청록 | 각성 |
+|---|---|---|---|
+| paperStorm | 가운데 거친 먹 번짐(r 약 15)과 날 사이를 지나는 길이·굵기가 다른 붓 휘감기 셋(반경 25·39·46, 굵기 13·10·4 → 끝 0.6)이 블랙 스팟이다. 접힌 종이날 8(삼각 + 접힌 반쪽 p300 + 접힌 선 ink3, 길이 20~28)이 안쪽 다섯은 번짐 가장자리에서 반경보다 44~54° 비껴 나가고 바깥 셋은 이미 멀리 날았다(크기·간격 불규칙, 낙관 쪽으로 긴 것 없음). 종이 부스러기 넷 | 관통: 오른쪽 아래 먹귀 (100, 103) r 11의 종이 구멍에서 날 하나가 빠져나온다 · 가운데 번짐 안에서 시작해 빠르게 벌어지는 나선 팔 한 획(140°, r 4 → 42, 청록 2.4 + 먹 테) | 10장(종이날 둘 더) + 바깥 둘째 감김(p300) |
+| inkBloom | 먹 꽃잎 여섯(둥근 뒤·뾰족한 앞, 길이 24~33, 폭 10~12, 각 −171·−109·−33·9·93·130°: 사이각 62·76·42·84·37·59°, 낙관 쪽 꽃잎은 짧게), 꽃잎마다 ink5 빛 획 한 줄과 끝에 처진 먹 방울. 왼쪽 아래 130° 꽃잎은 끝이 9 휜다. 가운데 종이 꽃술은 원이 아닌 불규칙 얼룩(r 약 10, 먹 테 2.4, 가운데 점 없음). **2차 수정 1회차 R4**: 각을 ±8~10° 흔들고 한 잎을 휨(옛 각 −162·−101·−42·17·83·139°, 사이각 60° ± 4°가 20px에서 '✻') | 먹 감속: 오른쪽 아래 먹귀 (104, 100) r 11의 발이 먹 웅덩이에 잠기고 뒤로 먹 방울 둘을 끈다 · 꽃술 테의 반 바퀴(약 30, 청록 3.4 + 먹 테) | 7잎(일곱째 51°, 옛 −128°) + 흩어진 방울 다섯 |
+| thornHalo | 먹 덩굴(r 38, 굵기 9.6 ± 2.6, 끝은 가늘게)이 세 토막 [−29, 64]·[88, 146]·[174, 298]°로 끊긴다(틈 24·28·33°, 33° 틈은 낙관 구역 위). 둘째 토막 끝(146°)에서 덩굴손 하나가 고리 밖으로 250° 열린 갈고리로 감긴다(굵기 3.2 → 0.6, 닫힌 '@' 아님). 바깥으로 장미 가시 12(밑이 넓고 끝이 휜, 길이 11~22, 간격·길이 불규칙)가 덩굴이 자라는 쪽으로 휘고, 떨어져 날아가는 가시 셋(속도 획). 고리 안은 비운다(가운데 점이 눈이 됐다). **2차 수정 1회차 R7**: 틈 16·18° → 24·28°, 덩굴손 추가, 토막 끝 가늘어지는 자리에 걸린 가시 넷을 1~6° 옮김 | — · 한 토막(95~139°) 안쪽의 청록 실(2.4 + 먹 테) | 가시 1.2배 + 2(43°·192°; 옛 72°는 틈에 떠 있었다), 날아가는 가시 하나 더 |
+| starShards | 블랙 스팟은 한쪽으로 치우친 거친 먹 폭발이다: 중심 (60, 70), 세로 0.86, 고르지 않은 사이각의 갈래 일곱(옆 홈이 있는 찢긴 갈래)이 왼쪽·왼쪽 아래로 길고 넓게(반경 45~46), 낙관 쪽·먹귀 쪽으로 짧고 뭉툭하게(20~27) 뻗는다. 그 위에 종이 별이 깨진 조각 5(불규칙 4~5각, 한 꼭짓점이 바깥으로 뾰족, 한 면 p300, 테 3)가 각 −160·−104·−60·6·100°(사이각 56·44·66·94·100°), 거리 36·50·36·43·40에 흩어지고, 조각마다 반경에서 +22·−18·−20·+16·−26° 비틀려 있다. 가운데에 먹 금 넷과 7갈래 불규칙 종이 섬광. **2차 수정 1회차 M1**: 옛 배치(사이각 70~74°, 거리 39~41, 조각이 모두 반경 방향)와 가운데 8갈래 폭발 (64, 66) r 47이 5갈래 정칙 별로 읽혔다 | 관통: 오른쪽 아래 먹귀 (104, 102) r 11의 종이 구멍에서 작은 조각이 빠져나온다(흩어진 조각과 먹귀 테 사이 9 이상) · 섬광 심(6갈래 청록, 먹 테) | 6조각(여섯째 152°, 거리 52, −16°: 비어 있던 왼쪽 아래, 사이각 56·44·66·94·52·48°) |
+| sunNeedles | 3/4로 본 둥근 종이 바늘꽂이(솜 방석 약 41 × 40, 먹 테 3, 아래 p300, 누빔 선 ink3 둘)와 그림자(먹 타원). 바늘 16(바늘귀 있음, 길이 18~31): 열넷은 시작 반경 26~42에서 반경보다 18~32° 비껴 굴러 날고, 둘은 꽂이에 반쯤 꽂혀 바늘귀 쪽이 밖으로 나온다(고른 햇살·욱일 무늬 없음) | 관통: 왼쪽 아래 먹귀 (24, 102) r 10을 바늘 하나가 꿰뚫는다 · 누빔 실 한 줄(꽂이 세로 가운데, 청록 2.4 + 먹 테) | 바늘 22(여섯 더, 바깥 반경 47~54) |
+
+**spray** (왼쪽 아래 발원 물체 → 원뿔)
+
+| id | 평상 | 효과 표지 · 청록 | 각성 |
+|---|---|---|---|
+| inkDrizzle | 왼쪽 아래의 붓(B2 §6.5: 종이 쇠테, 굵은 먹 붓털, 뾰족한 끝, −24°)에서 털어 낸 먹 튐(r 18.5)과 마른 붓 한 획. 먹 방울 12(앞이 뾰족한 길쭉한 물방울, 길이 17 → 9.5로 멀수록 작게, 폭 0.7배)이 약 36° 원뿔로 16° 올라가며 흩뿌려지고, 중심선이 S로 흔들린다. 방울 사이는 제 길이 이상(애벌레처럼 붙지 않음) | — · 맨 앞 방울 셋 뒤로 끌리는 젖은 청록 줄 셋(청록 2.4 + 먹 테): 가운데 26, 아래 14, 위 20, 방울 축에서 −6·+3·+5° 틀고 서로 다른 쪽으로 2~3 휘어 셋 사이 각이 11~13°다. **2차 수정 1회차 R2**: 옛 줄은 20·22·20의 곧은 줄이 거의 평행해 '≡'로 읽혔다 | 16방울(바깥 두 갈래 넷 더) |
+| pinHail | 왼쪽 아래의 기운 먹 핀통(지름 26, 종이 입테)과 입에서 터진 먹 튐. 단검 핀 9(마름모 종이 날 + 아래 p300 + 속 빈 먹 고리 손잡이, 길이 18~38)과 종이 우박 알갱이 5(각진 덩이, 먹 테)가 56° 넓은 원뿔(−42~+14°)로 쏟아진다 | — · 가장 큰 핀(38)의 날 홈(약 20, 청록 2.4 → 0.6 + 먹 4.8 → 1.8, 날 끝으로 가늘어짐) | 핀 13 + 알갱이 7 |
+
+**rear** (오른쪽 결 매듭 (97, 60) + 왼쪽 위로 물결치는 청록 목도리 꼬리, 모티프 끝은 **왼쪽**)
+
+결 매듭은 종이 매듭(고리 둘 + 끝 둘 + 가운데 매듭, 먹 테 2.4, 카드의 먹 매듭과 다른 꼴)이고, 왼쪽 고리 안에 그 아래 윤곽을 따르는 담묵 접힘 선 하나가 있다. 목도리 꼬리는 매듭에서 (38, 33)까지 두 번 물결치는 청록 띠(굵기 12 → 3.2 + 먹 테, glow 한 획)다. 셋 모두 청록 요소는 이 목도리다. **2차 수정 1회차 R8**: 옛 매듭은 두 고리 위에 안쪽으로 모이는 담묵 획 둘이 있어 2배 이상에서 성난 눈썹(작은 얼굴)으로 읽혔다(세 무기 모두 바뀜).
+
+| id | 평상 | 효과 표지 | 각성 |
+|---|---|---|---|
+| tailGuard | 매듭 아래에서 손잡이를 겹쳐 모은 단검 셋(둥근 종이 날밑을 비스듬히 본 타원 5.8 × 13.2, 가운데 점 없음, 먹 손잡이와 둥근 끝)이 ±18°로 펼쳐 끝이 왼쪽을 향한다(방패꼴). 가장 아래 단검이 가장 멀리 날아 먹귀를 꿰뚫었다. 손잡이 뒤로 속도 획 셋: 손잡이 끝점에서 8.2~21 뒤(둥근 끝 −5.2에서 3 띄움). **2차 수정 1회차 R5**: 옛 획은 손잡이 끝(1 뒤)에서 바로 시작해 단검과 한 몸의 긴 펜·주사기로 읽혔다 | 관통: 왼쪽 아래 먹귀(r 13, 12° 젖혀짐)를 단검이 꿰뚫고 종이 구멍으로 끝이 나온다. 먹귀 밑 먹 그림자·끌림 획 둘·튄 먹 방울 셋 | 4개 |
+| smokeTail | 매듭에서 왼쪽으로 퍼지는 먹 연기가 블랙 스팟이다. 한 실루엣이다: 매듭 쪽은 가는 김(높이 약 13)이고, 땅에 내려앉아 왼쪽으로 갈수록 넓어지며(높이 약 40) 왼쪽 끝에서 조금 오른다. 위 가장자리는 크기가 고르지 않은 덩이(반지름 5·8·9·13·14 + 발치를 둥글리는 낮은 8, 이웃과 약 절반씩 겹침)의 물결, 아래는 땅(y 104)을 따라 평평하고 매듭 쪽 아랫면은 매끈한 곡선이다. ink5 한 톤에 ink7 뭉게 면 셋(그늘 쪽), 열린 ink3 컬 획 셋(+ 앞 자락에 하나, '@' 아님), ink3 그림자는 실루엣 사본 하나(0.8, 2.2 옮김)가 아래 가장자리에만 보인다(탄의 '한 덩이' 문법). 종이 연막침 둘(길이 60·56, 188°·196°)이 연기 덩이의 왼쪽 끝에서 먹귀 위로 왼쪽을 향해 튀어나온다(둘 다 앞 약 57%가 보임; 각성은 연기가 1.2배라 약 절반) | 먹 감속: 먹귀 (22, 88) r 11이 연기 덩이 발치 앞에 선다. 뒤 연기와는 종이 테(먹귀 외곽을 따른 종이 획 5.6)로 갈리고, 같은 연기의 앞 자락이 아래 약 30%(발, y 92.6 아래)만 덮어 슬릿 눈과 위 70%가 드러난다. 먹귀 뒤(왼쪽)로 먹 방울 둘이 끌린다. **2차 수정 1회차 M2**: 옛 그림은 먹귀를 연기보다 먼저 그려 슬릿 눈이 묻혔고, 덩이 여섯이 7 → 15 → 11로 고르게 커지며 덩이마다 그림자와 번갈은 톤이 있어 애벌레·조약돌로 읽혔다 | 3개(셋째 209°, 길이 44), 연기 덩이 1.2배(앞 자락 1.1배) |
+| gravePins | 왼쪽 아래 땅 띠(먹, 위 가장자리 들쭉날쭉)가 블랙 스팟이다. 머리가 작은 비석(둥근 위 판 11.6 × 9.4, 종이 + 먹 테, 아래 p300, 먹 받침, 글자·십자 없음)인 핀 넷이 깊이·기울기를 달리해 땅에 꽂히고(한 줄 아님), 꽂힌 자리마다 종이 튐. 2차 수정 1회차에는 매듭 접힘 선(R8)만 바뀌었다 | 관통: 아직 나는 핀 하나가 왼쪽 먹귀 (18, 76) r 10을 꿰뚫는다 | 핀 6(땅에 하나 더) |
+
+**seeker** (왼쪽 가운데 발원 → 15° 이상 휘며 갈라지는 길 → 서로 다른 과녁)
+
+| id | 평상 | 효과 표지 · 청록 | 각성 |
+|---|---|---|---|
+| trackingSeals | 왼쪽 가운데의 먹 인주 덩이(r 15.5, 흘러내린 방울)가 블랙 스팟이다. 그곳에서 갈라져 휘는 추적 실 셋이 크기가 다른 먹귀 (90, 47) r 10.5 · (109, 80) r 11.5 · (76, 106) r 10에 닿고, 실 끝마다 옆에서 본 작은 도장(종이 원기둥 + 아래 p300 + 앞면 먹 띠 + 둥근 먹 꼭지)이 먹귀를 누른다. 누른 먹귀 몸의 아래 뒤쪽(중심에서 (−0.5r, +0.5r))에 속 빈 종이 네모 인영(반변 0.24r, d + 30° 돌림, 글자 없음). **2차 수정 1회차 R6**: 옛 인영(반변 0.36r)은 슬릿 눈 옆·아래에 놓여 120px에서 벌린 입으로 읽혔다 | — · 점선 추적 실 셋(청록 2.4 + 먹 4.8, 대시 5.5/3.4) | 4개(왼쪽 위 먹귀 하나 더) |
+| huntersMarks | 크기·높이가 다른 먹귀 넷((50, 90) r 12 · (70, 34) r 8 · (104, 60) r 11 · (104, 100) r 9)에 표식 다트(종이 몸 + 먹 촉 + 깃)가 꽂히고, 다트마다 꼬리에서 청록 끈이 한 번 휘어 종이 패(8 × 6.2, 구멍 하나)를 매단다. 끈이 흔들리는 쪽은 과녁마다 번갈고(+1·−1·+1·−1), 처짐은 12·20·−12·9다. (104, 60)의 패는 위로 날린다(끈 위의 패, 구멍은 아래 가장자리 쪽). 가는 휜 궤적 넷이 왼쪽 가운데 먹 점에서 갈라진다. **2차 수정 1회차 R1**: 옛 끈 넷은 모두 같은 쪽(−1)으로 14~17 처진 같은 J 갈고리라 32px에서 같은 기호가 넷 반복됐다 | 치명: 가장 가까운 먹귀에 7갈래 불규칙 종이 섬광 + 튄 먹 방울 셋 · 패를 묶은 끈(약 20~28, 청록 2.4 + 먹 테) | 5개(다섯째 (84, 80) r 7의 패도 위로 날림, 끈 −1) |
+| crowFeathers | 왼쪽 가운데 (36, 70)에서 오른쪽 반원(−68~74°)으로 거리 44~60의 먹귀 다섯(r 8~10)을 향해 까마귀 깃 단검 다섯(먹 깃날, 한쪽이 넓은 비대칭 깃, 종이 깃대와 뒤로 나온 깃촉, 가장자리 종이 갈라짐 셋, 끝이 날처럼 뾰족, 길이 28~33)이 날아가 먹귀 바로 앞에서 멈춘 순간(검은 깃과 검은 먹귀가 붙지 않게) | — · 한 깃의 깃대 심(청록 2.4 + 먹 테) | 6개(가까운 작은 먹귀 하나 더) |
+| bossbane | 오른쪽 40%를 차지한 보스 먹 덩어리(아래로 갈수록 넓게)와 종이 가면. 왼쪽 어깨에 둥근 갑주 판 혹(가장자리를 따르는 p300 테 선 둘)이 튀어나오고, 큰 뿔 하나가 머리 오른쪽 위에서 따로 솟아 뒤로 휜다: 머리와는 종이 홈(뿔 둘레 종이 1.6)으로 떨어지고, p300 마디 고리 셋이 있으며, 끝은 (126.5, 37.6)이다(낙관 구역 밖). 가면(§3.3: 왼쪽을 향한 3/4 한 시점)은 곧게 자른 이마 선(91.6, 55.8)–(117.4, 53.6)과 각진 턱(턱 모서리 (93.5, 79)·(115.4, 79), 턱 끝 (101, 86.5): 먼 쪽으로 치우침)이고, 먼 눈(왼쪽) 폭이 가까운 눈의 0.61, 눈 높이에서 먼 쪽 여백 4.3 < 가까운 쪽 5.2, 굵은 먹테 3.4, 눈마다 흰 눈빛, 코·입 없음, 가까운 쪽 턱을 따르는 p300 그늘, 아이콘의 약 4.4%다. 왼쪽 가운데에서 휜 길로 날아온 작살 침(종이 자루 + 먹 촉 + 뒤로 젖힌 미늘 하나, 길이 78)이 작은 먹귀 둘 사이를 지나 가면 옆에 꽂힌다. **2차 수정 1회차 R3**: 옛 실루엣(달걀꼴 가면 + 머리에서 바로 이어진 뿔 + 작은 어깨 뿔)은 두건 쓴 유령(가오나시)에 가까웠다 | 보스 · 침 꼬리 실(한 번 휜 청록 2.4 + 먹 테) | 2발(둘째는 어깨 갑주에 꽂힘) |
+
 ## 7. 탄 (`parts(id)` · `stamp(id, part, {frame})`)
 
 투사체가 있는 kind(volley·burst·spray·rear·seeker) 22종만 해당한다. 굽기 키는 `skill/<id>/<part>/<frame>`, 호출은 `['PN.arsenal.stamp', id, part, { frame }]`, `scale: 1`(월드 단위 = 1x px)이다.
@@ -177,14 +218,14 @@ PN.arsenal = {
 
 ### 7.2 무기별 박스·앵커
 
-| r | 박스 | 앵커 | 무기 (✓ = 1차에 그림, 나머지는 자리표시) |
+| r | 박스 | 앵커 | 무기 (1 = 1차에 그림, 2 = 2차에 그림; 22종 모두 그림) |
 |---|---|---|---|
-| 3.5 | 40 × 18 | (31, 9) | inkDrizzle |
-| 4 | 46 × 20 | (35, 10) | inkDarts ✓, thornHalo |
-| 4.5 | 50 × 20 | (39, 10) | frostNeedles ✓, thunderNeedles ✓, headsmanDarts ✓, inkBloom, pinHail, smokeTail, gravePins, trackingSeals |
-| 5 | 54 × 22 | (43, 11) | brushQuills ✓, ghostVolley ✓, paperStorm, sunNeedles, tailGuard, huntersMarks, crowFeathers |
-| 5.5 | 60 × 22 | (47, 11) | starShards, bossbane |
-| 6 | 64 × 24 | (51, 12) | sealArrows ✓, twinBlades ✓ |
+| 3.5 | 40 × 18 | (31, 9) | inkDrizzle 2 |
+| 4 | 46 × 20 | (35, 10) | inkDarts 1, thornHalo 2 |
+| 4.5 | 50 × 20 | (39, 10) | frostNeedles 1, thunderNeedles 1, headsmanDarts 1, inkBloom 2, pinHail 2, smokeTail 2, gravePins 2, trackingSeals 2 |
+| 5 | 54 × 22 | (43, 11) | brushQuills 1, ghostVolley 1, paperStorm 2, sunNeedles 2, tailGuard 2, huntersMarks 2, crowFeathers 2 |
+| 5.5 | 60 × 22 | (47, 11) | starShards 2, bossbane 2 |
+| 6 | 64 × 24 | (51, 12) | sealArrows 1, twinBlades 1 |
 
 ### 7.3 장마다·각성 (모든 탄이 같은 감싸개 `shot()`을 쓴다)
 
@@ -196,7 +237,7 @@ PN.arsenal = {
 
 - 각성(세 조각 모두): 몸과 청록 요소는 그대로, 몸 둘레에 겹 테(종이 1.0 + 먹 0.8, 몸 외곽선을 넓게 그은 두 획: 먹 lw + 3.6 위에 종이 lw + 2)를 두른다. 테는 몸 외곽선을 x −3 옮긴 사본에 긋고 clip은 없다. 그래서 테가 몸 꼴을 끝까지 따라가고 앞끝보다 0.45 뒤에서 끝나 앞끝이 늘지 않는다. 회전하는 몸(쌍날)은 회전한 외곽선을 옮긴다. **수정 1회차 R5**: 1차는 앞 3 단위를 세로 clip으로 잘라 칼·인장 머리에서 테 끝이 칼로 자른 듯 남았다(§9-14). travel-awakened 0번 장에만 앞끝 위쪽에 6갈래 불규칙 종이 반짝임(r 2.5, 먹 0.6). 꼬리는 1.25배(8r 안).
 - 색: K 토큰 11개만(산호·호박·자수정·연두·장 재질색 0). 필터·종이결·그라데이션·블러·혼합 모드 0, clipPath·묶음 opacity만. 몸 외곽 먹 1.5, 내부선 0.6~1.0. start·travel에는 늘 청록이 있다(C4). 둥근 먹알 + 종이 점(적 탄 문법)은 없다.
-- **자리표시**(done: false): 종이 바늘(앞끝 r + 1, 뒤 −(2.4r + 4), 반폭 1.7, 먹 1.5) + 청록 바늘귀(end는 allyD). end 1번 장은 p300·ink300·α 0.6. 각성 표시는 없다.
+- **자리표시**(done: false): 종이 바늘(앞끝 r + 1, 뒤 −(2.4r + 4), 반폭 1.7, 먹 1.5) + 청록 바늘귀(end는 allyD). end 1번 장은 p300·ink300·α 0.6. 각성 표시는 없다. 2차로 탄 22종이 모두 그려져, 이제 자리표시 탄을 쓰는 무기는 없다(투사체 없는 무기는 `parts`·`stamp`가 오류를 던진다).
 
 ### 7.4 그린 탄 (1차 + 수정 1회차: volley 8종, 앵커 기준 x · 반폭)
 
@@ -215,9 +256,35 @@ PN.arsenal = {
 - 탄 색 비율(C9, travel 0·1, 종이 / 먹): 먹침 34 / 57~58, 붓깃 33 / 51~52, 인장 화살 34 / 51, 서리침 33~34 / 64~65, 뇌침 26 / 54~55, 쌍날 27 / 58~60, 혼령 17~18 / 21(담묵 46~50), 망나니 침 33~34 / 53~54. 비교: K4 바늘 9 / 59, 부채 단검 32 / 66, 분신 탄 22 / 17. 1차의 먹침 14~15 / 75~77, 망나니 18~19 / 68~71, 인장 화살 종이 20 / 먹 64~66이 위 값으로 바뀌었다(F3·R4).
 - 쌍날 탄은 90° 단위(180° ↔ 270°)로만 돈다. 회전한 묶음은 getBBox가 돌린 로컬 상자로 재서 45°이면 앞끝이 9.2로 잡힌다(C7 실패).
 
-## 8. 자가 확인 명령 (지시서 §5.2 + 검수 1차 §7)
+### 7.5 그린 탄 (2차: burst·spray·rear·seeker 14종, 앵커 기준 x · 반폭)
 
-결과 PNG는 모두 직접 연다. `--check`를 붙인 명령은 `ok`이고 kit error가 0건이어야 한다. T1~T3, C4·C5·C7·C9~C11, 흑백판은 같은 그림을 여러 번 겹치거나 고정 id 필터를 쓰거나 글자로 결과를 내므로 `--check` 없이 돌린다. 명령 원문은 아래 두 코드 블록에 모두 옮겼다(지시서 줄 번호가 바뀌어도 깨지지 않게).
+기울기·회전이 있는 탄(가시·파편·핀·비석)은 돌린 묶음 대신 점을 돌려 그린다(`rotP`). 쌍날과 같은 getBBox 문제(§7.4 끝) 때문이다.
+
+| id | r | 몸 | 꼬리(평상) | 청록 | travel 두 장 | 실측 앞/뒤/옆 |
+|---|---|---|---|---|---|---|
+| paperStorm | 5 | 접힌 종이날(불규칙 삼각 +6.5 ~ −5.5, 반폭 4.5, 접힌 반쪽 p300) | 종이 부스러기 1~2(−8 ~ −16) | 접힌 선(먹 1.7 위 청록 0.9) | 뒤집힘(접힌 반쪽이 위 ↔ 아래) | 6.5 / 17.4 / 5.9 |
+| inkBloom | 4.5 | 밑이 갈라진 잎꼴 꽃잎(뾰족한 앞 +6, 가장 넓은 곳 x +1에서 위 3.6 / 아래 3.3, 뒤로 가늘어져 −8.5에서 반폭 1.0, 그 끝에 깊이 1.3의 V 홈; 종이 + 앞 19% 먹 + ink5 빛 획). **2차 수정 1회차 M3**: 옛 꽃잎(둥근 뒤 −8.5, 반폭 3.7 / 3.0, 앞 35% 먹)은 먹 이슬비 탄과 1배에서 같은 꼴이었다 | 꽃잎 아랫면에서 뒤로 비스듬히 내려온 짧은 먹 줄(0.75)에 매단 먹 방울 하나(중심 x −4.4 ~ −5.8, y +4.4 ~ +5.0; end에서 +5.7까지 처짐). 옛 꼬리(뒤로 처진 방울 1~2, −11 ~ −21)는 없앴다 | 가운데 잎맥(먹 1.3 위 청록 0.75) | 방울 자리 바뀜(x −4.4 ↔ −5.8) | 6.0 / 11.5 / 6.9 |
+| thornHalo | 4 | 휜 가시(밑 −5.6, 위로 휜 끝 +5.8, 위 3.9 / 아래 3.6; 종이 + 좁은 먹 밑동 띠 + 아래 p300) | 없음(사거리 짧음) | 밑동 앞 띠(먹 1.3 위 청록 0.8) | 기울기 +6° ↔ −6° | 6.1 / 9.0 / 4.7 |
+| starShards | 5.5 | 불규칙 5각 파편(+7 ~ −5, 반폭 4.9, 한 면 p300, 외곽 1.6) | 짧은 ink300 획 1(−8 ~ −16) | 한 모서리 선(먹 1.7 위 청록 0.9) | 15° 돎 | 7.0 / 18.0 / 6.5 |
+| sunNeedles | 5 | 종이 바늘(+6.5 ~ −11, 반폭 2.3, 먹 끝, 바늘귀) + 바늘귀에 걸린 솜 조각(불규칙 덩이 r 2.2, 먹 테) | 빛 획 둘(−14 ~ −24, 길이 다름) | 몸 심(먹 1.5 위 청록 0.8) | 획 길이 10·6 ↔ 7·10 | 6.5 / 27.0 / 5.9 |
+| inkDrizzle | 3.5 | 길쭉한 물방울(뾰족한 앞 +5.2, 둥근 뒤 −7, 반폭 2.7; 종이 + 앞 25% 먹 + 아래 p300) | 작은 먹 방울 1(−10 안팎) | 반짝 획(먹 1.2 위 청록 0.7) | 방울이 늘어남 ↔ 모임 | 5.2 / 12.6 / 5.3 |
+| pinHail | 4.5 | 마름모 날(+6 ~ −3.4, 반폭 2.9, 아래 반 p300) + 속 빈 먹 고리 손잡이(중심 −5.5, 4.2 × 2.9) | ink300 속도 획 1(−9 ~ −17) | 날 홈(먹 1.1 위 청록 0.7) | ±8° 흔들림 | 6.0 / 18.9 / 5.3 |
+| tailGuard | 5 | 날(+6.5 ~ −1.2, 반폭 2.2, 아래 p300) + 비스듬히 본 둥근 날밑(종이 타원 4.8 × 7.2, 중심 −4.4, 가운데 점 없음) + 먹 손잡이(−6.8 ~ −9.4) | 없음 | 날선(먹 1.2 위 청록 0.75) | 날밑 반사 획 자리 | 6.5 / 9.8 / 5.9 |
+| smokeTail | 4.5 | 공용 종이 바늘(+6 ~ −10, 반폭 2.2, 청록 끝) | 연기 한 덩이(겹친 덩이 셋, p300 + ink300 아랫면, r 2.1 → 3.8, −10 ~ −27) | 바늘 끝 | 연기 꼴 바뀜 | 6.0 / 28.6 / 6.7 |
+| gravePins | 4.5 | 핀(종이 자루 −3.6 ~ +3.4, 반폭 1.3, 청록 끝 +6) + 뒤쪽 비석 머리(둥근 판 4 × 6, 종이 + 아래 반 p300, ink300 받침) | 없음 | 핀 끝 | 판 기울기 +7° ↔ −9° | 6.0 / 11.5 / 5.3 |
+| trackingSeals | 4.5 | 옆에서 본 작은 도장(종이 몸 −4 ~ +4.6, 반폭 3.6, 아래 p300, 앞면 먹 띠 +4.6 ~ +6) + 둥근 먹 꼭지(−6, r 2) | 청록 점선 추적 실(−8 ~ −30, 한 번 휨; 각성 −35.5) | 추적 실(먹 2.6 / 청록 1.6 / glow 0.5, 대시 2.6 / 1.8) | 휨 방향 뒤집힘 | 6.0 / 35.5 / 5.3 |
+| huntersMarks | 5 | 다트(종이 몸 +6.5 ~ −6, 반폭 2.4, 먹 촉, 아래 p300) | 끈에 매단 종이 패(4.5 × 3.5, 구멍 하나, −8 ~ −17) | 끈(먹 1.8 위 청록 1.0) | 패 +20° ↔ −20° | 6.5 / 19.2 / 6.9 |
+| crowFeathers | 5 | 까마귀 깃 날(+6.5 ~ −12; 위 3.8 / 아래 1.9 비대칭 종이 깃, 위 가장자리 먹 띠, 먹 끝, 아래 p300 한 획) | 위 뒤쪽에서 갈라진 결 2(−12 ~ −20) | 깃대 심(먹 1.2 위 청록 0.7) | 결 흔들림 | 6.5 / 19.8 / 5.9 |
+| bossbane | 5.5 | 작살 침(종이 자루 −14 ~ +1, 반폭 1.7, 아래 p300; 종이 잎 촉 +1 ~ +7, 반폭 2.6) + 뒤로 젖힌 먹 미늘 하나 | 청록 꼬리 실(−14 ~ −38, 한 번 휨; 각성 −43) | 꼬리 실(먹 2.3 / 청록 1.4 / glow 0.5) | 휨 방향 뒤집힘 | 7.0 / 43.0 / 6.5 |
+
+- 실측은 C7 값이다(각성 꼬리 1.25배와 반짝임 포함). 22줄 모두 ok.
+- 탄 색 비율(C9, travel 0·1, 종이 / 먹): 종이 폭풍 30~31 / 59, 먹꽃 33 / 62~63(2차 수정 1회차 M3 뒤; 옛 31 / 65), 가시 테 34 / 59, 별조각 48 / 41, 해바늘 25 / 57, 먹 이슬비 35 / 61, 핀 우박 23 / 61, 꼬리 방패 31 / 62, 연막 꼬리 52~53 / 27~28(담묵 19), 묘침 33 / 61, 추적 인장 30 / 51(청록 20), 사냥꾼 표식 39 / 56, 까마귀 깃 28~29 / 63~64, 보스 사냥침 28 / 51(청록 21). 모두 먹 65% 이하(지시서 §4.3)이고, 1배 흑백(C12)에서 몸의 가장 큰 덩어리가 종이로 읽힌다.
+- 같은 kind 줄의 1배 실루엣(C6): burst = 삼각 종이 / 밑이 갈라진 잎꼴 꽃잎 + 아래 매단 방울 / 짧은 휜 가시 / 5각 파편 / 바늘 + 솜. spray = 작은 물방울 / 마름모 + 고리. rear = 타원 날밑 단검 / 연기 꼬리 바늘 / 비석 머리 핀. seeker = 네모 도장 + 점선 실 / 다트 + 매단 패 / 비대칭 깃 / 미늘 + 긴 실. r 4.5 바늘 계열은 꼬리로 갈린다: 얼음 조각(서리침), 번개(뇌침), 연기(연막 꼬리), 비석 머리(묘침).
+- 같은 look(needleStorm) 계열의 1배(C13, 지시서 §11-2): 먹꽃(앞이 넓고 뒤가 가늘어 갈라진 꽃잎 + 아래 매단 방울)과 먹 이슬비(뒤가 둥근 물방울 + 뒤 방울 점)가 1배 정보량 확대에서 다른 물건으로 갈린다(`k9-c13-needle-1xpx-a`·`-b`, `k9c-after-c13-bloom-drizzle-1xpx`, §8).
+
+## 8. 자가 확인 명령 (지시서 §5.2 + 검수 1차 §7 + 검수 2차 §6·§7 + 검수 4차 §6·§7)
+
+결과 PNG는 모두 직접 연다. `--check`를 붙인 명령은 `ok`이고 kit error가 0건이어야 한다. T1~T3, C4·C5·C7·C9~C11, 보존 해시, 흑백판은 같은 그림을 여러 번 겹치거나 고정 id 필터를 쓰거나 글자로 결과를 내므로 `--check` 없이 돌린다. 명령 원문은 아래 코드 블록에 모두 옮겼다(지시서 줄 번호가 바뀌어도 깨지지 않게). 2차부터 C10은 보정 측정 `k9-c10u-ink`로 판정한다(지시서 §10-5).
 
 | 명령 | 이름 | 합격 |
 |---|---|---|
@@ -232,10 +299,15 @@ PN.arsenal = {
 | C7 META·잘못된 호출·탄 규격 | `k9-c7-meta` | `meta ok \| invalid calls ok \| core list=17`, 탄 22줄 모두 ok |
 | C8 1배 전투 장면 | `k9-c8-scene` (`--scale 1`·`0.8`·`3`, `--check`), 흑백 `k9-c8-scene-gray` | 모든 탄이 '밝은 몸 + 청록', 적 탄(먹 알 + 산호 테)과 갈림 |
 | C9 탄 색 비율 | `k9-c9-paper` | 먹침·망나니 침 travel 0·1이 종이 25% 이상, 먹 60% 이하(검수 F3). 나머지는 먹 65%를 넘으면 다시 본다 |
-| C10 아이콘 창 먹 면적 | `k9-c10-ink` | 15~55%(지시서 §2.2, 3차 T3 때 판정). `<use>`·clip·필터는 무시하는 근사다(§10) |
-| C11 32px 청록 | `k9-c11-cyan32` | volley 8종 모두 32px 색에서 청록 한 점 이상 |
-| C12 volley 탄만 1배 장면 | `k9-c12-volley-scene` (`--check`), 흑백 `-gray` | 몸의 가장 큰 덩어리가 종이로 읽힘(T4 근거) |
+| C10 아이콘 창 먹 면적 | `k9-c10-ink`(옛 근사), `k9-c10u-ink`(보정, 판정용) | 15~55%(지시서 §2.2, 3차 T3 때 판정). 보정 측정은 `<use>`를 원본 사본으로 바꾸고 표본점마다 조상 `clip-path`를 모두 확인한다(필터·묶음 opacity는 무시) |
+| C11 32px 청록 | `k9-c11-cyan32`(volley), `k9-c11b-cyan32`(2차 14종 + 핵심 셋) | 32px 색에서 무기마다 청록 한 점 이상 |
+| C12 탄만 1배 장면 | `k9-c12-volley-scene`(volley), `k9-c12b-scene`(2차 14종 평상·각성 + 핵심 바늘 + 적 탄) (`--check`), 흑백 `-gray` | 몸의 가장 큰 덩어리가 종이로 읽힘(T4 근거) |
 | 망나니 8배 | `k9-fix-headsman-x8` | 곧은 등·뾰족한 끝의 '자루에 꽂힌 외날', 두 먹귀에 수염·부리·얼굴 없음 |
+| 보존 해시 | `k9-keep-hash` | 2차 이후 volley 8종 출력이 그대로: 정확히 `volley-keep=vko1lv len=992714 \| shots=8wzptx len=134704` |
+| volley 전체 해시 | `k9c-volley-all-after`(각성 망나니 포함, 글자 코드 출력) | `volley-all=lfot85 len=1080615 codes=108,102,111,116,56,53` |
+| 2차 보존 해시 | `k9c-keep22x-after`(바뀐 무기를 SKIP에 넣은 식), `k9c-keep22-orig-after`(검수 4차 §6 식 그대로) | 2차 수정 1회차 뒤 `keep22x-icons=12h4k5f len=1787852 \| keep22x-shots=1p7d1ev len=328482`. SKIP 목록은 다음 수정 때 바뀐 무기에 맞춘다 |
+| C13 같은 look 탄 1배 | `k9-c13-needle-1xpx-a`·`-b`(needleStorm 13종 + K4 바늘, 1단위 픽셀 블록 8배) | 같은 look 줄의 탄이 1배 정보량에서 서로 다른 물건으로 읽힘(지시서 §11-2) |
+| T3 보조 20px 픽셀 블록 | `k9-t3px-blind20` → `k9-t3px-blind20-key`(시드 `r=90210`) | 보조 도구(지시서 §11-4). 판정은 사람 판독 시험 |
 
 ```
 node scripts/art-review-sheet.mjs expr --name k9-c1-all --scale 0.25 --check --expr '(function(){var X=PN.arsenal,s="",n=0;function put(m){s+="<g transform=\"translate("+(n%12)*170+","+Math.floor(n/12)*170+")\">"+m+"</g>";n++;}X.ids.forEach(function(id){[false,true].forEach(function(a){put(X.tile(id,{awakened:a,metal:true,size:150}));put("<g transform=\"scale(1.4)\">"+X.hudSlot(id,{size:40,awakened:a})+"</g>");put("<g transform=\"scale(1.2)\">"+X.skill(id,{awakened:a})+"</g>");});});X.shots.forEach(function(id){var b="";X.parts(id).forEach(function(p,i){for(var f=0;f<p.frames;f++)b+="<g transform=\"translate("+(f*70)+","+(i*26)+")\">"+X.stamp(id,p.part,{frame:f})+"</g>";});put(b);});return s;})()'
@@ -257,16 +329,40 @@ node scripts/art-review-sheet.mjs expr --name k9-c8-scene --scale 1 --check --cr
 ```
 
 ```
-node scripts/art-review-sheet.mjs expr --name k9-c9-paper --scale 1 --crop 0,0,1400,420 --expr '(function(){var X=PN.arsenal,S=PN.skillVfx,NS="http://www.w3.org/2000/svg",L=[];var C={"#faf6ec":"p","#f3eee2":"p","#d8d0c0":"p","#fffff8":"p","#121110":"k","#2b2926":"k","#46423d":"k","#101312":"k","#8c8579":"t","#bcb4a5":"t","#00a8c6":"c","#007c94":"c","#cff6ff":"c"};function hex(v){var m=v.match(/[\d.]+/g);if(!m)return v;return "#"+m.slice(0,3).map(function(x){return ("0"+Math.round(+x).toString(16)).slice(-2);}).join("");}function meas(mk,box){var s=document.createElementNS(NS,"svg");s.setAttribute("width",box[0]);s.setAttribute("height",box[1]);s.innerHTML=mk;document.body.appendChild(s);var els=[].slice.call(s.querySelectorAll("path,circle,ellipse,rect,polygon,polyline,line")).filter(function(e){return !e.closest("clipPath,defs,mask,pattern");});var info=els.map(function(e){var cs=getComputedStyle(e);return {e:e,inv:e.getCTM().inverse(),st:cs.stroke!=="none"&&parseFloat(cs.strokeWidth)>0?hex(cs.stroke):null,fi:cs.fill!=="none"?hex(cs.fill):null};}).reverse();var n={p:0,k:0,t:0,c:0,x:0},st=0.25,pt=s.createSVGPoint();for(var y=0;y<box[1];y+=st)for(var x=0;x<box[0];x+=st){pt.x=x;pt.y=y;for(var i=0;i<info.length;i++){var q=info[i],lp=pt.matrixTransform(q.inv),col=null;if(q.st&&q.e.isPointInStroke(lp))col=q.st;else if(q.fi&&q.e.isPointInFill(lp))col=q.fi;if(col){n[C[col]||"x"]++;break;}}}s.remove();var tot=n.p+n.k+n.t+n.c+n.x;return "paper "+Math.round(100*n.p/tot)+"% ink "+Math.round(100*n.k/tot)+"% ink300 "+Math.round(100*n.t/tot)+"% cyan "+Math.round(100*n.c/tot)+"% other "+Math.round(100*n.x/tot)+"% (area "+(tot*st*st).toFixed(0)+")";}X.ids.filter(function(id){return X.META[id].done;}).forEach(function(id){var P={};X.parts(id).forEach(function(p){P[p.part]=p;});[["travel",0],["travel",1],["start",1],["end",0]].forEach(function(q){L.push(id+" "+q[0]+q[1]+": "+meas(X.stamp(id,q[0],{frame:q[1]}),P[q[0]].box));});});[["needleStorm","travel"],["fanKnives","travel"],["mirrorClone","shot-travel"]].forEach(function(g){var p=S.parts(g[0]).filter(function(x){return x.part===g[1];})[0];L.push("K4 "+g[0]+" "+g[1]+"0: "+meas(S.stamp(g[0],g[1],{frame:0}),p.box));});return "<rect width=\"1400\" height=\"420\" fill=\"#fff\"/>"+L.map(function(t,i){return "<text x=\"4\" y=\""+(12+i*11.6)+"\" font-size=\"10\" font-family=\"monospace\">"+t+"</text>";}).join("");})()'
+node scripts/art-review-sheet.mjs expr --name k9-c9-paper --scale 1 --crop 0,0,1400,1080 --expr '(function(){var X=PN.arsenal,S=PN.skillVfx,NS="http://www.w3.org/2000/svg",L=[];var C={"#faf6ec":"p","#f3eee2":"p","#d8d0c0":"p","#fffff8":"p","#121110":"k","#2b2926":"k","#46423d":"k","#101312":"k","#8c8579":"t","#bcb4a5":"t","#00a8c6":"c","#007c94":"c","#cff6ff":"c"};function hex(v){var m=v.match(/[\d.]+/g);if(!m)return v;return "#"+m.slice(0,3).map(function(x){return ("0"+Math.round(+x).toString(16)).slice(-2);}).join("");}function meas(mk,box){var s=document.createElementNS(NS,"svg");s.setAttribute("width",box[0]);s.setAttribute("height",box[1]);s.innerHTML=mk;document.body.appendChild(s);var els=[].slice.call(s.querySelectorAll("path,circle,ellipse,rect,polygon,polyline,line")).filter(function(e){return !e.closest("clipPath,defs,mask,pattern");});var info=els.map(function(e){var cs=getComputedStyle(e);return {e:e,inv:e.getCTM().inverse(),st:cs.stroke!=="none"&&parseFloat(cs.strokeWidth)>0?hex(cs.stroke):null,fi:cs.fill!=="none"?hex(cs.fill):null};}).reverse();var n={p:0,k:0,t:0,c:0,x:0},st=0.25,pt=s.createSVGPoint();for(var y=0;y<box[1];y+=st)for(var x=0;x<box[0];x+=st){pt.x=x;pt.y=y;for(var i=0;i<info.length;i++){var q=info[i],lp=pt.matrixTransform(q.inv),col=null;if(q.st&&q.e.isPointInStroke(lp))col=q.st;else if(q.fi&&q.e.isPointInFill(lp))col=q.fi;if(col){n[C[col]||"x"]++;break;}}}s.remove();var tot=n.p+n.k+n.t+n.c+n.x;return "paper "+Math.round(100*n.p/tot)+"% ink "+Math.round(100*n.k/tot)+"% ink300 "+Math.round(100*n.t/tot)+"% cyan "+Math.round(100*n.c/tot)+"% other "+Math.round(100*n.x/tot)+"% (area "+(tot*st*st).toFixed(0)+")";}X.ids.filter(function(id){return X.META[id].done;}).forEach(function(id){var P={};X.parts(id).forEach(function(p){P[p.part]=p;});[["travel",0],["travel",1],["start",1],["end",0]].forEach(function(q){L.push(id+" "+q[0]+q[1]+": "+meas(X.stamp(id,q[0],{frame:q[1]}),P[q[0]].box));});});[["needleStorm","travel"],["fanKnives","travel"],["mirrorClone","shot-travel"]].forEach(function(g){var p=S.parts(g[0]).filter(function(x){return x.part===g[1];})[0];L.push("K4 "+g[0]+" "+g[1]+"0: "+meas(S.stamp(g[0],g[1],{frame:0}),p.box));});return "<rect width=\"1400\" height=\"420\" fill=\"#fff\"/>"+L.map(function(t,i){return "<text x=\"4\" y=\""+(12+i*11.6)+"\" font-size=\"10\" font-family=\"monospace\">"+t+"</text>";}).join("");})()'
 node scripts/art-review-sheet.mjs expr --name k9-c10-ink --scale 1 --crop 0,0,1300,160 --expr '(function(){var X=PN.arsenal,I=PN.icons,NS="http://www.w3.org/2000/svg",L=[];var C={"#faf6ec":"p","#f3eee2":"p","#d8d0c0":"p","#fffff8":"p","#efe6d2":"p","#121110":"k","#2b2926":"k","#46423d":"k","#101312":"k","#000000":"k","#8c8579":"t","#bcb4a5":"t","#00a8c6":"c","#007c94":"c","#cff6ff":"c"};function hex(v){if(!v||v.indexOf("url")>=0)return "url";var m=v.match(/[\d.]+/g);if(!m)return v;return "#"+m.slice(0,3).map(function(x){return ("0"+Math.round(+x).toString(16)).slice(-2);}).join("");}function meas(mk){var s=document.createElementNS(NS,"svg");s.setAttribute("width",128);s.setAttribute("height",128);s.innerHTML=mk;document.body.appendChild(s);var info=[];[].slice.call(s.querySelectorAll("path,circle,ellipse,rect,polygon,polyline,line")).forEach(function(e){if(e.closest("clipPath,defs,mask,pattern"))return;if(e.tagName==="rect"&&e.getAttribute("filter"))return;var cs=getComputedStyle(e),m=e.getCTM(),b=e.getBBox(),sw=parseFloat(cs.strokeWidth)||0;var P=[[b.x,b.y],[b.x+b.width,b.y],[b.x,b.y+b.height],[b.x+b.width,b.y+b.height]].map(function(p){var q=s.createSVGPoint();q.x=p[0];q.y=p[1];return q.matrixTransform(m);});var xs=P.map(function(p){return p.x;}),ys=P.map(function(p){return p.y;}),pad=sw*2+1;info.push({e:e,inv:m.inverse(),x0:Math.min.apply(0,xs)-pad,x1:Math.max.apply(0,xs)+pad,y0:Math.min.apply(0,ys)-pad,y1:Math.max.apply(0,ys)+pad,st:cs.stroke!=="none"&&sw>0?hex(cs.stroke):null,fi:cs.fill!=="none"?hex(cs.fill):null});});info.reverse();var n={p:0,k:0,t:0,c:0,x:0},pt=s.createSVGPoint();for(var y=0.5;y<128;y+=1)for(var x=0.5;x<128;x+=1){pt.x=x;pt.y=y;for(var i=0;i<info.length;i++){var q=info[i];if(x<q.x0||x>q.x1||y<q.y0||y>q.y1)continue;var lp=pt.matrixTransform(q.inv),col=null;if(q.st&&q.e.isPointInStroke(lp))col=q.st;else if(q.fi&&q.e.isPointInFill(lp))col=q.fi;if(col){n[C[col]||"x"]++;break;}}}s.remove();var T=n.p+n.k+n.t+n.c+n.x;function pc(v){return Math.round(100*v/T)+"%";}return "ink "+pc(n.k)+" paper "+pc(n.p)+" ink300 "+pc(n.t)+" cyan "+pc(n.c)+" other "+pc(n.x);}X.ids.filter(function(id){return X.META[id].done;}).forEach(function(id){L.push(id+": "+meas(X.skill(id,{})));});["needleStorm","fanKnives","mirrorClone","railSpear"].forEach(function(id){L.push("core "+id+": "+meas(I.skill(id,{})));});return "<rect width=\"1300\" height=\"160\" fill=\"#fff\"/>"+L.map(function(t,i){return "<text x=\"4\" y=\""+(12+i*12)+"\" font-size=\"10\" font-family=\"monospace\">"+t+"</text>";}).join("");})()'
 node scripts/art-review-sheet.mjs expr --name k9-c11-cyan32 --scale 1 --crop 0,0,400,48 --expr '(function(){var X=PN.arsenal,I=PN.icons,s="<rect width=\"400\" height=\"48\" fill=\"#efe6d2\"/>",L=[["c","needleStorm"],["c","fanKnives"],["c","mirrorClone"],["a","inkDarts"],["a","brushQuills"],["a","sealArrows"],["a","frostNeedles"],["a","thunderNeedles"],["a","twinBlades"],["a","ghostVolley"],["a","headsmanDarts"]];L.forEach(function(it,i){var m=it[0]==="c"?I.hudSlot(it[1],{size:40}):X.hudSlot(it[1],{size:40});s+="<g transform=\"translate("+(4+i*36)+",3) scale(0.80357)\">"+m+"</g>";});return s;})()'
 node scripts/art-review-sheet.mjs expr --name k9-c12-volley-scene --scale 1 --check --crop 0,0,420,130 --expr '(function(){var X=PN.arsenal,S=PN.skillVfx,s=PN.env.ground(1,420,130,3,{center:null,canalY:false,rose:null,ringC:null});function es(x,y,r){return "<circle cx=\""+x+"\" cy=\""+y+"\" r=\""+(r+1.2)+"\" fill=\"#101312\"/><circle cx=\""+x+"\" cy=\""+y+"\" r=\""+r+"\" fill=\"#ef5b4f\"/><circle cx=\""+x+"\" cy=\""+y+"\" r=\""+(r-2.4)+"\" fill=\"#101312\"/><circle cx=\""+(x-1)+"\" cy=\""+(y-1)+"\" r=\"1.2\" fill=\"#fffff8\"/>";}var V=X.ids.filter(function(id){return X.META[id].kind==="volley";});[["travel",20],["travel-awakened",62]].forEach(function(row,ri){V.forEach(function(id,i){var P={};X.parts(id).forEach(function(p){P[p.part]=p;});var p=P[row[0]],a=[0,-30,200,150,30,-120,90,330][i],x=30+i*46,y=row[1]+(i%2)*8;s+="<g transform=\"translate("+x+","+y+") rotate("+a+") translate("+(-p.anchor[0])+","+(-p.anchor[1])+")\">"+X.stamp(id,row[0],{frame:0})+"</g>";});});var np=S.parts("needleStorm").filter(function(x){return x.part==="travel";})[0];s+="<g transform=\"translate(60,108) rotate(-20) translate("+(-np.anchor[0])+","+(-np.anchor[1])+")\">"+S.stamp("needleStorm","travel",{frame:0})+"</g>";var fp=S.parts("fanKnives").filter(function(x){return x.part==="travel";})[0];s+="<g transform=\"translate(130,108) rotate(15) translate("+(-fp.anchor[0])+","+(-fp.anchor[1])+")\">"+S.stamp("fanKnives","travel",{frame:0})+"</g>";s+=es(200,108,7)+es(240,104,7)+es(280,110,8)+PN.heroKit.placeSprite("run",2,360,118,1);return s;})()'
 node scripts/art-review-sheet.mjs expr --name k9-fix-headsman-x8 --scale 8 --crop 50,40,230,90 --expr '(function(){var X=PN.arsenal;return "<g>"+X.skill("headsmanDarts",{})+"</g><g transform=\"translate(148,0)\">"+X.skill("headsmanDarts",{awakened:true})+"</g>";})()'
 ```
 
+2차에서 더한 명령(보정 C10, 2차 C11·C12, volley 보존 해시):
+
+```
+node scripts/art-review-sheet.mjs expr --name k9-c10u-ink --scale 1 --crop 0,0,1300,340 --expr '(function(){var X=PN.arsenal,I=PN.icons,NS="http://www.w3.org/2000/svg",L=[];var C={"#faf6ec":"p","#f3eee2":"p","#d8d0c0":"p","#fffff8":"p","#efe6d2":"p","#121110":"k","#2b2926":"k","#46423d":"k","#101312":"k","#000000":"k","#8c8579":"t","#bcb4a5":"t","#00a8c6":"c","#007c94":"c","#cff6ff":"c"};function hex(v){if(!v||v.indexOf("url")>=0)return "url";var m=v.match(/[\d.]+/g);if(!m)return v;return "#"+m.slice(0,3).map(function(x){return ("0"+Math.round(+x).toString(16)).slice(-2);}).join("");}function meas(mk){var s=document.createElementNS(NS,"svg");s.setAttribute("width",128);s.setAttribute("height",128);s.innerHTML=mk;document.body.appendChild(s);var us=[].slice.call(s.querySelectorAll("use"));us.forEach(function(u){var h=(u.getAttribute("href")||"").slice(1),src=h&&s.querySelector("[id=\""+h+"\"]");if(!src)return;var g=document.createElementNS(NS,"g");g.innerHTML=src.innerHTML;u.parentNode.replaceChild(g,u);});var info=[];[].slice.call(s.querySelectorAll("path,circle,ellipse,rect,polygon,polyline,line")).forEach(function(e){if(e.closest("clipPath,defs,mask,pattern"))return;if(e.tagName==="rect"&&e.getAttribute("filter"))return;var cs=getComputedStyle(e),m=e.getCTM(),b=e.getBBox(),sw=parseFloat(cs.strokeWidth)||0;var P=[[b.x,b.y],[b.x+b.width,b.y],[b.x,b.y+b.height],[b.x+b.width,b.y+b.height]].map(function(p){var q=s.createSVGPoint();q.x=p[0];q.y=p[1];return q.matrixTransform(m);});var xs=P.map(function(p){return p.x;}),ys=P.map(function(p){return p.y;}),pad=sw*2+1,cls=[];for(var a=e;a&&a!==s;a=a.parentNode){var cp=a.getAttribute&&a.getAttribute("clip-path");if(!cp)continue;var mm=cp.match(/#([^)]+)\)/),el=mm&&s.querySelector("[id=\""+mm[1]+"\"]"),sh=el&&el.querySelector("path,circle,rect,ellipse,polygon");if(sh)cls.push({inv:a.getCTM().inverse(),p:sh,T:sh.transform&&sh.transform.baseVal.consolidate()?sh.transform.baseVal.consolidate().matrix.inverse():null});}info.push({e:e,cls:cls,inv:m.inverse(),x0:Math.min.apply(0,xs)-pad,x1:Math.max.apply(0,xs)+pad,y0:Math.min.apply(0,ys)-pad,y1:Math.max.apply(0,ys)+pad,st:cs.stroke!=="none"&&sw>0?hex(cs.stroke):null,fi:cs.fill!=="none"?hex(cs.fill):null});});info.reverse();var n={p:0,k:0,t:0,c:0,x:0},pt=s.createSVGPoint();for(var y=0.5;y<128;y+=1)for(var x=0.5;x<128;x+=1){pt.x=x;pt.y=y;for(var i=0;i<info.length;i++){var q=info[i];if(x<q.x0||x>q.x1||y<q.y0||y>q.y1)continue;var out=false;for(var j=0;j<q.cls.length;j++){var c0=q.cls[j],lc=pt.matrixTransform(c0.inv);if(c0.T)lc=lc.matrixTransform(c0.T);if(!c0.p.isPointInFill(lc)){out=true;break;}}if(out)continue;var lp=pt.matrixTransform(q.inv),col=null;if(q.st&&q.e.isPointInStroke(lp))col=q.st;else if(q.fi&&q.e.isPointInFill(lp))col=q.fi;if(col){n[C[col]||"x"]++;break;}}}s.remove();var T=n.p+n.k+n.t+n.c+n.x;function pc(v){return (100*v/T).toFixed(1)+"%";}return "ink "+pc(n.k)+" paper "+pc(n.p)+" cyan "+pc(n.c);}X.ids.filter(function(id){return X.META[id].done;}).forEach(function(id){L.push(id+": "+meas(X.skill(id,{})));});["needleStorm","fanKnives","mirrorClone","railSpear"].forEach(function(id){L.push("core "+id+": "+meas(I.skill(id,{})));});return "<rect width=\"1300\" height=\"340\" fill=\"#fff\"/>"+L.map(function(t,i){return "<text x=\"4\" y=\""+(12+i*12)+"\" font-size=\"10\" font-family=\"monospace\">"+t+"</text>";}).join("");})()'
+node scripts/art-review-sheet.mjs expr --name k9-c11b-cyan32 --scale 1 --crop 0,0,620,48 --expr '(function(){var X=PN.arsenal,I=PN.icons,s="<rect width=\"620\" height=\"48\" fill=\"#efe6d2\"/>",L=[["c","needleStorm"],["c","fanKnives"],["c","mirrorClone"],["a","paperStorm"],["a","inkBloom"],["a","thornHalo"],["a","starShards"],["a","sunNeedles"],["a","inkDrizzle"],["a","pinHail"],["a","tailGuard"],["a","smokeTail"],["a","gravePins"],["a","trackingSeals"],["a","huntersMarks"],["a","crowFeathers"],["a","bossbane"]];L.forEach(function(it,i){var m=it[0]==="c"?I.hudSlot(it[1],{size:40}):X.hudSlot(it[1],{size:40});s+="<g transform=\"translate("+(4+i*36)+",3) scale(0.80357)\">"+m+"</g>";});return s;})()'
+node scripts/art-review-sheet.mjs expr --name k9-c12b-scene --scale 1 --check --crop 0,0,700,130 --expr '(function(){var X=PN.arsenal,S=PN.skillVfx,s=PN.env.ground(1,700,130,3,{center:null,canalY:false,rose:null,ringC:null});function es(x,y,r){return "<circle cx=\""+x+"\" cy=\""+y+"\" r=\""+(r+1.2)+"\" fill=\"#101312\"/><circle cx=\""+x+"\" cy=\""+y+"\" r=\""+r+"\" fill=\"#ef5b4f\"/><circle cx=\""+x+"\" cy=\""+y+"\" r=\""+(r-2.4)+"\" fill=\"#101312\"/><circle cx=\""+(x-1)+"\" cy=\""+(y-1)+"\" r=\"1.2\" fill=\"#fffff8\"/>";}var V=["paperStorm","inkBloom","thornHalo","starShards","sunNeedles","inkDrizzle","pinHail","tailGuard","smokeTail","gravePins","trackingSeals","huntersMarks","crowFeathers","bossbane"];[["travel",20],["travel-awakened",62]].forEach(function(row){V.forEach(function(id,i){var P={};X.parts(id).forEach(function(p){P[p.part]=p;});var p=P[row[0]],a=[0,-30,200,150,30,-120,90,330,60,250,15,180,300,110][i],x=30+i*46,y=row[1]+(i%2)*8;s+="<g transform=\"translate("+x+","+y+") rotate("+a+") translate("+(-p.anchor[0])+","+(-p.anchor[1])+")\">"+X.stamp(id,row[0],{frame:0})+"</g>";});});s+=es(200,108,7)+es(240,104,7)+es(280,110,8)+PN.heroKit.placeSprite("run",2,360,118,1);var np=S.parts("needleStorm").filter(function(x){return x.part==="travel";})[0];s+="<g transform=\"translate(60,108) rotate(-20) translate("+(-np.anchor[0])+","+(-np.anchor[1])+")\">"+S.stamp("needleStorm","travel",{frame:0})+"</g>";return s;})()'
+node scripts/art-review-sheet.mjs expr --name k9-keep-hash --scale 1 --crop 0,0,900,40 --expr '(function(){var X=PN.arsenal;function norm(m){return m.replace(/\bki\d+/g,"ki").replace(/\bkar\d+/g,"kar");}function h(s){var x=5381;for(var i=0;i<s.length;i++){x=((x*33)^s.charCodeAt(i))>>>0;}return x.toString(36);}var A="",B="";["inkDarts","brushQuills","sealArrows","frostNeedles","thunderNeedles","twinBlades","ghostVolley","headsmanDarts"].forEach(function(id){[false,true].forEach(function(a){if(id==="headsmanDarts"&&a)return;A+=norm(X.skill(id,{awakened:a}))+norm(X.tile(id,{awakened:a,metal:true,size:150}))+norm(X.hudSlot(id,{size:40,awakened:a}));});X.parts(id).forEach(function(p){for(var f=0;f<p.frames;f++)B+=norm(X.stamp(id,p.part,{frame:f}));});});return "<rect width=\"900\" height=\"40\" fill=\"#fff\"/><text x=\"4\" y=\"26\" font-size=\"14\" font-family=\"monospace\">volley-keep="+h(A)+" len="+A.length+" | shots="+h(B)+" len="+B.length+"</text>";})()'
+```
+
+- 보존 해시는 검수 2차 §6 명령과 같은 값을 낸다. 다른 점은 무기 목록을 `done` 대신 volley 8종 이름으로 고정한 것 하나다(2차로 `done`이 22종이 되어 원래 식은 다른 값을 낸다).
+- C9의 crop은 22종이 다 들어가는 `0,0,1400,1080`이다(지시서 §11-5; 1차의 `0,0,1400,420`은 22종이면 아래가 잘린다).
 - C6은 같은 명령을 `--scale 6`(이름 `-x6`)으로도 돌린다. C8은 `--scale 0.8`(`-08`)·`--scale 3`(`-x3`)으로도 돌린다.
 - C8·C12 흑백판: 끝의 `return s;`를 `return "<defs><filter id=\"k9g8\"><feColorMatrix type=\"saturate\" values=\"0\"/></filter></defs><g filter=\"url(#k9g8)\">"+s+"</g>";`로 바꾸고(C12는 필터 id만 `k9g12`로), 이름 끝에 `-gray`를 붙여 `--check` 없이 돌린다.
-- C9·C10은 필터·clip·`<use>`·묶음 opacity를 무시하는 근사 측정이다. 망나니 침 아이콘은 찢긴 먹귀가 `<use>`라 C10에서 빠진다.
+- C9·옛 C10은 필터·clip·`<use>`·묶음 opacity를 무시하는 근사 측정이다. 망나니 침 아이콘은 찢긴 먹귀가 `<use>`라 옛 C10에서 빠진다. 보정 C10(`k9-c10u-ink`)은 `<use>`와 clip을 반영하지만 필터와 묶음 opacity는 여전히 무시한다.
+
+2차 수정 1회차에서 더한 명령(검수 4차 §6·§7: volley 전체 해시, 2차 보존 해시 둘, C13, T3 보조):
+
+```
+node scripts/art-review-sheet.mjs expr --name k9c-volley-all-after --scale 1 --crop 0,0,1300,60 --expr '(function(){var X=PN.arsenal;function norm(m){return m.replace(/\bki\d+/g,"ki").replace(/\bkar\d+/g,"kar");}function h(s){var x=5381;for(var i=0;i<s.length;i++){x=((x*33)^s.charCodeAt(i))>>>0;}return x.toString(36);}function cc(s){return s.split("").map(function(ch){return ch.charCodeAt(0);}).join(",");}var V=["inkDarts","brushQuills","sealArrows","frostNeedles","thunderNeedles","twinBlades","ghostVolley","headsmanDarts"],A="",B="",C="";V.forEach(function(id){[false,true].forEach(function(a){var m=norm(X.skill(id,{awakened:a}))+norm(X.tile(id,{awakened:a,metal:true,size:150}))+norm(X.hudSlot(id,{size:40,awakened:a}));C+=m;if(!(id==="headsmanDarts"&&a))A+=m;});X.parts(id).forEach(function(p){for(var f=0;f<p.frames;f++)B+=norm(X.stamp(id,p.part,{frame:f}));});});var ha=h(A),hb=h(B),hc=h(C);return "<rect width=\"1300\" height=\"60\" fill=\"#fff\"/><text x=\"4\" y=\"20\" font-size=\"13\" font-family=\"monospace\">volley-keep="+ha+" len="+A.length+" codes="+cc(ha)+" | shots="+hb+" len="+B.length+" codes="+cc(hb)+"</text><text x=\"4\" y=\"44\" font-size=\"13\" font-family=\"monospace\">volley-all="+hc+" len="+C.length+" codes="+cc(hc)+"</text>";})()'
+node scripts/art-review-sheet.mjs expr --name k9c-keep22x-after --scale 1 --crop 0,0,1300,40 --expr '(function(){var X=PN.arsenal;function norm(m){return m.replace(/\bki\d+/g,"ki").replace(/\bkar\d+/g,"kar");}function h(s){var x=5381;for(var i=0;i<s.length;i++){x=((x*33)^s.charCodeAt(i))>>>0;}return x.toString(36);}function cc(s){return s.split("").map(function(ch){return ch.charCodeAt(0);}).join(",");}var A="",B="",SKIPI={starShards:1,smokeTail:1,inkBloom:1,huntersMarks:1,inkDrizzle:1,bossbane:1,tailGuard:1,trackingSeals:1,thornHalo:1,gravePins:1},SKIPS={inkBloom:1};X.ids.filter(function(id){return X.META[id].done;}).forEach(function(id){if(!SKIPI[id])[false,true].forEach(function(a){A+=norm(X.skill(id,{awakened:a}))+norm(X.tile(id,{awakened:a,metal:true,size:150}))+norm(X.hudSlot(id,{size:40,awakened:a}));});if(X.META[id].shot&&!SKIPS[id])X.parts(id).forEach(function(p){for(var f=0;f<p.frames;f++)B+=norm(X.stamp(id,p.part,{frame:f}));});});var ha=h(A),hb=h(B);return "<rect width=\"1300\" height=\"40\" fill=\"#fff\"/><text x=\"4\" y=\"26\" font-size=\"13\" font-family=\"monospace\">keep22x-icons="+ha+" len="+A.length+" codes="+cc(ha)+" | keep22x-shots="+hb+" len="+B.length+" codes="+cc(hb)+"</text>";})()'
+node scripts/art-review-sheet.mjs expr --name k9-c13-needle-1xpx-a --scale 8 --crop 0,0,250,196 --expr '(function(){var X=PN.arsenal,S=PN.skillVfx,W=["inkDarts","sealArrows","frostNeedles","thunderNeedles","headsmanDarts","inkBloom","inkDrizzle"],Q=[["travel",0],["travel",1],["travel-awakened",0],["start",1],["end",0]],g="",lab="";W.forEach(function(id,r){var P={};X.parts(id).forEach(function(p){P[p.part]=p;});Q.forEach(function(q,j){var p=P[q[0]],cx=34+j*44,cy=14+r*28;g+="<g transform=\"translate("+(cx-p.anchor[0])+","+(cy-p.anchor[1])+")\">"+X.stamp(id,q[0],{frame:q[1]})+"</g>";});lab+="<text x=\"1\" y=\""+(16+r*28)+"\" font-size=\"3.6\" font-family=\"monospace\">"+id.slice(0,7)+"</text>";});return "<defs><filter id=\"k9px13\" x=\"0\" y=\"0\" width=\"250\" height=\"196\" filterUnits=\"userSpaceOnUse\" primitiveUnits=\"userSpaceOnUse\" color-interpolation-filters=\"sRGB\"><feGaussianBlur in=\"SourceGraphic\" stdDeviation=\"0.35\" result=\"b\"/><feFlood x=\"0.33\" y=\"0.33\" width=\"0.34\" height=\"0.34\" flood-color=\"#000\" result=\"d\"/><feComposite in=\"d\" in2=\"d\" operator=\"over\" x=\"0\" y=\"0\" width=\"1\" height=\"1\" result=\"c\"/><feTile in=\"c\" x=\"0\" y=\"0\" width=\"250\" height=\"196\" result=\"t\"/><feComposite in=\"b\" in2=\"t\" operator=\"in\" result=\"s\"/><feMorphology in=\"s\" operator=\"dilate\" radius=\"0.34\"/></filter></defs><g filter=\"url(#k9px13)\"><rect width=\"250\" height=\"196\" fill=\"#b8ac93\"/>"+g+"</g>"+lab;})()'
+node scripts/art-review-sheet.mjs expr --name k9-t3px-blind20-key --scale 1 --crop 0,0,1110,120 --expr '(function(){var X=PN.arsenal,ids=X.ids.filter(function(i){return X.META[i].done;}).map(function(i){return ["a",i];}).concat([["c","needleStorm"],["c","fanKnives"],["c","mirrorClone"]]),r=90210;for(var i=ids.length-1;i>0;i--){r=(r*16807)%2147483647;var j=r%(i+1),t=ids[i];ids[i]=ids[j];ids[j]=t;}return "<rect width=\"1110\" height=\"120\" fill=\"#fff\"/>"+ids.map(function(it,i){return "<text x=\""+(4+(i%5)*220)+"\" y=\""+(16+Math.floor(i/5)*20)+"\" font-size=\"12\" font-family=\"monospace\">"+(i+1)+" "+(it[0]==="c"?"core:":"")+it[1]+"</text>";}).join("");})()'
+```
+
+- `k9c-keep22-orig-after`는 `k9c-keep22x-after`에서 SKIPI를 `{starShards:1,smokeTail:1}`로 바꾼 식이다(검수 4차 §6의 `k9-keep22-hash`와 같은 식, 글자 코드를 더함).
+- `k9-c13-needle-1xpx-b`는 `-a`에서 W를 `["thornHalo","sunNeedles","smokeTail","gravePins","trackingSeals","bossbane"]`로 바꾸고 맨 아래 줄 (34, 182)에 `PN.skillVfx.stamp("needleStorm","travel",{frame:0})`을 더한 식이다(필터 id `k9px13b`).
+- T3 보조 그림 `k9-t3px-blind20`의 명령은 검수 4차 §7의 원문 그대로다(시드만 바꿔 쓴다). 정답표는 위 `-key` 식이며 맞힌 뒤에 연다.
 
 리뷰 도우미로 한 kind만 빨리 볼 때: `--expr "PN.arsenal.sheet({kind:'volley'})"`, `--expr "PN.arsenal.shotSheet({kind:'volley'})"`(둘 다 `--check` 통과).
 
@@ -305,12 +401,79 @@ node scripts/art-review-sheet.mjs expr --name k9-fix-headsman-x8 --scale 8 --cro
     - 평상판 아이콘·타일·슬롯과 탄 96장은 바뀌지 않았다(보존 해시 `volley-keep=vko1lv len=992714 | shots=8wzptx len=134704`).
     - 각성 1.1배에서 둘째 먹귀의 아래 끝과 종이 테가 창 아래 가장자리를 조금 넘는다(창 밖 10 안).
 
+### 9.4 2차 (burst·spray·rear·seeker 14종)
+
+17. **탄의 먹 비율**(지시서 §4.3·§4.4): 사양 그대로면 C9 먹이 65%를 넘어(먹꽃 앞 55% 먹 → 약 80%, 가시 테 먹 밑동 35% → 약 82%, 먹 이슬비 앞 40% 먹 → 약 74%) 1배에서 몸이 어둡게 읽혔다. 1차 먹침 F3와 같은 판단으로 먹을 줄였다: 먹꽃 앞 35%, 가시 테 좁은 밑동 띠 + 아래 p300, 먹 이슬비 앞 25% + 아래 p300. 결과는 §7.5 C9 값이다.
+18. **탄 꼴 비율**: 먹꽃 꽃잎(12 × 7.2)과 먹 이슬비 물방울(10.5 × 5.6)은 길이가 폭의 2배가 안 되고(§4.3 '길이 ≥ 폭의 2배'), 1배에서 눈처럼 읽혀서 길게 늘였다(14.5 × 6.7, 12.2 × 5.4). 먹꽃 꽃잎은 위쪽을 더 불룩하게 해 좌우 대칭 눈꼴을 깼다.
+19. **탄 세부**
+    - 꼬리 방패 날밑: 날 한가운데의 둥근 종이 원반(r 3.6)은 막대사탕으로 읽혀서, 날 뒤(중심 −4.4)로 옮기고 비스듬히 본 타원(4.8 × 7.2)으로 했다.
+    - 핀 우박 손잡이: 종이 고리가 검은 구멍을 두르면 5장 먹귀의 일식 고리 눈(지시서 §2.6)이 되어, 먹 선만 있는 타원 고리로 했다.
+    - 연막 꼬리 연기: 따로 떨어진 둥근 덩이 셋은 1배에서 조약돌 줄(같은 기호 한 줄)로 읽혀서, 셋을 겹쳐 담묵 외곽 하나로 묶은 한 덩이로 했다. 덩이 안의 어두운 점은 눈처럼 보여 빼고 아랫면 그늘로 바꿨다.
+    - 까마귀 깃 탄: 좌우 대칭 깃(반폭 3.6)과 갈라진 꼬리는 물고기로 읽혀서, 위 3.8 / 아래 1.9 비대칭 깃과 위쪽에서 갈라지는 결로 했다.
+    - 묘침 탄: 비석 머리 앞에 담묵 받침을 더했다(비석이 핀 끝 장식이 아니라 받침 위 판으로 읽히게).
+    - 꼬리 길이: 추적 인장 실 −34 → −30, 보스 사냥침 실 −44 → −38(각성 −43에서 멈춤). 각성 1.25배가 8r(36·44)을 넘지 않게 줄였다.
+20. **아이콘 먹 바탕·블랙 스팟**(1차 #1과 같은 근거, 지시서 §2.2): 흰 모티프는 종이 위에서 20px에 사라져 먹 바탕을 깔았다. 종이 폭풍 = 가운데 번짐 r 9 → 15와 날 사이 붓 휘감기 셋(먹 나선 한 줄은 '@'로 읽혔다), 별조각 = 가운데 먹 폭발, 해바늘 = 꽂이 그림자, 추적 인장 = 먹 인주 덩이, 먹 이슬비 = 붓에서 털어 낸 먹 튐과 마른 붓 한 획, 핀 우박 = 통 입에서 터진 먹 튐. 모두 낙관 구역 밖이다.
+21. **아이콘 크기·자리**(20px 주 덩어리와 보정 C10 하한 15%를 맞추려는 것)
+    - 가시 테 덩굴 굵기 6~9 → 9.6 ± 2.6, 가시 8~18 → 11~22.
+    - 핀 우박 핀 16~24 → 18~38(가장 큰 핀 38에 청록 홈 약 20을 넣으려는 것), 핀통 지름 26.
+    - 먹 이슬비 방울 7~14 → 9.5~17, 붓은 창 왼쪽 밖에서 들어와 끝이 (36, 100).
+    - 추적 인장 과녁 r 9·10·9 → 10.5·11.5·10.
+    - 꼬리 방패 먹귀 (18, 100) r 10 → (46, 112) r 13: 가장 길게 날아간 아래 단검 끝에 맞췄다. 단검 셋은 40~48 → 50·54·64.
+    - 까마귀 깃: 출발 (40, 70) → (36, 70), 먹귀 거리 30~56 → 44~60. 깃이 먹귀 바로 앞에서 멈춘 순간으로 그려 검은 깃과 검은 먹귀가 붙지 않게 했다.
+22. **해바늘 바늘 방향**: 지시서는 '각 간격 ±30%'다. 바늘을 반경 방향으로 두면 각을 흔들어도 햇살(욱일 무늬, §2.6)로 읽힐 수 있어, 바늘마다 반경에서 18~32° 비껴 굴러 나는 모양으로 했다.
+23. **청록 요소 길이·굵기**(32px, 지시서 §10-1의 C11 기준): 먹꽃 꽃술 테는 반 바퀴(약 30, 청록 3.4)로 했다. 4/10 바퀴의 2.4는 32px에서 먹 꽃잎에 묻혔다. 먹 이슬비 반짝 획은 '젖은 반짝 획'을 방울 뒤로 끌리는 줄(20~22)로 늘렸다. 사냥꾼 표식 끈은 약 22로 처지게 늘렸다. 핀 우박 날 홈은 날 안에 머물러야 해서 끝으로 가늘어진다(밑동 청록 2.4, 끝 0.6).
+24. **연막 꼬리 연기 덩이 수**(지시서 3~4): 아이콘 연기는 덩이 여섯을 겹친 한 덩어리다. 먹귀 발까지 이어지는 긴 꼬리를 경계가 또렷한 덩이로만 그리려면 여섯이 필요했다. (2차 수정 1회차 M2에서 덩이 여섯 + 앞 자락을 한 실루엣으로 그리는 방식으로 바뀌었다, §9.5-27.)
+25. **보스 가면 방향**: 지시서 §3.3대로 한 시점(3/4)이다. 가면은 작살이 날아오는 왼쪽을 향하고(먼 눈이 왼쪽, 가까운 눈 폭의 0.6), 오른쪽 아래에 p300 그늘을 둔다. 보스 실루엣은 위로 선 두 뿔이 고양이 귀로 읽혀서 뒤로 젖힌 큰 뿔 하나로 했다.
+
+### 9.5 2차 수정 1회차 (검수 4차 뒤)
+
+바뀐 출력은 아래 11개뿐이다. 나머지는 보존 해시로 같다(§8: volley `vko1lv`·`8wzptx`·`lfot85`, 2차 `12h4k5f`·`1p7d1ev`).
+
+| 무기 | 바뀐 출력 | 항목 |
+|---|---|---|
+| starShards | 아이콘 평상·각성 | M1 |
+| smokeTail | 아이콘 평상·각성 | M2 + R8(매듭) |
+| inkBloom | 아이콘 평상·각성, 탄 12장 | M3(탄), R4(아이콘) |
+| huntersMarks | 아이콘 평상·각성 | R1 |
+| inkDrizzle | 아이콘 평상·각성 | R2 |
+| bossbane | 아이콘 평상·각성 | R3 |
+| tailGuard | 아이콘 평상·각성 | R5 + R8 |
+| trackingSeals | 아이콘 평상·각성 | R6 |
+| thornHalo | 아이콘 평상·각성 | R7 |
+| gravePins | 아이콘 평상·각성 | R8 |
+
+처방과 다르게 한 것:
+
+26. **별조각 폭발(M1)**: 처방은 '갈래 6~7개를 고르지 않게'다. 깨끗한 삼각 갈래 일곱은 그 자체로 검은 별로, 가는 줄기 일곱은 둥근 먹 덩이와 함께 기뢰·성게로 읽혀서, 갈래마다 옆 홈을 낸 찢긴 갈래 일곱 사이에 작은 혹 셋을 둔 다각형(꼭짓점 23)으로 했다. 둘째 조각(6°)의 거리는 처방 50 → 43이다(±6 안). 46 이상이면 각성 1.1배에서 창 오른쪽 끝에 걸렸다.
+27. **연막 꼬리(M2)**
+    - 처방의 예 반지름 6·10·8·15·11·14 대신 5·8·9·13·14 + 발치 8이다. 고르게 커지지 않고 이웃과 약 절반씩 겹치는 조건은 지킨다.
+    - 먹귀를 뒤 연기 앞에 세우면서 먹귀 외곽을 따라 종이 테(5.6 획)를 둘렀다. 처방에 없다. 먹 몸(ink)과 ink5 연기는 명도 차가 작아 테 없이는 작은 크기에서 한 덩어리가 될 여지가 크다(테 없는 판은 렌더해 보지 않았다). 뇌침 아이콘의 '종이 끊김 호'(§6)와 같은 문법이다.
+    - 먹귀는 (20, 88) 대신 (22, 88)이다. 방울 둘을 먹귀 왼쪽에 둘 자리를 남겼다.
+    - 연막침은 연기 위로가 아니라 연기 덩이의 왼쪽 끝에서 먹귀 위로 나온다. 왼쪽 끝이 조금 오르는 연기에서 위로 빼면 앞 23~28%만 보였다(계산). 보이는 앞은 둘 다 약 57%(계산)이고, 각성은 연기 덩이가 1.2배라 약 51%다.
+    - 연기를 처음에는 매듭에서 왼쪽 아래 땅으로 곧게 내려가는 대각 쐐기로 그렸다. 처방의 '왼쪽으로 갈수록 넓어지며 조금 오른다'에 더 가깝게 연기 덩이를 땅 위 둑으로 모으고 매듭 쪽만 가는 김으로 남겼다. 흑백 20px에서 volley의 대각 구도(뇌침·망나니 침)와 가까운 점은 두 꼴 모두 남는다(§10 판독 메모).
+    - 앞 자락은 먹귀 가운데에서 아래 약 30%(y 92.6 아래)를 덮는다. 각성의 앞 자락은 1.1배(약 33%)다(뒤 연기는 1.2배). 1.2배면 약 37%까지 덮는다(계산).
+28. **먹꽃 탄(M3)**
+    - 방울을 하나만 매단다(처방 1~2). 둘을 매달면 1배에서 다리 둘로 읽혔다.
+    - 방울 줄은 수직이 아니라 뒤로 비스듬히 내려온다. 수직 줄은 1배에서 막대사탕 막대로 읽혔다.
+    - 끝(end) 두 장에서는 방울이 처져 중심 y가 +5.35·+5.7까지 내려간다(처방 +4.2~+5.2는 start·travel에서 지킴). end 문법(꼬리가 처짐)을 따른 것이다. C7 옆은 6.9로 7.0 안이다.
+    - 앞 먹은 19%다(처방 '35% 이하'). 24%에서 C9 먹이 65%로 경계에 붙어 줄였다.
+29. **사냥꾼 표식(R1)**: 다섯째(각성) 과녁의 패도 위로 날린다. 2차 납품의 처짐 14(끈 −1)로는 패가 첫째 먹귀 (50, 90) r 12의 오른쪽 몸에 겹친다(계산: 패 x 52.7~60.7, y 95.6~101.8).
+30. **가시 테(R7)**: 토막 끝이 가늘어지는 자리(끝 10%)에 걸린 가시 넷을 1~6° 옮겼다(55 → 54, 92 → 96, 140 → 138, 176 → 182). 각성 가시 72°는 옛 틈(67~83°) 안에 떠 있어서 43°로 옮겼다(190 → 192도 같이). 청록 실은 90~141° → 95~139°로 줄여 가늘어지는 끝에서 빠지지 않게 했다.
+
 ## 10. 알려진 한계와 사람 클린업 (바이블 §15)
 
-- 1차라 36종이 자리표시다. T1의 그 칸과 T3 섞은 20px은 아직 정식으로 판정할 수 없다(자리표시가 핵심 그림과 같다).
+- 2차까지 22종(투사체 없는 6 kind)의 아이콘이 자리표시다. T3 섞은 20px은 3차 뒤에 정식으로 판정한다(자리표시가 핵심 그림과 같다).
+- **2차 14종 블랙 스팟**(보정 C10 `k9-c10u-ink`, 2차 수정 1회차 뒤): 종이 폭풍 17.4 · 먹꽃 15.7 · 가시 테 15.3 · 별조각 20.8 · 해바늘 19.6 · 먹 이슬비 15.4 · 핀 우박 15.4 · 꼬리 방패 15.4 · 연막 꼬리 20.5 · 묘침 27.6 · 추적 인장 15.5 · 사냥꾼 표식 16.1 · 까마귀 깃 15.9 · 보스 사냥침 26.9%(2차 납품 때: 먹꽃 16.0 · 가시 테 15.7 · 별조각 29.2 · 꼬리 방패 15.2 · 연막 꼬리 16.4 · 묘침 27.5 · 추적 인장 15.3 · 사냥꾼 표식 16.5). 모두 하한 15% 이상이지만 가시 테·먹 이슬비·핀 우박·꼬리 방패·추적 인장은 하한에 붙어 있다. 3차 T3 때 44종과 함께 다시 본다.
 - **블랙 스팟 면적**(지시서 §2.2, 15~55%): C10(평상판, 창 안 먹)은 먹침 18 · 붓깃 18 · 인장 화살 15 · 서리침 32 · 뇌침 15 · 쌍날 15 · 혼령 19 · 망나니 침 10%다. C10은 `<use>`와 clip을 무시한다. 둘을 반영한 보정 측정(검수 2차 `k9r2-c10u-ink`, 지시서 §5.2 정정안의 `k9-c10u-ink`)으로는 먹침 18.5 · 붓깃 17.4 · 인장 화살 15.4 · 서리침 31.6 · 뇌침 15.4 · 쌍날 12.3 · 혼령 19.3 · 망나니 침 13.9%다. 수정 1회차 문서의 '망나니 침 15.2'는 반쪽 clip이 덜 반영된 값이라 고쳤다. 쌍날은 C10이 날 안쪽 먹 등의 clip을 무시해 크게 잡은 것이라 실제로는 하한 아래다. 망나니 침·쌍날은 검수서 R1대로 3차 T3 때 44종을 함께 보며 정한다.
 - 각성판은 20px에서 빌린 틀의 먹 바탕 + 종이 원상이 화면을 거의 채워 무기끼리 차이가 작다. 핵심 아이콘의 각성판도 같다(팀 결정 Q7 때 함께 본다).
 - 32px 청록: 쌍날·망나니 침의 날선은 청록 2.4(먹 테 포함 4.8)라 C11에서 보이지만 흐리다. 검수 2차에서 '청록 심 3.2 이상'은 거두었다. 선 요소는 '청록 심 2.4 이상 + 양쪽 먹 1.2 이상, 길이 20 이상'을 기준으로 하며 지금 날선은 합격이다.
 - 사람이 다시 그을 것: 44종의 최종 붓 외곽·블랙 스팟·비백(특히 마른 붓 꼬리, 먹 붓질 띠, 서릿발, 찢김선, 번개 꺾쇠), 20~32px 픽셀 다듬기(슬롯 하나를 20~45px에 쓴다), 탄 264장의 1x 픽셀 정리, 문화 검토(인장·종·손·가시·별·바늘꽂이의 최종 꼴, 로어 §1.4). 정식 판독 시험(n ≥ 8)은 하지 않았다.
 - 수정 1회차에 더한 사람 클린업(검수서 §9 + 이번에 본 것): 망나니 칼 머리 실루엣, 찢긴 먹귀의 먹 튐과 땅의 먹 튐(킷의 다각형 튐은 꼭짓점이 곧다), 위 조각의 꺾인 끝(8배에서 부리처럼 뾰족해 보일 여지), 서릿발 꼴(흰 꽃잎·불꽃처럼 보일 기미), 뇌침 탄 자국과 종이 끊김 호, 쌍날 각성 배치의 문화 검토(三つ巴·삼태극).
 - 기절 나선은 한 획 1.5바퀴라는 지시를 지키면 작은 크기에서 '@'와 닮을 여지가 남는다. 납작하게(0.38) 하고 꼬리를 열어 줄였다(검수 1차에서 사람 클린업으로 넘김).
+- 2차에 더한 사람 클린업: 연막 꼬리 연기와 먹 연기 붓 질감, 가시 테 덩굴과 장미 가시(가시관으로 읽히지 않는지 문화 검토), 해바늘 바늘꽂이(햇살·욱일 무늬 기미 문화 검토), 별조각(별 꼴 문화 검토), 묘침 비석(묘·비석 모티프 문화 검토), 보스 가면과 뿔 실루엣, 까마귀 깃의 깃털 결, 종이 폭풍 접힌 종이, 먹 이슬비 붓과 털어 낸 튐.
+- 2차 판독 메모(T2 20px 흑백): 가장 가까운 쌍은 혼령 일제사격 ↔ 먹 이슬비(왼쪽 아래에서 오른쪽으로 가는 먹: 꽉 찬 부채 대 낱낱의 방울 원뿔)와 서리침 ↔ 묘침(먹 땅: 오른쪽 아래 대 왼쪽 아래)이다. 지금은 갈리지만 3차 T3에서 다시 본다(검수 1차 §3 #1 조건).
+- 각성판 20px은 1차와 같이 빌린 틀(먹 바탕 + 종이 원상)이 화면을 채워 무기끼리 차이가 작다(팀 결정 Q7).
+- 2차 수정 1회차에 더한 사람 클린업(검수 4차 §7-7 + 이번에 본 것): 연기 줄기의 붓 질감(킷 덩이 실루엣은 원호 합집합이라 가장자리가 매끈하다), 별조각 흩어짐과 찢긴 폭발 다각형(꼭짓점이 곧다), 결 매듭 접힘 선, 보스 실루엣(뿔 마디·어깨 갑주; 가오나시와 닮은 점 확인 포함), 가시 덩굴(덩굴손·잎), 먹꽃 탄의 갈라진 밑과 매단 방울(1배 픽셀 정리).
+- 2차 수정 1회차 판독 메모
+  - 20px 픽셀 블록 블라인드(`k9-t3px-blind20`, 시드 90210, 25칸): 작업자가 정답표를 열기 전에 한 번 풀어 20/25였다(연막 꼬리를 고치던 중간 상태). 틀린 칸은 망나니 침 ↔ 뇌침 ↔ 연막 꼬리(왼쪽 아래 → 오른쪽 위로 놓인 덩어리 셋), 핵심 부채 단검 ↔ 핵심 먹선 바늘이다. 2차 수정 1회차의 열 종 중 별조각·먹꽃·가시 테·사냥꾼 표식·추적 인장·보스 사냥침·꼬리 방패·묘침·먹 이슬비는 맞혔다. 작업자는 그림을 알고 정답표를 이미 열었으므로 판정은 검수자가 다른 시드로 한다.
+  - 연막 꼬리는 rear 줄(T2)에서는 갈리지만, 흑백 20px 섞은 판에서는 청록 목도리가 회색 띠가 되어 volley의 대각 구도(뇌침·망나니 침)와 가까워질 여지가 남는다. 3차 T3에서 다시 본다.
