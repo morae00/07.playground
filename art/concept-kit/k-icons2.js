@@ -4,8 +4,10 @@
 //   the length of one PN.icons.skill / tile / hudSlot call (brief §1.3). The rarity frames, knots and the awakened
 //   grammar are k-icons' own; nothing is left behind in PN.icons or PN._ki.
 // - Shots: stamps for the 22 weapons that fire projectiles (parts / stamp, the K4 PN.skillVfx contract), ids 'kar<N>_'.
-// - Delivery 2 of 3: skeleton, META for all 44; drawn: volley (8, delivery 1) and burst · spray · rear · seeker (14,
-//   delivery 2), so all 22 shots are done. The rest (22 icons) wear placeholders (META done: false): the look's core icon.
+// - Delivery 3 of 3: all 44 drawn — volley (8, delivery 1), burst · spray · rear · seeker (14, delivery 2, with all 22
+//   shots) and strike · nova · lob · chain · beam · halo (22 icons, delivery 3; no projectiles, so no shots). META done is
+//   true for all; the look-icon placeholder path in defOf is no longer reached. Fix round after 검수 6차: M1 meteorBrush,
+//   M2 tarJar, M3 seventhSeal, R1 thunderNeedles · headsmanDarts (plain) · smokeTail, R2–R6 (API-icons2.md §9.7).
 // Deterministic: no Math.random / Date. Load after lib.js and k-icons.js.
 window.PN = window.PN || {};
 (function (PN) {
@@ -116,7 +118,11 @@ window.PN = window.PN || {};
   const DONE = new Set(['inkDarts', 'brushQuills', 'sealArrows', 'frostNeedles', 'thunderNeedles', 'twinBlades', 'ghostVolley', 'headsmanDarts',
     // delivery 2: burst · spray · rear · seeker
     'paperStorm', 'inkBloom', 'thornHalo', 'starShards', 'sunNeedles', 'inkDrizzle', 'pinHail', 'tailGuard', 'smokeTail', 'gravePins',
-    'trackingSeals', 'huntersMarks', 'crowFeathers', 'bossbane']);
+    'trackingSeals', 'huntersMarks', 'crowFeathers', 'bossbane',
+    // delivery 3: strike · nova · lob · chain · beam · halo (icons only)
+    'inkLightning', 'brushDownpour', 'fallingScroll', 'seventhSeal', 'inkPulse', 'frostRing', 'thunderclap', 'silenceBell',
+    'inkPots', 'clusterPots', 'tarJar', 'meteorBrush', 'sparkThread', 'stormThread', 'frostChainlet',
+    'inkLance', 'wideBrush', 'crossStrokes', 'judgmentLine', 'inkOrbit', 'wardRing', 'eclipseHalo']);
   const META = {};
   ROWS.forEach(([id, name, rarity, kind, look, count, awakenedCount, r]) => {
     META[id] = Object.freeze({ name, rarity, kind, look, count, awakenedCount, r, shot: SHOT_KINDS.indexOf(kind) >= 0, done: DONE.has(id), mass: MASS[id][0], cyan: MASS[id][1] });
@@ -304,7 +310,9 @@ window.PN = window.PN || {};
     return S(vane(1), K.p50, 2, 1.1) + upper + S(body, K.p50, 2.6, 1.4) + shade + bind + P(ptsD(tipPts, true), K.ink) + bevel;
   }
   DRAW.inkDarts = { draw(c, A) {
-    const deg = -12, ax = axis([0, 0], deg), u = ax.u, n = ax.n, G = [103, 57], gr = 15, ln = A ? K.ink7 : K.ink;
+    // 검수 5차 N1: the awakened trails are p300 (the brief §2.4 rule for bg ink lines) — in ink7 they sank into the
+    // awakened ink ground and the three volley needles' awakened icons swapped at 32 px; the black wedges stay
+    const deg = -12, ax = axis([0, 0], deg), u = ax.u, n = ax.n, G = [103, 57], gr = 15, ln = A ? K.p300 : K.ink;
     const lead = A ? [97, 62] : [96, 64];
     const add = (p, a, b) => [p[0] + n[0] * a + u[0] * b, p[1] + n[1] * a + u[1] * b];
     // [tip, length, cyan vane]: the upper dart flies a little behind the lead one (staggered, never a row)
@@ -420,8 +428,11 @@ window.PN = window.PN || {};
     const ko = (a) => q([G[0] + (gr + 1.3) * Math.cos(rad(a)), G[1] + (gr + 1.3) * Math.sin(rad(a))]);
     fg += `<path d="M${ko(-80)} A${gr + 1.3},${gr + 1.3} 0 0 1 ${ko(100)}" fill="none" stroke="${K.p50}" stroke-width="2.8" stroke-linecap="round"/>`;
     fg += ghoul(c, G[0], G[1], gr, 3) + stunSpiral(99, 42, 9.5, 2.4);
-    // the main bolt in icon space: long, short jog, longer, short jog back, medium, short — every step ≥ 30% apart
-    const main0 = { pts: [[4, 100], [30, 80], [36, 90], [70, 58], [66, 72], [86, 62], [99, 66]], w0: 8, w1: 15.5, front: [1, 3], fork: false, shadow: [2.1, 2.7] };
+    // the main bolt in icon space: long, short jog, longest, one deep jog back down across the needle, medium, short —
+    // every step ≥ 30% apart. 검수 6차 R1: the middle jog was 14 deep (70,58 → 66,72) and closed up at 20 px, where the
+    // bolt and 망나니 침's dart both became 'a thin diagonal + an ink mass on the right'; it now drops 32 (76,46 → 70,78)
+    // so a Z notch stays open at 20 px
+    const main0 = { pts: [[4, 100], [30, 80], [36, 90], [76, 46], [70, 78], [86, 62], [99, 66]], w0: 8, w1: 15.5, front: [1, 3], fork: false, shadow: [2.1, 2.7] };
     needles.slice().reverse().forEach(([B, Tp], i) => {
       const main = i === needles.length - 1, bo = boltAround(B, Tp, main ? main0 : { ts: [0.05, 0.24, 0.36, 0.58, 0.7, 1], ss: [0, -6, 3, -7.5, 3.5, 0.5], w0: 4.6, w1: 9, front: [1], fork: false });
       fg += bo.back + KI.slimNeedle(B, Tp, main ? 6.6 : 5.4, main ? 2.4 : 2) + bo.front;
@@ -479,8 +490,12 @@ window.PN = window.PN || {};
   }
   DRAW.frostNeedles = { draw(c, A) {
     const G = [100, 66], gr = 16, ln = A ? K.p300 : K.ink;
-    // the black spot: frozen ground spreading in from the lower right; the ghoul's frosted half stands on it
-    let bg = `<path d="M18,132 C34,110 60,92 82,80 C96,72 112,70 134,68 L134,134 L18,134 Z" fill="${A ? K.ink7 : K.ink}"/>` +
+    // the black spot: frozen ground spreading in from the lower right; the ghoul's frosted half stands on it. Awakened
+    // (검수 5차 N1): the same wedge turned to bright ice — p300 with an ink rim and three ink.300 cracks — since in ink7
+    // it vanished into the awakened ink ground and the icon swapped with 먹침 / 망나니 침 at 32 px
+    const ground = 'M18,132 C34,110 60,92 82,80 C96,72 112,70 134,68 L134,134 L18,134 Z';
+    let bg = (A ? `<path d="${ground}" fill="${K.p300}" stroke="${K.ink}" stroke-width="2.4" stroke-linejoin="round"/>` +
+      L('M50,112 L61,104 L66,108 L76,98 M84,124 L93,111 L100,113 L108,99 M104,84 L113,88 L124,82', K.ink3, 1.4) : `<path d="${ground}" fill="${K.ink}"/>`) +
       speed([30, 80], [4, 86], 2.2, ln) + speed([20, 61], [0, 65], 1.8, ln);
     let fg = icePlate(100, 89, 23, 5.5) + ghoul(c, G[0], G[1], gr, 3);
     // thin branched crystals off the lower half of the body (two of them lie on the black body itself)
@@ -575,14 +590,17 @@ window.PN = window.PN || {};
 
   /** 망나니 침: a thick dart (ink shaft 6, paper knock-out) carrying a wide curved single-edged blade: paper blade, ink back
    *  along the spine, the cyan edge line. Blade space: x forward from the mount, s down; spine on top, belly edge below. */
-  function headsmanDart(O, deg, len, k = 1, cyan = true) {
+  function headsmanDart(O, deg, len, k = 1, cyan = true, heavy = false) {
     const at = axis(O, deg), B = (x, s) => at(len + x * k, s * k), M = (a) => a.map(([x, s]) => B(x, s));
     // falchion head (검수 1차 F1): straight spine, the belly widest toward the point — widest at the heel it read as a
     // ladle — and a mitred point running past the spine; heel square to a tang collar on the shaft
     const belly = smooth([[37, -10.5], [34, -4], [28, 5], [19, 8.6], [9, 7], [1, 4.8], [-1, 4.2]], 6);
     const blade = ptsD(M([[-2, -6], [13, -8.4], [27, -9.4]]).concat(M(belly), M([[-2, 4.2]])), true);
-    // the ink back is a band along the spine only (3–4 thick); the blade body stays paper
-    const back = ptsD(M([[-2, -6], [13, -8.4], [27, -9.4], [35, -10.2], [31, -7.4], [20, -5.6], [9, -4.6], [-2, -2.6]]), true);
+    // the ink back is a band along the spine only (3–4 thick); the blade body stays paper. heavy (검수 6차 R1, the plain
+    // icon's dart only): a black back about 6 thick over the paper face, so at 20 px the blade is a black-over-white mass
+    // rather than an outline on paper (it and 뇌침 both shrank to 'a thin diagonal + an ink mass on the right')
+    const back = ptsD(M(heavy ? [[-2, -6], [13, -8.4], [27, -9.4], [35, -10.2], [33.4, -7.8], [29, -4.6], [20, -3.2], [9, -2.2], [-2, -0.2]]
+      : [[-2, -6], [13, -8.4], [27, -9.4], [35, -10.2], [31, -7.4], [20, -5.6], [9, -4.6], [-2, -2.6]]), true);
     // paper shade and the cyan edge line follow the new belly 2–3 inside it
     const shade = ptsD(M(smooth([[34.6, -3.6], [28.6, 3.8], [19.6, 6.6], [9.6, 5.2], [2.4, 3.4], [9, 2.4], [19, 3.4], [27.4, 1.2]], 5)), true);
     const eLine = ptsD(M(smooth([[33.8, -6.6], [31.4, -1.6], [26.4, 3.4], [18.8, 5.8], [10.4, 4.8]], 5)));
@@ -605,14 +623,20 @@ window.PN = window.PN || {};
     // ground a little right of the ghoul (the side the blade opened), with drops. (A smooth oval read as a plinth under
     // a bust, a lumpy pool as a slug, ball-ended fingers as a beetle's legs, long straight spikes as blades.) The
     // awakened icon lays the same splat in ink7 (검수 2차 F2b (b)) in place of the flicks.
-    bg += `<g transform="translate(108 102) scale(1 0.32) translate(-108 -102)">${P(splashD(108, 102, 32, 9, 46, 0.55, -0.2), col)}</g>` +
+    // (검수 6차 R1: the plain icon's splat is 0.5 high, from 0.32, so C10u clears 15 (it was 13.9 before R1); the
+    // awakened splat stays 0.32)
+    bg += `<g transform="translate(108 102) scale(1 ${A ? 0.32 : 0.5}) translate(-108 -102)">${P(splashD(108, 102, 32, 9, 46, 0.55, -0.2), col)}</g>` +
       P(blob(126, 95, 2.2, 6, 0.5, 44) + blob(121, 110, 1.6, 6, 0.5, 47) + blob(80, 105, 1.5, 6, 0.5, 45), col);
     let fg = '';
     // awakened (검수 2차 F2b): the second ghoul stands apart, down and to the left — centres 41.7 apart, silhouettes about
     // 10 apart even with its upper piece opened toward the first, so the paper halo does not bind the two into a head and
     // a body segment — and the small blade is aimed at it, its point at the outline; neither ghoul flicks
-    if (A) fg += tornGhoul(c, 71, 110, 11, 9, 'b', { deg: -10, open: [4, -5, -12], flicks: false }) + headsmanDart([-4, 111], -6, 38.6, 0.72, false);
-    fg += tornGhoul(c, 100, 80, 16, 5, 'a', A ? { flicks: false } : undefined) + headsmanDart([6, 89], -16, 56, 1.12);
+    // 검수 5차 N1 (awakened only): the big blade head is the largest bright mass — 1.2 × on a mount 4 further back, so
+    // its belly still stops short of the torn ghoul's eyes — and the small blade rides a stub of shaft (same mount and
+    // aim, its tail moved up 18), so no two long bars lie side by side; the ground splat stays dark (the bright lower
+    // right is 서리침's cue)
+    if (A) fg += tornGhoul(c, 71, 110, 11, 9, 'b', { deg: -10, open: [4, -5, -12], flicks: false }) + headsmanDart([14, 109.1], -6, 20.5, 0.72, false);
+    fg += tornGhoul(c, 100, 80, 16, 5, 'a', A ? { flicks: false } : undefined) + (A ? headsmanDart([2, 88], -16, 54, 1.2) : headsmanDart([6, 89], -16, 56, 1.12, true, true));
     return { bg, fg };
   } };
 
@@ -946,24 +970,23 @@ window.PN = window.PN || {};
   DRAW.smokeTail = { draw(c, A) {
     const k = A ? 1.2 : 1, gy = 104;
     let bg = '', fg = '';
-    // [start, deg, length]: paper smoke needles that come out of the smoke bank's left end to the LEFT, above the ghoul
-    // (three when awakened); drawn first, so the smoke covers their backs (the front 57% shows; about half awakened,
-    // where the bank is 1.2 ×)
-    const nd = A ? [[[63, 76], 188, 60], [[72, 71], 197, 56], [[78, 68], 209, 44]] : [[[63, 76], 188, 60], [[72, 71], 196, 56]];
+    // [start, deg, length]: paper smoke needles that leave the smoke bank's top to the LEFT, over the ghoul (three when
+    // awakened); drawn first, so the smoke covers their backs
+    const nd = A ? [[[66, 90], 204, 62], [[74, 92], 214, 50], [[80, 90], 224, 40]] : [[[66, 90], 204, 62], [[74, 92], 214, 50]];
     nd.forEach(([B, deg, len]) => { fg += KI.slimNeedle(B, polar(B, deg, len), 6.4, 2.3); });
-    // the black spot: the smoke trailing off the knot to the left, ONE silhouette (검수 4차 M2: lumps with their own
-    // shadows in alternating tones, growing evenly, read as a caterpillar / a row of pebbles): a thin wisp at the knot
-    // that settles into a bank on the ground, wider to the left and rising a little at its left end (the needles leave
-    // it there, the ghoul stands at its foot), the top wavy over lumps of uneven sizes (5·8·9·13·14 + a low 8 rounding
-    // the foot, each overlapping the next by about half), the bottom flat along the ground and a smooth underside up to
-    // the knot. ink.500 in one tone, ink.700 billows on three lumps' shadow sides, open ink.300 curls, and one ink.300
-    // copy of the silhouette showing only along its lower edge (the shot's one-puff grammar).
-    const lumps = [[91, 64, 5], [83, 68, 8], [74, 73, 9], [62, 81, 13], [50, 78, 14], [40, 96, 8]].map(([x, y, r]) => [x, y, r * k]);
-    const back = smokeD(lumps, gy, (x) => (x <= 62 ? gy : gy - 33 * Math.pow(Math.min(1, (x - 62) / 30), 0.8)));
+    // the black spot: the smoke off the knot, ONE silhouette (검수 4차 M2: lumps with their own shadows in alternating
+    // tones, growing evenly, read as a caterpillar / a row of pebbles). 검수 6차 R1: a wedge rising from the lower left
+    // to the knot under the diagonal scarf read at 20 px as 혼령's black fan with the arrows over it, so the smoke now lies
+    // low — a thin wisp drops from under the knot into a bank along the ground, its top billowing over lumps of uneven
+    // sizes (6·8·9·10·8·6, each overlapping the next by about half), its bottom flat on the ground — with paper (≥ 10)
+    // between its top and the scarf. ink.500 in one tone, ink.700 billows on the shadow sides, open ink.300 curls, one
+    // ink.300 copy of the silhouette showing only along its lower edge (the shot's one-puff grammar).
+    const lumps = [[9, 96, 6], [22, 92, 8], [36, 89, 9], [51, 88, 10], [65, 90, 8], [77, 94, 6], [84, 86, 4.4], [89, 78, 3.6], [93, 71, 3]].map(([x, y, r]) => [x, y, r * k]);
+    const back = smokeD(lumps, gy, (x) => (x <= 70 ? gy : gy - 40 * Math.pow(Math.min(1, (x - 70) / 16), 0.8)));
     let sm = `<path d="${back}" fill="${K.ink3}" transform="translate(0.8,2.2)"/>` + P(back, K.ink5);
     const bc = c.clip('smk', back);
-    sm += `<g clip-path="${bc}">${P(blob(68, 92, 9 * k, 9, 0.3, 111, 0.8) + blob(55, 88, 7 * k, 9, 0.3, 112, 0.8) + blob(86, 74, 4.6 * k, 8, 0.3, 113, 0.8), K.ink7)}</g>`;
-    [[46, 76, 7, 200, 296], [64, 80, 6, 204, 300], [81, 66, 4.6, 200, 296]].forEach(([x, y, r, a0, a1]) => { sm += smokeCurl(x, y - (k - 1) * 8, r * k, a0, a1, K.ink3); });
+    sm += `<g clip-path="${bc}">${P(blob(60, 99, 8 * k, 9, 0.3, 111, 0.7) + blob(42, 98, 7 * k, 9, 0.3, 112, 0.7) + blob(80, 99, 4.6 * k, 8, 0.3, 113, 0.7), K.ink7)}</g>`;
+    [[30, 92, 5, 200, 296], [53, 93, 6, 204, 300], [71, 95, 4, 200, 296]].forEach(([x, y, r, a0, a1]) => { sm += smokeCurl(x, y - (k - 1) * 8, r * k, a0, a1, K.ink3); });
     fg += sm;
     // 먹 감속 (검수 4차 M2: the ghoul was drawn under the smoke and lost its eyes): the ghoul stands at the bank's foot in
     // front of it — a paper rim parts it from the smoke behind — with only its feet in a front skirt of the same smoke,
@@ -1161,7 +1184,745 @@ window.PN = window.PN || {};
     return { bg, fg };
   } };
 
-  // (delivery 3: strike · nova · lob · chain · beam · halo)
+  // ==== delivery 3: strike · nova · lob · chain · beam · halo — icons only (no projectiles; field effects are K10) ====
+
+  /** The 結 knot alone (the rear knot's paper loops, ends, centre block and fold line; no scarf) at (x, y), scale k. */
+  function knotAt(x, y, k = 1) {
+    const at0 = (a) => axis([x, y], a);
+    const loop = (a, len, w) => { const at = at0(a), M = (p) => p.map(([t, sd]) => at(t * len * k, sd * w * k)); return ptsD(smooth(M([[0, -0.5], [0.5, -1], [1, -0.4], [1.05, 0.4], [0.5, 0.9], [0, 0.5]]), 5), true); };
+    const end = (a, len) => { const at = at0(a); return ptsD([at(k, -2.2 * k), at(len * k, -1.4 * k), at((len + 1.5) * k, 1.4 * k), at(k, 2.2 * k)], true); };
+    const sq = [[-3.2, -2.8], [3.2, -3.2], [3.4, 2.8], [-3, 3.2]].map(([a, b]) => [x + a * k, y + b * k]);
+    const fold = (() => { const at = at0(-150); return ptsD(smooth([[0.3, 0.1], [0.55, -0.42], [0.86, -0.05]].map(([t, sd]) => at(t * 9 * k, sd * 4.4 * k)), 4)); })();
+    return S(end(70, 9) + ' ' + end(112, 7), K.p50, 2.4, 1) + S(loop(-150, 9, 4.4) + ' ' + loop(-38, 8, 4.2), K.p50, 2.4, 1.1) +
+      `<path d="${polyD(sq)}" fill="${K.p50}" stroke="${K.ink}" stroke-width="2.4" stroke-linejoin="round"/>` + L(fold, K.ink3, 1.1);
+  }
+  /** A jagged bolt through pts (sharp corners, never an even Z / N / W): ink w, the cyan w / 2 when cy, a paper core. */
+  function zig(pts, w, cy) {
+    const d = ptsD(pts), lay = cy ? [[K.ink, 1], [K.ally, 0.5], [K.p50, 0.17]] : [[K.ink, 1], [K.p50, 0.3]];
+    return lay.map(([col, k]) => `<path d="${d}" fill="none" stroke="${col}" stroke-width="${f(w * k)}" stroke-linejoin="miter" stroke-miterlimit="8" stroke-linecap="round"/>`).join('');
+  }
+  /** Ground band (bg): the top edge from y0 (left) to y1 (right), wobbling by amp (phase ph), filled to below the window. */
+  function groundBand(y0, y1, amp, ph, col) {
+    const p = []; for (let i = 0; i <= 16; i++) { const t = i / 16; p.push([lerp(-4, 132, t), lerp(y0, y1, t) + amp * Math.sin(t * 7.1 + ph) + amp * 0.5 * Math.sin(t * 15.3 + ph * 2)]); }
+    return `<path d="${ptsD(smooth(p, 4).concat([[132, 134], [-4, 134]]), true)}" fill="${col}"/>`;
+  }
+  /** Knockback either way (§3.2): the ghoul thrown toward dir (±1) leans away about its feet, two drag strokes of
+   *  different lengths behind its feet and a paper splash on the side the blow came from. */
+  function pushed(c, x, y, r, seed, dir, o = {}) {
+    const ln = o.ln || K.ink, b = -dir;
+    let s = [[1, 0], [0.45, 3]].map(([k, dy], i) => speed([x + b * r * 0.3, y + r * 0.95 + dy], [x + b * r * (1.4 + 1.2 * k), y + r * 0.95 + dy + 1.5 * i], 3.4 - i * 0.8, ln)).join('');
+    s += `<g transform="rotate(${f(dir * (o.lean || 15))} ${f(x)} ${f(y + r * 0.9)})">${ghoul(c, x, y, r, seed)}</g>`;
+    if (o.splash !== false) s += paperSplash(x + b * r * 0.95, y - r * 0.15, r * 0.62, 6, seed + 40, 1.8);
+    return s;
+  }
+
+  // ---- strike (§3.1): from above (a source band at y 0–24 may cross the seal corner: it is background), the motifs come
+  // down nearly upright onto a ground band (bg, y 96–128) at different x ----
+
+  DRAW.inkLightning = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink;
+    // the main mass: an ink cloud bank along the top edge, its underside bulging in uneven billows (bg). Awakened (§12-1):
+    // the same bank turned pale — p300 with an ink rim — since ink7 sinks into the awakened ink ground
+    // (awakened, 검수 6차 R2: a tongue of cloud hangs lower in the middle, where the third, shorter bolt starts)
+    const bot = [[132, 20], [121, 27], [109, 22], [91, 30], [79, 23], A ? [66, 40] : [64, 26], [49, 21], [35, 29], [17, 22], [6, 25], [-4, 21]];
+    let cd = 'M-4,-6 L132,-6 L132,20';
+    for (let i = 1; i < bot.length; i++) { const [x0, y0] = bot[i - 1], [x1, y1] = bot[i]; cd += ` Q${f((x0 + x1) / 2)},${f(Math.max(y0, y1) + [9, 4, 7, 5][i % 4])} ${f(x1)},${f(y1)}`; }
+    cd += ' Z';
+    let bg = (A ? `<path d="${cd}" fill="${K.p300}" stroke="${K.ink}" stroke-width="2.4"/>` : `<path d="${cd}" fill="${col}"/>`) +
+      [[24, 12, 7, 200, 320], [62, 14, 8, 210, 330], [104, 11, 6, 205, 325]].map(([x, y, r, a0, a1]) => { const p = []; for (let i = 0; i <= 10; i++) p.push(polar([x, y], lerp(a0, a1, i / 10), r)); return taperPoly(p, 0.6, 2.2, A ? K.ink3 : K.ink5); }).join('');
+    // a thin ground band the ghouls stand on (top-heavy, unlike 붓 폭우)
+    bg += groundBand(110, 106, 2, 1.3, col);
+    let fg = ghoul(c, 36, 99, 12, 3) + ghoul(c, 95, 95, 11, 5);
+    // [points, ink width, cyan]: two thick bolts of different lengths, 4 bends each, segments 8–24 (three awakened)
+    const bolts = [[[[30, 20], [20, 33], [37, 46], [27, 68], [38, 77], [33, 87]], 10, true], [[[84, 26], [96, 44], [89, 52], [99, 70], [92, 77], [95, 84]], 9, false]];
+    // awakened third: 검수 6차 R2 — three near-parallel bolts at even spacing read as one sign repeated in a row, so the
+    // middle one starts lower (from the cloud's hanging tongue), leans the other way (down to the left), is thinner and
+    // shorter — it forks once and both prongs die out in the air above the ground, between the two struck ghouls
+    if (A) bolts.push([[[66, 36], [60, 47], [67, 55], [58, 72], [62, 79], [57, 90]], 6.5, false]);
+    bolts.forEach(([p, w, cy]) => { fg += zig(p, w, cy); });
+    if (A) { const F = [[58, 72], [66, 82], [70, 90]]; fg += taperPoly(F, 4.6, 0.6, K.ink) + taperPoly(F, 1.6, 0.2, K.p50); }
+    // paper splashes where the two strike
+    fg += paperSplash(33, 87, 7, 6, 211, 2) + paperSplash(95, 84, 6.4, 6, 212, 2);
+    // 기절: the paper spiral over the right ghoul, beside the bolt
+    fg += stunSpiral(108, 78, 7.5, 2.2);
+    return { bg, fg };
+  } };
+
+  /** 붓 폭우: a falling brush stroke, its pressed round head H leading (the lower end), the body running back up along
+   *  deg for len and drying out toward the top (paper streaks inside its upper half, 비백); wet = the cyan streak down its
+   *  middle. (A round head at the top read as rising tadpoles, prongs at the dry end as a rake, heads standing on the
+   *  ground as spikes: the heads stop above the ground.) */
+  function rainStroke(H, deg, len, w, col, wet) {
+    const at = axis(H, deg), body = smooth([at(0, 0), at(len * 0.32, w * 0.07), at(len * 0.7, -w * 0.05), at(len, w * 0.04)], 5);
+    let s = `<circle cx="${f(at(w * 0.15, 0)[0])}" cy="${f(at(w * 0.15, 0)[1])}" r="${f(w * 0.55)}" fill="${col}"/>` +
+      taperFn(body, (t) => w * Math.pow(1 - t, 0.8) + 0.5, col);
+    [[0.42, 0.92, -0.18, 0.13], [0.55, 0.86, 0.14, 0.1], [0.66, 0.97, -0.02, 0.07]].forEach(([t0, t1, sd, k]) => { s += taperPoly([at(len * t0, sd * w), at(len * t1, sd * w * 0.3)], w * k, 0.2, K.p50, 'opacity="0.92"'); });
+    if (wet) s += cyanLine(ptsD([at(len * 0.08, 0.3), at(len * 0.5, -0.3)]), 2.4, false);
+    return s;
+  }
+  DRAW.brushDownpour = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink;
+    // the black spot: the ground band (bottom-heavy) with the four marks the strokes left: ink splats thrown up off its
+    // edge and dry paper streaks (비백) in it
+    let bg = groundBand(104, 101, 1.6, 0.4, col), fg = '';
+    // [head (leading, lower end), deg back up the stroke, length, width, wet]: heavy brush rain leaning 20–24° off
+    // upright; heads, lengths, widths and gaps all different (never an even '////'); every head stops short of the
+    // ground (its lowest point 4–9 above it), where its mark already lies
+    const st = [[[30, 88], -112, 50, 14], [[60, 92], -110, 66, 11, true], [[86, 86], -114, 42, 16], [[108, 91], -111, 58, 10]];
+    if (A) st.push([[46, 80], -113, 40, 8]);
+    st.forEach(([H, deg, len, w], i) => {
+      bg += P(splashD(H[0] + 4, 103, w * 0.9, 6, 221 + i, 0.5, -1.4), col) + taperPoly([[H[0] - w * 0.6, 110 + i % 2 * 4], [H[0] + w * 1.4, 111 + i % 2 * 4]], 1.6, 0.3, A ? K.p300 : K.paper, 'opacity="0.9"');
+    });
+    st.forEach(([H, deg, len, w, wet]) => { fg += rainStroke(H, deg, len, w, K.ink, wet); });
+    return { bg, fg };
+  } };
+
+  /** 족자: a hanging scroll centred at (cx, cy), height 80 × k, tilted by deg: ink rods with end caps top and bottom, a
+   *  blank paper panel (p300 shade on the right), the hanging cord in a loop above (cyan when cy). */
+  function scrollAt(cx, cy, k, deg, cy2) {
+    const T = (x, y) => { const a = rad(deg), cs = Math.cos(a), sn = Math.sin(a); return [cx + (x * cs - y * sn) * k, cy + (x * sn + y * cs) * k]; };
+    const R = (x0, y0, x1, y1) => polyD([T(x0, y0), T(x1, y0), T(x1, y1), T(x0, y1)]);
+    const cap = (x, y, r) => { const p = T(x, y); return `<circle cx="${f(p[0])}" cy="${f(p[1])}" r="${f(r * k)}" fill="${K.ink}"/>`; };
+    const cord = ptsD([T(-17, -39), T(0, -50), T(17, -39)]);
+    return (cy2 ? cyanLine(cord, 2.4 * Math.min(1, k + 0.2), false) : L(cord, K.ink, 1.6)) +
+      S(R(-17, -36, 17, 34), K.p50, 2.4, 1.4) + P(R(10, -36, 17, 34), K.p300) +
+      `<path d="${R(-22, -41, 22, -35)}" fill="${K.ink}"/>` + cap(-23.5, -38, 3.2) + cap(23.5, -38, 3.2) +
+      `<path d="${R(-21, 33, 21, 40)}" fill="${K.ink}"/>` + cap(-23, 36.5, 3.8) + cap(23, 36.5, 3.8) +
+      L(ptsD([T(-15, 31), T(15, 31)]), K.ink3, 1.1);
+  }
+  DRAW.fallingScroll = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, ln = A ? K.p300 : K.ink;
+    let bg = groundBand(101, 99, 1.4, 2.2, col), fg = '';
+    // falling: speed strokes above it; the impact: two paper ripples on the band and ink thrown up
+    bg += [[46, 16, 12], [58, 10, 16], [76, 14, 11]].map(([x, y, l]) => speed([x, y], [x - 1.6, y - l], 3, ln)).join('');
+    bg += `<path d="M28,104 Q62,93 96,104" fill="none" stroke="${A ? K.p300 : K.p50}" stroke-width="2.4" stroke-linecap="round"/><path d="M12,112 Q62,98 112,111" fill="none" stroke="${A ? K.p300 : K.p50}" stroke-width="2" stroke-linecap="round"/>`;
+    if (A) fg += scrollAt(28, 47, 0.6, -10, false);
+    fg += pushed(c, 15, 86, 10, 3, -1, { ln: col }) + pushed(c, 107, 86, 11, 5, 1, { ln: col });
+    fg += scrollAt(62, 55, 1, 8, true) + P(blob(52, 98, 3, 6, 0.5, 231) + blob(74, 97, 2.4, 6, 0.5, 232) + blob(44, 92, 1.8, 6, 0.5, 233), K.ink);
+    return { bg, fg };
+  } };
+
+  DRAW.seventhSeal = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, ln = A ? K.p300 : K.ink;
+    // the black spot: the ground band the seven imprints lie on, printed in paper (3/4 view, sizes and places uneven, never
+    // a row or a ring). 검수 6차 M3: closed rings with the same knot stroke in the middle read as the 5장 eclipse eye at
+    // 32 px and as one glyph repeated, so each imprint is now a different, partly printed stamp — its rim only 70–85%
+    // printed (one or two arcs, the gaps in different places), its knot stroke off-centre and running into the rim (at
+    // least half the imprint wide), the stroke's shape differing (open loop, ㄱ curl, S bend; turned up to ±40°, some
+    // mirrored), and three printed heavily on one side as a solid half-moon of paper
+    let bg = groundBand(82, 80, 1.6, 0.9, col), fg = '';
+    // [x, y, r, rim arcs [from°, to°]…, stroke (null: none), turn°, mirror x, heavy side° of a half-moon (null: none)]
+    // printed rim per imprint: 79 · 78 · 72 · 80 · 76 · 75 · 78 % (a half-moon's own edge counts as printed rim); strokes:
+    // open loop · ㄱ curl · S · ㄱ curl · none · S · none (awakened eighth: open loop, mirrored)
+    const im = [
+      [16, 94, 8, [[230, 515]], 'loop', -20, 1, null],
+      [38, 113, 10, [[350, 452]], 'hook', 14, -1, 235],
+      [60, 98, 6.5, [[40, 300]], 'S', -30, 1, null],
+      [81, 117, 8.5, [[120, 250], [272, 430]], 'hook', -22, 1, null],
+      [102, 98, 9, [[115, 210]], null, 0, 1, 330],
+      [113, 114, 6, [[10, 280]], 'S', 35, -1, null],
+      [55, 121, 5.5, [[205, 306]], null, 0, 1, 100]
+    ];
+    if (A) im.push([82, 92, 5.5, [[90, 360]], 'loop', 18, -1, null]);
+    const pc = A ? K.p300 : K.p50;
+    // the knot strokes in the imprint's unit circle (rim radius 1), each kept off the centre (a stroke through the middle
+    // of a half-printed disc reads as 태극) and reaching the rim: an open loop with its two legs run out to the rim (a
+    // knot), a ㄱ bar curling in at its end, an S bend down one side
+    const GL = {
+      loop: (() => { const p = [[1.04, 0.14], [0.78, 0.1]]; for (let i = 0; i <= 12; i++) { const a = rad(60 - 300 * i / 12); p.push([0.38 + Math.cos(a) * 0.3, -0.3 + Math.sin(a) * 0.4]); } return p.concat([[-0.1, 0.3], [-0.45, 0.55], [-0.78, 0.6]]); })(),
+      hook: [[-0.96, -0.3], [-0.4, -0.5], [0.28, -0.5], [0.56, -0.28], [0.6, 0.14], [0.46, 0.4], [0.24, 0.4], [0.2, 0.2]],
+      S: [[-0.5, -0.86], [-0.28, -0.48], [-0.5, -0.08], [-0.32, 0.34], [0.02, 0.54], [0.36, 0.6], [0.64, 0.76]]
+    };
+    im.forEach(([x, y, r, arcs, gl, rot, mir, half]) => {
+      const ry = r * 0.55, w = Math.max(1.6, r * 0.24), U = (u, v) => [x + u * r, y + v * ry];
+      const E = (a) => U(Math.cos(rad(a)), Math.sin(rad(a)));
+      // the rim: printed arcs, heavy in their middles and drying out toward their ends (uneven pressure)
+      arcs.forEach(([a0, a1]) => { const p = []; for (let i = 0; i <= 18; i++) p.push(E(lerp(a0, a1, i / 18))); bg += taperFn(p, (t) => w * (0.3 + 0.9 * Math.pow(Math.sin(Math.PI * t), 0.7)), pc); });
+      // the heavy side: a solid half-moon of paper, its inner edge bowed a little toward the rim
+      if (half != null) {
+        const p = []; for (let i = 0; i <= 16; i++) p.push(E(half - 90 + 180 * i / 16));
+        const m = U(Math.cos(rad(half)) * 0.16, Math.sin(rad(half)) * 0.16);
+        bg += P(`${ptsD(p)} Q${f(m[0])},${f(m[1])} ${f(p[0][0])},${f(p[0][1])} Z`, pc);
+      }
+      if (gl) {
+        const cs = Math.cos(rad(rot)), sn = Math.sin(rad(rot));
+        const pts = GL[gl].map(([u, v]) => { const uu = u * mir; return U(uu * cs - v * sn, uu * sn + v * cs); });
+        bg += taperFn(smooth(pts, 3), (t) => w * (1 - 0.45 * t), pc);
+      }
+    });
+    // striking down: speed strokes beside its shoulders, dust thrown off where its face meets the ground
+    bg += speed([30, 52], [29, 34], 3, ln) + speed([90, 54], [89, 38], 2.6, ln);
+    // the big round stamp (3/4 view), squat (a tall drum read as a tin): a ball knob on a neck, the top face, a paper body
+    // with a p300 shade and a groove, the face rim in cyan, pressed onto the ground
+    const body = 'M34,52 L34,73 A26,7 0 0 0 86,73 L86,52 Z';
+    fg += S(body, K.p50, 2.6, 1.6) + P('M73,53 L73,79.4 A26,7 0 0 0 86,73 L86,52 Z', K.p300) +
+      L('M34,61 A26,7 0 0 0 86,61', K.ink3, 1.4) +
+      `<ellipse cx="60" cy="52" rx="26" ry="7" fill="${K.p50}" stroke="${K.ink}" stroke-width="2.6"/>` +
+      `<path d="M56.2,30 L63.8,30 L65,51 L55,51 Z" fill="${K.p50}" stroke="${K.ink}" stroke-width="2.2" stroke-linejoin="round"/>` +
+      P('M60.6,31 L63.8,31 L64.8,50 L61.2,50 Z', K.p300) +
+      `<circle cx="60" cy="24" r="8" fill="${K.p50}" stroke="${K.ink}" stroke-width="2.4"/><path d="M54.4,22.6 A6,6 0 0 1 58.8,18" fill="none" stroke="${K.p300}" stroke-width="1.6"/>` +
+      cyanLine('M34.6,74 A26,7 0 0 0 85.4,74', 2.4, false);
+    fg += paperSplash(30, 82, 5.4, 6, 241, 1.6) + paperSplash(91, 82, 4.8, 6, 242, 1.6);
+    return { bg, fg };
+  } };
+
+  // ---- nova (§3.1): an origin at the centre (r ≤ 18), one TRUE circle round it (r 34–48, its weight changing 1:2), broken
+  // where 2–3 things fly out of it; 1–3 ghouls on or outside it showing the effect ----
+  const NC = [64, 66];
+  /** A ring band about c0 from a0 to a1 (deg): mid radius R, width wf(a) (deg → units), tapered over the last tp° at
+   *  both ends; a closed polygon. */
+  function ringBand(c0, R, a0, a1, wf, tp = 10) {
+    const n = Math.max(8, Math.ceil(Math.abs(a1 - a0) / 3)), out = [], inn = [];
+    for (let i = 0; i <= n; i++) {
+      const a = lerp(a0, a1, i / n), e = Math.min(1, (a - a0) / tp, (a1 - a) / tp), w = wf(a) * (0.25 + 0.75 * Math.max(0, e));
+      out.push(polar(c0, a, R + w / 2)); inn.push(polar(c0, a, R - w / 2));
+    }
+    return polyD(out.concat(inn.reverse()));
+  }
+
+  DRAW.inkPulse = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, k = A ? 1.2 : 1, R = 38 * k;
+    // the main mass: an ink ring of uneven weight (8–18), dry-brushed on its outer edge, broken in three places at uneven
+    // steps where things burst out of it — the breaks narrow (14°) and the arcs between them uneven (62 · 89 · 167°), so
+    // it stays one ring and never three even arcs — never an even 'O' or an ensō; one break sits on the seal corner (the
+    // awakened 1.2 × ring would pass under the 覺 seal there); the 結 knot at the centre (the hero). The ends are blunt
+    // and torn (tapered ends left lens-shaped pieces that read as fins)
+    const wf = (a) => 13 + 4.2 * Math.sin(rad(a) * 2.3 + 0.7) + 1.4 * Math.sin(rad(a) * 5.1);
+    const segs = [[-38, 24], [38, 127], [141, 308]];
+    let bg = '', fg = '';
+    segs.forEach(([a0, a1]) => { fg += P(ringBand(NC, R, a0, a1, wf, 3), K.ink); });
+    // dry brush on the outer edge: paper streaks along it
+    [[-36, -6], [52, 96], [176, 214], [240, 276]].forEach(([a0, a1], i) => {
+      const p = []; for (let j = 0; j <= 10; j++) { const a = lerp(a0, a1, j / 10); p.push(polar(NC, a, R + wf(a) / 2 - 1.6 - (i % 2) * 1.2)); }
+      fg += taperPoly(p, 1.4, 0.3, K.p50, 'opacity="0.9"');
+    });
+    // the burst through the upper break: a short speed stroke (no ink lump: that corner is the seal's)
+    fg += speed(polar(NC, -45, R + 4), polar(NC, -45, R - 6), 3.4, K.ink);
+    // the cyan leading edge: one arc on the ring's outer edge, a quarter turn
+    const ce = []; for (let j = 0; j <= 14; j++) { const a = lerp(185, 275, j / 14); ce.push(polar(NC, a, R + wf(a) / 2 - 2.6)); }
+    fg += cyanLine(ptsD(ce), 2.4, false);
+    if (A) { [[-30, 20], [60, 130], [176, 280]].forEach(([a0, a1]) => { fg += P(ringBand(NC, 26, a0, a1, () => 3.4, 8), K.ink); }); }
+    // 밀침: two ghouls thrown out through the lower-right and lower-left breaks, clear of the ring
+    fg += pushed(c, 22, 108, 9.5, 3, -1, { ln: col }) + pushed(c, 114, 97, 8, 5, 1, { ln: col });
+    fg += knotAt(NC[0], NC[1], 1.3);
+    return { bg, fg };
+  } };
+
+  DRAW.frostRing = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, k = A ? 1.2 : 1, R = 39 * k;
+    // the main mass: a paper ring (band 12–18, ink rims 3 both sides) broken where ice bursts out, frost crystals growing
+    // in and out of it at uneven steps, black ghouls frozen onto it; the inside stays paper (a black disc with white
+    // spikes is the 검은 태양)
+    const wf = (a) => 15 + 3 * Math.sin(rad(a) * 2 + 1.1);
+    // awakened (§12-1): a pale disc keeps the ring's inside light on the awakened ink ground — a dark inside with white
+    // spikes round it is the core 검은 태양 (the same look)
+    let bg = A ? `<circle cx="${NC[0]}" cy="${NC[1]}" r="${f(R - 6)}" fill="${K.p300}"/>` : '', fg = '';
+    [[-30, 112], [134, 302]].forEach(([a0, a1]) => { const d = ringBand(NC, R, a0, a1, wf, 6); fg += `<path d="${d}" fill="${K.p50}" stroke="${K.ink}" stroke-width="3" stroke-linejoin="round"/>`; });
+    // frost: [angle, side (+1 out / −1 in), length]
+    const fr = [[-20, 1, 14], [8, -1, 10], [40, 1, 17], [68, -1, 9], [96, 1, 12], [150, 1, 16], [178, -1, 11], [212, 1, 13], [246, -1, 8], [276, 1, 15]];
+    fg += frost(fr.map(([a, sd, l]) => { const p = polar(NC, a, R + sd * (wf(a) / 2 + 1)); return [p[0], p[1], sd > 0 ? a : a + 180, l * (A ? 1.25 : 1)]; }), 31);
+    // ice bursting out of the two breaks
+    fg += paperSplash(...polar(NC, 123, R + 3), 6.4, 6, 261, 2) + paperSplash(...polar(NC, 318, R + 1), 4.6, 5, 262, 1.8);
+    // the cyan core along one stretch of the band
+    const cc = []; for (let j = 0; j <= 18; j++) cc.push(polar(NC, lerp(146, 214, j / 18), R));
+    fg += cyanLine(ptsD(cc), 3, false);
+    // 서리 감속: ghouls frozen on the ring — frost over their black bodies
+    const gs = [[208, 11, 3], [62, 10, 5]].concat(A ? [[262, 8, 7]] : []);
+    gs.forEach(([a, r, seed]) => { const G = polar(NC, a, R); fg += ghoul(c, G[0], G[1], r, seed) + frost([[G[0] - r * 0.5, G[1] + r * 0.3, 200, r * 0.9], [G[0] + r * 0.3, G[1] + r * 0.4, -20, r * 0.8]], seed + 50, 1.8); });
+    return { bg, fg };
+  } };
+
+  /** 천둥 박수 hand seen from its back, wrist at W, the fingers along deg (0 = up, + = clockwise), the thumb on the +x
+   *  side (m = 1) or −x (m = −1): a paper palm, four fingers held together (their tips just parted, uneven lengths), the
+   *  thumb off the side, an ink cuff. tone = the paper (p300 for the hand behind). */
+  function clapHand(W, deg, m, tone) {
+    const a = rad(deg), cs = Math.cos(a), sn = Math.sin(a), T = (px, py) => [W[0] + px * m * cs - py * sn, W[1] + px * m * sn + py * cs];
+    const out = smooth([[-9, 0], [-9.8, -15], [-9.4, -24], [-8.6, -33], [-6.8, -36.4], [-5, -34], [-4.6, -23], [-4.2, -38], [-2.2, -41.6], [0, -38.6], [0.2, -23],
+      [0.6, -40.4], [2.8, -43.2], [4.8, -40], [4.8, -23], [5.4, -37], [7.6, -38.6], [9.4, -35], [9.4, -20], [12.4, -24], [16.4, -27], [18, -24], [14.6, -16], [10.4, -7], [8.6, 0]], 3).map(([x, y]) => T(x, y));
+    const knuckle = L(ptsD(smooth([[-8.6, -21], [-3, -22.4], [3, -22.4], [8.6, -20.4]].map(([x, y]) => T(x, y)), 3)), K.ink3, 1.1);
+    const cuff = [[-9.4, 0], [8.8, 0], [9.6, 9], [-10, 9]].map(([x, y]) => T(x, y));
+    return `<path d="${polyD(cuff)}" fill="${K.ink}"/>` + S(polyD(out), tone, 2.4, 1.3) + knuckle;
+  }
+  DRAW.thunderclap = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, k = A ? 1.2 : 1, CL = [62, 70];
+    let bg = '', fg = '';
+    // the shock ring round the clap: a jagged bolt ring (bends at uneven steps 13–29° and reach, broken twice; never an
+    // even saw) — two rings awakened
+    const ring = (R, a0, a1, seed, w) => { const Rn = rng(seed), p = []; let a = a0; while (a < a1) { p.push(polar(CL, a, R + (Rn() - 0.5) * 9)); a += 13 + Rn() * 16; } p.push(polar(CL, a1, R)); return zig(p, w, false); };
+    fg += ring(46 * k, -24, 128, 271, 7) + ring(46 * k, 150, 300, 272, 7);
+    if (A) fg += ring(34, 6, 146, 273, 3.6) + ring(34, 166, 326, 274, 3.6);
+    // 기절: a ghoul thrown off beyond the ring with the paper spiral over it
+    fg += ghoul(c, 15, 109, 9.5, 3) + stunSpiral(15, 94, 7, 0.9);
+    // the two hands meeting, overlapped and tilted (never an upright prayer): the far one (p300, thumb to the left) more
+    // upright, the near one (paper, thumb to the right) leaning 38° across it; the flash bursts where their fingers meet
+    fg += clapHand([50, 102], 14, -1, K.p300) + clapHand([52, 112], 38, 1, K.p50);
+    // clap marks: short strokes off each side
+    fg += speed([42, 58], [33, 52], 2.6, col) + speed([40, 68], [30, 66], 2.2, col) + speed([96, 82], [106, 80], 2.6, col);
+    // the flash at the fingertips: 7 uneven rays, paper, with the cyan core
+    fg += `<path d="${splashD(73, 64, 15, 7, 281, 0.46, -0.4)}" fill="${K.p50}" stroke="${K.ink}" stroke-width="2.2" stroke-linejoin="round"/>` +
+      `<path d="${splashD(73, 64, 7.6, 6, 282, 0.62)}" fill="${K.ally}" stroke="${K.ink}" stroke-width="1.8" stroke-linejoin="round"/>`;
+    return { bg, fg };
+  } };
+
+  DRAW.silenceBell = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, k = A ? 1.2 : 1;
+    let bg = '', fg = '';
+    // smooth paper rings (ink rims, unbroken; their weight swelling 1:2 round the circle) spreading from the bell — one
+    // more awakened; drawn first, so the bell and the ghouls cover parts of them
+    const rings = [[28 * k, 4, 0.3], [44 * k, 6, 1.9]].concat(A ? [[56, 3.4, 2.6]] : []);
+    rings.forEach(([R, w, ph]) => { const d = ringBand(NC, R, 0, 360, (a) => w + w * 0.5 * Math.sin(rad(a) + ph), 0.001); fg += `<path d="${d}" fill="${K.p50}" stroke="${K.ink}" stroke-width="2.2" stroke-linejoin="round"/>`; });
+    // 먹 감속: two ghouls outside the rings, feet in ink, drops dragging behind them
+    [[16, 100, 10, 3, -1], [113, 98, 9, 5, 1]].forEach(([x, y, r, seed, dir]) => {
+      fg += P(blob(x, y + r * 0.95, r * 1.3, 9, 0.3, seed + 290, 0.3), col) + ghoul(c, x, y, r, seed) + P(dropD(x + dir * (r + 5), y + 2, 4.6, 1.6) + dropD(x + dir * (r + 10), y + 6, 3.4, 1.2), col);
+    });
+    // the small paper handbell (34 tall: a dark wooden grip, a flared paper body with a p300 shade, ink rim 3)
+    const bell = 'M54,52 C54,44 58,40 64,40 C70,40 74,44 74,52 C74,62 78,70 84,76 C84,80 44,80 44,76 C50,70 54,62 54,52 Z';
+    fg += `<path d="M61,24 L67,24 L68,40 L60,40 Z" fill="${K.ink}"/><circle cx="64" cy="22" r="4.6" fill="${K.ink}"/>` +
+      S(bell, K.p50, 3, 1.6) + P('M68,42 C72,46 72,54 72,58 C73,66 77,72 82,76 L76,77 C72,72 69,64 68,56 Z', K.p300) +
+      L('M47,74 C56,76.6 72,76.6 81,74', K.ink3, 1.2);
+    // the clapper, an ink ball under the mouth, tied fast to the rim with the cyan thread (the bell cannot ring)
+    fg += `<circle cx="66" cy="86" r="4.6" fill="${K.ink}"/>` + cyanLine('M48,77 C50,86 58,90 64,89 C69,88.4 71,84 67,82.4 C63,81 60,86 63,89', 2.4, false);
+    return { bg, fg };
+  } };
+
+  // ---- lob (§3.1): a dotted parabola from the lower left (8–16, 100–112) over a top (48–72, 16–30) down to a landing
+  // (92–112, 94–108); the object big near the top or on the way down; ink splashed at the landing ----
+  /** Points on the parabola p0 → apex → p1 (a quadratic through the apex at t 0.5). */
+  function lobArc(p0, top, p1, n = 24) {
+    const C = [2 * top[0] - (p0[0] + p1[0]) / 2, 2 * top[1] - (p0[1] + p1[1]) / 2], o = [];
+    for (let i = 0; i <= n; i++) { const t = i / n, v = 1 - t; o.push([v * v * p0[0] + 2 * v * t * C[0] + t * t * p1[0], v * v * p0[1] + 2 * v * t * C[1] + t * t * p1[1]]); }
+    return o;
+  }
+  /** The flight line: ink dots 2.4, dash 5/6 (p300 awakened: a bg ink line). */
+  const lobLine = (pts, A, w = 2.4) => L(ptsD(pts), A ? K.p300 : K.ink, w, 'stroke-dasharray="5 6"');
+  /** 먹단지 / 송이 단지 white jar (B2 §6.4), body centre at (x, y), height 36 × k, tilted deg: a porcelain jar — broad
+   *  shoulder, a belly tapering to a narrow foot, a short neck — paper with a p300 shade, a flat ink lid (no knob: a knob
+   *  on a round pot reads as a fuse), one ink run down the shoulder, a cord round the neck (cyan when cy). */
+  function whiteJar(x, y, k, deg, cy) {
+    const tr = `translate(${f(x)} ${f(y)}) rotate(${f(deg)}) scale(${f(k)})`;
+    const body = 'M-7,-15 L7,-15 L6.2,-12 C13,-10.6 17,-6 16.4,0 C15.8,7 12,13 8.6,16.6 L9.2,19 L-9.2,19 L-8.6,16.6 C-12,13 -15.8,7 -16.4,0 C-17,-6 -13,-10.6 -6.2,-12 Z';
+    const shade = 'M16.4,0 C15.8,7 12,13 8.6,16.6 L9.2,19 L2,19 C7,14.6 10.4,8 11,1.4 C11.4,-3 10.6,-6.6 9.2,-9.4 C13.4,-7.6 16.6,-4 16.4,0 Z';
+    const cord = 'M-6.6,-11.6 C-2,-10.4 2,-10.4 6.6,-11.6';
+    return `<g transform="${tr}">` + S(body, K.p50, 2.4 / k, 1.2 / k) + P(shade, K.p300) + L('M-8,16.6 L8,16.6', K.ink3, 1.1 / k) +
+      `<path d="M-8.4,-15.4 L8.4,-15.4 L7.6,-19.2 C3.6,-20.4 -3.6,-20.4 -7.6,-19.2 Z" fill="${K.ink}" stroke="${K.ink}" stroke-width="${f(1.4 / k)}" stroke-linejoin="round"/>` +
+      `<path d="M-4.6,-12.6 C-6,-7 -7,-1 -6,5 C-5.6,6.8 -7.4,8 -8.2,6.2 C-8.4,0 -7.2,-7 -6.2,-12 Z" fill="${K.ink}"/>` +
+      (cy ? L(cord, K.ink, 4.4 / k) + L(cord, K.ally, 2.4 / k) + L('M5.6,-11.2 C7.8,-8 9,-5 8.4,-2', K.ink, 3.6 / k) + L('M5.6,-11.2 C7.8,-8 9,-5 8.4,-2', K.ally, 1.6 / k)
+        : L(cord, K.ink, 1.6 / k)) + '</g>';
+  }
+  DRAW.inkPots = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink;
+    // the flight: from the lower left over the top (62, 22) down to the landing (102, 100)
+    const arc = lobArc([10, 106], [60, 18], [102, 100]);
+    let bg = lobLine(arc.slice(0, 11), A) + lobLine(arc.slice(15, 22), A), fg = '';
+    // the black spot: the ink splashed where the last jar landed (lower right), flattened, with drops thrown, and the
+    // ink the flying jar sheds along its path
+    bg += `<g transform="translate(100 106) scale(1 0.74) translate(-100 -106)">${P(splashD(100, 106, 44, 9, 301, 0.62, -0.3), col)}</g>` +
+      P(blob(74, 94, 4, 6, 0.5, 302) + blob(124, 88, 3, 6, 0.5, 303) + blob(88, 118, 2.6, 6, 0.5, 304) + blob(66, 104, 2.6, 6, 0.5, 305), col) +
+      taperPoly(lobArc([10, 106], [60, 18], [102, 100]).slice(11, 15), 1.2, 4.4, col);
+    // the jar flying over the top, tilted forward (awakened: a second one has already burst at the landing)
+    if (A) fg += P(splashD(104, 92, 9, 6, 305, 0.45), K.p50, `stroke="${K.ink}" stroke-width="1.8" stroke-linejoin="round"`) +
+      `<g transform="rotate(28 104 92)">` + P('M96,92 L100,84 L104,90 Z M106,90 L111,86 L112,94 Z', K.p50, `stroke="${K.ink}" stroke-width="1.6" stroke-linejoin="round"`) + '</g>';
+    fg += whiteJar(60, 34, 0.92, 24, true);
+    return { bg, fg };
+  } };
+
+  DRAW.clusterPots = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink;
+    // [jar centre, scale, tilt, landing]: small jars of different sizes (14–22 tall), their cord coming loose at the top,
+    // each now on its own dotted path to its own place round the target (four awakened)
+    // (spread apart a little so their lids and feet show: bunched round jars read as a bunch of grapes)
+    const jars = [[[42, 32], 0.56, -16, [80, 106]], [[72, 22], 0.48, 22, [104, 100]], [[64, 50], 0.4, 40, [96, 116]]];
+    if (A) jars.push([[88, 42], 0.37, 56, [118, 110]]);
+    let bg = lobLine(lobArc([10, 108], [50, 26], [56, 30]).slice(0, 14), A), fg = '';
+    // the black spot: three splashes round the target ghoul (lower right), of different sizes, never in a row
+    jars.forEach(([J, k, deg, Ld], i) => {
+      bg += lobLine(lobArc(J, [J[0] + (Ld[0] - J[0]) * 0.3, J[1] - 4], Ld, 12).slice(2, 11), A);
+      bg += `<g transform="translate(${Ld[0]} ${Ld[1]}) scale(1 0.66) translate(${-Ld[0]} ${-Ld[1]})">${P(splashD(Ld[0], Ld[1], 18 + 4 * (i % 2), 7, 311 + i, 0.6, -0.2), col)}</g>`;
+    });
+    fg += ghoul(c, 104, 80, 11, 3);
+    // the cluster cord: the cyan loop that held their necks, slipping off over the top, its ends flying
+    fg += cyanLine('M38,18 C46,8 62,6 72,10 C78,12 78,18 72,18', 2.4, false) + cyanLine('M38,18 C33,22 30,28 32,34', 2.4, false);
+    jars.forEach(([J, k, deg]) => { fg += whiteJar(J[0], J[1], k, deg, false); });
+    return { bg, fg };
+  } };
+
+  DRAW.tarJar = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, k = A ? 1.2 : 1;
+    let bg = lobLine(lobArc([10, 104], [52, 22], [84, 70]).slice(0, 17), A), fg = '';
+    // the main mass: the wide sticky pool at the lower right (flattened, its rim sagging into strings and drops)
+    const Pc = [86, 106];
+    bg += `<g transform="translate(${Pc[0]} ${Pc[1]}) scale(${k} ${0.34 * k}) translate(${-Pc[0]} ${-Pc[1]})">${P(blob(Pc[0], Pc[1], 38, 12, 0.22, 321), col)}</g>`;
+    [[56, 109, 7], [70, 112, 10], [104, 112, 6], [118, 110, 8]].forEach(([x, y, h], i) => { bg += L(`M${x},${y} C${x + 1},${y + h * 0.4} ${x - 1},${y + h * 0.7} ${x},${y + h}`, col, 1.6) + P(dropD(x, y + h + 1.8, 4, 1.5), col); });
+    // 먹 감속: a ghoul stuck in it, feet in the tar, drops dragging behind
+    fg += ghoul(c, 108, 92, 10, 3) + P(blob(108, 101, 13, 9, 0.3, 322, 0.32), col) + P(dropD(122, 96, 4.6, 1.6) + dropD(126, 102, 3.4, 1.2), col);
+    // the black jar (big belly; ink with an ink.500 light face and a paper glint on the shoulder) lying where it fell: its
+    // FOOT RING showing at the upper left, its open MOUTH (a dark opening in a paper lip) to the lower right with the tar
+    // pouring out over the lip into the pool; the seal cord round its neck in cyan. 검수 6차 M2: a black round body with a
+    // white zigzag crack and a square chip stuck on its shoulder read as the 폭탄병 bomb, so the crack is gone and the
+    // broken pieces lie on the ground by the pool as curved potsherds
+    // (a jar, not a ball: broad shoulders, the belly narrowing to a foot ring, a short neck and a flared lip)
+    const jarBody = 'M-6.4,-13 C-14,-12 -18,-6 -18,1 C-18,9 -13,15.6 -9,18.4 L9,18.4 C13,15.6 18,9 18,1 C18,-6 14,-12 6.4,-13 Z';
+    // (the seal cord: cyan 3 in ink 5.4 round the neck, its loose end trailing out over the paper, so it shows at 32 px)
+    const cord = 'M-6.8,-12.2 C-2,-10.8 2,-10.8 6.8,-12.2 C11,-13.6 15,-12.6 18,-16.2';
+    const blackJar = (glint, cy) => S(jarBody, K.ink, 2.4, 1.4) + P('M-15,-4 C-16.6,3 -13.6,10 -7.4,14.2 C-11.6,7.6 -12.6,0.6 -10.8,-6.4 Z', K.ink5) +
+      (glint ? L('M-9.2,-9 C-6.6,-10.6 -3.2,-11.4 0,-11.4', K.p50, 1.6) : '') +
+      // the foot ring at the far end (on top of the body): a band with a paper edge and a sliver of the base
+      `<path d="M-9.6,17.2 L9.6,17.2 L8.8,23 L-8.8,23 Z" fill="${K.ink5}" stroke="${K.ink}" stroke-width="1.8" stroke-linejoin="round"/>` +
+      `<ellipse cx="0" cy="23" rx="8.8" ry="2.2" fill="${K.ink}" stroke="${K.ink}" stroke-width="1.4"/>` + L('M-8.6,17.6 L8.6,17.6', K.p300, 1.2) +
+      `<path d="M-6.4,-13.2 L-5.4,-16 L5.4,-16 L6.4,-13.2 Z" fill="${K.ink}" stroke="${K.ink}" stroke-width="1.6" stroke-linejoin="round"/>` +
+      (cy ? L(cord, K.ink, 5.4) + L(cord, K.ally, 3) : '') +
+      // the open mouth: a dark opening inside a paper lip (with an ink edge outside, so it shows on paper too)
+      `<ellipse cx="0" cy="-17.2" rx="8.6" ry="3" fill="${K.ink}" stroke="${K.ink}" stroke-width="4.6"/><ellipse cx="0" cy="-17.2" rx="8.6" ry="3" fill="${K.ink}" stroke="${K.p50}" stroke-width="2"/>`;
+    // (rotated 127°: the mouth at about (78, 86) faces down and to the right, the foot at about (47, 63)); the tar spills
+    // over the lower lip and runs down into the pool
+    fg += `<g transform="translate(64 76) rotate(127)">${blackJar(true, true)}</g>` +
+      `<path d="M76.4,88.2 C80.6,90.4 85,94.2 86.6,99.6 C87.2,102.4 86.4,105.2 84.6,106 C82.8,105.2 82.6,102.2 82.2,99.8 C81,95.6 78.2,92.6 74.8,91 Z" fill="${K.ink}"/>`;
+    // the broken pieces: two curved potsherds on the ground at the pool's left edge (ink with an ink.500 inner face)
+    const sherd = (x, y, rot, s) => `<g transform="translate(${x} ${y}) rotate(${rot}) scale(${s})">` +
+      `<path d="M-6.4,0.6 C-4,-3.4 3,-3.8 6.4,-1 L4.6,1.6 C2,-0.2 -2.4,0 -4.6,2.4 Z" fill="${K.ink}" stroke="${K.ink}" stroke-width="1.2" stroke-linejoin="round"/>` +
+      `<path d="M-4.2,1.2 C-2,-0.6 2,-0.8 4.4,0.6" fill="none" stroke="${K.ink5}" stroke-width="1.2"/></g>`;
+    fg += sherd(40, 103, -8, 1) + sherd(50, 114, 18, 0.8);
+    if (A) fg += `<g transform="translate(40 30) rotate(-18) scale(0.6)">${blackJar(false, false)}</g>`;
+    return { bg, fg };
+  } };
+
+  /** 유성 붓 brush, falling head first from its butt B along deg (len): a round ink cap on the butt with a small paper
+   *  hanging loop, a paper handle, a paper ferrule with two ink bands, and swollen ink bristles CRUSHED where they hit —
+   *  splayed into three prongs of different lengths (검수 6차 M1: a clean point read as a rocket's nose). */
+  function meteorBrushD(B, deg, len) {
+    const at = axis(B, deg), M = (a) => a.map(([t, s]) => at(t * len, s));
+    const handle = ptsD(M([[0.02, -3.4], [0.42, -4], [0.42, 4], [0.02, 3.4]]), true);
+    const ferrule = ptsD(M([[0.42, -5.4], [0.58, -6], [0.58, 6], [0.42, 5.4]]), true);
+    // bristles: swelling past the ferrule, then pressed flat and splayed — three prongs (the middle one longest, the
+    // outer two bent out and back), notches of paper between them
+    const bristles = ptsD(smooth(M([[0.57, -6.2], [0.66, -9.8], [0.76, -10.6], [0.86, -12.4], [0.9, -15], [0.88, -9.6], [0.95, -6.2], [1.02, -1.4], [0.97, 0.6],
+      [0.93, 4.4], [0.9, 9.6], [0.86, 13.6], [0.8, 11.6], [0.72, 9.8], [0.62, 8.6], [0.57, 6.2]]), 4), true);
+    const cap = at(-0.6, 0), loopC = at(-4.6, 0);
+    return `<ellipse cx="${f(loopC[0])}" cy="${f(loopC[1])}" rx="3.6" ry="2.4" transform="rotate(${f(deg)} ${f(loopC[0])} ${f(loopC[1])})" fill="none" stroke="${K.p50}" stroke-width="1.5"/>` +
+      `<circle cx="${f(cap[0])}" cy="${f(cap[1])}" r="4.4" fill="${K.ink}" stroke="${K.p50}" stroke-width="1.3"/>` +
+      S(handle, K.p50, 2.4, 1.2) + P(ptsD(M([[0.06, 1.2], [0.42, 1.4], [0.42, 4], [0.06, 3.5]]), true), K.p300) +
+      S(bristles, K.ink, 2, 1.4) + L(ptsD(M([[0.64, -5], [0.82, -6.4]])), K.ink5, 2) +
+      S(ferrule, K.p50, 2.2, 1) + L(ptsD(M([[0.46, -5.6], [0.46, 5.6]])) + ' ' + ptsD(M([[0.53, -5.8], [0.53, 5.8]])), K.ink, 1.6);
+  }
+  DRAW.meteorBrush = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink;
+    // the main mass: the brush comet falling from the upper left to the lower right — a dry ink comet tail behind the
+    // brush that WIDENS away from it (narrow as the handle at the butt, 28 at its far end, where it breaks into dry tines
+    // of different lengths and broken ink dots), the paper handle with its ink cap and hanging loop showing inside the
+    // tail's near end, the ink bristles crushed and splayed where they hit; at the landing a big ink splash, a paper
+    // flash and a ghoul shoved away. 검수 6차 M1: a tail narrowing to a point far behind (with the cyan core out there)
+    // and a clean pointed head read as a rocket launched to the upper left. The seal corner stays empty.
+    const deg = 42, tip = [94, 96], len = 64, B = polar(tip, deg + 180, len);
+    let bg = `<g transform="translate(${f(tip[0] + 4)} ${f(tip[1] + 6)}) scale(1 0.58) translate(${f(-tip[0] - 4)} ${f(-tip[1] - 6)})">${P(splashD(tip[0] + 4, tip[1] + 6, 36, 9, 331, 0.58, -0.4), col)}</g>`;
+    bg += P(blob(tip[0] - 26, tip[1] + 8, 2.6, 6, 0.5, 332) + blob(tip[0] + 28, tip[1] - 4, 2.2, 6, 0.5, 333) + blob(tip[0] - 12, tip[1] + 18, 1.8, 6, 0.5, 335), col);
+    let fg = '';
+    /** a comet tail behind a brush butt Bt along deg: length tl, width w0 at the butt widening to w1; its far end is the
+     *  dry end of a brush stroke — n parallel streaks of different lengths and weights (never converging to a point,
+     *  never spikes: tines meeting at points read as fletching or flames) — with drops of ink left behind */
+    const comet = (Bt, tl, w0, w1, seed, n) => {
+      const at = axis(Bt, deg + 180), p = smooth([at(-6, 0), at(tl * 0.4, 0.6), at(tl * 0.75, -0.8), at(tl, 0.4)], 6);
+      let s = taperFn(p, (t) => w0 + (w1 - w0) * Math.pow(t, 0.85), K.ink);
+      const Rn = rng(seed);
+      for (let i = 0; i < n; i++) {
+        const sd = lerp(-w1 * 0.4, w1 * 0.4, i / (n - 1)) + (Rn() - 0.5) * 1.6, l = 4 + Rn() * 13, w = 1.8 + Rn() * 2.4, dr = (Rn() - 0.5) * 1.6;
+        s += taperPoly([at(tl - 4, sd), at(tl + l * 0.6, sd + dr * 0.6), at(tl + l, sd + dr)], w, 0.9, K.ink);
+      }
+      [[tl + 18, -w1 * 0.3], [tl + 24, w1 * 0.16], [tl + 15, w1 * 0.44]].forEach(([d, sd], i) => { s += P(blob(...at(d, sd), 1.2 + Rn() * 1.1, 6, 0.5, seed + i), K.ink); });
+      // dry streaks of paper running down the tail (비백), opening apart toward its far end
+      [[0.26, 0.9, -0.24], [0.4, 1, 0.16], [0.52, 0.94, -0.04], [0.62, 1, 0.33]].forEach(([t0, t1, sk]) => {
+        s += taperPoly([at(tl * t0, sk * (w0 + (w1 - w0) * t0)), at(tl * t1, sk * (w0 + (w1 - w0) * t1))], 0.4, 1.9, K.p50, 'opacity="0.9"');
+      });
+      return s;
+    };
+    fg += comet(B, 32, 9, 28, 336, 4);
+    // the cyan core runs down the middle of the tail from the brush's side
+    fg += cyanLine(ptsD([polar(B, deg + 180, 8), polar(B, deg + 182, 30)]), 2.4, false);
+    if (A) {
+      const B2 = polar([46, 104], deg + 180, 34);
+      fg += comet(B2, 18, 6, 15, 341, 4) + meteorBrushD(B2, deg, 34);
+    }
+    // 밀침: the ghoul thrown off the landing to the right
+    fg += pushed(c, 114, 80, 9.5, 3, 1, { ln: col, splash: false });
+    fg += meteorBrushD(B, deg, len) + `<path d="${splashD(tip[0] + 1, tip[1] + 1, 12, 7, 334, 0.42)}" fill="${K.p50}" stroke="${K.ink}" stroke-width="2" stroke-linejoin="round"/>`;
+    return { bg, fg };
+  } };
+
+  // ---- chain (§3.1): from the left end (2–12, 70–90) to targets scattered in turn (never one line, heights ≥ 14 apart,
+  // r 7–12); each weapon's own link joins them in order ----
+  DRAW.sparkThread = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink;
+    // [ghoul centre, r, seed, bow of the hop into it (× its span)]: four targets at different heights and sizes (five
+    // awakened); the thread runs from the side of one ghoul to the side of the next in soft arcs of different heights
+    // and spans (never three equal humps 'mmm'; tall loops read as 'M'), so it never crosses a body
+    // 검수 6차 R3: heights 56 · 100 · 58 · 94 at even steps made an even W; now 50 · 100 · 72 · 92 at steps 36 · 22 · 26
+    const tg = [[[26, 50], 12.5, 3, 0.2], [[62, 100], 13.5, 5, -0.14], [[84, 72], 11, 7, 0.26], [[110, 92], 13, 9, -0.1]];
+    if (A) tg.push([[116, 56], 7.5, 11, 0.18]);
+    // the black spot: the ghouls and the ink the thread was flicked out of at the left end
+    let bg = '', fg = P(splashD(9, 84, 12, 7, 340, 0.55), col);
+    const thr = [];
+    let prev = [12, 80];
+    tg.forEach(([G, r, , k], i) => {
+      const u = [G[0] - prev[0], G[1] - prev[1]], d = Math.hypot(u[0], u[1]), E = [G[0] - u[0] / d * r * 0.85, G[1] - u[1] / d * r * 0.85];
+      const span = Math.hypot(E[0] - prev[0], E[1] - prev[1]), m = [(prev[0] + E[0]) / 2, (prev[1] + E[1]) / 2], nn = [(E[1] - prev[1]) / span, -(E[0] - prev[0]) / span];
+      const C = [m[0] + nn[0] * k * span * 2, m[1] + nn[1] * k * span * 2], p = [];
+      for (let j = 0; j <= 16; j++) { const t = j / 16, v = 1 - t; p.push([v * v * prev[0] + 2 * v * t * C[0] + t * t * E[0], v * v * prev[1] + 2 * v * t * C[1] + t * t * E[1]]); }
+      thr.push(p);
+      const nx = tg[i + 1];
+      if (nx) { const v = [nx[0][0] - G[0], nx[0][1] - G[1]], dv = Math.hypot(v[0], v[1]); prev = [G[0] + v[0] / dv * r * 0.85, G[1] + v[1] / dv * r * 0.85]; }
+    });
+    tg.forEach(([G, r, seed]) => { fg += ghoul(c, G[0], G[1], r, seed); });
+    thr.forEach((p) => { fg += cyanLine(ptsD(p), 2.6, true); });
+    // a small paper spark (5–6 uneven rays) where the thread touches each ghoul
+    tg.forEach(([G, r], i) => { const p = thr[i][thr[i].length - 1]; fg += `<path d="${splashD(p[0], p[1], 5.4, 5 + (i % 2), 341 + i, 0.45)}" fill="${K.p50}" stroke="${K.ink}" stroke-width="1.5" stroke-linejoin="round"/>`; });
+    return { bg, fg };
+  } };
+
+  DRAW.stormThread = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink;
+    // the main mass: a whirlwind funnel (3/4 view: a helix wide at the top, 84 across, narrowing to its foot) wound from two
+    // twisted thread-bolts, kinked like lightning; small ghouls caught and pierced along it. (A flat spiral read as '6' /
+    // 'G'; the funnel never closes into an '@'.)
+    const hx = (t, ph) => { const y = 40 + 68 * t, rx = 38 * (1 - 0.78 * t), a = ph + t * Math.PI * 2 * 2.6; return [55 + Math.sin(t * 3) * 4 + Math.cos(a) * rx, y + Math.sin(a) * rx * 0.24]; };
+    const strand = (ph, kink) => { const o = []; for (let i = 0; i <= 64; i++) { const p = hx(i / 64, ph); o.push(i % kink === 0 && i > 0 && i < 64 ? [p[0], p[1] - 2.6] : p); } return o; };
+    let bg = '', fg = '';
+    const a = strand(0, 5), b = strand(Math.PI * 0.85, 7);
+    fg += `<path d="${ptsD(b)}" fill="none" stroke="${K.ink}" stroke-width="5" stroke-linejoin="miter" stroke-miterlimit="6"/><path d="${ptsD(b)}" fill="none" stroke="${K.p50}" stroke-width="1.6" stroke-linejoin="miter" stroke-miterlimit="6"/>`;
+    fg += `<path d="${ptsD(a)}" fill="none" stroke="${K.ink}" stroke-width="5.6" stroke-linejoin="miter" stroke-miterlimit="6"/><path d="${ptsD(a)}" fill="none" stroke="${K.ally}" stroke-width="2.6" stroke-linejoin="miter" stroke-miterlimit="6"/>`;
+    // [strand, position along it, x offset, r, seed]: seven small ghouls of different sizes caught on the whirl (eight
+    // awakened); the third and fifth stunned. 검수 6차 R6: two at the upper right (and the awakened eighth against one of
+    // them) touched; the places are now spread over both strands so every two silhouettes stay 10.4 apart or more (8.5
+    // with the awakened eighth), the stun spirals clear of the others, never three in a row and at most three on the top
+    // turn
+    const SS = { a, b }, gs = [['b', 1, -1.6, 7.5, 3], ['b', 41, 1.6, 6.5, 5], ['a', 3, -1.6, 8.5, 7], ['b', 6, 1.6, 6, 9], ['a', 62, -1.6, 7, 11], ['b', 20, 1.6, 6, 13], ['b', 28, -1.6, 7.5, 15]];
+    if (A) gs.push(['b', 62, 1.6, 5.6, 17]);
+    gs.forEach(([s, i, dx, r, seed]) => { const p = SS[s][i]; fg += ghoul(c, p[0] + dx, p[1], r, seed); });
+    [2, 4].forEach((j) => { const [s, i, dx, r] = gs[j], p = SS[s][i]; fg += stunSpiral(p[0] + dx + 1, p[1] - r - 5, 5.2, 0.4 + i * 0.1); });
+    // the black spot: the dust the funnel drags at its foot (a ragged dark wash, wider than the foot)
+    bg += `<g transform="translate(60 110) scale(1 0.4) translate(-60 -110)">${P(splashD(60, 110, 40, 9, 351, 0.6, 0.2), col)}</g>`;
+    return { bg, fg };
+  } };
+
+  /** 서리 사슬: n paper ice links from a to b, alternating face-on ovals and edge-on bars, ink rims; link `cyan` has the
+   *  cyan core. */
+  function iceChain(a, b, n, cyan) {
+    const deg = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI, d = Math.hypot(b[0] - a[0], b[1] - a[1]), step = d / n;
+    let s = '';
+    for (let i = 0; i < n; i++) {
+      // (the cyan link is a face-on one, bigger: cyan 3 inside ink 6, so it shows at 32 px)
+      const C0 = polar(a, deg, step * (i + 0.5)), face = i % 2 === 0, cy = i === cyan, rx = step * (cy ? 0.72 : 0.62), ry = face ? (cy ? 5.6 : 4.6) : 1.6;
+      s += `<ellipse cx="${f(C0[0])}" cy="${f(C0[1])}" rx="${f(rx)}" ry="${f(ry)}" transform="rotate(${f(deg)} ${f(C0[0])} ${f(C0[1])})" fill="${face ? 'none' : K.p50}" stroke="${K.ink}" stroke-width="${face ? (cy ? 6 : 5) : 3.4}"/>`;
+      s += `<ellipse cx="${f(C0[0])}" cy="${f(C0[1])}" rx="${f(rx)}" ry="${f(ry)}" transform="rotate(${f(deg)} ${f(C0[0])} ${f(C0[1])})" fill="none" stroke="${cy ? K.ally : K.p50}" stroke-width="${face ? (cy ? 3 : 2.2) : 1.2}"/>`;
+    }
+    return s;
+  }
+  DRAW.frostChainlet = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink;
+    // [ghoul centre, r, seed, links to it]: five ghouls at different heights and sizes (six awakened) standing on the ground
+    // at different depths, along a lopsided arch (spans 14 · 30 · 38 · 14; never a W / zigzag, never a hanging chain),
+    // each bound to the next by a short ice chain of 3–5 links; frost sprouting off a few links; ice plates underfoot
+    const tg = [[[16, 98], 11, 3, 0], [[30, 66], 8.5, 5, 3], [[60, 48], 7, 7, 4], [[98, 70], 9, 9, 4], [[112, 98], 11.5, 11, 3]];
+    if (A) tg.push([[80, 108], 8, 13, 3]);
+    let bg = '', fg = '';
+    // the black spot: frozen ground (bg), its top edge ragged
+    bg += `<path d="M-4,104 C14,100 30,108 46,106 C62,104 78,111 96,107 C108,104 120,108 132,104 L132,132 L-4,132 Z" fill="${col}"/>`;
+    tg.forEach(([G, r]) => { fg += icePlate(G[0], G[1] + r * 0.95, r * 1.4, 3.2); });
+    tg.forEach(([G, r, seed]) => { fg += ghoul(c, G[0], G[1], r, seed); });
+    tg.forEach(([G, r, , n], i) => {
+      if (!n) return;
+      const H = tg[i === 5 ? 4 : i - 1], dg = Math.atan2(G[1] - H[0][1], G[0] - H[0][0]) * 180 / Math.PI;
+      fg += iceChain(polar(H[0], dg, H[1] * 0.85), polar(G, dg + 180, r * 0.85), n, i === 3 ? 2 : -1);
+    });
+    fg += frost([[20, 80, -150, 9], [44, 52, -100, 10], [80, 52, -40, 9], [106, 84, 10, 8]], 361, 1.8);
+    return { bg, fg };
+  } };
+
+  // ---- beam (§3.1): one straight thing across 80%+ of the window; instant, so no speed strokes ----
+  /** A ghoul thrown off a beam: tilted away (dir −1 up / +1 down), a paper tear on the side the beam passed, ink flung
+   *  back toward the beam. */
+  function tornOff(c, x, y, r, seed, dir, beamDeg) {
+    const away = beamDeg + 90 * dir, back = polar([x, y], away + 180, r * 0.95);
+    return `<g transform="rotate(${f(dir * 16)} ${f(x)} ${f(y)})">${ghoul(c, x, y, r, seed)}</g>` +
+      `<path d="${splashD(back[0], back[1], r * 0.5, 6, seed + 40, 0.45)}" fill="${K.p50}" stroke="${K.ink}" stroke-width="1.5" stroke-linejoin="round"/>` +
+      P(blob(...polar(back, away + 180, 4.6), 1.8, 6, 0.5, seed + 41) + blob(...polar(back, away + 160, 7.4), 1.3, 6, 0.5, seed + 42), K.ink);
+  }
+  DRAW.inkLance = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, deg = -3, at = axis([4, 66], deg), k = A ? 1.2 : 1;
+    let bg = '', fg = '';
+    // two ghouls the spear passed between, torn and thrown up and down (never skewered); the ink they shed on the ground
+    bg += `<g transform="translate(72 112) scale(1 0.28) translate(-72 -112)">${P(blob(72, 112, 34, 10, 0.4, 411), col)}</g>`;
+    fg += tornOff(c, 44, 40, 14, 3, -1, deg) + tornOff(c, 82, 92, 14.5, 5, 1, deg);
+    if (A) fg += L(ptsD([at(20, 8), at(96, 8)]), K.p300, 2.4);
+    // the spear across 94% of the window: an ink shaft 6.4 (a paper rim so it parts from the ghouls), a willow-leaf
+    // paper blade with an ink rim and midrib at the right, an ink tassel at the back tied with the cyan band
+    fg += L(ptsD([at(10, 0), at(96, 0)]), K.p50, 9.6) + L(ptsD([at(10, 0), at(96, 0)]), K.ink, 6.4);
+    const bl = (x0, len, w) => ptsD(smooth([at(x0, 0), at(x0 + len * 0.3, -w), at(x0 + len * 0.7, -w * 0.7), at(x0 + len, 0), at(x0 + len * 0.7, w * 0.7), at(x0 + len * 0.3, w), at(x0, 0)], 5), true);
+    fg += `<path d="${ptsD([at(93, -4), at(98, -4.6), at(98, 4.6), at(93, 4)], true)}" fill="${K.ink}"/>` +
+      S(bl(97, 26 * k, 6.4 * k), K.p50, 2.4, 1.3) + P(ptsD([at(97 + 26 * k * 0.3, 0.6), at(97 + 26 * k, 0), at(97 + 26 * k * 0.3, 6.4 * k)], true), K.p300) + L(ptsD([at(100, 0), at(97 + 26 * k - 4, 0)]), K.ink3, 1.2);
+    // the tassel: a fanned bundle of ink strands swept back from the butt
+    [[-9, 22, 4.4], [-4, 26, 5], [1, 25, 4.6], [6, 21, 4.2], [10, 17, 3.4]].forEach(([s, l, w]) => { fg += taperPoly(smooth([at(10, s * 0.3), at(10 - l * 0.5, s * 0.8 + 1), at(10 - l, s * 1.3 + 2)], 3), w, 0.5, K.ink); });
+    fg += cyanLine(ptsD([at(10, -5.4), at(10, 5.4)]), 2.6, false) + cyanLine(ptsD([at(14, -4.6), at(14, 4.6)]), 2, false);
+    return { bg, fg };
+  } };
+
+  DRAW.wideBrush = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, k = A ? 1.2 : 1, y0 = 68 - 20 * k, y1 = 68 + 20 * k;
+    let bg = '', fg = '';
+    // the main mass: the wide paper band the brush swept across (31–38% of the window high): heavy ink edges broken by
+    // dry gaps, dry streaks (비백) running its length, the left end frayed where the stroke began; its leading edge (at
+    // the brush) in cyan
+    const top = [], bot = [];
+    for (let i = 0; i <= 16; i++) { const t = i / 16, x = lerp(6, 92, t), fr = t < 0.12 ? (0.12 - t) * 60 : 0; top.push([x, y0 + 1.4 * Math.sin(i * 1.9) + fr]); bot.push([x, y1 + 1.6 * Math.sin(i * 1.3 + 1) - fr * 0.8]); }
+    const band = ptsD(top.concat(bot.reverse()), true);
+    fg += `<path d="${band}" fill="${K.p50}" stroke="${K.ink}" stroke-width="5" stroke-linejoin="round"/>`;
+    // dry breaks in the edges and the streaks inside
+    [[22, y0, 34], [58, y0, 66], [40, y1, 50], [74, y1, 80]].forEach(([x0, y, x1]) => { fg += L(`M${x0},${f(y)} L${x1},${f(y + 0.4)}`, K.p50, 1.6); });
+    [[0.2, 8, 72, 2], [0.36, 16, 86, 1.4], [0.52, 4, 64, 2.2], [0.68, 20, 82, 1.4], [0.84, 10, 88, 1.8]].forEach(([t, x0, x1, w], i) => { const y = lerp(y0, y1, t); fg += taperPoly([[x0, y + (i % 2) * 0.6], [x1, y - (i % 2) * 0.4]], 0.3, w, i % 2 ? K.ink5 : K.ink3); });
+    // 밀침: two ghouls shoved off ahead of the band (right), one above it, one below
+    fg += pushed(c, 114, 47, 9, 3, 1, { ln: col, splash: false }) + pushed(c, 113, 102, 10, 5, 1, { ln: col, splash: false });
+    // the big brush (B2 §6.5) leaning into the sweep: the paper handle up to the right, the ferrule, the heavy ink
+    // bristles bent back flat along the band's end and drawn to a fine point (an upright brush read as a bottle)
+    const ba = axis([94, y0 + 20], -62), BM = (a) => a.map(([t, s]) => ba(t, s));
+    fg += S(ptsD(BM([[14, -3.6], [32, -3], [32, 3], [14, 3.6]]), true), K.p50, 2.2, 1) + P(ptsD(BM([[28, -3.1], [32, -3], [32, 3], [28, 3.1]]), true), K.ink) +
+      S(ptsD(BM([[4, -6], [15, -5], [15, 5], [4, 6]]), true), K.p50, 2.2, 1) + L(ptsD(BM([[9, -5.6], [9, 5.6]])), K.ink, 1.4) +
+      S(ptsD(smooth(BM([[5, -6.4], [-2, -8], [-12, -4], [-22, 6], [-26, 16], [-14, 10], [-4, 7], [5, 6.4]]), 4), true), K.ink, 2, 1.4) +
+      L(ptsD(BM([[-2, -4], [-16, 4]])), K.ink5, 1.8);
+    // the band's leading edge in cyan, over the bristle tips that lie on it (32 px reading)
+    fg += cyanLine(`M${f(92.4)},${f(y0 + 2.4)} L${f(92.8)},${f(y1 - 2.4)}`, 2.6, false);
+    return { bg, fg };
+  } };
+
+  DRAW.crossStrokes = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, k = A ? 1.2 : 1, C0 = [62, 66];
+    let bg = '', fg = '';
+    // [angle, distance, r, seed]: four ghouls on directions turned 30° (top and bottom pressed to 0.8 by the 3/4 view),
+    // at different distances (30–54) and sizes; each torn across by a short paper brush stroke. Only thin dotted lines
+    // join them to the knot (four heavy strokes meeting at the centre read as an '✕' at 20 px)
+    const gs = [[-60, 32, 9, 3], [30, 48, 12, 5], [120, 40, 10.5, 7], [210, 52, 11, 9]];
+    gs.forEach(([a, d, r]) => { const G = polar(C0, a, d * k); G[1] = C0[1] + (G[1] - C0[1]) * 0.8; fg += L(ptsD([polar(C0, a, 9), polar(G, a + 180, r + 2)].map(([x, y], i) => (i ? [x, y] : [x, C0[1] + (y - C0[1]) * 0.8]))), col, 2, 'stroke-dasharray="3 4"'); });
+    gs.forEach(([a, d, r, seed], i) => {
+      const G = polar(C0, a, d * k); G[1] = C0[1] + (G[1] - C0[1]) * 0.8;
+      const sa = [-14, 10, -8, 16][i];
+      // each ghoul torn across like paper (its upper piece lifted), and the stroke that tore it: a thin paper slash along
+      // the tear, pressed at one end and tapering out past the body (a wide lens across a body read as a ringed planet,
+      // a slash on one side only as a beak)
+      fg += tornGhoul(c, G[0], G[1], r, seed, 'x' + i, { deg: sa, open: [2, -4, -10], flicks: false });
+      const at = axis(G, sa), o = r * 0.22, sp = [at(-r * 1.5, o + 0.6), at(0, o - 0.4), at(r * 1.6, o)];
+      fg += i === 1 ? cyanLine(ptsD(sp), 2.4, false) : taperPoly(sp, 4.6, 1.2, K.ink) + taperPoly(sp, 2.6, 0.3, K.p50);
+    });
+    fg += knotAt(C0[0], C0[1], 1.3);
+    // the black spot: the ink shed by the four torn ghouls on the ground below them
+    bg += `<g transform="translate(62 104) scale(1 0.3) translate(-62 -104)">${P(blob(62, 104, 50, 11, 0.4, 371), col)}</g>`;
+    return { bg, fg };
+  } };
+
+  DRAW.judgmentLine = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, k = A ? 1.2 : 1;
+    let bg = '', fg = '';
+    // the line: snapped from the carpenter's ink pot at the upper left to the lower right (↘, never upright — a vertical
+    // line over a figure reads as a gallows); a trembling afterimage beside it (two awakened), ink flicked off it
+    const L0 = [30, 30], L1 = [118, 112], deg = Math.atan2(L1[1] - L0[1], L1[0] - L0[0]) * 180 / Math.PI;
+    [3.4].concat(A ? [-3.2] : []).forEach((o) => { fg += L(ptsD([polar(L0, deg + 90, o), polar(L1, deg + 90, o)]), A ? K.p300 : K.ink3, 1.4); });
+    fg += L(ptsD([L0, L1]), K.ink, 5.4 * k) + L(ptsD([polar(L0, deg, 8), polar(L1, deg, -4)]), K.ally, 2.4 * k) + L(ptsD([polar(L0, deg, 14), polar(L1, deg, -12)]), K.allyG, 0.6, 'opacity="0.9"');
+    [[0.3, -6, 2.2], [0.47, 7, 1.8], [0.66, -7, 2.4], [0.82, 6, 1.6]].forEach(([t, o, r], i) => { const p = polar([lerp(L0[0], L1[0], t), lerp(L0[1], L1[1], t)], deg + 90, o); fg += P(blob(p[0], p[1], r, 6, 0.5, 381 + i), K.ink); });
+    // 처형: two ghouls on the line, torn along it like paper
+    fg += tornGhoul(c, 57, 55, 13, 3, 'j', { deg, open: [3, -5, -10], flicks: false }) + tornGhoul(c, 91, 85, 14.5, 5, 'k', { deg, open: [4, -6, -12], flicks: false });
+    // the ink pot (sumitsubo): a wooden well (paper box, ink rim, ink inside) with the reel beside it, turned to the line.
+    // 검수 6차 R5: the reel was a thick ring with a centre dot and three even ticks — a reticle — so it is now a spool seen
+    // 3/4 from above (two flanges, the inked line wound on it bulging a little, one strand of it running up into the pot)
+    // with a crank handle off the top flange's rim; no centre dot, no ticks
+    const spool = `<ellipse cx="0" cy="8" rx="7.4" ry="2.8" fill="${K.p300}" stroke="${K.ink}" stroke-width="2"/>` +
+      `<path d="M-4.6,-6 C-6.2,-1.4 -6.2,3.6 -4.6,8 L4.6,8 C6.2,3.6 6.2,-1.4 4.6,-6 Z" fill="${K.ink}"/>` + L('M-3.6,-2.8 C-1.4,-1.6 1.6,2.8 3.6,5.6', K.ink5, 1.6) +
+      `<ellipse cx="0" cy="-6" rx="7.4" ry="2.8" fill="${K.p50}" stroke="${K.ink}" stroke-width="2.2"/>` +
+      `<path d="M-5.4,-6.8 L-8.8,-9.6" fill="none" stroke="${K.ink}" stroke-width="2.4" stroke-linecap="round"/>` +
+      `<path d="M-8.8,-9.6 L-9,-14" fill="none" stroke="${K.ink}" stroke-width="4" stroke-linecap="round"/><path d="M-8.85,-10.6 L-8.95,-13" fill="none" stroke="${K.p50}" stroke-width="1.1" stroke-linecap="round"/>`;
+    fg += L('M16.8,39.6 L19.6,28.6', K.ink, 1.4) +
+      `<g transform="rotate(${f(deg - 10)} 22 20)">` + S('M8,12 L36,12 L34,28 L10,28 Z', K.p50, 2.4, 1.3) + P('M12,14 L32,14 L31,20 L13,20 Z', K.ink) + P('M10,24 L34,24 L34,28 L10,28 Z', K.p300) + '</g>' +
+      `<g transform="translate(12 45) rotate(-8)">${spool}</g>`;
+    // the black spot: the ink the line threw off where it struck the ground at the lower right
+    bg += `<g transform="translate(104 114) scale(1 0.46) translate(-104 -114)">${P(splashD(104, 114, 32, 9, 391, 0.6), col)}</g>`;
+    return { bg, fg };
+  } };
+
+  // ---- halo (§3.1): a 3/4 view, FLAT ellipse band (ry 0.42–0.5 rx, rx 34–58), a tangent motion along it, ghouls at its
+  // edge ----
+  /** Points round an ellipse (cx, cy, rx, ry) from a0 to a1 (deg). */
+  const ellP = (cx, cy, rx, ry, a0, a1, n = 48) => { const o = []; for (let i = 0; i <= n; i++) { const a = rad(lerp(a0, a1, i / n)); o.push([cx + Math.cos(a) * rx, cy + Math.sin(a) * ry]); } return o; };
+  /** A flat ring band: outer ellipse (rx, ry) minus the inner one shrunk by w (the band thicker at the front/bottom by
+   *  wf), even-odd. */
+  function ellBand(cx, cy, rx, ry, w, wf = 1.4) {
+    const out = ellP(cx, cy, rx, ry, 0, 360, 64), inn = ellP(cx, cy + w * (wf - 1) * 0.5, rx - w, ry - w * (wf + 1) * 0.5 * 0.5, 0, 360, 64);
+    return ptsD(out, true) + ' ' + ptsD(inn.reverse(), true);
+  }
+  DRAW.inkOrbit = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, k = A ? 1.2 : 1, E0 = [62, 66], rx = 50 * Math.min(k, 1.12), ry = 21 * Math.min(k, 1.12);
+    let bg = '', fg = '';
+    // the main mass: a thick ink ellipse band (width about a third of rx, heavier at the front), the centre paper
+    fg += `<path d="${ellBand(E0[0], E0[1], rx, ry, 17 * k, 1.5)}" fill="${K.ink}" fill-rule="evenodd"/>`;
+    // the paper comet stroke riding a quarter turn of it (front right, sweeping to the right), its cyan core
+    const cp = ellP(E0[0], E0[1] + 2, rx - 8, ry - 5, 30, 125, 20).reverse();
+    fg += taperFn(cp, (t) => 1 + 7 * Math.pow(t, 0.8), K.p50) + cyanLine(ptsD(cp.slice(8)), 2.4, false);
+    // ghouls at the band's edge, at different heights and sizes (two on top read as ears on a face): one at the lower
+    // left, one at the right end being shaved, its chip flung off along the turn
+    fg += ghoul(c, 16, 92, 10, 3) + ghoul(c, 112, 58, 9, 5);
+    fg += P(blob(118, 80, 3.6, 6, 0.5, 401) + blob(123, 90, 2.4, 6, 0.5, 402), K.ink) + speed([112, 74], [124, 94], 2, col);
+    return { bg, fg };
+  } };
+
+  /** 수호 고리: a twisted rope ring — paper with ink twist strokes along an ellipse, bound in places. 검수 6차 R4: twist
+   *  marks every 12° as straight bars read as a ladder / hatched ring, so the spacing now wanders ±30% (seeded), each
+   *  twist is an S stroke swelling in its middle, and the rope runs bare for a little on both sides of each binding
+   *  (binds: the binding angles, deg). */
+  function ropeRing(cx, cy, rx, ry, w, binds = [], seed = 421) {
+    let s = `<path d="${ellBand(cx, cy, rx + w / 2, ry + w / 2, w, 1.3)}" fill="${K.p50}" fill-rule="evenodd" stroke="${K.ink}" stroke-width="2.4" stroke-linejoin="round"/>`;
+    const R = rng(seed), E = (a, kx, ky) => [cx + Math.cos(rad(a)) * (rx + w * kx), cy + Math.sin(rad(a)) * (ry + w * ky)];
+    for (let a = 4 * R(); a < 356; a += 12 * (0.7 + 0.6 * R())) {
+      if (binds.some((b) => Math.abs(((a + 4 - b) % 360 + 540) % 360 - 180) < 13)) continue;
+      // inner edge → outer edge, leaving and arriving along the turn so the stroke bends like an S
+      const p = smooth([E(a, -0.38, -0.3), E(a + 3.4, -0.14, -0.11), E(a + 4.6, 0.18, 0.14), E(a + 8, 0.42, 0.35)], 4);
+      s += taperFn(p, (t) => 0.7 + 2.3 * Math.sin(Math.PI * t), K.ink);
+    }
+    return s;
+  }
+  DRAW.wardRing = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, k = A ? 1.2 : 1, E0 = [62, 68], rx = 36 * k, ry = 16 * k;
+    let bg = '', fg = '';
+    // 밀침: three ghouls that came close bounced outward off the rope, at different places and sizes
+    fg += pushed(c, 16, 52, 9.5, 3, -1, { ln: col }) + pushed(c, 110, 50, 8.5, 5, 1, { ln: col }) + pushed(c, 96, 102, 10.5, 7, 1, { ln: col });
+    // the main mass: a thick twisted rope ring (paper and ink twists, about 12 thick) round the 結 knot, bound in three
+    // places; the cyan stitching along a third of it (never the whole ring: a cyan ring on the ground is the hero's)
+    fg += ropeRing(E0[0], E0[1], rx, ry, 12, [150, 262, 20]);
+    [[150, 0], [262, 1], [20, 2]].forEach(([a]) => { const p = [E0[0] + Math.cos(rad(a)) * rx, E0[1] + Math.sin(rad(a)) * ry]; fg += `<ellipse cx="${f(p[0])}" cy="${f(p[1])}" rx="4.6" ry="8.2" transform="rotate(${f(a + 90)} ${f(p[0])} ${f(p[1])})" fill="${K.ink}"/>`; });
+    const st = ellP(E0[0], E0[1], rx, ry, 40, 140, 24);
+    fg += L(ptsD(st), K.ink, 4.8, 'stroke-dasharray="5 3"') + L(ptsD(st), K.ally, 2.4, 'stroke-dasharray="5 3"');
+    fg += knotAt(E0[0], E0[1], 1.3);
+    // the black spot: the rope's shadow under it
+    bg += `<ellipse cx="${E0[0] + 3}" cy="${E0[1] + ry + 9}" rx="${f(rx + 8)}" ry="${f(6 * k)}" fill="${col}"/>`;
+    return { bg, fg };
+  } };
+
+  DRAW.eclipseHalo = { draw(c, A) {
+    const col = A ? K.ink7 : K.ink, k = A ? 1.12 : 1, E0 = [64, 70], rx = 52 * k, ry = 22 * k;
+    let bg = '', fg = '';
+    // the black spot: the ink crescent shadow just behind the rim on its right quarter — thick in the middle, drawn to two
+    // points (awakened: a thin one on the left too)
+    const cres = (sg, w) => {
+      const a0 = sg > 0 ? -72 : 108, a1 = sg > 0 ? 72 : 252, o = ellP(E0[0], E0[1], rx + 3, ry + 3, a0, a1, 28);
+      const i2 = []; for (let i = 28; i >= 0; i--) { const t = i / 28, a = rad(lerp(a0, a1, t)), sw = w * Math.sin(Math.PI * t); i2.push([E0[0] + Math.cos(a) * (rx + 3 - sw * 1.1), E0[1] + Math.sin(a) * (ry + 3 - sw * 0.45)]); }
+      return `<g transform="rotate(-8 ${E0[0]} ${E0[1]})">${P(ptsD(o.concat(i2), true), K.ink)}</g>`;
+    };
+    fg += cres(1, 44) + (A ? cres(-1, 9) : '');
+    // the rim: a wide thin hollow ellipse — paper 1.8 inside an ink outline 3.6 — tilted a little (never an upright
+    // circle or a halo over a head; nothing at its centre)
+    const rim = ptsD(ellP(E0[0], E0[1], rx, ry, 0, 360, 72), true);
+    fg += `<g transform="rotate(-8 ${E0[0]} ${E0[1]})"><path d="${rim}" fill="none" stroke="${K.ink}" stroke-width="5.4"/><path d="${rim}" fill="none" stroke="${K.p50}" stroke-width="1.8"/></g>`;
+    // two ghouls caught on the rim's outer band (clear of the crescent)
+    fg += ghoul(c, 22, 87, 11, 3) + ghoul(c, 82, 46, 9.5, 5);
+    // the two cyan ribbons flying off the rim's left side: flat ribbons twisting (their width swelling and pinching)
+    const r1 = smooth([[16, 66], [8, 56], [13, 46], [7, 36], [12, 26]], 5), r2 = smooth([[19, 70], [28, 62], [26, 52], [34, 44]], 5);
+    const tw = (w0, n) => (t) => 0.8 + w0 * Math.abs(Math.cos(t * Math.PI * n)) * (1 - 0.4 * t);
+    fg += taperFn(r1, (t) => tw(5.4, 2.2)(t) + 2.6, K.ink) + taperFn(r1, tw(5.4, 2.2), K.ally) + taperFn(r2, (t) => tw(4.6, 1.6)(t) + 2.6, K.ink) + taperFn(r2, tw(4.6, 1.6), K.ally);
+    return { bg, fg };
+  } };
 
   // ==== 4. lending the k-icons frame (brief §1.3) ====
   function defOf(id) {

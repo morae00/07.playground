@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 120009,
+      "bytes": 120008,
       "kib": 117.2,
       "baselineBytes": 102071,
-      "growthRatio": 0.1757404159849516,
+      "growthRatio": 0.1757306188829344,
       "warningBytes": 117381,
       "failBytes": 127588,
       "status": "warning",
@@ -27,8 +27,8 @@
       "passed": true
     },
     "css": {
-      "bytes": 18540,
-      "kib": 18.11,
+      "bytes": 17892,
+      "kib": 17.47,
       "warningBytes": 32768,
       "failBytes": 49152,
       "status": "passed",
@@ -43,8 +43,8 @@
       "passed": true
     },
     "installAssets": {
-      "bytes": 30921244,
-      "kib": 30196.53,
+      "bytes": 32123128,
+      "kib": 31370.24,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,7 +55,7 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-4gjRA58z.js",
+      "file": "assets/App-zg3xAJVf.js",
       "category": "appJs",
       "sourceBytes": 378222,
       "gzipBytes": 116454
@@ -133,16 +133,16 @@
       "gzipBytes": 113032
     },
     {
-      "file": "assets/index-CnlvvnO4.js",
+      "file": "assets/index-86GmeD9c.js",
       "category": "appJs",
       "sourceBytes": 7500,
-      "gzipBytes": 3555
+      "gzipBytes": 3554
     },
     {
-      "file": "assets/index-xuKM8-dS.css",
+      "file": "assets/index-GduQI7ey.css",
       "category": "css",
-      "sourceBytes": 93320,
-      "gzipBytes": 18540
+      "sourceBytes": 95975,
+      "gzipBytes": 17892
     },
     {
       "file": "assets/keyart-DFQzyQdB.webp",
@@ -1153,16 +1153,16 @@
       "gzipBytes": 74897
     },
     {
-      "file": "assets/packs/ui/arsenal-slots-CkAGBOSA.webp",
+      "file": "assets/packs/ui/arsenal-slots-CEENIsWe.webp",
       "category": "image",
-      "sourceBytes": 136496,
-      "gzipBytes": 135241
+      "sourceBytes": 272128,
+      "gzipBytes": 269442
     },
     {
-      "file": "assets/packs/ui/arsenal-tiles-B4lMmIAD.webp",
+      "file": "assets/packs/ui/arsenal-tiles-BejaIMTn.webp",
       "category": "image",
-      "sourceBytes": 972772,
-      "gzipBytes": 969238
+      "sourceBytes": 2039024,
+      "gzipBytes": 2033423
     },
     {
       "file": "assets/packs/ui/character-portraits-ecH57XVd.webp",

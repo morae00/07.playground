@@ -23,6 +23,9 @@ export const ARSENAL_ART = Object.freeze([
   'inkDarts', 'brushQuills', 'sealArrows', 'frostNeedles', 'thunderNeedles', 'twinBlades', 'ghostVolley', 'headsmanDarts',
   'paperStorm', 'inkBloom', 'thornHalo', 'starShards', 'sunNeedles', 'inkDrizzle', 'pinHail', 'tailGuard', 'smokeTail',
   'gravePins', 'trackingSeals', 'huntersMarks', 'crowFeathers', 'bossbane',
+  'inkLightning', 'brushDownpour', 'fallingScroll', 'seventhSeal', 'inkPulse', 'frostRing', 'thunderclap', 'silenceBell',
+  'inkPots', 'clusterPots', 'tarJar', 'meteorBrush', 'sparkThread', 'stormThread', 'frostChainlet', 'inkLance', 'wideBrush',
+  'crossStrokes', 'judgmentLine', 'inkOrbit', 'wardRing', 'eclipseHalo',
 ]);
 
 /** Bonus draft cards (makeBonusOffers) have no skill icon: a kit glyph on the frame of the rarity they come in. */
