@@ -702,6 +702,7 @@ export class GameRenderer {
 
   /** The effect's mark at the centre, ink on a paper disc so it reads over any texture. */
   private drawHazardGlyph(ctx: CanvasRenderingContext2D, glyph: HazardGlyph, x: number, y: number, size: number, alpha: number) {
+    if (glyph === 'none') return;
     ctx.save();
     ctx.globalAlpha *= alpha;
     ctx.fillStyle = NEUTRAL.paperBright;

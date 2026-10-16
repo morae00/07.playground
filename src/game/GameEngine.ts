@@ -2805,7 +2805,6 @@ export class GameEngine {
       const gap = distance(enemy, zone);
       if (enemy.hp <= 0 || gap > zone.radius + enemy.radius) continue;
       if (id === 'twinBlades' || id === 'inkPots') {
-        if (id === 'inkPots') enemy.burn = BURN_SHOW_SECONDS;
         if (tick) this.echoHit(enemy, zone.damage, id, zone);
       } else if (id === 'pinHail') {
         this.echoHit(enemy, zone.damage, id, zone);

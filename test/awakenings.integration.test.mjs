@@ -132,7 +132,8 @@ const SCENARIOS = {
   },
   thunderclap: { setup: (f) => f(100, 0), steps: 120, check: (r) => new Set(blasts(r, 'thunderclap').map((blast) => Math.round(blast.radius))).size > 1 },
   silenceBell: { setup: (f) => f(150, 0, { attackStyle: 'ranged' }), steps: 60, watch: (world) => marked(world, 'silence') },
-  inkPots: { setup: (f) => f(200, 0), steps: 120, watch: (world) => zone(world, 'inkPots') && world.enemies.some((enemy) => enemy.burn > 0) },
+  // The burning ink is the player's: it hurts what stands in it but paints no coral burn on them (K10 brief §12).
+  inkPots: { setup: (f) => f(200, 0), steps: 120, watch: (world) => zone(world, 'inkPots') && !world.enemies.some((enemy) => enemy.burn > 0) },
   clusterPots: { setup: (f) => f(200, 0), steps: 150, check: (r) => new Set(blasts(r, 'clusterPots').map((blast) => Math.round(blast.radius))).size > 1 },
   tarJar: {
     // The jar lands on the nearer enemy and gathers the farther one in.

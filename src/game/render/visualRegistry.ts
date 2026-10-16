@@ -181,7 +181,7 @@ export const HOSTILE_PROJECTILE_ART: Readonly<Record<BossProjectile['kind'], Pro
   enemy: projectile('needle', SIGNAL.hostile, '#fff4f1', '#ff8b82'),
 });
 
-export type HazardGlyph = 'wave' | 'chain' | 'null' | 'flame' | 'shatter' | 'spiral' | 'star';
+export type HazardGlyph = 'wave' | 'chain' | 'null' | 'flame' | 'shatter' | 'spiral' | 'star' | 'none';
 
 export type HazardArtProfile = Readonly<{
   /** Ownership sets the look (ART-06, kit PN.env.hazard): hostile ground is hatched amber inside an ink ring,
