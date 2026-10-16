@@ -128,6 +128,7 @@ Damage numbers (FX-07) follow the kit's styles (`PN.vfx.damageNumber`):
 Player feedback (FX-03):
 
 - `player/hurt` carries where the hit came from, and a coral glow rises on that side of the screen for 0.35 s.
+- A body standing in fire glows coral and sheds embers (`player.burn`, `Entity.burn`, looks only), and the fire's damage to the player shows as one small coral number every half second (`player/burn`; only under `isolatedCosmeticIds`, so classic ids stay put). Neither uses the hurt pose, vignette, or sound.
 - The engine reports `player/lowHealth` when health crosses 30% either way. While it is low, the heartbeat sounds every 0.85 s, the screen edge glows coral, and the health bar turns coral and beats. The glow and the bar hold still under reduced motion or reduced flash, and reduced flash halves both glows (UI-08).
 - On `player/died` the simulation stops as before, and the app holds the settlement for 0.7 s. Meanwhile the hero falls back, the last hit's ink drifts at quarter speed for 0.4 s, and nothing can pause the run.
 

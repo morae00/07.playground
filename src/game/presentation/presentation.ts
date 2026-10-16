@@ -267,6 +267,10 @@ export class Presentation {
         this.burst(event.x, event.y, 12, '#000000', 160);
         this.play('player.hurt', event.x);
         return;
+      case 'player/burn':
+        // FX-03: a small coral number for what the fire took; no pose, vignette, or sound (K11 brief Q4).
+        if (this.host.options().damageNumbers) this.addDamageNumber(event.x, event.y - 38, event.damage, false, 0.5, 'hostile');
+        return;
       case 'player/lowHealth':
         this.lowHealth = event.low;
         this.heartbeatIn = 0;

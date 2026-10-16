@@ -556,9 +556,11 @@ function trapCell(x: number, y: number, half: number, spacing: number, gap: numb
 const ANCHOR_RADIUS = 60;
 /** SYS-05 fix: an anchoring boss holds its spot only while the player is this close (about the view's reach). */
 const ANCHOR_LEASH = 720;
-/** Bosses enter this far from the player; under bossSpacing never closer than the minimum (SYS-04). */
 /** How long a body keeps showing it burns after the fire last touched it (looks only). */
 const BURN_SHOW_SECONDS = 0.3;
+/** FX-03: the fire damage the player takes shows as one number this often (looks only, K11 brief Q4). */
+const BURN_NUMBER_SECONDS = 0.5;
+/** Bosses enter this far from the player; under bossSpacing never closer than the minimum (SYS-04). */
 const BOSS_SPAWN_DISTANCE = 620;
 const BOSS_MIN_SPAWN_DISTANCE = 420;
 /** SYS-04: the speed a boss recoils at after a contact hit. */
@@ -912,6 +914,8 @@ export class GameEngine {
   /** SYS-15: lobbed blasts on their way down, and the way the player last moved (for the weapons that fire behind). */
   protected arsenalLobs: { at: number; x: number; y: number; radius: number; damage: number; id: ArsenalId }[] = [];
   protected lastMove = { x: 1, y: 0 };
+  /** FX-03: fire damage taken since the last burn number, and for how long (looks only). */
+  protected burnShown = { damage: 0, time: 0 };
   /**
    * SYS-16: awakening gimmicks' state: actions coming due, the ground they leave, each weapon's casts so far, the
    * tracking seals' last cast, whether a gimmick's own damage is under way (it runs no gimmick or weapon effect), whether
@@ -1232,6 +1236,7 @@ export class GameEngine {
     this.bossDps = 0;
     this.hordeCarry = { xp: 0, coin: 0 };
     this.arsenalLobs = [];
+    this.burnShown = { damage: 0, time: 0 };
     this.infiniteEventScore = 0;
     this.infiniteBossKills = 0;
     this.infiniteBossRespawnTimer = 0;
@@ -5580,6 +5585,17 @@ export class GameEngine {
     this.damageTakenTotal += Math.min(burn, Math.max(0, this.player.hp));
     this.player.hp -= burn;
     this.lastDamageSource = source;
+    // FX-03: what the fire takes shows as a small number every half second. Only where cosmetic objects have ids of
+    // their own (BUG-08), so the classic rules' ids stay as they were.
+    if (source !== 'fire' || !this.rules.isolatedCosmeticIds) return;
+    const shown = this.burnShown;
+    shown.damage += burn;
+    shown.time += dt;
+    // Steps add up to a hair under the half second, so a step's rounding counts as reaching it.
+    if (shown.time < BURN_NUMBER_SECONDS - 1e-6) return;
+    this.emit({ type: 'player/burn', x: this.player.x, y: this.player.y, damage: shown.damage });
+    shown.damage = 0;
+    shown.time = 0;
   }
 
   protected pushEnemiesFromPlayer(radius: number) {

@@ -93,3 +93,35 @@ test('SYS-06: an enemy springs a trap, which then no longer waits for the player
     engine.dispose();
   }
 });
+
+test('FX-03: fire the player stands in shows its damage as a number every half second; classic rules and a shield show none', () => {
+  for (const [rules, shield, shown] of [['remaster', 0, true], ['remaster', 50, false], ['classic', 0, false]]) {
+    const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), maxMeta(), standardOptions(), { onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver() {} });
+    try {
+      engine.setRuleSet(rules);
+      engine.startRun(1, 2, 5151);
+      const { probe } = engine;
+      probe.haltSpawns();
+      probe.clear('enemies', 'hazards', 'obstacles', 'pickups', 'projectiles', 'hostileShots', 'effects');
+      probe.setSkills({});
+      const events = [];
+      engine.subscribe((event) => events.push(event));
+      const { player } = probe.read();
+      probe.setPlayer({ shield, stats: { hpRegen: 0 } });
+      const before = probe.read().player.hp;
+      probe.addHazard(zone('fire', player.x, player.y));
+      probe.step(60);
+      const burns = events.filter((event) => event.type === 'player/burn');
+      if (!shown) {
+        assert.equal(burns.length, 0, `${rules}, shield ${shield}: no burn numbers`);
+        continue;
+      }
+      assert.equal(burns.length, 2, 'one second of fire, two numbers');
+      const lost = before - probe.read().player.hp;
+      const total = burns.reduce((sum, event) => sum + event.damage, 0);
+      assert.ok(lost > 0 && Math.abs(total - lost) < 1e-6, `the numbers add up to what the fire took (${total} of ${lost})`);
+    } finally {
+      engine.dispose();
+    }
+  }
+});

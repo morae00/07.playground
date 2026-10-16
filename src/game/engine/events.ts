@@ -23,6 +23,8 @@ export type GameEvent =
   | { type: 'enemy/contact'; isBoss: boolean }
   /** fromX/fromY: where the hit came from (the enemy, shot, or shock zone), for the directional vignette (FX-03). */
   | { type: 'player/hurt'; x: number; y: number; damage: number; source: PlayerDamageSource; fromX: number; fromY: number }
+  /** FX-03: the fire damage of the last half second, while the player stands in fire (looks only). */
+  | { type: 'player/burn'; x: number; y: number; damage: number }
   /** The player's health crossed LOW_HEALTH_RATIO, either way (FX-03 heartbeat and vignette). */
   | { type: 'player/lowHealth'; low: boolean }
   /** The run ended in defeat; source is the last thing that hurt the player (CON-09 telemetry). */
