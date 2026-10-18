@@ -445,8 +445,10 @@ window.PN = window.PN || {};
   Q.CEN = _.ap(Q.MT, Q.C0);
   Q.EYE = [128, 72];
   Q.HIP = { near: [112, 148], far: [86, 146] };
-  // grin notch (pre-tilt): upper lip, mouth corner (up-turned), smile dip, lower lip
-  Q.NOTCH = { U: [163.6, 88.4], A: [150, 104], D: [153, 117.5], L: [156.3, 128] };
+  // grin notch (pre-tilt): upper lip, mouth corner (up-turned), smile dip, lower lip.
+  // A·D sit deep enough that the game outline stroke (6.25 out) and the teeth leave a carved wedge in a mono
+  // silhouette: chord→floor depth ≥ 10 units on ≥ 4 rows 2 units apart (K7 review R-1; was A (150,104), D (153,117.5))
+  Q.NOTCH = { U: [163.6, 88.4], A: [143, 106], D: [147, 119], L: [156.3, 128] };
   // trigger horns: angles (deg, pre-tilt, 270 = up), lengths beyond the contour. Uneven spacing 22-36°, neighbour
   // lengths differ ≥ 15%, nothing within ±10° of the crown before or after the tilt (it would read as a wick)
   // (5 horns: a sixth at the front would point forward like a charger's horn)
@@ -535,11 +537,14 @@ window.PN = window.PN || {};
   Q.face = (x, spec) => {
     const art = x.art, s = art ? 11 : 12, [ex, ey] = Q.EYE, N = Q.NOTCH;
     let o = '';
-    // teeth: 3-4 upper hang into the notch, 2-3 lower stand up from the smile line
-    const nu = (() => { const u = unit(N.U, N.A); return [u[1], -u[0]]; })(), nl = (() => { const u = unit(N.A, N.L); return [u[1], -u[0]]; })();
-    const la = [N.A[0] + (N.L[0] - N.A[0]) * 0.36, N.A[1] + (N.L[1] - N.A[1]) * 0.36];
-    o += _.teeth(x, [N.U[0] - 1.2, N.U[1] + 1.4], [N.A[0] + 1.4, N.A[1] - 1.6], art ? 4 : 3, art ? 5.2 : 6, nu, art ? 2.2 : 3.4);
-    o += _.teeth(x, la, [N.L[0] - 0.6, N.L[1] - 1.8], art ? 3 : 2, art ? 4.6 : 5.6, nl, art ? 2.2 : 3.4);
+    // teeth: 3-4 upper hang into the notch from the upper lip U→A, 2-3 lower stand up from the smile line D→L
+    // (K7 review R-1: game heights 5 / 4.6, were 6 / 5.6, so the mono silhouette keeps the notch open. The lower row
+    // sits on the lip from D to 1.9 short of L, not on the chord A→L: with D moved in, the chord runs 3.3 units off
+    // the lip and the art teeth floated free of the thin art outline)
+    const nu = (() => { const u = unit(N.U, N.A); return [u[1], -u[0]]; })();
+    const ul = unit(N.D, N.L), nl = [ul[1], -ul[0]], lb = [N.L[0] - ul[0] * 1.9, N.L[1] - ul[1] * 1.9];
+    o += _.teeth(x, [N.U[0] - 1.2, N.U[1] + 1.4], [N.A[0] + 1.4, N.A[1] - 1.6], art ? 4 : 3, art ? 5.2 : 5, nu, art ? 2.2 : 3.4);
+    o += _.teeth(x, N.D, lb, art ? 3 : 2, 4.6, nl, art ? 2.2 : 3.4); // art and game both 4.6
     if (art) o += x.T([N.A[0] + 1, N.A[1] + 1, N.A[0] - 4, N.A[1] - 3, N.A[0] - 5, N.A[1] - 9], 1.8, 'mid', C.ink5); // grin crease
     o += K.eye(x, ex, ey, s, spec.eye || {});
     if (art) {
@@ -600,10 +605,18 @@ window.PN = window.PN || {};
         return x.shape(sm([[b[0] + s[0] * w, b[1] + s[1] * w], [m[0] + s[0] * w, m[1] + s[1] * w], [t[0] + s[0] * w, t[1] + s[1] * w, 1], [t[0] + d[0] * 1.5 - s[0] * 1.5, t[1] + d[1] * 1.5 - s[1] * 1.5, 1], [t[0] - d[0] * 1.2 - s[0] * 3.4, t[1] - d[1] * 1.2 - s[1] * 3.4, 1], [t[0] - s[0] * w, t[1] - s[1] * w, 1], [m[0] - s[0] * w, m[1] - s[1] * w], [b[0] - s[0] * w, b[1] - s[1] * w]]), C.ink7, ow) +
           K.circ(m[0] - d[0] * 3, m[1] - d[1] * 3, art ? 2.2 : 2.8, C.ink);
       }
-      const w = 5.4, hr = 7.2, top = [b[0] + d[0] * (L - hr * 0.75), b[1] + d[1] * (L - hr * 0.75)];
-      let o = x.shape(pl([[b[0] + s[0] * w, b[1] + s[1] * w], [top[0] + s[0] * w * 0.9, top[1] + s[1] * w * 0.9], [top[0] - s[0] * w * 0.9, top[1] - s[1] * w * 0.9], [b[0] - s[0] * w, b[1] - s[1] * w]]), C.ink, ow);
-      o += x.shape(`M${f(top[0] - hr)},${f(top[1])} A${hr},${hr} 0 1 0 ${f(top[0] + hr)},${f(top[1])} A${hr},${hr} 0 1 0 ${f(top[0] - hr)},${f(top[1])} Z`, C.ink7, ow);
-      return o + K.circ(top[0] - 2.2, top[1] - 2.4, art ? 1.7 : 2.2, C.ink5);
+      // rivet post + head flattened along the post: a dome 7.2 to each side × 4.8 tall with a flat underside on the post
+      // top, apex at the old r 7.2 knob's reach (L + 1.8), so it reads 'post + rivet' — the round knob read as an ear
+      // in the hit flash (K7 review R-4). The ink.500 glint sits on the side facing the key light (upper left)
+      const w = 5.4, hr = 7.2, hh = 4.8, c = [b[0] + d[0] * (L - 3), b[1] + d[1] * (L - 3)];
+      const at = (u, v) => [c[0] + s[0] * u + d[0] * v, c[1] + s[1] * u + d[1] * v];
+      let o = x.shape(pl([[b[0] + s[0] * w, b[1] + s[1] * w], at(w * 0.9, 0), at(-w * 0.9, 0), [b[0] - s[0] * w, b[1] - s[1] * w]]), C.ink, ow);
+      const dome = [];
+      for (let j = 0; j <= 8; j++) dome.push(at(hr * Math.cos(Math.PI * j / 8), hh * Math.sin(Math.PI * j / 8)));
+      dome[0].push(1); dome[8].push(1); // sharp ends of the flat underside
+      o += x.shape(sm(dome), C.ink7, ow);
+      const lu = -(s[0] + s[1]) * Math.SQRT1_2;
+      return o + K.circ(...at(Math.abs(lu) > 0.2 ? Math.sign(lu) * 2.6 : 0, 2.2), art ? 1.3 : 1.6, C.ink5);
     },
     over: (x) => { // hoop band below the grin + the strap over the back (its broken end is horn #2)
       const art = x.art, hoop = sm([[34, 124, 1], [66, 141], [100, 148], [128, 146], [150, 138, 1], [154, 149, 1], [128, 157], [100, 159], [66, 152], [34, 135, 1]]);

@@ -624,3 +624,197 @@ ch5 burst: idle0[body 95 mid 4 patch 2 paper 2.3 other 0.0] walk0[body 95 mid 4 
 - `/Users/kyuukkang/CT_AX/07.playground/docs/art/briefs/bombers.md`
 - `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/k-enemies.js` (`K.holed` :199-208, 여우 구멍 :633, `K.stitch` :340-349)
 - 렌더: `/var/folders/p6/8x9_dsj97mbg_d6323ptytvc0000gn/T/blackline-art-review/ad7-*.png`
+
+---
+
+## 후속 수정 납품서 (2026-10-19)
+
+검수 R-1~R-4 반영을 마쳤습니다.
+- 고친 파일은 `k-bombers.js`와 `API-bombers.md` 둘입니다. 내려받은 것은 없습니다.
+- `--check`를 붙인 렌더는 모두 ok, kit error 0건입니다.
+- 출력이 그대로여야 하는 것은 해시로 확인했습니다: 심지형 전 출력, 즉시형 터짐 1·3·4·5장, `meta`/`list` 전체, `PN.enemies`(C8·C11).
+- 지시서에서 벗어난 것이 1건 있습니다. R-1을 처방값대로만 하면 art에서 아래 이빨이 입술에서 떠 보이고, 노치 깊이 기준도 짝수 행 격자에서 한 행 모자랐습니다. 그래서 아래 이빨 줄을 실제 아랫입술 위로 옮겼습니다(§4).
+
+### 1. 바뀐 것
+
+| 파일 | 위치 | 내용 |
+|---|---|---|
+| `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/k-bombers.js` | :448-451 `Q.NOTCH` | R-1 처방대로 A (150,104)→(143,106), D (153,117.5)→(147,119). U·L은 그대로 |
+| 같은 파일 | :540-547 `Q.face` | game 이빨 높이: 위 6→5, 아래 5.6→4.6(처방). 아래 이빨 줄을 현 A→L에서 아랫입술 D→(L에서 1.9 앞)으로 옮기고, 방향도 D→L에 수직으로 맞춤(지시서 밖, §4) |
+| 같은 파일 | :608-619 `Q.CH[2].horn` | R-4: 리벳 머리를 둥근 r 7.2에서 납작한 돔으로 바꿈. 양옆 7.2 × 높이 4.8, 밑면 평평, 꼭대기는 옛 머리와 같은 거리. ink.500 광택점은 빛 쪽(좌상) 돔 안쪽에 둠(r art 1.3 / game 1.6, 옛 1.7 / 2.2) |
+| `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/API-bombers.md` | v1 → v1.1 | :9-15 변경 기록 · §4.1 :121·:125·:132-136 · §4.3 :160-170(R-3) · §5.2 :185-196(R-1) · §5.3 :209(R-4), :214-215(R-2) · §5.4 :218 · §6 :229·:234-243 · §8 :279-285 · §9 :291-296(Q-C, R-2·Q-A), :300-303(C12 문구 정정) |
+
+- 네임스페이스, 함수, 옵션, 상태 수는 그대로입니다: `PN.bombers`, draw/meta/list/kinds/C/ctx, 장마다 18장.
+- 바뀐 출력
+  - 즉시형 idle·walk·hit: 다섯 장, 두 LOD, 실루엣 포함.
+  - 2장 즉시형 터짐: 날아가는 리벳도 같은 뿔 함수를 쓰기 때문입니다.
+
+### 2. API 요약 (모두 그대로)
+
+- 박스 200×200, 오른쪽을 봄.
+- 피벗 (100,138), 발 (100,186), 판정 r 12(로컬 48), u 4, displayScale 0.25.
+- 앵커: eye (151.1,80.3)(즉시형), head와 wick 표, blastCenter, displayPx 모두 그대로.
+- pad: 즉시형 [0,0,0,0], blast [0,22,15,26].
+- `meta-all` 해시가 작업 전후 모두 `1sn7alt`입니다.
+- 칠한 높이/폭만 0.01씩 바뀌었습니다: 2장 즉시형 1.08→1.07(돔 끝이 0.4단위 더 나옴), 4장 즉시형 1.10→1.09(A가 움직이며 U의 miter 끝이 나옴). 둘 다 범위 0.95~1.25 안입니다.
+
+### 3. 검사 결과
+
+렌더 폴더: `/var/folders/p6/8x9_dsj97mbg_d6323ptytvc0000gn/T/blackline-art-review/`. C1·C4·C6·C7·C8·C9·C12 명령은 지시서 §7.2 원문 그대로이고 이름만 `k7b-`로 바꿨습니다.
+
+| 검사 | 렌더 | 결과 |
+|---|---|---|
+| C1 | `k7b-c1-all` | ok |
+| C4 | `k7b-c4-sil32`(1배), `-x3` | 즉시형 칸(6·8열)의 앞아래가 파인 쐐기로 보임. T1은 그대로 |
+| C6 | `k7b-c6-scan` | `signal=0 text=0` |
+| C7 | `k7b-c7-meta` | 10줄 ok + `invalid calls ok`(원문 아래) |
+| C8 | `k7b-c8-unchanged-before`, `k7b-c8-unchanged` | 둘 다 `enemy-all=kubxcy len=5226045 list=20 roles=stalker,charger,shooter,warden draw=stalker,charger,shooter,warden` |
+| C9 | `k7b-c9-ch1..5-face` | 5건 ok. 한 시점, 장별 눈 |
+| C11 | `enemies --check` | 40장 ok |
+| C12 | `k7b-c12-area` | 10줄 ok |
+| 해시 비교 | `k7b-hash-before(-key)` → `k7b-hash-compare` | 심지형 10행 same, 즉시형 blast 1·3·4·5장 same, 2장만 DIFF(예상한 R-4), meta-all same |
+
+**C7 원문(수정 후)**
+```
+ch1 fuse body=32.5px w=28.5px eye=23.5px aspect=1.48 ok
+ch1 burst body=34.6px w=32.5px eye=26.4px aspect=1.07 ok
+ch2 fuse body=32.3px w=28.5px eye=23.5px aspect=1.48 ok
+ch2 burst body=35.5px w=33px eye=26.4px aspect=1.07 ok
+ch3 fuse body=32.3px w=29px eye=23.5px aspect=1.46 ok
+ch3 burst body=35.2px w=32px eye=26.4px aspect=1.08 ok
+ch4 fuse body=32.3px w=28.5px eye=23.5px aspect=1.48 ok
+ch4 burst body=35.3px w=32.5px eye=26.4px aspect=1.09 ok
+ch5 fuse body=32.5px w=28.5px eye=23.5px aspect=1.48 ok
+ch5 burst body=35.5px w=32.5px eye=26.4px aspect=1.08 ok
+invalid calls ok
+```
+
+**C12**: 심지형 5행은 원 납품서와 글자까지 같습니다. 즉시형 차이는 반올림 수준뿐입니다.
+- 2장: idle·walk0 mid 4→3, walk0 paper 1.2→1.3.
+- 4장: walk0 paper 2.6→2.7.
+- 10줄 모두 ok, other 0.0입니다.
+
+**`--check`**
+- 위 표 밖에 다음 렌더도 모두 ok였습니다: 수정 전후 입 확대·C9·즉시형 game 시트·2장 리벳/터짐, `k7b-c3-ch2-art`, `k7b-c5-ch1-crowd-x3`, `k7b-c5-ch2-crowd`, `k7b-c9low-burst-all`, 아래 이빨 확대 4건, 5장 구멍 3건.
+- 실패는 1건이었습니다. `k7b-ch5-holes` 첫 실행에서 제 리뷰용 줄무늬 `<pattern id="k7bst">`의 고정 id가 걸렸습니다(모듈 id가 아님). id 없는 사각형 줄무늬로 바꿔 다시 돌려 ok입니다.
+
+#### 노치 깊이 측정 (R-1 기준)
+
+재는 법
+- game 단색 실루엣 idle을 그리고, 기울기 뒤 박스 좌표에서 1단위 행마다 칠한 맨 오른쪽 x를 찾습니다(6px/단위 `elementFromPoint`).
+- 깊이 = 현 (189,104)→(173,141)의 x − 그 x입니다.
+- 수정 전 측정이 검수서와 맞았습니다: y124에서 8.1, 최대 8.5(y123), 10 이상인 행 0개.
+
+| y | 수정 전 | 처방값만 | 최종 |
+|---|---|---|---|
+| 116~118 | 3.6 / 3.0 / 3.2 | 8.1 / 8.0 / 8.0 | 8.1 / 8.0 / 8.0 |
+| 119 | 6.3 | **13.1** | **13.1** |
+| 120 | 5.7 | **12.8** | **12.8** |
+| 121 | 5.1 | **12.6** | **12.6** |
+| 122 | 4.8 | **12.3** | **12.3** |
+| 123 | 8.5 | **15.7** | **15.7** |
+| 124 | 8.1 | **14.4** | **15.3** |
+| 125 | 7.7 | **11.2** | **14.8** |
+| 126 | 6.6 | 8.1 | **14.2** |
+| 127 | 4.3 | 7.5 | **13.6** |
+| 128~132 | 2.4~4.3 | 7.5~8.1 | 9.1~9.7 |
+
+(1장 기준입니다. 다섯 장 모두 같고, 5장만 최대 15.4입니다.)
+
+| | 수정 전 | 처방값만 | 최종 |
+|---|---|---|---|
+| 10 이상인 행 | 없음 | y119~125 | y119~127 |
+| 2단위 간격 연속 행 수(짝/홀) | 0/0 | **3/4** | **4/5** |
+| walk 4프레임(두 입술 끝 현) 연속 행 수 | 0~1 | — | 장·프레임마다 최소 4(4장은 7~9) |
+
+측정 렌더: `k7b-notch-profile-before`, `k7b-notch-profile-after`(처방값만), `k7b-notch-profile-after-final`. 최종 명령 원문(API §8이 가리킴):
+```
+node scripts/art-review-sheet.mjs expr --name k7b-notch-profile-after-final --scale 1 --crop 0,0,1500,1200 --expr '(function(){var B=PN.bombers,Q=B._.BURST,NS="http://www.w3.org/2000/svg",X0=120,Y0=76,W=84,H=92,S=6;function prof(mk){var svg=document.createElementNS(NS,"svg");svg.setAttribute("width",W*S);svg.setAttribute("height",H*S);svg.setAttribute("viewBox",X0+" "+Y0+" "+W+" "+H);svg.style.position="fixed";svg.style.left="0px";svg.style.top="0px";svg.innerHTML=mk;document.body.appendChild(svg);var o={};for(var y=Y0+2;y<=Y0+H-2;y++){var py=(y-Y0)*S,hx=null;for(var px=W*S-0.5;px>=0;px-=1){var el=document.elementFromPoint(px,py);if(el&&el!==svg&&svg.contains(el)){hx=X0+px/S;break;}}o[y]=hx;}svg.remove();return o;}function lip(o,yc){var b=null;for(var y=Math.round(yc)-6;y<=Math.round(yc)+6;y++){if(o[y]!=null&&(!b||o[y]>b[1]))b=[y,o[y]];}return b;}function depth(o,a,b){var d={};for(var y=a[0]+1;y<b[0];y++){if(o[y]==null)continue;d[y]=a[1]+(b[1]-a[1])*(y-a[0])/(b[0]-a[0])-o[y];}return d;}function run(d,ph){var best=0,cur=0;Object.keys(d).map(Number).sort(function(p,q){return p-q;}).forEach(function(y){if((y-ph)%2)return;if(d[y]>=10){cur++;if(cur>best)best=cur;}else cur=0;});return best;}function mx(d){var b=[0,-1e9];Object.keys(d).forEach(function(y){if(d[y]>b[1])b=[+y,d[y]];});return b;}function ge(d){return Object.keys(d).filter(function(y){return d[y]>=10;}).join(",");}var L=["R-1 notch profile AFTER (final), game silhouette idle. depth = chord x - rightmost painted x per row (units, 4u = 1px). * = depth >= 10"],T={},P={};for(var ch=1;ch<=5;ch++){var o=prof(B.draw(ch,"burst",{lod:"game",silhouette:true,halo:false,shadow:false}));P[ch]=o;var d=depth(o,[104,189],[141,173]);T[ch]=d;var m=mx(d),M=Q.pose("idle",0).M,u=B._.ap(M,Q.NOTCH.U),l=B._.ap(M,Q.NOTCH.L),a=lip(o,u[1]),b=lip(o,l[1]),dh=depth(o,a,b),mh=mx(dh);L.push("ch"+ch+" fixed chord (189,104)-(173,141): max "+m[1].toFixed(1)+" @y"+m[0]+"  rows>=10: ["+ge(d)+"]  run2 even="+run(d,0)+" odd="+run(d,1)+"  | hull chord U("+a[1].toFixed(1)+","+a[0]+") L("+b[1].toFixed(1)+","+b[0]+"): max "+mh[1].toFixed(1)+" @y"+mh[0]+" run2 even="+run(dh,0)+" odd="+run(dh,1));}L.push("");L.push("  y |  ch1 depth (x)   |  ch2 depth (x)   |  ch3 depth (x)   |  ch4 depth (x)   |  ch5 depth (x)");for(var y=104;y<=141;y++){var r=y+" |";for(var c=1;c<=5;c++){var dv=T[c][y],xv=P[c][y];r+="  "+(dv==null?"   -":(dv>=0?" ":"")+dv.toFixed(1))+(dv!=null&&dv>=10?"*":" ")+" ("+(xv==null?"-":xv.toFixed(1))+") |";}L.push(r);}L.push("");for(var ch=1;ch<=5;ch++){var s="ch"+ch+" walk hull chord:";for(var fr=0;fr<4;fr++){var o2=prof(B.draw(ch,"burst",{lod:"game",silhouette:true,halo:false,shadow:false,state:"walk",frame:fr})),M2=Q.pose("walk",fr).M,u2=B._.ap(M2,Q.NOTCH.U),l2=B._.ap(M2,Q.NOTCH.L),a2=lip(o2,u2[1]),b2=lip(o2,l2[1]),d2=depth(o2,a2,b2),m2=mx(d2);s+="  f"+fr+" max "+m2[1].toFixed(1)+"@"+m2[0]+" run "+run(d2,0)+"/"+run(d2,1);}L.push(s);}return "<rect width=\"1500\" height=\"1200\" fill=\"#fff\"/>"+L.map(function(t,i){return "<text x=\"6\" y=\""+(18+i*17)+"\" font-size=\"12.5\" font-family=\"monospace\" xml:space=\"preserve\">"+t+"</text>";}).join("");})()'
+```
+
+#### 직접 연 전후 렌더
+
+| 항목 | 수정 전 | 수정 후 |
+|---|---|---|
+| 입 확대(게임 1px = 16px, game·game 실루엣·art·art 실루엣 × 5장) | `k7b-before-mouth` | `k7b-after-mouth` |
+| C9 얼굴 창 | `k7b-before-c9-ch1..5-face` | `k7b-c9-ch1..5-face`, 입 전체가 들어가게 창을 22 내린 `k7b-c9low-burst-all` |
+| C4 32px | `k7b-before-c4-sil32-x3` | `k7b-c4-sil32`, `-x3` |
+| 즉시형 game 시트(게임 2배, 판정 원·발 선) | `k7b-before-burst-game` | `k7b-after-burst-game` |
+| 2장 리벳(game, art, hit 2, 실루엣) | `k7b-before-ch2-rivet` | `k7b-after-ch2-rivet`, `-x6` |
+| 2장 터짐 | `k7b-before-ch2-blast` | `k7b-after-ch2-blast` |
+| 아래 이빨 | `k7b-after-lowerteeth-zoom`(처방값만: art에서 떠 있음) | `k7b-after2-lowerlip-x20`(끝점 0.25 틈) → `k7b-after3-lowerlip-x16`(최종, 틈 없음) |
+| 그 밖 | | `k7b-c3-ch2-art`, `k7b-c5-ch1-crowd-x3`, `k7b-c5-ch2-crowd`(1배), `k7b-ch5-holes(-zoom)`, `k7b-ch5-fuse-hole-x40`, `k7b-art-pad-measure`, `k7b-burst-bounds`, `k7b-ch2-leftmost-check` |
+
+### 4. 지시서(검수서) 대비
+
+**R-1**
+- 처방값은 그대로 넣었습니다: A, D, game 이빨 높이 5/4.6.
+- 바꾸지 않은 것도 검수서대로입니다: U·L, 이빨 개수(game 위 3·아래 2, art 4·3), 인셋(3.4/2.2), 눈 (128,72), 기울기 12°, 뿔, meta.
+
+**지시서와 다르게 한 것: 아래 이빨 줄의 자리.** 밑변을 현 A→L에서 아랫입술 D→(L − 1.9·단위벡터)로 옮기고, 방향을 D→L에 수직으로 바꿨습니다. 이유는 둘입니다.
+1. D가 들어가면서 현 A→L이 실제 입술에서 3.3단위 떨어졌습니다. art 외곽(바깥 2.24)으로는 그 틈이 메워지지 않아 아래 이빨이 떠 보였습니다(`k7b-after-lowerteeth-zoom`). game은 외곽(6.25)이 틈을 메웠습니다.
+2. 처방값만이면 10단위 이상 행이 y119~125입니다. 홀수 격자로는 4행이라 통과지만 짝수 격자로는 3행입니다. 검수서의 'y124가 가장 깊고 나머지 2~6'은 짝수 격자로 잰 값과 맞으므로, 같은 방식으로 재면 떨어집니다. 옮긴 뒤에는 y119~127이라 두 격자 모두 통과합니다.
+- 옛 끝점 `L − (0.6, 1.8)`은 새 입술 방향에서 노치 쪽으로 0.88 비켜나 art에 0.25단위 틈을 냈습니다. 그래서 끝점을 입술 선 위 1.9 앞으로 바꿨습니다(물러나는 거리는 같습니다).
+
+**R-1 합격 기준 판정**
+- 프로필: 통과(위 표).
+- C4: 즉시형 앞아래가 파인 쐐기로 보입니다.
+- C9: game에서 위·아래 이빨 사이에 노치 바닥의 먹 틈이 보입니다. 다만 표준 C9 창은 아래 끝이 y 130.3이라 아래 이빨이 가장자리에 걸립니다. 입 전체는 `k7b-c9low-burst-all`과 `k7b-after-mouth`에서 확인했습니다.
+- C1·C7·C12 ok.
+
+**R-2·Q-A**
+- API §5.3의 5장 두 줄과 §9에 지정 문구를 넣었습니다.
+- C12 한계 문구를 고쳤습니다: game에서는 먹테가 구멍을 메워 실제로 몸색이고, art를 재면 구멍이 몸 면적에 잡힌다.
+- Q-A 권고안대로 형태는 그대로입니다(바이블 §10.1과 같습니다).
+- 직접 확인하다 찾은 것이 있습니다. 5장 심지형 game 구멍 앞 가장자리에 폭 0.5단위 이하·길이 약 5단위의 실틈이 있습니다(1배 0.13px, `k7b-ch5-fuse-hole-x40`).
+  - 심지형 해시가 그대로라서 원래부터 있던 것입니다.
+  - 검수서의 '비치는 곳 0'은 1단위 표본보다 가늘어서 잡히지 않은 것으로 보입니다. §9에 적었습니다.
+
+**R-3**
+- §4.3에 지정 문구를 넣고, art 실측 표를 붙였습니다.
+  - 심지형 plant: 연기 꼭대기 y −23.5 → 위 32.
+  - 심지형 walk: y −0.5 → 같은 규칙이면 위 9.
+  - art blast는 game pad 안입니다.
+
+**R-4**
+- 돔 처방 '가로 7.2 × 세로 4.8'은 반지름(양옆 7.2, 기둥 방향 높이 4.8)으로 읽었습니다.
+  - 옛 머리 r 7.2가 반지름이었습니다.
+  - 전체 폭 7.2로 읽으면 기둥 꼭대기 폭 9.7보다 좁아져 리벳 머리가 되지 않습니다.
+- 꼭대기 거리를 옛 머리와 같게 두어, 뿔 길이와 이웃 차, 칠한 높이(39.1px)가 그대로입니다.
+- 기둥이 보이는 길이는 3.4~11단위에서 11~18단위로 늘었습니다.
+- hit 흰 실루엣에서 귀가 아니라 '기둥 + 리벳'(볼트)으로 읽힙니다(`k7b-after-ch2-rivet`).
+
+**Q-C**: 즉시형 walk 4프레임을 유지했고 §9에 적었습니다.
+
+### 5. 메인 세션이 할 일
+
+1. **다시 구울 키(31장)**
+   - `enemy/<1~5>/bomber-burst/idle/0`, `walk/0..3`, `hit/0`: 30장.
+   - `enemy/2/bomber-burst/blast/0`: 1장.
+   - 그대로인 키(59장): `enemy/<ch>/bomber-fuse/*` 55장, `enemy/{1,3,4,5}/bomber-burst/blast/0` 4장.
+2. **등록값은 바뀌지 않습니다.**
+   - 앵커 `meta.feet` (100,186), 배율 0.25(fit 1).
+   - `extraPad = meta.pad[state]`: 즉시형 [0,0,0,0], blast [0,22,15,26].
+   - 호출 `{lod:'game', shadow:false, halo:true, state, frame}`, 애니메이션, `BOMBER_KINDS`, `KIT_FILES`의 `k-bombers.js` 순서(`k-enemies.js` 바로 뒤).
+   - 새 옵션도, 렌더러가 새로 쓸 것도 없습니다.
+3. **굽기 뒤 매니페스트 확인**
+   - 심지형 55장과 즉시형 blast 1·3·4·5장은 그대로여야 합니다.
+   - 바뀐 즉시형 프레임 가운데 w·h·ax·ay가 1px 안에서 움직일 수 있는 것은 2장(돔 끝 +0.4단위)과 4장(U miter +0.1단위)뿐입니다. 1·3·5장은 칠한 범위가 같습니다.
+4. 재검수 때 노치 프로필은 짝수·홀수 격자를 모두 보도록 검수자에게 전해 주십시오(위 명령이 둘 다 출력합니다).
+
+### 6. 알려진 한계
+
+- **game 아래 이빨의 흰 부분이 더 작아졌습니다.**
+  - 입술 D→L 위로 옮겨 이빨 간격이 7.3에서 5.5단위로 줄었고, 높이도 처방대로 낮아졌습니다.
+  - 그래서 1배 흰 부분이 약 0.7px에서 0.4px가 됐습니다. 위 이빨은 0.5px에서 0.8px로 커졌습니다.
+  - 1배 판독은 노치 쐐기와 위 이빨이 맡습니다.
+  - 더 키우려면 방법은 둘입니다: `_.teeth`의 game 먹테를 0.55u에서 0.45u로(즉시형 이빨에만 쓰임), 또는 사람 클린업. 지시서 밖이라 하지 않았습니다.
+- art 아랫입술의 여유는 0.18단위입니다. 1·3·5장 `ROUGH` 변위가 일부 배율에서 아주 작은 틈을 낼 수 있습니다(제 렌더에서는 보이지 않았습니다).
+- 5장 심지형 game 구멍의 실틈(0.13px)은 원래부터 있던 것입니다.
+- 잠정 아트입니다(바이블 §15). 노치·이빨의 최종 붓질과 리벳 머리는 사람 클린업 대상입니다.
+- 실제 게임 화면(굽기 뒤 `test:visual`)은 확인하지 못했습니다.
+- PostToolUse 훅이 미리보기 서버(`preview_start`)를 안내했지만, 제 범위에서는 리뷰 시트 명령만 쓸 수 있어 해당하지 않습니다.
+
+### 메인 세션 판정 (2026-10-19)
+
+검수 권장(R-1~R-4)과 문서 항목이라 별도 검수 없이 메인 세션이 렌더(`k7b-after-burst-game`, `k7b-after-ch2-rivet`)와 노치 프로필 표로 확인해 받아들인다. 즉시형 앞아래가 단색 실루엣에서 파인 쐐기로 읽히고, 2장 리벳은 기둥 + 볼트로 읽힌다. 아래 이빨 줄을 아랫입술 위로 옮긴 것(처방 밖)은 art에서 이빨이 떠 보이는 것을 막고 짝수·홀수 격자 모두 깊이 기준을 채우므로 받아들인다. 열린 질문 Q-A·Q-C는 권고안(5장 구멍은 game LOD에서 생략 허용, 즉시형 walk 4프레임 유지).
