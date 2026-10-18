@@ -1676,3 +1676,205 @@ C11c k9u-c11c-cyan32-px (32px 색, 1px 블록): 3차 22종 + R1 넷, 26칸 모�
 - 렌더: `/var/folders/p6/8x9_dsj97mbg_d6323ptytvc0000gn/T/blackline-art-review/k9r7-*.png`
 
 파일은 하나도 고치지 않았고, 아무것도 내려받지 않았다.
+
+---
+
+## 3차 수정 2회차 납품서
+
+검수 7차 §5의 F1·F2와 권장 R7을 반영했습니다.
+- 고친 파일은 `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/k-icons2.js`와 `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/API-icons2.md` 둘뿐입니다. 아무것도 내려받지 않았습니다.
+- 세션 한도로 멈췄다 재개할 때 파일 상태를 다시 확인했습니다. F1·F2·R7 코드가 모두 들어 있었고, 모듈은 오류 없이 로드됩니다(kit error 0). 그 자리부터 검사와 문서를 마쳤습니다.
+- 출력이 바뀐 무기는 **뇌침(평상·각성)과 유성 붓(평상·각성)** 둘뿐입니다.
+- `keep-but-MR=1nz2ip3 len=4552974`는 그대로이고, 나머지 무기별 해시 10종도 그대로입니다.
+
+### 1. 바뀐 것
+
+**F1 뇌침(평상·각성) — 처방 (b)**
+- 되꺾임 안쪽을 먹 쐐기로 채웠습니다. 쐐기는 두 다리 사이에서 바늘 중심선 너머 3.8까지 이릅니다.
+- 쐐기를 바늘 위에 얹어 바늘이 쐐기 뒤로 지나가게 했고, 두 다리는 쐐기 앞에 다시 그립니다(`front` [1, 3] → [1, 2, 3]).
+- 종이 삼각형 안의 가로획('A')과 '오른쪽 다리 + 바늘'('4')이 없어집니다.
+- 그대로 둔 것: 점, 굵기 w0 8 / w1 15.5, 먹·청록·종이 심, Z 홈, 과녁·기절 나선·먹 튐.
+- (a)도 그려 봤습니다(`k9u-f1-a-120-32`). 두 발을 바늘선에 올리면 바늘이 삼각형 밑변이 되어 'Δ'나 밑변 있는 'A'로 남아서 버렸습니다.
+- 각성 둘째 바늘의 작은 번개는 바늘을 밑변으로 하는 작은 꺾쇠라 안쪽 가로획이 없습니다(8배 `k9u-f1-aw-second-x8`).
+
+**F2 각성 유성 붓**
+- 각성판에서 꼬리의 끊긴 먹 방울을 뺐습니다(`comet(…, drops=false)`). 둘째 붓 꼬리의 방울도 같이 뺐습니다.
+- bg로 옮기는 안은 쓰지 않았습니다. 1.1배로 커진 fg 꼬리와 자리가 어긋나 꼬리 끝에 묻히고, 각성 먹 바탕에서는 먹 방울이 보이지 않습니다.
+- 평상판의 방울은 그대로입니다.
+
+**R7 유성 붓 꼬리 갈래 끝(평상·각성)**
+- 끝이 뾰족한 가시(끝 폭 0.9)이던 것을 갈라진 마른 끝으로 바꿨습니다(새 도우미 `dryTine`).
+- 끝 폭은 max(1.8, 시작 폭 × 0.75)입니다.
+- 끝에 깊이 min(끝 폭, 갈래 길이 × 0.3)의 홈을 내서 두 가닥으로 가릅니다. 가닥마다 0.32 × 끝 폭의 납작한 끝이 있어 뾰족하지 않습니다.
+- 그 밖의 M1 꼴(넓어지는 꼬리, 마개·고리, 짓눌린 붓털, 청록 심, 착지)과 난수 순서는 같습니다.
+
+### 2. 전후 렌더 (`/var/folders/p6/8x9_dsj97mbg_d6323ptytvc0000gn/T/blackline-art-review/`)
+1. **F1**
+   - 전: `k9u-f1-before-120-32`(120px 1배 + 32px 색·흑백 픽셀 블록). 검수자 렌더 `k9r7-thunder-120`, `k9r7-thunder-32-solo`도 같은 상태입니다.
+   - 후: `k9u-f1-b-120-32`(같은 배치), 5배 `k9u-f1-b-x5`
+2. **F2**
+   - 전: `k9r7-meteor-aw-tile-corner`(검수자)
+   - 후: `k9u-f2-meteor-aw-tile-corner`(각성 타일 왼쪽 위 5배). 모서리 마름모 옆 흰 테 점이 없습니다.
+3. **R7**
+   - 전: `k9u-m1-meteor-x4b`(가시 갈래)
+   - 후: 8배 `k9u-r7-tines-x8b`, 4배 `k9u-f2r7-meteor-x4`
+4. **크기 확인**: `k9u-f2r7-meteor-120-32`(유성 붓 120px·32px 색·흑백)
+
+### 3. 해시 전후 (`k9u-f12-hashes`, 무기별 `k9u-weapon-hashes12-f12`)
+
+| 해시 | 전(1회차 뒤) | 후 | 판정 |
+|---|---|---|---|
+| keep-but-MR | `1nz2ip3 len=4552974` | `1nz2ip3 len=4552974 codes=49,110,122,50,105,112,51` | **같음**(`icons32=st2cpv len=4208357`, `shots264=194b48x len=344617`) |
+| keep-but-M | `18cb7f6 len=5875151` | `1fjlgj1 len=5877248 codes=49,102,106,108,103,106,49` | 뇌침으로 바뀜 |
+| keep-but-M-R1 | `j853k3 len=5290144` | `j853k3 len=5290144 codes=106,56,53,51,107,51` | **같음** |
+| volley-keep-v2 | `1vrl75n len=943384` | `11ea404 len=945481 codes=49,49,101,97,52,48,52` | 뇌침으로 바뀜 |
+| batch2-accepted | `1cu38bf len=2295034` | `1cu38bf len=2295034` | **같음** |
+| batch3-icons | `wgek8m len=2722700` | `1prsfzs len=2720789 codes=49,112,114,115,102,122,115` | 유성 붓으로 바뀜 |
+| n1-awakened | `1agojwf len=272829` | `1agojwf len=272829` | **같음** |
+| all44-icons | `19ir0aw len=5889330` | `13kuvqx len=5889516 codes=49,51,107,117,118,113,120` | 바뀜(굽기 전 확인값) |
+
+무기별 해시
+```
+meteorBrush    plain=f0ap7s [102,48,97,112,55,115] CHANGED  awakened=1eekf35 [49,101,101,107,102,51,53] CHANGED
+thunderNeedles plain=1rnwt16 [49,114,110,119,116,49,54] CHANGED  awakened=14rsbvu [49,52,114,115,98,118,117] CHANGED
+tarJar, seventhSeal, headsmanDarts, smokeTail, ghostVolley, inkLightning, sparkThread, wardRing, judgmentLine, stormThread: plain·awakened 모두 same
+```
+- **유성 붓 평상 `8e7c47` → `f0ap7s`**: 바뀐 이유는 R7(갈래 끝 모양) 하나입니다. 방울은 평상판에 그대로 있고 난수 호출 순서도 같습니다.
+- **유성 붓 각성 `1wjcsxc` → `1eekf35`**: R7 + F2(방울 뺌)입니다.
+- K10 기준 버전으로 쓰던 유성 붓 해시는 이 새 값으로 바뀝니다. 꼴 기준은 갈래 끝과 각성 방울 말고는 같습니다.
+
+### 4. 검사 출력
+```
+C1  k9u-f12-c1-all (--scale 0.25 --check): ok
+C2  k9u-f12-c2-volley (--check): ok
+C2  k9u-f12-c2-lob (--check): ok
+C10u k9u-f12-c10u-ink (ink %):
+  inkDarts 18.5 · brushQuills 17.5 · sealArrows 15.4 · frostNeedles 31.6 · thunderNeedles 17.8 · twinBlades 12.4 · ghostVolley 19.4 · headsmanDarts 15.3
+  paperStorm 17.4 · inkBloom 15.7 · thornHalo 15.3 · starShards 20.8 · sunNeedles 19.6 · inkDrizzle 15.4 · pinHail 15.4 · tailGuard 15.4 · smokeTail 16.9
+  gravePins 27.6 · trackingSeals 15.5 · huntersMarks 16.1 · crowFeathers 15.9 · bossbane 26.9 · inkLightning 47.6 · brushDownpour 30.4 · fallingScroll 33.0
+  seventhSeal 37.8 · inkPulse 21.7 · frostRing 17.4 · thunderclap 18.2 · silenceBell 21.2 · inkPots 15.1 · clusterPots 15.1 · tarJar 19.8 · meteorBrush 16.2
+  sparkThread 15.5 · stormThread 18.7 · frostChainlet 29.4 · inkLance 19.3 · wideBrush 15.6 · crossStrokes 23.4 · judgmentLine 16.6 · inkOrbit 16.9
+  wardRing 22.3 · eclipseHalo 15.4 · core needleStorm 19.5 · core fanKnives 40.3 · core mirrorClone 54.2 · core railSpear 29.2
+  (thunderNeedles: ink 17.8% paper 79.0% cyan 3.1% / meteorBrush: ink 16.2% paper 83.3% cyan 0.4%)
+```
+- C10u 변화: 뇌침 17.3 → 17.8, 유성 붓 15.9 → 16.2입니다. 15 아래는 이번 범위 밖인 쌍날 12.4 하나입니다.
+- needleStorm 32px 블라인드(새 시드, 답을 먼저 적고 정답표를 열었습니다)
+  - 평상 `k9u-f1-blind-needle-32-s1618033`: **14/14**
+  - 각성 `k9u-f1-blind-needle-aw32-s1414213`: **14/14**
+  - 32px에서 뇌침은 검은 쐐기가 있는 들쭉날쭉한 번개로 읽혔고, 'A' 가로획은 보이지 않았습니다.
+
+### 5. 메인 세션이 할 일
+- 검수 8차 합격 뒤 UI 시트만 다시 굽습니다(`npm run build:ui-art`, `node scripts/build-arsenal-art.mjs`).
+- 바뀌는 칸은 뇌침 평상·각성 × 타일·슬롯 4칸과 **유성 붓 평상·각성 × 타일·슬롯 4칸**입니다. R7 때문에 검수 7차 §9-4의 예상(유성 붓 각성 2칸)보다 평상 2칸이 더 바뀝니다.
+- 굽기 전 확인할 값(다르면 멈춤):
+  - `keep-but-MR=1nz2ip3 len=4552974`
+  - `all44-icons=13kuvqx len=5889516`
+  - `volley-keep-v2=11ea404 len=945481`
+  - `batch3-icons=1prsfzs len=2720789`
+  - `batch2-accepted=1cu38bf len=2295034`
+  - `n1-awakened=1agojwf len=272829`
+- 탄은 바뀌지 않았습니다(`shots264=194b48x`). 아틀라스와 skills 팩은 다시 굽지 않습니다.
+- K10 무기 전장 효과의 유성 붓 기준 해시는 `f0ap7s`/`1eekf35`로 바꿉니다.
+
+### 6. API 문서에서 고친 곳과 알려진 한계
+API 문서
+- 납품 표에 '3차 수정 2회차' 줄을 더했습니다.
+- 표: §6 뇌침(F1), §6c 유성 붓(R7·F2)을 고쳤습니다.
+- §8에 2회차 해시 표를 더했습니다.
+- §9.8을 새로 썼습니다(55 F1에 (b)를 고른 이유, 56 F2에 빼기를 고른 이유, 57 R7 치수와 평상 해시가 바뀐 이유).
+- §10에 C10u·블라인드·클린업을 더했습니다.
+
+알려진 한계
+- 뇌침 먹 쐐기는 곧은 변 다각형입니다. 사람 클린업 때 붓 질감을 넣어야 합니다.
+- 유성 붓 갈래 끝의 마른 붓 결도 클린업 몫입니다.
+- 새 시드 20px 판독(뇌침 ↔ 망나니 침)은 검수자가 봅니다.
+
+---
+
+## 검수 8차: K9 3차 수정 2회차 (F1·F2·R7), art-director, 2026-10-19
+
+**판정: 합격.** 검수 7차 §5의 F1·F2 합격 기준과 권장 R7을 모두 채운다. 메인 세션은 UI 시트 8칸을 다시 구우면 된다.
+- 다시 굽는 칸: 뇌침 평상·각성, 유성 붓 평상·각성 × 타일·슬롯.
+- 처방과 다르게 한 55~57은 모두 받아들인다.
+
+### 1. 직접 돌린 검사
+렌더는 `/var/folders/p6/8x9_dsj97mbg_d6323ptytvc0000gn/T/blackline-art-review/k9r8-*.png`에 있다. kit error는 0건이다.
+
+| 검사 | 결과 |
+|---|---|
+| 해시 `k9r8-hash-check`(코드 안에서 문자열·길이 비교) | 모두 exact-match=true. 값은 아래 '굽기 전 확인 값'과 같고, 여기에 `keep-but-M=1fjlgj1 len=5877248`, `keep-but-M-R1=j853k3 len=5290144`(그대로), `icons32=st2cpv`, `shots264=194b48x len=344617`이 더해진다 |
+| 무기별 해시 | 12/12 일치. 유성 붓 `f0ap7s`/`1eekf35`, 뇌침 `1rnwt16`/`14rsbvu`. 나머지 10종은 검수 7차에 내가 확인한 값과 같으므로, 그 10종이 바뀌지 않았다는 독립 증명이 된다 |
+| 탄 | 옛 `8wzptx len=134704`·`1p7d1ev len=328482`가 그대로다. 탄은 바뀌지 않았다 |
+| 길이 산수 | keep-but-M과 volley-keep-v2가 똑같이 +2097(뇌침), batch3-icons가 −1911(유성 붓)이다. all44의 +186 = 2097 − 1911로 정확히 맞는다 |
+| C5 | `icons-all=19vh262 len=2634966 list=17 ICON=17 \| skillvfx-all=1xq1i37 len=698432 groups=18`, exact-match=true |
+| `--check` | 모두 ok: C1, C2 volley, C2 lob, 뇌침·유성 붓 3배 쌍 렌더 |
+| C10u | 뇌침 17.8, 유성 붓 16.2(작가 값과 같음, 15~55 안) |
+
+### 2. F1 뇌침: 'A'·'4' 제거 → 합격
+- **렌더:** `k9r8-thunder-120`(드래프트 1배), `k9r8-draft3-thunder`(드래프트 세 장), `k9r8-thunder-32-solo`(32px 색·흑백 픽셀 블록 8배), `k9r8-thunder-x3`
+- **결과**
+  - 되꺾임 안쪽이 먹 쐐기로 채워져 종이 삼각형이 없다. 바늘은 쐐기 뒤로 지나 오른쪽 다리 밖에서만 다시 보인다.
+  - 그래서 120px와 32px(색·흑백)에서 '가로획 있는 A'도, '다리 + 바늘 = 4'도 없다. 지금은 '검은 가시가 솟은 들쭉날쭉한 번개'로 읽힌다.
+  - 각성판도 같다. 둘째 바늘의 작은 꺾쇠에도 가로획이 없다.
+  - 점, 굵기, 청록·종이 심, Z 홈은 그대로다.
+- **20px 새 시드 55칸**(시드 49979687, 흑백 픽셀 블록)
+  - 매듭을 세지 않고 꼴만으로 첫 판독: 55/55.
+  - 뇌침(1.6)과 망나니 침(2.6)은 맞바뀌지 않았다.
+- **needleStorm 32px:** 평상 14/14(시드 611953), 각성 14/14(시드 2750159).
+- **편향:** 같은 그림을 여러 차례 본 검수자의 판독이라 학습 효과가 있다. 정식 판독 시험(n ≥ 8)은 미확인이다.
+
+### 3. F2 각성 유성 붓: 모서리 방울 → 합격
+- `k9r8-meteor-aw-tile-corner`(각성 타일 왼쪽 위 5배)에서 모서리 마름모 옆의 흰 테 점이 없어졌다.
+- 가장 가까운 것은 꼬리 갈래 끝(아이콘 좌표 약 (15, 9))으로, 모서리 10 구역 밖이다.
+- 틀 왼쪽 가장자리의 먹 얼룩은 빌린 각성 틀(k-icons)의 번짐이고 무기 그림이 아니다.
+- 평상판의 방울은 그대로다.
+
+### 4. R7 유성 붓 갈래 끝 → 합격
+- `k9r8-meteor-tines-x8`: 갈래 끝이 뾰족하지 않고, 홈으로 갈라진 납작한 마른 끝이다.
+- `k9r8-meteor-32-px`: 32px 색·흑백에서 인장 화살·붓깃·먹침과 나란히 놓아도, 꼬리는 좌우 대칭 깃이 아니라 거친 먹 술로 보인다. 화살 깃으로 읽히지 않는다.
+- `k9r8-meteor-x3`, `k9r8-meteor-120-32`(드래프트 120): M1 꼴은 그대로다. 먼 끝이 넓은 꼬리, 마개·고리, 짓눌린 붓털, 청록 심, 착지, 42°, 낙관 구역 비움.
+
+### 5. 55~57
+| # | 판정 | 근거 |
+|---|---|---|
+| 55 F1에 처방 (b) | 수용 | (a)는 바늘이 밑변이 되어 'Δ'·밑변 있는 'A'로 남았다는 판단에 동의한다. `front`에 2를 더해 다리를 쐐기 앞에 다시 그린 것도 맞다 |
+| 56 F2를 '빼기'로 | 수용 | bg로 옮기면 1.1배 fg 꼬리와 어긋나고 먹 바탕에서 보이지 않는다 |
+| 57 R7 치수, 평상 해시 변경 | 수용 | 끝 폭 1.8 이상(처방 1.6 이상)이다. 평상 해시는 갈래 끝 때문에만 바뀌었고, 나머지는 같은 코드·같은 난수 순서다 |
+
+### 6. K10 기준 갱신
+- 유성 붓의 K10 기준 해시를 `f0ap7s`/`1eekf35`로 바꾼다.
+- 꼴 기준은 검수 7차 §7 그대로이고, 갈래 끝은 '갈라진 마른 끝'이 기준이다. 이미 금지 목록에 '가시처럼 뾰족한 갈래 끝'으로 들어 있다.
+- 타르 항아리 `1mq1jnw`/`chm7dz`, 일곱째 인장 `11totq1`/`1s8ck17`은 그대로다.
+
+### 7. 남는 것
+- **사람 클린업**(검수 7차 §8 목록에 더함)
+  - 뇌침 먹 쐐기는 곧은 변 다각형이라 붓 질감이 필요하다.
+  - 유성 붓 갈래 끝의 마른 붓 결.
+- **팀 결정**(검수 7차와 같음): 쌍날 C10u 12.4, HUD 각성 슬롯 표시 방식.
+- **미확인:** 실제 게임 화면, 정식 판독 시험, 정산 목록의 무기 이름 표시.
+
+### 8. 메인 세션: 굽기 때 주의할 것
+1. **UI 시트만 다시 굽는다**(`npm run build:ui-art`, `node scripts/build-arsenal-art.mjs`).
+   - 바뀌는 칸은 8칸이다.
+   - 44종을 아직 굽지 않았다면 지금 이 값으로 44종을 한 번에 굽는다. 검수 7차 §9의 확인 값은 아래 값으로 대체된다.
+2. **굽기 전 확인 값**(커밋한 스냅숏에서, 다르면 멈춤; 모두 내가 exact-match로 확인함)
+   - `keep-but-MR=1nz2ip3 len=4552974`
+   - `all44-icons=13kuvqx len=5889516`
+   - `volley-keep-v2=11ea404 len=945481`
+   - `batch3-icons=1prsfzs len=2720789`
+   - `batch2-accepted=1cu38bf len=2295034`
+   - `n1-awakened=1agojwf len=272829`
+   - K10·K11이 진행 중이니 굽기 직전에 다시 돌린다.
+3. **탄은 바뀌지 않았다**(`shots264=194b48x`). 아틀라스와 skills 팩은 다시 굽지 않는다.
+4. **`npm run test:visual`**
+   - 드래프트 카드에서 뇌침('A'가 실제 UI에서도 사라졌는지)과 유성 붓을 본다.
+   - 나머지 장면은 검수 7차 §9-5 그대로다.
+5. **지시서 정정:** 검수 7차 §9-6의 두 줄(§2.6 'A'·'4', §2.2 각성 방울)은 아직 더할 것으로 남아 있다.
+
+**관련 파일**
+- `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/k-icons2.js`
+- `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/API-icons2.md`(§8, §9.8)
+- `/Users/kyuukkang/CT_AX/07.playground/docs/art/deliveries/K9-arsenal-icons.md`(3차 수정 2회차 납품서)
+- 렌더: `/var/folders/p6/8x9_dsj97mbg_d6323ptytvc0000gn/T/blackline-art-review/k9r8-*.png`
+
+파일은 하나도 고치지 않았고, 아무것도 내려받지 않았다.

@@ -7,7 +7,8 @@
 // - Delivery 3 of 3: all 44 drawn — volley (8, delivery 1), burst · spray · rear · seeker (14, delivery 2, with all 22
 //   shots) and strike · nova · lob · chain · beam · halo (22 icons, delivery 3; no projectiles, so no shots). META done is
 //   true for all; the look-icon placeholder path in defOf is no longer reached. Fix round after 검수 6차: M1 meteorBrush,
-//   M2 tarJar, M3 seventhSeal, R1 thunderNeedles · headsmanDarts (plain) · smokeTail, R2–R6 (API-icons2.md §9.7).
+//   M2 tarJar, M3 seventhSeal, R1 thunderNeedles · headsmanDarts (plain) · smokeTail, R2–R6 (API-icons2.md §9.7);
+//   after 검수 7차: F1 thunderNeedles wedge, F2 awakened meteorBrush drops, R7 meteorBrush dry tine ends (§9.8).
 // Deterministic: no Math.random / Date. Load after lib.js and k-icons.js.
 window.PN = window.PN || {};
 (function (PN) {
@@ -432,10 +433,23 @@ window.PN = window.PN || {};
     // every step ≥ 30% apart. 검수 6차 R1: the middle jog was 14 deep (70,58 → 66,72) and closed up at 20 px, where the
     // bolt and 망나니 침's dart both became 'a thin diagonal + an ink mass on the right'; it now drops 32 (76,46 → 70,78)
     // so a Z notch stays open at 20 px
-    const main0 = { pts: [[4, 100], [30, 80], [36, 90], [76, 46], [70, 78], [86, 62], [99, 66]], w0: 8, w1: 15.5, front: [1, 3], fork: false, shadow: [2.1, 2.7] };
+    // 검수 7차 F1: the deep jog's two legs both crossed the paper needle, so the needle drew a bar inside the paper
+    // triangle and the bolt read as 'A' (or '4') at 120 and 32 px. The inside of the jog — between its two legs, down to
+    // the needle — is now a solid ink wedge drawn over the needle (the needle passes behind it), and both legs are
+    // redrawn in front of it (front [1, 2, 3])
+    const main0 = { pts: [[4, 100], [30, 80], [36, 90], [76, 46], [70, 78], [86, 62], [99, 66]], w0: 8, w1: 15.5, front: [1, 2, 3], fork: false, shadow: [2.1, 2.7] };
     needles.slice().reverse().forEach(([B, Tp], i) => {
       const main = i === needles.length - 1, bo = boltAround(B, Tp, main ? main0 : { ts: [0.05, 0.24, 0.36, 0.58, 0.7, 1], ss: [0, -6, 3, -7.5, 3.5, 0.5], w0: 4.6, w1: 9, front: [1], fork: false });
-      fg += bo.back + KI.slimNeedle(B, Tp, main ? 6.6 : 5.4, main ? 2.4 : 2) + bo.front;
+      let wedge = '';
+      if (main) {
+        const dl = Math.hypot(Tp[0] - B[0], Tp[1] - B[1]), nv = [-(Tp[1] - B[1]) / dl, (Tp[0] - B[0]) / dl];
+        const side = (X) => (X[0] - B[0]) * nv[0] + (X[1] - B[1]) * nv[1];
+        // where a leg crosses the needle's centre line, pushed 3.8 past it so the wedge also covers the needle's far half
+        const cut = (Pp, Q) => { const t = side(Pp) / (side(Pp) - side(Q)); return [Pp[0] + (Q[0] - Pp[0]) * t + nv[0] * 3.8, Pp[1] + (Q[1] - Pp[1]) * t + nv[1] * 3.8]; };
+        const p = main0.pts;
+        wedge = P(polyD([cut(p[2], p[3]), p[3], cut(p[3], p[4])]), K.ink);
+      }
+      fg += bo.back + KI.slimNeedle(B, Tp, main ? 6.6 : 5.4, main ? 2.4 : 2) + wedge + bo.front;
     });
     return { bg, fg };
   } };
@@ -1616,30 +1630,47 @@ window.PN = window.PN || {};
     let bg = `<g transform="translate(${f(tip[0] + 4)} ${f(tip[1] + 6)}) scale(1 0.58) translate(${f(-tip[0] - 4)} ${f(-tip[1] - 6)})">${P(splashD(tip[0] + 4, tip[1] + 6, 36, 9, 331, 0.58, -0.4), col)}</g>`;
     bg += P(blob(tip[0] - 26, tip[1] + 8, 2.6, 6, 0.5, 332) + blob(tip[0] + 28, tip[1] - 4, 2.2, 6, 0.5, 333) + blob(tip[0] - 12, tip[1] + 18, 1.8, 6, 0.5, 335), col);
     let fg = '';
+    /** a dry tine along pts (3 points), width w0 → we, its end split in two by a notch nd deep (검수 7차 R7: the tines
+     *  tapered to points read as fletching at 32 px; a dry brush's end stays blunt and splits) */
+    const dryTine = (pts, w0, we, nd) => {
+      const Lf = [], Rt = [];
+      pts.forEach((p, i) => {
+        const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)], dl = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+        const nx = -(b[1] - a[1]) / dl, ny = (b[0] - a[0]) / dl, hw = lerp(w0, we, i / (pts.length - 1)) / 2;
+        Lf.push([p[0] + nx * hw, p[1] + ny * hw]); Rt.push([p[0] - nx * hw, p[1] - ny * hw]);
+      });
+      // the end: two blunt prongs (each with a short flat end) either side of a notch nd deep
+      const e = pts[pts.length - 1], q = pts[pts.length - 2], el = Math.hypot(e[0] - q[0], e[1] - q[1]) || 1;
+      const ux = (e[0] - q[0]) / el, uy = (e[1] - q[1]) / el, k = we * 0.18;
+      return P(polyD(Lf.concat([[e[0] - uy * k, e[1] + ux * k], [e[0] - ux * nd, e[1] - uy * nd], [e[0] + uy * k, e[1] - ux * k]], Rt.reverse())), K.ink);
+    };
     /** a comet tail behind a brush butt Bt along deg: length tl, width w0 at the butt widening to w1; its far end is the
-     *  dry end of a brush stroke — n parallel streaks of different lengths and weights (never converging to a point,
-     *  never spikes: tines meeting at points read as fletching or flames) — with drops of ink left behind */
-    const comet = (Bt, tl, w0, w1, seed, n) => {
+     *  dry end of a brush stroke — n parallel dry tines of different lengths and weights (never converging to a point,
+     *  never spikes: tines meeting at points read as fletching or flames) — with drops of ink left behind. drops = false
+     *  leaves the drops out (검수 7차 F2: in the awakened icon the paper halo turned them into white-ringed dots beside
+     *  the frame's corner diamond) */
+    const comet = (Bt, tl, w0, w1, seed, n, drops = true) => {
       const at = axis(Bt, deg + 180), p = smooth([at(-6, 0), at(tl * 0.4, 0.6), at(tl * 0.75, -0.8), at(tl, 0.4)], 6);
       let s = taperFn(p, (t) => w0 + (w1 - w0) * Math.pow(t, 0.85), K.ink);
       const Rn = rng(seed);
       for (let i = 0; i < n; i++) {
         const sd = lerp(-w1 * 0.4, w1 * 0.4, i / (n - 1)) + (Rn() - 0.5) * 1.6, l = 4 + Rn() * 13, w = 1.8 + Rn() * 2.4, dr = (Rn() - 0.5) * 1.6;
-        s += taperPoly([at(tl - 4, sd), at(tl + l * 0.6, sd + dr * 0.6), at(tl + l, sd + dr)], w, 0.9, K.ink);
+        const we = Math.max(1.8, w * 0.75);
+        s += dryTine([at(tl - 4, sd), at(tl + l * 0.6, sd + dr * 0.6), at(tl + l, sd + dr)], w, we, Math.min(we, l * 0.3));
       }
-      [[tl + 18, -w1 * 0.3], [tl + 24, w1 * 0.16], [tl + 15, w1 * 0.44]].forEach(([d, sd], i) => { s += P(blob(...at(d, sd), 1.2 + Rn() * 1.1, 6, 0.5, seed + i), K.ink); });
+      [[tl + 18, -w1 * 0.3], [tl + 24, w1 * 0.16], [tl + 15, w1 * 0.44]].forEach(([d, sd], i) => { const r = 1.2 + Rn() * 1.1; if (drops) s += P(blob(...at(d, sd), r, 6, 0.5, seed + i), K.ink); });
       // dry streaks of paper running down the tail (비백), opening apart toward its far end
       [[0.26, 0.9, -0.24], [0.4, 1, 0.16], [0.52, 0.94, -0.04], [0.62, 1, 0.33]].forEach(([t0, t1, sk]) => {
         s += taperPoly([at(tl * t0, sk * (w0 + (w1 - w0) * t0)), at(tl * t1, sk * (w0 + (w1 - w0) * t1))], 0.4, 1.9, K.p50, 'opacity="0.9"');
       });
       return s;
     };
-    fg += comet(B, 32, 9, 28, 336, 4);
+    fg += comet(B, 32, 9, 28, 336, 4, !A);
     // the cyan core runs down the middle of the tail from the brush's side
     fg += cyanLine(ptsD([polar(B, deg + 180, 8), polar(B, deg + 182, 30)]), 2.4, false);
     if (A) {
       const B2 = polar([46, 104], deg + 180, 34);
-      fg += comet(B2, 18, 6, 15, 341, 4) + meteorBrushD(B2, deg, 34);
+      fg += comet(B2, 18, 6, 15, 341, 4, false) + meteorBrushD(B2, deg, 34);
     }
     // 밀침: the ghoul thrown off the landing to the right
     fg += pushed(c, 114, 80, 9.5, 3, 1, { ln: col, splash: false });
