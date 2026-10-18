@@ -19,6 +19,11 @@ const warmup = Number(process.env.BENCH_WARMUP ?? '4');
 const CONFIGS = [
   { name: 'stress DPR1 1.0 sprites', scene: 'stress', dpr: 1, scale: 1, sprites: true },
   { name: 'stress DPR2 2.0 sprites', scene: 'stress', dpr: 2, scale: 2, sprites: true },
+  // K11: the terrain bundle's cost, against the same scene without it; and at full detail (60 enemies), where the
+  // fire screen cap binds (brief §9-7, review 2 §8-5).
+  { name: 'stress DPR2 2.0 sprites bare', scene: 'stress', dpr: 2, scale: 2, sprites: true, terrain: false },
+  { name: 'terrain DPR2 2.0 sprites', scene: 'stress', dpr: 2, scale: 2, sprites: true, enemies: 60 },
+  { name: 'terrain DPR2 2.0 sprites bare', scene: 'stress', dpr: 2, scale: 2, sprites: true, enemies: 60, terrain: false },
   { name: 'stress DPR2 1.5 sprites', scene: 'stress', dpr: 2, scale: 1.5, sprites: true },
   { name: 'stress DPR2 2.0 vectors', scene: 'stress', dpr: 2, scale: 2, sprites: false },
   { name: 'stress DPR1 1.0 vectors', scene: 'stress', dpr: 1, scale: 1, sprites: false },
@@ -71,6 +76,8 @@ for (const config of CONFIGS.filter((item) => !only || only.test(item.name))) {
         stage: String(config.stage ?? 10),
         scale: String(config.scale),
         sprites: config.sprites ? 'on' : 'off',
+        terrain: config.terrain === false ? 'off' : 'on',
+        ...(config.enemies ? { enemies: String(config.enemies) } : {}),
         seconds: String(seconds),
         warmup: String(Math.max(warmup, config.warmup ?? 0)),
       }),

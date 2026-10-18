@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 120008,
-      "kib": 117.2,
+      "bytes": 124847,
+      "kib": 121.92,
       "baselineBytes": 102071,
-      "growthRatio": 0.1757306188829344,
+      "growthRatio": 0.22313879554427807,
       "warningBytes": 117381,
       "failBytes": 127588,
       "status": "warning",
@@ -35,16 +35,16 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 2042598,
-      "kib": 1994.72,
+      "bytes": 2088029,
+      "kib": 2039.09,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 32124486,
-      "kib": 31371.57,
+      "bytes": 32763226,
+      "kib": 31995.34,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-Cs5pjTI_.js",
+      "file": "assets/App-CCUuogLM.js",
       "category": "appJs",
-      "sourceBytes": 378222,
-      "gzipBytes": 116455
+      "sourceBytes": 390702,
+      "gzipBytes": 121295
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -69,8 +69,8 @@
     {
       "file": "assets/atlas/manifest.json",
       "category": "data",
-      "sourceBytes": 139446,
-      "gzipBytes": 20762
+      "sourceBytes": 184877,
+      "gzipBytes": 29410
     },
     {
       "file": "assets/chapter-thumbs-D_lcRDUv.webp",
@@ -133,16 +133,16 @@
       "gzipBytes": 113032
     },
     {
+      "file": "assets/index-B66FgS10.js",
+      "category": "appJs",
+      "sourceBytes": 7500,
+      "gzipBytes": 3552
+    },
+    {
       "file": "assets/index-CELqW5wV.css",
       "category": "css",
       "sourceBytes": 95975,
       "gzipBytes": 17893
-    },
-    {
-      "file": "assets/index-DAemxcEa.js",
-      "category": "appJs",
-      "sourceBytes": 7500,
-      "gzipBytes": 3553
     },
     {
       "file": "assets/keyart-DFQzyQdB.webp",
@@ -263,6 +263,12 @@
       "category": "image",
       "sourceBytes": 23558,
       "gzipBytes": 23432
+    },
+    {
+      "file": "assets/packs/hazards/atlas-0.png",
+      "category": "image",
+      "sourceBytes": 593309,
+      "gzipBytes": 590181
     },
     {
       "file": "assets/packs/hero-dan/atlas-0.png",

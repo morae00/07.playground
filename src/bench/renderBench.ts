@@ -3,17 +3,19 @@
 // imports this file.
 //
 // Scenes: `stress` (backlog TEC-04; 400 since the SYS-13 horde, 204 before) keeps 400 enemies of the four Ch1 roles, 240 hostile shots, 520 particles,
-// and 160 damage numbers around the player, topped up every simulation step. `game` plays a real stage late in
-// its clock (spawns, boss, hazards, and a mid-game build) in god mode. Query: scene, chapter, stage, progress,
-// scale (render scale cap), sprites (on/off), warmup and seconds (measurement window).
+// and 160 damage numbers around the player, topped up every simulation step, on the K11 terrain bundle (brief §9-7:
+// fires drawn from the kit, the other kinds as vectors). `game` plays a real stage late in its clock (spawns, boss,
+// hazards, and a mid-game build) in god mode. Query: scene, chapter, stage, progress, scale (render scale cap),
+// sprites (on/off), terrain (on/off, stress), enemies (stress count; 60 keeps full detail), warmup and seconds.
 import { ProbedGameEngine } from '../game/engine/probe';
+import type { Hazard } from '../game/engine/worldTypes';
 import type { GameOptions, MetaState } from '../platform/save';
 import { DEFAULT_MOVE_KEYS } from '../platform/moveKeys';
 import { SpriteAtlas } from '../game/render/assets/spriteAtlas';
-import { CHAPTER_PACKS, COMMON_PACK, SKILLS_PACK } from '../game/render/assets/slots';
+import { CHAPTER_PACKS, COMMON_PACK, HAZARDS_PACK, SKILLS_PACK } from '../game/render/assets/slots';
 
 export type RenderBenchResult = {
-  config: { scene: string; scale: number; sprites: boolean; devicePixelRatio: number; backingStore: string; warmupSeconds: number; measureSeconds: number };
+  config: { scene: string; scale: number; sprites: boolean; terrain: boolean; devicePixelRatio: number; backingStore: string; warmupSeconds: number; measureSeconds: number };
   frames: number;
   /** Intervals between animation frames: what the player sees. */
   /**
@@ -31,9 +33,9 @@ export type RenderBenchResult = {
   spritesReady: boolean;
 };
 
-const TARGET = { enemies: 400, hostileShots: 240, particles: 520, damageNumbers: 160 };
-
 const params = new URLSearchParams(window.location.search);
+const TARGET = { enemies: Number(params.get('enemies') ?? '400'), hostileShots: 240, particles: 520, damageNumbers: 160 };
+const useTerrain = params.get('terrain') !== 'off';
 const scene = params.get('scene') === 'game' ? 'game' : 'stress';
 const gameChapter = Number(params.get('chapter') ?? '5');
 const gameStage = Number(params.get('stage') ?? '10');
@@ -69,8 +71,30 @@ const options: GameOptions = {
   assistDamage: 1, assistEnemySpeed: 1, assistSlowGame: false, moveKeys: DEFAULT_MOVE_KEYS,
 };
 
+/**
+ * K11 (brief §9-7): the terrain a boss fight and a map lay at once, standing for good. Two map fires (r90), the Furnace
+ * Maw's three fire lanes (21 fires of r50) and its ash vault collapse (a r150 core and seven r68 patches), slow zones
+ * (r200) twice, nine bindings (r52), a null zone (r170), water (r250), and two traps (r80).
+ */
+function addTerrain(probe: ProbedGameEngine['probe'], x: number, y: number) {
+  const zone = (kind: Hazard['kind'], dx: number, dy: number, radius: number) =>
+    probe.addHazard({ kind, x: x + dx, y: y + dy, radius, life: Number.POSITIVE_INFINITY, maxLife: Number.POSITIVE_INFINITY, damage: 0, slow: kind === 'slow' || kind === 'water' ? 0.6 : 1, triggered: false });
+  zone('water', -40, 20, 250);
+  zone('slow', -640, -260, 200);
+  zone('slow', 640, 280, 200);
+  zone('null', 120, -300, 170);
+  for (const dx of [-300, 300]) zone('trap', dx, 330, 80);
+  for (let index = 0; index < 9; index += 1) zone('root', -560 + (index % 3) * 70, 200 + Math.floor(index / 3) * 70, 52);
+  zone('fire', -120, -330, 90);
+  zone('fire', 80, 340, 90);
+  for (const lane of [-1, 0, 1]) for (let index = 0; index < 7; index += 1) zone('fire', -380 + lane * 220, (index - 3) * 100, 50);
+  zone('fire', 420, 0, 150);
+  for (let spot = 0; spot < 8; spot += 1) if (spot !== 3) zone('fire', 420 + Math.cos((spot * Math.PI) / 4) * 230, Math.sin((spot * Math.PI) / 4) * 230, 68);
+}
+
 function setUpStressScene(probe: ProbedGameEngine['probe']) {
   const { player } = probe.read();
+  if (useTerrain) addTerrain(probe, player.x, player.y);
   // Enemies spread over the fixed 900-unit-tall view (BUG-09), all four roles, standing still so the scene holds.
   const tiers = ['small', 'small', 'small', 'medium', 'medium', 'large'] as const;
   for (let index = 0; index < TARGET.enemies; index += 1) {
@@ -113,7 +137,7 @@ async function run(): Promise<RenderBenchResult> {
   const atlas = new SpriteAtlas();
   // The chapter on screen has its pack loaded, as in the game (ART-07); the stress scene uses Ch1 bodies.
   const chapterPack = CHAPTER_PACKS[scene === 'game' ? gameChapter : 1];
-  const spritesReady = useSprites ? (await Promise.all([atlas.load(COMMON_PACK), atlas.load(SKILLS_PACK), atlas.load(chapterPack)])).every(Boolean) : false;
+  const spritesReady = useSprites ? (await Promise.all([atlas.load(COMMON_PACK), atlas.load(SKILLS_PACK), atlas.load(HAZARDS_PACK), atlas.load(chapterPack)])).every(Boolean) : false;
 
   // Record every animation-frame timestamp the engine receives.
   const stamps: number[] = [];
@@ -214,6 +238,7 @@ async function run(): Promise<RenderBenchResult> {
       scene,
       scale: renderScale,
       sprites: useSprites,
+      terrain: scene === 'stress' && useTerrain,
       devicePixelRatio: window.devicePixelRatio,
       backingStore: `${canvas.width}x${canvas.height}`,
       warmupSeconds,

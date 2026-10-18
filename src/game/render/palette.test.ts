@@ -55,7 +55,7 @@ test('hazards are coloured by owner: player skills cyan, enemy damage coral, ene
 });
 
 test('renderer and engine sources draw signal colours only through palette tokens', () => {
-  for (const file of ['../GameEngine.ts', './GameRenderer.ts', './skillVfx.ts']) {
+  for (const file of ['../GameEngine.ts', './GameRenderer.ts', './skillVfx.ts', './hazardArt.ts']) {
     const source = readFileSync(new URL(file, import.meta.url), 'utf8');
     for (const [literal] of source.matchAll(/#[0-9a-fA-F]{6}\b/g)) {
       assert.equal(signalFamily(literal), null, `${file} hardcodes signal colour ${literal}; use SIGNAL tokens`);

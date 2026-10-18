@@ -4,11 +4,11 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { ATLAS_SCALE, BAKE_MARGIN, COLOR_MAP, ENEMY_ROLES, FRAME_PADDING, GROUND_TILE, HERO_STATES, PACKS, PAGE_SIZE, SKILL_VFX_RENDER, SKILL_VFX_TIMING } from '../art/atlas-spec.mjs';
+import { ATLAS_SCALE, BAKE_MARGIN, COLOR_MAP, ENEMY_ROLES, FRAME_PADDING, GROUND_TILE, HAZARD_RENDER, HAZARD_VECTORS, HERO_STATES, PACKS, PAGE_SIZE, SKILL_VFX_RENDER, SKILL_VFX_TIMING } from '../art/atlas-spec.mjs';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const kitDir = path.join(root, 'art/concept-kit');
-const KIT_FILES = ['lib.js', 'k-hero.js', 'k-characters.js', 'k-skills-vfx.js', 'k-enemies.js', 'k-bombers.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses3.js', 'k-bosses4.js', 'k-icons.js', 'k-icons2.js', 'k-env.js'];
+const KIT_FILES = ['lib.js', 'k-hero.js', 'k-characters.js', 'k-skills-vfx.js', 'k-enemies.js', 'k-bombers.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses3.js', 'k-bosses4.js', 'k-icons.js', 'k-icons2.js', 'k-env.js', 'k-hazards.js'];
 
 const browser = await chromium.launch();
 try {
@@ -49,6 +49,8 @@ try {
   manifest.animations.hero = Object.fromEntries(Object.entries(HERO_STATES).map(([state, spec]) => [state, spec]));
   // The skill VFX's shapes and part rules as data (FX-06, FX-07): the renderer reads its numbers from here.
   manifest.skillVfx = await page.evaluate(readSkillVfx, { timing: SKILL_VFX_TIMING, render: SKILL_VFX_RENDER });
+  // K11: the terrain hazards' shapes, part rules, states, and the layout vectors their renderer port is tested against.
+  manifest.hazards = await page.evaluate(readHazards, { vectors: HAZARD_VECTORS, render: HAZARD_RENDER });
   // SYS-14 (K7): where the fuse bomber's wick ends in each frame (the same rig in every chapter), for the spark.
   manifest.bombers = await page.evaluate(() => {
     const { feet, displayScale, wick } = window.PN.bombers.meta(1, 'fuse');
@@ -177,9 +179,50 @@ function readSkillVfx({ timing, render }) {
   return JSON.parse(text);
 }
 
+/**
+ * K11 (API-hazards §3, §5, §8.13): the kit's SPEC, every part's playback rule and box, the states, and the C9 vectors
+ * (layout items [part, x, y, flip, phase, z, prio] and ember slots [part, x, y, frame], rounded as C9 prints them).
+ * The vectors come from the kit's own layout and its check helpers, so the renderer's TypeScript port is tested
+ * against the kit itself. No text may be Korean.
+ */
+function readHazards({ vectors, render }) {
+  const H = window.PN.hazards;
+  const round = (value, places) => Math.round(value * 10 ** places) / 10 ** places;
+  const parts = {};
+  for (const group of H.groups) {
+    parts[group] = {};
+    for (const { part, ...rule } of H.parts(group)) parts[group][part] = rule;
+  }
+  const layout = {};
+  for (const [kind, r, seed, lod = 'full'] of vectors.layout) {
+    layout[`${kind}:${r}:${seed}${lod === 'full' ? '' : `:${lod}`}`] = H.layout(kind, r, seed, { lod }).map((q) => [q.part, round(q.x, 2), round(q.y, 2), q.flip ? 1 : 0, round(q.phase, 3), q.z, q.prio]);
+  }
+  const slot = (q) => [q.part, round(q.x, 2), round(q.y, 2), q.frame];
+  const embers = Object.fromEntries(vectors.embers.map(([r, seed, t]) => [`fire:${r}:${seed}:${t}`, H._.emberSlots(r, seed, t, 'full').map(slot)]));
+  embers[`hero:${vectors.hero}`] = H._.heroEmberSlots(vectors.hero).map(slot);
+  const data = { version: H.version, spec: H.SPEC, parts, states: H.states, vectors: { layout, embers }, render };
+  const text = JSON.stringify(data);
+  if (/[가-힣]/.test(text)) throw new Error('hazard data carries Korean text; strings belong in the string tables');
+  return JSON.parse(text);
+}
+
 async function renderFrames({ frames, scale, margin, colorMap, roles }) {
   const expanded = [];
   for (const frame of frames) {
+    if (frame.hazards) {
+      // K11: every stamp of every hazard group (PN.hazards.parts), anchored where it sits in the world.
+      const H = window.PN.hazards;
+      for (const group of H.groups) {
+        const parts = H.parts(group);
+        for (const p of parts) {
+          for (let index = 0; index < p.frames; index += 1) {
+            expanded.push({ key: `hazard/${group}/${p.part}/${index}`, call: ['PN.hazards.stamp', group, p.part, { frame: index }], box: p.box, anchor: p.anchor, scale: 1 });
+          }
+        }
+        expanded.at(-1).animation = { key: `hazard/${group}`, spec: Object.fromEntries(parts.map((p) => [p.part, { frames: p.frames, fps: p.drive === 'loop' ? p.fps : 0 }])) };
+      }
+      continue;
+    }
     if (frame.skillVfx) {
       // Every stamp of every skill group (PN.skillVfx.parts), anchored where it sits in the world.
       const S = window.PN.skillVfx;

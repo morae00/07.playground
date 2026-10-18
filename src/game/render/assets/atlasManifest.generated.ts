@@ -504,6 +504,298 @@ export const ATLAS_MANIFEST = {
         "skill/voidMine/core-start/2": [0, 825, 786, 85, 64, 43, 34]
       }
     },
+    "hazards": {
+      "pages": [
+        "assets/packs/hazards/atlas-0.png"
+      ],
+      "frames": {
+        "hazard/fire/char-a/0": [0, 1144, 385, 74, 30, 37, 15],
+        "hazard/fire/char-b/0": [0, 686, 385, 70, 31, 35, 15],
+        "hazard/fire/char-c/0": [0, 1520, 385, 73, 28, 37, 14],
+        "hazard/fire/char-cold-a/0": [0, 1222, 385, 74, 30, 37, 15],
+        "hazard/fire/char-cold-b/0": [0, 760, 385, 70, 31, 35, 15],
+        "hazard/fire/char-cold-c/0": [0, 1597, 385, 73, 28, 37, 14],
+        "hazard/fire/char-cold-d/0": [0, 834, 385, 71, 31, 36, 15],
+        "hazard/fire/char-d/0": [0, 909, 385, 71, 31, 36, 15],
+        "hazard/fire/cluster-l-a-gutter/0": [0, 2, 195, 81, 73, 41, 69],
+        "hazard/fire/cluster-l-a-gutter/1": [0, 1310, 272, 77, 49, 39, 45],
+        "hazard/fire/cluster-l-a-gutter/2": [0, 114, 336, 74, 43, 37, 39],
+        "hazard/fire/cluster-l-a-gutter/3": [0, 661, 195, 42, 71, 21, 67],
+        "hazard/fire/cluster-l-a-ignite/0": [0, 192, 336, 48, 43, 24, 39],
+        "hazard/fire/cluster-l-a-ignite/1": [0, 1444, 195, 76, 63, 38, 59],
+        "hazard/fire/cluster-l-a-ignite/2": [0, 87, 195, 80, 73, 40, 69],
+        "hazard/fire/cluster-l-a-ignite/3": [0, 824, 2, 80, 95, 40, 91],
+        "hazard/fire/cluster-l-a/0": [0, 1075, 2, 80, 92, 40, 88],
+        "hazard/fire/cluster-l-a/1": [0, 490, 2, 80, 97, 40, 93],
+        "hazard/fire/cluster-l-a/2": [0, 574, 2, 80, 96, 40, 92],
+        "hazard/fire/cluster-l-a/3": [0, 991, 2, 80, 93, 40, 89],
+        "hazard/fire/cluster-l-a/4": [0, 1118, 105, 80, 79, 40, 75],
+        "hazard/fire/cluster-l-a/5": [0, 676, 105, 80, 83, 40, 79],
+        "hazard/fire/cluster-l-b-gutter/0": [0, 171, 195, 80, 73, 40, 69],
+        "hazard/fire/cluster-l-b-gutter/1": [0, 1391, 272, 75, 49, 37, 45],
+        "hazard/fire/cluster-l-b-gutter/2": [0, 424, 336, 71, 41, 35, 37],
+        "hazard/fire/cluster-l-b-gutter/3": [0, 830, 195, 42, 70, 21, 66],
+        "hazard/fire/cluster-l-b-ignite/0": [0, 244, 336, 48, 43, 24, 39],
+        "hazard/fire/cluster-l-b-ignite/1": [0, 1586, 195, 73, 62, 36, 58],
+        "hazard/fire/cluster-l-b-ignite/2": [0, 255, 195, 79, 73, 39, 69],
+        "hazard/fire/cluster-l-b-ignite/3": [0, 908, 2, 79, 94, 39, 90],
+        "hazard/fire/cluster-l-b/0": [0, 1242, 2, 79, 91, 39, 87],
+        "hazard/fire/cluster-l-b/1": [0, 658, 2, 79, 96, 39, 92],
+        "hazard/fire/cluster-l-b/2": [0, 741, 2, 79, 96, 39, 92],
+        "hazard/fire/cluster-l-b/3": [0, 1159, 2, 79, 92, 39, 88],
+        "hazard/fire/cluster-l-b/4": [0, 1346, 105, 79, 78, 39, 74],
+        "hazard/fire/cluster-l-b/5": [0, 760, 105, 79, 82, 39, 78],
+        "hazard/fire/cluster-m-a-gutter/0": [0, 597, 272, 58, 55, 29, 51],
+        "hazard/fire/cluster-m-a-gutter/1": [0, 852, 336, 53, 37, 25, 33],
+        "hazard/fire/cluster-m-a-gutter/2": [0, 1618, 336, 53, 34, 25, 30],
+        "hazard/fire/cluster-m-a-gutter/3": [0, 874, 272, 30, 53, 15, 49],
+        "hazard/fire/cluster-m-a-ignite/0": [0, 1951, 336, 36, 33, 18, 29],
+        "hazard/fire/cluster-m-a-ignite/1": [0, 1746, 272, 55, 47, 26, 43],
+        "hazard/fire/cluster-m-a-ignite/2": [0, 254, 272, 58, 56, 29, 52],
+        "hazard/fire/cluster-m-a-ignite/3": [0, 707, 195, 58, 71, 29, 67],
+        "hazard/fire/cluster-m-a/0": [0, 1067, 195, 58, 69, 29, 65],
+        "hazard/fire/cluster-m-a/1": [0, 338, 195, 58, 73, 29, 69],
+        "hazard/fire/cluster-m-a/2": [0, 1813, 105, 58, 74, 29, 70],
+        "hazard/fire/cluster-m-a/3": [0, 400, 195, 58, 73, 29, 69],
+        "hazard/fire/cluster-m-a/4": [0, 2, 272, 58, 60, 29, 56],
+        "hazard/fire/cluster-m-a/5": [0, 1524, 195, 58, 63, 29, 59],
+        "hazard/fire/cluster-m-b-gutter/0": [0, 812, 272, 58, 54, 29, 50],
+        "hazard/fire/cluster-m-b-gutter/1": [0, 909, 336, 55, 37, 27, 33],
+        "hazard/fire/cluster-m-b-gutter/2": [0, 345, 385, 54, 32, 27, 28],
+        "hazard/fire/cluster-m-b-gutter/3": [0, 1092, 272, 30, 52, 15, 48],
+        "hazard/fire/cluster-m-b-ignite/0": [0, 1991, 336, 35, 33, 17, 29],
+        "hazard/fire/cluster-m-b-ignite/1": [0, 1805, 272, 56, 47, 28, 43],
+        "hazard/fire/cluster-m-b-ignite/2": [0, 659, 272, 57, 55, 28, 51],
+        "hazard/fire/cluster-m-b-ignite/3": [0, 876, 195, 57, 70, 28, 66],
+        "hazard/fire/cluster-m-b/0": [0, 1129, 195, 57, 68, 28, 64],
+        "hazard/fire/cluster-m-b/1": [0, 769, 195, 57, 71, 28, 67],
+        "hazard/fire/cluster-m-b/2": [0, 1875, 105, 58, 74, 29, 70],
+        "hazard/fire/cluster-m-b/3": [0, 462, 195, 57, 72, 28, 68],
+        "hazard/fire/cluster-m-b/4": [0, 64, 272, 57, 59, 28, 55],
+        "hazard/fire/cluster-m-b/5": [0, 1663, 195, 57, 62, 28, 58],
+        "hazard/fire/cluster-s-a-gutter/0": [0, 968, 336, 42, 37, 21, 35],
+        "hazard/fire/cluster-s-a-gutter/1": [0, 39, 422, 37, 25, 19, 23],
+        "hazard/fire/cluster-s-a-gutter/2": [0, 208, 422, 36, 24, 19, 22],
+        "hazard/fire/cluster-s-a-gutter/3": [0, 1494, 336, 22, 35, 11, 33],
+        "hazard/fire/cluster-s-a-ignite/0": [0, 420, 422, 26, 23, 13, 21],
+        "hazard/fire/cluster-s-a-ignite/1": [0, 403, 385, 38, 32, 20, 30],
+        "hazard/fire/cluster-s-a-ignite/2": [0, 1014, 336, 42, 37, 21, 35],
+        "hazard/fire/cluster-s-a-ignite/3": [0, 1470, 272, 42, 48, 21, 46],
+        "hazard/fire/cluster-s-a/0": [0, 1911, 272, 42, 46, 21, 44],
+        "hazard/fire/cluster-s-a/1": [0, 1516, 272, 42, 48, 21, 46],
+        "hazard/fire/cluster-s-a/2": [0, 1126, 272, 42, 51, 21, 49],
+        "hazard/fire/cluster-s-a/3": [0, 1172, 272, 42, 51, 21, 49],
+        "hazard/fire/cluster-s-a/4": [0, 564, 336, 42, 40, 21, 38],
+        "hazard/fire/cluster-s-a/5": [0, 339, 336, 42, 42, 21, 40],
+        "hazard/fire/cluster-s-b-gutter/0": [0, 1153, 336, 42, 36, 21, 34],
+        "hazard/fire/cluster-s-b-gutter/1": [0, 80, 422, 38, 25, 20, 23],
+        "hazard/fire/cluster-s-b-gutter/2": [0, 450, 422, 36, 23, 20, 21],
+        "hazard/fire/cluster-s-b-gutter/3": [0, 1675, 336, 22, 34, 11, 32],
+        "hazard/fire/cluster-s-b-ignite/0": [0, 848, 422, 26, 22, 13, 20],
+        "hazard/fire/cluster-s-b-ignite/1": [0, 445, 385, 39, 32, 21, 30],
+        "hazard/fire/cluster-s-b-ignite/2": [0, 1199, 336, 42, 36, 21, 34],
+        "hazard/fire/cluster-s-b-ignite/3": [0, 1957, 272, 42, 46, 21, 44],
+        "hazard/fire/cluster-s-b/0": [0, 2003, 272, 42, 45, 21, 43],
+        "hazard/fire/cluster-s-b/1": [0, 1865, 272, 42, 47, 21, 45],
+        "hazard/fire/cluster-s-b/2": [0, 1218, 272, 42, 51, 21, 49],
+        "hazard/fire/cluster-s-b/3": [0, 1264, 272, 42, 51, 21, 49],
+        "hazard/fire/cluster-s-b/4": [0, 610, 336, 42, 39, 21, 37],
+        "hazard/fire/cluster-s-b/5": [0, 499, 336, 42, 41, 21, 39],
+        "hazard/fire/ember-a/0": [0, 1703, 422, 10, 14, 5, 7],
+        "hazard/fire/ember-a/1": [0, 305, 452, 10, 12, 5, 6],
+        "hazard/fire/ember-a/2": [0, 1717, 422, 10, 14, 5, 7],
+        "hazard/fire/ember-a/3": [0, 1548, 422, 9, 15, 4, 8],
+        "hazard/fire/ember-a/4": [0, 576, 452, 8, 10, 4, 5],
+        "hazard/fire/ember-a/5": [0, 1856, 452, 6, 5, 3, 3],
+        "hazard/fire/ember-b/0": [0, 1731, 422, 10, 14, 5, 7],
+        "hazard/fire/ember-b/1": [0, 319, 452, 10, 12, 5, 6],
+        "hazard/fire/ember-b/2": [0, 1745, 422, 10, 14, 5, 7],
+        "hazard/fire/ember-b/3": [0, 1561, 422, 9, 15, 5, 8],
+        "hazard/fire/ember-b/4": [0, 588, 452, 8, 10, 4, 5],
+        "hazard/fire/ember-b/5": [0, 1866, 452, 6, 5, 3, 3],
+        "hazard/fire/smoke-a/0": [0, 1143, 422, 8, 20, 3, 21],
+        "hazard/fire/smoke-a/1": [0, 488, 385, 11, 32, 5, 33],
+        "hazard/fire/smoke-a/2": [0, 385, 336, 14, 42, 6, 45],
+        "hazard/fire/smoke-a/3": [0, 94, 336, 16, 44, 6, 51],
+        "hazard/fire/smoke-a/4": [0, 296, 336, 16, 43, 5, 54],
+        "hazard/fire/smoke-a/5": [0, 503, 385, 15, 32, 5, 53],
+        "hazard/fire/smoke-b/0": [0, 1155, 422, 9, 19, 4, 20],
+        "hazard/fire/smoke-b/1": [0, 984, 385, 12, 31, 6, 32],
+        "hazard/fire/smoke-b/2": [0, 545, 336, 15, 41, 7, 44],
+        "hazard/fire/smoke-b/3": [0, 316, 336, 19, 43, 10, 50],
+        "hazard/fire/smoke-b/4": [0, 403, 336, 17, 42, 11, 53],
+        "hazard/fire/smoke-b/5": [0, 522, 385, 16, 32, 10, 53],
+        "hazard/hero/back/0": [0, 908, 272, 88, 53, 44, 49],
+        "hazard/hero/back/1": [0, 720, 272, 88, 55, 44, 51],
+        "hazard/hero/back/2": [0, 1000, 272, 88, 53, 44, 49],
+        "hazard/hero/back/3": [0, 1562, 272, 88, 48, 44, 44],
+        "hazard/hero/back/4": [0, 2, 336, 88, 45, 44, 41],
+        "hazard/hero/back/5": [0, 1654, 272, 88, 48, 44, 44],
+        "hazard/hero/bind-back/0": [0, 600, 452, 74, 10, 37, 6],
+        "hazard/hero/bind-back/1": [0, 2, 385, 74, 33, 37, 29],
+        "hazard/hero/bind-back/2": [0, 80, 385, 74, 33, 37, 29],
+        "hazard/hero/bind-back/3": [0, 1245, 336, 74, 36, 37, 32],
+        "hazard/hero/bind-front/0": [0, 888, 452, 68, 8, 34, 2],
+        "hazard/hero/bind-front/1": [0, 490, 422, 68, 23, 34, 17],
+        "hazard/hero/bind-front/2": [0, 1300, 385, 68, 30, 34, 24],
+        "hazard/hero/bind-front/3": [0, 1372, 385, 68, 30, 34, 24],
+        "hazard/hero/front/0": [0, 1701, 336, 72, 34, 36, 28],
+        "hazard/hero/front/1": [0, 1323, 336, 72, 36, 36, 30],
+        "hazard/hero/front/2": [0, 1777, 336, 72, 34, 36, 28],
+        "hazard/hero/front/3": [0, 542, 385, 72, 32, 36, 26],
+        "hazard/hero/front/4": [0, 1444, 385, 72, 30, 36, 24],
+        "hazard/hero/front/5": [0, 1000, 385, 72, 31, 36, 25],
+        "hazard/mob/front-12/0": [0, 248, 422, 46, 24, 24, 20],
+        "hazard/mob/front-12/1": [0, 122, 422, 46, 25, 24, 21],
+        "hazard/mob/front-12/2": [0, 878, 422, 45, 22, 23, 18],
+        "hazard/mob/front-12/3": [0, 927, 422, 45, 21, 23, 17],
+        "hazard/mob/front-19/0": [0, 1076, 385, 64, 31, 33, 27],
+        "hazard/mob/front-19/1": [0, 618, 385, 64, 32, 33, 28],
+        "hazard/mob/front-19/2": [0, 1674, 385, 64, 28, 33, 24],
+        "hazard/mob/front-19/3": [0, 1742, 385, 64, 27, 33, 23],
+        "hazard/mob/front-28/0": [0, 754, 336, 94, 38, 48, 34],
+        "hazard/mob/front-28/1": [0, 656, 336, 94, 39, 48, 35],
+        "hazard/mob/front-28/2": [0, 1520, 336, 94, 35, 48, 31],
+        "hazard/mob/front-28/3": [0, 1853, 336, 94, 34, 48, 30],
+        "hazard/null/crumb-a/0": [0, 960, 452, 12, 8, 6, 4],
+        "hazard/null/crumb-b/0": [0, 976, 452, 11, 8, 5, 4],
+        "hazard/null/crumb-c/0": [0, 1117, 452, 11, 7, 5, 4],
+        "hazard/root/vine-a-emerge/0": [0, 1132, 452, 22, 7, 19, 5],
+        "hazard/root/vine-a-emerge/1": [0, 1759, 422, 22, 14, 19, 12],
+        "hazard/root/vine-a-emerge/2": [0, 1325, 422, 31, 18, 19, 16],
+        "hazard/root/vine-a-emerge/3": [0, 1810, 385, 38, 27, 19, 25],
+        "hazard/root/vine-a-wither/0": [0, 1360, 422, 38, 18, 19, 16],
+        "hazard/root/vine-a-wither/1": [0, 1785, 422, 38, 14, 19, 12],
+        "hazard/root/vine-a-wither/2": [0, 2, 452, 38, 13, 19, 11],
+        "hazard/root/vine-a-wither/3": [0, 777, 452, 37, 9, 19, 7],
+        "hazard/root/vine-a/0": [0, 1852, 385, 38, 27, 19, 25],
+        "hazard/root/vine-a/1": [0, 1894, 385, 36, 27, 19, 25],
+        "hazard/root/vine-a/2": [0, 1934, 385, 35, 27, 19, 25],
+        "hazard/root/vine-a/3": [0, 1973, 385, 36, 27, 19, 25],
+        "hazard/root/vine-b-emerge/0": [0, 1158, 452, 22, 7, 18, 5],
+        "hazard/root/vine-b-emerge/1": [0, 1827, 422, 22, 14, 18, 12],
+        "hazard/root/vine-b-emerge/2": [0, 44, 452, 31, 13, 18, 11],
+        "hazard/root/vine-b-emerge/3": [0, 976, 422, 37, 21, 18, 19],
+        "hazard/root/vine-b-wither/0": [0, 1402, 422, 38, 17, 18, 15],
+        "hazard/root/vine-b-wither/1": [0, 79, 452, 38, 13, 18, 11],
+        "hazard/root/vine-b-wither/2": [0, 449, 452, 36, 11, 18, 9],
+        "hazard/root/vine-b-wither/3": [0, 818, 452, 36, 9, 18, 7],
+        "hazard/root/vine-b/0": [0, 562, 422, 37, 23, 18, 21],
+        "hazard/root/vine-b/1": [0, 603, 422, 36, 23, 18, 21],
+        "hazard/root/vine-b/2": [0, 643, 422, 35, 23, 18, 21],
+        "hazard/root/vine-b/3": [0, 682, 422, 36, 23, 18, 21],
+        "hazard/root/vine-c-emerge/0": [0, 1184, 452, 20, 7, 19, 5],
+        "hazard/root/vine-c-emerge/1": [0, 1853, 422, 20, 14, 19, 12],
+        "hazard/root/vine-c-emerge/2": [0, 2013, 385, 26, 27, 19, 25],
+        "hazard/root/vine-c-emerge/3": [0, 158, 385, 35, 33, 19, 31],
+        "hazard/root/vine-c-wither/0": [0, 2, 422, 33, 26, 19, 24],
+        "hazard/root/vine-c-wither/1": [0, 172, 422, 32, 25, 19, 23],
+        "hazard/root/vine-c-wither/2": [0, 1168, 422, 37, 19, 19, 17],
+        "hazard/root/vine-c-wither/3": [0, 1574, 422, 33, 15, 19, 13],
+        "hazard/root/vine-c/0": [0, 197, 385, 35, 33, 19, 31],
+        "hazard/root/vine-c/1": [0, 236, 385, 33, 33, 19, 31],
+        "hazard/root/vine-c/2": [0, 273, 385, 31, 33, 19, 31],
+        "hazard/root/vine-c/3": [0, 308, 385, 33, 33, 19, 31],
+        "hazard/shock/core/0": [0, 1429, 105, 108, 78, 53, 55],
+        "hazard/shock/core/1": [0, 2, 105, 100, 86, 53, 63],
+        "hazard/shock/core/2": [0, 1937, 105, 100, 74, 53, 51],
+        "hazard/shock/core/3": [0, 1190, 195, 99, 66, 52, 40],
+        "hazard/shock/dust-a/0": [0, 678, 452, 20, 10, 10, 10],
+        "hazard/shock/dust-a/1": [0, 121, 452, 34, 13, 16, 14],
+        "hazard/shock/dust-a/2": [0, 1877, 422, 39, 14, 20, 18],
+        "hazard/shock/dust-a/3": [0, 333, 452, 40, 12, 20, 20],
+        "hazard/shock/dust-b/0": [0, 702, 452, 20, 10, 10, 10],
+        "hazard/shock/dust-b/1": [0, 159, 452, 34, 13, 19, 14],
+        "hazard/shock/dust-b/2": [0, 1920, 422, 39, 14, 19, 18],
+        "hazard/shock/dust-b/3": [0, 377, 452, 40, 12, 20, 20],
+        "hazard/shock/pebble-a/0": [0, 1876, 452, 6, 5, 3, 7],
+        "hazard/shock/pebble-a/1": [0, 991, 452, 6, 8, 3, 10],
+        "hazard/shock/pebble-b/0": [0, 1886, 452, 7, 5, 4, 7],
+        "hazard/shock/pebble-b/1": [0, 1001, 452, 7, 8, 4, 10],
+        "hazard/shock/shard-a/0": [0, 1012, 452, 14, 8, 7, 16],
+        "hazard/shock/shard-a/1": [0, 421, 452, 10, 12, 4, 18],
+        "hazard/shock/shard-a/2": [0, 489, 452, 11, 11, 5, 17],
+        "hazard/shock/shard-a/3": [0, 858, 452, 10, 9, 5, 16],
+        "hazard/shock/shard-b/0": [0, 726, 452, 11, 10, 6, 17],
+        "hazard/shock/shard-b/1": [0, 504, 452, 8, 11, 4, 18],
+        "hazard/shock/shard-b/2": [0, 872, 452, 12, 9, 6, 17],
+        "hazard/shock/shard-b/3": [0, 1030, 452, 8, 8, 4, 16],
+        "hazard/shock/shard-c/0": [0, 1042, 452, 15, 8, 7, 16],
+        "hazard/shock/shard-c/1": [0, 435, 452, 10, 12, 5, 18],
+        "hazard/shock/shard-c/2": [0, 1963, 422, 10, 14, 5, 19],
+        "hazard/shock/shard-c/3": [0, 1061, 452, 12, 8, 6, 16],
+        "hazard/slow/bubble-a/0": [0, 1897, 452, 8, 4, 4, 4],
+        "hazard/slow/bubble-a/1": [0, 1208, 452, 12, 7, 6, 7],
+        "hazard/slow/bubble-a/2": [0, 741, 452, 14, 10, 7, 10],
+        "hazard/slow/bubble-a/3": [0, 197, 452, 12, 13, 6, 13],
+        "hazard/slow/bubble-a/4": [0, 1977, 422, 16, 14, 8, 15],
+        "hazard/slow/bubble-a/5": [0, 1224, 452, 16, 7, 8, 8],
+        "hazard/slow/bubble-b/0": [0, 1909, 452, 8, 4, 4, 4],
+        "hazard/slow/bubble-b/1": [0, 1244, 452, 12, 7, 6, 7],
+        "hazard/slow/bubble-b/2": [0, 759, 452, 14, 10, 7, 10],
+        "hazard/slow/bubble-b/3": [0, 213, 452, 12, 13, 6, 13],
+        "hazard/slow/bubble-b/4": [0, 1997, 422, 16, 14, 8, 15],
+        "hazard/slow/bubble-b/5": [0, 1260, 452, 16, 7, 8, 8],
+        "hazard/slow/mire-l-a/0": [0, 316, 272, 135, 56, 67, 27],
+        "hazard/slow/mire-l-b/0": [0, 455, 272, 138, 56, 68, 29],
+        "hazard/slow/mire-m-a/0": [0, 1060, 336, 89, 37, 44, 18],
+        "hazard/slow/mire-m-b/0": [0, 1399, 336, 91, 36, 45, 19],
+        "hazard/slow/mire-s-a/0": [0, 298, 422, 54, 24, 24, 12],
+        "hazard/slow/mire-s-b/0": [0, 356, 422, 60, 24, 30, 13],
+        "hazard/slow/mire-xl-a/0": [0, 2, 2, 237, 99, 117, 48],
+        "hazard/slow/mire-xl-b/0": [0, 243, 2, 243, 99, 118, 52],
+        "hazard/trap/armed-ch1/0": [0, 1325, 2, 138, 89, 69, 41],
+        "hazard/trap/armed-ch2/0": [0, 533, 105, 139, 84, 66, 44],
+        "hazard/trap/armed-ch3/0": [0, 994, 105, 120, 80, 60, 40],
+        "hazard/trap/armed-ch4/0": [0, 1541, 105, 118, 78, 59, 39],
+        "hazard/trap/shut-ch1/0": [0, 1467, 2, 138, 89, 69, 41],
+        "hazard/trap/shut-ch2/0": [0, 1202, 105, 140, 79, 67, 44],
+        "hazard/trap/shut-ch3/0": [0, 125, 272, 125, 59, 67, 24],
+        "hazard/trap/shut-ch4/0": [0, 937, 195, 126, 70, 67, 35],
+        "hazard/trap/spring-ch1/0": [0, 1609, 2, 138, 89, 69, 41],
+        "hazard/trap/spring-ch1/1": [0, 1751, 2, 142, 89, 73, 41],
+        "hazard/trap/spring-ch1/2": [0, 1897, 2, 147, 89, 74, 41],
+        "hazard/trap/spring-ch2/0": [0, 523, 195, 134, 72, 61, 44],
+        "hazard/trap/spring-ch2/1": [0, 1663, 105, 146, 76, 73, 44],
+        "hazard/trap/spring-ch2/2": [0, 843, 105, 147, 81, 74, 44],
+        "hazard/trap/spring-ch3/0": [0, 1724, 195, 117, 62, 61, 35],
+        "hazard/trap/spring-ch3/1": [0, 1845, 195, 141, 62, 73, 30],
+        "hazard/trap/spring-ch3/2": [0, 1293, 195, 147, 66, 74, 29],
+        "hazard/trap/spring-ch4/0": [0, 106, 105, 127, 85, 63, 42],
+        "hazard/trap/spring-ch4/1": [0, 237, 105, 141, 85, 73, 42],
+        "hazard/trap/spring-ch4/2": [0, 382, 105, 147, 85, 74, 42],
+        "hazard/water/flow-a/0": [0, 1280, 452, 44, 7, 34, 3],
+        "hazard/water/flow-a/1": [0, 1328, 452, 44, 7, 30, 3],
+        "hazard/water/flow-a/2": [0, 1376, 452, 44, 7, 26, 3],
+        "hazard/water/flow-a/3": [0, 1424, 452, 44, 7, 22, 3],
+        "hazard/water/flow-a/4": [0, 1472, 452, 44, 7, 18, 3],
+        "hazard/water/flow-a/5": [0, 1520, 452, 44, 7, 14, 3],
+        "hazard/water/flow-b/0": [0, 1568, 452, 44, 7, 32, 3],
+        "hazard/water/flow-b/1": [0, 1616, 452, 44, 7, 28, 3],
+        "hazard/water/flow-b/2": [0, 1664, 452, 44, 7, 24, 3],
+        "hazard/water/flow-b/3": [0, 1712, 452, 44, 7, 20, 3],
+        "hazard/water/flow-b/4": [0, 1760, 452, 44, 7, 16, 3],
+        "hazard/water/flow-b/5": [0, 1808, 452, 44, 7, 12, 3],
+        "hazard/water/glint/0": [0, 1921, 452, 8, 4, 4, 2],
+        "hazard/water/glint/1": [0, 1933, 452, 12, 4, 6, 2],
+        "hazard/water/ripple-a/0": [0, 1077, 452, 16, 8, 8, 4],
+        "hazard/water/ripple-a/1": [0, 516, 452, 26, 11, 13, 5],
+        "hazard/water/ripple-a/2": [0, 229, 452, 34, 13, 17, 6],
+        "hazard/water/ripple-a/3": [0, 1611, 422, 42, 15, 21, 7],
+        "hazard/water/ripple-a/4": [0, 1444, 422, 48, 17, 24, 8],
+        "hazard/water/ripple-a/5": [0, 1209, 422, 54, 19, 27, 9],
+        "hazard/water/ripple-a/6": [0, 1017, 422, 59, 21, 30, 10],
+        "hazard/water/ripple-a/7": [0, 722, 422, 59, 23, 33, 11],
+        "hazard/water/ripple-b/0": [0, 1097, 452, 16, 8, 8, 4],
+        "hazard/water/ripple-b/1": [0, 546, 452, 26, 11, 13, 5],
+        "hazard/water/ripple-b/2": [0, 267, 452, 34, 13, 17, 6],
+        "hazard/water/ripple-b/3": [0, 1657, 422, 42, 15, 21, 7],
+        "hazard/water/ripple-b/4": [0, 1496, 422, 48, 17, 24, 8],
+        "hazard/water/ripple-b/5": [0, 1267, 422, 54, 19, 27, 9],
+        "hazard/water/ripple-b/6": [0, 1080, 422, 59, 21, 30, 10],
+        "hazard/water/ripple-b/7": [0, 785, 422, 59, 23, 33, 11]
+      }
+    },
     "chapter-01": {
       "pages": [
         "assets/packs/chapter-01/atlas-0.png",
@@ -3755,6 +4047,360 @@ export const ATLAS_MANIFEST = {
       "hit-crit": {
         "frames": 4,
         "fps": 25
+      }
+    },
+    "hazard/fire": {
+      "cluster-s-a": {
+        "frames": 6,
+        "fps": 12
+      },
+      "cluster-s-b": {
+        "frames": 6,
+        "fps": 12
+      },
+      "cluster-m-a": {
+        "frames": 6,
+        "fps": 12
+      },
+      "cluster-m-b": {
+        "frames": 6,
+        "fps": 12
+      },
+      "cluster-l-a": {
+        "frames": 6,
+        "fps": 12
+      },
+      "cluster-l-b": {
+        "frames": 6,
+        "fps": 12
+      },
+      "cluster-s-a-ignite": {
+        "frames": 4,
+        "fps": 0
+      },
+      "cluster-s-b-ignite": {
+        "frames": 4,
+        "fps": 0
+      },
+      "cluster-m-a-ignite": {
+        "frames": 4,
+        "fps": 0
+      },
+      "cluster-m-b-ignite": {
+        "frames": 4,
+        "fps": 0
+      },
+      "cluster-l-a-ignite": {
+        "frames": 4,
+        "fps": 0
+      },
+      "cluster-l-b-ignite": {
+        "frames": 4,
+        "fps": 0
+      },
+      "cluster-s-a-gutter": {
+        "frames": 4,
+        "fps": 0
+      },
+      "cluster-s-b-gutter": {
+        "frames": 4,
+        "fps": 0
+      },
+      "cluster-m-a-gutter": {
+        "frames": 4,
+        "fps": 0
+      },
+      "cluster-m-b-gutter": {
+        "frames": 4,
+        "fps": 0
+      },
+      "cluster-l-a-gutter": {
+        "frames": 4,
+        "fps": 0
+      },
+      "cluster-l-b-gutter": {
+        "frames": 4,
+        "fps": 0
+      },
+      "char-a": {
+        "frames": 1,
+        "fps": 0
+      },
+      "char-b": {
+        "frames": 1,
+        "fps": 0
+      },
+      "char-c": {
+        "frames": 1,
+        "fps": 0
+      },
+      "char-d": {
+        "frames": 1,
+        "fps": 0
+      },
+      "char-cold-a": {
+        "frames": 1,
+        "fps": 0
+      },
+      "char-cold-b": {
+        "frames": 1,
+        "fps": 0
+      },
+      "char-cold-c": {
+        "frames": 1,
+        "fps": 0
+      },
+      "char-cold-d": {
+        "frames": 1,
+        "fps": 0
+      },
+      "ember-a": {
+        "frames": 6,
+        "fps": 0
+      },
+      "ember-b": {
+        "frames": 6,
+        "fps": 0
+      },
+      "smoke-a": {
+        "frames": 6,
+        "fps": 0
+      },
+      "smoke-b": {
+        "frames": 6,
+        "fps": 0
+      }
+    },
+    "hazard/hero": {
+      "back": {
+        "frames": 6,
+        "fps": 12
+      },
+      "front": {
+        "frames": 6,
+        "fps": 12
+      },
+      "bind-back": {
+        "frames": 4,
+        "fps": 0
+      },
+      "bind-front": {
+        "frames": 4,
+        "fps": 0
+      }
+    },
+    "hazard/mob": {
+      "front-12": {
+        "frames": 4,
+        "fps": 12
+      },
+      "front-19": {
+        "frames": 4,
+        "fps": 12
+      },
+      "front-28": {
+        "frames": 4,
+        "fps": 12
+      }
+    },
+    "hazard/null": {
+      "crumb-a": {
+        "frames": 1,
+        "fps": 0
+      },
+      "crumb-b": {
+        "frames": 1,
+        "fps": 0
+      },
+      "crumb-c": {
+        "frames": 1,
+        "fps": 0
+      }
+    },
+    "hazard/root": {
+      "vine-a": {
+        "frames": 4,
+        "fps": 6
+      },
+      "vine-b": {
+        "frames": 4,
+        "fps": 6
+      },
+      "vine-c": {
+        "frames": 4,
+        "fps": 6
+      },
+      "vine-a-emerge": {
+        "frames": 4,
+        "fps": 0
+      },
+      "vine-b-emerge": {
+        "frames": 4,
+        "fps": 0
+      },
+      "vine-c-emerge": {
+        "frames": 4,
+        "fps": 0
+      },
+      "vine-a-wither": {
+        "frames": 4,
+        "fps": 0
+      },
+      "vine-b-wither": {
+        "frames": 4,
+        "fps": 0
+      },
+      "vine-c-wither": {
+        "frames": 4,
+        "fps": 0
+      }
+    },
+    "hazard/shock": {
+      "pebble-a": {
+        "frames": 2,
+        "fps": 12
+      },
+      "pebble-b": {
+        "frames": 2,
+        "fps": 12
+      },
+      "shard-a": {
+        "frames": 4,
+        "fps": 0
+      },
+      "shard-b": {
+        "frames": 4,
+        "fps": 0
+      },
+      "shard-c": {
+        "frames": 4,
+        "fps": 0
+      },
+      "core": {
+        "frames": 4,
+        "fps": 0
+      },
+      "dust-a": {
+        "frames": 4,
+        "fps": 0
+      },
+      "dust-b": {
+        "frames": 4,
+        "fps": 0
+      }
+    },
+    "hazard/slow": {
+      "mire-s-a": {
+        "frames": 1,
+        "fps": 0
+      },
+      "mire-s-b": {
+        "frames": 1,
+        "fps": 0
+      },
+      "mire-m-a": {
+        "frames": 1,
+        "fps": 0
+      },
+      "mire-m-b": {
+        "frames": 1,
+        "fps": 0
+      },
+      "mire-l-a": {
+        "frames": 1,
+        "fps": 0
+      },
+      "mire-l-b": {
+        "frames": 1,
+        "fps": 0
+      },
+      "mire-xl-a": {
+        "frames": 1,
+        "fps": 0
+      },
+      "mire-xl-b": {
+        "frames": 1,
+        "fps": 0
+      },
+      "bubble-a": {
+        "frames": 6,
+        "fps": 0
+      },
+      "bubble-b": {
+        "frames": 6,
+        "fps": 0
+      }
+    },
+    "hazard/trap": {
+      "armed-ch1": {
+        "frames": 1,
+        "fps": 0
+      },
+      "spring-ch1": {
+        "frames": 3,
+        "fps": 0
+      },
+      "shut-ch1": {
+        "frames": 1,
+        "fps": 0
+      },
+      "armed-ch2": {
+        "frames": 1,
+        "fps": 0
+      },
+      "spring-ch2": {
+        "frames": 3,
+        "fps": 0
+      },
+      "shut-ch2": {
+        "frames": 1,
+        "fps": 0
+      },
+      "armed-ch3": {
+        "frames": 1,
+        "fps": 0
+      },
+      "spring-ch3": {
+        "frames": 3,
+        "fps": 0
+      },
+      "shut-ch3": {
+        "frames": 1,
+        "fps": 0
+      },
+      "armed-ch4": {
+        "frames": 1,
+        "fps": 0
+      },
+      "spring-ch4": {
+        "frames": 3,
+        "fps": 0
+      },
+      "shut-ch4": {
+        "frames": 1,
+        "fps": 0
+      }
+    },
+    "hazard/water": {
+      "ripple-a": {
+        "frames": 8,
+        "fps": 0
+      },
+      "ripple-b": {
+        "frames": 8,
+        "fps": 0
+      },
+      "flow-a": {
+        "frames": 6,
+        "fps": 6
+      },
+      "flow-b": {
+        "frames": 6,
+        "fps": 6
+      },
+      "glint": {
+        "frames": 2,
+        "fps": 2
       }
     },
     "hero": {
@@ -7327,6 +7973,3403 @@ export const ATLAS_MANIFEST = {
       "popEvery": 1.5,
       "rayInset": 2,
       "boltFps": 12
+    }
+  },
+  "hazards": {
+    "version": "1.0",
+    "spec": {
+      "jit": {
+        "mul": 31,
+        "hash": 2654435761,
+        "mod": 1000,
+        "kron": [0.7548776662466927, 0.5698402909980532, 0.6287067210378087, 0.5385972572236101, 0.4614032426986125]
+      },
+      "caps": {
+        "stamps": [160, 90, 40]
+      },
+      "fire": {
+        "base": {
+          "token": "ink",
+          "alpha": 0.3
+        },
+        "rim": [
+          [
+            "hostile",
+            6,
+            -9,
+            0.35
+          ],
+          [
+            "ink",
+            5,
+            0
+          ],
+          [
+            "hostile",
+            2.4,
+            -3.6
+          ],
+          [
+            "hostileGlow",
+            0.8,
+            -3.6
+          ]
+        ],
+        "size": {
+          "m": 56
+        },
+        "windows": {
+          "ignite": 0.25,
+          "gutter": 0.5
+        },
+        "ignite": {
+          "flash": {
+            "layers": [
+              [
+                "hostileGlow",
+                3,
+                -7
+              ]
+            ],
+            "seconds": 0.12,
+            "flash": true
+          }
+        },
+        "gutter": {
+          "coldCross": 0.2
+        },
+        "soot": {
+          "seconds": 1.5,
+          "base": {
+            "token": "ink",
+            "alpha": 0.16
+          },
+          "chars": "char-cold",
+          "caps": [12, 6, 0]
+        },
+        "layout": {
+          "cluster": {
+            "area": 1000,
+            "min": 3,
+            "max": 10,
+            "maxBig": 16,
+            "big": 100,
+            "minimal": 3,
+            "tries": 60,
+            "cand": 6,
+            "reach": {
+              "frac": 0.6,
+              "pad": 30
+            },
+            "gap": {
+              "frac": 0.48,
+              "cap": 28
+            },
+            "far": 6,
+            "squash": 1.3,
+            "fallbackY": 0.2,
+            "jit": {
+              "base": 3000,
+              "stride": 5
+            }
+          },
+          "rim": {
+            "parts": [
+              "cluster-s-a",
+              "cluster-s-b"
+            ],
+            "countInset": 9,
+            "pitch": [32, 40],
+            "big": 100,
+            "skip": 0.15,
+            "angleJitter": 0.6,
+            "inset": {
+              "min": 12,
+              "pad": 4,
+              "jitter": 3
+            },
+            "far": 6,
+            "farIn": 24,
+            "reduced": "even",
+            "jit": {
+              "skip": 500,
+              "angle": 540,
+              "dist": 580,
+              "variant": 620,
+              "flip": 660,
+              "phase": 700
+            }
+          },
+          "char": {
+            "per": 1400,
+            "min": 2,
+            "max": 10,
+            "maxBig": 4,
+            "big": 100,
+            "minimal": 2,
+            "tries": 40,
+            "inset": 24,
+            "gap": 0.35,
+            "jit": {
+              "angle": 1000,
+              "dist": 1040,
+              "variant": 1080,
+              "flip": 1120
+            }
+          },
+          "caps": [36, 22, 5],
+          "prio": {
+            "cluster": 0,
+            "char": 1,
+            "rim": 2
+          },
+          "cut": {
+            "even": 2,
+            "keep": 1
+          }
+        },
+        "embers": {
+          "per": 12,
+          "min": 3,
+          "max": 8,
+          "cycle": 0.7,
+          "jitter": 0.4,
+          "rise": 34,
+          "drift": 8,
+          "origin": {
+            "dx": [-8, 8],
+            "dy": [-12, -4]
+          },
+          "jit": {
+            "dx": 1200,
+            "dy": 1240,
+            "period": 1280,
+            "phase": 1320,
+            "sign": 1360
+          }
+        },
+        "smoke": {
+          "max": 3,
+          "cycle": 1,
+          "jitter": 0.3,
+          "start": 0.25,
+          "stagger": 0.25,
+          "until": 0.6,
+          "origin": {
+            "dy": -8
+          },
+          "rise": 10,
+          "drift": 4,
+          "jit": {
+            "period": 1500,
+            "start": 1540,
+            "sign": 1580
+          }
+        },
+        "caps": {
+          "stamps": [72, 40, 20],
+          "embers": [32, 16, 0]
+        }
+      },
+      "hero": {
+        "tint": {
+          "token": "hostile",
+          "composite": "multiply",
+          "alpha": [0.3, 0.12],
+          "step": 0.25,
+          "steady": 0.2,
+          "fadeIn": 0.1,
+          "fadeOut": 0.15
+        },
+        "embers": {
+          "origins": [
+            [-18, -12],
+            [-22, -28],
+            [24, -10],
+            [22, -24]
+          ],
+          "cycle": 0.6,
+          "jitter": 0.3,
+          "rise": 30,
+          "drift": 6,
+          "outward": true,
+          "seed": 1,
+          "jit": {
+            "period": 1400,
+            "phase": 1440
+          }
+        },
+        "faceZone": [-8, -58, 18, -34],
+        "clear": {
+          "ring": [24, 10.3],
+          "back": [-22, -26, 22, 2],
+          "front": [-18, -15, 18, 3],
+          "bindBack": [-20, -16, 20, 2],
+          "bindFront": [-18, -15, 18, 3]
+        }
+      },
+      "mob": {
+        "radii": [12, 19, 28],
+        "rects": {
+          "12": [-12, -11, 12, 2],
+          "19": [-17, -14, 17, 2],
+          "28": [-25, -18, 25, 2]
+        },
+        "caps": [24, 12, 0]
+      },
+      "shock": {
+        "rim": {
+          "preview": {
+            "drawn": [
+              [
+                "ink",
+                5,
+                0
+              ]
+            ],
+            "rest": {
+              "layers": [
+                [
+                  "ink",
+                  1.5,
+                  0
+                ]
+              ],
+              "dash": [2, 6]
+            },
+            "inner": [
+              [
+                "warn",
+                2.6,
+                -3.5
+              ]
+            ]
+          },
+          "imminent": {
+            "layers": [
+              [
+                "ink",
+                7,
+                0
+              ]
+            ],
+            "inner": {
+              "layers": [
+                [
+                  "warn",
+                  3.5,
+                  -3.5
+                ]
+              ],
+              "dash": [10, 5]
+            },
+            "ticks": {
+              "count": 8,
+              "layers": [
+                [
+                  "ink",
+                  3
+                ]
+              ],
+              "from": -12,
+              "to": 6
+            }
+          },
+          "renderer": "current-without-glyph"
+        },
+        "cracks": {
+          "arms": 7,
+          "start": 10,
+          "seg": 22,
+          "segJitter": 0.3,
+          "turn": 0.5,
+          "push": [3, 5],
+          "reach": 0.88,
+          "branchAt": 0.55,
+          "branchLen": 0.3,
+          "branchTurn": 0.6,
+          "branchSegs": 3,
+          "grow": {
+            "full": 0.85,
+            "power": 0.7
+          },
+          "width": [3.6, 1.6],
+          "jit": {
+            "arm": 2000,
+            "seg": 2100,
+            "segStride": 40,
+            "side": 2090,
+            "branch": 2400
+          }
+        },
+        "coreLayers": {
+          "telegraph": [
+            [
+              "warn",
+              0.4
+            ]
+          ],
+          "imminent": [
+            [
+              "warn",
+              0.5
+            ],
+            [
+              "warnGlow",
+              0.17
+            ]
+          ],
+          "burst": [
+            [
+              "hostileGlow",
+              0.5
+            ],
+            [
+              "p50",
+              0.18
+            ]
+          ],
+          "decal": [
+            [
+              "ink300",
+              0.6
+            ]
+          ]
+        },
+        "burst": {
+          "seconds": 0.25,
+          "fill": {
+            "token": "hostile",
+            "alpha": 0.55,
+            "seconds": 0.1
+          },
+          "edge": {
+            "token": "ink",
+            "dots": 40,
+            "band": 14,
+            "pitch": 6,
+            "rows": [
+              [-2.5, 2.2],
+              [-7, 1.6],
+              [-11.5, 1]
+            ]
+          },
+          "flash": {
+            "layers": [
+              [
+                "p50",
+                3,
+                -5
+              ]
+            ],
+            "seconds": 0.1,
+            "flash": true
+          },
+          "shards": {
+            "count": 8,
+            "from": 0.3,
+            "to": 0.9,
+            "out": 14,
+            "hop": 10,
+            "seconds": 0.3,
+            "jit": 7100
+          },
+          "dust": {
+            "count": 8,
+            "at": -6,
+            "seconds": 0.3,
+            "jit": 7200
+          }
+        },
+        "decal": {
+          "seconds": 1.2,
+          "alpha": [0.6, 0],
+          "crater": {
+            "token": "ink",
+            "alpha": 0.2,
+            "r": 0.18
+          }
+        },
+        "layout": {
+          "pebble": {
+            "count": 6,
+            "arms": [0, 2, 4, 6],
+            "from": 0.4,
+            "span": 0.3,
+            "jit": {
+              "at": 7000,
+              "variant": 7010,
+              "phase": 7020,
+              "flip": 7030
+            }
+          },
+          "caps": [6, 0, 0]
+        }
+      },
+      "slow": {
+        "rim": [
+          [
+            "ink",
+            5.6,
+            0
+          ],
+          [
+            "warn",
+            3,
+            0
+          ],
+          [
+            "p50",
+            0.8,
+            0
+          ]
+        ],
+        "hatch": {
+          "renderer": "current"
+        },
+        "end": {
+          "seconds": 0.5
+        },
+        "dial": {
+          "ticks": 24,
+          "r0": -14,
+          "r1": -6,
+          "long": -3,
+          "every": 6,
+          "on": [
+            [
+              "ink",
+              3.6
+            ],
+            [
+              "warn",
+              1.6
+            ]
+          ],
+          "off": [
+            [
+              "ink",
+              2,
+              0,
+              0.45
+            ]
+          ],
+          "hand": {
+            "len": 0.78,
+            "layers": [
+              [
+                "ink",
+                3.4
+              ],
+              [
+                "warn",
+                1.4
+              ]
+            ],
+            "hub": [
+              "ink",
+              4
+            ]
+          },
+          "period": 12
+        },
+        "layout": {
+          "mire": {
+            "tiers": [
+              [
+                0,
+                "m",
+                "s",
+                410
+              ],
+              [
+                100,
+                "l",
+                "m",
+                1000
+              ],
+              [
+                160,
+                "xl",
+                "l",
+                1000
+              ]
+            ],
+            "fill": {
+              "s": 220,
+              "m": 524,
+              "l": 1220,
+              "xl": 3900
+            },
+            "target": 0.3,
+            "min": 3,
+            "max": 18,
+            "minimal": 3,
+            "tries": 120,
+            "cand": 10,
+            "reach": {
+              "frac": 1,
+              "pad": 2
+            },
+            "sep": 0.75,
+            "squash": 2.2,
+            "mirror": 2,
+            "pool": "kr",
+            "jit": {
+              "base": 3000,
+              "stride": 5,
+              "small": 6000
+            }
+          },
+          "bubble": {
+            "per": 30,
+            "min": 2,
+            "max": 6,
+            "cycle": 0.9,
+            "spread": [0.7, 0.6],
+            "still": 2,
+            "jit": 3200
+          },
+          "caps": [24, 12, 3]
+        }
+      },
+      "root": {
+        "rim": [
+          [
+            "ink",
+            5.6,
+            0
+          ],
+          [
+            "warn",
+            3,
+            0
+          ],
+          [
+            "p50",
+            0.8,
+            0
+          ]
+        ],
+        "hatch": {
+          "renderer": "current"
+        },
+        "windows": {
+          "emerge": 0.25,
+          "wither": 0.4
+        },
+        "faded": {
+          "alpha": 0.35
+        },
+        "layout": {
+          "vine": {
+            "per": 12,
+            "min": 3,
+            "max": 6,
+            "tries": 40,
+            "cand": 6,
+            "reach": {
+              "frac": 0.72,
+              "pad": 99
+            },
+            "gap": {
+              "frac": 0.5,
+              "cap": 24
+            },
+            "squash": 1.2,
+            "far": 6,
+            "mirror": 6,
+            "pool": "kr",
+            "jit": {
+              "base": 5000,
+              "stride": 5
+            }
+          },
+          "caps": [6, 6, 6]
+        }
+      },
+      "water": {
+        "base": {
+          "token": "ink",
+          "alpha": 0.24
+        },
+        "rim": [
+          [
+            "ink",
+            2.6,
+            0
+          ],
+          [
+            "p300",
+            1.2,
+            -2.4,
+            0.8
+          ]
+        ],
+        "layout": {
+          "ripple": {
+            "per": 40,
+            "min": 3,
+            "max": 7,
+            "still": 3,
+            "cycle": 1.6,
+            "spread": [0.7, 0.6],
+            "tries": 40,
+            "cand": 6,
+            "reach": {
+              "frac": 0,
+              "pad": 24
+            },
+            "gap": {
+              "frac": 1,
+              "cap": 36
+            },
+            "squash": 2,
+            "mirror": 2,
+            "pool": "kr",
+            "jit": {
+              "base": 4000,
+              "stride": 5
+            }
+          },
+          "flow": {
+            "per": 60,
+            "min": 2,
+            "max": 5,
+            "tries": 40,
+            "cand": 6,
+            "reach": {
+              "frac": 0,
+              "pad": 30
+            },
+            "gap": {
+              "frac": 1,
+              "cap": 30
+            },
+            "squash": 3,
+            "mirror": 2,
+            "pool": "kr",
+            "jit": {
+              "base": 4100,
+              "stride": 5
+            }
+          },
+          "glint": {
+            "angle": -2.356,
+            "spread": 0.3,
+            "at": 0.45,
+            "jit": 4300
+          },
+          "caps": [13, 7, 1]
+        }
+      },
+      "trap": {
+        "plate": {
+          "token": "ink700",
+          "alpha": 0.5
+        },
+        "rim": [
+          [
+            "ink",
+            3.4,
+            0
+          ]
+        ],
+        "groove": [
+          [
+            "ink",
+            1.6,
+            -6,
+            0.7
+          ]
+        ],
+        "spokes": {
+          "count": 6,
+          "from": -6,
+          "to": 38,
+          "layers": [
+            [
+              "ink",
+              1.4,
+              0,
+              0.5
+            ]
+          ]
+        },
+        "rivets": {
+          "per": 40,
+          "min": 8,
+          "at": -11,
+          "size": 2,
+          "token": "p300",
+          "shape": "square"
+        },
+        "windows": {
+          "spring": 0.15,
+          "fadeLast": 0.6,
+          "sprungAlpha": 0.7,
+          "fallback": {
+            "5": 1
+          }
+        },
+        "layout": {
+          "caps": [1, 1, 1]
+        }
+      },
+      "null": {
+        "base": {
+          "token": "voidPaper",
+          "alpha": 1
+        },
+        "ghost": {
+          "lines": [4, 6],
+          "split": 150,
+          "dash": [4, 3],
+          "layers": [
+            [
+              "ink300",
+              1,
+              0,
+              0.6
+            ]
+          ],
+          "inset": 6,
+          "jit": {
+            "angle": 2200,
+            "offset": 2240
+          }
+        },
+        "rim": [
+          [
+            "ink",
+            5.4,
+            0,
+            1,
+            [0.1, 9]
+          ],
+          [
+            "warn",
+            3,
+            0,
+            1,
+            [0.1, 9]
+          ]
+        ],
+        "active": {
+          "on": false,
+          "layers": [
+            [
+              "ink",
+              3.2
+            ],
+            [
+              "hostile",
+              1.5
+            ]
+          ],
+          "at": 0.9
+        },
+        "erase": {
+          "seconds": 0.3,
+          "jag": {
+            "points": 12,
+            "depth": 6,
+            "jit": 2280
+          }
+        },
+        "restore": {
+          "seconds": 0.5,
+          "line": [
+            "ink300",
+            1.4
+          ]
+        },
+        "layout": {
+          "crumb": {
+            "per": 16,
+            "min": 5,
+            "max": 9,
+            "inset": {
+              "pad": 2,
+              "jitter": 4
+            },
+            "jit": {
+              "angle": 6000,
+              "dist": 6040,
+              "variant": 6080,
+              "flip": 6120
+            }
+          },
+          "caps": [9, 0, 0]
+        }
+      }
+    },
+    "parts": {
+      "fire": {
+        "cluster-s-a": {
+          "frames": 6,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": null,
+          "box": [28, 32],
+          "anchor": [14, 28],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "cluster-s-b": {
+          "frames": 6,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": null,
+          "box": [28, 32],
+          "anchor": [14, 28],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "cluster-m-a": {
+          "frames": 6,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": null,
+          "box": [36, 44],
+          "anchor": [18, 39],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "cluster-m-b": {
+          "frames": 6,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": null,
+          "box": [36, 44],
+          "anchor": [18, 39],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "cluster-l-a": {
+          "frames": 6,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": null,
+          "box": [48, 58],
+          "anchor": [24, 52],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "cluster-l-b": {
+          "frames": 6,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": null,
+          "box": [48, 58],
+          "anchor": [24, 52],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "cluster-s-a-ignite": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.25,
+          "still": null,
+          "box": [28, 32],
+          "anchor": [14, 28],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "cluster-s-b-ignite": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.25,
+          "still": null,
+          "box": [28, 32],
+          "anchor": [14, 28],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "cluster-m-a-ignite": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.25,
+          "still": null,
+          "box": [36, 44],
+          "anchor": [18, 39],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "cluster-m-b-ignite": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.25,
+          "still": null,
+          "box": [36, 44],
+          "anchor": [18, 39],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "cluster-l-a-ignite": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.25,
+          "still": null,
+          "box": [48, 58],
+          "anchor": [24, 52],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "cluster-l-b-ignite": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.25,
+          "still": null,
+          "box": [48, 58],
+          "anchor": [24, 52],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "cluster-s-a-gutter": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.5,
+          "still": null,
+          "box": [28, 32],
+          "anchor": [14, 28],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "cluster-s-b-gutter": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.5,
+          "still": null,
+          "box": [28, 32],
+          "anchor": [14, 28],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "cluster-m-a-gutter": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.5,
+          "still": null,
+          "box": [36, 44],
+          "anchor": [18, 39],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "cluster-m-b-gutter": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.5,
+          "still": null,
+          "box": [36, 44],
+          "anchor": [18, 39],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "cluster-l-a-gutter": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.5,
+          "still": null,
+          "box": [48, 58],
+          "anchor": [24, 52],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "cluster-l-b-gutter": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.5,
+          "still": null,
+          "box": [48, 58],
+          "anchor": [24, 52],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "char-a": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [44, 22],
+          "anchor": [22, 11],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "char-b": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [44, 22],
+          "anchor": [22, 11],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "char-c": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [44, 22],
+          "anchor": [22, 11],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "char-d": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [44, 22],
+          "anchor": [22, 11],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "char-cold-a": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [44, 22],
+          "anchor": [22, 11],
+          "layer": "ground",
+          "z": "ground",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "char-cold-b": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [44, 22],
+          "anchor": [22, 11],
+          "layer": "ground",
+          "z": "ground",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "char-cold-c": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [44, 22],
+          "anchor": [22, 11],
+          "layer": "ground",
+          "z": "ground",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "char-cold-d": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [44, 22],
+          "anchor": [22, 11],
+          "layer": "ground",
+          "z": "ground",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "ember-a": {
+          "frames": 6,
+          "drive": "cycle",
+          "fps": 0,
+          "seconds": 0.7,
+          "still": null,
+          "box": [12, 14],
+          "anchor": [6, 7],
+          "layer": "hazard",
+          "z": "air",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "ember-b": {
+          "frames": 6,
+          "drive": "cycle",
+          "fps": 0,
+          "seconds": 0.7,
+          "still": null,
+          "box": [12, 14],
+          "anchor": [6, 7],
+          "layer": "hazard",
+          "z": "air",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "smoke-a": {
+          "frames": 6,
+          "drive": "cycle",
+          "fps": 0,
+          "seconds": 1,
+          "still": null,
+          "box": [18, 34],
+          "anchor": [9, 30],
+          "layer": "hazard",
+          "z": "air",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "smoke-b": {
+          "frames": 6,
+          "drive": "cycle",
+          "fps": 0,
+          "seconds": 1,
+          "still": null,
+          "box": [18, 34],
+          "anchor": [9, 30],
+          "layer": "hazard",
+          "z": "air",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        }
+      },
+      "shock": {
+        "pebble-a": {
+          "frames": 2,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": null,
+          "box": [10, 10],
+          "anchor": [5, 8],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "pebble-b": {
+          "frames": 2,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": null,
+          "box": [10, 10],
+          "anchor": [5, 8],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "shard-a": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.3,
+          "still": null,
+          "box": [20, 20],
+          "anchor": [10, 16],
+          "layer": "hazard",
+          "z": "air",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "shard-b": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.3,
+          "still": null,
+          "box": [20, 20],
+          "anchor": [10, 16],
+          "layer": "hazard",
+          "z": "air",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "shard-c": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.3,
+          "still": null,
+          "box": [20, 20],
+          "anchor": [10, 16],
+          "layer": "hazard",
+          "z": "air",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "core": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.25,
+          "still": null,
+          "box": [72, 72],
+          "anchor": [36, 44],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": true,
+          "ch": null
+        },
+        "dust-a": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.3,
+          "still": null,
+          "box": [28, 18],
+          "anchor": [14, 14],
+          "layer": "hazard",
+          "z": "air",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "dust-b": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.3,
+          "still": null,
+          "box": [28, 18],
+          "anchor": [14, 14],
+          "layer": "hazard",
+          "z": "air",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        }
+      },
+      "slow": {
+        "mire-s-a": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [36, 20],
+          "anchor": [18, 10],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "mire-s-b": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [36, 20],
+          "anchor": [18, 10],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "mire-m-a": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [52, 28],
+          "anchor": [26, 14],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "mire-m-b": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [52, 28],
+          "anchor": [26, 14],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "mire-l-a": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [76, 40],
+          "anchor": [38, 20],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "mire-l-b": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [76, 40],
+          "anchor": [38, 20],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "mire-xl-a": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [132, 60],
+          "anchor": [66, 30],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "mire-xl-b": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [132, 60],
+          "anchor": [66, 30],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "bubble-a": {
+          "frames": 6,
+          "drive": "cycle",
+          "fps": 0,
+          "seconds": 0.9,
+          "still": 2,
+          "box": [14, 14],
+          "anchor": [7, 11],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "bubble-b": {
+          "frames": 6,
+          "drive": "cycle",
+          "fps": 0,
+          "seconds": 0.9,
+          "still": 2,
+          "box": [14, 14],
+          "anchor": [7, 11],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        }
+      },
+      "water": {
+        "ripple-a": {
+          "frames": 8,
+          "drive": "cycle",
+          "fps": 0,
+          "seconds": 1.6,
+          "still": 3,
+          "box": [40, 18],
+          "anchor": [20, 9],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "ripple-b": {
+          "frames": 8,
+          "drive": "cycle",
+          "fps": 0,
+          "seconds": 1.6,
+          "still": 3,
+          "box": [40, 18],
+          "anchor": [20, 9],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "flow-a": {
+          "frames": 6,
+          "drive": "loop",
+          "fps": 6,
+          "seconds": null,
+          "still": null,
+          "box": [44, 10],
+          "anchor": [22, 5],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "flow-b": {
+          "frames": 6,
+          "drive": "loop",
+          "fps": 6,
+          "seconds": null,
+          "still": null,
+          "box": [44, 10],
+          "anchor": [22, 5],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "glint": {
+          "frames": 2,
+          "drive": "loop",
+          "fps": 2,
+          "seconds": null,
+          "still": null,
+          "box": [14, 8],
+          "anchor": [7, 4],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        }
+      },
+      "root": {
+        "vine-a": {
+          "frames": 4,
+          "drive": "loop",
+          "fps": 6,
+          "seconds": null,
+          "still": null,
+          "box": [26, 24],
+          "anchor": [13, 20],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "vine-b": {
+          "frames": 4,
+          "drive": "loop",
+          "fps": 6,
+          "seconds": null,
+          "still": null,
+          "box": [26, 24],
+          "anchor": [13, 20],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "vine-c": {
+          "frames": 4,
+          "drive": "loop",
+          "fps": 6,
+          "seconds": null,
+          "still": null,
+          "box": [26, 24],
+          "anchor": [13, 20],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "vine-a-emerge": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.25,
+          "still": null,
+          "box": [26, 24],
+          "anchor": [13, 20],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "vine-b-emerge": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.25,
+          "still": null,
+          "box": [26, 24],
+          "anchor": [13, 20],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "vine-c-emerge": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.25,
+          "still": null,
+          "box": [26, 24],
+          "anchor": [13, 20],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "vine-a-wither": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.4,
+          "still": null,
+          "box": [26, 24],
+          "anchor": [13, 20],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "vine-b-wither": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.4,
+          "still": null,
+          "box": [26, 24],
+          "anchor": [13, 20],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "vine-c-wither": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.4,
+          "still": null,
+          "box": [26, 24],
+          "anchor": [13, 20],
+          "layer": "hazard",
+          "z": "flame",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        }
+      },
+      "trap": {
+        "armed-ch1": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [82, 62],
+          "anchor": [41, 33],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": 1
+        },
+        "spring-ch1": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.15,
+          "still": null,
+          "box": [82, 62],
+          "anchor": [41, 33],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": 1
+        },
+        "shut-ch1": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [82, 62],
+          "anchor": [41, 33],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": 1
+        },
+        "armed-ch2": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [82, 62],
+          "anchor": [41, 33],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": 2
+        },
+        "spring-ch2": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.15,
+          "still": null,
+          "box": [82, 62],
+          "anchor": [41, 33],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": 2
+        },
+        "shut-ch2": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [82, 62],
+          "anchor": [41, 33],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": 2
+        },
+        "armed-ch3": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [82, 62],
+          "anchor": [41, 33],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": 3
+        },
+        "spring-ch3": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.15,
+          "still": null,
+          "box": [82, 62],
+          "anchor": [41, 33],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": 3
+        },
+        "shut-ch3": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [82, 62],
+          "anchor": [41, 33],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": 3
+        },
+        "armed-ch4": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [82, 62],
+          "anchor": [41, 33],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": 4
+        },
+        "spring-ch4": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.15,
+          "still": null,
+          "box": [82, 62],
+          "anchor": [41, 33],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": 4
+        },
+        "shut-ch4": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [82, 62],
+          "anchor": [41, 33],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": 4
+        }
+      },
+      "null": {
+        "crumb-a": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [12, 10],
+          "anchor": [6, 5],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "crumb-b": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [12, 10],
+          "anchor": [6, 5],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "crumb-c": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [12, 10],
+          "anchor": [6, 5],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        }
+      },
+      "hero": {
+        "back": {
+          "frames": 6,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": null,
+          "box": [50, 34],
+          "anchor": [25, 29],
+          "layer": "body-back",
+          "z": "body",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "front": {
+          "frames": 6,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": null,
+          "box": [42, 24],
+          "anchor": [21, 18],
+          "layer": "body-front",
+          "z": "body",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "bind-back": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.2,
+          "still": null,
+          "box": [46, 24],
+          "anchor": [23, 19],
+          "layer": "body-back",
+          "z": "body",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "bind-front": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.2,
+          "still": null,
+          "box": [42, 24],
+          "anchor": [21, 18],
+          "layer": "body-front",
+          "z": "body",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        }
+      },
+      "mob": {
+        "front-12": {
+          "frames": 4,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": null,
+          "box": [30, 19],
+          "anchor": [15, 14],
+          "layer": "body-front",
+          "z": "body",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "front-19": {
+          "frames": 4,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": null,
+          "box": [40, 22],
+          "anchor": [20, 17],
+          "layer": "body-front",
+          "z": "body",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "front-28": {
+          "frames": 4,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": null,
+          "box": [56, 26],
+          "anchor": [28, 21],
+          "layer": "body-front",
+          "z": "body",
+          "lod": "deco",
+          "flash": false,
+          "ch": null
+        }
+      }
+    },
+    "states": {
+      "fire": [
+        "burn",
+        "ignite",
+        "gutter",
+        "soot"
+      ],
+      "shock": [
+        "telegraph",
+        "burst",
+        "decal"
+      ],
+      "slow": [
+        "static"
+      ],
+      "water": [
+        "static"
+      ],
+      "root": [
+        "emerge",
+        "static",
+        "wither",
+        "faded"
+      ],
+      "trap": [
+        "armed",
+        "spring",
+        "shut"
+      ],
+      "null": [
+        "erase",
+        "static",
+        "restore"
+      ]
+    },
+    "vectors": {
+      "layout": {
+        "fire:50:1": [
+          [
+            "char-d",
+            7.36,
+            -22.66,
+            1,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "char-b",
+            15.45,
+            3.86,
+            1,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "cluster-s-a",
+            -14.15,
+            -25.44,
+            1,
+            0.712,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-b",
+            13.69,
+            -25.24,
+            1,
+            0.177,
+            "flame",
+            2
+          ],
+          [
+            "cluster-m-b",
+            1.63,
+            -14.39,
+            1,
+            0.924,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-b",
+            -31.65,
+            -13.02,
+            0,
+            0.951,
+            "flame",
+            2
+          ],
+          [
+            "cluster-m-a",
+            -28.77,
+            4.37,
+            1,
+            0.632,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-a",
+            -30.07,
+            21.21,
+            1,
+            0.486,
+            "flame",
+            2
+          ],
+          [
+            "cluster-m-a",
+            18.15,
+            21.94,
+            1,
+            0.592,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-a",
+            8.76,
+            34.37,
+            1,
+            0.26,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-b",
+            -10.13,
+            34.74,
+            0,
+            0.725,
+            "flame",
+            2
+          ]
+        ],
+        "fire:74:7": [
+          [
+            "char-a",
+            5.92,
+            -44.64,
+            1,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "char-d",
+            -45.07,
+            -13.09,
+            0,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "char-a",
+            9.62,
+            -0.18,
+            1,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "char-b",
+            -10.14,
+            27.61,
+            0,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "cluster-s-a",
+            0.02,
+            -51.13,
+            1,
+            0.374,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-b",
+            16.73,
+            -49.07,
+            0,
+            0.135,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-a",
+            -51.04,
+            -30.53,
+            1,
+            0.148,
+            "flame",
+            2
+          ],
+          [
+            "cluster-l-b",
+            -21.15,
+            -16.62,
+            1,
+            0.058,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-b",
+            55.17,
+            -11.76,
+            1,
+            0.065,
+            "flame",
+            2
+          ],
+          [
+            "cluster-l-a",
+            29.5,
+            -3.35,
+            0,
+            0.138,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-a",
+            -58.05,
+            4.61,
+            0,
+            0.683,
+            "flame",
+            2
+          ],
+          [
+            "cluster-l-a",
+            -42.88,
+            5.14,
+            1,
+            0.637,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-b",
+            -9.15,
+            11.95,
+            1,
+            0.806,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-b",
+            53.69,
+            19.09,
+            0,
+            0.301,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-b",
+            -52.79,
+            22.78,
+            0,
+            0.218,
+            "flame",
+            2
+          ],
+          [
+            "cluster-l-a",
+            13.03,
+            33.52,
+            0,
+            0.347,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-b",
+            47.29,
+            37.46,
+            0,
+            0.766,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-a",
+            -27.44,
+            55.46,
+            1,
+            0.457,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-a",
+            17.2,
+            59.22,
+            1,
+            0.527,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-b",
+            -7.89,
+            59.75,
+            0,
+            0.992,
+            "flame",
+            2
+          ]
+        ],
+        "fire:98:7": [
+          [
+            "char-a",
+            8.77,
+            -66.06,
+            1,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "char-d",
+            61.98,
+            -37.18,
+            1,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "char-d",
+            -66.7,
+            -19.38,
+            0,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "char-a",
+            14.23,
+            -0.27,
+            1,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "char-d",
+            -64.23,
+            15.63,
+            0,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "char-b",
+            -15,
+            40.86,
+            0,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "char-c",
+            29.62,
+            42.43,
+            0,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "cluster-s-b",
+            -5.12,
+            -74.99,
+            1,
+            0.065,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-a",
+            53.06,
+            -60.37,
+            1,
+            0.291,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-b",
+            -61.65,
+            -53.34,
+            0,
+            0.135,
+            "flame",
+            2
+          ],
+          [
+            "cluster-l-b",
+            6.21,
+            -49.16,
+            1,
+            0.222,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-b",
+            68.57,
+            -46.78,
+            0,
+            0.756,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-a",
+            -72.75,
+            -36.25,
+            1,
+            0.374,
+            "flame",
+            2
+          ],
+          [
+            "cluster-l-a",
+            23.8,
+            -30.29,
+            0,
+            0.012,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-b",
+            -32.39,
+            -25.45,
+            1,
+            0.058,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-a",
+            79.84,
+            -23.15,
+            1,
+            0.517,
+            "flame",
+            2
+          ],
+          [
+            "cluster-l-a",
+            45.17,
+            -5.13,
+            0,
+            0.138,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-b",
+            -35.69,
+            -4.05,
+            0,
+            0.97,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-a",
+            -65.67,
+            7.88,
+            1,
+            0.637,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-b",
+            -14.02,
+            18.31,
+            1,
+            0.806,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-b",
+            77.98,
+            20.85,
+            0,
+            0.301,
+            "flame",
+            2
+          ],
+          [
+            "cluster-l-a",
+            57.07,
+            23.43,
+            0,
+            0.514,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-a",
+            -79.07,
+            26.82,
+            1,
+            0.148,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-b",
+            72.66,
+            40.86,
+            0,
+            0.766,
+            "flame",
+            2
+          ],
+          [
+            "cluster-l-b",
+            -37.74,
+            48.66,
+            1,
+            0.511,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-a",
+            19.95,
+            51.33,
+            0,
+            0.347,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-a",
+            -59.37,
+            61.1,
+            0,
+            0.683,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-a",
+            47.36,
+            71.38,
+            1,
+            0.527,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-b",
+            -41.54,
+            72.54,
+            0,
+            0.218,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-b",
+            22.41,
+            81.24,
+            0,
+            0.992,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-a",
+            1.57,
+            85.86,
+            1,
+            0.457,
+            "flame",
+            2
+          ]
+        ],
+        "fire:150:23": [
+          [
+            "char-c",
+            -61.03,
+            -85.12,
+            0,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "char-b",
+            93.63,
+            -77.45,
+            1,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "char-b",
+            37.12,
+            33.14,
+            0,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "char-c",
+            -76.56,
+            39.01,
+            0,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "cluster-s-a",
+            3.18,
+            -127.91,
+            1,
+            0.101,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-b",
+            -72.2,
+            -108.99,
+            0,
+            0.171,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-a",
+            -93.45,
+            -94.66,
+            1,
+            0.41,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-b",
+            98.67,
+            -90.48,
+            0,
+            0.792,
+            "flame",
+            2
+          ],
+          [
+            "cluster-l-a",
+            36.17,
+            -83.58,
+            0,
+            0.267,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-a",
+            119.45,
+            -64.86,
+            0,
+            0.553,
+            "flame",
+            2
+          ],
+          [
+            "cluster-l-b",
+            -46.21,
+            -61.15,
+            1,
+            0.099,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-b",
+            9.58,
+            -58.13,
+            1,
+            0.932,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-b",
+            -122.36,
+            -55.6,
+            0,
+            0.945,
+            "flame",
+            2
+          ],
+          [
+            "cluster-l-a",
+            57.6,
+            -43.53,
+            0,
+            0.053,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-a",
+            93.11,
+            -37.55,
+            0,
+            0.391,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-a",
+            -132.76,
+            -24.42,
+            1,
+            0.184,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-b",
+            132.13,
+            -17.57,
+            0,
+            0.018,
+            "flame",
+            2
+          ],
+          [
+            "cluster-l-b",
+            -20.08,
+            -9.3,
+            1,
+            0.725,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-b",
+            80.14,
+            -7.58,
+            0,
+            0.141,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-a",
+            -116.31,
+            11.73,
+            1,
+            0.64,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-a",
+            105.21,
+            13.29,
+            0,
+            0.472,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-b",
+            132.55,
+            17.41,
+            0,
+            0.885,
+            "flame",
+            2
+          ],
+          [
+            "cluster-l-b",
+            -49.52,
+            20.33,
+            1,
+            0.89,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-b",
+            -12.31,
+            29.99,
+            1,
+            0.764,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-b",
+            80.03,
+            35.23,
+            0,
+            0.222,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-a",
+            -106.46,
+            41.38,
+            1,
+            0.597,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-b",
+            -123.89,
+            49.1,
+            0,
+            0.254,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-a",
+            119.3,
+            64.54,
+            1,
+            0.646,
+            "flame",
+            2
+          ],
+          [
+            "cluster-l-a",
+            54.88,
+            76.54,
+            0,
+            0.307,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-b",
+            -69.48,
+            83.98,
+            1,
+            0.516,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-b",
+            100.23,
+            91.62,
+            1,
+            0.111,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-a",
+            -96.64,
+            98.19,
+            1,
+            0.493,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-b",
+            -75.02,
+            113.63,
+            0,
+            0.028,
+            "flame",
+            2
+          ],
+          [
+            "cluster-l-a",
+            14.23,
+            118.67,
+            0,
+            0.683,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-a",
+            -45.73,
+            129.74,
+            1,
+            0.563,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-b",
+            3.61,
+            136.79,
+            0,
+            0.802,
+            "flame",
+            2
+          ]
+        ],
+        "fire:150:23:reduced": [
+          [
+            "char-b",
+            93.63,
+            -77.45,
+            1,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "char-c",
+            -76.56,
+            39.01,
+            0,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "cluster-s-a",
+            77.84,
+            -105.7,
+            1,
+            0.327,
+            "flame",
+            2
+          ],
+          [
+            "cluster-l-a",
+            36.17,
+            -83.58,
+            0,
+            0.267,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-b",
+            -46.21,
+            -61.15,
+            1,
+            0.099,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-b",
+            9.58,
+            -58.13,
+            1,
+            0.932,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-b",
+            -122.36,
+            -55.6,
+            0,
+            0.945,
+            "flame",
+            2
+          ],
+          [
+            "cluster-l-a",
+            57.6,
+            -43.53,
+            0,
+            0.053,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-a",
+            93.11,
+            -37.55,
+            0,
+            0.391,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-b",
+            -20.08,
+            -9.3,
+            1,
+            0.725,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-b",
+            80.14,
+            -7.58,
+            0,
+            0.141,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-a",
+            -116.31,
+            11.73,
+            1,
+            0.64,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-a",
+            105.21,
+            13.29,
+            0,
+            0.472,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-b",
+            -49.52,
+            20.33,
+            1,
+            0.89,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-b",
+            -12.31,
+            29.99,
+            1,
+            0.764,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-b",
+            80.03,
+            35.23,
+            0,
+            0.222,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-a",
+            -106.46,
+            41.38,
+            1,
+            0.597,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-a",
+            54.88,
+            76.54,
+            0,
+            0.307,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-b",
+            -69.48,
+            83.98,
+            1,
+            0.516,
+            "flame",
+            0
+          ],
+          [
+            "cluster-s-b",
+            100.23,
+            91.62,
+            1,
+            0.111,
+            "flame",
+            2
+          ],
+          [
+            "cluster-s-a",
+            -96.64,
+            98.19,
+            1,
+            0.493,
+            "flame",
+            2
+          ],
+          [
+            "cluster-l-a",
+            14.23,
+            118.67,
+            0,
+            0.683,
+            "flame",
+            0
+          ]
+        ],
+        "fire:150:23:minimal": [
+          [
+            "char-b",
+            93.63,
+            -77.45,
+            1,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "char-c",
+            -76.56,
+            39.01,
+            0,
+            0,
+            "ground",
+            1
+          ],
+          [
+            "cluster-l-a",
+            36.17,
+            -83.58,
+            0,
+            0.267,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-b",
+            -20.08,
+            -9.3,
+            1,
+            0.725,
+            "flame",
+            0
+          ],
+          [
+            "cluster-l-b",
+            -69.48,
+            83.98,
+            1,
+            0.516,
+            "flame",
+            0
+          ]
+        ]
+      },
+      "embers": {
+        "fire:50:1:0.3": [
+          [
+            "ember-a",
+            2.01,
+            -46.27,
+            3
+          ],
+          [
+            "ember-b",
+            -31.13,
+            -6.16,
+            0
+          ],
+          [
+            "ember-a",
+            27.75,
+            -5.9,
+            4
+          ],
+          [
+            "ember-b",
+            4.78,
+            -34.78,
+            2
+          ]
+        ],
+        "fire:74:7:0.3": [
+          [
+            "ember-a",
+            -22.19,
+            -30.31,
+            1
+          ],
+          [
+            "ember-b",
+            28.65,
+            -38.22,
+            4
+          ],
+          [
+            "ember-a",
+            -42.58,
+            -6.69,
+            0
+          ],
+          [
+            "ember-b",
+            -24.32,
+            -24.97,
+            5
+          ],
+          [
+            "ember-a",
+            15.18,
+            13.28,
+            1
+          ],
+          [
+            "ember-b",
+            -18.42,
+            -51.29,
+            4
+          ]
+        ],
+        "fire:98:7:0.3": [
+          [
+            "ember-a",
+            5.17,
+            -62.85,
+            1
+          ],
+          [
+            "ember-b",
+            22.96,
+            -65.17,
+            4
+          ],
+          [
+            "ember-a",
+            -32.09,
+            -37.28,
+            0
+          ],
+          [
+            "ember-b",
+            30,
+            -42.05,
+            5
+          ],
+          [
+            "ember-a",
+            -33.54,
+            -24.29,
+            1
+          ],
+          [
+            "ember-b",
+            -62.94,
+            -26.8,
+            4
+          ],
+          [
+            "ember-a",
+            -15.69,
+            -13.74,
+            3
+          ],
+          [
+            "ember-b",
+            52.16,
+            14.64,
+            0
+          ]
+        ],
+        "fire:150:23:0.3": [
+          [
+            "ember-a",
+            36.48,
+            -122.59,
+            4
+          ],
+          [
+            "ember-b",
+            -44.82,
+            -77.38,
+            1
+          ],
+          [
+            "ember-a",
+            11.83,
+            -97.2,
+            5
+          ],
+          [
+            "ember-b",
+            56.3,
+            -68.26,
+            2
+          ],
+          [
+            "ember-a",
+            92.89,
+            -52.53,
+            1
+          ],
+          [
+            "ember-b",
+            -20.58,
+            -45.41,
+            4
+          ],
+          [
+            "ember-a",
+            76.04,
+            -20.73,
+            0
+          ],
+          [
+            "ember-b",
+            -115.45,
+            -26.41,
+            5
+          ]
+        ],
+        "hero:0.3": [
+          [
+            "ember-a",
+            -23.37,
+            -38.83,
+            5
+          ],
+          [
+            "ember-b",
+            -25.53,
+            -45.63,
+            3
+          ],
+          [
+            "ember-a",
+            24.51,
+            -12.56,
+            0
+          ],
+          [
+            "ember-b",
+            27.63,
+            -52.16,
+            5
+          ]
+        ]
+      }
+    },
+    "render": {
+      "fireStamps": [120, 40, 20]
     }
   },
   "bombers": {

@@ -35,6 +35,33 @@ export type SkillVfxManifest = Readonly<{
   render: Readonly<{ cloneAlpha: number; popRise: number; popEvery: number; rayInset: number; boltFps: number }>;
 }>;
 
+/** K11: how one hazard stamp plays and where it sits (API-hazards §5); box and anchor in world units. */
+export type HazardPart = Readonly<{
+  frames: number;
+  drive: 'loop' | 'prog' | 'cycle' | 'idx';
+  fps: number;
+  seconds: number | null;
+  still: number | null;
+  box: readonly [number, number];
+  anchor: readonly [number, number];
+  layer: string;
+  z: string;
+  lod: 'info' | 'deco';
+  flash: boolean;
+  ch: number | null;
+}>;
+
+/** K11: the kit's hazard shapes (SPEC), part rules, states, and the vectors the layout port is tested against. */
+export type HazardManifest = Readonly<{
+  version: string;
+  spec: Readonly<Record<string, unknown>>;
+  parts: Readonly<Record<string, Readonly<Record<string, HazardPart>>>>;
+  states: Readonly<Record<string, readonly string[]>>;
+  /** layout `kind:r:seed[:lod]` -> [part, x, y, flip, phase, z, prio]; embers `fire:r:seed:t` / `hero:t` -> [part, x, y, frame]. */
+  vectors: Readonly<{ layout: Readonly<Record<string, readonly (readonly (string | number)[])[]>>; embers: Readonly<Record<string, readonly (readonly (string | number)[])[]>> }>;
+  render: Readonly<{ fireStamps: readonly number[] }>;
+}>;
+
 export type AtlasManifest = Readonly<{
   version: number;
   /** Atlas pixels per world unit. */
@@ -42,6 +69,7 @@ export type AtlasManifest = Readonly<{
   packs: Readonly<Record<string, AtlasPackManifest>>;
   animations: Readonly<Record<string, Readonly<Record<string, AnimationSpec>>>>;
   skillVfx?: SkillVfxManifest;
+  hazards?: HazardManifest;
   /** SYS-14 (K7): the fuse bomber's wick tip per state and frame, in kit units around its feet (API-bombers §4.2). */
   bombers?: BomberManifest;
 }>;
@@ -201,6 +229,10 @@ export class SpriteAtlas {
 
   skillVfx(): SkillVfxManifest | undefined {
     return this.manifest?.skillVfx;
+  }
+
+  hazards(): HazardManifest | undefined {
+    return this.manifest?.hazards;
   }
 
   /** The frame for a key from any ready pack, or undefined (not baked, pack not loaded, or load failed). */

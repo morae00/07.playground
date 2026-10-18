@@ -260,6 +260,49 @@ test('a body in fire shows it burns while it stands there and a moment after, an
   }
 });
 
+test('fire draws the kit\'s burning floor from the hazards pack, the bodies in it burn with feet flames, and it leaves soot (K11)', async () => {
+  const atlas = await loadedAtlas();
+  assert.equal(await atlas.load('hazards'), true);
+  const pack = ATLAS_MANIFEST.packs.hazards;
+  const shows = (images, prefix) => {
+    const keys = new Set(Object.entries(pack.frames).filter(([key]) => key.startsWith(prefix)).map(([, frame]) => `${pack.pages[frame[0]]}:${frame[1]},${frame[2]}`));
+    return images.some((draw) => keys.has(`${draw.image.url}:${draw.sx},${draw.sy}`));
+  };
+  const { engine, images } = arena(1, 2, atlas);
+  try {
+    engine.probe.setGodMode();
+    const { player } = engine.probe.read();
+    engine.probe.spawnEnemy({ tier: 'small', x: player.x + 30, y: player.y, speed: 0, damage: 0, hp: 1e6 });
+    engine.probe.addHazard({ kind: 'fire', x: player.x, y: player.y, radius: 90, life: 5, maxLife: 5, damage: 4, slow: 1, triggered: false });
+    engine.probe.step(2);
+    images.length = 0;
+    engine.probe.render(1);
+    assert.ok(shows(images, 'hazard/fire/cluster-l-a-ignite/') || shows(images, 'hazard/fire/cluster-l-b-ignite/'), 'it flares up first');
+    engine.probe.step(30);
+    images.length = 0;
+    engine.probe.render(1);
+    assert.ok(shows(images, 'hazard/fire/cluster-l-') && shows(images, 'hazard/fire/cluster-s-'), 'body clusters and the rim ring burn');
+    assert.ok(shows(images, 'hazard/fire/char-') && shows(images, 'hazard/fire/ember-'), 'over char, with embers');
+    assert.ok(shows(images, 'hazard/hero/back/') && shows(images, 'hazard/hero/front/'), 'the hero stands in flames');
+    assert.ok(shows(images, 'hazard/mob/front-12/'), 'the enemy in it gets feet flames');
+    // Burned out: the renderer saw it gutter, so its cold char stays on the floor for a moment.
+    while (engine.probe.read().hazards.some((hazard) => hazard.kind === 'fire')) {
+      engine.probe.step(6);
+      engine.probe.render(1);
+    }
+    images.length = 0;
+    engine.probe.render(1);
+    assert.ok(shows(images, 'hazard/fire/char-cold-'), 'soot after the fire');
+    assert.ok(!shows(images, 'hazard/fire/cluster-'), 'and no flames');
+    engine.probe.step(120);
+    images.length = 0;
+    engine.probe.render(1);
+    assert.ok(!shows(images, 'hazard/'), 'the soot is gone 1.5 s later and the bodies no longer burn');
+  } finally {
+    engine.dispose();
+  }
+});
+
 test('without an atlas nothing is blitted (vector fallback)', () => {
   const { engine, images } = arena(1, 2, null);
   try {

@@ -1430,6 +1430,14 @@ export class GameEngine {
       return 'FIRE';
     }
 
+    // K11: map fires of four sizes round the player, burning for good like a stage's own, to see the fire art at 60-98.
+    if (code === 'FIRES') {
+      for (const [dx, dy, radius] of [[-380, -170, 60], [-320, 190, 98], [340, -170, 86], [380, 190, 74]] as const) {
+        this.hazards.push({ id: this.nextId(), kind: 'fire', x: this.player.x + dx, y: this.player.y + dy, radius, life: Number.POSITIVE_INFINITY, maxLife: Number.POSITIVE_INFINITY, damage: 3, slow: 1, triggered: false });
+      }
+      return 'FIRES';
+    }
+
     // CON-06: takes the stage's boss to just past its next phase, to see its phase move and line.
     if (code === 'PHASE') {
       const boss = this.enemies.find((enemy) => enemy.isBoss && !enemy.legacyBoss && enemy.boss?.role !== 'field' && enemy.hp > 0);

@@ -88,6 +88,13 @@ export const CHAPTER_PACKS: Readonly<Record<number, string>> = Object.freeze({ 1
 export const COMMON_PACK = 'common';
 /** FX-06, FX-07: the skill VFX stamps, loaded with the common pack and kept for the whole session. */
 export const SKILLS_PACK = 'skills';
+/** K11: the terrain hazard stamps, loaded with the skills pack and kept for the whole session. */
+export const HAZARDS_PACK = 'hazards';
+/**
+ * K11: the hazard kinds drawn from the kit, switched on one by one (brief §15: fire, then trap and null, shock, slow,
+ * root, water). Every other kind, and every kind while the pack is missing or failed, keeps the vector drawing (TEC-10).
+ */
+export const HAZARD_ART_KINDS: ReadonlySet<string> = new Set(['fire']);
 
 export function enemySlot(chapter: number, tier: EnemyTier, attackStyle: 'contact' | 'ranged') {
   return `enemy/${chapter}/${enemyRoleFor(tier, attackStyle)}`;

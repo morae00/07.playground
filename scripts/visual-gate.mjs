@@ -12,7 +12,7 @@ const requireGoldens = process.env.VISUAL_REQUIRE_GOLDENS !== '0';
 const maxDiffRatio = Number.parseFloat(process.env.VISUAL_MAX_DIFF_RATIO ?? '0.005');
 const pixelTolerance = Number.parseInt(process.env.VISUAL_PIXEL_TOLERANCE ?? '24', 10);
 // The default matrix is the platform decision (TEC-01: minimum 1024x720, reference 1280x720 and 1440x900,
-// largest verified 1920x1080): 4 viewports x DPR 1/2 x 3 modes x 11 states = 264 captures. The modes are full
+// largest verified 1920x1080): 4 viewports x DPR 1/2 x 3 modes x 12 states = 288 captures. The modes are full
 // motion, the system's reduced motion, and the reduced flash setting, which UI-08 separates from reduced motion.
 // The small sizes stay selectable by name (VISUAL_VIEWPORTS) to check the responsive layout.
 const viewportCatalog = [
@@ -24,7 +24,7 @@ const viewportCatalog = [
   { name: '1440x900', width: 1440, height: 900 },
   { name: '1920x1080', width: 1920, height: 1080 },
 ];
-const stateNames = ['menu', 'infinite-menu', 'infinite-playing', 'story', 'playing', 'paused', 'draft', 'bombers', 'burning', 'settlement', 'boss'];
+const stateNames = ['menu', 'infinite-menu', 'infinite-playing', 'story', 'playing', 'paused', 'draft', 'bombers', 'burning', 'fires', 'settlement', 'boss'];
 
 const defaultViewports = ['1024x720', '1280x720', '1440x900', '1920x1080'];
 
@@ -455,13 +455,21 @@ async function runScenario(page, viewport, dpr, motion) {
   await settle(page, 120);
   await captureEvidence(page, viewport, dpr, motion, 'bombers');
 
-  // The hero standing in fire (GOD is still on): the burning floor and the hero glowing coral with embers.
+  // The hero standing in fire (GOD is still on): the burning floor, and the hero in its flames, tinted coral, with
+  // embers (K11; FX-03's coral body while the hazard art is missing).
   await openCheatPanel(page);
   await enterCheat(page, 'NUKE');
   await enterCheat(page, 'FIRE');
   await page.keyboard.press('Escape');
   await settle(page, 300);
   await captureEvidence(page, viewport, dpr, motion, 'burning');
+
+  // K11: map fires of radius 60, 74, 86, and 98 round the hero, beside the two above.
+  await openCheatPanel(page);
+  await enterCheat(page, 'FIRES');
+  await page.keyboard.press('Escape');
+  await settle(page, 200);
+  await captureEvidence(page, viewport, dpr, motion, 'fires');
 
   await openCheatPanel(page);
   await enterCheat(page, 'CLEAR');

@@ -422,9 +422,26 @@ export const SKILL_VFX_TIMING = Object.freeze({
 /** Drawing constants for the renderer (brief §9 defaults): clone opacity, pop rise and rate, the eclipse slash inset. */
 export const SKILL_VFX_RENDER = Object.freeze({ cloneAlpha: 0.8, popRise: 4, popEvery: 1.5, rayInset: 2, boltFps: 12 });
 
+/**
+ * Terrain hazards (K11; kit PN.hazards, API-hazards): the bake expands every stamp of the nine groups (seven kinds, the
+ * hero's and enemies' overlays) into a pack of their own, `hazard/<group>/<part>/<frame>`. The kit's SPEC, part rules,
+ * and states go into the manifest as data (`manifest.hazards`), with the layout and ember vectors the renderer's port is
+ * tested against (API §8.13, C9): [kind, r, seed, lod] and [r, seed, t]; `hero` is the hero's ember clock.
+ * `render.fireStamps` is the renderer's cap on fire stamps a screen (full, reduced, minimal). The kit's SPEC fire.caps
+ * is 72 / 40 / 20; full detail is raised to 120 of the 160 terrain stamps (review 2 §8-5), measured on the bench's
+ * terrain bundle (docs/QUALITY_GATES.md), so a screen of map fires keeps their rim rings.
+ */
+export const HAZARD_VECTORS = Object.freeze({
+  layout: [['fire', 50, 1], ['fire', 74, 7], ['fire', 98, 7], ['fire', 150, 23], ['fire', 150, 23, 'reduced'], ['fire', 150, 23, 'minimal']],
+  embers: [[50, 1, 0.3], [74, 7, 0.3], [98, 7, 0.3], [150, 23, 0.3]],
+  hero: 0.3,
+});
+export const HAZARD_RENDER = Object.freeze({ fireStamps: [120, 40, 20] });
+
 export const PACKS = Object.freeze({
   common: { page: 'assets/atlas/common', frames: [...heroFrames(), ...hitFrames(), ...pickupFrames()], animations: fxAnimations() },
   skills: { page: 'assets/packs/skills/atlas', frames: [{ skillVfx: true }] },
+  hazards: { page: 'assets/packs/hazards/atlas', frames: [{ hazards: true }] },
   'chapter-01': chapterPack(1),
   'chapter-02': chapterPack(2),
   'chapter-03': chapterPack(3),

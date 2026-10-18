@@ -38,6 +38,7 @@ import { AnimationBook, SPAWN_SECONDS, enemyPoses, heroPoses, poseFrame, stepBos
 import { phaseFor, type GroundTile, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
 import { CHAPTER_PACKS, COMMON_PACK, FX_SLOT, HERO_SLOT, PICKUP_SLOT, bomberSlot, characterPack, characterSlot, bossSlot, bossState, enemyDrawScale, enemySlot, frameKey, pickupState, slotEnabled, type BossPose, type BossSlot } from './assets/slots.ts';
 import { GameRenderer } from './GameRenderer.ts';
+import { HazardPainter } from './hazardArt.ts';
 import { NumberGlyphs, type NumberStyle } from './numberGlyphs.ts';
 import { shakeOffset } from '../presentation/viewCamera.ts';
 import { NEUTRAL, SIGNAL, rgba } from './palette.ts';
@@ -320,6 +321,13 @@ export class WorldRenderer {
   /** Skill VFX from the kit (FX-06, FX-07); skillArt is false while its pack or data is missing (vectors draw). */
   private readonly vfx = new SkillVfxPainter();
   private skillArt = false;
+  /** Terrain hazards from the kit (K11); terrainArt is false while their pack or data is missing (vectors and FX-03 draw). */
+  private readonly terrain = new HazardPainter();
+  private terrainArt = false;
+  /** When the hero's burn began (sim seconds, -1 when not burning), and the burning enemies that get feet flames. */
+  private burnSince = -1;
+  private readonly mobFlames = new Set<number>();
+  private readonly fires: Readonly<Hazard>[] = [];
   /** Each passive as last seen ("level" plus "a" once awakened), the pops showing, and the clock they were read at. */
   private readonly passives = new Map<SkillId, string>();
   private readonly pops: { skillId: SkillId; at: number; awakened: boolean }[] = [];
@@ -402,6 +410,9 @@ export class WorldRenderer {
     this.visual.beginFrame(snapshot);
     this.stats.detail = snapshot.detail;
     this.skillArt = this.vfx.begin(this.sprites, world.elapsed, policy.reduced, policy.flashStrength, snapshot.detail === 'minimal');
+    this.terrainArt = this.terrain.begin(this.sprites, world.elapsed, policy.reduced, policy.flashStrength, snapshot.detail);
+    if (this.terrainArt) this.terrain.track(world.hazards);
+    this.burnSince = world.player.burn <= 0 ? -1 : this.burnSince < 0 || this.burnSince > world.elapsed ? world.elapsed : this.burnSince;
     this.trackPassives();
     this.trackInvulnerability();
     for (const key of ['silence', 'root'] as const) {
@@ -452,6 +463,7 @@ export class WorldRenderer {
       case 'ground':
         this.drawWorld(ctx);
         this.drawCorpseStains(ctx);
+        if (this.terrainArt) this.terrain.drawSoot(ctx, this.viewport);
         return;
       case 'hazards':
         this.drawHazards(ctx);
@@ -470,6 +482,7 @@ export class WorldRenderer {
         for (const body of this.sortedBodies) if (body.obstacle && !this.obstacleFrame(body.obstacle)) this.visual.drawObstacleShadow(ctx, body.obstacle);
         return;
       case 'bodies':
+        this.pickMobFlames();
         for (const body of this.sortedBodies) this.drawBody(ctx, body);
         return;
       case 'overheads':
@@ -836,6 +849,8 @@ export class WorldRenderer {
     for (const zone of this.world.zones) {
       if (circleVisible(this.viewport, zone.x, zone.y, zone.radius + 8)) this.visual.drawHazard(ctx, zone, 1, ZONE_ART);
     }
+    const fires = this.fires;
+    fires.length = 0;
     for (const ally of [true, false]) {
       for (const hazard of this.world.hazards) {
         if (allyZone(hazard) !== ally || !circleVisible(this.viewport, hazard.x, hazard.y, hazard.radius * 1.25 + 8)) continue;
@@ -843,10 +858,26 @@ export class WorldRenderer {
           this.drawAllyZone(ctx, hazard);
           continue;
         }
+        // K11: kinds the kit draws are drawn together after the rest, with no glyph and no life fade.
+        if (this.terrainArt && this.terrain.drawn(hazard.kind)) {
+          fires.push(hazard);
+          continue;
+        }
         const fadedRoot = hazard.kind === 'root' && this.world.player.rootImmunity > 0;
         this.visual.drawHazard(ctx, hazard, fadedRoot ? 0.35 : 1);
       }
     }
+    if (fires.length) this.terrain.drawFires(ctx, fires, this.world.player.x, this.world.player.y);
+  }
+
+  /** K11: the burning sprite enemies that get feet flames this frame, nearest the hero first, up to the cap (API §3.5). */
+  private pickMobFlames() {
+    this.mobFlames.clear();
+    if (!this.terrainArt) return;
+    const { x, y } = this.world.player;
+    const burning = this.sortedBodies.filter((body) => body.sprite && (body.enemy?.burn ?? 0) > 0 && !body.enemy!.isBoss);
+    burning.sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y));
+    for (const body of burning.slice(0, this.terrain.mobCap())) this.mobFlames.add(body.id);
   }
 
   /**
@@ -1541,7 +1572,10 @@ export class WorldRenderer {
       const flash = hitFlashAlpha(enemy.hitFlash) * motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion).flashStrength;
       const silhouette = flash > 0 ? this.silhouette(frame) : null;
       if (silhouette) this.blit(ctx, silhouette, x, y, facing, scale, flash * rise);
-      if (enemy.burn) this.drawBurning(ctx, frame, x, y, facing, scale, enemy.burn, enemy.id);
+      // K11: feet flames only (no body tint, V2); FX-03's coral body stands in while the hazard art is missing.
+      if (this.terrainArt) {
+        if (this.mobFlames.has(enemy.id)) this.terrain.mobFlames(ctx, x, y, enemy.radius, facing);
+      } else if (enemy.burn) this.drawBurning(ctx, frame, x, y, facing, scale, enemy.burn, enemy.id);
       return;
     }
     if (rise < 1) {
@@ -1685,9 +1719,17 @@ export class WorldRenderer {
         this.blitTilted(ctx, this.hero, body.x, body.y, tilt, 1);
         return;
       }
-      this.drawHeroOutline(ctx, this.hero, body.x, body.y, this.heroAnim?.facing ?? 1);
-      this.blit(ctx, this.hero, body.x, body.y, this.heroAnim?.facing ?? 1, 1);
-      this.drawBurning(ctx, this.hero, body.x, body.y, this.heroAnim?.facing ?? 1, 1, this.world.player.burn, 0);
+      const facing = this.heroAnim?.facing ?? 1;
+      // K11 (API §9): feet flames behind and before the body, the coral multiply tint, and embers; FX-03 without the art.
+      const fire = this.terrainArt && this.world.player.burn > 0;
+      if (fire) this.terrain.heroFlames(ctx, 'back', body.x, body.y, facing);
+      this.drawHeroOutline(ctx, this.hero, body.x, body.y, facing);
+      this.blit(ctx, this.hero, body.x, body.y, facing, 1);
+      if (fire) {
+        const hurt = this.drawHeroTint(ctx, this.hero, body.x, body.y, 1);
+        this.terrain.heroFlames(ctx, 'front', body.x, body.y, facing);
+        if (hurt) this.terrain.heroEmbers(ctx, body.x, body.y, facing);
+      } else if (!this.terrainArt) this.drawBurning(ctx, this.hero, body.x, body.y, facing, 1, this.world.player.burn, 0);
       // The paper ward's plates float round the hero while the softened hit's immunity runs (FX-06).
       if (this.skillArt && this.invulnSource === 'ward') this.vfx.stamp(ctx, 'paperWard', 'plates', body.x, body.y, 0, 1 - this.world.player.invuln / Math.max(1e-6, this.invulnSpan));
       this.drawHeroMarks(ctx, body.x, body.y, this.hero);
@@ -1731,6 +1773,24 @@ export class WorldRenderer {
       ctx.stroke();
     }
     ctx.restore();
+  }
+
+  /**
+   * K11 (API §3.2): while fire hurts the hero (no shield left to stop it), its cut-out multiplies coral over it, so the
+   * ink stays black and the scarf cyan. True when it drew.
+   */
+  private drawHeroTint(ctx: CanvasRenderingContext2D, frame: SpriteFrame, x: number, y: number, strength: number) {
+    const { player, options, elapsed, reducedMotion } = this.world;
+    if (!this.terrainArt || player.burn <= 0 || player.shield > 0 || player.hp <= 0) return false;
+    const policy = motionPolicy(options.reducedFlash, reducedMotion);
+    const alpha = this.terrain.tintAlpha(elapsed - this.burnSince, player.burn, policy.reduced || policy.flashStrength < 1) * strength;
+    const cutout = this.silhouette(frame, SIGNAL.hostile, this.burnCutouts);
+    if (!cutout) return false;
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+    this.blit(ctx, cutout, x, y, this.heroAnim?.facing ?? 1, 1, alpha);
+    ctx.restore();
+    return true;
   }
 
   /** The hero falls back over the death moment (FX-03) and lies still until the settlement; upright otherwise. */
@@ -1855,7 +1915,13 @@ export class WorldRenderer {
       // The hero is redrawn half-transparent over whatever covers it, with the hit circle (BUG-12).
       const tilt = this.heroTilt();
       if (tilt !== 0) this.blitTilted(ctx, this.hero, player.x, player.y, tilt, 0.6);
-      else this.blit(ctx, this.hero, player.x, player.y, this.heroAnim?.facing ?? 1, 1, 0.6);
+      else {
+        this.blit(ctx, this.hero, player.x, player.y, this.heroAnim?.facing ?? 1, 1, 0.6);
+        // K11: the tint at 0.6 (API §3.2), and the front flames, so the burn numbers that bring the x-ray on do not
+        // wash the hero's feet out of the fire.
+        this.drawHeroTint(ctx, this.hero, player.x, player.y, 0.6);
+        if (this.terrainArt && this.world.player.burn > 0) this.terrain.heroFlames(ctx, 'front', player.x, player.y, this.heroAnim?.facing ?? 1, 0.6);
+      }
       ctx.save();
       ctx.setLineDash([4, 4]);
       ctx.strokeStyle = SIGNAL.ally;
