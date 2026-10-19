@@ -18,8 +18,9 @@ test('the baked manifest is complete: every animation frame exists and sits insi
       assert.ok(page < sizes.length, `${packName} ${key} page`);
       assert.ok(x >= 0 && y >= 0 && x + w <= sizes[page].width && y + h <= sizes[page].height, `${packName} ${key} is inside its page`);
       // Skill stamps (FX-06) anchor where they sit in the world, which can be just off the drawing: a pop's anchor is
-      // the head it floats over, a mark's the body it hangs above. So do hazard stamps (K11): smoke rises off its base.
-      const slack = key.startsWith('skill/') || key.startsWith('hazard/') ? 64 : 0;
+      // the head it floats over, a mark's the body it hangs above. So do hazard stamps (K11): smoke rises off its base;
+      // and weapon stamps (K10): a lance's tassel and an ink box sit 26 or more behind the beam's start.
+      const slack = key.startsWith('skill/') || key.startsWith('hazard/') || key.startsWith('afx/') ? 64 : 0;
       assert.ok(ax >= -slack && ax <= w + slack && ay >= -slack && ay <= h + 4 + slack, `${packName} ${key} anchor lies on the drawing`);
     }
   }

@@ -430,6 +430,8 @@ export type BeamEffect = {
   owner: EffectOwner;
   /** FX-06: the skill that cast a player's beam, for its art; hostile beams have none. */
   skillId?: SkillId;
+  /** K10 looks only: an awakening gimmick's line (a fork, a sweep back, an unrolling scroll), drawn as the gimmick's. */
+  echo?: true;
 };
 
 /** A hostile area the player can read before it activates (lane = rectangle from start to end). */
@@ -446,12 +448,22 @@ export type LaneTelegraph = {
 
 export type ChainEffect = {
   id: number;
-  points: Array<{ x: number; y: number }>;
+  /** K10 looks only: `r` is the radius of the enemy a weapon's chain reached there (its ice comes in that size). */
+  points: Array<{ x: number; y: number; r?: number }>;
   life: number;
   maxLife: number;
   /** FX-06: the white chain's bolt, or the thread from the hero to a mirror clone. */
   skillId: SkillId;
+  /** K10 looks only: an awakening gimmick's chain (a thread running back, a leap, a shared hit's flash). */
+  echo?: true;
 };
+
+/**
+ * SYS-15: a lobbed blast on its way down: when and where it lands, how hard. K10 looks only (the simulation reads none of
+ * these): where it was thrown from (x0, y0), when (born) and for how long (delay), its place in the cast (k), and
+ * whether its weapon is awakened, for the flight art.
+ */
+export type ArsenalLob = { at: number; x: number; y: number; radius: number; damage: number; id: ArsenalId; x0: number; y0: number; born: number; delay: number; k: number; awakened: boolean };
 
 /**
  * FX-06: a skill ring or mark for the renderer: the rings no game event sizes (the white chain's last burst, the
@@ -472,6 +484,11 @@ export type SkillMark = {
   target: number;
   life: number;
   maxLife: number;
+  /** K10: the mark's cosmetic serial (the presentation's own counter, never a game id), the seed of its jitter. */
+  seed?: number;
+  /** K10: an awakening gimmick's blast, and the way the lob flew that ended in this one (see `area/blast`). */
+  echo?: true;
+  dir?: -1 | 1;
 };
 
 /** SYS-14 (K7): a bomber's blast drawing, shown for a moment where it went off. */

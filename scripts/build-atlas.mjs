@@ -4,11 +4,11 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { ATLAS_SCALE, BAKE_MARGIN, COLOR_MAP, ENEMY_ROLES, FRAME_PADDING, GROUND_TILE, HAZARD_RENDER, HAZARD_VECTORS, HERO_STATES, PACKS, PAGE_SIZE, SKILL_VFX_RENDER, SKILL_VFX_TIMING } from '../art/atlas-spec.mjs';
+import { ARSENAL_FX_VECTORS, ATLAS_SCALE, BAKE_MARGIN, COLOR_MAP, ENEMY_ROLES, FRAME_PADDING, GROUND_TILE, HAZARD_RENDER, HAZARD_VECTORS, HERO_STATES, PACKS, PAGE_SIZE, SKILL_VFX_RENDER, SKILL_VFX_TIMING } from '../art/atlas-spec.mjs';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const kitDir = path.join(root, 'art/concept-kit');
-const KIT_FILES = ['lib.js', 'k-hero.js', 'k-characters.js', 'k-skills-vfx.js', 'k-enemies.js', 'k-bombers.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses3.js', 'k-bosses4.js', 'k-icons.js', 'k-icons2.js', 'k-env.js', 'k-hazards.js'];
+const KIT_FILES = ['lib.js', 'k-hero.js', 'k-characters.js', 'k-skills-vfx.js', 'k-enemies.js', 'k-bombers.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses3.js', 'k-bosses4.js', 'k-icons.js', 'k-icons2.js', 'k-arsenal-fx.js', 'k-env.js', 'k-hazards.js'];
 
 const browser = await chromium.launch();
 try {
@@ -51,6 +51,8 @@ try {
   manifest.skillVfx = await page.evaluate(readSkillVfx, { timing: SKILL_VFX_TIMING, render: SKILL_VFX_RENDER });
   // K11: the terrain hazards' shapes, part rules, states, and the layout vectors their renderer port is tested against.
   manifest.hazards = await page.evaluate(readHazards, { vectors: HAZARD_VECTORS, render: HAZARD_RENDER });
+  // K10: the weapons' field effects: their shapes, the drawn weapons' numbers, part rules, and the vectors their port is tested against.
+  manifest.arsenalFx = await page.evaluate(readArsenalFx, ARSENAL_FX_VECTORS);
   // SYS-14 (K7): where the fuse bomber's wick ends in each frame (the same rig in every chapter), for the spark.
   manifest.bombers = await page.evaluate(() => {
     const { feet, displayScale, wick } = window.PN.bombers.meta(1, 'fuse');
@@ -208,9 +210,58 @@ function readHazards({ vectors, render }) {
   return JSON.parse(text);
 }
 
+/**
+ * K10 (API-arsenal-fx §3-§8): the kit's SPEC, the drawn weapons' META without their names, every part's rule, and the
+ * C9 vectors from the kit's own layout(), paths(), and lobPath() (layout items [part, x, y, angle, flip, phase, prio, z],
+ * points rounded as C9 prints them), so the renderer's TypeScript port is tested against the kit itself. No text may be
+ * Korean.
+ */
+function readArsenalFx({ cases, lob }) {
+  const X = window.PN.arsenalFx;
+  const r = (value, places = 2) => Math.round(value * 10 ** places) / 10 ** places + 0;
+  const parts = {};
+  for (const group of X.groups) parts[group] = Object.fromEntries(X.parts(group).map(({ part, ...rule }) => [part, rule]));
+  const meta = {};
+  for (const id of X.ids) {
+    const { kind, look, geo, main, stages, done } = X.META[id];
+    if (stages.length) meta[id] = { kind, look, geo, main, stages, done };
+  }
+  const vectors = {
+    cases: cases.filter(([id, stage]) => meta[id]?.stages.includes(stage)).map(([id, stage, opts]) => [id, stage, opts,
+      X.layout(id, stage, opts).map((q) => [q.part, r(q.x), r(q.y), r(q.angle, 3), q.flip ? 1 : 0, r(q.phase, 3), q.prio, q.z]),
+      Object.fromEntries(Object.entries(X.paths(id, stage, opts)).map(([name, pts]) => [name, pts.map((p) => [r(p[0]), r(p[1])])]))]),
+    lob: Object.fromEntries(Object.keys(X.SPEC.lob).map((id) => [id, lob.t.map((t) => {
+      const p = X.lobPath(id, { x0: 0, y0: 0, x1: lob.to[0], y1: lob.to[1], t });
+      return [t, r(p.x), r(p.y), r(p.h), r(p.angle, 3), r(p.shadow.rx), r(p.shadow.alpha, 3)];
+    })])),
+    mini: lob.mini.map(([x1, y1]) => [x1, y1, lob.t.map((t) => {
+      const p = X.lobPath('clusterPots', { x0: 0, y0: 0, x1, y1, t, mini: true });
+      return [t, r(p.x), r(p.y), r(p.h), r(p.angle, 3), r(p.shadow.rx), r(p.shadow.alpha, 3)];
+    })]),
+  };
+  const data = { version: X.SPEC.version, spec: X.SPEC, meta, parts, vectors };
+  const text = JSON.stringify(data);
+  if (/[\uAC00-\uD7A3]/.test(text)) throw new Error('arsenal fx data carries Korean text; strings belong in the string tables');
+  return JSON.parse(text);
+}
+
 async function renderFrames({ frames, scale, margin, colorMap, roles }) {
   const expanded = [];
   for (const frame of frames) {
+    if (frame.arsenalFx) {
+      // K10: every stamp of every weapon group the kit has drawn (PN.arsenalFx.groups), anchored where it sits.
+      const X = window.PN.arsenalFx;
+      for (const group of X.groups) {
+        const parts = X.parts(group);
+        for (const p of parts) {
+          for (let index = 0; index < p.frames; index += 1) {
+            expanded.push({ key: `afx/${group}/${p.part}/${index}`, call: ['PN.arsenalFx.stamp', group, p.part, { frame: index }], box: p.box, anchor: p.anchor, scale: 1 });
+          }
+        }
+        expanded.at(-1).animation = { key: `afx/${group}`, spec: Object.fromEntries(parts.map((p) => [p.part, { frames: p.frames, fps: p.drive === 'loop' ? p.fps : 0 }])) };
+      }
+      continue;
+    }
     if (frame.hazards) {
       // K11: every stamp of every hazard group (PN.hazards.parts), anchored where it sits in the world.
       const H = window.PN.hazards;

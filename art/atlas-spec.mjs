@@ -444,10 +444,47 @@ export const HAZARD_VECTORS = Object.freeze({
 });
 export const HAZARD_RENDER = Object.freeze({ fireStamps: [120, 40, 20] });
 
+/**
+ * The weapons' field effects (K10; kit PN.arsenalFx, API-arsenal-fx): the bake expands every stamp of every group the
+ * kit has drawn into a pack of their own, `afx/<group>/<part>/<frame>`. The kit's SPEC, META (numbers and words only),
+ * part rules, and the vectors the renderer's port is tested against go into the manifest (`manifest.arsenalFx`): the
+ * C9 cases [id, stage, opts] of the brief's §7.2 the kit has drawn, review 1's three, and awakened, LOD, and reduced
+ * motion cases, each run through the kit's layout() and paths(); and lobPath() at five points of a throw to (320, −120),
+ * and the cluster pots' mini path to (±60, 0) (delivery 2).
+ */
+const AFX_POINTS = [{ x: 0, y: 0 }, { x: 220, y: -70 }, { x: 420, y: 20 }, { x: 640, y: -40 }, { x: 860, y: 30 }];
+export const ARSENAL_FX_VECTORS = Object.freeze({
+  cases: [
+    ['inkPulse', 'burst', { radius: 151, seed: 7 }], ['frostRing', 'burst', { radius: 178, seed: 7 }], ['thunderclap', 'burst', { radius: 136, seed: 5 }],
+    ['silenceBell', 'burst', { radius: 244, seed: 5 }], ['brushDownpour', 'impact', { radius: 46, seed: 3 }], ['meteorBrush', 'land', { radius: 160, seed: 3 }],
+    ['eclipseHalo', 'sweep', { radius: 230, inner: 110, seed: 6, p: 0.5 }], ['inkOrbit', 'sweep', { radius: 132, inner: 40, seed: 6, p: 0.5 }],
+    ['wardRing', 'sweep', { radius: 100, inner: 0, seed: 6, p: 0.5 }], ['sparkThread', 'jump', { points: AFX_POINTS, seed: 1 }],
+    ['stormThread', 'jump', { points: AFX_POINTS, seed: 1 }], ['frostChainlet', 'jump', { points: AFX_POINTS, seed: 1 }],
+    ['inkLance', 'stroke', { length: 640, width: 12, seed: 1 }], ['wideBrush', 'stroke', { length: 410, width: 34, seed: 1 }],
+    ['crossStrokes', 'stroke', { length: 496, width: 14, seed: 1 }], ['judgmentLine', 'stroke', { length: 960, width: 18, seed: 1 }],
+    ['inkPots', 'land', { radius: 92, seed: 9 }], ['clusterPots', 'land', { radius: 64, seed: 9 }], ['fallingScroll', 'impact', { radius: 110, seed: 4 }],
+    ['inkPulse', 'burst', { radius: 162, seed: 3, awakened: true, p: 0.1 }], ['frostRing', 'burst', { radius: 192, seed: 2, awakened: true }],
+    ['frostRing', 'burst', { radius: 178, seed: 7, lod: 'minimal' }], ['silenceBell', 'burst', { radius: 290, seed: 4, awakened: true, p: 0.6 }],
+    ['thunderclap', 'burst', { radius: 150, seed: 2, t: 0.1, reduced: true }], ['brushDownpour', 'impact', { radius: 75, seed: 5, awakened: true }],
+    ['seventhSeal', 'impact', { radius: 58, seed: 12 }], ['fallingScroll', 'impact', { radius: 132, seed: 7, awakened: true }],
+    ['inkLightning', 'impact', { radius: 67, seed: 8, awakened: true }], ['tarJar', 'land', { radius: 114, seed: 9 }],
+    ['meteorBrush', 'land', { radius: 192, seed: 11, awakened: true }], ['meteorBrush', 'land', { radius: 160, seed: 3, lod: 'reduced' }],
+    ['inkPots', 'land', { radius: 92, seed: 9, lod: 'minimal' }], ['sparkThread', 'jump', { points: AFX_POINTS, seed: 1, awakened: true }],
+    ['stormThread', 'jump', { points: AFX_POINTS, seed: 4, t: 0.1 }],
+    ['frostChainlet', 'jump', { points: AFX_POINTS.map((p, i) => ({ ...p, r: [0, 12, 28, 19, 54][i] })), seed: 3 }],
+    ['inkLance', 'stroke', { length: 760, width: 14.4, seed: 3, awakened: true, p: 0.8 }], ['wideBrush', 'stroke', { length: 480, width: 40.8, seed: 5, p: 0.1 }],
+    ['crossStrokes', 'stroke', { length: 496, width: 16.8, seed: 2, awakened: true, p: 0.2 }], ['judgmentLine', 'stroke', { length: 1000, width: 21.6, seed: 2, awakened: true, p: 0.04 }],
+    ['inkOrbit', 'sweep', { radius: 150, inner: 40, seed: 9, awakened: true, p: 0.7 }], ['wardRing', 'sweep', { radius: 110, inner: 0, seed: 3, awakened: true, p: 0.5 }],
+    ['eclipseHalo', 'sweep', { radius: 250, inner: 110, seed: 2, awakened: true, p: 0.3 }], ['eclipseHalo', 'sweep', { radius: 230, inner: 110, seed: 6, p: 0.5, reduced: true }],
+  ],
+  lob: { to: [320, -120], t: [0, 0.25, 0.5, 0.75, 1], mini: [[60, 0], [-60, 0]] },
+});
+
 export const PACKS = Object.freeze({
   common: { page: 'assets/atlas/common', frames: [...heroFrames(), ...hitFrames(), ...pickupFrames()], animations: fxAnimations() },
   skills: { page: 'assets/packs/skills/atlas', frames: [{ skillVfx: true }] },
   hazards: { page: 'assets/packs/hazards/atlas', frames: [{ hazards: true }] },
+  'arsenal-fx': { page: 'assets/packs/arsenal-fx/atlas', frames: [{ arsenalFx: true }] },
   'chapter-01': chapterPack(1),
   'chapter-02': chapterPack(2),
   'chapter-03': chapterPack(3),

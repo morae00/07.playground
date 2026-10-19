@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { ATLAS_MANIFEST } from './assets/atlasManifest.generated.ts';
 import { hazardTokenColor } from './hazardArt.ts';
+import { tokenColor, type Token } from './skillVfx.ts';
 import { NEUTRAL, SIGNAL, signalFamily } from './palette.ts';
 import { BOSS_ART, CHAPTER_ART, HAZARD_ART, HOSTILE_PROJECTILE_ART, VISUAL_PALETTE } from './visualRegistry.ts';
 
@@ -87,8 +88,24 @@ test('K11: the kit SPEC of each hazard kind keeps its owner\'s colours (brief §
   }
 });
 
+test('K10: the weapons\' field effects are the player\'s (brief §1.7): every SPEC token ally cyan or neutral, and a palette colour', () => {
+  const tokens = new Set<string>();
+  JSON.stringify(ATLAS_MANIFEST.arsenalFx.spec, (key, value) => {
+    if (Array.isArray(value) && typeof value[0] === 'string' && typeof value[1] === 'number') tokens.add(value[0]);
+    if (['token', 'body', 'fill'].includes(key) && typeof value === 'string') tokens.add(value);
+    return value;
+  });
+  for (const name of ['ink', 'ink300', 'p50', 'p300', 'ally', 'allyG']) assert.ok(tokens.has(name), `the SPEC draws with ${name}`);
+  for (const token of tokens) {
+    if (/^(fills|lob)\./.test(token) || token.includes('.')) continue;
+    const color = tokenColor(token as Token);
+    assert.ok(color, `${token} maps to the palette`);
+    assert.ok([null, 'ally'].includes(signalFamily(color)), `${token} reads as ${signalFamily(color)}`);
+  }
+});
+
 test('renderer and engine sources draw signal colours only through palette tokens', () => {
-  for (const file of ['../GameEngine.ts', './GameRenderer.ts', './skillVfx.ts', './hazardArt.ts']) {
+  for (const file of ['../GameEngine.ts', './GameRenderer.ts', './skillVfx.ts', './hazardArt.ts', './arsenalFx.ts']) {
     const source = readFileSync(new URL(file, import.meta.url), 'utf8');
     for (const [literal] of source.matchAll(/#[0-9a-fA-F]{6}\b/g)) {
       assert.equal(signalFamily(literal), null, `${file} hardcodes signal colour ${literal}; use SIGNAL tokens`);

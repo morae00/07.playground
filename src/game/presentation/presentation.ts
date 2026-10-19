@@ -27,6 +27,11 @@ export type PresentationHost = {
   chapter(): number;
   /** The player's skills (FX-06): a coin's glint and the execution mark show only with their passive. */
   skills?(): Readonly<Partial<Record<SkillId, Readonly<SkillState>>>>;
+  /**
+   * K10: how long a weapon's blast or sweep shows when the kit draws it (its SPEC life: the ring, then its decal), or
+   * undefined to keep SKILL_MARK_SECONDS (the look's art). Looks only.
+   */
+  markSeconds?(skillId: SkillId): number | undefined;
 };
 
 const PARTICLE_CAP_FULL = 520;
@@ -37,7 +42,8 @@ export const NUMBER_MERGE_SECONDS = 0.3;
 const IMPACT_RING_CAP = 32;
 /** FX-06: how long each skill mark shows (the kit's thread ring and collapse, the slash ring, a shard), and how many. */
 export const SKILL_MARK_SECONDS = Object.freeze({ ring: 0.3, slash: 0.2, shard: 0.12, pulse: 0.55, glint: 0.12, mark: 0.3 });
-const SKILL_MARK_CAP = 48;
+/** K10: weapon blasts stay through their decals (up to 1.5 s), so a crowd of casts needs more room than the 48 of FX-06. */
+const SKILL_MARK_CAP = 64;
 /** The execution mark shows at most once per enemy per its 0.3 s, and this many at once. */
 const EXECUTION_MARK_CAP = 12;
 /** Ink stains on the floor (style bible P6): 48 at full effects, 24 at reduced; the renderer drops them at minimal detail. */
@@ -103,6 +109,8 @@ export class Presentation {
   /** S4: each planted bomber's fuse voice (enemy id to voice id), stopped if the bomber is felled first. */
   private readonly fuses = new Map<number, number>();
   readonly skillMarks: SkillMark[] = [];
+  /** K10: the marks' cosmetic serial, the seed of their jitter; its own counter, so it never moves a game id (BUG-08). */
+  private markSerial = 0;
   readonly corpses: Corpse[] = [];
   readonly hitStamps: HitStamp[] = [];
   readonly recoils: Recoil[] = [];
@@ -294,7 +302,7 @@ export class Presentation {
         this.burst(event.x, event.y, Math.round(22 * effects), '#050505', 230);
         return;
       case 'area/blast':
-        this.addSkillMark('ring', event.source, event.x, event.y, event.radius, false, event.x, event.y);
+        this.addSkillMark('ring', event.source, event.x, event.y, event.radius, false, event.x, event.y, -1, event.echo, event.dir);
         if (lookOf(event.source) === 'boneMortar') this.addShake(8);
         return;
       case 'vortex/collapse':
@@ -520,11 +528,14 @@ export class Presentation {
     this.impactRings.push({ x, y, radius, life: 0.24, maxLife: 0.24, tier, owner: 'player' });
   }
 
-  /** FX-06: a skill ring or stroke from the engine; it draws no ids or cosmetic random numbers. */
-  addSkillMark(kind: SkillMark['kind'], skillId: SkillId, x: number, y: number, radius: number, heavy: boolean, x2: number, y2: number, target = -1) {
+  /**
+   * FX-06: a skill ring or stroke from the engine; it draws no ids or cosmetic random numbers. K10: a weapon's own ring
+   * (not a gimmick's echo or the total eclipse) lasts as long as the kit's art for it, and carries the lob's way.
+   */
+  addSkillMark(kind: SkillMark['kind'], skillId: SkillId, x: number, y: number, radius: number, heavy: boolean, x2: number, y2: number, target = -1, echo?: true, dir?: -1 | 1) {
     if (this.skillMarks.length >= SKILL_MARK_CAP) this.skillMarks.shift();
-    const life = SKILL_MARK_SECONDS[kind];
-    this.skillMarks.push({ kind, skillId, x, y, radius, heavy, x2, y2, target, life, maxLife: life });
+    const life = (kind === 'ring' && !heavy && !echo && this.host.markSeconds?.(skillId)) || SKILL_MARK_SECONDS[kind];
+    this.skillMarks.push({ kind, skillId, x, y, radius, heavy, x2, y2, target, life, maxLife: life, seed: (this.markSerial += 1), ...(echo ? { echo } : {}), ...(dir ? { dir } : {}) });
   }
 
   private addExecutionMark(target: number, x: number, y: number) {

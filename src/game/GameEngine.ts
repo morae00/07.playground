@@ -149,6 +149,7 @@ import type {
   Pickup,
   Projectile,
   ArsenalId,
+  ArsenalLob,
   SkillId,
   SkillMark,
   SkillState,
@@ -912,7 +913,7 @@ export class GameEngine {
   /** SYS-12: how fast the player felled infinite bosses lately (health per second, blended over the fights). */
   protected bossDps = 0;
   /** SYS-15: lobbed blasts on their way down, and the way the player last moved (for the weapons that fire behind). */
-  protected arsenalLobs: { at: number; x: number; y: number; radius: number; damage: number; id: ArsenalId }[] = [];
+  protected arsenalLobs: ArsenalLob[] = [];
   protected lastMove = { x: 1, y: 0 };
   /** FX-03: fire damage taken since the last burn number, and for how long (looks only). */
   protected burnShown = { damage: 0, time: 0 };
@@ -1068,7 +1069,7 @@ export class GameEngine {
     PICKUP_HARD_CAP,
   );
   /** Cosmetic state (particles, damage numbers, rings, shake, sound) lives here and only consumes events (TEC-02). */
-  protected presentation = new Presentation({ nextId: () => this.nextCosmeticId(), options: () => this.options, pan: (x) => this.screenPan(x), chapter: () => this.shownChapter, skills: () => this.skills });
+  protected presentation = new Presentation({ nextId: () => this.nextCosmeticId(), options: () => this.options, pan: (x) => this.screenPan(x), chapter: () => this.shownChapter, skills: () => this.skills, markSeconds: (id) => this.worldRenderer.markSeconds(id) });
   protected eventListeners = new Set<GameEventListener>();
   protected playerAimAngle = -Math.PI / 2;
   protected aimTargetId: number | null = null;
@@ -1358,7 +1359,7 @@ export class GameEngine {
       this.faultInjection = true;
       return 'LOOP FAULT ARMED';
     }
-    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO', 'TURN', 'PHASE', 'VFX', 'BOMB', 'FIRE', 'TERRAIN', 'BIND', 'SHOCK'].includes(code)) {
+    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO', 'TURN', 'PHASE', 'VFX', 'BOMB', 'FIRE', 'TERRAIN', 'BIND', 'SHOCK', 'AFX1', 'AFX2', 'AFX3', 'AFX4'].includes(code)) {
       this.invalidateInfiniteScore();
     }
     if (code === 'GOD') {
@@ -1477,6 +1478,63 @@ export class GameEngine {
         this.hazards.push({ id: this.nextId(), kind: 'shock', x: this.player.x + dx, y: this.player.y, radius: 190, life, maxLife, damage: 0, slow: 1, triggered: false });
       }
       return 'SHOCK';
+    }
+
+    // K10 (FX-08): the weapons' field effects round the player, in place of the field's terrain, to see the kit's art at
+    // the sizes the weapons cast it (the visual gate times its captures to these delays). AFX1: the bone mortar's six
+    // look-alikes cast in turn 0.42 s on; AFX2: the chain spark's five 0.2 s on; AFX3: the four lobs thrown at once (a
+    // meteor brush leftward, the cluster pots' three splitting) beside a coin, two jades, and a bone mortar shell; AFX4:
+    // six weapons awakened at level 5, one of each kind, over two hundred enemies.
+    if (/^AFX[1-4]$/.test(code)) {
+      const { x, y } = this.player;
+      compactWhere(this.hazards, () => false);
+      const radius = (id: ArsenalId) => arsenalStats(ARSENAL[id], 3, false).radius;
+      const blast = (id: ArsenalId, dx: number, dy: number, n = 1) => {
+        for (let k = 0; k < n; k += 1) this.emit({ type: 'area/blast', x: x + dx + (n > 1 ? Math.cos((k * Math.PI * 2) / n) * 64 : 0), y: y + dy + (n > 1 ? Math.sin((k * Math.PI * 2) / n) * 44 : 0), radius: radius(id), source: id });
+      };
+      const chain = (id: ArsenalId, dx: number, dy: number) => this.chains.push({ id: this.nextId(), points: [0, 1, 2, 3, 4].map((k) => ({ x: x + dx + k * 95, y: y + dy + (k ? (k % 2 ? -40 : 34) : 0), r: [12, 19, 28, 19, 12][k] })), life: 0.18, maxLife: 0.18, skillId: id });
+      const lob = (id: ArsenalId, k: number, x0: number, y0: number, x1: number, y1: number) => {
+        const delay = ARSENAL[id].delay ?? 0.6;
+        this.arsenalLobs.push({ at: this.elapsed + delay, x: x + x1, y: y + y1, radius: radius(id), damage: 0, id, x0: x + x0, y0: y + y0, born: this.elapsed, delay, k, awakened: false });
+      };
+      if (code === 'AFX1') {
+        const cells: [ArsenalId, number, number, number][] = [['brushDownpour', -470, -200, 4], ['fallingScroll', 0, -200, 1], ['inkPulse', 470, -200, 1], ['inkPots', -470, 210, 1], ['clusterPots', 0, 210, 3], ['meteorBrush', 470, 210, 1]];
+        cells.forEach(([id, dx, dy, n], i) => this.after(0.42 + i * 0.02, () => blast(id, dx, dy, n)));
+      } else if (code === 'AFX2') {
+        this.after(0.2, () => {
+          blast('inkLightning', 470, -200, 2);
+          blast('thunderclap', 0, -170);
+          chain('sparkThread', -640, 300);
+          chain('stormThread', -190, 300);
+          chain('frostChainlet', 260, 300);
+        });
+      } else if (code === 'AFX3') {
+        this.spawnPickup('coin', x - 430, y - 150, 0, 0, 9, 12);
+        this.spawnPickup('xp', x + 110, y + 250, 0, 0, 7, 30);
+        this.spawnPickup('xp', x + 40, y + 270, 0, 0, 7, 3);
+        lob('inkPots', 0, -580, 40, -300, -170);
+        for (let k = 0; k < 3; k += 1) lob('clusterPots', k, -40, 300, 170 + Math.cos((k * Math.PI * 2) / 3) * 70, 150 + Math.sin((k * Math.PI * 2) / 3) * 70);
+        lob('tarJar', 0, 120, -150, 420, -40);
+        lob('meteorBrush', 0, 640, 280, 300, 200);
+        this.hazards.push({ id: this.nextId(), kind: 'warning', x: x + 560, y: y - 120, radius: 110, life: 0.48, maxLife: 0.48, damage: 0, slow: 1, triggered: false, sourceSkillId: 'boneMortar', skillDamage: 0 });
+      } else {
+        const ids: ArsenalId[] = ['seventhSeal', 'silenceBell', 'frostChainlet', 'meteorBrush', 'judgmentLine', 'eclipseHalo'];
+        this.skills = Object.fromEntries(ids.map((id) => [id, { level: 5, awakened: true }]));
+        this.skillCooldowns = {};
+        this.pendingAwakenings = [];
+        this.recalculateStats(false);
+        for (let index = 0; index < 200; index += 1) {
+          this.spawnEnemy(1, index % 3 ? 'small' : 'medium');
+          const enemy = this.enemies[this.enemies.length - 1];
+          const angle = index * 2.39996, reach = 150 + Math.sqrt(index / 200) * 520;
+          enemy.x = enemy.prevX = x + Math.cos(angle) * reach * 1.25;
+          enemy.y = enemy.prevY = y + Math.sin(angle) * reach * 0.72;
+          Object.assign(enemy, { hp: enemy.maxHp * 40, maxHp: enemy.maxHp * 40 });
+        }
+        this.rebuildEnemyIndex();
+        this.emitSnapshot(true);
+      }
+      return code;
     }
 
     // CON-06: takes the stage's boss to just past its next phase, to see its phase move and line.
@@ -2592,18 +2650,20 @@ export class GameEngine {
         for (let index = 0; index < stats.count; index += 1) {
           const angle = (index * Math.PI * 2) / stats.count;
           const spread = stats.count > 1 ? weapon.scatter ?? 0 : 0;
-          this.arsenalLobs.push({ at: this.elapsed + (weapon.delay ?? 0.6), x: near.x + Math.cos(angle) * spread, y: near.y + Math.sin(angle) * spread, radius: stats.radius, damage, id });
+          // K10 looks only: where and when it was thrown, for how long, its place in the cast, and its awakening.
+          const delay = weapon.delay ?? 0.6;
+          this.arsenalLobs.push({ at: this.elapsed + delay, x: near.x + Math.cos(angle) * spread, y: near.y + Math.sin(angle) * spread, radius: stats.radius, damage, id, x0: px, y0: py, born: this.elapsed, delay, k: index, awakened: skill.awakened });
         }
         break;
       case 'chain': {
-        const points = [{ x: px, y: py }];
+        const points: ChainEffect['points'] = [{ x: px, y: py }];
         const hit = new Set<number>();
         const chained: Entity[] = [];
         let target: Entity | undefined = near;
         for (let jump = 0; jump <= stats.jumps && target; jump += 1) {
           hit.add(target.id);
           chained.push(target);
-          points.push({ x: target.x, y: target.y });
+          points.push({ x: target.x, y: target.y, r: target.radius });
           // SYS-16 증폭: the storm thread hits harder with every jump.
           this.dealDamage(target, awake && id === 'stormThread' ? damage * (1 + A.stormThread.damage * jump) : damage, id, knockback, false);
           target = this.findNearestEnemyFrom(target.x, target.y, weapon.hop ?? 260, hit);
@@ -2613,7 +2673,7 @@ export class GameEngine {
         const tail = chained[chained.length - 1];
         if (awake && id === 'sparkThread' && tail !== head) {
           // SYS-16 되감김: the thread runs back from the last enemy to the first.
-          this.chains.push({ id: this.nextId(), points: [{ x: tail.x, y: tail.y }, { x: head.x, y: head.y }], life: 0.18, maxLife: 0.18, skillId: id });
+          this.chains.push({ id: this.nextId(), points: [{ x: tail.x, y: tail.y }, { x: head.x, y: head.y }], life: 0.18, maxLife: 0.18, skillId: id, echo: true });
           this.echoHit(head, damage * A.sparkThread.damage, id, tail);
         } else if (awake && id === 'frostChainlet') {
           // SYS-16 묶인 사슬: the chained enemies share what each of them takes for a while.
@@ -2662,7 +2722,7 @@ export class GameEngine {
   protected sweep(id: ArsenalId, x1: number, y1: number, angle: number, length: number, width: number, damage: number, knockback: number) {
     const x2 = x1 + Math.cos(angle) * length;
     const y2 = y1 + Math.sin(angle) * length;
-    this.beams.push({ id: this.nextId(), x1, y1, x2, y2, width, life: 0.28, maxLife: 0.28, owner: 'player', skillId: id });
+    this.beams.push({ id: this.nextId(), x1, y1, x2, y2, width, life: 0.28, maxLife: 0.28, owner: 'player', skillId: id, ...(this.echo ? { echo: true as const } : {}) });
     for (const enemy of this.querySegmentEnemies(x1, y1, x2, y2, width)) {
       if (enemy.hp > 0 && distancePointToSegment(enemy.x, enemy.y, x1, y1, x2, y2) < enemy.radius + width) this.dealDamage(enemy, damage, id, knockback, false);
     }
@@ -2672,10 +2732,11 @@ export class GameEngine {
    * SYS-15: an arsenal blast: area damage under the weapon's id. The effect carries the weapon too, so the renderer
    * draws the weapon's own art when the kit has it, else its look's, awakened when the weapon is.
    */
-  protected arsenalBlast(id: ArsenalId, x: number, y: number, radius: number, damage: number) {
+  protected arsenalBlast(id: ArsenalId, x: number, y: number, radius: number, damage: number, dir?: -1 | 1) {
     const weapon = ARSENAL[id];
     this.areaDamage(x, y, radius, damage, id, weapon.knockback ?? 0);
-    this.emit({ type: 'area/blast', x, y, radius, source: id });
+    // K10 looks only: a gimmick's own blast, and the way a lob flew.
+    this.emit({ type: 'area/blast', x, y, radius, source: id, ...(this.echo ? { echo: true as const } : {}), ...(dir ? { dir } : {}) });
   }
 
   /** SYS-15: lobbed blasts land when their time comes. */
@@ -2685,7 +2746,7 @@ export class GameEngine {
     if (landing.length === 0) return;
     this.arsenalLobs = this.arsenalLobs.filter((lob) => lob.at > this.elapsed);
     for (const lob of landing) {
-      this.arsenalBlast(lob.id, lob.x, lob.y, lob.radius, lob.damage);
+      this.arsenalBlast(lob.id, lob.x, lob.y, lob.radius, lob.damage, lob.x > lob.x0 ? 1 : lob.x < lob.x0 ? -1 : undefined);
       if (this.rules.awakeningGimmicks && this.skills[lob.id]?.awakened) this.lobLanded(lob);
     }
   }
@@ -2694,7 +2755,7 @@ export class GameEngine {
    * SYS-16: an awakened lob lands: the ink pot leaves burning ink, the cluster pot splits in two, the tar jar gathers
    * what stands round it, and the meteor leaves a glowing mark that hastens the player.
    */
-  protected lobLanded({ id, x, y, radius, damage }: { id: ArsenalId; x: number; y: number; radius: number; damage: number }) {
+  protected lobLanded({ id, x, y, radius, damage }: Readonly<ArsenalLob>) {
     const A = AWAKENINGS;
     if (id === 'inkPots') this.addZone(id, x, y, radius * A.inkPots.area, A.inkPots.seconds, damage * A.inkPots.damage * A.inkPots.tick);
     if (id === 'tarJar') this.addZone(id, x, y, radius, A.tarJar.seconds);
@@ -5453,7 +5514,7 @@ export class GameEngine {
     }
     const next = awoken === 'thunderNeedles' && enemy.stun > 0 ? this.findNearestEnemyFrom(enemy.x, enemy.y, A.thunderNeedles.range, new Set([enemy.id])) : undefined;
     if (next) {
-      this.chains.push({ id: this.nextId(), points: [{ x: enemy.x, y: enemy.y }, { x: next.x, y: next.y }], life: 0.18, maxLife: 0.18, skillId: 'thunderNeedles' });
+      this.chains.push({ id: this.nextId(), points: [{ x: enemy.x, y: enemy.y }, { x: next.x, y: next.y }], life: 0.18, maxLife: 0.18, skillId: 'thunderNeedles', echo: true });
       this.echoHit(next, this.weaponHit('thunderNeedles') * A.thunderNeedles.damage, 'thunderNeedles', enemy);
     }
     return scale;
@@ -5474,7 +5535,7 @@ export class GameEngine {
       this.sharing = false;
       if (link.flashAt <= t) {
         link.flashAt = t + 0.15;
-        this.chains.push({ id: this.nextId(), points: link.members.filter((member) => member.hp > 0).map(({ x, y }) => ({ x, y })), life: 0.18, maxLife: 0.18, skillId: 'frostChainlet' });
+        this.chains.push({ id: this.nextId(), points: link.members.filter((member) => member.hp > 0).map(({ x, y }) => ({ x, y })), life: 0.18, maxLife: 0.18, skillId: 'frostChainlet', echo: true });
       }
     }
     if (!awoken) return;
@@ -6241,6 +6302,7 @@ export class GameEngine {
       beams: this.beams,
       laneTelegraphs: this.laneTelegraphs,
       chains: this.chains,
+      lobs: this.arsenalLobs,
       coinFrenzy: this.coinFeverRushTimer,
       objectiveMarks: this.stageObjective?.marks() ?? NO_MARKS,
       effects: this.presentation,

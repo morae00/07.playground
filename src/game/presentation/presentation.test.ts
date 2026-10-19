@@ -353,7 +353,7 @@ test('AUD-04: kills sound in the chapter material, and each boss pattern has its
   assert.deepEqual(played.map((entry) => entry.cue), ['boss.dash', 'boss.saw', 'boss.null']);
 });
 
-test('FX-06: skill marks age out by kind, stop at 48, and draw no ids or cosmetic random numbers', () => {
+test('FX-06: skill marks age out by kind, stop at 64 (K10), and draw no ids or cosmetic random numbers', () => {
   const { presentation, ids } = setup();
   const before = presentation.random();
   presentation.reseed(1234);
@@ -364,9 +364,10 @@ test('FX-06: skill marks age out by kind, stop at 48, and draw no ids or cosmeti
   assert.equal(presentation.random(), before, 'the cosmetic stream did not move');
   presentation.step(SKILL_MARK_SECONDS.shard + 0.01);
   assert.deepEqual(presentation.skillMarks.map((mark) => mark.kind), ['ring']);
-  for (let index = 0; index < 60; index += 1) presentation.addSkillMark('ring', 'railSpear', index, 0, 58, false, index, 0);
-  assert.equal(presentation.skillMarks.length, 48);
-  assert.equal(presentation.skillMarks[47].x, 59, 'the newest marks stay');
+  for (let index = 0; index < 80; index += 1) presentation.addSkillMark('ring', 'railSpear', index, 0, 58, false, index, 0);
+  assert.equal(presentation.skillMarks.length, 64);
+  assert.equal(presentation.skillMarks[63].x, 79, 'the newest marks stay');
+  assert.deepEqual(presentation.skillMarks.slice(-2).map((mark) => mark.seed! - presentation.skillMarks[0].seed!), [62, 63], 'each mark its own serial');
   presentation.clearRound();
   assert.equal(presentation.skillMarks.length, 0);
 });
@@ -405,4 +406,22 @@ test('K11: a shock that went off stays 1.45 s (burst, then its mark) by its own 
   presentation.handle({ type: 'shock/burst', x: 0, y: 0, id: 78, radius: 190 });
   presentation.clearRound();
   assert.equal(presentation.shocks.length, 0);
+});
+
+test('K10: a weapon blast lasts as long as the kit draws it, a gimmick\'s echo keeps the look\'s ring, and the lob\'s way rides along', () => {
+  let id = 0;
+  const options = { ...createDefaultOptions(), volume: 0 };
+  const seconds: Partial<Record<string, number>> = { seventhSeal: 1.2, meteorBrush: 1.5, eclipseHalo: 0.3 };
+  const presentation = new Presentation({ nextId: () => (id += 1), options: () => options, pan: () => 0, chapter: () => 1, markSeconds: (skillId) => seconds[skillId] });
+  presentation.reseed(1234);
+  presentation.handle({ type: 'area/blast', x: 0, y: 0, radius: 58, source: 'seventhSeal' });
+  presentation.handle({ type: 'area/blast', x: 0, y: 0, radius: 120, source: 'seventhSeal', echo: true });
+  presentation.handle({ type: 'area/blast', x: 0, y: 0, radius: 160, source: 'meteorBrush', dir: -1 });
+  presentation.handle({ type: 'area/blast', x: 0, y: 0, radius: 160, source: 'boneMortar' });
+  presentation.addSkillMark('ring', 'eclipseHalo', 0, 0, 230, true, 0, 0);
+  assert.deepEqual(presentation.skillMarks.map((mark) => [mark.skillId, mark.maxLife, mark.echo ?? false, mark.dir ?? 0]), [
+    ['seventhSeal', 1.2, false, 0], ['seventhSeal', SKILL_MARK_SECONDS.ring, true, 0], ['meteorBrush', 1.5, false, -1], ['boneMortar', SKILL_MARK_SECONDS.ring, false, 0], ['eclipseHalo', SKILL_MARK_SECONDS.ring, false, 0],
+  ]);
+  assert.deepEqual(presentation.skillMarks.map((mark) => mark.seed), [1, 2, 3, 4, 5], 'the presentation\'s own serials');
+  assert.equal(id, 0, 'no game or cosmetic id is drawn (BUG-08)');
 });

@@ -808,6 +808,186 @@ export const ATLAS_MANIFEST = {
         "hazard/water/wave-b/5": [0, 166, 470, 160, 12, 88, 6]
       }
     },
+    "arsenal-fx": {
+      "pages": [
+        "assets/packs/arsenal-fx/atlas-0.png"
+      ],
+      "frames": {
+        "afx/brushDownpour/mark-l/0": [0, 1285, 438, 126, 51, 66, 16],
+        "afx/brushDownpour/mark-m/0": [0, 235, 508, 95, 42, 50, 15],
+        "afx/brushDownpour/mark-s/0": [0, 1009, 508, 71, 33, 37, 12],
+        "afx/brushDownpour/stroke-a-awakened/0": [0, 1616, 2, 68, 149, 22, 142],
+        "afx/brushDownpour/stroke-a-awakened/1": [0, 1840, 2, 64, 125, 22, 118],
+        "afx/brushDownpour/stroke-a-awakened/2": [0, 1164, 234, 48, 89, 18, 89],
+        "afx/brushDownpour/stroke-a/0": [0, 1774, 2, 62, 139, 22, 134],
+        "afx/brushDownpour/stroke-a/1": [0, 304, 234, 54, 113, 18, 112],
+        "afx/brushDownpour/stroke-a/2": [0, 1216, 234, 48, 89, 18, 89],
+        "afx/brushDownpour/stroke-b-awakened/0": [0, 1524, 2, 88, 150, 22, 143],
+        "afx/brushDownpour/stroke-b-awakened/1": [0, 1908, 2, 79, 125, 21, 118],
+        "afx/brushDownpour/stroke-b-awakened/2": [0, 1268, 234, 60, 89, 18, 89],
+        "afx/brushDownpour/stroke-b/0": [0, 1688, 2, 82, 140, 22, 135],
+        "afx/brushDownpour/stroke-b/1": [0, 362, 234, 70, 113, 18, 112],
+        "afx/brushDownpour/stroke-b/2": [0, 1332, 234, 60, 89, 18, 89],
+        "afx/clusterPots/burst/0": [0, 566, 438, 78, 59, 39, 41],
+        "afx/clusterPots/burst/1": [0, 1664, 356, 88, 68, 49, 50],
+        "afx/clusterPots/burst/2": [0, 595, 508, 78, 38, 40, 23],
+        "afx/clusterPots/mini/0": [0, 1098, 556, 21, 17, 9, 8],
+        "afx/clusterPots/mini/1": [0, 1123, 556, 20, 17, 9, 8],
+        "afx/clusterPots/mini/2": [0, 1147, 556, 19, 17, 9, 8],
+        "afx/clusterPots/mini/3": [0, 1170, 556, 20, 17, 9, 8],
+        "afx/clusterPots/pot-m/0": [0, 1162, 508, 36, 30, 15, 15],
+        "afx/clusterPots/pot-m/1": [0, 1202, 508, 34, 30, 15, 15],
+        "afx/clusterPots/pot-m/2": [0, 1240, 508, 33, 30, 15, 15],
+        "afx/clusterPots/pot-m/3": [0, 1277, 508, 34, 30, 15, 15],
+        "afx/clusterPots/pot-s/0": [0, 1874, 508, 27, 24, 15, 12],
+        "afx/clusterPots/pot-s/1": [0, 1905, 508, 28, 24, 16, 12],
+        "afx/clusterPots/pot-s/2": [0, 1937, 508, 29, 24, 17, 12],
+        "afx/clusterPots/pot-s/3": [0, 1970, 508, 27, 24, 15, 12],
+        "afx/crossStrokes/scrap-a/0": [0, 492, 556, 27, 20, 13, 10],
+        "afx/crossStrokes/scrap-a/1": [0, 649, 556, 26, 19, 12, 10],
+        "afx/crossStrokes/scrap-b/0": [0, 1245, 556, 25, 15, 13, 9],
+        "afx/crossStrokes/scrap-b/1": [0, 848, 556, 23, 18, 10, 10],
+        "afx/eclipseHalo/ribbon-a/0": [0, 37, 556, 60, 23, 58, 12],
+        "afx/eclipseHalo/ribbon-a/1": [0, 523, 556, 60, 20, 58, 10],
+        "afx/eclipseHalo/ribbon-a/2": [0, 315, 556, 60, 21, 58, 13],
+        "afx/eclipseHalo/ribbon-b/0": [0, 379, 556, 60, 21, 58, 11],
+        "afx/eclipseHalo/ribbon-b/1": [0, 187, 556, 60, 22, 58, 13],
+        "afx/eclipseHalo/ribbon-b/2": [0, 251, 556, 60, 22, 58, 12],
+        "afx/fallingScroll/scroll-awakened/0": [0, 502, 2, 98, 199, 49, 189],
+        "afx/fallingScroll/scroll-awakened/1": [0, 604, 2, 96, 199, 48, 189],
+        "afx/fallingScroll/scroll-awakened/2": [0, 704, 2, 96, 199, 48, 189],
+        "afx/fallingScroll/scroll-awakened/3": [0, 804, 2, 84, 194, 42, 189],
+        "afx/fallingScroll/scroll/0": [0, 892, 2, 88, 188, 45, 183],
+        "afx/fallingScroll/scroll/1": [0, 984, 2, 84, 188, 42, 189],
+        "afx/fallingScroll/scroll/2": [0, 1072, 2, 84, 188, 42, 189],
+        "afx/fallingScroll/scroll/3": [0, 1160, 2, 84, 188, 42, 189],
+        "afx/frostChainlet/rime12/0": [0, 587, 556, 58, 20, 30, 12],
+        "afx/frostChainlet/rime19/0": [0, 101, 556, 82, 23, 42, 15],
+        "afx/frostChainlet/rime28/0": [0, 1394, 508, 112, 29, 57, 22],
+        "afx/frostRing/shard-a/0": [0, 189, 508, 42, 43, 9, 21],
+        "afx/frostRing/shard-a/1": [0, 942, 438, 66, 53, 9, 26],
+        "afx/frostRing/shard-a/2": [0, 1012, 438, 57, 53, 9, 26],
+        "afx/frostRing/shard-awakened-a/0": [0, 882, 438, 56, 55, 12, 27],
+        "afx/frostRing/shard-awakened-a/1": [0, 1574, 356, 86, 70, 12, 34],
+        "afx/frostRing/shard-awakened-a/2": [0, 112, 438, 70, 64, 9, 31],
+        "afx/frostRing/shard-awakened-b/0": [0, 1534, 438, 57, 49, 12, 24],
+        "afx/frostRing/shard-awakened-b/1": [0, 1879, 356, 88, 66, 12, 33],
+        "afx/frostRing/shard-awakened-b/2": [0, 372, 438, 66, 60, 9, 30],
+        "afx/frostRing/shard-b/0": [0, 711, 508, 42, 36, 9, 18],
+        "afx/frostRing/shard-b/1": [0, 1639, 438, 66, 47, 9, 23],
+        "afx/frostRing/shard-b/2": [0, 1709, 438, 54, 47, 9, 23],
+        "afx/frostRing/shard-c/0": [0, 1961, 438, 41, 44, 9, 21],
+        "afx/frostRing/shard-c/1": [0, 648, 438, 63, 57, 9, 28],
+        "afx/frostRing/shard-c/2": [0, 715, 438, 63, 57, 9, 28],
+        "afx/inkLance/tassel-awakened/0": [0, 757, 508, 61, 36, 107, 15],
+        "afx/inkLance/tassel-awakened/1": [0, 822, 508, 61, 36, 107, 15],
+        "afx/inkLance/tassel/0": [0, 1624, 508, 49, 26, 101, 11],
+        "afx/inkLance/tassel/1": [0, 1677, 508, 49, 26, 101, 11],
+        "afx/inkLightning/bolt-awakened/0": [0, 2, 2, 67, 228, 35, 221],
+        "afx/inkLightning/bolt-awakened/1": [0, 73, 2, 67, 228, 35, 221],
+        "afx/inkLightning/bolt-awakened/2": [0, 144, 2, 67, 228, 35, 221],
+        "afx/inkLightning/bolt-awakened/3": [0, 394, 2, 50, 213, 27, 212],
+        "afx/inkLightning/bolt/0": [0, 215, 2, 56, 220, 29, 215],
+        "afx/inkLightning/bolt/1": [0, 275, 2, 56, 216, 29, 215],
+        "afx/inkLightning/bolt/2": [0, 335, 2, 55, 216, 29, 215],
+        "afx/inkLightning/bolt/3": [0, 448, 2, 50, 213, 27, 212],
+        "afx/inkLightning/scorch/0": [0, 1510, 508, 75, 28, 36, 14],
+        "afx/inkOrbit/chip-a/0": [0, 1307, 556, 12, 8, -2, 4],
+        "afx/inkOrbit/chip-a/1": [0, 1274, 556, 11, 9, -7, 5],
+        "afx/inkOrbit/chip-b/0": [0, 1289, 556, 14, 9, -1, 5],
+        "afx/inkOrbit/chip-b/1": [0, 1323, 556, 9, 8, -9, 4],
+        "afx/inkPots/pot-awakened/0": [0, 1595, 438, 40, 49, 20, 26],
+        "afx/inkPots/pot-awakened/1": [0, 1415, 438, 42, 51, 21, 26],
+        "afx/inkPots/pot-awakened/2": [0, 1840, 438, 49, 46, 24, 23],
+        "afx/inkPots/pot-awakened/3": [0, 472, 508, 51, 39, 25, 19],
+        "afx/inkPots/pot/0": [0, 677, 508, 30, 38, 15, 19],
+        "afx/inkPots/pot/1": [0, 334, 508, 31, 40, 16, 20],
+        "afx/inkPots/pot/2": [0, 887, 508, 38, 35, 19, 17],
+        "afx/inkPots/pot/3": [0, 1118, 508, 40, 31, 20, 15],
+        "afx/inkPots/shatter/0": [0, 567, 234, 98, 104, 45, 68],
+        "afx/inkPots/shatter/1": [0, 669, 234, 109, 103, 54, 67],
+        "afx/inkPots/shatter/2": [0, 436, 234, 127, 107, 61, 65],
+        "afx/inkPots/splat/0": [0, 369, 508, 99, 40, 49, 21],
+        "afx/inkPulse/splash-a/0": [0, 875, 556, 54, 18, 1, 11],
+        "afx/inkPulse/splash-a/1": [0, 679, 556, 54, 19, -5, 10],
+        "afx/inkPulse/splash-a/2": [0, 933, 556, 39, 18, -21, 10],
+        "afx/inkPulse/splash-b/0": [0, 976, 556, 54, 18, 1, 12],
+        "afx/inkPulse/splash-b/1": [0, 737, 556, 54, 19, -5, 13],
+        "afx/inkPulse/splash-b/2": [0, 1034, 556, 39, 18, -21, 12],
+        "afx/judgmentLine/flick-a/0": [0, 1077, 556, 17, 18, 9, 11],
+        "afx/judgmentLine/flick-a/1": [0, 795, 556, 23, 19, 12, 11],
+        "afx/judgmentLine/flick-b/0": [0, 1194, 556, 19, 17, 9, 7],
+        "afx/judgmentLine/flick-b/1": [0, 1336, 556, 19, 8, 12, -2],
+        "afx/judgmentLine/inkbox-awakened/0": [0, 1767, 438, 69, 47, 117, 29],
+        "afx/judgmentLine/inkbox-awakened/1": [0, 1461, 438, 69, 50, 117, 29],
+        "afx/judgmentLine/inkbox/0": [0, 527, 508, 64, 39, 113, 25],
+        "afx/judgmentLine/inkbox/1": [0, 1893, 438, 64, 46, 113, 25],
+        "afx/meteorBrush/comet-awakened/0": [0, 1353, 2, 33, 171, 15, 24],
+        "afx/meteorBrush/comet-awakened/1": [0, 1248, 2, 31, 172, 15, 24],
+        "afx/meteorBrush/comet-awakened/2": [0, 1283, 2, 31, 172, 15, 24],
+        "afx/meteorBrush/comet-awakened/3": [0, 1318, 2, 31, 172, 15, 24],
+        "afx/meteorBrush/comet/0": [0, 1491, 2, 29, 165, 13, 18],
+        "afx/meteorBrush/comet/1": [0, 1390, 2, 29, 166, 13, 18],
+        "afx/meteorBrush/comet/2": [0, 1423, 2, 30, 166, 14, 18],
+        "afx/meteorBrush/comet/3": [0, 1457, 2, 30, 166, 14, 18],
+        "afx/meteorBrush/crater/0": [0, 112, 356, 191, 76, 98, 38],
+        "afx/meteorBrush/impact-awakened/0": [0, 2, 234, 147, 118, 81, 85],
+        "afx/meteorBrush/impact-awakened/1": [0, 1396, 234, 145, 89, 71, 55],
+        "afx/meteorBrush/impact-awakened/2": [0, 442, 438, 120, 60, 59, 36],
+        "afx/meteorBrush/impact/0": [0, 153, 234, 147, 118, 81, 85],
+        "afx/meteorBrush/impact/1": [0, 910, 234, 136, 96, 62, 60],
+        "afx/meteorBrush/impact/2": [0, 1756, 356, 119, 68, 58, 42],
+        "afx/seventhSeal/print-a/0": [0, 929, 508, 76, 34, 39, 16],
+        "afx/seventhSeal/print-b/0": [0, 1810, 508, 60, 25, 28, 12],
+        "afx/seventhSeal/print-c/0": [0, 443, 556, 45, 21, 23, 11],
+        "afx/seventhSeal/seal-awakened/0": [0, 1000, 356, 67, 74, 35, 66],
+        "afx/seventhSeal/seal-awakened/1": [0, 1050, 234, 56, 96, 28, 91],
+        "afx/seventhSeal/seal-awakened/2": [0, 1395, 356, 50, 71, 25, 93],
+        "afx/seventhSeal/seal/0": [0, 1449, 356, 67, 71, 35, 66],
+        "afx/seventhSeal/seal/1": [0, 1110, 234, 50, 90, 25, 85],
+        "afx/seventhSeal/seal/2": [0, 1520, 356, 50, 71, 25, 93],
+        "afx/silenceBell/bell-awakened/0": [0, 782, 234, 60, 98, 24, 95],
+        "afx/silenceBell/bell-awakened/1": [0, 846, 234, 60, 98, 36, 95],
+        "afx/silenceBell/bell-awakened/2": [0, 1545, 234, 54, 88, 27, 90],
+        "afx/silenceBell/bell/0": [0, 1717, 234, 52, 86, 20, 89],
+        "afx/silenceBell/bell/1": [0, 1661, 234, 52, 87, 32, 89],
+        "afx/silenceBell/bell/2": [0, 1603, 234, 54, 88, 27, 90],
+        "afx/sparkThread/spark-awakened/0": [0, 1084, 508, 30, 32, 16, 16],
+        "afx/sparkThread/spark-awakened/1": [0, 1730, 508, 27, 26, 16, 14],
+        "afx/sparkThread/spark/0": [0, 1315, 508, 29, 30, 15, 15],
+        "afx/sparkThread/spark/1": [0, 1589, 508, 31, 28, 15, 16],
+        "afx/stormThread/gust-a/0": [0, 1217, 556, 24, 17, 17, 8],
+        "afx/stormThread/gust-a/1": [0, 822, 556, 22, 19, 14, 11],
+        "afx/stormThread/gust-b/0": [0, 1761, 508, 45, 26, 25, 11],
+        "afx/stormThread/gust-b/1": [0, 1348, 508, 42, 30, 21, 15],
+        "afx/tarJar/crack/0": [0, 307, 356, 123, 75, 63, 41],
+        "afx/tarJar/crack/1": [0, 434, 356, 123, 75, 63, 41],
+        "afx/tarJar/crack/2": [0, 561, 356, 123, 75, 63, 41],
+        "afx/tarJar/jar-awakened/0": [0, 1073, 438, 49, 53, 23, 28],
+        "afx/tarJar/jar-awakened/1": [0, 1126, 438, 49, 53, 23, 28],
+        "afx/tarJar/jar-awakened/2": [0, 1179, 438, 49, 53, 23, 28],
+        "afx/tarJar/jar-awakened/3": [0, 1232, 438, 49, 53, 23, 28],
+        "afx/tarJar/jar/0": [0, 2, 508, 43, 44, 18, 24],
+        "afx/tarJar/jar/1": [0, 49, 508, 44, 44, 18, 24],
+        "afx/tarJar/jar/2": [0, 97, 508, 43, 44, 18, 24],
+        "afx/tarJar/jar/3": [0, 144, 508, 41, 44, 18, 24],
+        "afx/tarJar/pool/0": [0, 186, 438, 182, 62, 92, 28],
+        "afx/thunderclap/clap-awakened/0": [0, 1773, 234, 90, 83, 38, 83],
+        "afx/thunderclap/clap-awakened/1": [0, 1867, 234, 77, 78, 30, 76],
+        "afx/thunderclap/clap-awakened/2": [0, 1160, 356, 75, 72, 31, 77],
+        "afx/thunderclap/clap/0": [0, 1071, 356, 85, 74, 33, 79],
+        "afx/thunderclap/clap/1": [0, 1239, 356, 73, 72, 26, 74],
+        "afx/thunderclap/clap/2": [0, 1316, 356, 75, 72, 31, 77],
+        "afx/wardRing/knot-a/0": [0, 2001, 508, 31, 24, 16, 12],
+        "afx/wardRing/knot-b/0": [0, 2, 556, 31, 24, 15, 12],
+        "afx/wideBrush/brush-awakened/0": [0, 2, 356, 106, 78, 25, 40],
+        "afx/wideBrush/brush-awakened/1": [0, 688, 356, 106, 75, 25, 37],
+        "afx/wideBrush/brush-awakened/2": [0, 2, 438, 106, 66, 25, 37],
+        "afx/wideBrush/brush/0": [0, 798, 356, 97, 75, 20, 37],
+        "afx/wideBrush/brush/1": [0, 899, 356, 97, 75, 20, 37],
+        "afx/wideBrush/brush/2": [0, 782, 438, 96, 56, 19, 33]
+      }
+    },
     "chapter-01": {
       "pages": [
         "assets/packs/chapter-01/atlas-0.png",
@@ -1931,6 +2111,322 @@ export const ATLAS_MANIFEST = {
     }
   },
   "animations": {
+    "afx/brushDownpour": {
+      "stroke-a": {
+        "frames": 3,
+        "fps": 0
+      },
+      "stroke-b": {
+        "frames": 3,
+        "fps": 0
+      },
+      "stroke-a-awakened": {
+        "frames": 3,
+        "fps": 0
+      },
+      "stroke-b-awakened": {
+        "frames": 3,
+        "fps": 0
+      },
+      "mark-s": {
+        "frames": 1,
+        "fps": 0
+      },
+      "mark-m": {
+        "frames": 1,
+        "fps": 0
+      },
+      "mark-l": {
+        "frames": 1,
+        "fps": 0
+      }
+    },
+    "afx/clusterPots": {
+      "burst": {
+        "frames": 3,
+        "fps": 0
+      },
+      "pot-s": {
+        "frames": 4,
+        "fps": 12
+      },
+      "pot-m": {
+        "frames": 4,
+        "fps": 12
+      },
+      "mini": {
+        "frames": 4,
+        "fps": 12
+      }
+    },
+    "afx/crossStrokes": {
+      "scrap-a": {
+        "frames": 2,
+        "fps": 0
+      },
+      "scrap-b": {
+        "frames": 2,
+        "fps": 0
+      }
+    },
+    "afx/eclipseHalo": {
+      "ribbon-a": {
+        "frames": 3,
+        "fps": 12
+      },
+      "ribbon-b": {
+        "frames": 3,
+        "fps": 12
+      }
+    },
+    "afx/fallingScroll": {
+      "scroll": {
+        "frames": 4,
+        "fps": 0
+      },
+      "scroll-awakened": {
+        "frames": 4,
+        "fps": 0
+      }
+    },
+    "afx/frostChainlet": {
+      "rime12": {
+        "frames": 1,
+        "fps": 0
+      },
+      "rime19": {
+        "frames": 1,
+        "fps": 0
+      },
+      "rime28": {
+        "frames": 1,
+        "fps": 0
+      }
+    },
+    "afx/frostRing": {
+      "shard-a": {
+        "frames": 3,
+        "fps": 0
+      },
+      "shard-b": {
+        "frames": 3,
+        "fps": 0
+      },
+      "shard-c": {
+        "frames": 3,
+        "fps": 0
+      },
+      "shard-awakened-a": {
+        "frames": 3,
+        "fps": 0
+      },
+      "shard-awakened-b": {
+        "frames": 3,
+        "fps": 0
+      }
+    },
+    "afx/inkLance": {
+      "tassel": {
+        "frames": 2,
+        "fps": 0
+      },
+      "tassel-awakened": {
+        "frames": 2,
+        "fps": 0
+      }
+    },
+    "afx/inkLightning": {
+      "bolt": {
+        "frames": 4,
+        "fps": 0
+      },
+      "bolt-awakened": {
+        "frames": 4,
+        "fps": 0
+      },
+      "scorch": {
+        "frames": 1,
+        "fps": 0
+      }
+    },
+    "afx/inkOrbit": {
+      "chip-a": {
+        "frames": 2,
+        "fps": 0
+      },
+      "chip-b": {
+        "frames": 2,
+        "fps": 0
+      }
+    },
+    "afx/inkPots": {
+      "shatter": {
+        "frames": 3,
+        "fps": 0
+      },
+      "splat": {
+        "frames": 1,
+        "fps": 0
+      },
+      "pot": {
+        "frames": 4,
+        "fps": 0
+      },
+      "pot-awakened": {
+        "frames": 4,
+        "fps": 0
+      }
+    },
+    "afx/inkPulse": {
+      "splash-a": {
+        "frames": 3,
+        "fps": 0
+      },
+      "splash-b": {
+        "frames": 3,
+        "fps": 0
+      }
+    },
+    "afx/judgmentLine": {
+      "inkbox": {
+        "frames": 2,
+        "fps": 0
+      },
+      "inkbox-awakened": {
+        "frames": 2,
+        "fps": 0
+      },
+      "flick-a": {
+        "frames": 2,
+        "fps": 0
+      },
+      "flick-b": {
+        "frames": 2,
+        "fps": 0
+      }
+    },
+    "afx/meteorBrush": {
+      "impact": {
+        "frames": 3,
+        "fps": 0
+      },
+      "impact-awakened": {
+        "frames": 3,
+        "fps": 0
+      },
+      "crater": {
+        "frames": 1,
+        "fps": 0
+      },
+      "comet": {
+        "frames": 4,
+        "fps": 12
+      },
+      "comet-awakened": {
+        "frames": 4,
+        "fps": 12
+      }
+    },
+    "afx/seventhSeal": {
+      "seal": {
+        "frames": 3,
+        "fps": 0
+      },
+      "seal-awakened": {
+        "frames": 3,
+        "fps": 0
+      },
+      "print-a": {
+        "frames": 1,
+        "fps": 0
+      },
+      "print-b": {
+        "frames": 1,
+        "fps": 0
+      },
+      "print-c": {
+        "frames": 1,
+        "fps": 0
+      }
+    },
+    "afx/silenceBell": {
+      "bell": {
+        "frames": 3,
+        "fps": 0
+      },
+      "bell-awakened": {
+        "frames": 3,
+        "fps": 0
+      }
+    },
+    "afx/sparkThread": {
+      "spark": {
+        "frames": 2,
+        "fps": 0
+      },
+      "spark-awakened": {
+        "frames": 2,
+        "fps": 0
+      }
+    },
+    "afx/stormThread": {
+      "gust-a": {
+        "frames": 2,
+        "fps": 0
+      },
+      "gust-b": {
+        "frames": 2,
+        "fps": 0
+      }
+    },
+    "afx/tarJar": {
+      "crack": {
+        "frames": 3,
+        "fps": 0
+      },
+      "pool": {
+        "frames": 1,
+        "fps": 0
+      },
+      "jar": {
+        "frames": 4,
+        "fps": 8
+      },
+      "jar-awakened": {
+        "frames": 4,
+        "fps": 8
+      }
+    },
+    "afx/thunderclap": {
+      "clap": {
+        "frames": 3,
+        "fps": 0
+      },
+      "clap-awakened": {
+        "frames": 3,
+        "fps": 0
+      }
+    },
+    "afx/wardRing": {
+      "knot-a": {
+        "frames": 1,
+        "fps": 0
+      },
+      "knot-b": {
+        "frames": 1,
+        "fps": 0
+      }
+    },
+    "afx/wideBrush": {
+      "brush": {
+        "frames": 3,
+        "fps": 0
+      },
+      "brush-awakened": {
+        "frames": 3,
+        "fps": 0
+      }
+    },
     "boss/1/butcher": {
       "phase1": {
         "frames": 1,
@@ -12384,6 +12880,5982 @@ export const ATLAS_MANIFEST = {
     },
     "render": {
       "fireStamps": [120, 40, 20]
+    }
+  },
+  "arsenalFx": {
+    "version": "1.0-d2r1",
+    "spec": {
+      "version": "1.0-d2r1",
+      "jit": {
+        "mul": 31,
+        "hash": 2654435761,
+        "mod": 1000
+      },
+      "headY": -66,
+      "headLift": 26,
+      "footClear": 26,
+      "faceZone": [-8, -58, 18, -34],
+      "rim": {
+        "ally": {
+          "layers": [
+            [
+              "ink",
+              2.6
+            ],
+            [
+              "ally",
+              1.4
+            ]
+          ],
+          "dash": [6, 4],
+          "pad": 0.6
+        },
+        "pad": {
+          "layers": [
+            [
+              "ink",
+              3.4
+            ],
+            [
+              "ally",
+              1.8
+            ],
+            [
+              "allyG",
+              0.6
+            ]
+          ],
+          "inside": [
+            [
+              "ink",
+              4
+            ],
+            [
+              "ally",
+              2.4
+            ],
+            [
+              "allyG",
+              0.8
+            ]
+          ]
+        }
+      },
+      "awakened": {
+        "inset": 6,
+        "layers": [
+          [
+            "ink",
+            1
+          ],
+          [
+            "p50",
+            0.6
+          ]
+        ],
+        "coreScale": 1.5,
+        "count": 1,
+        "reach": 1.2,
+        "object": {
+          "offset": 1.2,
+          "paper": 1,
+          "ink": 0.8,
+          "sparkle": {
+            "points": [5, 6],
+            "r": [2.4, 3]
+          }
+        },
+        "prims": [
+          "stroke",
+          "band",
+          "multi",
+          "jag",
+          "ripple",
+          "halo"
+        ]
+      },
+      "decal": {
+        "fadeAt": 0.5
+      },
+      "life": {
+        "inkLightning": {
+          "mark": 0.3,
+          "decal": 0.6
+        },
+        "brushDownpour": {
+          "mark": 0.3,
+          "decal": 0.9
+        },
+        "fallingScroll": {
+          "mark": 0.45
+        },
+        "seventhSeal": {
+          "mark": 0.36,
+          "decal": 1.2
+        },
+        "inkPulse": {
+          "mark": 0.3
+        },
+        "frostRing": {
+          "mark": 0.45
+        },
+        "thunderclap": {
+          "mark": 0.3
+        },
+        "silenceBell": {
+          "mark": 0.5
+        },
+        "inkPots": {
+          "mark": 0.36,
+          "decal": 1.2
+        },
+        "clusterPots": {
+          "mark": 0.3
+        },
+        "tarJar": {
+          "mark": 0.4,
+          "decal": 1.5
+        },
+        "meteorBrush": {
+          "mark": 0.45,
+          "decal": 1.5
+        },
+        "sparkThread": {
+          "mark": 0.18
+        },
+        "stormThread": {
+          "mark": 0.18
+        },
+        "frostChainlet": {
+          "mark": 0.18,
+          "decal": 0.48
+        },
+        "inkLance": {
+          "mark": 0.28
+        },
+        "wideBrush": {
+          "mark": 0.28
+        },
+        "crossStrokes": {
+          "mark": 0.28
+        },
+        "judgmentLine": {
+          "mark": 0.28
+        },
+        "inkOrbit": {
+          "mark": 0.3
+        },
+        "wardRing": {
+          "mark": 0.3
+        },
+        "eclipseHalo": {
+          "mark": 0.3
+        }
+      },
+      "ring": {
+        "inkLightning": {
+          "prim": "stroke",
+          "layers": [
+            [
+              "ink",
+              3.4
+            ],
+            [
+              "ally",
+              1.8
+            ],
+            [
+              "allyG",
+              0.6
+            ]
+          ],
+          "gaps": {
+            "n": [2, 3],
+            "deg": [8, 14]
+          },
+          "punch": {
+            "scale": 2,
+            "seconds": 0.1,
+            "reducedMax": 1.5
+          },
+          "grow": {
+            "from": 0.7,
+            "seconds": 0.08
+          },
+          "fade": {
+            "at": 0.6
+          }
+        },
+        "brushDownpour": {
+          "prim": "band",
+          "token": "ink",
+          "width": [1.5, 6],
+          "knots": 13,
+          "gaps": {
+            "n": [5, 7],
+            "deg": [12, 26]
+          },
+          "endTaper": 7,
+          "core": {
+            "layers": [
+              [
+                "ink",
+                4
+              ],
+              [
+                "ally",
+                1.8
+              ]
+            ],
+            "span": [30, 50],
+            "at": "mid",
+            "dab": true
+          },
+          "grow": {
+            "from": 0.8,
+            "seconds": 0.06
+          },
+          "fade": {
+            "at": 0.6
+          }
+        },
+        "fallingScroll": {
+          "prim": "ripple",
+          "arcs": [
+            {
+              "at": 0.72,
+              "span": [15, 165],
+              "layers": [
+                [
+                  "ink",
+                  3
+                ],
+                [
+                  "p50",
+                  1.6
+                ]
+              ]
+            },
+            {
+              "at": 1,
+              "span": [10, 170],
+              "layers": [
+                [
+                  "ink",
+                  3.4
+                ],
+                [
+                  "p50",
+                  2
+                ]
+              ]
+            }
+          ],
+          "full": {
+            "layers": [
+              [
+                "ink",
+                1.6,
+                0.6
+              ]
+            ]
+          },
+          "core": {
+            "layers": [
+              [
+                "ink",
+                3.2
+              ],
+              [
+                "ally",
+                1.6
+              ]
+            ],
+            "span": [60, 120],
+            "arc": 1
+          },
+          "punch": {
+            "scale": 2,
+            "seconds": 0.1,
+            "reducedMax": 1.5
+          },
+          "grow": {
+            "from": 0.5,
+            "seconds": 0.15
+          },
+          "fade": {
+            "at": 0.6
+          }
+        },
+        "seventhSeal": {
+          "prim": "stroke",
+          "wash": {
+            "token": "p50",
+            "alpha": 0.18,
+            "union": true
+          },
+          "layers": [
+            [
+              "ink",
+              2.6
+            ]
+          ],
+          "gaps": {
+            "n": [2, 2],
+            "deg": [10, 18]
+          },
+          "inner": {
+            "at": 0.92,
+            "layers": [
+              [
+                "ink300",
+                1
+              ]
+            ]
+          },
+          "core": {
+            "layers": [
+              [
+                "ink",
+                3
+              ],
+              [
+                "ally",
+                1.4
+              ]
+            ],
+            "span": [40, 70]
+          },
+          "punch": {
+            "scale": 1.5,
+            "seconds": 0.1,
+            "reducedMax": 1.5
+          },
+          "grow": {
+            "from": 0.85,
+            "seconds": 0.06
+          },
+          "fade": {
+            "at": 0.6
+          }
+        },
+        "inkPulse": {
+          "prim": "band",
+          "token": "ink",
+          "width": [6, 16],
+          "knots": 9,
+          "gaps": {
+            "n": [3, 4],
+            "deg": [3, 7]
+          },
+          "endTaper": 0,
+          "core": {
+            "layers": [
+              [
+                "ink",
+                4
+              ],
+              [
+                "ally",
+                2
+              ]
+            ],
+            "span": [80, 120],
+            "at": "outer"
+          },
+          "grow": {
+            "from": 0.55,
+            "seconds": 0.1
+          },
+          "fade": {
+            "at": 0.6
+          },
+          "awakened": {
+            "widthScale": 1.2,
+            "inner": {
+              "at": 0.8,
+              "layers": [
+                [
+                  "ink",
+                  1.6
+                ]
+              ]
+            }
+          }
+        },
+        "frostRing": {
+          "prim": "band",
+          "token": "p50",
+          "alpha": 0.5,
+          "edge": [
+            [
+              "ink",
+              2.2
+            ]
+          ],
+          "width": [14, 17],
+          "knots": 9,
+          "endTaper": 0,
+          "core": {
+            "layers": [
+              [
+                "ink",
+                3.2
+              ],
+              [
+                "ally",
+                1.6
+              ]
+            ],
+            "span": [360, 360],
+            "at": "mid"
+          },
+          "fringe": {
+            "side": -1,
+            "pitch": 7,
+            "h": [2, 7],
+            "skip": 0.35,
+            "layers": [
+              [
+                "ink",
+                1.4
+              ]
+            ]
+          },
+          "grow": {
+            "from": 0.6,
+            "seconds": 0.12
+          },
+          "fade": {
+            "at": 0.3
+          },
+          "awakened": {
+            "fringeSides": [-1, 1]
+          }
+        },
+        "thunderclap": {
+          "prim": "jag",
+          "layers": [
+            [
+              "ink",
+              5
+            ],
+            [
+              "ally",
+              2.4
+            ],
+            [
+              "p50",
+              0.8
+            ]
+          ],
+          "seg": 26,
+          "amp": [1.5, 6.5],
+          "forks": {
+            "n": 3,
+            "len": [12, 24]
+          },
+          "flicker": {
+            "fps": 12,
+            "seeds": [5, 6]
+          },
+          "grow": {
+            "from": 0.5,
+            "seconds": 0.08
+          },
+          "fade": {
+            "at": 0.65,
+            "dash": [6, 4]
+          }
+        },
+        "silenceBell": {
+          "prim": "multi",
+          "rings": [
+            {
+              "final": 1,
+              "delay": 0,
+              "alpha": 1
+            },
+            {
+              "final": 0.86,
+              "delay": 0.08,
+              "alpha": 0.7
+            },
+            {
+              "final": 0.72,
+              "delay": 0.16,
+              "alpha": 0.45
+            }
+          ],
+          "layers": [
+            [
+              "ink",
+              5.4
+            ],
+            [
+              "p50",
+              2.6
+            ]
+          ],
+          "grow": {
+            "from": 0.35,
+            "seconds": 0.3
+          },
+          "fade": {
+            "at": 0.7
+          },
+          "awakened": {
+            "ring": {
+              "final": 0.58,
+              "delay": 0.24,
+              "alpha": 0.3
+            }
+          }
+        },
+        "inkPots": {
+          "prim": "stroke",
+          "layers": [
+            [
+              "ink",
+              3
+            ],
+            [
+              "ally",
+              1.6
+            ]
+          ],
+          "gaps": {
+            "n": [2, 2],
+            "deg": [6, 10]
+          },
+          "punch": {
+            "scale": 2.2,
+            "seconds": 0.1,
+            "reducedMax": 1.5
+          },
+          "grow": {
+            "from": 0.75,
+            "seconds": 0.07
+          },
+          "fade": {
+            "at": 0.6
+          }
+        },
+        "clusterPots": {
+          "prim": "stroke",
+          "layers": [
+            [
+              "ink",
+              2.6
+            ],
+            [
+              "ally",
+              1.4
+            ]
+          ],
+          "gaps": {
+            "n": [1, 1],
+            "deg": [8, 14]
+          },
+          "punch": {
+            "scale": 1.8,
+            "seconds": 0.1,
+            "reducedMax": 1.5
+          },
+          "grow": {
+            "from": 0.75,
+            "seconds": 0.06
+          },
+          "fade": {
+            "at": 0.6
+          }
+        },
+        "tarJar": {
+          "prim": "stroke",
+          "layers": [
+            [
+              "ink",
+              3.2
+            ],
+            [
+              "ally",
+              1.4
+            ]
+          ],
+          "gaps": {
+            "n": [1, 1],
+            "deg": [8, 14]
+          },
+          "punch": {
+            "scale": 2,
+            "seconds": 0.1,
+            "reducedMax": 1.5
+          },
+          "grow": {
+            "from": 0.75,
+            "seconds": 0.08
+          },
+          "fade": {
+            "at": 0.6
+          }
+        },
+        "meteorBrush": {
+          "prim": "stroke",
+          "layers": [
+            [
+              "ink",
+              5
+            ],
+            [
+              "ally",
+              2.8
+            ],
+            [
+              "allyG",
+              0.8
+            ]
+          ],
+          "gaps": {
+            "n": [2, 2],
+            "deg": [6, 10]
+          },
+          "punch": {
+            "scale": 2.2,
+            "seconds": 0.1,
+            "reducedMax": 1.5
+          },
+          "grow": {
+            "from": 0.7,
+            "seconds": 0.08
+          },
+          "fade": {
+            "at": 0.6
+          }
+        }
+      },
+      "splash": {
+        "shape": {
+          "shoulder": [0.45, 0.55],
+          "bend": 0.5,
+          "fork": {
+            "at": 0.7,
+            "deg": 7,
+            "short": 0.82
+          },
+          "drop": {
+            "stretch": 1.7,
+            "clear": 6
+          },
+          "reducedIn": 0.06
+        },
+        "inkPots": {
+          "token": "ink",
+          "n": [7, 9],
+          "awakenedN": [8, 10],
+          "from": 0.12,
+          "to": [0.42, 0.72],
+          "width": [5, 10],
+          "jitter": 0.4,
+          "fork": 0.25,
+          "drop": {
+            "p": 0.5,
+            "r": [1.8, 3.2],
+            "gap": [4, 9]
+          },
+          "grow": {
+            "from": 0.3,
+            "seconds": 0.06
+          },
+          "fade": {
+            "at": 0.4
+          },
+          "minimal": 3
+        },
+        "clusterPots": {
+          "token": "ink",
+          "n": [5, 6],
+          "awakenedN": [6, 7],
+          "from": 0.15,
+          "to": [0.35, 0.58],
+          "width": [4, 7],
+          "jitter": 0.4,
+          "fork": 0,
+          "drop": {
+            "p": 0.35,
+            "r": [1.4, 2.4],
+            "gap": [3, 6]
+          },
+          "grow": {
+            "from": 0.3,
+            "seconds": 0.05
+          },
+          "fade": {
+            "at": 0.4
+          },
+          "minimal": 0
+        },
+        "meteorBrush": {
+          "token": "ink",
+          "n": [8, 10],
+          "awakenedN": [10, 12],
+          "from": 0.1,
+          "to": [0.5, 0.82],
+          "width": [7, 14],
+          "jitter": 0.35,
+          "fork": 0.35,
+          "drop": {
+            "p": 0.6,
+            "r": [2.6, 4.6],
+            "gap": [6, 14]
+          },
+          "grow": {
+            "from": 0.25,
+            "seconds": 0.07
+          },
+          "fade": {
+            "at": 0.5
+          },
+          "minimal": 3
+        }
+      },
+      "tilt": {
+        "fallingScroll": {
+          "parts": [
+            "scroll",
+            "scroll-awakened"
+          ],
+          "deg": [0, 6, 12, 12],
+          "sign": 954
+        }
+      },
+      "line": {
+        "sparkThread": {
+          "prim": "sag",
+          "sag": 0.16,
+          "step": 8,
+          "layers": [
+            [
+              "ink",
+              3.4
+            ],
+            [
+              "ally",
+              1.8
+            ],
+            [
+              "allyG",
+              0.6
+            ]
+          ],
+          "grow": {
+            "frac": 0.4
+          },
+          "fade": {
+            "at": 0.65,
+            "dash": [5, 4]
+          }
+        },
+        "stormThread": {
+          "prim": "twist",
+          "amp": 4,
+          "wave": 36,
+          "step": 6,
+          "strands": [
+            [
+              [
+                "ink",
+                3
+              ],
+              [
+                "ally",
+                1.5
+              ]
+            ],
+            [
+              [
+                "ink",
+                2.6
+              ],
+              [
+                "p50",
+                1
+              ]
+            ]
+          ],
+          "kinkEvery": 3,
+          "kinkAmp": 5,
+          "kinkStrand": 0,
+          "flicker": {
+            "fps": 12,
+            "seeds": [7, 8]
+          },
+          "grow": {
+            "frac": 0.3
+          },
+          "fade": {
+            "at": 0.6
+          }
+        },
+        "frostChainlet": {
+          "prim": "links",
+          "pitch": 14,
+          "ellipse": {
+            "rx": 7.5,
+            "ry": 4,
+            "layers": [
+              [
+                "ink",
+                3.4
+              ],
+              [
+                "p50",
+                1.6
+              ]
+            ]
+          },
+          "bar": {
+            "len": 14,
+            "h": 3.2,
+            "fill": "p300",
+            "edge": [
+              "ink",
+              1.6
+            ]
+          },
+          "core": {
+            "layers": [
+              [
+                "ink",
+                3.4
+              ],
+              [
+                "ally",
+                1.6
+              ]
+            ]
+          },
+          "nubs": {
+            "every": 4,
+            "r": 2.4,
+            "fill": "p50",
+            "edge": [
+              "ink",
+              0.8
+            ]
+          },
+          "grow": {
+            "frac": 0.3
+          },
+          "fade": {
+            "at": 0.6
+          },
+          "minimal": {
+            "layers": [
+              [
+                "ink",
+                3
+              ],
+              [
+                "ally",
+                1.6
+              ]
+            ]
+          }
+        },
+        "inkLance": {
+          "prim": "blade",
+          "capsule": {
+            "fill": [
+              "p50",
+              0.16
+            ],
+            "edge": [
+              [
+                "ink",
+                1.2
+              ]
+            ]
+          },
+          "shaft": {
+            "token": "ink",
+            "width": [4.8, 3],
+            "grain": [
+              "p50",
+              0.8
+            ]
+          },
+          "head": {
+            "len": 30,
+            "half": 6.5,
+            "fill": "p50",
+            "edge": [
+              "ink",
+              1.6
+            ]
+          },
+          "thrust": 0.18,
+          "retract": {
+            "at": 0.7,
+            "to": 0.6
+          },
+          "awakened": {
+            "headScale": 1.2,
+            "shadow": {
+              "offset": 3,
+              "layers": [
+                [
+                  "ink300",
+                  1.2
+                ]
+              ]
+            }
+          }
+        },
+        "wideBrush": {
+          "prim": "brushBand",
+          "fill": [
+            "p50",
+            0.45
+          ],
+          "edge": {
+            "layers": [
+              [
+                "ink",
+                2
+              ]
+            ],
+            "ragged": {
+              "pitch": 10,
+              "amp": [0.5, 2.5]
+            },
+            "sides": "both"
+          },
+          "streaks": {
+            "n": [3, 5],
+            "layers": [
+              [
+                "ink300",
+                1.2
+              ]
+            ],
+            "len": [0.3, 0.8]
+          },
+          "front": {
+            "layers": [
+              [
+                "ink",
+                3
+              ],
+              [
+                "ally",
+                1.6
+              ]
+            ]
+          },
+          "grow": {
+            "frac": 0.3
+          },
+          "fade": {
+            "at": 0.6
+          }
+        },
+        "crossStrokes": {
+          "prim": "brushBand",
+          "capsule": {
+            "edge": [
+              [
+                "ink300",
+                1,
+                0.6
+              ]
+            ],
+            "dash": [6, 4]
+          },
+          "fill": [
+            "p50",
+            0.5
+          ],
+          "edge": {
+            "layers": [
+              [
+                "ink",
+                1.6
+              ]
+            ],
+            "ragged": {
+              "pitch": 8,
+              "amp": [0.5, 3]
+            },
+            "sides": "back"
+          },
+          "taper": [
+            [0, 0.15],
+            [0.35, 1],
+            [1, 0.4]
+          ],
+          "core": {
+            "layers": [
+              [
+                "ink",
+                3
+              ],
+              [
+                "ally",
+                1.4
+              ]
+            ],
+            "from": 0.7
+          },
+          "grow": {
+            "frac": 0.25
+          },
+          "fade": {
+            "at": 0.6
+          },
+          "aim": 30
+        },
+        "judgmentLine": {
+          "prim": "string",
+          "capsule": {
+            "fill": [
+              "p50",
+              0.12
+            ],
+            "edge": [
+              [
+                "ink300",
+                1.2
+              ]
+            ],
+            "dash": [6, 4]
+          },
+          "layers": [
+            [
+              "ink",
+              2.8
+            ],
+            [
+              "ally",
+              1.2
+            ],
+            [
+              "p50",
+              0.4
+            ]
+          ],
+          "punch": {
+            "scale": 2,
+            "seconds": 0.06,
+            "reducedMax": 1.5
+          },
+          "after": {
+            "n": 2,
+            "bow": 9,
+            "seconds": 0.12,
+            "sign": [1, -0.7, 0.48],
+            "layers": [
+              [
+                "ink300",
+                1.2,
+                0.6
+              ]
+            ]
+          },
+          "fade": {
+            "at": 0.7
+          },
+          "awakened": {
+            "after": 3,
+            "widthScale": 1.2
+          }
+        }
+      },
+      "halo": {
+        "inkOrbit": {
+          "wash": {
+            "token": "ink",
+            "alpha": 0.14
+          },
+          "outer": {
+            "layers": [
+              [
+                "ink",
+                2.4
+              ]
+            ],
+            "gaps": {
+              "n": [2, 2],
+              "deg": [8, 14]
+            }
+          },
+          "inner": {
+            "layers": [
+              [
+                "ink300",
+                1.2
+              ]
+            ],
+            "dash": [4, 4]
+          },
+          "comet": {
+            "span": 100,
+            "head": [14, 18],
+            "rim": [
+              "ink",
+              1.6
+            ],
+            "body": "p50",
+            "core": {
+              "layers": [
+                [
+                  "ink",
+                  3.6
+                ],
+                [
+                  "ally",
+                  2
+                ]
+              ],
+              "from": 0.08,
+              "to": 0.55
+            },
+            "sweep": 240
+          },
+          "fade": {
+            "at": 0.6
+          },
+          "awakened": {
+            "span": 140
+          }
+        },
+        "wardRing": {
+          "wash": {
+            "token": "p50",
+            "alpha": 0.12
+          },
+          "rope": {
+            "width": 10,
+            "body": "p50",
+            "edge": [
+              "ink",
+              1.4
+            ],
+            "twist": {
+              "pitch": [9, 15],
+              "angle": 40,
+              "layers": [
+                [
+                  "ink",
+                  1.4
+                ]
+              ]
+            }
+          },
+          "core": {
+            "layers": [
+              [
+                "ink",
+                2.4
+              ],
+              [
+                "ally",
+                1.4
+              ]
+            ],
+            "dash": [5, 4],
+            "pad": 0.6,
+            "span": 120,
+            "gap": 1.6
+          },
+          "grow": {
+            "from": 0.82,
+            "seconds": 0.1
+          },
+          "fade": {
+            "at": 0.6
+          },
+          "awakened": {
+            "width": 12
+          }
+        },
+        "eclipseHalo": {
+          "outer": {
+            "layers": [
+              [
+                "ink",
+                3.6
+              ],
+              [
+                "p50",
+                1.8
+              ]
+            ]
+          },
+          "inner": {
+            "layers": [
+              [
+                "ink300",
+                1.2
+              ]
+            ],
+            "dash": [5, 5]
+          },
+          "wash": {
+            "token": "ink",
+            "alpha": 0.1
+          },
+          "crescent": {
+            "token": "ink",
+            "alpha": 0.35,
+            "span": 90,
+            "thick": 0.9,
+            "sweep": 180,
+            "step": 3
+          },
+          "fade": {
+            "at": 0.6
+          },
+          "awakened": {
+            "span": 110,
+            "opposite": {
+              "alpha": 0.18,
+              "thick": 0.45
+            }
+          }
+        }
+      },
+      "layout": {
+        "inkLightning": {
+          "impact": [
+            {
+              "prim": "center",
+              "parts": [
+                "bolt"
+              ],
+              "awakened": [
+                "bolt-awakened"
+              ],
+              "z": "ally"
+            },
+            {
+              "prim": "center",
+              "parts": [
+                "scorch"
+              ],
+              "z": "ground"
+            }
+          ]
+        },
+        "brushDownpour": {
+          "impact": [
+            {
+              "prim": "center",
+              "parts": [
+                "stroke-a",
+                "stroke-b"
+              ],
+              "awakened": [
+                "stroke-a-awakened",
+                "stroke-b-awakened"
+              ],
+              "pick": 950,
+              "z": "ally"
+            },
+            {
+              "prim": "center",
+              "parts": [
+                "mark-s",
+                "mark-m",
+                "mark-l"
+              ],
+              "by": "radius",
+              "steps": [52, 72],
+              "z": "ground"
+            }
+          ]
+        },
+        "fallingScroll": {
+          "impact": [
+            {
+              "prim": "center",
+              "parts": [
+                "scroll"
+              ],
+              "awakened": [
+                "scroll-awakened"
+              ],
+              "z": "ally"
+            }
+          ]
+        },
+        "seventhSeal": {
+          "impact": [
+            {
+              "prim": "center",
+              "parts": [
+                "seal"
+              ],
+              "awakened": [
+                "seal-awakened"
+              ],
+              "z": "ally"
+            },
+            {
+              "prim": "center",
+              "parts": [
+                "print-a",
+                "print-b",
+                "print-c"
+              ],
+              "pick": 951,
+              "flip": 955,
+              "z": "ground"
+            }
+          ]
+        },
+        "inkPulse": {
+          "burst": [
+            {
+              "prim": "ring",
+              "parts": [
+                "splash-a",
+                "splash-b"
+              ],
+              "count": [3, 3],
+              "awakenedCount": [4, 4],
+              "jitter": 0.4,
+              "skip": 0,
+              "dr": 4,
+              "z": "ally"
+            }
+          ]
+        },
+        "frostRing": {
+          "burst": [
+            {
+              "prim": "ring",
+              "parts": [
+                "shard-a",
+                "shard-b",
+                "shard-c"
+              ],
+              "awakened": [
+                "shard-awakened-a",
+                "shard-awakened-b"
+              ],
+              "count": [6, 6],
+              "awakenedCount": [7, 7],
+              "jitter": 0.35,
+              "skip": 0.15,
+              "dr": 6,
+              "inout": true,
+              "info": 3,
+              "z": "ally"
+            }
+          ]
+        },
+        "thunderclap": {
+          "burst": [
+            {
+              "prim": "head",
+              "parts": [
+                "clap"
+              ],
+              "awakened": [
+                "clap-awakened"
+              ],
+              "z": "ally"
+            }
+          ]
+        },
+        "silenceBell": {
+          "burst": [
+            {
+              "prim": "head",
+              "parts": [
+                "bell"
+              ],
+              "awakened": [
+                "bell-awakened"
+              ],
+              "z": "ally"
+            }
+          ]
+        },
+        "inkPots": {
+          "land": [
+            {
+              "prim": "center",
+              "parts": [
+                "shatter"
+              ],
+              "z": "ally"
+            },
+            {
+              "prim": "center",
+              "parts": [
+                "splat"
+              ],
+              "z": "ground"
+            }
+          ]
+        },
+        "clusterPots": {
+          "land": [
+            {
+              "prim": "center",
+              "parts": [
+                "burst"
+              ],
+              "z": "ally"
+            }
+          ]
+        },
+        "tarJar": {
+          "land": [
+            {
+              "prim": "center",
+              "parts": [
+                "crack"
+              ],
+              "z": "ally"
+            },
+            {
+              "prim": "center",
+              "parts": [
+                "pool"
+              ],
+              "z": "ground"
+            }
+          ]
+        },
+        "meteorBrush": {
+          "land": [
+            {
+              "prim": "center",
+              "parts": [
+                "impact"
+              ],
+              "awakened": [
+                "impact-awakened"
+              ],
+              "z": "ally"
+            },
+            {
+              "prim": "center",
+              "parts": [
+                "crater"
+              ],
+              "z": "ground"
+            }
+          ]
+        },
+        "sparkThread": {
+          "jump": [
+            {
+              "prim": "point",
+              "parts": [
+                "spark"
+              ],
+              "awakened": [
+                "spark-awakened"
+              ],
+              "z": "ally"
+            }
+          ]
+        },
+        "stormThread": {
+          "jump": [
+            {
+              "prim": "point",
+              "parts": [
+                "gust-a",
+                "gust-b"
+              ],
+              "pick": 600,
+              "big": 0.35,
+              "z": "ally"
+            }
+          ]
+        },
+        "frostChainlet": {
+          "jump": [
+            {
+              "prim": "point",
+              "parts": [
+                "rime12",
+                "rime19",
+                "rime28"
+              ],
+              "by": "r",
+              "z": "feet"
+            }
+          ]
+        },
+        "inkLance": {
+          "stroke": [
+            {
+              "prim": "center",
+              "parts": [
+                "tassel"
+              ],
+              "awakened": [
+                "tassel-awakened"
+              ],
+              "z": "ally"
+            }
+          ]
+        },
+        "wideBrush": {
+          "stroke": [
+            {
+              "prim": "tip",
+              "parts": [
+                "brush"
+              ],
+              "awakened": [
+                "brush-awakened"
+              ],
+              "z": "ally"
+            }
+          ]
+        },
+        "crossStrokes": {
+          "stroke": [
+            {
+              "prim": "tip",
+              "parts": [
+                "scrap-a",
+                "scrap-b"
+              ],
+              "pick": 952,
+              "z": "ally"
+            }
+          ]
+        },
+        "judgmentLine": {
+          "stroke": [
+            {
+              "prim": "center",
+              "parts": [
+                "inkbox"
+              ],
+              "awakened": [
+                "inkbox-awakened"
+              ],
+              "z": "ally"
+            },
+            {
+              "prim": "line",
+              "parts": [
+                "flick-a",
+                "flick-b"
+              ],
+              "count": [4, 6],
+              "offset": 0.6,
+              "z": "ally"
+            }
+          ]
+        },
+        "inkOrbit": {
+          "sweep": [
+            {
+              "prim": "ring",
+              "parts": [
+                "chip-a",
+                "chip-b"
+              ],
+              "count": [2, 3],
+              "jitter": 0.45,
+              "skip": 0,
+              "dr": 2,
+              "z": "ally"
+            }
+          ]
+        },
+        "wardRing": {
+          "sweep": [
+            {
+              "prim": "ring",
+              "parts": [
+                "knot-a",
+                "knot-b"
+              ],
+              "count": [2, 2],
+              "awakenedCount": [3, 3],
+              "jitter": 0.4,
+              "skip": 0,
+              "dr": 0,
+              "z": "ally"
+            }
+          ]
+        },
+        "eclipseHalo": {
+          "sweep": [
+            {
+              "prim": "tail",
+              "parts": [
+                "ribbon-a",
+                "ribbon-b"
+              ],
+              "pick": 953,
+              "z": "ally"
+            }
+          ]
+        }
+      },
+      "zorder": [
+        "ground",
+        "feet",
+        "stand",
+        "ally"
+      ],
+      "lob": {
+        "inkPots": {
+          "H": [0.35, 48, 140],
+          "shadow": {
+            "rx": [9, 15],
+            "alpha": [0.18, 0.32]
+          }
+        },
+        "clusterPots": {
+          "H": [0.35, 40, 120],
+          "shadow": {
+            "rx": [7, 12],
+            "alpha": [0.18, 0.32]
+          }
+        },
+        "tarJar": {
+          "H": [0.33, 48, 130],
+          "shadow": {
+            "rx": [10, 16],
+            "alpha": [0.18, 0.32]
+          }
+        },
+        "meteorBrush": {
+          "H": [0.5, 90, 220],
+          "shadow": {
+            "rx": [12, 22],
+            "alpha": [0.14, 0.34]
+          }
+        }
+      },
+      "lobMini": {
+        "h": 28,
+        "shadow": {
+          "rx": [5, 7]
+        }
+      },
+      "flight": {
+        "inkPots": {
+          "parts": [
+            "pot"
+          ],
+          "awakened": [
+            "pot-awakened"
+          ],
+          "frame": "progress"
+        },
+        "clusterPots": {
+          "parts": [
+            "pot-s",
+            "pot-m"
+          ],
+          "by": "index",
+          "mini": "mini"
+        },
+        "tarJar": {
+          "parts": [
+            "jar"
+          ],
+          "awakened": [
+            "jar-awakened"
+          ]
+        },
+        "meteorBrush": {
+          "parts": [
+            "comet"
+          ],
+          "awakened": [
+            "comet-awakened"
+          ],
+          "turn": 90,
+          "landMirror": {
+            "when": "dx<0",
+            "parts": [
+              "impact",
+              "impact-awakened"
+            ]
+          }
+        },
+        "phase": 1850,
+        "shadow": {
+          "token": "ink"
+        }
+      },
+      "reference": {
+        "chainStep": [90, 40],
+        "spread": [120, 80]
+      },
+      "caps": {
+        "stamps": [220, 140, 70],
+        "heads": [24, 16, 8],
+        "feet": [24, 16, 8],
+        "crows": [12, 8, 4],
+        "spores": [16, 8, 0],
+        "pollenRings": [8, 4, 0],
+        "events": [16, 10, 4],
+        "zoneStamps": [120, 72, 36],
+        "decals": [16, 8, 0],
+        "flights": [12, 12, 6],
+        "pending": [12, 12, 12],
+        "links": [120, 60, 0],
+        "splash": [12, 8, 3],
+        "perZone": {
+          "smoke": 4,
+          "flame": 5,
+          "string": 7,
+          "mote": 6
+        }
+      },
+      "priority": {
+        "heads": [
+          "silence",
+          "prey",
+          "fear",
+          "lost",
+          "weak",
+          "stain"
+        ],
+        "feet": [
+          "freeze",
+          "bound",
+          "scorch",
+          "frost2",
+          "frost1",
+          "thorn",
+          "rime"
+        ],
+        "drop": [
+          "deco",
+          "events",
+          "decals",
+          "farHeads",
+          "farFeet",
+          "zoneExtras"
+        ],
+        "keep": [
+          "hitShapes",
+          "mainObjects",
+          "flights",
+          "pending",
+          "freeze"
+        ]
+      },
+      "marks": {
+        "rects": {
+          "12": [-16, -14, 16, 4],
+          "19": [-22, -18, 22, 4],
+          "28": [-30, -24, 30, 5],
+          "38": [-40, -30, 40, 6],
+          "54": [-56, -38, 56, 7]
+        },
+        "emblem": {
+          "box": [22, 22],
+          "gap": 4
+        },
+        "crow": {
+          "rx": 14,
+          "ry": 5,
+          "period": 0.9,
+          "lift": 8,
+          "dive": 0.12
+        },
+        "spores": {
+          "slots": 2,
+          "rise": 16,
+          "drift": 6
+        }
+      },
+      "fills": [
+        [
+          "brushDownpour.band",
+          "ink",
+          1,
+          0.3
+        ],
+        [
+          "seventhSeal.wash",
+          "p50",
+          0.18,
+          0.36
+        ],
+        [
+          "seventhSeal.print",
+          "p50",
+          0.25,
+          1.2
+        ],
+        [
+          "inkPulse.band",
+          "ink",
+          1,
+          0.3
+        ],
+        [
+          "frostRing.band",
+          "p50",
+          0.5,
+          0.29
+        ],
+        [
+          "frostRing.band.tail",
+          "p50",
+          0.25,
+          0.45
+        ],
+        [
+          "inkLance.capsule",
+          "p50",
+          0.16,
+          0.28
+        ],
+        [
+          "wideBrush.band",
+          "p50",
+          0.45,
+          0.28
+        ],
+        [
+          "crossStrokes.band",
+          "p50",
+          0.5,
+          0.28
+        ],
+        [
+          "judgmentLine.capsule",
+          "p50",
+          0.12,
+          0.28
+        ],
+        [
+          "inkOrbit.wash",
+          "ink",
+          0.14,
+          0.3
+        ],
+        [
+          "wardRing.wash",
+          "p50",
+          0.12,
+          0.3
+        ],
+        [
+          "eclipseHalo.wash",
+          "ink",
+          0.1,
+          0.3
+        ],
+        [
+          "eclipseHalo.crescent",
+          "ink",
+          0.35,
+          0.3
+        ],
+        [
+          "lob.shadow",
+          "ink",
+          0.14,
+          1
+        ]
+      ]
+    },
+    "meta": {
+      "inkLightning": {
+        "kind": "strike",
+        "look": "chainSpark",
+        "geo": {
+          "count": [2, 0.5],
+          "radius": [56, 0]
+        },
+        "main": "impact",
+        "stages": [
+          "impact"
+        ],
+        "done": {
+          "fx": true,
+          "lob": false,
+          "gimmick": false
+        }
+      },
+      "brushDownpour": {
+        "kind": "strike",
+        "look": "boneMortar",
+        "geo": {
+          "count": [4, 0.5],
+          "radius": [46, 0]
+        },
+        "main": "impact",
+        "stages": [
+          "impact"
+        ],
+        "done": {
+          "fx": true,
+          "lob": false,
+          "gimmick": false
+        }
+      },
+      "fallingScroll": {
+        "kind": "strike",
+        "look": "boneMortar",
+        "geo": {
+          "count": [1, 0.25],
+          "radius": [110, 0]
+        },
+        "main": "impact",
+        "stages": [
+          "impact"
+        ],
+        "done": {
+          "fx": true,
+          "lob": false,
+          "gimmick": false
+        }
+      },
+      "seventhSeal": {
+        "kind": "strike",
+        "look": "voidMine",
+        "geo": {
+          "count": [7, 1],
+          "radius": [58, 0]
+        },
+        "main": "impact",
+        "stages": [
+          "impact"
+        ],
+        "done": {
+          "fx": true,
+          "lob": false,
+          "gimmick": false
+        }
+      },
+      "inkPulse": {
+        "kind": "nova",
+        "look": "boneMortar",
+        "geo": {
+          "radius": [135, 8]
+        },
+        "main": "burst",
+        "stages": [
+          "burst"
+        ],
+        "done": {
+          "fx": true,
+          "lob": false,
+          "gimmick": false
+        }
+      },
+      "frostRing": {
+        "kind": "nova",
+        "look": "blackSun",
+        "geo": {
+          "radius": [160, 9]
+        },
+        "main": "burst",
+        "stages": [
+          "burst"
+        ],
+        "done": {
+          "fx": true,
+          "lob": false,
+          "gimmick": false
+        }
+      },
+      "thunderclap": {
+        "kind": "nova",
+        "look": "chainSpark",
+        "geo": {
+          "radius": [120, 8]
+        },
+        "main": "burst",
+        "stages": [
+          "burst"
+        ],
+        "done": {
+          "fx": true,
+          "lob": false,
+          "gimmick": false
+        }
+      },
+      "silenceBell": {
+        "kind": "nova",
+        "look": "voidMine",
+        "geo": {
+          "radius": [220, 12]
+        },
+        "main": "burst",
+        "stages": [
+          "burst"
+        ],
+        "done": {
+          "fx": true,
+          "lob": false,
+          "gimmick": false
+        }
+      },
+      "inkPots": {
+        "kind": "lob",
+        "look": "boneMortar",
+        "geo": {
+          "count": [1, 0.25],
+          "radius": [80, 6],
+          "delay": 0.55,
+          "scatter": 0
+        },
+        "main": "land",
+        "stages": [
+          "land",
+          "flight"
+        ],
+        "done": {
+          "fx": true,
+          "lob": true,
+          "gimmick": false
+        }
+      },
+      "clusterPots": {
+        "kind": "lob",
+        "look": "boneMortar",
+        "geo": {
+          "count": [3, 0.5],
+          "radius": [56, 4],
+          "delay": 0.6,
+          "scatter": 70
+        },
+        "main": "land",
+        "stages": [
+          "land",
+          "flight"
+        ],
+        "done": {
+          "fx": true,
+          "lob": true,
+          "gimmick": false
+        }
+      },
+      "tarJar": {
+        "kind": "lob",
+        "look": "voidMine",
+        "geo": {
+          "count": [1, 0.25],
+          "radius": [100, 7],
+          "delay": 0.7,
+          "scatter": 0
+        },
+        "main": "land",
+        "stages": [
+          "land",
+          "flight"
+        ],
+        "done": {
+          "fx": true,
+          "lob": true,
+          "gimmick": false
+        }
+      },
+      "meteorBrush": {
+        "kind": "lob",
+        "look": "boneMortar",
+        "geo": {
+          "count": [1, 0.25],
+          "radius": [140, 10],
+          "delay": 1,
+          "scatter": 0
+        },
+        "main": "land",
+        "stages": [
+          "land",
+          "flight"
+        ],
+        "done": {
+          "fx": true,
+          "lob": true,
+          "gimmick": false
+        }
+      },
+      "sparkThread": {
+        "kind": "chain",
+        "look": "chainSpark",
+        "geo": {
+          "jumps": [3, 0.5],
+          "hop": 260
+        },
+        "main": "jump",
+        "stages": [
+          "jump"
+        ],
+        "done": {
+          "fx": true,
+          "lob": false,
+          "gimmick": false
+        }
+      },
+      "stormThread": {
+        "kind": "chain",
+        "look": "chainSpark",
+        "geo": {
+          "jumps": [6, 0.75],
+          "hop": 300
+        },
+        "main": "jump",
+        "stages": [
+          "jump"
+        ],
+        "done": {
+          "fx": true,
+          "lob": false,
+          "gimmick": false
+        }
+      },
+      "frostChainlet": {
+        "kind": "chain",
+        "look": "chainSpark",
+        "geo": {
+          "jumps": [4, 0.5],
+          "hop": 280
+        },
+        "main": "jump",
+        "stages": [
+          "jump"
+        ],
+        "done": {
+          "fx": true,
+          "lob": false,
+          "gimmick": false
+        }
+      },
+      "inkLance": {
+        "kind": "beam",
+        "look": "railSpear",
+        "geo": {
+          "length": [600, 20],
+          "width": 12,
+          "directions": 1
+        },
+        "main": "stroke",
+        "stages": [
+          "stroke"
+        ],
+        "done": {
+          "fx": true,
+          "lob": false,
+          "gimmick": false
+        }
+      },
+      "wideBrush": {
+        "kind": "beam",
+        "look": "frostLine",
+        "geo": {
+          "length": [380, 15],
+          "width": 34,
+          "directions": 1
+        },
+        "main": "stroke",
+        "stages": [
+          "stroke"
+        ],
+        "done": {
+          "fx": true,
+          "lob": false,
+          "gimmick": false
+        }
+      },
+      "crossStrokes": {
+        "kind": "beam",
+        "look": "railSpear",
+        "geo": {
+          "length": [460, 18],
+          "width": 14,
+          "directions": 4
+        },
+        "main": "stroke",
+        "stages": [
+          "stroke"
+        ],
+        "done": {
+          "fx": true,
+          "lob": false,
+          "gimmick": false
+        }
+      },
+      "judgmentLine": {
+        "kind": "beam",
+        "look": "railSpear",
+        "geo": {
+          "length": [900, 30],
+          "width": 18,
+          "directions": 1
+        },
+        "main": "stroke",
+        "stages": [
+          "stroke"
+        ],
+        "done": {
+          "fx": true,
+          "lob": false,
+          "gimmick": false
+        }
+      },
+      "inkOrbit": {
+        "kind": "halo",
+        "look": "orbitScythes",
+        "geo": {
+          "radius": [120, 6],
+          "inner": 40
+        },
+        "main": "sweep",
+        "stages": [
+          "sweep"
+        ],
+        "done": {
+          "fx": true,
+          "lob": false,
+          "gimmick": false
+        }
+      },
+      "wardRing": {
+        "kind": "halo",
+        "look": "eclipseStep",
+        "geo": {
+          "radius": [90, 5],
+          "inner": 0
+        },
+        "main": "sweep",
+        "stages": [
+          "sweep"
+        ],
+        "done": {
+          "fx": true,
+          "lob": false,
+          "gimmick": false
+        }
+      },
+      "eclipseHalo": {
+        "kind": "halo",
+        "look": "eclipseStep",
+        "geo": {
+          "radius": [210, 10],
+          "inner": 110
+        },
+        "main": "sweep",
+        "stages": [
+          "sweep"
+        ],
+        "done": {
+          "fx": true,
+          "lob": false,
+          "gimmick": false
+        }
+      }
+    },
+    "parts": {
+      "inkLightning": {
+        "bolt": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.24,
+          "still": null,
+          "box": [36, 120],
+          "anchor": [18, 112],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        },
+        "bolt-awakened": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.24,
+          "still": null,
+          "box": [36, 120],
+          "anchor": [18, 112],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        },
+        "scorch": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": 0.6,
+          "still": null,
+          "box": [52, 24],
+          "anchor": [26, 12],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "deco",
+          "flash": false,
+          "window": "decal"
+        }
+      },
+      "brushDownpour": {
+        "stroke-a": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.18,
+          "still": null,
+          "box": [48, 88],
+          "anchor": [14, 80],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        },
+        "stroke-b": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.18,
+          "still": null,
+          "box": [48, 88],
+          "anchor": [14, 80],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        },
+        "stroke-a-awakened": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.18,
+          "still": null,
+          "box": [48, 88],
+          "anchor": [14, 80],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        },
+        "stroke-b-awakened": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.18,
+          "still": null,
+          "box": [48, 88],
+          "anchor": [14, 80],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        },
+        "mark-s": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": 0.9,
+          "still": null,
+          "box": [56, 28],
+          "anchor": [28, 14],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "deco",
+          "flash": false,
+          "window": "decal"
+        },
+        "mark-m": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": 0.9,
+          "still": null,
+          "box": [76, 36],
+          "anchor": [38, 18],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "deco",
+          "flash": false,
+          "window": "decal"
+        },
+        "mark-l": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": 0.9,
+          "still": null,
+          "box": [100, 46],
+          "anchor": [50, 23],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "deco",
+          "flash": false,
+          "window": "decal"
+        }
+      },
+      "fallingScroll": {
+        "scroll": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.42,
+          "still": null,
+          "box": [52, 104],
+          "anchor": [26, 98],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        },
+        "scroll-awakened": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.42,
+          "still": null,
+          "box": [52, 104],
+          "anchor": [26, 98],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        }
+      },
+      "seventhSeal": {
+        "seal": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.3,
+          "still": null,
+          "box": [40, 56],
+          "anchor": [20, 50],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        },
+        "seal-awakened": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.3,
+          "still": null,
+          "box": [40, 56],
+          "anchor": [20, 50],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        },
+        "print-a": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": 1.2,
+          "still": null,
+          "box": [48, 24],
+          "anchor": [24, 12],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "deco",
+          "flash": false,
+          "window": "decal"
+        },
+        "print-b": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": 1.2,
+          "still": null,
+          "box": [48, 24],
+          "anchor": [24, 12],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "deco",
+          "flash": false,
+          "window": "decal"
+        },
+        "print-c": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": 1.2,
+          "still": null,
+          "box": [48, 24],
+          "anchor": [24, 12],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "deco",
+          "flash": false,
+          "window": "decal"
+        }
+      },
+      "inkPulse": {
+        "splash-a": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.3,
+          "still": null,
+          "box": [40, 28],
+          "anchor": [6, 14],
+          "place": "ring",
+          "rotate": "radial",
+          "layer": "ally",
+          "lod": "deco",
+          "flash": false,
+          "window": "mark"
+        },
+        "splash-b": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.3,
+          "still": null,
+          "box": [40, 28],
+          "anchor": [6, 14],
+          "place": "ring",
+          "rotate": "radial",
+          "layer": "ally",
+          "lod": "deco",
+          "flash": false,
+          "window": "mark"
+        }
+      },
+      "frostRing": {
+        "shard-a": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.45,
+          "still": null,
+          "box": [36, 32],
+          "anchor": [6, 16],
+          "place": "ring",
+          "rotate": "radial",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        },
+        "shard-b": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.45,
+          "still": null,
+          "box": [36, 32],
+          "anchor": [6, 16],
+          "place": "ring",
+          "rotate": "radial",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        },
+        "shard-c": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.45,
+          "still": null,
+          "box": [36, 32],
+          "anchor": [6, 16],
+          "place": "ring",
+          "rotate": "radial",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        },
+        "shard-awakened-a": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.45,
+          "still": null,
+          "box": [44, 36],
+          "anchor": [6, 18],
+          "place": "ring",
+          "rotate": "radial",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        },
+        "shard-awakened-b": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.45,
+          "still": null,
+          "box": [44, 36],
+          "anchor": [6, 18],
+          "place": "ring",
+          "rotate": "radial",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        }
+      },
+      "thunderclap": {
+        "clap": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.24,
+          "still": null,
+          "box": [60, 44],
+          "anchor": [30, 42],
+          "place": "head",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        },
+        "clap-awakened": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.24,
+          "still": null,
+          "box": [60, 44],
+          "anchor": [30, 42],
+          "place": "head",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        }
+      },
+      "silenceBell": {
+        "bell": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.45,
+          "still": null,
+          "box": [40, 52],
+          "anchor": [20, 50],
+          "place": "head",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        },
+        "bell-awakened": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.45,
+          "still": null,
+          "box": [40, 52],
+          "anchor": [20, 50],
+          "place": "head",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        }
+      },
+      "inkPots": {
+        "shatter": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.3,
+          "still": null,
+          "box": [76, 64],
+          "anchor": [38, 40],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        },
+        "splat": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": 1.2,
+          "still": null,
+          "box": [64, 30],
+          "anchor": [32, 15],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "deco",
+          "flash": false,
+          "window": "decal"
+        },
+        "pot": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.55,
+          "still": null,
+          "box": [30, 34],
+          "anchor": [15, 17],
+          "place": "air",
+          "rotate": "none",
+          "layer": "air",
+          "lod": "info",
+          "flash": false,
+          "window": "flight"
+        },
+        "pot-awakened": {
+          "frames": 4,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.55,
+          "still": null,
+          "box": [30, 34],
+          "anchor": [15, 17],
+          "place": "air",
+          "rotate": "none",
+          "layer": "air",
+          "lod": "info",
+          "flash": false,
+          "window": "flight"
+        }
+      },
+      "clusterPots": {
+        "burst": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.24,
+          "still": null,
+          "box": [56, 48],
+          "anchor": [28, 30],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        },
+        "pot-s": {
+          "frames": 4,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": 0,
+          "box": [22, 26],
+          "anchor": [11, 13],
+          "place": "air",
+          "rotate": "none",
+          "layer": "air",
+          "lod": "info",
+          "flash": false,
+          "window": "flight"
+        },
+        "pot-m": {
+          "frames": 4,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": 0,
+          "box": [26, 30],
+          "anchor": [13, 15],
+          "place": "air",
+          "rotate": "none",
+          "layer": "air",
+          "lod": "info",
+          "flash": false,
+          "window": "flight"
+        },
+        "mini": {
+          "frames": 4,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": 0,
+          "box": [18, 20],
+          "anchor": [9, 11],
+          "place": "air",
+          "rotate": "none",
+          "layer": "air",
+          "lod": "info",
+          "flash": false,
+          "window": "pending"
+        }
+      },
+      "tarJar": {
+        "crack": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.32,
+          "still": null,
+          "box": [80, 56],
+          "anchor": [40, 34],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        },
+        "pool": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": 1.5,
+          "still": null,
+          "box": [104, 44],
+          "anchor": [52, 22],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "deco",
+          "flash": false,
+          "window": "decal"
+        },
+        "jar": {
+          "frames": 4,
+          "drive": "loop",
+          "fps": 8,
+          "seconds": null,
+          "still": 0,
+          "box": [34, 38],
+          "anchor": [17, 19],
+          "place": "air",
+          "rotate": "none",
+          "layer": "air",
+          "lod": "info",
+          "flash": false,
+          "window": "flight"
+        },
+        "jar-awakened": {
+          "frames": 4,
+          "drive": "loop",
+          "fps": 8,
+          "seconds": null,
+          "still": 0,
+          "box": [34, 38],
+          "anchor": [17, 19],
+          "place": "air",
+          "rotate": "none",
+          "layer": "air",
+          "lod": "info",
+          "flash": false,
+          "window": "flight"
+        }
+      },
+      "meteorBrush": {
+        "impact": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.36,
+          "still": null,
+          "box": [88, 68],
+          "anchor": [44, 46],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": true,
+          "window": "mark"
+        },
+        "impact-awakened": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.36,
+          "still": null,
+          "box": [88, 68],
+          "anchor": [44, 46],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": true,
+          "window": "mark"
+        },
+        "crater": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": 1.5,
+          "still": null,
+          "box": [120, 52],
+          "anchor": [60, 26],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "info",
+          "flash": false,
+          "window": "decal"
+        },
+        "comet": {
+          "frames": 4,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": 0,
+          "box": [32, 92],
+          "anchor": [16, 14],
+          "place": "air",
+          "rotate": "path",
+          "layer": "air",
+          "lod": "info",
+          "flash": false,
+          "window": "flight"
+        },
+        "comet-awakened": {
+          "frames": 4,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": 0,
+          "box": [32, 92],
+          "anchor": [16, 14],
+          "place": "air",
+          "rotate": "path",
+          "layer": "air",
+          "lod": "info",
+          "flash": false,
+          "window": "flight"
+        }
+      },
+      "sparkThread": {
+        "spark": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [24, 24],
+          "anchor": [12, 12],
+          "place": "point",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "deco",
+          "flash": false,
+          "window": "chain"
+        },
+        "spark-awakened": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [24, 24],
+          "anchor": [12, 12],
+          "place": "point",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "deco",
+          "flash": false,
+          "window": "chain"
+        }
+      },
+      "stormThread": {
+        "gust-a": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [24, 20],
+          "anchor": [12, 10],
+          "place": "point",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "deco",
+          "flash": false,
+          "window": "chain"
+        },
+        "gust-b": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [32, 26],
+          "anchor": [16, 13],
+          "place": "point",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "deco",
+          "flash": false,
+          "window": "chain"
+        }
+      },
+      "frostChainlet": {
+        "rime12": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [36, 18],
+          "anchor": [18, 9],
+          "place": "feet",
+          "rotate": "none",
+          "layer": "feet",
+          "lod": "info",
+          "flash": false,
+          "window": "class",
+          "r": 12
+        },
+        "rime19": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [48, 22],
+          "anchor": [24, 11],
+          "place": "feet",
+          "rotate": "none",
+          "layer": "feet",
+          "lod": "info",
+          "flash": false,
+          "window": "class",
+          "r": 19
+        },
+        "rime28": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [64, 28],
+          "anchor": [32, 14],
+          "place": "feet",
+          "rotate": "none",
+          "layer": "feet",
+          "lod": "info",
+          "flash": false,
+          "window": "class",
+          "r": 28
+        }
+      },
+      "inkLance": {
+        "tassel": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [60, 22],
+          "anchor": [56, 11],
+          "place": "origin",
+          "rotate": "beam",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "beam"
+        },
+        "tassel-awakened": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [60, 22],
+          "anchor": [56, 11],
+          "place": "origin",
+          "rotate": "beam",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "beam"
+        }
+      },
+      "wideBrush": {
+        "brush": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [56, 48],
+          "anchor": [14, 24],
+          "place": "tip",
+          "rotate": "beam",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "beam"
+        },
+        "brush-awakened": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [56, 48],
+          "anchor": [14, 24],
+          "place": "tip",
+          "rotate": "beam",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "beam"
+        }
+      },
+      "crossStrokes": {
+        "scrap-a": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [20, 16],
+          "anchor": [10, 8],
+          "place": "tip",
+          "rotate": "beam",
+          "layer": "ally",
+          "lod": "deco",
+          "flash": false,
+          "window": "beam"
+        },
+        "scrap-b": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [20, 16],
+          "anchor": [10, 8],
+          "place": "tip",
+          "rotate": "beam",
+          "layer": "ally",
+          "lod": "deco",
+          "flash": false,
+          "window": "beam"
+        }
+      },
+      "judgmentLine": {
+        "inkbox": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [64, 30],
+          "anchor": [60, 15],
+          "place": "origin",
+          "rotate": "beam",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "beam"
+        },
+        "inkbox-awakened": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [64, 30],
+          "anchor": [60, 15],
+          "place": "origin",
+          "rotate": "beam",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "beam"
+        },
+        "flick-a": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.24,
+          "still": null,
+          "box": [22, 18],
+          "anchor": [11, 9],
+          "place": "line",
+          "rotate": "beam",
+          "layer": "ally",
+          "lod": "deco",
+          "flash": false,
+          "window": "beam"
+        },
+        "flick-b": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.24,
+          "still": null,
+          "box": [22, 18],
+          "anchor": [11, 9],
+          "place": "line",
+          "rotate": "beam",
+          "layer": "ally",
+          "lod": "deco",
+          "flash": false,
+          "window": "beam"
+        }
+      },
+      "inkOrbit": {
+        "chip-a": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.24,
+          "still": null,
+          "box": [16, 12],
+          "anchor": [4, 6],
+          "place": "ring",
+          "rotate": "radial",
+          "layer": "ally",
+          "lod": "deco",
+          "flash": false,
+          "window": "mark"
+        },
+        "chip-b": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.24,
+          "still": null,
+          "box": [16, 12],
+          "anchor": [4, 6],
+          "place": "ring",
+          "rotate": "radial",
+          "layer": "ally",
+          "lod": "deco",
+          "flash": false,
+          "window": "mark"
+        }
+      },
+      "wardRing": {
+        "knot-a": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [22, 18],
+          "anchor": [11, 9],
+          "place": "ring",
+          "rotate": "radial",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "variant"
+        },
+        "knot-b": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [22, 18],
+          "anchor": [11, 9],
+          "place": "ring",
+          "rotate": "radial",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "variant"
+        }
+      },
+      "eclipseHalo": {
+        "ribbon-a": {
+          "frames": 3,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": 0,
+          "box": [36, 18],
+          "anchor": [32, 9],
+          "place": "ring",
+          "rotate": "tangent",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        },
+        "ribbon-b": {
+          "frames": 3,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": 0,
+          "box": [36, 18],
+          "anchor": [32, 9],
+          "place": "ring",
+          "rotate": "tangent",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "mark"
+        }
+      }
+    },
+    "vectors": {
+      "cases": [
+        [
+          "inkPulse",
+          "burst",
+          {
+            "radius": 151,
+            "seed": 7
+          },
+          [
+            [
+              "splash-a",
+              130.59,
+              -83.49,
+              -0.569,
+              0,
+              0.761,
+              0,
+              "ally"
+            ],
+            [
+              "splash-b",
+              66.82,
+              139.86,
+              1.125,
+              0,
+              0.522,
+              0,
+              "ally"
+            ],
+            [
+              "splash-a",
+              -101.48,
+              -117.16,
+              3.999,
+              0,
+              0.987,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "knots": [
+              [0, 11.89],
+              [40, 6.54],
+              [80, 11.19],
+              [120, 8.8],
+              [160, 13.45],
+              [200, 8.1],
+              [240, 15.71],
+              [280, 10.36],
+              [320, 7.97]
+            ],
+            "gaps": [
+              [13.8, 20.04],
+              [190.67, 194.77],
+              [281.06, 287.02]
+            ],
+            "core": [
+              [65.16, 182.84]
+            ]
+          }
+        ],
+        [
+          "frostRing",
+          "burst",
+          {
+            "radius": 178,
+            "seed": 7
+          },
+          [
+            [
+              "shard-a",
+              83.04,
+              -150.63,
+              2.075,
+              0,
+              0.761,
+              0,
+              "ally"
+            ],
+            [
+              "shard-c",
+              168.74,
+              -33.33,
+              2.947,
+              0,
+              0.522,
+              0,
+              "ally"
+            ],
+            [
+              "shard-b",
+              63.43,
+              159.88,
+              4.335,
+              0,
+              0.987,
+              0,
+              "ally"
+            ],
+            [
+              "shard-c",
+              -87.29,
+              161.98,
+              2.065,
+              0,
+              0.452,
+              2,
+              "ally"
+            ],
+            [
+              "shard-b",
+              -163.72,
+              -52.72,
+              6.595,
+              0,
+              0.213,
+              2,
+              "ally"
+            ]
+          ],
+          {
+            "knots": [
+              [0, 15.77],
+              [40, 14.16],
+              [80, 15.56],
+              [120, 14.84],
+              [160, 16.24],
+              [200, 14.63],
+              [240, 16.91],
+              [280, 15.31],
+              [320, 14.59]
+            ],
+            "core": [
+              [65.16, 425.16]
+            ],
+            "fringe": [
+              [0, -170.23],
+              [6.95, -170.13],
+              [13.88, -169.74],
+              [20.8, -169.06],
+              [27.68, -168.08],
+              [34.51, -166.82],
+              [40.54, -162.29],
+              [48, -163.47],
+              [53.28, -157.41],
+              [61.18, -159.05],
+              [65.51, -151.55],
+              [73.96, -153.58]
+            ]
+          }
+        ],
+        [
+          "thunderclap",
+          "burst",
+          {
+            "radius": 136,
+            "seed": 5
+          },
+          [
+            [
+              "clap",
+              0,
+              -66,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "jag": [
+              [133.4, 4.26],
+              [140.26, 24.27],
+              [128.31, 55.16],
+              [109.2, 70.56],
+              [97.25, 101.81],
+              [75.02, 110.89],
+              [62.41, 127.46],
+              [29.06, 129.53],
+              [7.5, 141.38],
+              [-25.36, 138.07],
+              [-45.96, 126.19],
+              [-66.44, 124.94],
+              [-88.15, 99.81],
+              [-109.79, 88.73],
+              [-119.17, 56.84],
+              [-123.7, 39.02],
+              [-138.29, 19.2],
+              [-132.96, -12.9],
+              [-135.86, -36.78],
+              [-116.3, -63.39],
+              [-113.92, -84.56],
+              [-82.41, -104.14],
+              [-67.74, -115.61],
+              [-40.84, -134.26],
+              [-16.92, -131.78],
+              [1.67, -141.45],
+              [36.13, -128.22],
+              [55.36, -125.96],
+              [84.54, -111.49],
+              [94.56, -88.86],
+              [115.21, -81.37],
+              [125.43, -46.08],
+              [138.97, -30]
+            ],
+            "forks": [
+              [84.54, -111.49],
+              [90.26, -117.37],
+              [92.06, -123.83],
+              [-66.44, 124.94],
+              [-68.34, 131.29],
+              [-72.2, 135.1],
+              [36.13, -128.22],
+              [39.51, -137.31],
+              [38.36, -145.16]
+            ]
+          }
+        ],
+        [
+          "silenceBell",
+          "burst",
+          {
+            "radius": 244,
+            "seed": 5
+          },
+          [
+            [
+              "bell",
+              0,
+              -66,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "rings": [
+              [216.47, 1],
+              [146.15, 0.7],
+              [72.62, 0.45]
+            ]
+          }
+        ],
+        [
+          "brushDownpour",
+          "impact",
+          {
+            "radius": 46,
+            "seed": 3
+          },
+          [
+            [
+              "mark-s",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ground"
+            ],
+            [
+              "stroke-a",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "knots": [
+              [0, 4.74],
+              [27.69, 3.67],
+              [55.38, 5.76],
+              [83.08, 3.35],
+              [110.77, 2.28],
+              [138.46, 4.37],
+              [166.15, 1.96],
+              [193.85, 5.39],
+              [221.54, 2.98],
+              [249.23, 1.91],
+              [276.92, 4],
+              [304.62, 1.59],
+              [332.31, 5.01]
+            ],
+            "gaps": [
+              [16.68, 41.85],
+              [42.26, 64.09],
+              [121.35, 135.69],
+              [157.23, 178.08],
+              [234.25, 251.75],
+              [270.13, 294.14],
+              [347.15, 367.81]
+            ],
+            "core": [
+              [76.98, 108.46]
+            ]
+          }
+        ],
+        [
+          "meteorBrush",
+          "land",
+          {
+            "radius": 160,
+            "seed": 3
+          },
+          [
+            [
+              "crater",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ground"
+            ],
+            [
+              "impact",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "gaps": [
+              [97.54, 107.3],
+              [181.72, 190.52]
+            ],
+            "splash": [
+              [-38.04, 70.79],
+              [-16.93, 66.66],
+              [-84.87, 60.4],
+              [-87.64, -27.77],
+              [-85.19, -78.34],
+              [21.24, -85.76],
+              [91.47, -88.55],
+              [56.73, -91.04],
+              [99.86, 3.4],
+              [101.03, 71.42],
+              [3.35, 111.44]
+            ],
+            "drops": [
+              [-33.86, 87.05],
+              [-92.01, 65.49],
+              [-94.17, -29.84],
+              [22.75, -91.87],
+              [107.96, 3.67],
+              [106.09, 74.99]
+            ]
+          }
+        ],
+        [
+          "eclipseHalo",
+          "sweep",
+          {
+            "radius": 230,
+            "inner": 110,
+            "seed": 6,
+            "p": 0.5
+          },
+          [
+            [
+              "ribbon-b",
+              -222.41,
+              58.6,
+              4.455,
+              0,
+              0.628,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "crescent": [
+              [-222.41, 58.6],
+              [-229.21, 19.09],
+              [-229.04, -21.01],
+              [-221.91, -60.46],
+              [-208.04, -98.07],
+              [-187.85, -132.71],
+              [-161.95, -163.31],
+              [-131.13, -188.96],
+              [-96.33, -208.86],
+              [-58.6, -222.41],
+              [-80.86, -175.31],
+              [-91.55, -131.92],
+              [-96.09, -96.9],
+              [-100.98, -71.34],
+              [-111.84, -52.72],
+              [-131.67, -35.87],
+              [-159.91, -14.67],
+              [-192.4, 16.02]
+            ]
+          }
+        ],
+        [
+          "inkOrbit",
+          "sweep",
+          {
+            "radius": 132,
+            "inner": 40,
+            "seed": 6,
+            "p": 0.5
+          },
+          [
+            [
+              "chip-a",
+              133.86,
+              6.12,
+              0.046,
+              0,
+              0.794,
+              0,
+              "ally"
+            ],
+            [
+              "chip-b",
+              56.98,
+              121.28,
+              1.132,
+              0,
+              0.555,
+              0,
+              "ally"
+            ],
+            [
+              "chip-b",
+              -76.75,
+              -109.84,
+              4.103,
+              0,
+              0.02,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "comet": [
+              [-42.69, -74.66],
+              [-57.28, -64.15],
+              [-69.36, -50.84],
+              [-78.42, -35.31],
+              [-84.05, -18.23],
+              [-86, -0.36],
+              [-84.19, 17.53],
+              [-78.71, 34.65],
+              [-69.79, 50.26]
+            ],
+            "gaps": [
+              [24.79, 37.85],
+              [343.38, 353.22]
+            ]
+          }
+        ],
+        [
+          "wardRing",
+          "sweep",
+          {
+            "radius": 100,
+            "inner": 0,
+            "seed": 6,
+            "p": 0.5
+          },
+          [
+            [
+              "knot-a",
+              72.55,
+              68.82,
+              0.759,
+              0,
+              0.794,
+              0,
+              "ally"
+            ],
+            [
+              "knot-b",
+              -83.34,
+              55.27,
+              2.556,
+              0,
+              0.555,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "twist": [
+              [84.56, 43.3],
+              [89.12, 55.52],
+              [77.42, 55.06],
+              [80.16, 67.81],
+              [70.72, 63.43],
+              [72.02, 76.41],
+              [64.14, 70.08],
+              [64.15, 83.12],
+              [54.79, 77.61],
+              [53.16, 90.55],
+              [47.24, 82.42],
+              [44.39, 95.15]
+            ],
+            "stitch": [
+              [270, 390]
+            ]
+          }
+        ],
+        [
+          "sparkThread",
+          "jump",
+          {
+            "points": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 220,
+                "y": -70
+              },
+              {
+                "x": 420,
+                "y": 20
+              },
+              {
+                "x": 640,
+                "y": -40
+              },
+              {
+                "x": 860,
+                "y": 30
+              }
+            ],
+            "seed": 1
+          },
+          [
+            [
+              "spark",
+              220,
+              -70,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ],
+            [
+              "spark",
+              420,
+              20,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ],
+            [
+              "spark",
+              640,
+              -40,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ],
+            [
+              "spark",
+              860,
+              30,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "controls": [
+              [121.2, 0.2],
+              [334.4, -57],
+              [539.6, 25.2],
+              [761.2, -40.2]
+            ],
+            "start": [
+              [25.99, -0.79]
+            ]
+          }
+        ],
+        [
+          "stormThread",
+          "jump",
+          {
+            "points": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 220,
+                "y": -70
+              },
+              {
+                "x": 420,
+                "y": 20
+              },
+              {
+                "x": 640,
+                "y": -40
+              },
+              {
+                "x": 860,
+                "y": 30
+              }
+            ],
+            "seed": 1
+          },
+          [
+            [
+              "gust-b",
+              220,
+              -70,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ],
+            [
+              "gust-a",
+              420,
+              20,
+              0,
+              1,
+              0,
+              0,
+              "ally"
+            ],
+            [
+              "gust-a",
+              640,
+              -40,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ],
+            [
+              "gust-a",
+              860,
+              30,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "strandA": [
+              [0, 0],
+              [5.88, -1.57],
+              [11.75, -3.15],
+              [17.24, -5.94],
+              [22.81, -8.47],
+              [28.54, -10.48],
+              [33.72, -14.24],
+              [41.13, -11],
+              [46.92, -12.84],
+              [53.05, -13.63],
+              [57.07, -21.01],
+              [62.93, -22.62]
+            ],
+            "strandB": [
+              [0, 0],
+              [5.7, -2.12],
+              [11.41, -4.22],
+              [17.38, -5.49],
+              [23.51, -6.27],
+              [29.35, -7.94],
+              [34.69, -11.2],
+              [39.92, -14.79],
+              [45.71, -16.63],
+              [52.2, -16.27],
+              [58.72, -15.83],
+              [64.44, -17.9]
+            ]
+          }
+        ],
+        [
+          "frostChainlet",
+          "jump",
+          {
+            "points": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 220,
+                "y": -70
+              },
+              {
+                "x": 420,
+                "y": 20
+              },
+              {
+                "x": 640,
+                "y": -40
+              },
+              {
+                "x": 860,
+                "y": 30
+              }
+            ],
+            "seed": 1
+          },
+          [
+            [
+              "rime19",
+              220,
+              -70,
+              0,
+              0,
+              0,
+              0,
+              "feet"
+            ],
+            [
+              "rime19",
+              420,
+              20,
+              0,
+              0,
+              0,
+              0,
+              "feet"
+            ],
+            [
+              "rime19",
+              640,
+              -40,
+              0,
+              0,
+              0,
+              0,
+              "feet"
+            ],
+            [
+              "rime19",
+              860,
+              30,
+              0,
+              0,
+              0,
+              0,
+              "feet"
+            ]
+          ],
+          {
+            "links": [
+              [35.67, -11.35],
+              [49.01, -15.59],
+              [62.35, -19.84],
+              [75.69, -24.08],
+              [89.04, -28.33],
+              [102.38, -32.57],
+              [115.72, -36.82],
+              [129.06, -41.06],
+              [142.4, -45.31],
+              [155.74, -49.55],
+              [169.08, -53.8],
+              [182.42, -58.04]
+            ]
+          }
+        ],
+        [
+          "inkLance",
+          "stroke",
+          {
+            "length": 640,
+            "width": 12,
+            "seed": 1
+          },
+          [
+            [
+              "tassel",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "tip": [
+              [640, 0]
+            ],
+            "head": [
+              [610, -1.6],
+              [615.4, -5.52],
+              [620.5, -6.5],
+              [628.6, -4.03],
+              [635.8, -1.43],
+              [640, 0],
+              [635.8, 1.43],
+              [628.6, 4.03],
+              [620.5, 6.5],
+              [615.4, 5.53],
+              [610, 1.6]
+            ]
+          }
+        ],
+        [
+          "wideBrush",
+          "stroke",
+          {
+            "length": 410,
+            "width": 34,
+            "seed": 1
+          },
+          [
+            [
+              "brush",
+              410,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "top": [
+              [26, -34.52],
+              [35.85, -32.55],
+              [45.69, -36.38],
+              [55.54, -35.9],
+              [65.38, -33.17],
+              [75.23, -35.76],
+              [85.08, -32.71],
+              [94.92, -36.22],
+              [104.77, -32.26],
+              [114.62, -34.67],
+              [124.46, -32.4],
+              [134.31, -32.88]
+            ],
+            "bottom": [
+              [26, 36.02],
+              [35.85, 33.05],
+              [45.69, 35.88],
+              [55.54, 32.6],
+              [65.38, 36.33],
+              [75.23, 35.85],
+              [85.08, 33.22],
+              [94.92, 35.71],
+              [104.77, 32.77],
+              [114.62, 36.16],
+              [124.46, 32.31],
+              [134.31, 34.62]
+            ],
+            "streaks": [
+              [193.7, -7.57],
+              [342.5, -7.57],
+              [95.17, 14.57],
+              [333.25, 14.57],
+              [259.47, 3.19],
+              [394.83, 3.19],
+              [97.77, -22.28],
+              [379.24, -22.28]
+            ]
+          }
+        ],
+        [
+          "crossStrokes",
+          "stroke",
+          {
+            "length": 496,
+            "width": 14,
+            "seed": 1
+          },
+          [
+            [
+              "scrap-a",
+              496,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "top": [
+              [26, -2.63],
+              [33.97, -0.99],
+              [41.93, -6.11],
+              [49.9, -6.08],
+              [57.86, -3.49],
+              [65.83, -7.06],
+              [73.8, -4.08],
+              [81.76, -8.78],
+              [89.73, -4.66],
+              [97.69, -8],
+              [105.66, -5.99],
+              [113.63, -7.16]
+            ],
+            "bottom": [
+              [26, 4.5],
+              [33.97, 1.62],
+              [41.93, 5.48],
+              [49.9, 2.2],
+              [57.86, 7.19],
+              [65.83, 7.17],
+              [73.8, 4.71],
+              [81.76, 8.15],
+              [89.73, 5.29],
+              [97.69, 9.87],
+              [105.66, 5.88],
+              [113.63, 9.08]
+            ]
+          }
+        ],
+        [
+          "judgmentLine",
+          "stroke",
+          {
+            "length": 960,
+            "width": 18,
+            "seed": 1
+          },
+          [
+            [
+              "inkbox",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ],
+            [
+              "flick-b",
+              208.18,
+              7.37,
+              0,
+              0,
+              0,
+              2,
+              "ally"
+            ],
+            [
+              "flick-a",
+              408.19,
+              2.2,
+              0,
+              0,
+              0,
+              2,
+              "ally"
+            ],
+            [
+              "flick-b",
+              566.74,
+              -9.35,
+              0,
+              1,
+              0,
+              2,
+              "ally"
+            ],
+            [
+              "flick-a",
+              865.39,
+              7.08,
+              0,
+              0,
+              0,
+              2,
+              "ally"
+            ]
+          ],
+          {
+            "after": [
+              [493, 3.3],
+              [493, -2.31]
+            ]
+          }
+        ],
+        [
+          "inkPots",
+          "land",
+          {
+            "radius": 92,
+            "seed": 9
+          },
+          [
+            [
+              "splat",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ground"
+            ],
+            [
+              "shatter",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "gaps": [
+              [9.61, 17.39],
+              [273.78, 280.62]
+            ],
+            "splash": [
+              [39.13, -35.45],
+              [65.63, -0.66],
+              [51.71, 28.48],
+              [-7.23, 43.68],
+              [-48.43, 30.26],
+              [-33.91, 35.12],
+              [-43.04, -26.43],
+              [-18.36, -60.62]
+            ],
+            "drops": [
+              [73.89, -0.74],
+              [-7.95, 48.01],
+              [-49.59, 40.17],
+              [-47.74, -29.32]
+            ]
+          }
+        ],
+        [
+          "clusterPots",
+          "land",
+          {
+            "radius": 64,
+            "seed": 9
+          },
+          [
+            [
+              "burst",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "gaps": [
+              [21.66, 32.34]
+            ],
+            "splash": [
+              [26.87, -13.23],
+              [31.2, 19.51],
+              [9.61, 31.86],
+              [-25.16, 3.54],
+              [-20.63, -24.79]
+            ],
+            "drops": [
+              [35.91, 22.46],
+              [-28.36, 3.99],
+              [-23.59, -28.34]
+            ]
+          }
+        ],
+        [
+          "fallingScroll",
+          "impact",
+          {
+            "radius": 110,
+            "seed": 4
+          },
+          [
+            [
+              "scroll",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "core": [
+              [60, 120]
+            ],
+            "tilt": [
+              [0, 0],
+              [1, -6],
+              [2, -12],
+              [3, -12]
+            ]
+          }
+        ],
+        [
+          "inkPulse",
+          "burst",
+          {
+            "radius": 162,
+            "seed": 3,
+            "awakened": true,
+            "p": 0.1
+          },
+          [
+            [
+              "splash-a",
+              159.47,
+              -46.11,
+              -0.281,
+              0,
+              0.189,
+              0,
+              "ally"
+            ],
+            [
+              "splash-a",
+              135.39,
+              96.05,
+              0.617,
+              0,
+              0.654,
+              0,
+              "ally"
+            ],
+            [
+              "splash-b",
+              -51.69,
+              157.75,
+              1.887,
+              0,
+              0.415,
+              0,
+              "ally"
+            ],
+            [
+              "splash-a",
+              -103.06,
+              -130.14,
+              4.043,
+              0,
+              0.88,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "knots": [
+              [0, 15.85],
+              [40, 12.98],
+              [80, 18.56],
+              [120, 12.14],
+              [160, 9.28],
+              [200, 14.86],
+              [240, 8.44],
+              [280, 17.57],
+              [320, 11.15]
+            ],
+            "gaps": [
+              [47.83, 54.59],
+              [90.16, 95.96],
+              [223.08, 226.74],
+              [290.64, 296.16]
+            ],
+            "core": [
+              [219.24, 223.08],
+              [226.74, 290.64],
+              [296.16, 343.68]
+            ]
+          }
+        ],
+        [
+          "frostRing",
+          "burst",
+          {
+            "radius": 192,
+            "seed": 2,
+            "awakened": true
+          },
+          [
+            [
+              "shard-awakened-b",
+              122.85,
+              -139.65,
+              2.292,
+              0,
+              0.222,
+              0,
+              "ally"
+            ],
+            [
+              "shard-awakened-a",
+              196.97,
+              -20.14,
+              -0.102,
+              0,
+              0.687,
+              0,
+              "ally"
+            ],
+            [
+              "shard-awakened-b",
+              177.46,
+              87.83,
+              0.46,
+              0,
+              0.448,
+              0,
+              "ally"
+            ],
+            [
+              "shard-awakened-a",
+              -14.59,
+              185.43,
+              4.791,
+              0,
+              0.913,
+              2,
+              "ally"
+            ],
+            [
+              "shard-awakened-a",
+              -167.89,
+              -80.05,
+              6.728,
+              0,
+              0.139,
+              2,
+              "ally"
+            ],
+            [
+              "shard-awakened-a",
+              -105.91,
+              -167.29,
+              4.148,
+              0,
+              0.604,
+              2,
+              "ally"
+            ]
+          ],
+          {
+            "knots": [
+              [0, 16.26],
+              [40, 15.55],
+              [80, 16.94],
+              [120, 15.34],
+              [160, 14.62],
+              [200, 16.01],
+              [240, 15.3],
+              [280, 16.69],
+              [320, 15.09]
+            ],
+            "core": [
+              [231.12, 591.12]
+            ],
+            "fringe": [
+              [0, -180.29],
+              [6.91, -183.59],
+              [13.46, -178.58],
+              [20.69, -182.5],
+              [26.9, -177.38],
+              [34.35, -180.42],
+              [39.91, -173.76],
+              [47.82, -177.35],
+              [54.47, -175.46],
+              [61.04, -173.32],
+              [66.57, -168.5],
+              [73.94, -168.34]
+            ]
+          }
+        ],
+        [
+          "frostRing",
+          "burst",
+          {
+            "radius": 178,
+            "seed": 7,
+            "lod": "minimal"
+          },
+          [
+            [
+              "shard-a",
+              83.04,
+              -150.63,
+              2.075,
+              0,
+              0.761,
+              0,
+              "ally"
+            ],
+            [
+              "shard-c",
+              168.74,
+              -33.33,
+              2.947,
+              0,
+              0.522,
+              0,
+              "ally"
+            ],
+            [
+              "shard-b",
+              63.43,
+              159.88,
+              4.335,
+              0,
+              0.987,
+              0,
+              "ally"
+            ],
+            [
+              "shard-c",
+              -87.29,
+              161.98,
+              2.065,
+              0,
+              0.452,
+              2,
+              "ally"
+            ],
+            [
+              "shard-b",
+              -163.72,
+              -52.72,
+              6.595,
+              0,
+              0.213,
+              2,
+              "ally"
+            ]
+          ],
+          {
+            "knots": [
+              [0, 15.77],
+              [40, 14.16],
+              [80, 15.56],
+              [120, 14.84],
+              [160, 16.24],
+              [200, 14.63],
+              [240, 16.91],
+              [280, 15.31],
+              [320, 14.59]
+            ],
+            "core": [
+              [65.16, 425.16]
+            ],
+            "fringe": [
+              [0, -170.23],
+              [6.95, -170.13],
+              [13.88, -169.74],
+              [20.8, -169.06],
+              [27.68, -168.08],
+              [34.51, -166.82],
+              [40.54, -162.29],
+              [48, -163.47],
+              [53.28, -157.41],
+              [61.18, -159.05],
+              [65.51, -151.55],
+              [73.96, -153.58]
+            ]
+          }
+        ],
+        [
+          "silenceBell",
+          "burst",
+          {
+            "radius": 290,
+            "seed": 4,
+            "awakened": true,
+            "p": 0.6
+          },
+          [
+            [
+              "bell-awakened",
+              0,
+              -66,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "rings": [
+              [290, 1],
+              [237.87, 0.7],
+              [170.2, 0.45],
+              [98.23, 0.3]
+            ]
+          }
+        ],
+        [
+          "thunderclap",
+          "burst",
+          {
+            "radius": 150,
+            "seed": 2,
+            "t": 0.1,
+            "reduced": true
+          },
+          [
+            [
+              "clap",
+              0,
+              -66,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "jag": [
+              [147.4, 4.31],
+              [154.42, 24.46],
+              [143.14, 55.88],
+              [124.55, 72.29],
+              [114.21, 104.49],
+              [92.54, 115.35],
+              [81.27, 133.07],
+              [48, 138.68],
+              [27.78, 153.08],
+              [-5.5, 154.28],
+              [-27.9, 145.65],
+              [-48.49, 147.76],
+              [-74.68, 126.81],
+              [-98.28, 120.07],
+              [-114.49, 90.66],
+              [-123.12, 74.12],
+              [-142.18, 58.15],
+              [-145.37, 25.42],
+              [-154.72, 3.01],
+              [-143.66, -28.47],
+              [-147.79, -49.55],
+              [-124.03, -78.53],
+              [-113.93, -94.46],
+              [-95.04, -121.6],
+              [-71.66, -128.2],
+              [-57.93, -144.26],
+              [-20.68, -145.76],
+              [-1.98, -151.58],
+              [30.88, -150.78],
+              [50.06, -134.76],
+              [72.08, -137.27],
+              [97.84, -110.55],
+              [117.57, -102.8],
+              [134.46, -74.04],
+              [146.4, -53.38],
+              [144.06, -19.5]
+            ],
+            "forks": [
+              [97.84, -110.55],
+              [103.99, -115.98],
+              [106.28, -122.29],
+              [-74.68, 126.81],
+              [-76.85, 133.07],
+              [-80.87, 136.71],
+              [30.88, -150.78],
+              [33.59, -160.09],
+              [31.88, -167.84]
+            ]
+          }
+        ],
+        [
+          "brushDownpour",
+          "impact",
+          {
+            "radius": 75,
+            "seed": 5,
+            "awakened": true
+          },
+          [
+            [
+              "mark-l",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ground"
+            ],
+            [
+              "stroke-a-awakened",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "knots": [
+              [0, 4.45],
+              [27.69, 2.04],
+              [55.38, 5.46],
+              [83.08, 3.06],
+              [110.77, 5.15],
+              [138.46, 4.07],
+              [166.15, 1.67],
+              [193.85, 5.09],
+              [221.54, 2.68],
+              [249.23, 4.78],
+              [276.92, 3.7],
+              [304.62, 5.79],
+              [332.31, 3.39]
+            ],
+            "gaps": [
+              [-1.48, 22.77],
+              [92.83, 109.59],
+              [118.42, 131.83],
+              [190.51, 210.43],
+              [231.32, 247.89],
+              [251.98, 275.06],
+              [346.29, 361.88]
+            ],
+            "core": [
+              [295.85, 341.09]
+            ]
+          }
+        ],
+        [
+          "seventhSeal",
+          "impact",
+          {
+            "radius": 58,
+            "seed": 12
+          },
+          [
+            [
+              "print-c",
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              "ground"
+            ],
+            [
+              "seal",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "gaps": [
+              [116.01, 128.79],
+              [251.13, 267.63]
+            ],
+            "core": [
+              [5.76, 60.19]
+            ]
+          }
+        ],
+        [
+          "fallingScroll",
+          "impact",
+          {
+            "radius": 132,
+            "seed": 7,
+            "awakened": true
+          },
+          [
+            [
+              "scroll-awakened",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "core": [
+              [45, 135]
+            ],
+            "tilt": [
+              [0, 0],
+              [1, -6],
+              [2, -12],
+              [3, -12]
+            ]
+          }
+        ],
+        [
+          "inkLightning",
+          "impact",
+          {
+            "radius": 67,
+            "seed": 8,
+            "awakened": true
+          },
+          [
+            [
+              "scorch",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ground"
+            ],
+            [
+              "bolt-awakened",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "gaps": [
+              [13.11, 25.77],
+              [278.42, 287.86]
+            ]
+          }
+        ],
+        [
+          "tarJar",
+          "land",
+          {
+            "radius": 114,
+            "seed": 9
+          },
+          [
+            [
+              "pool",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ground"
+            ],
+            [
+              "crack",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "gaps": [
+              [21.66, 32.34]
+            ]
+          }
+        ],
+        [
+          "meteorBrush",
+          "land",
+          {
+            "radius": 192,
+            "seed": 11,
+            "awakened": true
+          },
+          [
+            [
+              "crater",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ground"
+            ],
+            [
+              "impact-awakened",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "gaps": [
+              [124.58, 132.1],
+              [260.63, 270.01]
+            ],
+            "splash": [
+              [-120.97, 24.7],
+              [-147.37, -37.36],
+              [-128.12, -0.5],
+              [-100.83, -63.51],
+              [-19.99, -102.55],
+              [-37.71, -80.76],
+              [63.96, -116.66],
+              [28.63, -108.85],
+              [72.93, -68.68],
+              [140.12, -44.23],
+              [105.66, -64.79],
+              [106.15, 41.73],
+              [67.49, 72.95],
+              [71.06, 46.55],
+              [22.24, 126],
+              [-40.44, 151.2],
+              [-78.77, 117.95]
+            ],
+            "drops": [
+              [-129.36, 26.42],
+              [-34.22, -105.14],
+              [78.68, -74.1],
+              [86.13, 72.86],
+              [23.83, 135.01],
+              [-43.76, 163.64]
+            ]
+          }
+        ],
+        [
+          "meteorBrush",
+          "land",
+          {
+            "radius": 160,
+            "seed": 3,
+            "lod": "reduced"
+          },
+          [
+            [
+              "crater",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ground"
+            ],
+            [
+              "impact",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "gaps": [
+              [97.54, 107.3],
+              [181.72, 190.52]
+            ],
+            "splash": [
+              [-38.04, 70.79],
+              [-16.93, 66.66],
+              [-87.64, -27.77],
+              [21.24, -85.76],
+              [99.86, 3.4],
+              [3.35, 111.44]
+            ],
+            "drops": []
+          }
+        ],
+        [
+          "inkPots",
+          "land",
+          {
+            "radius": 92,
+            "seed": 9,
+            "lod": "minimal"
+          },
+          [
+            [
+              "splat",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ground"
+            ],
+            [
+              "shatter",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "gaps": [
+              [9.61, 17.39],
+              [273.78, 280.62]
+            ],
+            "splash": [
+              [39.13, -35.45],
+              [51.71, 28.48],
+              [-48.43, 30.26],
+              [-33.91, 35.12]
+            ],
+            "drops": []
+          }
+        ],
+        [
+          "sparkThread",
+          "jump",
+          {
+            "points": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 220,
+                "y": -70
+              },
+              {
+                "x": 420,
+                "y": 20
+              },
+              {
+                "x": 640,
+                "y": -40
+              },
+              {
+                "x": 860,
+                "y": 30
+              }
+            ],
+            "seed": 1,
+            "awakened": true
+          },
+          [
+            [
+              "spark-awakened",
+              220,
+              -70,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ],
+            [
+              "spark-awakened",
+              420,
+              20,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ],
+            [
+              "spark-awakened",
+              640,
+              -40,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ],
+            [
+              "spark-awakened",
+              860,
+              30,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "controls": [
+              [121.2, 0.2],
+              [334.4, -57],
+              [539.6, 25.2],
+              [761.2, -40.2]
+            ],
+            "start": [
+              [25.99, -0.79]
+            ]
+          }
+        ],
+        [
+          "stormThread",
+          "jump",
+          {
+            "points": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 220,
+                "y": -70
+              },
+              {
+                "x": 420,
+                "y": 20
+              },
+              {
+                "x": 640,
+                "y": -40
+              },
+              {
+                "x": 860,
+                "y": 30
+              }
+            ],
+            "seed": 4,
+            "t": 0.1
+          },
+          [
+            [
+              "gust-a",
+              220,
+              -70,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ],
+            [
+              "gust-b",
+              420,
+              20,
+              0,
+              1,
+              0,
+              0,
+              "ally"
+            ],
+            [
+              "gust-a",
+              640,
+              -40,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ],
+            [
+              "gust-b",
+              860,
+              30,
+              0,
+              1,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "strandA": [
+              [0, 0],
+              [5.88, -1.57],
+              [11.75, -3.15],
+              [16.24, -9.08],
+              [22.81, -8.47],
+              [28.54, -10.48],
+              [33.62, -14.55],
+              [41.13, -11],
+              [46.92, -12.84],
+              [52.95, -13.94],
+              [57.07, -21.01],
+              [62.93, -22.62]
+            ],
+            "strandB": [
+              [0, 0],
+              [5.7, -2.12],
+              [11.41, -4.22],
+              [17.38, -5.49],
+              [23.51, -6.27],
+              [29.35, -7.94],
+              [34.69, -11.2],
+              [39.92, -14.79],
+              [45.71, -16.63],
+              [52.2, -16.27],
+              [58.72, -15.83],
+              [64.44, -17.9]
+            ]
+          }
+        ],
+        [
+          "frostChainlet",
+          "jump",
+          {
+            "points": [
+              {
+                "x": 0,
+                "y": 0,
+                "r": 0
+              },
+              {
+                "x": 220,
+                "y": -70,
+                "r": 12
+              },
+              {
+                "x": 420,
+                "y": 20,
+                "r": 28
+              },
+              {
+                "x": 640,
+                "y": -40,
+                "r": 19
+              },
+              {
+                "x": 860,
+                "y": 30,
+                "r": 54
+              }
+            ],
+            "seed": 3
+          },
+          [
+            [
+              "rime12",
+              220,
+              -70,
+              0,
+              0,
+              0,
+              0,
+              "feet"
+            ],
+            [
+              "rime28",
+              420,
+              20,
+              0,
+              0,
+              0,
+              0,
+              "feet"
+            ],
+            [
+              "rime19",
+              640,
+              -40,
+              0,
+              0,
+              0,
+              0,
+              "feet"
+            ],
+            [
+              "rime28",
+              860,
+              30,
+              0,
+              0,
+              0,
+              0,
+              "feet"
+            ]
+          ],
+          {
+            "links": [
+              [35.67, -11.35],
+              [49.01, -15.59],
+              [62.35, -19.84],
+              [75.69, -24.08],
+              [89.04, -28.33],
+              [102.38, -32.57],
+              [115.72, -36.82],
+              [129.06, -41.06],
+              [142.4, -45.31],
+              [155.74, -49.55],
+              [169.08, -53.8],
+              [182.42, -58.04]
+            ]
+          }
+        ],
+        [
+          "inkLance",
+          "stroke",
+          {
+            "length": 760,
+            "width": 14.4,
+            "seed": 3,
+            "awakened": true,
+            "p": 0.8
+          },
+          [
+            [
+              "tassel-awakened",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "tip": [
+              [658.67, 0]
+            ],
+            "head": [
+              [622.67, -1.6],
+              [629.15, -6.63],
+              [635.27, -7.8],
+              [644.99, -4.84],
+              [653.63, -1.72],
+              [658.67, 0],
+              [653.63, 1.72],
+              [644.99, 4.84],
+              [635.27, 7.8],
+              [629.15, 6.63],
+              [622.67, 1.6]
+            ]
+          }
+        ],
+        [
+          "wideBrush",
+          "stroke",
+          {
+            "length": 480,
+            "width": 40.8,
+            "seed": 5,
+            "p": 0.1
+          },
+          [
+            [
+              "brush",
+              278.22,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "top": [
+              [26, -39.13],
+              [35.7, -41.4],
+              [45.4, -42.92],
+              [55.1, -39.75],
+              [64.8, -42.78],
+              [74.5, -39.3],
+              [84.21, -43.23],
+              [93.91, -42.75],
+              [103.61, -39.92],
+              [113.31, -42.61],
+              [123.01, -39.47],
+              [132.71, -43.06]
+            ],
+            "bottom": [
+              [26, 39.64],
+              [35.7, 42.89],
+              [45.4, 39.19],
+              [55.1, 41.34],
+              [64.8, 42.87],
+              [74.5, 39.8],
+              [84.21, 42.73],
+              [93.91, 39.35],
+              [103.61, 43.18],
+              [113.31, 42.7],
+              [123.01, 39.97],
+              [132.71, 42.56]
+            ],
+            "streaks": [
+              [73.85, 23.59],
+              [243.72, 23.59],
+              [32.89, -6.97],
+              [135.29, -6.97],
+              [69.46, -20.62],
+              [267.83, -20.62]
+            ]
+          }
+        ],
+        [
+          "crossStrokes",
+          "stroke",
+          {
+            "length": 496,
+            "width": 16.8,
+            "seed": 2,
+            "awakened": true,
+            "p": 0.2
+          },
+          [
+            [
+              "scrap-a",
+              477.2,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "top": [
+              [26, -4.72],
+              [33.92, -1.6],
+              [41.83, -6.66],
+              [49.75, -6.75],
+              [57.66, -4.43],
+              [65.58, -3.96],
+              [73.49, -5.24],
+              [81.41, -9.89],
+              [89.33, -6.79],
+              [97.24, -9.33],
+              [105.16, -7.6],
+              [113.07, -8.89]
+            ],
+            "bottom": [
+              [26, 4.84],
+              [33.92, 2.23],
+              [41.83, 6.03],
+              [49.75, 3.04],
+              [57.66, 7.97],
+              [65.58, 7.32],
+              [73.49, 7.41],
+              [81.41, 5.4],
+              [89.33, 6.68],
+              [97.24, 11.2],
+              [105.16, 8.23],
+              [113.07, 10.64]
+            ]
+          }
+        ],
+        [
+          "judgmentLine",
+          "stroke",
+          {
+            "length": 1000,
+            "width": 21.6,
+            "seed": 2,
+            "awakened": true,
+            "p": 0.04
+          },
+          [
+            [
+              "inkbox-awakened",
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              "ally"
+            ],
+            [
+              "flick-b",
+              211.16,
+              7.98,
+              0,
+              0,
+              0,
+              2,
+              "ally"
+            ],
+            [
+              "flick-a",
+              419.74,
+              1.79,
+              0,
+              0,
+              0,
+              2,
+              "ally"
+            ],
+            [
+              "flick-b",
+              585.08,
+              -12.08,
+              0,
+              1,
+              0,
+              2,
+              "ally"
+            ],
+            [
+              "flick-a",
+              896.51,
+              -0.03,
+              0,
+              1,
+              0,
+              2,
+              "ally"
+            ]
+          ],
+          {
+            "after": [
+              [513, 16.32],
+              [513, -11.42],
+              [513, 7.83]
+            ]
+          }
+        ],
+        [
+          "inkOrbit",
+          "sweep",
+          {
+            "radius": 150,
+            "inner": 40,
+            "seed": 9,
+            "awakened": true,
+            "p": 0.7
+          },
+          [
+            [
+              "chip-b",
+              116.36,
+              -97.79,
+              -0.699,
+              0,
+              0.695,
+              0,
+              "ally"
+            ],
+            [
+              "chip-b",
+              -98.06,
+              116.14,
+              2.272,
+              0,
+              0.16,
+              0,
+              "ally"
+            ],
+            [
+              "chip-a",
+              -108.67,
+              -106.28,
+              3.916,
+              0,
+              0.921,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "comet": [
+              [-78.8, 53.07],
+              [-66.04, 68.29],
+              [-50.4, 80.53],
+              [-32.55, 89.25],
+              [-13.29, 94.07],
+              [6.56, 94.77],
+              [26.12, 91.34],
+              [44.54, 83.91],
+              [61.01, 72.82],
+              [74.82, 58.54],
+              [85.36, 41.7],
+              [92.16, 23.05]
+            ],
+            "gaps": [
+              [8.16, 18.84],
+              [272.58, 281.82]
+            ]
+          }
+        ],
+        [
+          "wardRing",
+          "sweep",
+          {
+            "radius": 110,
+            "inner": 0,
+            "seed": 3,
+            "awakened": true,
+            "p": 0.5
+          },
+          [
+            [
+              "knot-a",
+              108.79,
+              16.25,
+              0.148,
+              0,
+              0.189,
+              0,
+              "ally"
+            ],
+            [
+              "knot-a",
+              24.49,
+              107.24,
+              1.346,
+              0,
+              0.654,
+              0,
+              "ally"
+            ],
+            [
+              "knot-b",
+              -109.44,
+              11.13,
+              3.04,
+              0,
+              0.415,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "twist": [
+              [-102.12, 19.67],
+              [-115.43, 11.44],
+              [-103.4, 11.17],
+              [-115.98, 1.87],
+              [-103.99, -1.72],
+              [-115.32, -12.51],
+              [-103.35, -11.57],
+              [-113.62, -23.39],
+              [-102.06, -19.99],
+              [-111.32, -32.61],
+              [-99.33, -30.8],
+              [-107.19, -44.34]
+            ],
+            "stitch": [
+              [305.64, 485.64]
+            ]
+          }
+        ],
+        [
+          "eclipseHalo",
+          "sweep",
+          {
+            "radius": 250,
+            "inner": 110,
+            "seed": 2,
+            "awakened": true,
+            "p": 0.3
+          },
+          [
+            [
+              "ribbon-b",
+              14.48,
+              -249.58,
+              6.341,
+              0,
+              0.056,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "crescent": [
+              [14.48, -249.58],
+              [57.6, -243.27],
+              [98.97, -229.58],
+              [137.33, -208.9],
+              [171.52, -181.88],
+              [200.5, -149.34],
+              [223.38, -112.25],
+              [239.48, -71.76],
+              [248.3, -29.08],
+              [249.58, 14.48],
+              [243.27, 57.6],
+              [229.58, 98.97],
+              [208.73, 49.42],
+              [181.57, 10.53],
+              [153.72, -18],
+              [129.69, -38.86],
+              [111.94, -56.25],
+              [100.47, -74.84],
+              [92.88, -98.5],
+              [85.02, -129.33],
+              [72, -167.02],
+              [49.42, -208.73]
+            ]
+          }
+        ],
+        [
+          "eclipseHalo",
+          "sweep",
+          {
+            "radius": 230,
+            "inner": 110,
+            "seed": 6,
+            "p": 0.5,
+            "reduced": true
+          },
+          [
+            [
+              "ribbon-b",
+              58.6,
+              222.41,
+              2.884,
+              0,
+              0.628,
+              0,
+              "ally"
+            ]
+          ],
+          {
+            "crescent": [
+              [58.6, 222.41],
+              [19.09, 229.21],
+              [-21.01, 229.04],
+              [-60.46, 221.91],
+              [-98.07, 208.04],
+              [-132.71, 187.85],
+              [-163.31, 161.95],
+              [-188.96, 131.13],
+              [-208.86, 96.33],
+              [-222.41, 58.6],
+              [-175.31, 80.86],
+              [-131.92, 91.55],
+              [-96.9, 96.09],
+              [-71.34, 100.98],
+              [-52.72, 111.84],
+              [-35.87, 131.67],
+              [-14.67, 159.91],
+              [16.02, 192.4]
+            ]
+          }
+        ]
+      ],
+      "lob": {
+        "inkPots": [
+          [0, 0, 0, 0, -1.08, 9, 0.18],
+          [0.25, 80, -30, 89.71, -0.843, 10.5, 0.215],
+          [0.5, 160, -60, 119.62, -0.359, 12, 0.25],
+          [0.75, 240, -90, 89.71, 0.357, 13.5, 0.285],
+          [1, 320, -120, 0, 0.842, 15, 0.32]
+        ],
+        "clusterPots": [
+          [0, 0, 0, 0, -1.08, 7, 0.18],
+          [0.25, 80, -30, 89.71, -0.843, 8.25, 0.215],
+          [0.5, 160, -60, 119.62, -0.359, 9.5, 0.25],
+          [0.75, 240, -90, 89.71, 0.357, 10.75, 0.285],
+          [1, 320, -120, 0, 0.842, 12, 0.32]
+        ],
+        "tarJar": [
+          [0, 0, 0, 0, -1.06, 10, 0.18],
+          [0.25, 80, -30, 84.59, -0.824, 11.5, 0.215],
+          [0.5, 160, -60, 112.78, -0.359, 13, 0.25],
+          [0.75, 240, -90, 84.59, 0.319, 14.5, 0.285],
+          [1, 320, -120, 0, 0.802, 16, 0.32]
+        ],
+        "meteorBrush": [
+          [0, 0, 0, 0, -1.192, 12, 0.14],
+          [0.25, 80, -30, 128.16, -0.965, 14.5, 0.19],
+          [0.5, 160, -60, 170.88, -0.359, 17, 0.24],
+          [0.75, 240, -90, 128.16, 0.606, 19.5, 0.29],
+          [1, 320, -120, 0, 1.054, 22, 0.34]
+        ]
+      },
+      "mini": [
+        [
+          60,
+          0,
+          [
+            [0, 0, 0, 0, -1.079, 5, 0.18],
+            [0.25, 15, 0, 21, -0.751, 5.5, 0.215],
+            [0.5, 30, 0, 28, 0, 6, 0.25],
+            [0.75, 45, 0, 21, 0.751, 6.5, 0.285],
+            [1, 60, 0, 0, 1.079, 7, 0.32]
+          ]
+        ],
+        [
+          -60,
+          0,
+          [
+            [0, 0, 0, 0, -2.063, 5, 0.18],
+            [0.25, -15, 0, 21, -2.391, 5.5, 0.215],
+            [0.5, -30, 0, 28, 3.142, 6, 0.25],
+            [0.75, -45, 0, 21, 2.391, 6.5, 0.285],
+            [1, -60, 0, 0, 2.063, 7, 0.32]
+          ]
+        ]
+      ]
     }
   },
   "bombers": {

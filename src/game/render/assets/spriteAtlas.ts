@@ -69,6 +69,40 @@ export type HazardManifest = Readonly<{
   render: Readonly<{ fireStamps: readonly number[] }>;
 }>;
 
+/** K10: how one weapon field-effect stamp plays and where it sits (API-arsenal-fx §5); box and anchor in world units. */
+export type ArsenalFxPart = Readonly<{
+  frames: number;
+  drive: 'prog' | 'loop' | 'cycle' | 'idx';
+  fps: number;
+  seconds: number | null;
+  still: number | null;
+  box: readonly [number, number];
+  anchor: readonly [number, number];
+  place: string;
+  rotate: string;
+  layer: string;
+  lod: 'info' | 'deco';
+  flash: boolean;
+  window: string;
+  r?: number;
+}>;
+
+/**
+ * K10: the kit's weapon shapes (SPEC), the drawn weapons' numbers (META without names), part rules, and the C9 vectors
+ * the renderer's port is tested against: cases [id, stage, opts, layout items, paths], and lob paths.
+ */
+export type ArsenalFxManifest = Readonly<{
+  version: string;
+  spec: Readonly<Record<string, unknown>>;
+  meta: Readonly<Record<string, Readonly<{ kind: string; look: string; main: string; stages: readonly string[]; geo: Readonly<{ inner?: number; delay?: number }>; done: Readonly<{ fx: boolean; lob: boolean; gimmick: boolean }> }>>>;
+  parts: Readonly<Record<string, Readonly<Record<string, ArsenalFxPart>>>>;
+  vectors: Readonly<{
+    cases: readonly (readonly [string, string, Readonly<Record<string, unknown>>, readonly (readonly (string | number)[])[], Readonly<Record<string, readonly (readonly [number, number])[]>>])[];
+    lob: Readonly<Record<string, readonly (readonly number[])[]>>;
+    mini: readonly (readonly [number, number, readonly (readonly number[])[]])[];
+  }>;
+}>;
+
 export type AtlasManifest = Readonly<{
   version: number;
   /** Atlas pixels per world unit. */
@@ -77,6 +111,8 @@ export type AtlasManifest = Readonly<{
   animations: Readonly<Record<string, Readonly<Record<string, AnimationSpec>>>>;
   skillVfx?: SkillVfxManifest;
   hazards?: HazardManifest;
+  /** K10: the weapons' field effects. */
+  arsenalFx?: ArsenalFxManifest;
   /** SYS-14 (K7): the fuse bomber's wick tip per state and frame, in kit units around its feet (API-bombers §4.2). */
   bombers?: BomberManifest;
 }>;
@@ -240,6 +276,10 @@ export class SpriteAtlas {
 
   hazards(): HazardManifest | undefined {
     return this.manifest?.hazards;
+  }
+
+  arsenalFx(): ArsenalFxManifest | undefined {
+    return this.manifest?.arsenalFx;
   }
 
   /** The frame for a key from any ready pack, or undefined (not baked, pack not loaded, or load failed). */

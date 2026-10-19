@@ -91,6 +91,12 @@
     - active: 채움
   - 아군 착탄 예고는 적 문법(방사 눈금)을 쓰지 않는다. 판정 원 전체를 안내선으로 먼저 보이고, 12시에서 시계 방향으로 바느질해 나간다(FX-06).
 - 스킬 VFX(FX-06, FX-07)는 킷 `PN.skillVfx`의 조각 188장을 `skills` 팩(`assets/packs/skills/`)에 굽고, SPEC 도형과 조각 규칙은 매니페스트 데이터로 넘긴다(`docs/ARCHITECTURE.md` "Skill VFX"). 주인공 스프라이트가 바뀌면 분신 21장(`skill/mirrorClone/clone-*`)을 다시 굽고 C1·C7, 얼굴 crop, throw 2번 장 자르기 위치를 다시 본다.
+- 무기 전장 효과(K10, FX-08)도 같은 혼합 방식이다(`docs/ARCHITECTURE.md` "Arsenal FX", 지시서 `docs/art/briefs/arsenal-fx.md`).
+  - 반경·길이·점 목록을 따라가는 것(판정 고리·띠, 먹 튐, 연쇄 선, 빔 캡슐과 띠, 테)은 킷 `PN.arsenalFx.SPEC`의 숫자로 렌더러가 그린다.
+  - 물건(번개, 붓 획, 족자, 도장과 인영, 손, 손종, 단지·항아리·붓과 그 착탄, 술·먹통, 매듭, 리본, 얼음판)은 고정 크기 조각으로 굽는다. 킷이 그린 무기 22그룹 173장(킷 1.0-d2r1)을 `arsenal-fx` 팩(`assets/packs/arsenal-fx/`, 2036×584 한 장)에 `afx/<group>/<part>/<frame>`으로 굽는다. 조각은 늘이지 않는다.
+  - SPEC, 그린 무기의 META(이름 뺌), 조각 규칙과 C9 검증 벡터(지시서 §7.2 사례, 검수 1차 셋, 각성·LOD·감소 모션 사례, lob 경로와 송이 단지 `mini` 경로)는 매니페스트 `arsenalFx`로 넘긴다. 벡터는 굽기가 킷의 `layout`·`paths`·`lobPath`로 직접 찍으므로 킷이 바뀌면 다시 굽기만 하면 시험(`arsenalFx.test.ts`)이 새 값을 본다.
+  - `META[id].done`이 참인 무기만 굽는다. 투사체 무기 22종과 각성 기믹(3차 납품)은 아직 없다. 기믹의 메아리 폭발·선은 지금의 그림(무기 look의 그림)을 쓴다.
+  - 팩이 없거나 실패하면 무기는 look의 그림으로 그린다(TEC-10).
 
 ## UI 아트 (ART-09)
 

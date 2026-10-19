@@ -32,7 +32,11 @@ export type GameEvent =
   /** Area damage landed at a point (mortar shockwave, vortex collapse, rail fissure). */
   | { type: 'area/damage'; x: number; y: number }
   /** A delayed skill blast (bone mortar, eclipse afterimage) went off. */
-  | { type: 'area/blast'; x: number; y: number; radius: number; source: SkillId }
+  /**
+   * K10 looks only: `echo` marks an awakening gimmick's own blast (its art is the gimmick's, not the weapon's); `dir` is
+   * the way a lob flew (the sign of its x travel) on the blast that ends it.
+   */
+  | { type: 'area/blast'; x: number; y: number; radius: number; source: SkillId; echo?: true; dir?: -1 | 1 }
   | { type: 'vortex/collapse'; x: number; y: number; radius: number; ring: boolean }
   | { type: 'shock/burst'; x: number; y: number; id: number; radius: number }
   /** SYS-14: a fuse bomber planted itself (its blast reach and fuse length), and a bomber went off. */

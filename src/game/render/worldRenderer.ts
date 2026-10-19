@@ -2,6 +2,7 @@
 // cannot change outcomes and a test can render any hand-built world.
 import { lookOf } from '../arsenal.ts';
 import type {
+  ArsenalLob,
   AwakenedMarks,
   AwakeningZone,
   BeamEffect,
@@ -39,6 +40,7 @@ import { AnimationBook, SPAWN_SECONDS, enemyPoses, heroPoses, poseFrame, stepBos
 import { phaseFor, type GroundTile, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
 import { CHAPTER_PACKS, COMMON_PACK, FX_SLOT, HERO_SLOT, PICKUP_SLOT, bomberSlot, characterPack, characterSlot, bossSlot, bossState, enemyDrawScale, enemySlot, frameKey, pickupState, slotEnabled, type BossPose, type BossSlot } from './assets/slots.ts';
 import { GameRenderer } from './GameRenderer.ts';
+import { ArsenalFxPainter } from './arsenalFx.ts';
 import { HazardPainter, type TerrainHost } from './hazardArt.ts';
 import { NumberGlyphs, type NumberStyle } from './numberGlyphs.ts';
 import { shakeOffset } from '../presentation/viewCamera.ts';
@@ -280,6 +282,8 @@ export type RenderWorld = {
   readonly beams: readonly Readonly<BeamEffect>[];
   readonly laneTelegraphs: readonly Readonly<LaneTelegraph>[];
   readonly chains: readonly Readonly<ChainEffect>[];
+  /** SYS-15, K10: the lobs in the air, for their flight art. */
+  readonly lobs: readonly Readonly<ArsenalLob>[];
   /** FX-06: seconds left of the awakened coin fever's attack-speed rush. */
   readonly coinFrenzy: number;
   /** CON-03: the zone to hold or the cache to recover, when the stage's bonus goal has one. */
@@ -329,6 +333,9 @@ export class WorldRenderer {
   /** Terrain hazards from the kit (K11); terrainArt is false while their pack or data is missing (vectors and FX-03 draw). */
   private readonly terrain = new HazardPainter();
   private terrainArt = false;
+  /** The weapons' field effects from the kit (K10); arsenalArt is false while their pack or data is missing (the looks' art draws). */
+  private readonly afx = new ArsenalFxPainter();
+  private arsenalArt = false;
   /** When the hero's burn began (sim seconds, -1 when not burning), and the burning enemies that get feet flames. */
   private burnSince = -1;
   /** When a binding zone's vines took the hero (sim seconds, -1 when not bound by one). */
@@ -368,6 +375,11 @@ export class WorldRenderer {
   private readonly debuffLast = { silence: 0, root: 0 };
   /** Called as each world layer starts drawing; tests use it to check the layer contract. */
   onLayer: ((layer: WorldLayer) => void) | null = null;
+
+  /** K10: how long a weapon's blast or sweep mark shows while the kit draws it (presentation asks; looks only). */
+  markSeconds(id: SkillId) {
+    return this.afx.markSeconds(id);
+  }
 
   setSprites(atlas: SpriteAtlas | null) {
     this.unsubscribeSprites?.();
@@ -424,6 +436,7 @@ export class WorldRenderer {
     this.skillArt = this.vfx.begin(this.sprites, world.elapsed, policy.reduced, policy.flashStrength, snapshot.detail === 'minimal');
     this.terrainArt = this.terrain.begin(this.sprites, world.elapsed, policy.reduced, policy.flashStrength, snapshot.detail);
     if (this.terrainArt) this.terrain.track(world.hazards);
+    this.arsenalArt = this.afx.begin(this.sprites, world.elapsed, policy.reduced, policy.flashStrength, snapshot.detail, world.skills);
     this.burnSince = world.player.burn <= 0 ? -1 : this.burnSince < 0 || this.burnSince > world.elapsed ? world.elapsed : this.burnSince;
     // K11: a binding zone's bind, not a trap's (its shut machine shows that one).
     const bound = this.terrainArt && world.player.root > 0 && this.terrain.drawn('root') && world.hazards.some((h) => h.kind === 'root' && distance(h, world.player) <= h.radius);
@@ -478,6 +491,7 @@ export class WorldRenderer {
       case 'ground':
         this.drawWorld(ctx);
         this.drawCorpseStains(ctx);
+        if (this.arsenalArt) this.afx.drawDecals(ctx, this.world.effects.skillMarks, this.viewport);
         if (this.terrainArt) this.terrain.drawDecals(ctx, this.viewport, this.world.effects.shocks);
         return;
       case 'hazards':
@@ -509,6 +523,8 @@ export class WorldRenderer {
         this.drawZoneTops(ctx);
         this.drawSkillMarks(ctx);
         this.drawBeams(ctx);
+        // K10: the lobs in the air, over their shadows (groundMarks).
+        if (this.arsenalArt) this.afx.drawLobs(ctx, this.world.lobs, this.viewport);
         this.drawOrbitScythes(ctx);
         this.drawFriendlyProjectiles(ctx);
         this.drawPassivePops(ctx);
@@ -1028,6 +1044,8 @@ export class WorldRenderer {
     this.drawFallingBodies(ctx);
     this.drawBlastFlashes(ctx);
     if (this.world.airShots) this.drawShotShadows(ctx);
+    // K10: the ice a frost chain leaves under feet, and the lobs' shadows.
+    if (this.arsenalArt) this.afx.drawGround(ctx, this.world.chains, this.world.lobs, this.viewport);
     for (const body of this.sortedBodies) {
       const enemy = body.enemy;
       if (!enemy) continue;
@@ -1360,6 +1378,11 @@ export class WorldRenderer {
   private drawBeams(ctx: CanvasRenderingContext2D) {
     for (const beam of this.world.beams) {
       if (!segmentVisible(this.viewport, beam.x1, beam.y1, beam.x2, beam.y2, beam.width)) continue;
+      // K10: a weapon's own beam from the kit (a gimmick's line keeps the look's art below).
+      if (this.arsenalArt && this.afx.handlesLine(beam)) {
+        this.afx.drawBeam(ctx, beam);
+        continue;
+      }
       if (this.skillArt && beam.skillId && BEAM_ART.has(lookOf(beam.skillId))) {
         this.drawSkillBeam(ctx, beam);
         continue;
@@ -1369,6 +1392,10 @@ export class WorldRenderer {
 
     for (const chain of this.world.chains) {
       if (!chain.points.some((point, index) => index > 0 && segmentVisible(this.viewport, chain.points[index - 1].x, chain.points[index - 1].y, point.x, point.y, 5))) continue;
+      if (this.arsenalArt && this.afx.handlesLine(chain)) {
+        this.afx.drawChain(ctx, chain);
+        continue;
+      }
       if (this.skillArt && lookOf(chain.skillId) === 'chainSpark') this.vfx.bolt(ctx, chain.points, chain.life, chain.maxLife, this.world.skills[chain.skillId]?.awakened === true);
       else if (this.skillArt) this.vfx.tether(ctx, chain.points[0].x, chain.points[0].y, chain.points[1].x, chain.points[1].y, Math.min(1, (chain.life / chain.maxLife) * 2));
       else this.visual.drawChain(ctx, chain.points, chain.life, chain.maxLife);
@@ -1403,8 +1430,11 @@ export class WorldRenderer {
 
   /** Skill rings and strokes no event sizes (FX-07): the white chain's last burst and the needles' shards. */
   private drawSkillMarks(ctx: CanvasRenderingContext2D) {
+    // K10: the weapons' own blasts and sweeps from the kit; objects over the hero's head clear its debuff timers.
+    if (this.arsenalArt) this.afx.drawMarks(ctx, this.world.effects.skillMarks, this.viewport, this.world.player.silence > 0 || this.world.player.root > 0);
     if (!this.skillArt) return;
     for (const mark of this.world.effects.skillMarks) {
+      if (this.arsenalArt && this.afx.handles(mark)) continue;
       const age = mark.maxLife - mark.life;
       if (mark.kind === 'pulse') {
         const player = this.interpolated(this.world.player);

@@ -24,6 +24,12 @@ const CONFIGS = [
   { name: 'stress DPR2 2.0 sprites bare', scene: 'stress', dpr: 2, scale: 2, sprites: true, terrain: false },
   { name: 'terrain DPR2 2.0 sprites', scene: 'stress', dpr: 2, scale: 2, sprites: true, enemies: 60 },
   { name: 'terrain DPR2 2.0 sprites bare', scene: 'stress', dpr: 2, scale: 2, sprites: true, enemies: 60, terrain: false },
+  // K10: six awakened weapons firing on the stress crowd without the terrain (minimal detail), and on 60 enemies (full
+  // detail), with the weapons' field effects pack and without it (brief §9-6: work p95 +0.4 ms and +0.6 ms at most).
+  { name: 'arsenal DPR2 2.0 sprites', scene: 'arsenal', dpr: 2, scale: 2, sprites: true },
+  { name: 'arsenal DPR2 2.0 sprites bare', scene: 'arsenal', dpr: 2, scale: 2, sprites: true, afx: false },
+  { name: 'arsenal full DPR2 2.0 sprites', scene: 'arsenal', dpr: 2, scale: 2, sprites: true, enemies: 60 },
+  { name: 'arsenal full DPR2 2.0 sprites bare', scene: 'arsenal', dpr: 2, scale: 2, sprites: true, enemies: 60, afx: false },
   { name: 'stress DPR2 1.5 sprites', scene: 'stress', dpr: 2, scale: 1.5, sprites: true },
   { name: 'stress DPR2 2.0 vectors', scene: 'stress', dpr: 2, scale: 2, sprites: false },
   { name: 'stress DPR1 1.0 vectors', scene: 'stress', dpr: 1, scale: 1, sprites: false },
@@ -77,6 +83,7 @@ for (const config of CONFIGS.filter((item) => !only || only.test(item.name))) {
         scale: String(config.scale),
         sprites: config.sprites ? 'on' : 'off',
         terrain: config.terrain === false ? 'off' : 'on',
+        afx: config.afx === false ? 'off' : 'on',
         ...(config.enemies ? { enemies: String(config.enemies) } : {}),
         seconds: String(seconds),
         warmup: String(Math.max(warmup, config.warmup ?? 0)),

@@ -12,7 +12,7 @@ const requireGoldens = process.env.VISUAL_REQUIRE_GOLDENS !== '0';
 const maxDiffRatio = Number.parseFloat(process.env.VISUAL_MAX_DIFF_RATIO ?? '0.005');
 const pixelTolerance = Number.parseInt(process.env.VISUAL_PIXEL_TOLERANCE ?? '24', 10);
 // The default matrix is the platform decision (TEC-01: minimum 1024x720, reference 1280x720 and 1440x900,
-// largest verified 1920x1080): 4 viewports x DPR 1/2 x 3 modes x 15 states = 360 captures. The modes are full
+// largest verified 1920x1080): 4 viewports x DPR 1/2 x 3 modes x 20 states = 480 captures. The modes are full
 // motion, the system's reduced motion, and the reduced flash setting, which UI-08 separates from reduced motion.
 // The small sizes stay selectable by name (VISUAL_VIEWPORTS) to check the responsive layout.
 const viewportCatalog = [
@@ -24,7 +24,7 @@ const viewportCatalog = [
   { name: '1440x900', width: 1440, height: 900 },
   { name: '1920x1080', width: 1920, height: 1080 },
 ];
-const stateNames = ['menu', 'infinite-menu', 'infinite-playing', 'story', 'playing', 'paused', 'draft', 'bombers', 'burning', 'fires', 'shock', 'terrain', 'settlement', 'boss', 'terrain-ch3'];
+const stateNames = ['menu', 'infinite-menu', 'infinite-playing', 'story', 'playing', 'paused', 'draft', 'bombers', 'burning', 'fires', 'shock', 'terrain', 'settlement', 'boss', 'terrain-ch3', 'arsenal-mortar', 'arsenal-chain', 'arsenal-lob', 'arsenal-land', 'arsenal-crowd'];
 
 const defaultViewports = ['1024x720', '1280x720', '1440x900', '1920x1080'];
 
@@ -488,6 +488,7 @@ async function runScenario(page, viewport, dpr, motion) {
   await settle(page, 1300);
   await captureEvidence(page, viewport, dpr, motion, 'terrain');
 
+
   await openCheatPanel(page);
   await enterCheat(page, 'CLEAR');
   await unique(page.getByRole('dialog'), 'settlement dialog');
@@ -534,6 +535,40 @@ async function runScenario(page, viewport, dpr, motion) {
   await page.keyboard.press('Escape');
   await settle(page, 200);
   await captureEvidence(page, viewport, dpr, motion, 'terrain-ch3');
+
+  // K10 (FX-08): the weapons' field effects in place of chapter 3's terrain, last so the other states keep their clock
+  // (developer cheats AFX1-AFX4, GOD still on). The bone mortar's six look-alikes cast in turn (brush downpour, falling
+  // scroll, ink pulse; ink pots, cluster pots, meteor brush), their decals under them; then the chain spark's five (ink
+  // lightning, thunderclap; spark, storm, and frost chains, the frost chain's ice under its points).
+  await openCheatPanel(page);
+  await enterCheat(page, 'NUKE');
+  await enterCheat(page, 'AFX1');
+  await page.keyboard.press('Escape');
+  await settle(page, 300);
+  await captureEvidence(page, viewport, dpr, motion, 'arsenal-mortar');
+  await openCheatPanel(page);
+  await enterCheat(page, 'AFX2');
+  await page.keyboard.press('Escape');
+  await settle(page, 60);
+  await captureEvidence(page, viewport, dpr, motion, 'arsenal-chain');
+  // The four lobs in the air beside a coin, two jades, and a bone mortar shell (ink pots, the cluster pots' three
+  // splitting, a tar jar, a meteor brush on its rising leg, thrown leftward), then the moment the meteor brush lands,
+  // mirrored to the way it flew (review 4 F2).
+  await openCheatPanel(page);
+  await enterCheat(page, 'AFX3');
+  await page.keyboard.press('Escape');
+  await settle(page, 60);
+  await captureEvidence(page, viewport, dpr, motion, 'arsenal-lob');
+  await settle(page, 590);
+  await captureEvidence(page, viewport, dpr, motion, 'arsenal-land');
+  // Six weapons awakened at level 5, one of each kind (seventh seal, silence bell, frost chainlet, meteor brush,
+  // judgment line, eclipse halo), over two hundred enemies: minimal detail.
+  await openCheatPanel(page);
+  await enterCheat(page, 'NUKE');
+  await enterCheat(page, 'AFX4');
+  await page.keyboard.press('Escape');
+  await settle(page, 900);
+  await captureEvidence(page, viewport, dpr, motion, 'arsenal-crowd');
 }
 
 function escapeHtml(value) {

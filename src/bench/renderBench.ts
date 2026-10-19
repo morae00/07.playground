@@ -5,17 +5,19 @@
 // Scenes: `stress` (backlog TEC-04; 400 since the SYS-13 horde, 204 before) keeps 400 enemies of the four Ch1 roles, 240 hostile shots, 520 particles,
 // and 160 damage numbers around the player, topped up every simulation step, on the K11 terrain bundle (brief §9-7:
 // fires drawn from the kit, the other kinds as vectors). `game` plays a real stage late in its clock (spawns, boss,
-// hazards, and a mid-game build) in god mode. Query: scene, chapter, stage, progress, scale (render scale cap),
-// sprites (on/off), terrain (on/off, stress), enemies (stress count; 60 keeps full detail), warmup and seconds.
+// hazards, and a mid-game build) in god mode. `arsenal` (K10, brief §9-6) is the stress scene without the terrain, its
+// enemies under fire from six awakened weapons (pin hail, grave pins, smoke tail, seventh seal, frost chainlet, silence
+// bell). Query: scene, chapter, stage, progress, scale (render scale cap), sprites (on/off), terrain (on/off, stress),
+// afx (on/off: the weapons' field effects pack), enemies (stress count; 60 keeps full detail), warmup and seconds.
 import { ProbedGameEngine } from '../game/engine/probe';
 import type { Hazard } from '../game/engine/worldTypes';
 import type { GameOptions, MetaState } from '../platform/save';
 import { DEFAULT_MOVE_KEYS } from '../platform/moveKeys';
 import { SpriteAtlas } from '../game/render/assets/spriteAtlas';
-import { CHAPTER_PACKS, COMMON_PACK, HAZARDS_PACK, SKILLS_PACK } from '../game/render/assets/slots';
+import { ARSENAL_FX_PACK, CHAPTER_PACKS, COMMON_PACK, HAZARDS_PACK, SKILLS_PACK } from '../game/render/assets/slots';
 
 export type RenderBenchResult = {
-  config: { scene: string; scale: number; sprites: boolean; terrain: boolean; devicePixelRatio: number; backingStore: string; warmupSeconds: number; measureSeconds: number };
+  config: { scene: string; scale: number; sprites: boolean; terrain: boolean; arsenalFx: boolean; devicePixelRatio: number; backingStore: string; warmupSeconds: number; measureSeconds: number };
   frames: number;
   /** Intervals between animation frames: what the player sees. */
   /**
@@ -35,8 +37,9 @@ export type RenderBenchResult = {
 
 const params = new URLSearchParams(window.location.search);
 const TARGET = { enemies: Number(params.get('enemies') ?? '400'), hostileShots: 240, particles: 520, damageNumbers: 160 };
-const useTerrain = params.get('terrain') !== 'off';
-const scene = params.get('scene') === 'game' ? 'game' : 'stress';
+const scene = params.get('scene') === 'game' ? 'game' : params.get('scene') === 'arsenal' ? 'arsenal' : 'stress';
+const useTerrain = params.get('terrain') !== 'off' && scene === 'stress';
+const useArsenalFx = params.get('afx') !== 'off';
 const gameChapter = Number(params.get('chapter') ?? '5');
 const gameStage = Number(params.get('stage') ?? '10');
 const gameProgress = Number(params.get('progress') ?? '0.85');
@@ -137,7 +140,8 @@ async function run(): Promise<RenderBenchResult> {
   const atlas = new SpriteAtlas();
   // The chapter on screen has its pack loaded, as in the game (ART-07); the stress scene uses Ch1 bodies.
   const chapterPack = CHAPTER_PACKS[scene === 'game' ? gameChapter : 1];
-  const spritesReady = useSprites ? (await Promise.all([atlas.load(COMMON_PACK), atlas.load(SKILLS_PACK), atlas.load(HAZARDS_PACK), atlas.load(chapterPack)])).every(Boolean) : false;
+  const packs = [COMMON_PACK, SKILLS_PACK, HAZARDS_PACK, ...(useArsenalFx ? [ARSENAL_FX_PACK] : []), chapterPack];
+  const spritesReady = useSprites ? (await Promise.all(packs.map((pack) => atlas.load(pack)))).every(Boolean) : false;
 
   // Record every animation-frame timestamp the engine receives.
   const stamps: number[] = [];
@@ -176,6 +180,11 @@ async function run(): Promise<RenderBenchResult> {
     probe.clear('enemies', 'hazards', 'pickups', 'projectiles', 'hostileShots', 'effects');
     probe.setClock({ timeLeft: 9_999 });
     setUpStressScene(probe);
+    if (scene === 'arsenal') {
+      const awakened = { level: 5, awakened: true };
+      probe.setSkills({ pinHail: awakened, gravePins: awakened, smokeTail: awakened, seventhSeal: awakened, frostChainlet: awakened, silenceBell: awakened });
+      probe.setPlayer({ nextXp: 1e12 });
+    }
   }
 
   // Main-thread time per frame, and the render part alone.
@@ -238,7 +247,8 @@ async function run(): Promise<RenderBenchResult> {
       scene,
       scale: renderScale,
       sprites: useSprites,
-      terrain: scene === 'stress' && useTerrain,
+      terrain: useTerrain,
+      arsenalFx: useArsenalFx,
       devicePixelRatio: window.devicePixelRatio,
       backingStore: `${canvas.width}x${canvas.height}`,
       warmupSeconds,

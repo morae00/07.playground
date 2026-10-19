@@ -91,6 +91,11 @@ export const SKILLS_PACK = 'skills';
 /** K11: the terrain hazard stamps, loaded with the skills pack and kept for the whole session. */
 export const HAZARDS_PACK = 'hazards';
 /**
+ * K10: the weapons' field effects (blasts, chains, beams, halos, lobs in flight), loaded with the skills pack and kept
+ * for the session. While it is missing or failed, the weapons draw their look's art as before (TEC-10).
+ */
+export const ARSENAL_FX_PACK = 'arsenal-fx';
+/**
  * K11: the hazard kinds drawn from the kit, switched on in the brief's order (§15-6: fire, then trap and null, shock,
  * slow, root, water). Every other kind (the player's zones), and every kind while the pack is missing or failed, keeps
  * the vector drawing (TEC-10); taking a kind out of this list rolls it back alone.
