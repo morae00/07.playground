@@ -7,13 +7,13 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 140980,
-      "kib": 137.68,
+      "bytes": 146530,
+      "kib": 143.1,
       "baselineBytes": 122849,
-      "growthRatio": 0.14758768895147711,
+      "growthRatio": 0.1927651018730312,
       "warningBytes": 141276,
       "failBytes": 153561,
-      "status": "passed",
+      "status": "warning",
       "passed": true
     },
     "vendorJs": {
@@ -35,30 +35,30 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 2163640,
-      "kib": 2112.93,
+      "bytes": 2191211,
+      "kib": 2139.85,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 34023358,
-      "kib": 33225.94,
+      "bytes": 34303042,
+      "kib": 33499.06,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
       "passed": true
     }
   },
-  "status": "passed",
+  "status": "warning",
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-Dghy_m_v.js",
+      "file": "assets/App-DyP2MhOb.js",
       "category": "appJs",
-      "sourceBytes": 434361,
-      "gzipBytes": 137428
+      "sourceBytes": 450101,
+      "gzipBytes": 142977
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -69,8 +69,8 @@
     {
       "file": "assets/atlas/manifest.json",
       "category": "data",
-      "sourceBytes": 253389,
-      "gzipBytes": 45167
+      "sourceBytes": 280960,
+      "gzipBytes": 50272
     },
     {
       "file": "assets/chapter-thumbs-D_lcRDUv.webp",
@@ -133,16 +133,16 @@
       "gzipBytes": 113032
     },
     {
+      "file": "assets/index-B5HnBXmK.js",
+      "category": "appJs",
+      "sourceBytes": 7500,
+      "gzipBytes": 3553
+    },
+    {
       "file": "assets/index-CELqW5wV.css",
       "category": "css",
       "sourceBytes": 95975,
       "gzipBytes": 17893
-    },
-    {
-      "file": "assets/index-qCwS02XV.js",
-      "category": "appJs",
-      "sourceBytes": 7500,
-      "gzipBytes": 3552
     },
     {
       "file": "assets/keyart-DFQzyQdB.webp",
@@ -153,8 +153,8 @@
     {
       "file": "assets/packs/arsenal-fx/atlas-0.png",
       "category": "image",
-      "sourceBytes": 647435,
-      "gzipBytes": 640758
+      "sourceBytes": 899548,
+      "gzipBytes": 891215
     },
     {
       "file": "assets/packs/chapter-01/atlas-0.png",

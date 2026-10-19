@@ -3,8 +3,10 @@
 // Delivery 1 of 3: the skeleton (tokens, META for all 44, SPEC, jit, layout / paths / lobPath, parts / stamp, draw /
 // overlay) and the main stage, plain and awakened, of the 22 weapons that fire no projectile (strike impact, nova burst,
 // lob landing, chain jump, beam stroke, halo sweep). Delivery 2: the lob flight of the four lob weapons (stage
-// 'flight', the flying objects, SPEC.flight, the cluster pots' `mini` and lobPath's mini path). The awakening gimmicks
-// (delivery 3) are not drawn yet and are listed nowhere (META.stages / gimmicks / groups hold only what is drawn).
+// 'flight', the flying objects, SPEC.flight, the cluster pots' `mini` and lobPath's mini path). Delivery 3, round 1
+// (3a): the 17 P1 awakening gimmicks (one stage each, GSTAGE; ground pieces SPEC.zone, the drawn shapes SPEC.gimmick,
+// the enemy overlays SPEC.overlay / overlay()). The P2 gimmicks (round 2) are not drawn yet and are listed nowhere
+// (META.stages / gimmicks / groups / overlays hold only what is drawn).
 // Two forms, as in K4 / K11: (1) fixed-size stamps baked into the arsenal-fx pack as afx/<group>/<part>/<frame>
 // (stamp()), never stretched; (2) shapes that follow a radius, a length or a list of points, drawn by the renderer
 // from the numbers in SPEC (draw() paints the same rules as reference / golden art; layout(), paths() and lobPath()
@@ -12,7 +14,8 @@
 // Units are world units (1440x900 at zoom 1.0, 1x px). Deterministic: no Math.random / Date; jitter is jit(seed, i).
 // Every call returns one <g class="kaf kaf-<id>"> with its own <defs>; ids are 'kaf<N>_' per call (counter, never reset).
 // Colours: the 11 tokens in K, written as the implemented palette values (palette.ts), so the bake's COLOR_MAP leaves
-// them as they are. Nothing here calls PN.arsenal (K9) or PN.hazards (K11); PN.skillVfx is not read either.
+// them as they are. Nothing here calls PN.arsenal (K9) or PN.hazards (K11); PN.skillVfx is not read either. Only the
+// reference composition with opts.context reads PN.enemies / PN.heroKit; stamp() and the default draw() read nothing.
 window.PN = window.PN || {};
 (function (PN) {
   'use strict';
@@ -374,10 +377,18 @@ window.PN = window.PN || {};
   // delivery 1: the main stage of the 22 weapons without projectiles; delivery 2: the flight of the four lobs
   const DRAWN_FX = new Set(Object.keys(OBJECT));
   const DRAWN_LOB = new Set(['inkPots', 'clusterPots', 'tarJar', 'meteorBrush']);
+  // delivery 3a: the P1 awakening gimmicks (work order §4.1), one stage each (stage names as the §7.2 commands use them)
+  const GSTAGE = {
+    frostNeedles: 'freeze', twinBlades: 'spin', pinHail: 'caltrop', smokeTail: 'smoke', gravePins: 'grave', trackingSeals: 'triangle',
+    huntersMarks: 'prey', crowFeathers: 'crow', inkLightning: 'pillar', brushDownpour: 'surge', fallingScroll: 'unroll',
+    seventhSeal: 'eighth', silenceBell: 'silence', inkPots: 'fire', tarJar: 'gather', meteorBrush: 'mark', eclipseHalo: 'total'
+  };
+  // the object stamp of the weapons that fire projectiles, from their gimmick (C15 against the K9 icon); null: none
+  const GOBJECT = { twinBlades: 'spin', pinHail: 'caltrop-a', smokeTail: 'puff-a', gravePins: 'grave-a', trackingSeals: 'sealStrike', huntersMarks: 'mark-prey', crowFeathers: 'crow' };
 
   /** Parametric shapes and placement rules (work order §1.5); token names, numbers and English words only. */
   const SPEC = {
-    version: '1.0-d2r1',
+    version: '1.0-d3a-r1',
     jit: { mul: 31, hash: 2654435761, mod: 1000 },
     headY: -66, headLift: 26, footClear: 26, faceZone: [-8, -58, 18, -34],
     rim: {
@@ -503,6 +514,42 @@ window.PN = window.PN || {};
       phase: 1850,
       shadow: { token: 'ink' }
     },
+    // ---- delivery 3a, awakening gimmicks P1 (work order §4, §12). Ground zones (RenderWorld.zones): the hit rim on the
+    // zone's radius (rim.ally, the sewn dashes; the meteor's mark rim.pad, solid), a pale floor wash (Y ≤ 0.62, C10) and
+    // the stamps by SPEC.layout[id][stage]; no bright fill, no sign disc. The fill and the stamps come in over fadeIn
+    // and go over fadeOut of the life (data); the rim stays the whole life (V4). r: fixed radius; area: share of the
+    // weapon's radius; life: the data's seconds (reference). start / end: the centre object's parts at the ends ----
+    zone: {
+      fadeIn: 0.15, fadeOut: 0.3,
+      twinBlades: { stage: 'spin', r: 60, life: 0.5, rim: 'ally', arcs: { n: 2, at: 0.75, span: 70, layers: [['ink', 3.2], ['p50', 1.6]], turns: 2, start: 1960 }, end: { part: 'spin-end', seconds: 0.15 } },
+      pinHail: { stage: 'caltrop', r: 18, life: 1.5, rim: 'none', shadow: { rx: 18, alpha: 0.25 } },
+      smokeTail: { stage: 'smoke', r: 70, life: 2, rim: 'ally', wash: { token: 'ink300', alpha: 0.16 } },
+      gravePins: { stage: 'grave', r: 22, life: 3, rim: 'none', shadow: { rx: 21, alpha: 0.25 }, start: { part: 'grave-rise', seconds: 0.15 } },
+      inkLightning: { stage: 'pillar', r: 40, life: 1.2, rim: 'ally', start: { part: 'pillar-start', seconds: 0.12 }, end: { part: 'pillar-end', seconds: 0.2 } },
+      inkPots: { stage: 'fire', area: 0.6, life: 2, rim: 'ally', wash: { token: 'ink', alpha: 0.24 } },
+      tarJar: { stage: 'gather', area: 1, life: 1.5, rim: 'ally', wash: { token: 'ink700', alpha: 0.32 }, gloss: { at: [0.55, 0.7], span: [200, 250], layers: [['p300', 1.4]] } },
+      meteorBrush: { stage: 'mark', area: 0.6, life: 4, rim: 'pad', wash: { token: 'p50', alpha: 0.14 }, floor: 'crater' }
+    },
+    // ---- the other P1 gimmicks: the triangle seal (pending, then the strike), the unrolling scroll (a beam frame from the
+    // scroll's landing point), the eighth seal (pending shadow and stitches, then the big seal, its print and the heavy
+    // ring), the total eclipse, the growing downpour (data only) ----
+    gimmick: {
+      trackingSeals: { stage: 'triangle', delay: 0.6, life: 0.28, pre: { layers: [['ink', 2.6], ['ally', 1.4]], dash: [6, 4], pad: 0.6, sewn: true }, strike: { layers: [['ink', 4], ['ally', 2.2], ['allyG', 0.7]], fill: { token: 'p50', alpha: 0.25 }, fillSeconds: 0.1, fade: { at: 0.6 } } },
+      fallingScroll: { stage: 'unroll', length: 240, width: 50, life: 0.28, grow: 0.2, fade: { at: 0.75 }, band: { fill: { token: 'p50', alpha: 0.5 }, edge: [['ink', 1.6]], ridge: { humps: 2, amp: 0.25, base: 0.18, layers: [['ink', 1.4]] }, head: [['ink', 6], ['p50', 3.4]] } },
+      seventhSeal: { stage: 'eighth', r: 120, delay: 0.3, life: 0.5, shadow: { token: 'ink', rx: [18, 64], alpha: [0.12, 0.35] }, stitch: { layers: [['ink', 2], ['ally', 1]], dash: [5, 4], pad: 0.6 }, ring: { layers: [['ink', 4], ['ally', 2.2], ['allyG', 0.7]], gaps: { n: [2, 2], deg: [6, 10] }, wash: { token: 'p50', alpha: 0.2 }, grow: { from: 0.7, seconds: 0.08 }, fade: { at: 0.6 } }, sealSeconds: 0.45 },
+      eclipseHalo: { stage: 'total', inner: 0, wash: { token: 'ink', alpha: 0.2 }, band: { token: 'ink', alpha: 0.22, at: 0.62 }, outer: [['ink', 4], ['p50', 2]] },
+      brushDownpour: { stage: 'surge', scale: [1, 1.2, 1.4, 1.6] }
+    },
+    // ---- enemy overlays (§4.3): head marks at (0, top + dy) (top = the sprite's top), one per enemy by priority.heads;
+    // feet overlays by the nearest size class r, one per enemy by priority.feet (-back under the body, -front in front);
+    // the crow orbits (marks.crow) or sits at (sit) under reduced motion. At each crow hit tick it dives for marks.crow.dive
+    // seconds: its anchor goes to dive.crow (x on the side it faces from) and back, the peck stamp shows at dive.peck
+    // (both from (0, top)) ----
+    overlay: {
+      head: { dy: -12, parts: { silence: { group: 'silenceBell', part: 'mark-silence' }, prey: { group: 'huntersMarks', part: 'mark-prey' } } },
+      feet: { freeze: { group: 'frostNeedles', back: 'freeze-back-', front: 'freeze-front-', r: [12, 19, 28] }, scorch: { group: 'inkPots', part: 'scorch', r: [12, 19, 28, 38, 54] } },
+      crow: { group: 'crowFeathers', part: 'crow', peck: 'peck', sit: [6, -6], dive: { crow: [7, -5], peck: [0, -1] } }
+    },
     reference: { chainStep: [90, 40], spread: [120, 80] },
     // screen caps (full / reduced / minimal, §4.5 / §5.4) and the order things are dropped in when over
     caps: {
@@ -536,27 +583,98 @@ window.PN = window.PN || {};
       ['wardRing.wash', 'p50', 0.12, 0.3],
       ['eclipseHalo.wash', 'ink', 0.1, 0.3],
       ['eclipseHalo.crescent', 'ink', 0.35, 0.3],
-      ['lob.shadow', 'ink', 0.14, 1]
+      ['lob.shadow', 'ink', 0.14, 1],
+      // delivery 3a
+      ['smokeTail.smoke', 'ink300', 0.16, 2],
+      ['inkPots.fire', 'ink', 0.24, 2],
+      ['tarJar.gather', 'ink700', 0.32, 1.5],
+      ['meteorBrush.mark', 'p50', 0.14, 4],
+      ['seventhSeal.eighth', 'p50', 0.2, 0.3],
+      ['seventhSeal.shadow', 'ink', 0.12, 0.3],
+      ['trackingSeals.fill', 'p50', 0.25, 0.1],
+      ['fallingScroll.unroll', 'p50', 0.5, 0.28],
+      ['eclipseHalo.total', 'ink', 0.2, 0.3]
     ]
   };
+  // delivery 3a: the gimmick stages' stamp placement, appended to SPEC.layout (read by glayout; layout() hands them on)
+  const GLAYOUT = {
+    twinBlades: { spin: [{ prim: 'center', parts: ['spin'], z: 'ally' }] },
+    pinHail: { caltrop: [{ prim: 'center', parts: ['caltrop-a', 'caltrop-b', 'caltrop-c'], pick: 1950, z: 'ground' }] },
+    smokeTail: { smoke: [{ prim: 'disc', parts: ['puff-a', 'puff-b', 'puff-c'], per: 26, min: 2, max: 4, margin: 16, minGap: 0.45, info: 1, z: 'ground' }] },
+    gravePins: { grave: [{ prim: 'center', parts: ['grave-a', 'grave-b', 'grave-c'], pick: 1951, z: 'stand' }] },
+    trackingSeals: { triangle: [{ prim: 'corner', parts: ['sealCorner'], z: 'ally' }, { prim: 'centroid', parts: ['sealStrike'], z: 'ally' }] },
+    inkLightning: { pillar: [{ prim: 'center', parts: ['pillar'], z: 'stand' }] },
+    fallingScroll: { unroll: [{ prim: 'tip', parts: ['roller'], z: 'ally' }] },
+    seventhSeal: { eighth: [{ prim: 'center', parts: ['print8'], z: 'ground' }, { prim: 'center', parts: ['seal8'], z: 'ally' }] },
+    inkPots: { fire: [{ prim: 'disc', parts: ['flame-a', 'flame-b'], per: 24, min: 2, max: 5, margin: 10, minGap: 0.35, info: 1, z: 'ground' }] },
+    tarJar: { gather: [{ prim: 'center', parts: ['jarBroken'], z: 'ground' }, { prim: 'ring', parts: ['string-a', 'string-b'], count: [5, 7], jitter: 0.3, skip: 0, dr: -6, info: 3, z: 'ground' }] },
+    meteorBrush: { mark: [{ prim: 'disc', parts: ['mote-a', 'mote-b'], per: 30, min: 3, max: 6, margin: 8, minGap: 0.3, z: 'ally' }] },
+    eclipseHalo: { total: [{ prim: 'ring', parts: ['corona-a', 'corona-b'], count: [7, 9], jitter: 0.35, skip: 0, dr: 2, z: 'ally' }, { prim: 'tail', parts: ['ribbon-a', 'ribbon-b'], pick: 953, z: 'ally' }] }
+  };
+  Object.keys(GLAYOUT).forEach((id) => { SPEC.layout[id] = Object.assign(SPEC.layout[id] || {}, GLAYOUT[id]); });
 
   const META = {};
   ROWS.forEach(([id, name, rarity, kind, look, geo]) => {
-    const fx = DRAWN_FX.has(id), lob = DRAWN_LOB.has(id), main = MAIN[kind] || null;
+    const fx = DRAWN_FX.has(id), lob = DRAWN_LOB.has(id), gm = GSTAGE[id] || null, main = MAIN[kind] || null;
     META[id] = Object.freeze({
       name, rarity, kind, look, geo: Object.freeze(Object.assign({}, geo)), main,
-      stages: Object.freeze(fx ? [main].concat(lob ? ['flight'] : []) : []), gimmicks: Object.freeze([]), object: fx ? OBJECT[id] : null,
-      done: Object.freeze({ fx, lob, gimmick: false })
+      stages: Object.freeze((fx ? [main].concat(lob ? ['flight'] : []) : []).concat(gm ? [gm] : [])),
+      gimmicks: Object.freeze(gm ? [Object.freeze({ stage: gm, priority: 1 })] : []), object: fx ? OBJECT[id] : (GOBJECT[id] || null),
+      done: Object.freeze({ fx, lob, gimmick: !!gm })
     });
   });
   Object.freeze(META);
 
   // ---- baked parts (work order §2): [part, frames, drive, fps, seconds, window, box, anchor, place, rotate, layer, lod, extra] ----
   const PT = {
+    // delivery 3a: the groups of the projectile weapons hold only their P1 gimmick's stamps (work order §4.2-§4.4)
+    frostNeedles: [
+      ['freeze-back-12', 1, 'idx', 0, null, 'status', [36, 20], [18, 10], 'feet', 'none', 'feet', 'info', { r: 12 }],
+      ['freeze-back-19', 1, 'idx', 0, null, 'status', [48, 24], [24, 12], 'feet', 'none', 'feet', 'info', { r: 19 }],
+      ['freeze-back-28', 1, 'idx', 0, null, 'status', [64, 30], [32, 15], 'feet', 'none', 'feet', 'info', { r: 28 }],
+      ['freeze-front-12', 1, 'idx', 0, null, 'status', [32, 24], [16, 20], 'feet', 'none', 'front', 'info', { r: 12 }],
+      ['freeze-front-19', 1, 'idx', 0, null, 'status', [44, 30], [22, 25], 'feet', 'none', 'front', 'info', { r: 19 }],
+      ['freeze-front-28', 1, 'idx', 0, null, 'status', [60, 38], [30, 32], 'feet', 'none', 'front', 'info', { r: 28 }]
+    ],
+    twinBlades: [
+      ['spin', 4, 'loop', 16, null, 'zone', [40, 40], [20, 20], 'center', 'none', 'ally', 'info', { still: 0 }],
+      ['spin-end', 2, 'prog', 0, 0.15, 'zone-end', [40, 40], [20, 20], 'center', 'none', 'ally', 'info']
+    ],
+    pinHail: [
+      ['caltrop-a', 1, 'idx', 0, null, 'variant', [44, 26], [22, 17], 'center', 'none', 'ground', 'info'],
+      ['caltrop-b', 1, 'idx', 0, null, 'variant', [44, 26], [22, 17], 'center', 'none', 'ground', 'info'],
+      ['caltrop-c', 1, 'idx', 0, null, 'variant', [44, 26], [22, 17], 'center', 'none', 'ground', 'info']
+    ],
+    smokeTail: [
+      ['puff-a', 4, 'loop', 6, null, 'zone', [40, 28], [20, 24], 'disc', 'none', 'ground', 'info', { still: 0 }],
+      ['puff-b', 4, 'loop', 6, null, 'zone', [40, 28], [20, 24], 'disc', 'none', 'ground', 'info', { still: 0 }],
+      ['puff-c', 4, 'loop', 6, null, 'zone', [40, 28], [20, 24], 'disc', 'none', 'ground', 'info', { still: 0 }]
+    ],
+    gravePins: [
+      ['grave-a', 1, 'idx', 0, null, 'variant', [48, 36], [24, 27], 'center', 'none', 'stand', 'info'],
+      ['grave-b', 1, 'idx', 0, null, 'variant', [48, 36], [24, 27], 'center', 'none', 'stand', 'info'],
+      ['grave-c', 1, 'idx', 0, null, 'variant', [48, 36], [24, 27], 'center', 'none', 'stand', 'info'],
+      ['grave-rise', 2, 'prog', 0, 0.15, 'zone-start', [48, 36], [24, 27], 'center', 'none', 'stand', 'info']
+    ],
+    trackingSeals: [
+      ['sealCorner', 3, 'prog', 0, 0.6, 'pending', [26, 20], [13, 10], 'point', 'none', 'ally', 'info'],
+      ['sealStrike', 3, 'prog', 0, 0.28, 'event', [48, 40], [24, 22], 'center', 'none', 'ally', 'info']
+    ],
+    huntersMarks: [
+      ['mark-prey', 2, 'loop', 4, null, 'status', [22, 24], [11, 22], 'over', 'none', 'head', 'info', { still: 0 }]
+    ],
+    crowFeathers: [
+      ['crow', 6, 'loop', 12, null, 'status', [26, 18], [13, 9], 'orbit', 'face', 'head', 'info', { still: 0 }],
+      ['peck', 2, 'prog', 0, 0.12, 'event', [16, 16], [8, 8], 'orbit', 'none', 'head', 'deco']
+    ],
     inkLightning: [
       ['bolt', 4, 'prog', 0, 0.24, 'mark', [36, 120], [18, 112], 'target', 'none', 'ally', 'info'],
       ['bolt-awakened', 4, 'prog', 0, 0.24, 'mark', [36, 120], [18, 112], 'target', 'none', 'ally', 'info'],
-      ['scorch', 1, 'idx', 0, 0.6, 'decal', [52, 24], [26, 12], 'target', 'none', 'ground', 'deco']
+      ['scorch', 1, 'idx', 0, 0.6, 'decal', [52, 24], [26, 12], 'target', 'none', 'ground', 'deco'],
+      // delivery 3a: the lightning pillar (zone)
+      ['pillar-start', 2, 'prog', 0, 0.12, 'zone-start', [32, 84], [16, 78], 'center', 'none', 'stand', 'info'],
+      ['pillar', 4, 'loop', 12, null, 'zone', [32, 84], [16, 78], 'center', 'none', 'stand', 'info', { still: 0 }],
+      ['pillar-end', 2, 'prog', 0, 0.2, 'zone-end', [32, 84], [16, 78], 'center', 'none', 'stand', 'info']
     ],
     brushDownpour: [
       ['stroke-a', 3, 'prog', 0, 0.18, 'mark', [48, 88], [14, 80], 'target', 'none', 'ally', 'info'],
@@ -569,14 +687,19 @@ window.PN = window.PN || {};
     ],
     fallingScroll: [
       ['scroll', 4, 'prog', 0, 0.42, 'mark', [52, 104], [26, 98], 'target', 'none', 'ally', 'info'],
-      ['scroll-awakened', 4, 'prog', 0, 0.42, 'mark', [52, 104], [26, 98], 'target', 'none', 'ally', 'info']
+      ['scroll-awakened', 4, 'prog', 0, 0.42, 'mark', [52, 104], [26, 98], 'target', 'none', 'ally', 'info'],
+      // delivery 3a: the unrolling scroll's head
+      ['roller', 2, 'loop', 12, null, 'beam', [36, 24], [18, 12], 'tip', 'beam', 'ally', 'info', { still: 0 }]
     ],
     seventhSeal: [
       ['seal', 3, 'prog', 0, 0.3, 'mark', [40, 56], [20, 50], 'target', 'none', 'ally', 'info'],
       ['seal-awakened', 3, 'prog', 0, 0.3, 'mark', [40, 56], [20, 50], 'target', 'none', 'ally', 'info'],
       ['print-a', 1, 'idx', 0, 1.2, 'decal', [48, 24], [24, 12], 'target', 'none', 'ground', 'deco'],
       ['print-b', 1, 'idx', 0, 1.2, 'decal', [48, 24], [24, 12], 'target', 'none', 'ground', 'deco'],
-      ['print-c', 1, 'idx', 0, 1.2, 'decal', [48, 24], [24, 12], 'target', 'none', 'ground', 'deco']
+      ['print-c', 1, 'idx', 0, 1.2, 'decal', [48, 24], [24, 12], 'target', 'none', 'ground', 'deco'],
+      // delivery 3a: the eighth seal
+      ['seal8', 4, 'prog', 0, 0.45, 'mark', [60, 80], [30, 74], 'center', 'none', 'ally', 'info', { flash: true }],
+      ['print8', 1, 'idx', 0, 1.2, 'decal', [88, 36], [44, 18], 'center', 'none', 'ground', 'deco']
     ],
     inkPulse: [
       ['splash-a', 3, 'prog', 0, 0.3, 'mark', [40, 28], [6, 14], 'ring', 'radial', 'ally', 'deco'],
@@ -595,7 +718,9 @@ window.PN = window.PN || {};
     ],
     silenceBell: [
       ['bell', 3, 'prog', 0, 0.45, 'mark', [40, 52], [20, 50], 'head', 'none', 'ally', 'info'],
-      ['bell-awakened', 3, 'prog', 0, 0.45, 'mark', [40, 52], [20, 50], 'head', 'none', 'ally', 'info']
+      ['bell-awakened', 3, 'prog', 0, 0.45, 'mark', [40, 52], [20, 50], 'head', 'none', 'ally', 'info'],
+      // delivery 3a: the silence mark over an enemy's head
+      ['mark-silence', 1, 'idx', 0, null, 'status', [22, 22], [11, 20], 'over', 'none', 'head', 'info']
     ],
     inkPots: [
       ['shatter', 3, 'prog', 0, 0.3, 'mark', [76, 64], [38, 40], 'target', 'none', 'ally', 'info'],
@@ -603,7 +728,15 @@ window.PN = window.PN || {};
       // delivery 2: the flight (§3). The pot rolls once over its flight (review 4 F1): prog by the flight's progress t;
       // seconds 0.55 is a reference value (the ink pot's flight delay), the renderer uses the data's delay
       ['pot', 4, 'prog', 0, 0.55, 'flight', [30, 34], [15, 17], 'air', 'none', 'air', 'info'],
-      ['pot-awakened', 4, 'prog', 0, 0.55, 'flight', [30, 34], [15, 17], 'air', 'none', 'air', 'info']
+      ['pot-awakened', 4, 'prog', 0, 0.55, 'flight', [30, 34], [15, 17], 'air', 'none', 'air', 'info'],
+      // delivery 3a: the ink fire (zone) and the scorch under enemies standing in it (feet overlay, in front of the body)
+      ['flame-a', 6, 'loop', 12, null, 'zone', [22, 28], [11, 25], 'disc', 'none', 'ground', 'info', { still: 0 }],
+      ['flame-b', 6, 'loop', 12, null, 'zone', [22, 28], [11, 25], 'disc', 'none', 'ground', 'info', { still: 0 }],
+      ['scorch12', 2, 'loop', 8, null, 'status', [30, 18], [15, 14], 'feet', 'none', 'front', 'info', { still: 0, r: 12 }],
+      ['scorch19', 2, 'loop', 8, null, 'status', [40, 22], [20, 17], 'feet', 'none', 'front', 'info', { still: 0, r: 19 }],
+      ['scorch28', 2, 'loop', 8, null, 'status', [56, 26], [28, 21], 'feet', 'none', 'front', 'info', { still: 0, r: 28 }],
+      ['scorch38', 2, 'loop', 8, null, 'status', [72, 30], [36, 25], 'feet', 'none', 'front', 'info', { still: 0, r: 38 }],
+      ['scorch54', 2, 'loop', 8, null, 'status', [96, 34], [48, 29], 'feet', 'none', 'front', 'info', { still: 0, r: 54 }]
     ],
     clusterPots: [
       ['burst', 3, 'prog', 0, 0.24, 'mark', [56, 48], [28, 30], 'target', 'none', 'ally', 'info'],
@@ -615,14 +748,21 @@ window.PN = window.PN || {};
       ['crack', 3, 'prog', 0, 0.32, 'mark', [80, 56], [40, 34], 'target', 'none', 'ally', 'info'],
       ['pool', 1, 'idx', 0, 1.5, 'decal', [104, 44], [52, 22], 'target', 'none', 'ground', 'deco'],
       ['jar', 4, 'loop', 8, null, 'flight', [34, 38], [17, 19], 'air', 'none', 'air', 'info', { still: 0 }],
-      ['jar-awakened', 4, 'loop', 8, null, 'flight', [34, 38], [17, 19], 'air', 'none', 'air', 'info', { still: 0 }]
+      ['jar-awakened', 4, 'loop', 8, null, 'flight', [34, 38], [17, 19], 'air', 'none', 'air', 'info', { still: 0 }],
+      // delivery 3a: the sticky gathering (zone): tar strings pulled from the rim, the broken jar in the middle
+      ['string-a', 4, 'loop', 8, null, 'zone', [40, 14], [36, 7], 'ring', 'radial', 'ground', 'info', { still: 1 }],
+      ['string-b', 4, 'loop', 8, null, 'zone', [40, 14], [36, 7], 'ring', 'radial', 'ground', 'info', { still: 1 }],
+      ['jarBroken', 1, 'idx', 0, null, 'variant', [36, 26], [18, 18], 'center', 'none', 'ground', 'info']
     ],
     meteorBrush: [
       ['impact', 3, 'prog', 0, 0.36, 'mark', [88, 68], [44, 46], 'target', 'none', 'ally', 'info', { flash: true }],
       ['impact-awakened', 3, 'prog', 0, 0.36, 'mark', [88, 68], [44, 46], 'target', 'none', 'ally', 'info', { flash: true }],
       ['crater', 1, 'idx', 0, 1.5, 'decal', [120, 52], [60, 26], 'target', 'none', 'ground', 'info'],
       ['comet', 4, 'loop', 12, null, 'flight', [32, 92], [16, 14], 'air', 'path', 'air', 'info', { still: 0 }],
-      ['comet-awakened', 4, 'loop', 12, null, 'flight', [32, 92], [16, 14], 'air', 'path', 'air', 'info', { still: 0 }]
+      ['comet-awakened', 4, 'loop', 12, null, 'flight', [32, 92], [16, 14], 'air', 'path', 'air', 'info', { still: 0 }],
+      // delivery 3a: the star mark (zone) - paper star motes rising
+      ['mote-a', 4, 'cycle', 0, 1.2, 'zone', [10, 14], [5, 12], 'disc', 'none', 'ally', 'deco'],
+      ['mote-b', 4, 'cycle', 0, 1.2, 'zone', [10, 14], [5, 12], 'disc', 'none', 'ally', 'deco']
     ],
     sparkThread: [
       ['spark', 2, 'prog', 0, null, 'chain', [24, 24], [12, 12], 'point', 'none', 'ally', 'deco'],
@@ -665,7 +805,10 @@ window.PN = window.PN || {};
     ],
     eclipseHalo: [
       ['ribbon-a', 3, 'loop', 12, null, 'mark', [36, 18], [32, 9], 'ring', 'tangent', 'ally', 'info', { still: 0 }],
-      ['ribbon-b', 3, 'loop', 12, null, 'mark', [36, 18], [32, 9], 'ring', 'tangent', 'ally', 'info', { still: 0 }]
+      ['ribbon-b', 3, 'loop', 12, null, 'mark', [36, 18], [32, 9], 'ring', 'tangent', 'ally', 'info', { still: 0 }],
+      // delivery 3a: the total eclipse's corona flags
+      ['corona-a', 2, 'prog', 0, 0.3, 'mark', [26, 14], [3, 7], 'ring', 'radial', 'ally', 'deco'],
+      ['corona-b', 2, 'prog', 0, 0.3, 'mark', [26, 14], [3, 7], 'ring', 'radial', 'ally', 'deco']
     ]
   };
   const PARTS = {};
@@ -1694,6 +1837,344 @@ window.PN = window.PN || {};
   ART.eclipseHalo['ribbon-a'] = (fr) => ribbonArt(fr, 0);
   ART.eclipseHalo['ribbon-b'] = (fr) => ribbonArt(fr, 1);
 
+  // ==== 3b. awakening gimmicks, P1 (delivery 3a, work order §4.2-§4.4): stamps ====
+  /** A ground shadow ellipse (ink α) of a ground piece: rx, centre y. */
+  const gShadow = (rx, cy, a) => E(0, cy, rx, 0.42 * rx, 'ink', { a: a == null ? 0.25 : a });
+
+  // ---- frostNeedles freeze: an ice plate under the feet with crystals behind (-back, under the body) and a fan of
+  // crystals in front rising to about 40 % of the body (-front, in front of it; never up to the eyes); the tallest has
+  // the needle's cyan core. Inside the feet rects (marks.rects) ----
+  const FREEZE = {
+    12: { rx: 12.5, ry: 3.2, cy: 0, by: 0.2, H: 13, w: 2.2, back: 4.8, chips: [1.8, 2.1, 1.7] },
+    19: { rx: 18.5, ry: 4.2, cy: -0.4, by: 0.6, H: 17, w: 2.8, back: 6.1, chips: [2.3, 2.7, 2.1] },
+    28: { rx: 26, ry: 5.4, cy: -0.6, by: 0.9, H: 23, w: 3.4, back: 8.3, chips: [2.8, 3.2, 2.6] }
+  };
+  /** Crystal prisms [deg, len, base x, base y] of width w: ink rim under, a paper and a p300 face. */
+  function crystalFan(list, w) {
+    let out = '', fa = '', fb = '';
+    list.forEach(([deg, len, bx, by]) => { const g = prismGeo(deg, len, w, bx, by); out += g.out + ' '; fa += g.a + ' '; fb += g.b + ' '; });
+    return S(out.trim(), 'ink', 2.4) + F(fa.trim(), 'p50') + F(fb.trim(), 'p300');
+  }
+  /** A ragged ice plate lying on the ground: paper, ink edge, one p300 facet. */
+  function icePlate(rx, ry, cy, seed) {
+    const pl = [];
+    for (let i = 0; i < 14; i++) { const a = i * TAU / 14 + (jit(seed, i + 40) - 0.5) * 0.3, k = 0.9 + 0.1 * jit(seed, i); pl.push([Math.cos(a) * rx * k, cy + Math.sin(a) * ry * k]); }
+    return F(line(pl, true), 'p50', { st: 'ink', sw: 1.2 }) + F(line([[rx * 0.12, cy + ry * 0.1], [rx * 0.62, cy - ry * 0.05], [rx * 0.5, cy + ry * 0.62], [rx * 0.06, cy + ry * 0.7]], true), 'p300', { a: 0.9 });
+  }
+  function freezeBackArt(rc) {
+    const q = FREEZE[rc], b = q.back, y0 = q.cy - q.ry * 0.55;
+    return crystalFan([[-114, b * 0.8, -q.rx * 0.62, y0], [-96, b, -q.rx * 0.5, y0], [-84, b * 0.92, q.rx * 0.48, y0], [-64, b * 0.72, q.rx * 0.62, y0]], q.w * 0.85) + icePlate(q.rx, q.ry, q.cy, 230 + rc);
+  }
+  function freezeFrontArt(rc) {
+    const q = FREEZE[rc], H = q.H, L = -q.rx * 0.42, R = q.rx * 0.36, y = q.by;
+    const fan = [[-118, 0.6 * H, L, y], [-98, 0.9 * H, L + q.w * 0.9, y], [-80, 0.55 * H, L + q.w * 1.8, y], [-104, 0.68 * H, R, y], [-84, 0.84 * H, R + q.w * 0.9, y], [-64, 0.5 * H, R + q.w * 1.8, y]];
+    let s = crystalFan(fan, q.w);
+    const t = fan[1], a = t[0] * RAD;
+    s += SW(`M${P2([t[2], t[3] - 0.6])} L${P2([t[2] + Math.cos(a) * t[1] * 0.68, t[3] + Math.sin(a) * t[1] * 0.68])}`, [['ink', 1.3], ['ally', 0.75]]);
+    [[-q.rx * 0.62, 0], [q.rx * 0.02, 1], [q.rx * 0.6, 2]].forEach(([x, i]) => { s += F(chipD(x, -1.2, q.chips[i], 240 + rc + i, 0.4 + i), 'p50', { st: 'ink', sw: 1 }); });
+    return s;
+  }
+  [12, 19, 28].forEach((rc) => { ART.frostNeedles['freeze-back-' + rc] = () => freezeBackArt(rc); ART.frostNeedles['freeze-front-' + rc] = () => freezeFrontArt(rc); });
+
+  // ---- twinBlades spin: the twin blades' paper crescents (no handles), opposite each other, spinning in place: 45° a
+  // frame, so the 4-frame loop at 16 fps is two turns a second (the pair repeats every 180°). spin-end: slowing, falling ----
+  function bladeD(a0, k) {
+    const outer = [], inner = [];
+    for (let i = 0; i <= 10; i++) { const s = i / 10, a = a0 + s * 110 * RAD, th = 4.6 * Math.sin(Math.PI * s); outer.push(polar(15, a)); inner.push(polar(15 - th, a)); }
+    return line(outer.concat(inner.reverse()).map(([x, y]) => [x, y * (k || 1)]), true);
+  }
+  function bladePair(rot, k, pc, ln, cy) {
+    let s = '';
+    [0, Math.PI].forEach((o) => {
+      const a0 = -2.4 + rot + o;
+      s += S(`M${P2(polar(11.6, a0 - 0.9).map((v, i) => (i ? v * (k || 1) : v)))} A11.6,${f(11.6 * (k || 1))} 0 0 1 ${P2(polar(11.6, a0 - 0.2).map((v, i) => (i ? v * (k || 1) : v)))}`, 'ink300', 0.9);
+      s += F(bladeD(a0, k), pc, { st: ln, sw: 1.4 });
+      const core = samp((t) => { const ss = 0.2 + 0.6 * t, p = polar(15 - 2.3 * Math.sin(Math.PI * ss), a0 + ss * 110 * RAD); return [p[0], p[1] * (k || 1)]; }, 8);
+      s += SW(smooth(core), cy);
+    });
+    return s;
+  }
+  ART.twinBlades.spin = (fr) => bladePair(fr * 45 * RAD, 1, 'p50', 'ink', [['ink', 1.6], ['ally', 0.8]]);
+  ART.twinBlades['spin-end'] = (fr) => (fr === 0 ? bladePair(0.4, 1, 'p300', 'ink', [['ink', 1.4], ['allyD', 0.7]]) : GA(bladePair(0.9, 0.45, 'p300', 'ink300', [['ink300', 1.2], ['allyD', 0.6]]), 0.7));
+
+  // ---- pinHail caltrop: two or three dagger pins of the K9 icon (a diamond paper blade, a hollow ring handle up) stuck
+  // point first in the ground like a thicket; one blade's groove is cyan; the ground shadow rx 18, no rim, no fill ----
+  function pinArt(bx, by, deg, len, cyan) {
+    const a = deg * RAD, u = [Math.cos(a), Math.sin(a)], n = [-u[1], u[0]], at = (t, sx) => [bx + u[0] * t + n[0] * sx, by + u[1] * t + n[1] * sx];
+    let s = F(line([at(0, -1.4), at(len * 0.55, -2.3), at(len, -0.7), at(len, 0.7), at(len * 0.55, 2.3), at(0, 1.4)], true), 'p50', { st: 'ink', sw: 1.1 }) +
+      F(line([at(0, 0.2), at(len * 0.55, 2.3), at(len, 0.7), at(len, 0.2)], true), 'p300');
+    const g0 = at(len * 0.12, 0), g1 = at(len * 0.82, 0);
+    s += cyan ? SW(`M${P2(g0)} L${P2(g1)}`, [['ink', 1.1], ['ally', 0.6]]) : S(`M${P2(g0)} L${P2(g1)}`, 'ink', 0.8);
+    const c = at(len + 2.5, 0);
+    s += S(`M${P2(at(len, 0))} L${P2(at(len + 0.7, 0))}`, 'ink', 1.4) + Cir(c[0], c[1], 1.7, 'none', { st: 'ink', sw: 1.2 });
+    return s + S(`M${f(bx - 2)},${f(by + 0.3)} L${f(bx + 2)},${f(by + 0.3)}`, 'ink700', 1) + Cir(bx - 2.8, by + 0.9, 0.5, 'ink300') + Cir(bx + 2.6, by + 1.1, 0.45, 'ink300');
+  }
+  // [base x, base y, deg, len, cyan]: back to front, leaning hard and at different depths (upright pins in a row with
+  // round rings read as little figures)
+  const CALTROPS = {
+    'caltrop-a': [[-8, -2.6, -122, 7.6, false], [8, -1.2, -60, 7.2, false], [0, 1.4, -92, 8.4, true]],
+    'caltrop-b': [[-5, -2.2, -116, 8, true], [6, 1, -68, 8.2, false]],
+    'caltrop-c': [[2, -3, -104, 6.8, false], [-9, -0.6, -72, 7.2, false], [9, 1.2, -126, 8, true]]
+  };
+  Object.keys(CALTROPS).forEach((p) => { ART.pinHail[p] = () => gShadow(18, -1.6) + CALTROPS[p].map((q) => pinArt(q[0], q[1], q[2], q[3], q[4])).join(''); });
+
+  // ---- smokeTail puff: a clump of smoke rolling along the ground: lobes in ink300 with a crisp ink500 lower part and an
+  // open curl on top; each variant a different size (not a caterpillar of equal lobes) ----
+  const PUFFS = { 'puff-a': [[-7.6, -8, 7.6], [1.4, -11.4, 9.2], [9.4, -7.4, 6]], 'puff-b': [[-5.6, -7.2, 7], [4.4, -9.4, 8.2], [11, -5.4, 4.2]], 'puff-c': [[-9.8, -6.6, 5.6], [-2.4, -10.2, 8.2], [6.6, -8.6, 7], [11.4, -5, 3.6]] };
+  function puffArt(fr, lobes) {
+    const ph = fr / 4, L = lobes.map(([x, y, r], i) => { const w = TAU * (ph + i / 3); return [x + 1.2 * Math.sin(w), y + 0.6 * Math.cos(w), r * (1 + 0.05 * Math.sin(w + 1))]; });
+    // the light clump, a crisp darker core low in it, the clump's lower edge, an open light curl on top
+    let s = F(L.map(([x, y, r]) => circD(x, y, r)).join(' '), 'ink300') + F(L.map(([x, y, r]) => circD(x + 0.16 * r, y + 0.5 * r, r * 0.42)).join(' '), 'ink500');
+    const t = L.reduce((m, q) => (q[1] - q[2] < m[1] - m[2] ? q : m), L[0]), cx = t[0] + t[2] * 0.15, cy = t[1] - t[2] * 0.25, rr = t[2] * 0.45;
+    s += S(smooth(samp((u) => { const a = -0.6 + u * 4.6 + ph * 1.2, k = rr * (1 - 0.55 * u); return [cx + Math.cos(a) * k, cy + Math.sin(a) * k]; }, 16)), 'p300', 1.1);
+    return s + S(smooth(samp((u) => [lerp(L[0][0] - L[0][2] * 0.6, L[L.length - 1][0] + L[L.length - 1][2] * 0.5, u), -0.6 - 0.8 * Math.sin(Math.PI * u)], 8)), 'ink500', 0.9);
+  }
+  Object.keys(PUFFS).forEach((p) => { ART.smokeTail[p] = (fr) => puffArt(fr, PUFFS[p]); });
+
+  // ---- gravePins grave: the K9 grave pin stuck in the ground: an ink shaft, a small round-topped paper head (ink edge,
+  // p300 shade; no writing, no cross), cyan thread wound round the shaft; ground shadow (rx 21: the box allows no more).
+  // grave-rise: it comes up out of the ground (the head's top, then most of it) with clods flying ----
+  const GRAVES = { 'grave-a': [-8, 9, 9.4, 10], 'grave-b': [10, 7.6, 8.2, 9], 'grave-c': [-3, 10.4, 10, 11] };   // [tilt°, shaft, head w, head h]
+  function gravePin(q, out) {   // out: share of the pin standing above the ground (1 = all)
+    const [tilt, sh, hw, hh] = q, total = sh + hh, base = -total * (out - 1);
+    const y0 = base - sh, h2 = hw / 2;
+    let s = '';
+    if (out >= 0.99) {
+      s += F(`M-1,${f(base)} L1,${f(base)} L1,${f(y0)} L-1,${f(y0)} Z`, 'ink');
+      [0.32, 0.58].forEach((k, i) => { const y = base - sh * k; s += SW(`M-1.9,${f(y + 0.9)} L1.9,${f(y - 0.9)}`, [['ink', 1.5], ['ally', 0.8]]); if (i) s += SW(`M1.9,${f(y - 0.9)} C3.4,${f(y - 0.2)} 3.8,${f(y + 1.4)} 3.4,${f(y + 2.8)}`, [['ink', 1.2], ['ally', 0.6]]); });
+    }
+    const head = `M${f(-h2)},${f(y0)} L${f(-h2)},${f(y0 - hh + h2)} A${f(h2)},${f(h2)} 0 0 1 ${f(h2)},${f(y0 - hh + h2)} L${f(h2)},${f(y0)} Z`;
+    const shade = `M${f(h2 * 0.25)},${f(y0)} L${f(h2 * 0.25)},${f(y0 - hh + h2 * 0.4)} A${f(h2)},${f(h2)} 0 0 1 ${f(h2)},${f(y0 - hh + h2)} L${f(h2)},${f(y0)} Z`;
+    s += F(head, 'p50', { st: 'ink', sw: 1.4 }) + F(shade, 'p300');
+    return TX(s, rotM(tilt, 0, 0));
+  }
+  Object.keys(GRAVES).forEach((p, i) => {
+    ART.gravePins[p] = () => gShadow(21, -2.9) + gravePin(GRAVES[p], 1) + Cir(-4.6, 0.6, 0.6, 'ink300') + Cir(4.2 - i, 1, 0.5, 'ink300');
+  });
+  /** The grave pin coming up: the round top of the head out of the ground (0), then most of the pin (1), clods flying. */
+  ART.gravePins['grave-rise'] = (fr) => {
+    const q = GRAVES['grave-a'], h2 = q[2] / 2;
+    let s = gShadow(21, -2.9, 0.18);
+    if (fr === 0) s += TX(F(`M${f(-h2)},0 A${f(h2)},${f(h2)} 0 0 1 ${f(h2)},0 Z`, 'p50', { st: 'ink', sw: 1.4 }), rotM(q[0], 0, 0));
+    else s += gravePin([q[0], q[1] * 0.6, q[2], q[3]], 1);
+    [[-7, -3, 1.6, 0], [6, -5, 1.3, 1], [-2, -8, 1.1, 2], [9, -1, 1.2, 3]].forEach(([x, y, r, i]) => { s += F(chipD(x * (fr ? 1.4 : 1), y * (fr ? 0.6 : 1) + (fr ? 1.5 : 0), r, 270 + i, i), i % 2 ? 'ink700' : 'ink300'); });
+    return s;
+  };
+
+  // ---- trackingSeals: the K9 seal is a square paper tag. sealCorner: a small square print pressed on the ground at
+  // each corner (0 faint, 1 half, 2 pressed + the cyan thread's knot); sealStrike: the big square print slammed at the
+  // centroid (0 torn paper flash, 1 an ink splat, 2 fading); the threads' cyan ends reach its corners. A plain square,
+  // no inner square (a square in a square reads as a character) ----
+  function sqPts(cx, cy, side, rotDeg, flat) {
+    const a = rotDeg * RAD, c = Math.cos(a), s = Math.sin(a), h = side / 2;
+    return [[-h, -h], [h, -h], [h, h], [-h, h]].map(([x, y]) => [cx + x * c - y * s, cy + (x * s + y * c) * flat]);
+  }
+  ART.trackingSeals.sealCorner = (fr) => {
+    const sq = sqPts(0, 0, 11.5, 14, 0.5);
+    if (fr === 0) return F(line(sq, true), 'p300', { a: 0.55 }) + S(line(sq, true), 'ink300', 0.9);
+    let s = F(line(sq, true), 'p50', { st: 'ink', sw: fr === 1 ? 1 : 1.3, a: fr === 1 ? 0.8 : 1 }) + F(line([sq[1], sq[2], sq[3]], true), 'p300', { a: 0.85 });
+    if (fr === 2) s += Cir(sq[0][0], sq[0][1], 1.3, 'ally', { st: 'ink', sw: 0.7 });
+    return s;
+  };
+  ART.trackingSeals.sealStrike = (fr) => {
+    const sq = sqPts(0, -2, 22, 14, 0.5), last = fr === 2;
+    let s = '';
+    if (fr === 0) s += TX(F(tornD(0, 0, [[-170, 18], [-128, 13], [-84, 16], [-40, 20], [-6, 15], [32, 19], [76, 12], [122, 17], [150, 14]], 0.4, 311), 'p50', { st: 'ink', sw: 1.3 }), chainM(transM(0, -2), scaleM(1, 0.55)));
+    if (fr === 1) s += inkBurst(0, -1, 6, 312, { arms: 7, reach: [1.6, 2.6], flat: 0.5, drops: 0.6, col: 'ink700' });
+    s += F(line(sq, true), last ? 'p300' : 'p50', { st: last ? 'ink300' : 'ink', sw: 1.6 }) + F(line([sq[1], sq[2], sq[3]], true), 'p300', { a: last ? 0.5 : 0.9 });
+    if (!last) [0, 1, 3].forEach((k) => { const p = sq[k]; s += SW(`M${P2(p)} L${P2([p[0] * 1.3, (p[1] + 2) * 1.3 - 2])}`, [['ink', 2], ['ally', 1.1]]); });
+    return last ? GA(s, 0.75) : s;
+  };
+
+  // ---- huntersMarks mark-prey: the K9 tag: a punched paper tag hung on a cyan cord loop, swinging (2 frames ±9°) ----
+  ART.huntersMarks['mark-prey'] = (fr) => {
+    let b = F('M-4.4,-12.6 L4.4,-12.6 L4.6,-3 L-4.2,-2.4 Z', 'p50', { st: 'ink', sw: 1.3 }) + F('M1.6,-12.6 L4.4,-12.6 L4.6,-3 L1.8,-2.8 Z', 'p300') + Cir(0, -10.4, 1.2, 'ink700', { st: 'ink', sw: 0.6 });
+    b += SW('M0,-10.4 C-0.4,-12.8 -0.6,-14.2 0,-15.4', [['ink', 1.9], ['ally', 1]]) + SW(circD(0, -17.1, 1.7), [['ink', 1.8], ['ally', 0.9]]);
+    return TX(b, rotM([9, -9][fr], 0, -17.1));
+  };
+
+  // ---- crowFeathers crow: an ink crow flying (+x, mirrored by the renderer for the way it goes): paper strokes on the
+  // wing edges, cyan thread on a leg, no eye (6-frame wing beat). peck: a small paper burst where it pecks ----
+  const CROW_BODY = smooth([[-5, -0.6], [-2, -2.4], [2.4, -2.4], [4.8, -1.4], [5.2, 0.6], [2.6, 2.2], [-2.2, 2], [-5.2, 0.9]], true);
+  const CROW_WING = [[0, 0], [-2.6, -1.4], [-6.4, -2], [-9.4, -1.6], [-7.4, -0.2], [-4, 0.9]];
+  function crowArt(fr) {
+    const el = [18, 9, -4, -20, -9, 8][fr], sh = [-0.4, -0.8];
+    const wing = (dx, dy, k) => { const m = chainM(transM(sh[0] + dx, sh[1] + dy), rotM(el * k)); return CROW_WING.map((p) => apM(m, p)); };
+    const far = wing(1.2, -0.6, 0.8), near = wing(0, 0, 1);
+    let s = F(smooth(far, true), 'ink700');
+    s += F(line([[-4.4, -0.8], [-9.6, -2.2], [-8.9, -0.2], [-9.8, 1.6], [-4.4, 1.1]], true), 'ink') + F(CROW_BODY, 'ink') + Cir(5.4, -1.7, 2.4, 'ink') + F(line([[7.4, -2.5], [9.6, -1.6], [7.4, -0.9]], true), 'ink');
+    s += S('M-0.6,2 L-1.3,4 M1,2.1 L0.6,4.1', 'ink', 0.9) + SW('M-2.1,3.5 L0.3,3.2', [['ink', 1.4], ['ally', 0.75]]) + SW('M-2.1,3.5 C-3.4,3.9 -4.4,4.6 -5.4,4.8', [['ink', 1.2], ['ally', 0.6]]);
+    s += F(smooth(near, true), 'ink') + S(smooth(near.slice(0, 4)), 'p50', 0.7);
+    return s;
+  }
+  ART.crowFeathers.crow = (fr) => crowArt(fr);
+  ART.crowFeathers.peck = (fr) => (fr === 0 ? F(starD(0, 0, 4.8, 6, 281, -0.3, 0.42), 'p50', { st: 'ink', sw: 0.8 }) : F(starD(0.3, 0.2, 3.2, 5, 282, 0.2, 0.45), 'p300', { st: 'ink300', sw: 0.7 }) + Cir(-3.8, 2.6, 0.6, 'ink') + Cir(3.6, -2.4, 0.5, 'ink'));
+
+  // ---- inkLightning pillar: a narrow (≤ 14) ink lightning pillar standing from a small ink cloud to the ground,
+  // flickering (4 frames), with the bolt's cyan core; start: it strikes down (0 half, 1 grounded); end: it breaks up ----
+  const PCLOUD = [[-5, -67, 4.6], [1, -69.6, 5.2], [6.4, -66.8, 4.2], [-9, -65.4, 3], [3.4, -64.4, 3.8]];
+  function pillarPts(seed) { const pts = [[0, -62]]; for (let i = 1; i <= 6; i++) pts.push([i === 6 ? 0 : (jit(seed, i) - 0.5) * 8, -62 + 62 * i / 6]); return pts; }
+  function pillarArt(fr, mode) {
+    const end = mode === 'end', col = end ? (fr ? 'ink300' : 'ink700') : 'ink';
+    let s = PCLOUD.map(([x, y, r]) => Cir(x, y, r, end && fr ? 'ink300' : 'ink')).join('') + PCLOUD.slice(0, 3).map(([x, y, r]) => Cir(x + 0.9, y + 1, r * 0.55, 'ink500')).join('');
+    const pts = pillarPts(212 + (mode === 'loop' ? fr : mode === 'start' ? 6 : 8));
+    if (end && fr === 1) return GA(s + dens(pts, 2).filter((p, i) => i % 3 === 0).map(([x, y]) => Cir(x, y, 1.2, 'ink300')).join(''), 0.8);
+    let bolt = pts;
+    if (mode === 'start' && fr === 0) bolt = cutAlong(pts, 0, 0.5);
+    const d = brushD(dens(bolt, 3), (t) => lerp(end ? 5 : 7, end ? 3.4 : 5, t) * (mode === 'loop' && fr === 2 ? 0.85 : 1));
+    if (end) { s += F(brushD(dens(cutAlong(pts, 0, 0.42), 3), (t) => lerp(5, 3.8, t)), col) + F(brushD(dens(cutAlong(pts, 0.56, 1), 3), (t) => lerp(3.8, 3, t)), col); return s; }
+    s += F(d, col) + SW(line(cutAlong(bolt, 0.04, mode === 'start' && fr === 0 ? 0.9 : 0.86)), [['ally', 1.6], ['allyG', 0.5]], { join: 'miter', miter: 5 });
+    if (!(mode === 'start' && fr === 0)) s += Cir(-4.4, 0.6, 0.9, 'p50', { st: 'ink', sw: 0.5 }) + Cir(4.8, 1.2, 0.8, 'p50', { st: 'ink', sw: 0.5 }) + Cir(-1.6, 2.2, 0.6, 'ink300');
+    if (mode === 'start' && fr === 1) s += F(starD(0, -3.6, 6.2, 6, 291, -0.2, 0.4), 'p50', { st: 'ink', sw: 0.9 }) + F(brushD(dens(pts, 3), (t) => lerp(7, 5, t)), 'ink');
+    return s;
+  }
+  ART.inkLightning['pillar-start'] = (fr) => pillarArt(fr, 'start');
+  ART.inkLightning.pillar = (fr) => pillarArt(fr, 'loop');
+  ART.inkLightning['pillar-end'] = (fr) => pillarArt(fr, 'end');
+
+  // ---- fallingScroll roller: the middle of the scroll's roll at the band's head (+x = the band's way): paper roll seen
+  // from above, the paper layers' lines rolling, the cyan hanging cord tied round it, its end trailing behind ----
+  ART.fallingScroll.roller = (fr) => {
+    let s = F('M-4.2,-7.6 L4.2,-7.6 L4.2,7.6 L-4.2,7.6 Z', 'p50', { st: 'ink', sw: 1.4 }) + F('M0.6,-7.6 L4.2,-7.6 L4.2,7.6 L0.6,7.6 Z', 'p300');
+    [-2.4, 0.2, 2.6].forEach((x, i) => { const xx = x + fr * 1.2 - (x + fr * 1.2 > 3.4 ? 7.2 : 0); s += S(`M${f(xx)},-7.2 L${f(xx)},7.2`, 'ink300', 0.8 - i * 0.1); });
+    s += E(0, -7.9, 4.4, 1, 'ink') + E(0, 7.9, 4.4, 1, 'ink');
+    s += SW('M-4.6,-2.6 C-1.6,-1.8 1.6,-1.8 4.6,-2.6', [['ink', 2], ['ally', 1.1]]) + Cir(-4.4, -2.5, 1.1, 'ally', { st: 'ink', sw: 0.7 });
+    return s + SW(`M-4.6,-2.4 C-7.4,${f(-1.8 + fr * 0.8)} -10,${f(-0.6 - fr * 0.6)} -12.8,${f(0.8 + fr * 0.6)}`, [['ink', 1.7], ['ally', 0.9]]);
+  };
+
+  // ---- seventhSeal seal8 / print8: the eighth seal, the seal's form 1.55 × (low wide cylinder, neck, ball knob, cyan
+  // face rim); 0: the heavy press (squashed, a torn paper flash spread flat behind it on the ground - flash, speed
+  // strokes, dust), 1-2: lifting, 3: fading. print8: a big print with a double rim ----
+  const S8_BODY = 'M-17,-28 L-17,-3 A17,5.2 0 0 0 17,-3 L17,-28 A17,5.2 0 0 0 -17,-28 Z';
+  const S8_NECK = 'M-3,-30.4 L3,-30.4 L2.3,-39.6 L-2.3,-39.6 Z';
+  ART.seventhSeal.seal8 = (fr) => {
+    const lift = [0, 8, 14, 18][fr], last = fr === 3, ln = last ? 'ink300' : 'ink';
+    let b = F(S8_BODY, last ? 'p300' : 'p50', { st: ln, sw: 2.4 }) + F('M8,-28.8 L17,-28 L17,-3 A17,5.2 0 0 1 8,1.4 Z', 'p300', { a: last ? 0.6 : 1 });
+    b += E(0, -28, 17, 5.2, last ? 'p300' : 'p50', { st: ln, sw: 1.7 }) + S(ellArc(17, 5.2, 0, -8, 0.1, Math.PI - 0.2), 'ink300', 1.1);
+    b += SW(ellArc(17, 5.2, 0, -3, 0.02, Math.PI - 0.04), last ? [['ink300', 2.8], ['allyD', 1.4]] : [['ink', 3.6], ['ally', 2]]);
+    b += F(S8_NECK, ln) + Cir(0, -45, 6.2, ln);
+    if (!last) b += Cir(-1.9, -46.8, 2.3, 'ink500') + Cir(-2.7, -48, 0.9, 'p50');
+    let s = b;
+    if (fr === 0) s = G('scale(1.06 0.9)', s);
+    if (lift) s = G(tr(0, -lift), s, last ? 0.55 : 1);
+    if (fr === 0) {
+      s = TX(F(tornD(0, 0, [[-176, 27], [-150, 19], [-118, 12], [-62, 12], [-30, 19], [-4, 27], [24, 16], [160, 16]], 0.42, 301), 'p50', { st: 'ink', sw: 1.4 }), chainM(transM(0, -8), scaleM(1, 0.5))) +
+        taper([[-24, -18], [-24.4, -44]], 2, 0.4) + taper([[23, -26], [23.4, -50]], 1.6, 0.4) + s;
+      s += F(blotE(-21, 0.6, 3.4, 2.2, 302, 7, 0.4), 'p300', { st: 'ink300', sw: 0.7 }) + F(blotE(20.6, 0.4, 3, 2, 303, 7, 0.4), 'p300', { st: 'ink300', sw: 0.7 });
+    }
+    if (fr === 1) s += Cir(-9, 1.2, 1.2, 'ink') + Cir(8, 1.8, 1, 'ink');
+    return s;
+  };
+  ART.seventhSeal.print8 = () => {
+    const rx = 32, ry = 0.42 * rx, onE = (deg, k) => [Math.cos(deg * RAD) * rx * (k || 1), Math.sin(deg * RAD) * ry * (k || 1)];
+    let s = E(0, 0, rx, ry, 'p50', { a: 0.25 });
+    [[200, 335], [355, 520]].forEach(([a0, a1]) => { s += F(brushD(samp((t) => onE(lerp(a0, a1, t)), 24), (t) => 0.6 + 2 * Math.sin(Math.PI * t)), 'ink'); });
+    s += S(ellArc(rx * 0.8, ry * 0.8, 0, 0, 230 * RAD, 75 * RAD), 'ink300', 1) + S(ellArc(rx * 0.8, ry * 0.8, 0, 0, 20 * RAD, 60 * RAD), 'ink300', 0.9);
+    const kp = [[-1.1, -0.1], [-0.8, 0.3], [-0.4, 0.56], [0.06, 0.62], [0.5, 0.5], [0.84, 0.26], [1.1, -0.06]].map(([x, y]) => [x * rx, y * ry]);
+    s += F(brushD(crPts(kp, 8), (t) => 0.5 + 1.4 * Math.pow(Math.sin(Math.PI * t), 0.6)), 'ink', { a: 0.85 });
+    return s + [[-0.86, 0.7, 0.8], [0.3, 1.04, 0.6], [0.92, -0.74, 0.6]].map(([x, y, r]) => Cir(x * rx, y * ry, r, 'ink700')).join('');
+  };
+
+  // ---- silenceBell mark-silence: the weapon's paper hand bell, small, its mouth lashed shut with cyan thread ----
+  ART.silenceBell['mark-silence'] = () => {
+    let s = F('M-0.9,-15.6 L0.9,-15.6 L0.9,-13 L-0.9,-13 Z', 'ink') + F(ellD(0, -15.9, 1.6, 1), 'ink');
+    s += F('M-2.6,-13.2 C-3.8,-12.6 -4.7,-10.4 -5.1,-7.8 C-5.5,-6 -6.4,-5 -7.2,-4.4 L7.2,-4.4 C6.4,-5 5.5,-6 5.1,-7.8 C4.7,-10.4 3.8,-12.6 2.6,-13.2 Z', 'p50', { st: 'ink', sw: 1.3 });
+    s += F('M2.6,-13.2 C3.8,-12.6 4.7,-10.4 5.1,-7.8 C5.5,-6 6.4,-5 7.2,-4.4 L3.8,-4.4 C4,-6.6 3.9,-10.2 2.6,-13.2 Z', 'p300') + F(ellD(0, -4.4, 7.2, 1.5), 'ink');
+    s += SW('M-7,-5.2 C-3,-3.2 3,-3.2 7,-5.2', [['ink', 1.9], ['ally', 1]]) + SW('M-6.6,-3.8 C-2.6,-2.3 2.6,-2.3 6.6,-3.8', [['ink', 1.7], ['ally', 0.9]]);
+    return s + Cir(5.4, -4.2, 1.1, 'ally', { st: 'ink', sw: 0.7 }) + SW('M6.2,-3.8 C6.8,-3.2 7,-2.8 7.4,-2.4', [['ink', 1.3], ['ally', 0.7]]);
+  };
+
+  // ---- inkPots fire: an ink flame of two or three tongues joined (ink silhouette, cyan body, allyG heart, paper sparks
+  // off the tips), flickering over six frames; scorch<r>: the same flame in one to three clumps at the front of the feet
+  // (review 5 F1) ----
+  function tongueD(x, h, w, lean, y0) {
+    return smooth([[x - w / 2, y0], [x - w * 0.46 + lean * 0.15, y0 - h * 0.34], [x - w * 0.22 + lean * 0.55, y0 - h * 0.7], [x + lean, y0 - h], [x + w * 0.2 + lean * 0.62, y0 - h * 0.66], [x + w * 0.44 + lean * 0.2, y0 - h * 0.3], [x + w / 2, y0]], true);
+  }
+  const FLAMES = { 'flame-a': [[0, 18, 7.6, 0], [-3.5, 11.5, 4.4, -1.2], [4.2, 12.8, 4.8, 1.6]], 'flame-b': [[-1, 16.4, 7.2, -0.8], [3.8, 13.4, 5, 1.4]] };
+  function flameArt(fr, T) {
+    const sway = [0, 0.9, 1.5, 0.7, -0.5, -1.1][fr], grow = [1, 1.05, 0.97, 1.02, 0.95, 1.03][fr];
+    const tg = T.map(([x, h, w, lean], i) => [x, h * (i ? 2 - grow : grow), w, lean + sway * (i ? 0.7 : 1)]);
+    let s = F(tg.map(([x, h, w, l]) => tongueD(x, h - 0.8, w, l, -0.8)).join(' ') + ' ' + ellD(0, -1.8, 6, 1.4), 'ink');
+    s += F(tg.map(([x, h, w, l]) => tongueD(x + l * 0.12, h * 0.7, w * 0.52, l * 0.7, -1)).join(' '), 'ally');
+    s += F(tongueD(tg[0][0] + tg[0][3] * 0.1, tg[0][1] * 0.42, tg[0][2] * 0.28, tg[0][3] * 0.5, -1.4), 'allyG');
+    tg.slice(0, 2).forEach(([x, h, , l], i) => { s += Cir(x + l + (i ? -1.6 : 1.4), -h - 1.6 - i * 0.6, 0.7, 'p50', { st: 'ink', sw: 0.45 }); });
+    return s;
+  }
+  Object.keys(FLAMES).forEach((p) => { ART.inkPots[p] = (fr) => flameArt(fr, FLAMES[p]); });
+  // scorch<r>: clumps [x, s, tongues] of the ground flame (flame-a three tongues, flame-b two) at height H = hm·s, uneven
+  // in gap and size (never a row of like single tongues); hm by size class. The big tongue's tip bends by SCORCH_LEAN (per
+  // clump) through tongueD's lean: no straight cones
+  const SCORCH_HM = { 12: 9.5, 19: 12, 28: 15, 38: 18, 54: 21 };
+  const SCORCH = {
+    12: [[-1, 1, 3]],
+    19: [[-5, 1, 3], [7, 0.72, 2]],
+    28: [[-8, 1, 3], [10, 0.76, 2]],
+    38: [[-19, 0.8, 2], [-2, 1, 3], [17, 0.64, 2]],
+    54: [[-30, 0.86, 3], [1, 1, 3], [29, 0.68, 2]]
+  };
+  const SCORCH_LEAN = [0.5, -0.6, 0.4];
+  /** One scorch frame, flameArt's order: every tongue and each clump's base ellipse (rx = clump half width + 1, ry 1.4) in
+   *  one ink path; the inner tongues (0.7h, 0.52w but leaving at least 1.2 of ink rim) in cyan; an allyG heart in each
+   *  clump's big tongue (0.42h, 0.3w, at least 1.4 wide); one paper spark beside the biggest clump's tip when it fits
+   *  inside the box - 3 and the feet rect (not class 12). Tongues at least 5 (big) / 3.4 (side) wide. Frame 1: big
+   *  tongues sway +1 and stand 0.95 as high, side tongues sway -0.7 and stand 1.05 as high (no uniform scaling). */
+  function scorchArt(fr, rc, P) {
+    const hm = SCORCH_HM[rc], R = SPEC.marks.rects[rc];
+    let ink = '', cy = '', heart = '', top = null;
+    SCORCH[rc].forEach(([cx, sc, n], ci) => {
+      const H = hm * sc, k = H / 18;
+      const tg = FLAMES[n === 3 ? 'flame-a' : 'flame-b'].map(([x, h, w, l], i) => (i === 0
+        ? [cx + x * k, h * k * (fr ? 0.95 : 1), Math.max(5, w * k), (l + SCORCH_LEAN[ci]) * k + (fr ? 1 : 0)]
+        : [cx + x * k, h * k * (fr ? 1.05 : 1), Math.max(3.4, w * k), l * k - (fr ? 0.7 : 0)]));
+      const half = Math.max(...tg.map(([x, , w]) => Math.abs(x - cx) + w / 2));
+      ink += tg.map(([x, h, w, l]) => tongueD(x, h - 0.8, w, l, -0.8)).join(' ') + ' ' + ellD(cx, -1, half + 1, 1.4) + ' ';
+      cy += tg.map(([x, h, w, l]) => tongueD(x + l * 0.12, h * 0.7, Math.min(w * 0.52, w - 2.4 - 0.24 * Math.abs(l)), l * 0.7, -1)).join(' ') + ' ';
+      const [bx, bh, bw, bl] = tg[0];
+      heart += tongueD(bx + bl * 0.1, bh * 0.42, Math.max(1.4, bw * 0.3), bl * 0.5, -1.4) + ' ';
+      if (!top || H > top.H) top = { H, x: bx + bl, y: -bh };
+    });
+    let s = F(ink.trim(), 'ink') + F(cy.trim(), 'ally') + F(heart.trim(), 'allyG');
+    if (rc !== 12) {
+      const x = top.x + 2.1, y = top.y + 1.2, r = 0.75, x0 = 3 - P.anchor[0], y0 = 3 - P.anchor[1], x1 = P.box[0] - 3 - P.anchor[0], y1 = P.box[1] - 3 - P.anchor[1];
+      if (x - r >= Math.max(x0, R[0]) && x + r <= Math.min(x1, R[2]) && y - r >= Math.max(y0, R[1]) && y + r <= Math.min(y1, R[3])) s += Cir(x, y, r, 'p50', { st: 'ink', sw: 0.45 });
+    }
+    return s;
+  }
+  [12, 19, 28, 38, 54].forEach((rc) => { ART.inkPots['scorch' + rc] = (fr, c, P) => scorchArt(fr, rc, P); });
+
+  // ---- tarJar gather: a tar string pulled from the rim toward the middle (+x = outward, the anchor on the rim side):
+  // thick at the rim, thin, a bead at the inner end; it tightens over four frames; jarBroken: the landing's jar, half
+  // size, lying broken in the middle with tar run out of its mouth ----
+  function stringArt(fr, v) {
+    const inner = [-30, -27.5, -25.5, -27][fr] + (v ? 2 : 0), sag = [2.4, 1.6, 0.9, 1.4][fr] * (v ? -1 : 1);
+    const pts = samp((t) => [lerp(-1, inner, t), sag * Math.sin(Math.PI * t) + (v ? 0.6 : -0.4) * t], 14);
+    const s = F(brushD(pts, (t) => (t < 0.7 ? lerp(3, 1.1, t / 0.7) : t < 0.9 ? lerp(1.1, 2.4, (t - 0.7) / 0.2) : lerp(2.4, 0.5, (t - 0.9) / 0.1))), 'ink');
+    return s + S(smooth(cutAlong(pts, 0.05, 0.3).map(([x, y]) => [x, y - 0.6])), 'p300', 0.7, { a: 0.85 });
+  }
+  ART.tarJar['string-a'] = (fr) => stringArt(fr, 0);
+  ART.tarJar['string-b'] = (fr) => stringArt(fr, 1);
+  const JB_M = chainM(transM(-1, -6.9), rotM(120), scaleM(0.5), transM(0, 14));
+  ART.tarJar.jarBroken = () => {
+    let jar = F(TJ_FOOT, 'ink', { st: 'ink', sw: 0.9 }) + S(ellArc(5.8, 1.3, 0, -0.2, 0.2, Math.PI - 0.4), 'p300', 0.9);
+    jar += F(TJ_BODY, 'ink', { st: 'ink', sw: 0.9 }) + F(TJ_LIGHT, 'ink500') + F(smooth(TJ_HOLE, true), 'ink700') + S(smooth(TJ_BREAK), 'ink500', 0.8);
+    jar += SW('M-7.9,-22 C-3.8,-20.2 3.8,-20.2 7.9,-22', [['ink', 1.8], ['ally', 1]]) + S(TJ_MOUTH, 'ink', 2) + F(TJ_MOUTH, 'ink') + F(ellD(0.4, -29, 6, 2.2), 'ink700') + S(TJ_MOUTH, 'p50', 1.2);
+    const lip = apM(JB_M, [8.4, -28]);
+    return F(blotE(lip[0] + 3.4, lip[1] + 2.2, 5.4, 2.2, 251, 9, 0.3), 'ink') + TX(jar, JB_M) + S(`M${P2([lip[0] + 1, lip[1] + 1.6])} L${P2([lip[0] + 5, lip[1] + 2])}`, 'p300', 0.8, { a: 0.8 });
+  };
+
+  // ---- meteorBrush mark: paper star motes (5-6 uneven points) rising and fading over the 1.2 s cycle ----
+  const MOTE = [[-2.6, 1.85, 'p50'], [-4.4, 1.75, 'p50'], [-6.1, 1.5, 'p50'], [-7.6, 1.1, 'p300']];
+  [0, 1].forEach((v) => { ART.meteorBrush['mote-' + 'ab'[v]] = (fr) => { const [y, r, col] = MOTE[fr]; return F(starD(v ? 0.3 : -0.3, y, r, v ? 6 : 5, 262 + v * 4 + fr, -Math.PI / 2, 0.42), col, { st: 'ink', sw: 0.5 }); }; });
+
+  // ---- eclipseHalo corona: a torn paper flag out from the rim (+x = outward), a notch at its far end; 1: shorter, p300 ----
+  function coronaArt(fr, v) {
+    const L = (v ? 13.5 : 17) * (fr ? 0.8 : 1), wv = v ? -1 : 1;
+    const top = samp((t) => [t * L, -lerp(2.2, 0.5, t) + wv * 0.9 * Math.sin(Math.PI * t * 1.4)], 8), bot = samp((t) => [t * L, lerp(2.2, 0.5, t) + wv * 0.9 * Math.sin(Math.PI * t * 1.4)], 8).reverse();
+    return F(line(top.concat([[L + 0.6, -0.6], [L - 1.4, 0], [L + 0.4, 0.7]], bot), true), fr ? 'p300' : 'p50', { st: 'ink', sw: 0.9 });
+  }
+  ART.eclipseHalo['corona-a'] = (fr) => coronaArt(fr, 0);
+  ART.eclipseHalo['corona-b'] = (fr) => coronaArt(fr, 1);
+
   function stamp(group, part, o) {
     o = o || {};
     const P = partOf(group, part);
@@ -2018,7 +2499,66 @@ window.PN = window.PN || {};
   /** Where the wide brush's / cross stroke's head is at age (grows over grow.frac of life). */
   function bandHead(sp, L, age, life) { return SPEC.footClear + (L - SPEC.footClear) * easeOut(clamp(age / (sp.grow.frac * life), 0, 1)); }
 
+  /** The radius of a stage: opts.radius; a zone's r, or area × the weapon's radius; a gimmick's r; else the weapon's. */
+  function stageR(id, stage, o) {
+    if (o.radius != null) return +o.radius;
+    const z = SPEC.zone[id], g = SPEC.gimmick[id];
+    if (z && z.stage === stage) return z.area ? z.area * stats(id, o).radius : z.r;
+    if (g && g.stage === stage && g.r) return g.r;
+    return stats(id, o).radius;
+  }
+  /** The three corners of the triangle seal: opts.points (the three sealed enemies) or a reference triangle. */
+  const triPts = (o) => { const P = ptsOf(o); return P.length >= 3 ? P.slice(0, 3) : [[-110, 40], [104, 56], [-6, -92]]; };
+  /** Stamp placement of a gimmick stage (SPEC.layout[id][stage], delivery 3a). Prims: center (pick), disc (§1.6: 40
+   *  candidates at 2π·J(k), (R - margin)·√J(k + 40), refused within minGap·R by hypot(dx, 1.3 dy); n = clamp(round(R /
+   *  per), min, max); variant J(k + 80), flip J(k + 120) < 0.5, phase J(k + 160); the first `info` are prio 0), ring
+   *  (as layout's, but +x stays outward), corner and centroid (the triangle), tip (the unroll head), tail (eclipse). */
+  function glayout(id, stage, o) {
+    const L = SPEC.layout[id] && SPEC.layout[id][stage];
+    if (!L) return [];
+    const R = stageR(id, stage, o), seed = o.seed, out = [];
+    L.forEach((q) => {
+      const parts = q.parts;
+      if (q.prim === 'center') {
+        const part = q.pick ? parts[Math.min(parts.length - 1, Math.floor(jit(seed, q.pick) * parts.length))] : parts[0];
+        out.push({ prim: 'center', part, x: 0, y: 0, angle: 0, flip: false, phase: 0, prio: 0, z: q.z });
+      } else if (q.prim === 'disc') {
+        const n = clamp(Math.round(R / q.per), q.min, q.max), mg = q.margin || 0, got = [];
+        for (let k = 0; k < 40 && got.length < n; k++) {
+          const a = TAU * jit(seed, k), d = Math.max(0, R - mg) * Math.sqrt(jit(seed, k + 40)), x = Math.cos(a) * d, y = Math.sin(a) * d;
+          if (got.some((g) => Math.hypot(g.x - x, 1.3 * (g.y - y)) < (q.minGap || 0) * R)) continue;
+          got.push({ x, y, k });
+        }
+        got.forEach((g, i) => out.push({ prim: 'disc', part: parts[Math.min(parts.length - 1, Math.floor(jit(seed, g.k + 80) * parts.length))], x: g.x, y: g.y, angle: 0, flip: jit(seed, g.k + 120) < 0.5, phase: jit(seed, g.k + 160), prio: i < (q.info == null ? 99 : q.info) ? 0 : 2, z: q.z, margin: mg }));
+      } else if (q.prim === 'ring') {
+        const n = q.count[0] + Math.floor(jit(seed, 900) * (q.count[1] - q.count[0] + 1));
+        let placed = 0;
+        for (let k = 0; k < n; k++) {
+          if (jit(seed, k + 100) < (q.skip || 0)) continue;
+          const a = -Math.PI / 2 + (k + 0.5 + (jit(seed, k) - 0.5) * 2 * (q.jitter || 0)) * TAU / n, dr = q.dr || 0, rr = R + dr;
+          out.push({ prim: 'ring', part: parts[Math.min(parts.length - 1, Math.floor(jit(seed, k + 200) * parts.length))], x: Math.cos(a) * rr, y: Math.sin(a) * rr, angle: a, flip: false, phase: jit(seed, k + 400), prio: placed < (q.info == null ? 99 : q.info) ? 0 : 2, z: q.z, dr });
+          placed++;
+        }
+      } else if (q.prim === 'corner') {
+        triPts(o).forEach((p, i) => out.push({ prim: 'corner', part: parts[0], x: p[0], y: p[1], angle: 0, flip: false, phase: 0, prio: 0, z: q.z, index: i }));
+      } else if (q.prim === 'centroid') {
+        const P = triPts(o);
+        out.push({ prim: 'centroid', part: parts[0], x: (P[0][0] + P[1][0] + P[2][0]) / 3, y: (P[0][1] + P[1][1] + P[2][1]) / 3, angle: 0, flip: false, phase: 0, prio: 0, z: q.z });
+      } else if (q.prim === 'tip') {
+        const g = SPEC.gimmick[id], Lb = o.length != null ? +o.length : g.length, age = clamp(o.p, 0, 1) * g.life;
+        out.push({ prim: 'tip', part: parts[0], x: o.reduced ? Lb : Lb * easeOut(clamp(age / g.grow, 0, 1)), y: 0, angle: 0, flip: false, phase: 0, prio: 0, z: q.z });
+      } else if (q.prim === 'tail') {
+        const h = SPEC.halo[id], life = lifeOf(id), age = o.p * life, span = h.crescent.span * RAD;
+        const phi = sweepAngle(seed, h.crescent.sweep, age, life, o.reduced), th = phi - span / 2;
+        out.push({ prim: 'tail', part: parts[Math.floor(jit(seed, q.pick) * parts.length) % parts.length], x: Math.cos(th) * R, y: Math.sin(th) * R, angle: th + Math.PI / 2, flip: false, phase: jit(seed, 410), prio: 0, z: q.z });
+      }
+    });
+    const zo = SPEC.zorder.concat(['stand']);
+    return out.map((it, i) => [it, i]).sort((a, b) => (zo.indexOf(a[0].z) - zo.indexOf(b[0].z)) || (a[1] - b[1])).map((q) => q[0]);
+  }
+
   function layout(id, stage, opts) {
+    if (GSTAGE[id] === stage) return glayout(id, stage, norm(opts));
     const L = SPEC.layout[id] && SPEC.layout[id][stage];
     if (!L) return [];
     const o = norm(opts), st = stats(id, o), R = st.radius, seed = o.seed, life = lifeOf(id), age = o.p * life, out = [];
@@ -2070,8 +2610,22 @@ window.PN = window.PN || {};
   }
 
   /** Vertices of the stage's parametric shapes (C9 vectors; compact: defining points, see API §8). */
+  /** The gimmick stages' defining points (C9): spin arcs [start°, end°], the unroll's ridge and head, the triangle's
+   *  corners and centroid, the eighth seal's stitch starts (the seven seals). */
+  function gpaths(id, stage, o) {
+    const out = {};
+    if (stage === 'spin') { const Z = SPEC.zone[id], age = clamp(o.p, 0, 1) * Z.life, th0 = TAU * jit(o.seed, Z.arcs.start) + (o.reduced ? 0 : TAU * Z.arcs.turns * age); out.arcs = []; for (let k = 0; k < Z.arcs.n; k++) { const a0 = th0 + k * TAU / Z.arcs.n; out.arcs.push([f((a0 / RAD) % 360), f((a0 / RAD + Z.arcs.span) % 360)]); } }
+    if (stage === 'unroll') { const g = SPEC.gimmick[id], Lb = o.length != null ? +o.length : g.length, w = o.width != null ? +o.width : g.width; out.ridge = ridgePts(Lb, w, g.band.ridge).slice(0, 12); out.head = [[glayout(id, stage, o)[0].x, 0]]; }
+    if (stage === 'triangle') { const P = triPts(o); out.corners = P; out.centroid = [[(P[0][0] + P[1][0] + P[2][0]) / 3, (P[0][1] + P[1][1] + P[2][1]) / 3]]; }
+    if (stage === 'eighth') out.stitch = eventPositions(id, 7, o).map((q) => [q.x, q.y]);
+    Object.keys(out).forEach((k) => { out[k] = out[k].map((p) => [f(p[0]), f(p[1])]); });
+    return out;
+  }
+  /** The unroll's mountain ridge: two humps of amp × w over the band, its base at base × w below the axis. */
+  const ridgePts = (Lb, w, rg) => samp((t) => { const x = lerp(0.06 * Lb, 0.96 * Lb, t); return [x, rg.base * w - rg.amp * w * Math.abs(Math.sin(Math.PI * rg.humps * (x - 0.06 * Lb) / (0.9 * Lb)))]; }, 24);
   function paths(id, stage, opts) {
     if (!META[id] || META[id].stages.indexOf(stage) < 0) return {};
+    if (GSTAGE[id] === stage) return gpaths(id, stage, norm(opts));
     const o = norm(opts), st = stats(id, o), R = st.radius, seed = o.seed, life = lifeOf(id), age = o.p * life, out = {};
     const rs = SPEC.ring[id], ls = SPEC.line[id], hs = SPEC.halo[id], aw = o.awakened;
     if (rs) {
@@ -2479,26 +3033,200 @@ window.PN = window.PN || {};
     return s + putItems(id, items, o, age, life, 'ally');
   };
 
+  // -- awakening gimmicks, P1 (delivery 3a) --
+  const rClass = (r, list) => list.reduce((m, q) => (Math.abs(q - r) < Math.abs(m - r) ? q : m), list[0]);
+  /** An overlay's markup round an enemy's feet (origin): head marks at (0, top + dy), feet overlays by size class.
+   *  layer (the renderer's layers, §5.1): 'feet' = groundMarks, under the body (freeze -back); 'front' = right after
+   *  that enemy's body (freeze -front, scorch); 'head' = overheads (head marks, the crow); none = all, in that order. */
+  function ovBody(key, o, r, top, layer) {
+    const OV = SPEC.overlay, t = o.t, want = (ly) => !layer || layer === ly;
+    if (OV.head.parts[key]) {
+      if (!want('head')) return '';
+      const q = OV.head.parts[key], P = partOf(q.group, q.part);
+      const fr = P.drive === 'loop' ? (o.reduced || minimal(o) ? P.still : Math.floor(t * P.fps) % P.frames) : 0;
+      return place(q.group, q.part, fr, 0, top + OV.head.dy, 0);
+    }
+    if (key === 'crow') {
+      if (!want('head')) return '';
+      const c = SPEC.marks.crow, q = OV.crow, P = partOf(q.group, q.part), Pk = partOf(q.group, q.peck);
+      // opts.peck = seconds since the crow's hit tick (data crowAt): for dive seconds the peck stamp shows on the head
+      // (deco: not at minimal LOD) and the flying crow dives to it and back (k = sin(π·peck / dive))
+      const pk = o.peck == null ? -1 : +o.peck, pecking = pk >= 0 && pk < c.dive;
+      const burst = pecking && !minimal(o) ? place(q.group, q.peck, clamp(Math.floor(pk / Pk.seconds * Pk.frames), 0, Pk.frames - 1), q.dive.peck[0], top + q.dive.peck[1], 0) : '';
+      if (o.reduced) return place(q.group, q.part, P.still, q.sit[0], top + q.sit[1], 0) + burst;
+      const a = TAU * t / c.period, fl = Math.sin(a) > 0, k = pecking ? Math.sin(Math.PI * pk / c.dive) : 0;
+      const x = lerp(Math.cos(a) * c.rx, (fl ? 1 : -1) * q.dive.crow[0], k), y = lerp(top - c.lift + Math.sin(a) * c.ry, top + q.dive.crow[1], k);
+      return place(q.group, q.part, Math.floor(t * P.fps) % P.frames, x, y, 0, { flip: fl }) + burst;
+    }
+    if (key === 'freeze') { const q = OV.feet.freeze, rc = rClass(r, q.r); return (want('feet') ? place(q.group, q.back + rc, 0, 0, 0, 0) : '') + (want('front') ? place(q.group, q.front + rc, 0, 0, 0, 0) : ''); }
+    if (key === 'scorch') { if (!want('front')) return ''; const q = OV.feet.scorch, rc = rClass(r, q.r), P = partOf(q.group, q.part + rc); return place(q.group, q.part + rc, o.reduced || minimal(o) ? P.still : Math.floor(t * P.fps) % P.frames, 0, 0, 0); }
+    return '';
+  }
+  // reference context (opts.context, C5): enemies of chapter ch (and the hero) read only from PN.enemies / PN.heroKit
+  const CTX_SCL = { stalker: 0.9, charger: 0.963, shooter: 0.783, warden: 1 }, CTX_TOP = { stalker: -30, charger: -40, shooter: -44, warden: -74 };
+  function ctxEnemy(role, x, y, o, ov) {
+    const EN = PN.enemies;
+    if (!EN || !EN.meta) return '';
+    const m = EN.meta(o.ch, role), k = m.displayScale * (CTX_SCL[role] || 1);
+    // the overlay in the renderer's layers: feet under the body, front right after it, head marks over it
+    const lay = (ly) => { const b = ov ? ovBody(ov, o, m.r, CTX_TOP[role] || -34, ly) : ''; return b ? G(tr(x, y), b) : ''; };
+    return E(x, y, m.r, m.r * 0.42, 'ink', { a: 0.3 }) + lay('feet') + `<g transform="translate(${f(x - m.feet[0] * k)} ${f(y - m.feet[1] * k)}) scale(${f(k)})">${EN.draw(o.ch, role, { lod: 'game' })}</g>` + lay('front') + lay('head');
+  }
+  const ZONE_CTX = { inkPots: [['stalker', -24, 12, 'scorch'], ['charger', 28, -12, 'scorch']], tarJar: [['stalker', -72, 26], ['shooter', 60, -46]], smokeTail: [['charger', -16, 10]], pinHail: [['stalker', 26, 6]], gravePins: [['stalker', 30, 4]], inkLightning: [['charger', 34, 10]], twinBlades: [['stalker', -42, 18], ['shooter', 46, -8]] };
+  const zoneAlpha = (age, life) => Math.min(clamp(age / SPEC.zone.fadeIn, 0, 1), clamp((life - age) / SPEC.zone.fadeOut, 0, 1));
+  /** Frame of a zone stamp: cycle by o.t / seconds + phase; loop and idx as frameFor. */
+  function zoneFrame(P, o, age, phase) {
+    if (P.drive === 'cycle') return (o.reduced || minimal(o)) ? Math.min(P.frames - 1, Math.floor((phase || 0) * P.frames)) : Math.floor(((((o.t / P.seconds) + (phase || 0)) % 1) + 1) % 1 * P.frames) % P.frames;
+    return frameFor(P, o, age, 1, phase);
+  }
+  /** A ground zone (SPEC.zone[id], §4.2): floor, wash, gloss, rim (whole life), turning arcs, stamps by glayout (ground,
+   *  then stand by y with the context, then ally); minimal keeps the centre object only, reduced drops every other deco
+   *  part / prio-2 item. The centre object's start / end parts carry its own coming and going: drawn at full alpha, and
+   *  its frames between them skip the fade of an end that has such a part (F2). */
+  function drawZone(id, stage, o) {
+    const Z = SPEC.zone[id], R = stageR(id, stage, o), life = Z.life, age = clamp(o.p, 0, 1) * life, A = zoneAlpha(age, life);
+    let ground = '', ally = '', deco = 0;
+    const stand = [];
+    if (Z.floor) ground += place(id, Z.floor, 0, 0, 0, 0, { a: A });
+    if (Z.wash) ground += F(circ(R), Z.wash.token, { a: Z.wash.alpha * A });
+    if (Z.gloss) Z.gloss.at.forEach((k, i) => { ground += SW(arc(R * k, (Z.gloss.span[0] + i * 12) * RAD, (Z.gloss.span[1] - Z.gloss.span[0]) * RAD), Z.gloss.layers, { a: A }); });
+    if (Z.rim === 'ally') ground += SWD(circ(R), SPEC.rim.ally.layers, SPEC.rim.ally.dash, SPEC.rim.ally.pad);
+    else if (Z.rim === 'pad') ground += SW(circ(R), o.context ? SPEC.rim.pad.inside : SPEC.rim.pad.layers);
+    if (Z.arcs) {
+      const th0 = TAU * jit(o.seed, Z.arcs.start) + (o.reduced ? 0 : TAU * Z.arcs.turns * age);
+      for (let k = 0; k < Z.arcs.n; k++) ally += SW(arc(R * Z.arcs.at, th0 + k * TAU / Z.arcs.n, Z.arcs.span * RAD), Z.arcs.layers, { a: A });
+    }
+    glayout(id, stage, o).forEach((it) => {
+      if (minimal(o) && it.prim !== 'center') return;
+      if (partOf(id, it.part).lod === 'deco' || it.prio === 2) { deco++; if (o.lod === 'reduced' && deco % 2 === 0) return; }
+      let part = it.part, fr, own = false;
+      if (it.prim === 'center' && Z.start && age < Z.start.seconds) { part = Z.start.part; fr = Math.floor(age / Z.start.seconds * partOf(id, part).frames); own = true; }
+      else if (it.prim === 'center' && Z.end && age > life - Z.end.seconds) { part = Z.end.part; fr = Math.floor((age - life + Z.end.seconds) / Z.end.seconds * partOf(id, part).frames); own = true; }
+      const P = partOf(id, part);
+      fr = fr == null ? zoneFrame(P, o, age, it.phase) : clamp(fr, 0, P.frames - 1);
+      // the centre object's loop / idx frames take only the fade of an end that has no start / end part (review 5 F2):
+      // the part at that end does the coming or going, so the object never dims next to it
+      const a = own ? 1 : it.prim === 'center' ? Math.min(Z.start ? 1 : clamp(age / SPEC.zone.fadeIn, 0, 1), Z.end ? 1 : clamp((life - age) / SPEC.zone.fadeOut, 0, 1)) : A;
+      const m = place(id, part, fr, it.x, it.y, P.rotate === 'none' ? 0 : it.angle, { flip: it.flip, a });
+      if (it.z === 'stand') stand.push([it.y, m]); else if (it.z === 'ally') ally += m; else ground += m;
+    });
+    if (o.context) {
+      // big zones: the enemies inside (scaled with R); small ones (< 50): an enemy beside the piece
+      (ZONE_CTX[id] || []).forEach(([role, x, y, ov]) => { const k = R < 50 ? 1 : R / 75, dx = R < 50 ? R + 16 : 0; stand.push([y * k, ctxEnemy(role, x * k + dx, y * k, o, ov)]); });
+      if (id === 'meteorBrush' && PN.heroKit && PN.heroKit.placeSprite) stand.push([8, PN.heroKit.placeSprite('idle', 0, -10, 8, 1)]);
+    }
+    return ground + stand.sort((a, b) => a[0] - b[0]).map((q) => q[1]).join('') + ally;
+  }
+  /** Head and feet marks as a gimmick stage: the overlay alone (r 19), or three enemies wearing it (context). */
+  function drawMarks(id, stage, o) {
+    if (o.context) return [['shooter', 10, -40], ['stalker', -70, 40], ['charger', 50, 70]].map(([r, x, y]) => ctxEnemy(r, x, y, o, stage)).join('');
+    return ovBody(stage, o, 19, -40);
+  }
+  /** The triangle seal (§4.4): pending (delay) the threads sew the edges corner to corner and the corner prints come in;
+   *  then the strike edges, the triangle's paper fill for fillSeconds and the strike print at the centroid. */
+  function drawTriangle(id, o) {
+    const g = SPEC.gimmick[id], P = triPts(o), age = clamp(o.p, 0, 1) * (g.delay + g.life), cen = [(P[0][0] + P[1][0] + P[2][0]) / 3, (P[0][1] + P[1][1] + P[2][1]) / 3];
+    let s = o.context ? P.map((p, i) => ctxEnemy(['stalker', 'charger', 'shooter'][i], p[0], p[1] + 8, o)).join('') : '', top = '';
+    if (age < g.delay) {
+      const u = o.reduced ? 1 : age / g.delay;
+      for (let k = 0; k < 3; k++) { const a = P[k], b = P[(k + 1) % 3], gk = clamp(u * 3 - k, 0, 1); if (gk > 0.01) s += SWD(`M${P2(a)} L${P2([lerp(a[0], b[0], gk), lerp(a[1], b[1], gk)])}`, g.pre.layers, g.pre.dash, g.pre.pad); }
+      P.forEach((p) => { top += place(id, 'sealCorner', Math.min(2, Math.floor(u * 3)), p[0], p[1], 0); });
+    } else {
+      const v = age - g.delay;
+      if (v < g.strike.fillSeconds) s += F(line(P, true), g.strike.fill.token, { a: g.strike.fill.alpha });
+      s += SW(line(P, true), g.strike.layers, { a: fadeA(g.strike.fade, v, g.life) });
+      P.forEach((p) => { top += place(id, 'sealCorner', 2, p[0], p[1], 0); });
+      top += place(id, 'sealStrike', clamp(Math.floor(v / partOf(id, 'sealStrike').seconds * 3), 0, 2), cen[0], cen[1], 0);
+    }
+    return s + top;
+  }
+  /** The unrolling scroll (§4.4, beam frame from the landing point): the paper band at ±w (straight ink edges, the
+   *  mountain ridge) unrolls over grow, the roll's rod across its head, the roller stamp in the middle of it. */
+  function drawUnroll(id, o) {
+    const g = SPEC.gimmick[id], Lb = o.length != null ? +o.length : g.length, w = o.width != null ? +o.width : g.width, age = clamp(o.p, 0, 1) * g.life;
+    const x1 = o.reduced ? Lb : Lb * easeOut(clamp(age / g.grow, 0, 1)), A = fadeA(g.fade, age, g.life);
+    if (x1 < 2) return '';
+    let s = o.context ? ctxEnemy('stalker', x1 * 0.5, w * 0.3, o) + ctxEnemy('charger', x1 * 0.85, -w * 0.4, o) : '';
+    s += F(`M0,${f(-w)} L${f(x1)},${f(-w)} L${f(x1)},${f(w)} L0,${f(w)} Z`, g.band.fill.token, { a: g.band.fill.alpha * A });
+    s += SW(`M0,${f(-w)} L${f(x1)},${f(-w)}`, g.band.edge, { a: A }) + SW(`M0,${f(w)} L${f(x1)},${f(w)}`, g.band.edge, { a: A });
+    const ridge = ridgePts(Lb, w, g.band.ridge).filter((p) => p[0] <= x1 - 3);
+    if (ridge.length > 1) s += SW(smooth(ridge), g.band.ridge.layers, { a: A });
+    s += SW(`M${f(x1)},${f(-w)} L${f(x1)},${f(w)}`, g.band.head, { a: A });
+    const P = partOf(id, 'roller');
+    return s + place(id, 'roller', o.reduced || minimal(o) ? P.still : Math.floor(o.t * P.fps) % P.frames, x1, 0, 0, { a: A });
+  }
+  /** The eighth seal (§4.4): pending (delay) its shadow grows at the centre and the stitches run in from the seven seals
+   *  (deco); then the big print, the wash, the heavy ring (gaps, grow, fade) and the big seal. */
+  function drawEighth(id, o) {
+    const g = SPEC.gimmick[id], R = stageR(id, 'eighth', o), age = clamp(o.p, 0, 1) * (g.delay + g.life);
+    let s = '';
+    if (age < g.delay) {
+      const u = age / g.delay, rx = lerp(g.shadow.rx[0], g.shadow.rx[1], u);
+      s += E(0, 0, rx, 0.42 * rx, g.shadow.token, { a: lerp(g.shadow.alpha[0], g.shadow.alpha[1], u) });
+      // the stitches are deco: none at minimal LOD, every other one at reduced
+      if (!minimal(o)) eventPositions(id, 7, o).forEach((q, k) => { if (o.lod === 'reduced' && k % 2) return; s += SWD(`M${P2([q.x, q.y])} L${P2([q.x * (1 - u), q.y * (1 - u)])}`, g.stitch.layers, g.stitch.dash, g.stitch.pad); });
+      return s;
+    }
+    const v = age - g.delay, rg = g.ring, Rg = grownR(R, rg.grow, v, o.reduced), A = fadeA(rg.fade, v, g.life, rg.grow, o.reduced);
+    s += place(id, 'print8', 0, 0, 0, 0) + F(circ(Rg), rg.wash.token, { a: rg.wash.alpha * A });
+    arcsBetween(gapList(rg.gaps, o.seed)).forEach(([a0, a1]) => { s += SW(arc(Rg, a0, a1 - a0), rg.layers, { a: A }); });
+    return s + place(id, 'seal8', clamp(Math.floor(v / g.sealSeconds * 4), 0, 3), 0, 0, 0);
+  }
+  /** The total eclipse (every fourth sweep): the disc's pale ink, the crescent closed into a full shadow band, the
+   *  heavy outer rim, the corona flags round the rim and the ribbons (translucent: never the black sun's solid disc). */
+  function drawTotal(id, o) {
+    const hs = SPEC.halo[id], g = SPEC.gimmick[id], R = stageR(id, 'total', o), life = lifeOf(id), age = clamp(o.p, 0, 1) * life, A = fadeA(hs.fade, age, life);
+    let s = F(circ(R), g.wash.token, { a: g.wash.alpha * A }) + F(circ(R) + ' ' + circ(R * g.band.at), g.band.token, { rule: 'evenodd', a: g.band.alpha * A });
+    s += SW(circ(R), g.outer, { a: A }) + SW(circ(R - SPEC.awakened.inset), SPEC.awakened.layers, { a: A });
+    let deco = 0;   // the corona flags are deco: none at minimal LOD, every other one at reduced
+    glayout(id, 'total', o).forEach((it) => { if (it.prim === 'ring' && (minimal(o) || (o.lod === 'reduced' && deco++ % 2))) return; const P = partOf(id, it.part); s += place(id, it.part, P.drive === 'loop' ? frameFor(P, o, age, life, it.phase) : clamp(Math.floor(age / P.seconds * P.frames), 0, P.frames - 1), it.x, it.y, it.angle, { a: A }); });
+    if (o.context && PN.heroKit && PN.heroKit.placeSprite) s += PN.heroKit.placeSprite('idle', 0, 0, 0, 1);
+    return s;
+  }
+  /** The growing downpour: no new art (data); four strokes at the scale steps, their marks chosen by radius. */
+  function drawSurge(id, o) {
+    const g = SPEC.gimmick[id], st = stats(id, o), life = lifeOf(id), age = o.p * life, pos = [[-110, -70], [110, -70], [-110, 90], [110, 90]];
+    return g.scale.map((m, i) => {
+      const R = st.radius * m, seed = o.seed + 17 * i, oe = Object.assign({}, o, { seed, radius: R }), items = layout(id, 'impact', oe);
+      return G(tr(pos[i][0], pos[i][1]), putItems(id, items, oe, age, life, 'ground') + drawRing(id, R, seed, age, o) + putItems(id, items, oe, age, life, 'ally'));
+    }).join('');
+  }
+  function drawGimmick(id, stage, o) {
+    if (SPEC.zone[id] && SPEC.zone[id].stage === stage) return drawZone(id, stage, o);
+    if (stage === 'freeze' || stage === 'prey' || stage === 'crow' || stage === 'silence') return drawMarks(id, stage, o);
+    if (stage === 'triangle') return drawTriangle(id, o);
+    if (stage === 'unroll') return drawUnroll(id, o);
+    if (stage === 'eighth') return drawEighth(id, o);
+    if (stage === 'total') return drawTotal(id, o);
+    if (stage === 'surge') return drawSurge(id, o);
+    return '';
+  }
+
   function draw(id, stage, opts) {
     if (!META[id] || META[id].stages.indexOf(stage) < 0) {
       if (typeof console !== 'undefined') console.warn('PN.arsenalFx: nothing drawn for ' + id + '/' + stage);
       return '<g/>';
     }
     const o = norm(opts), c = Ctx();
+    if (GSTAGE[id] === stage) return c.out(drawGimmick(id, stage, o), id);
     return c.out(DRAW[META[id].kind](id, stage, o, c), id);
   }
-  /** Enemy overlays come with the gimmicks (delivery 3); until then every key is unknown. */
-  const OVERLAYS = [];
+  /** Enemy overlays (§4.3; P1: silence, prey, crow, freeze, scorch; the rest come with P2). Origin = the enemy's feet;
+   *  opts.r = its radius (size class), opts.top = its sprite's top (y), opts.t = clock, opts.peck = seconds since the
+   *  crow's hit tick, opts.layer = 'feet' | 'front' | 'head' (one layer only; default all). */
+  const OVERLAYS = ['silence', 'prey', 'crow', 'freeze', 'scorch'];
   function overlay(key, opts) {
     if (OVERLAYS.indexOf(key) < 0) {
       if (typeof console !== 'undefined') console.warn('PN.arsenalFx: unknown overlay ' + key);
       return '<g/>';
     }
-    return '<g/>';
+    const o = norm(opts), r = opts && opts.r != null ? +opts.r : 12, top = opts && opts.top != null ? +opts.top : -30, c = Ctx();
+    const layer = ['feet', 'front', 'head'].indexOf(o.layer) >= 0 ? o.layer : null;
+    return c.out(ovBody(key, o, r, top, layer), 'ov-' + key);
   }
 
   PN.arsenalFx = Object.freeze({
-    version: '1.0',   // the delivery stage is SPEC.version (now '1.0-d2')
+    version: '1.0',   // the delivery stage is SPEC.version (now '1.0-d3a-r1')
     K, ids: Object.freeze(IDS.slice()), kinds: Object.freeze(KINDS.slice()), META,
     groups: Object.freeze(GROUPS.slice()), overlays: Object.freeze(OVERLAYS.slice()),
     SPEC, jit,

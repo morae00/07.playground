@@ -3,6 +3,7 @@
 import { lookOf } from '../arsenal.ts';
 import type {
   ArsenalLob,
+  ArsenalPending,
   AwakenedMarks,
   AwakeningZone,
   BeamEffect,
@@ -40,7 +41,7 @@ import { AnimationBook, SPAWN_SECONDS, enemyPoses, heroPoses, poseFrame, stepBos
 import { phaseFor, type GroundTile, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
 import { CHAPTER_PACKS, COMMON_PACK, FX_SLOT, HERO_SLOT, PICKUP_SLOT, bomberSlot, characterPack, characterSlot, bossSlot, bossState, enemyDrawScale, enemySlot, frameKey, pickupState, slotEnabled, type BossPose, type BossSlot } from './assets/slots.ts';
 import { GameRenderer } from './GameRenderer.ts';
-import { ArsenalFxPainter } from './arsenalFx.ts';
+import { ArsenalFxPainter, type Over, type Stand } from './arsenalFx.ts';
 import { HazardPainter, type TerrainHost } from './hazardArt.ts';
 import { NumberGlyphs, type NumberStyle } from './numberGlyphs.ts';
 import { shakeOffset } from '../presentation/viewCamera.ts';
@@ -106,6 +107,9 @@ const MARK_SIGNS: readonly (readonly [keyof AwakenedMarks, number, number])[] = 
   ['fear', 3, -Math.PI / 2], ['weak', 3, Math.PI / 2], ['prey', 4, 0], ['thorn', 4, Math.PI / 4],
   ['wander', 5, -Math.PI / 2], ['pollen', 6, 0], ['silence', 8, 0], ['crow', 2, Math.PI / 2],
 ];
+/** K10: the awakened marks the kit draws over a head (API §14.5), and with them the lower head marks one enemy does not wear at once. */
+const K10_HEAD: ReadonlySet<keyof AwakenedMarks> = new Set(['silence', 'prey', 'crow']);
+const K10_HEAD_FIRST: ReadonlySet<keyof AwakenedMarks> = new Set(['silence', 'prey', 'crow', 'fear', 'wander', 'weak', 'stain']);
 /** The beam groups the kit draws (FX-06); other lines (SYS-16's) draw as ink bands. */
 const BEAM_ART: ReadonlySet<SkillId> = new Set(['frostLine', 'railSpear', 'mirrorClone', 'eclipseStep']);
 
@@ -163,8 +167,8 @@ type EnemySprite = { frame: SpriteFrame; facing: 1 | -1; scale: number };
 
 /** One depth-sorted body for this frame. Pooled: fields are overwritten every frame. */
 type BodyDraw = {
-  /** Draw order at equal depth: obstacle blocks, then enemies, then clones, then the player. */
-  rank: 0 | 1 | 2 | 3;
+  /** Draw order at equal depth: obstacle blocks, then enemies, then clones, then the player, then K10's standing pieces. */
+  rank: 0 | 1 | 2 | 3 | 4;
   depth: number;
   id: number;
   x: number;
@@ -180,6 +184,11 @@ type BodyDraw = {
   obstacle: Readonly<Obstacle> | null;
   sprite: EnemySprite | null;
   cloneSide: -1 | 1;
+  /** K10: an awakening gimmick's standing piece (a grave, a pillar). */
+  stand: Stand | null;
+  /** K10: what the kit draws on this enemy this frame (planOverlays), and whether its head mark is the kit's. */
+  kit: Over | undefined;
+  first: boolean;
 };
 
 /** What the last frame drew, for diagnostics and the visual gate (TEC-12). */
@@ -284,6 +293,8 @@ export type RenderWorld = {
   readonly chains: readonly Readonly<ChainEffect>[];
   /** SYS-15, K10: the lobs in the air, for their flight art. */
   readonly lobs: readonly Readonly<ArsenalLob>[];
+  /** K10: awakening gimmicks waiting to go off (the eighth seal), for their pending art. */
+  readonly pending: readonly Readonly<ArsenalPending>[];
   /** FX-06: seconds left of the awakened coin fever's attack-speed rush. */
   readonly coinFrenzy: number;
   /** CON-03: the zone to hold or the cache to recover, when the stage's bonus goal has one. */
@@ -376,9 +387,9 @@ export class WorldRenderer {
   /** Called as each world layer starts drawing; tests use it to check the layer contract. */
   onLayer: ((layer: WorldLayer) => void) | null = null;
 
-  /** K10: how long a weapon's blast or sweep mark shows while the kit draws it (presentation asks; looks only). */
-  markSeconds(id: SkillId) {
-    return this.afx.markSeconds(id);
+  /** K10: how long a weapon's blast or sweep mark, or a gimmick's, shows while the kit draws it (presentation asks; looks only). */
+  markSeconds(id: SkillId, echo?: boolean, heavy?: boolean) {
+    return this.afx.markSeconds(id, echo, heavy);
   }
 
   setSprites(atlas: SpriteAtlas | null) {
@@ -465,6 +476,14 @@ export class WorldRenderer {
     ctx.setTransform(this.world.view.dpr * frame.zoom, 0, 0, this.world.view.dpr * frame.zoom, this.world.view.dpr * frame.offsetX, this.world.view.dpr * frame.offsetY);
     ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
     this.collectBodies();
+    // K10: what the kit draws on the enemies this frame, nearest the hero first (API §14.5).
+    if (this.arsenalArt && this.playerBody && this.afx.planOverlays(this.sortedBodies, world.zones, this.playerBody.x, this.playerBody.y)) {
+      for (const body of this.sortedBodies) {
+        if (!body.enemy || (!body.enemy.awk && !this.world.zones.length)) continue;
+        body.kit = this.afx.overlayOf(body.enemy);
+        body.first = this.afx.firstMark(body.enemy);
+      }
+    }
     for (const layer of WORLD_LAYERS) {
       this.onLayer?.(layer);
       this.drawLayer(ctx, layer);
@@ -491,7 +510,7 @@ export class WorldRenderer {
       case 'ground':
         this.drawWorld(ctx);
         this.drawCorpseStains(ctx);
-        if (this.arsenalArt) this.afx.drawDecals(ctx, this.world.effects.skillMarks, this.viewport);
+        if (this.arsenalArt) this.afx.drawDecals(ctx, this.world.effects.skillMarks, this.world.zones, this.viewport);
         if (this.terrainArt) this.terrain.drawDecals(ctx, this.viewport, this.world.effects.shocks);
         return;
       case 'hazards':
@@ -521,6 +540,11 @@ export class WorldRenderer {
         // The player's rings sit under enemy shots and telegraphs (V3).
         this.drawImpactRings(ctx, 'player');
         this.drawZoneTops(ctx);
+        // K10: the gimmick zones' pieces over the bodies, and the eighth seal's stitches while it waits.
+        if (this.arsenalArt) {
+          this.afx.drawZoneTops(ctx);
+          this.afx.drawPending(ctx, this.world.pending, this.viewport, false);
+        }
         this.drawSkillMarks(ctx);
         this.drawBeams(ctx);
         // K10: the lobs in the air, over their shadows (groundMarks).
@@ -551,7 +575,7 @@ export class WorldRenderer {
   private acquireBody(): BodyDraw {
     let body = this.bodyPool[this.bodyCount];
     if (!body) {
-      body = { rank: 1, depth: 0, id: 0, x: 0, y: 0, left: 0, right: 0, top: 0, bottom: 0, enemy: null, anim: null, obstacle: null, sprite: null, cloneSide: 1 };
+      body = { rank: 1, depth: 0, id: 0, x: 0, y: 0, left: 0, right: 0, top: 0, bottom: 0, enemy: null, anim: null, obstacle: null, sprite: null, cloneSide: 1, stand: null, kit: undefined, first: false };
       this.bodyPool.push(body);
     }
     this.bodyCount += 1;
@@ -559,6 +583,9 @@ export class WorldRenderer {
     body.anim = null;
     body.obstacle = null;
     body.sprite = null;
+    body.stand = null;
+    body.kit = undefined;
+    body.first = false;
     return body;
   }
 
@@ -650,6 +677,22 @@ export class WorldRenderer {
     body.top = heroTop;
     body.bottom = player.y + 6;
     this.playerBody = body;
+    if (this.arsenalArt) {
+      // K10: the gimmick zones' standing pieces (graves, pillars) stand among the bodies by their foot y (API §14.3).
+      this.afx.planZones(this.world.zones, this.viewport, player.x, player.y);
+      this.afx.stands().forEach((stand, index) => {
+        const piece = this.acquireBody();
+        piece.rank = 4;
+        piece.depth = piece.y = stand.y;
+        piece.id = index;
+        piece.x = stand.x;
+        piece.left = stand.left;
+        piece.right = stand.right;
+        piece.top = stand.top;
+        piece.bottom = stand.bottom;
+        piece.stand = stand;
+      });
+    }
 
     this.anims.endFrame();
     const sorted = this.sortedBodies;
@@ -660,6 +703,10 @@ export class WorldRenderer {
   }
 
   private drawBody(ctx: CanvasRenderingContext2D, body: BodyDraw) {
+    if (body.stand) {
+      this.afx.drawStand(ctx, body.stand);
+      return;
+    }
     if (body.obstacle) {
       const frame = this.obstacleFrame(body.obstacle);
       const { x, y, w, h, id } = body.obstacle;
@@ -876,8 +923,10 @@ export class WorldRenderer {
   }
 
   private drawHazards(ctx: CanvasRenderingContext2D) {
-    // SYS-16: the ground awakened weapons leave, the player's, under everything else.
+    // SYS-16: the ground awakened weapons leave, the player's, under everything else; the kit's own art for the P1 zones (K10).
+    if (this.arsenalArt && this.playerBody) this.afx.drawZones(ctx, this.playerBody.x, this.playerBody.y);
     for (const zone of this.world.zones) {
+      if (this.arsenalArt && this.afx.zoneSpec(zone.weapon)) continue;
       if (circleVisible(this.viewport, zone.x, zone.y, zone.radius + 8)) this.visual.drawHazard(ctx, zone, 1, ZONE_ART);
     }
     const kit = this.kitHazards;
@@ -1044,13 +1093,18 @@ export class WorldRenderer {
     this.drawFallingBodies(ctx);
     this.drawBlastFlashes(ctx);
     if (this.world.airShots) this.drawShotShadows(ctx);
-    // K10: the ice a frost chain leaves under feet, and the lobs' shadows.
-    if (this.arsenalArt) this.afx.drawGround(ctx, this.world.chains, this.world.lobs, this.viewport);
+    // K10: the ice a frost chain leaves under feet, the lobs' shadows, and the eighth seal's shadow while it waits.
+    if (this.arsenalArt) {
+      this.afx.drawGround(ctx, this.world.chains, this.world.lobs, this.viewport);
+      this.afx.drawPending(ctx, this.world.pending, this.viewport, true);
+    }
     for (const body of this.sortedBodies) {
       const enemy = body.enemy;
       if (!enemy) continue;
       if (body.anim?.state === 'spawn') this.drawSpawnBloom(ctx, body.x, body.y, enemy.radius, this.spawnProgress(body.anim));
-      if (this.skillArt && (enemy.frostUntil ?? 0) > this.world.elapsed) {
+      // K10: a frozen enemy wears the kit's freeze in place of the chalk cut's root (API §14.5).
+      const frozen = body.kit?.feet === 'freeze';
+      if (this.skillArt && !frozen && (enemy.frostUntil ?? 0) > this.world.elapsed) {
         // The chalk cut's chill, or its root (FX-07), round the enemy's feet.
         const radius = CHILL_RADII.reduce((best, r) => (Math.abs(r - enemy.radius) < Math.abs(best - enemy.radius) ? r : best));
         const rooted = (enemy.frostRootUntil ?? 0) > this.world.elapsed;
@@ -1064,6 +1118,7 @@ export class WorldRenderer {
         ctx.fill();
         ctx.restore();
       }
+      if (frozen) this.afx.drawFeet(ctx, body, body.kit);
       if (enemy.shieldAngle !== undefined && !enemy.isBoss) {
         // The warden's shield front (SYS-02): an ink arc on the floor, so a flank is readable at a glance.
         ctx.save();
@@ -1164,7 +1219,11 @@ export class WorldRenderer {
       if (enemy.elite) this.drawEliteMark(ctx, enemy.elite, body.x, over);
       if (enemy.stun > 0 && !enemy.isBoss) this.drawStunMark(ctx, body.x, enemy.elite ? over - 14 : over, enemy.id);
       if (enemy.bomber) this.drawBomberMark(ctx, enemy, body, over);
-      if (enemy.awk) this.drawAwakenedMarks(ctx, enemy.awk, body.x, over - (enemy.elite ? 14 : 0) - (enemy.stun > 0 ? 12 : 0));
+      const marked = over - (enemy.elite ? 14 : 0) - (enemy.stun > 0 ? 12 : 0);
+      // K10: the kit's head mark and crow (API §14.5); the vector signs keep the gimmicks it has not drawn yet.
+      const kit = body.kit;
+      if (enemy.awk) this.drawAwakenedMarks(ctx, enemy.awk, body.x, marked, this.arsenalArt ? (body.first ? K10_HEAD_FIRST : K10_HEAD) : null, kit?.head ? 1 : 0);
+      if (kit) this.afx.drawHead(ctx, body, marked, kit);
     }
   }
 
@@ -1225,15 +1284,16 @@ export class WorldRenderer {
    * SYS-16: what awakened weapons left on an enemy, over its head: ink dots for stains or cracks, then a small sign for
    * each state in the player's colour, silence too (violet is the elites'; K10 brief Q3; a crow is a stroke).
    */
-  private drawAwakenedMarks(ctx: CanvasRenderingContext2D, marks: Readonly<AwakenedMarks>, x: number, y: number) {
+  private drawAwakenedMarks(ctx: CanvasRenderingContext2D, marks: Readonly<AwakenedMarks>, x: number, y: number, skip: ReadonlySet<keyof AwakenedMarks> | null = null, start = 0) {
     const t = this.world.elapsed;
-    const dots = ((marks.stainUntil ?? 0) > t ? marks.stain ?? 0 : 0) + (marks.crack ?? 0);
-    let shown = 0;
+    const dots = ((marks.stainUntil ?? 0) > t && !skip?.has('stain') ? marks.stain ?? 0 : 0) + (marks.crack ?? 0);
+    // K10: the kit's head mark takes the middle; the signs it does not draw sit to its sides.
+    let shown = start;
     ctx.save();
     ctx.lineWidth = 1.5;
     ctx.strokeStyle = NEUTRAL.ink;
     for (const [key, sides, turn] of MARK_SIGNS) {
-      if (!((marks[key] as number | undefined ?? 0) > t)) continue;
+      if (!((marks[key] as number | undefined ?? 0) > t) || skip?.has(key)) continue;
       const cx = x + (shown % 2 ? 1 : -1) * Math.ceil(shown / 2) * 13;
       shown += 1;
       ctx.fillStyle = SIGNAL.ally;
@@ -1245,7 +1305,7 @@ export class WorldRenderer {
     ctx.fillStyle = NEUTRAL.ink;
     for (let dot = 0; dot < dots; dot += 1) {
       ctx.beginPath();
-      ctx.arc(x + (dot - (dots - 1) / 2) * 6, y - (shown > 0 ? 10 : 0), 2.2, 0, Math.PI * 2);
+      ctx.arc(x + (dot - (dots - 1) / 2) * 6, y - (start ? 26 : shown > 0 ? 10 : 0), 2.2, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
@@ -1376,6 +1436,8 @@ export class WorldRenderer {
   }
 
   private drawBeams(ctx: CanvasRenderingContext2D) {
+    // K10: the tracking seals' triangles (the kit draws their edges as one, API §14.4).
+    if (this.arsenalArt) this.afx.drawSeals(ctx, this.world.beams, this.viewport);
     for (const beam of this.world.beams) {
       if (!segmentVisible(this.viewport, beam.x1, beam.y1, beam.x2, beam.y2, beam.width)) continue;
       // K10: a weapon's own beam from the kit (a gimmick's line keeps the look's art below).
@@ -1624,6 +1686,8 @@ export class WorldRenderer {
       if (this.terrainArt) {
         if (this.mobFlames.has(enemy.id)) this.terrain.mobFlames(ctx, x, y, enemy.radius, facing);
       } else if (enemy.burn) this.drawBurning(ctx, frame, x, y, facing, scale, enemy.burn, enemy.id);
+      // K10: the freeze's front crystals or burning ink, right after the body (API §14.5).
+      if (body.kit?.feet) this.afx.drawFront(ctx, body, body.kit);
       return;
     }
     if (rise < 1) {
@@ -1641,6 +1705,7 @@ export class WorldRenderer {
       ctx.restore();
     }
     if (rise < 1) ctx.restore();
+    if (body.kit?.feet) this.afx.drawFront(ctx, body, body.kit);
   }
 
   /** SYS-10: an elite's affix over its head in the elite purple: haste chevrons, split pair, shield ring, drain drop. */

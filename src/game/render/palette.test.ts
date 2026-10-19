@@ -104,6 +104,22 @@ test('K10: the weapons\' field effects are the player\'s (brief §1.7): every SP
   }
 });
 
+test('K10 3a: the awakening gimmicks\' shapes are the player\'s too: every token of SPEC zone, gimmick, and rim ally cyan or neutral (no coral or amber burn, no violet silence)', () => {
+  const spec = ATLAS_MANIFEST.arsenalFx.spec as unknown as Record<string, unknown>;
+  const tokens = new Set<string>();
+  JSON.stringify([spec.zone, spec.gimmick, spec.rim], (key, value) => {
+    if (Array.isArray(value) && typeof value[0] === 'string' && typeof value[1] === 'number') tokens.add(value[0]);
+    if (key === 'token' && typeof value === 'string') tokens.add(value);
+    return value;
+  });
+  for (const name of ['ink', 'ink300', 'ink700', 'p50', 'p300', 'ally', 'allyG']) assert.ok(tokens.has(name), `the gimmicks draw with ${name}`);
+  for (const token of tokens) {
+    const color = tokenColor(token as Token);
+    assert.ok(color, `${token} maps to the palette`);
+    assert.ok([null, 'ally'].includes(signalFamily(color)), `${token} reads as ${signalFamily(color)}`);
+  }
+});
+
 test('renderer and engine sources draw signal colours only through palette tokens', () => {
   for (const file of ['../GameEngine.ts', './GameRenderer.ts', './skillVfx.ts', './hazardArt.ts', './arsenalFx.ts']) {
     const source = readFileSync(new URL(file, import.meta.url), 'utf8');

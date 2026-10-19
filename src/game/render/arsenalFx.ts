@@ -1,10 +1,11 @@
 // Weapon field effects painter (K10, FX-08): the kit's weapon stamps (PN.arsenalFx, baked into the `arsenal-fx` pack)
-// and its shapes (SPEC, baked into the atlas manifest as data), drawn on the canvas (API-arsenal-fx §7-§9): the blasts
-// of the strike, nova, and lob weapons, their decals, the chains, the beams, the halos, and the lobs in flight. The
-// layout, the shapes' points, and the lob path are ports of the kit's (API §8), tested against the kit's own vectors in
-// the manifest, so every number stays data. The awakening gimmicks (delivery 3) are not drawn here yet: their marks,
-// lines, and blasts carry `echo` and keep the renderer's own drawing.
-import type { ArsenalLob, BeamEffect, ChainEffect, SkillId, SkillMark, SkillState } from '../engine/worldTypes.ts';
+// and its shapes (SPEC, baked into the atlas manifest as data), drawn on the canvas (API-arsenal-fx §7-§9, §14): the
+// blasts of the strike, nova, and lob weapons, their decals, the chains, the beams, the halos, the lobs in flight, and
+// the P1 awakening gimmicks (delivery 3a: the gimmick zones, the enemy overlays, the triangle seal, the unrolling
+// scroll, the eighth seal, and the total eclipse). The layout, the shapes' points, and the lob path are ports of the
+// kit's (API §8, §14.6), tested against the kit's own vectors in the manifest, so every number stays data. The P2
+// gimmicks (delivery 3b) are not drawn here yet: their marks, lines, and blasts keep the renderer's own drawing.
+import type { ArsenalLob, ArsenalPending, AwakenedMarks, AwakeningZone, BeamEffect, ChainEffect, Entity, SkillId, SkillMark, SkillState } from '../engine/worldTypes.ts';
 import type { ArsenalFxManifest, ArsenalFxPart, SpriteAtlas } from './assets/spriteAtlas.ts';
 import { ARSENAL_FX_PACK, slotEnabled } from './assets/slots.ts';
 import { jit, tokenColor, type Token } from './skillVfx.ts';
@@ -57,11 +58,30 @@ export type HaloSpec = Readonly<{
   grow?: Grow; fade?: Fade; awakened?: Readonly<{ span?: number; width?: number; opposite?: Readonly<{ alpha: number; thick: number }> }>;
 }>;
 type Splash = Readonly<{ token: string; n: N2; awakenedN?: N2; from: number; to: N2; width: N2; jitter: number; fork: number; drop: Readonly<{ p: number; r: N2; gap: N2 }>; grow: Grow; fade: Fade; minimal: number }>;
-/** A layout descriptor (API §7.6). */
+/** A layout descriptor (API §7.6, §14.6). */
 type Place = Readonly<{
   prim: string; parts: readonly string[]; awakened?: readonly string[]; z: string; pick?: number; flip?: number; by?: string; steps?: N2;
   count?: N2; awakenedCount?: N2; jitter?: number; skip?: number; dr?: number; inout?: boolean; info?: number; big?: number; offset?: number;
+  per?: number; min?: number; max?: number; margin?: number; minGap?: number;
 }>;
+type Wash = Readonly<{ token: string; alpha: number }>;
+type Stitch = Readonly<{ layers: Ls; dash: N2; pad: number }>;
+/** An awakening gimmick's ground zone (API §14.3, SPEC.zone[id]); its radius and life are the data's. */
+export type ZoneSpec = Readonly<{
+  stage: string; life: number; rim: string; wash?: Wash; floor?: string;
+  gloss?: Readonly<{ at: readonly number[]; span: N2; layers: Ls }>;
+  arcs?: Readonly<{ n: number; at: number; span: number; layers: Ls; turns: number; start: number }>;
+  start?: Readonly<{ part: string; seconds: number }>; end?: Readonly<{ part: string; seconds: number }>;
+}>;
+type Ridge = Readonly<{ humps: number; amp: number; base: number; layers: Ls }>;
+/** The other P1 gimmicks' shapes (API §14.4, SPEC.gimmick). */
+type Gimmicks = Readonly<{
+  trackingSeals: Readonly<{ stage: string; delay: number; life: number; pre: Stitch; strike: Readonly<{ layers: Ls; fill: Wash; fillSeconds: number; fade: Fade }> }>;
+  fallingScroll: Readonly<{ stage: string; length: number; width: number; life: number; grow: number; fade: Fade; band: Readonly<{ fill: Wash; edge: Ls; ridge: Ridge; head: Ls }> }>;
+  seventhSeal: Readonly<{ stage: string; r: number; delay: number; life: number; shadow: Readonly<{ token: string; rx: N2; alpha: N2 }>; stitch: Stitch; ring: Readonly<{ layers: Ls; gaps: Gaps; wash: Wash; grow: Grow; fade: Fade }> }>;
+  eclipseHalo: Readonly<{ stage: string; wash: Wash; band: Readonly<{ token: string; alpha: number; at: number }>; outer: Ls }>;
+}>;
+type Mark = Readonly<{ group: string; part: string }>;
 type Flight = Readonly<{ parts: readonly string[]; awakened?: readonly string[]; by?: string; turn?: number; frame?: string; landMirror?: Readonly<{ when: string; parts: readonly string[] }> }>;
 
 /** The parts of the kit's SPEC this painter reads (API-arsenal-fx §7). */
@@ -81,7 +101,18 @@ export type ArsenalFxSpec = Readonly<{
   lob: Readonly<Record<string, Readonly<{ H: readonly [number, number, number]; shadow: Readonly<{ rx: N2; alpha: N2 }> }>>>;
   lobMini: Readonly<{ h: number; shadow: Readonly<{ rx: N2 }> }>;
   flight: Readonly<Record<string, Flight>> & Readonly<{ phase: number; shadow: Readonly<{ token: string }> }>;
-  caps: Readonly<Record<'stamps' | 'decals' | 'flights' | 'links' | 'splash' | 'feet', readonly number[]>>;
+  caps: Readonly<Record<'stamps' | 'decals' | 'flights' | 'links' | 'splash' | 'feet' | 'heads' | 'crows' | 'events' | 'zoneStamps' | 'pending', readonly number[]>>;
+  // delivery 3a (API §14)
+  rim: Readonly<{ ally: Stitch; pad: Readonly<{ layers: Ls; inside: Ls }> }>;
+  zone: Readonly<{ fadeIn: number; fadeOut: number }>;
+  gimmick: Gimmicks;
+  overlay: Readonly<{
+    head: Readonly<{ dy: number; parts: Readonly<Record<string, Mark>> }>;
+    feet: Readonly<{ freeze: Readonly<{ group: string; back: string; front: string; r: readonly number[] }>; scorch: Mark & Readonly<{ r: readonly number[] }> }>;
+    crow: Mark & Readonly<{ peck: string; sit: N2; dive: Readonly<{ crow: N2; peck: N2 }> }>;
+  }>;
+  marks: Readonly<{ crow: Readonly<{ rx: number; ry: number; period: number; lift: number; dive: number }> }>;
+  priority: Readonly<{ heads: readonly string[] }>;
 }>;
 
 const TAU = Math.PI * 2;
@@ -414,8 +445,10 @@ export function lobPath(S: ArsenalFxSpec, id: string, x0: number, y0: number, x1
 export function partFrame(P: Readonly<{ frames: number; drive: string; fps: number; seconds: number | null }>, age: number, life: number, phase: number, time: number, reduced: boolean, li: number) {
   const F = P.frames;
   if (P.drive === 'prog') return clamp(Math.floor((P.seconds ? age / P.seconds : age / life) * F), 0, F - 1);
-  if (P.drive !== 'loop') return 0;
+  if (P.drive !== 'loop' && P.drive !== 'cycle') return 0;
   if (reduced || li === 2) return Math.min(F - 1, Math.floor(phase * F));
+  // A cycle (3a) rises once every `seconds`: ⌊frac(t / seconds + phase)·frames⌋.
+  if (P.drive === 'cycle') return Math.floor((((time / P.seconds! + phase) % 1) + 1) % 1 * F) % F;
   return ((Math.floor(time * (li === 1 ? P.fps / 2 : P.fps) + phase * F) % F) + F) % F;
 }
 /** A flying object's frame (API §8.4): by the flight's progress t when SPEC flight says so (frame 0 at minimal detail);
@@ -427,11 +460,12 @@ export function flightFrame(P: Readonly<{ frames: number; fps: number; still: nu
   return ((Math.floor(age * (li === 1 ? P.fps / 2 : P.fps) + phase * F) % F) + F) % F;
 }
 
-export type Item = { part: string; x: number; y: number; angle: number; flip: boolean; phase: number; prio: number; z: string; index?: number };
+export type Item = { part: string; x: number; y: number; angle: number; flip: boolean; phase: number; prio: number; z: string; index?: number; prim?: string };
 /** What a layout reads: the radius or length and width, awakening, the event's seed, its age and life, and a chain's points. */
 export type Shape = { R: number; L: number; w: number; aw: boolean; seed: number; age: number; life: number; reduced: boolean; points?: readonly Readonly<{ x: number; y: number; r?: number }>[] };
 /** The stamps of a stage (API §8.2), ground first (SPEC.zorder), each group in descriptor order. */
 export function layout(S: ArsenalFxSpec, id: string, stage: string, o: Shape): Item[] {
+  if (isGimmick(S, id, stage)) return glayout(S, id, stage, o);
   const list = S.layout[id]?.[stage];
   if (!list) return [];
   const J = (i: number) => jit(o.seed, i), out: Item[] = [];
@@ -474,10 +508,120 @@ export function layout(S: ArsenalFxSpec, id: string, stage: string, o: Shape): I
   return out.map((it, i) => [it, i] as const).sort((a, b) => S.zorder.indexOf(a[0].z) - S.zorder.indexOf(b[0].z) || a[1] - b[1]).map((q) => q[0]);
 }
 
+// ---- delivery 3a: the awakening gimmicks, P1 (API §14) ----
+
+/** A weapon's ground zone spec, or a P1 gimmick's shapes (the SPEC keeps the weapons' ids beside fadeIn and fadeOut). */
+export const zoneOf = (S: ArsenalFxSpec, id: string) => (S.zone as unknown as Readonly<Record<string, ZoneSpec | undefined>>)[id];
+const gimmickOf = (S: ArsenalFxSpec, id: string) => (S.gimmick as unknown as Readonly<Record<string, Readonly<{ stage: string }> | undefined>>)[id];
+/** Whether a stage is an awakening gimmick's (placed by glayout, API §14.6). */
+export const isGimmick = (S: ArsenalFxSpec, id: string, stage: string) => zoneOf(S, id)?.stage === stage || gimmickOf(S, id)?.stage === stage;
+/** The triangle the reference draws when no three points are given (API §14.6 corner). */
+const REF_TRIANGLE: readonly P2[] = [[-110, 40], [104, 56], [-6, -92]];
+/** Where the unrolling scroll's head is `age` in: out to L over grow (ease out); at L under reduced motion. */
+export const unrollHead = (g: Gimmicks['fallingScroll'], L: number, age: number, reduced: boolean) => (reduced ? L : L * easeOut(clamp(age / g.grow, 0, 1)));
+
+/**
+ * A gimmick stage's stamps (kit glayout, API §14.6): center (pick), disc (40 candidates at 2π·J(k), (R − margin)·√J(k + 40),
+ * refused within minGap·R by hypot(dx, 1.3dy), n = clamp(round(R / per), min, max), variant J(k + 80), flip J(k + 120),
+ * phase J(k + 160), the first `info` prio 0), ring (as the main layout's, +x always outward), corner and centroid (the
+ * points or the reference triangle), tip (the unroll head), and tail (the eclipse ribbon at the crescent's span).
+ */
+export function glayout(S: ArsenalFxSpec, id: string, stage: string, o: Shape): Item[] {
+  const list = S.layout[id]?.[stage];
+  if (!list) return [];
+  const R = o.R, J = (i: number) => jit(o.seed, i), out: Item[] = [];
+  const at = (parts: readonly string[], v: number) => parts[Math.min(parts.length - 1, Math.floor(v * parts.length))];
+  const add = (prim: string, part: string, x: number, y: number, z: string, angle = 0, flip = false, phase = 0, prio = 0) => out.push({ prim, part, x, y, angle, flip, phase, prio, z });
+  const tri = o.points && o.points.length >= 3 ? o.points.slice(0, 3).map((p): P2 => [p.x, p.y]) : REF_TRIANGLE;
+  for (const q of list) {
+    const parts = q.parts;
+    if (q.prim === 'center') add('center', q.pick ? at(parts, J(q.pick)) : parts[0], 0, 0, q.z);
+    else if (q.prim === 'disc') {
+      const n = clamp(Math.round(R / q.per!), q.min!, q.max!), got: { x: number; y: number; k: number }[] = [];
+      for (let k = 0; k < 40 && got.length < n; k += 1) {
+        const a = TAU * J(k), d = Math.max(0, R - (q.margin ?? 0)) * Math.sqrt(J(k + 40)), x = Math.cos(a) * d, y = Math.sin(a) * d;
+        if (!got.some((g) => Math.hypot(g.x - x, 1.3 * (g.y - y)) < (q.minGap ?? 0) * R)) got.push({ x, y, k });
+      }
+      got.forEach((g, i) => add('disc', at(parts, J(g.k + 80)), g.x, g.y, q.z, 0, J(g.k + 120) < 0.5, J(g.k + 160), i < (q.info ?? 99) ? 0 : 2));
+    } else if (q.prim === 'ring') {
+      const n = q.count![0] + Math.floor(J(900) * (q.count![1] - q.count![0] + 1)), rr = R + (q.dr ?? 0);
+      let placed = 0;
+      for (let k = 0; k < n; k += 1) {
+        if (J(k + 100) < (q.skip ?? 0)) continue;
+        const a = -Math.PI / 2 + ((k + 0.5 + (J(k) - 0.5) * 2 * (q.jitter ?? 0)) * TAU) / n;
+        add('ring', at(parts, J(k + 200)), Math.cos(a) * rr, Math.sin(a) * rr, q.z, a, false, J(k + 400), placed < (q.info ?? 99) ? 0 : 2);
+        placed += 1;
+      }
+    } else if (q.prim === 'corner') tri.forEach((p) => add('corner', parts[0], p[0], p[1], q.z));
+    else if (q.prim === 'centroid') add('centroid', parts[0], (tri[0][0] + tri[1][0] + tri[2][0]) / 3, (tri[0][1] + tri[1][1] + tri[2][1]) / 3, q.z);
+    else if (q.prim === 'tip') add('tip', parts[0], unrollHead(S.gimmick.fallingScroll, o.L, o.age, o.reduced), 0, q.z);
+    else if (q.prim === 'tail') {
+      const cr = S.halo[id].crescent!, th = sweepAngle(o.seed, cr.sweep, o.age, o.life, o.reduced) - (cr.span * RAD) / 2;
+      add('tail', parts[Math.floor(J(q.pick!) * parts.length) % parts.length], Math.cos(th) * R, Math.sin(th) * R, q.z, th + Math.PI / 2, false, J(410));
+    }
+  }
+  return out.map((it, i) => [it, i] as const).sort((a, b) => S.zorder.indexOf(a[0].z) - S.zorder.indexOf(b[0].z) || a[1] - b[1]).map((q) => q[0]);
+}
+
+/** A zone's fill and stamps' alpha `age` into its life (API §14.3): in over fadeIn, out over fadeOut. */
+export const zoneFade = (S: ArsenalFxSpec, age: number, life: number) => Math.min(clamp(age / S.zone.fadeIn, 0, 1), clamp((life - age) / S.zone.fadeOut, 0, 1));
+/**
+ * A zone stamp `age` into its life (API §14.3, review 5 F2): the centre object shows its start part over the first
+ * start.seconds and its end part over the last end.seconds (played inside the life), both at alpha 1; its own frames
+ * fade in and out only on a side with no start or end part. Every other stamp takes the zone's alpha. `progress` is
+ * the start or end part's share played (null: the part's own drive).
+ */
+export function zonePiece(S: ArsenalFxSpec, Z: ZoneSpec, it: Readonly<Item>, age: number, life: number): { part: string; progress: number | null; alpha: number } {
+  if (it.prim !== 'center') return { part: it.part, progress: null, alpha: zoneFade(S, age, life) };
+  const { start, end } = Z;
+  if (start && age < start.seconds) return { part: start.part, progress: age / start.seconds, alpha: 1 };
+  if (end && age > life - end.seconds) return { part: end.part, progress: (age - life + end.seconds) / end.seconds, alpha: 1 };
+  return { part: it.part, progress: null, alpha: Math.min(start ? 1 : clamp(age / S.zone.fadeIn, 0, 1), end ? 1 : clamp((life - age) / S.zone.fadeOut, 0, 1)) };
+}
+/** The spin's two paper arcs [a0, a1] (rad): from 2π·J(start), turning `turns` a second (still under reduced motion). */
+export function spinArcs(Z: ZoneSpec, seed: number, age: number, reduced: boolean): P2[] {
+  const A = Z.arcs!, th0 = TAU * jit(seed, A.start) + (reduced ? 0 : TAU * A.turns * age);
+  return Array.from({ length: A.n }, (_, k): P2 => [th0 + (k * TAU) / A.n, th0 + (k * TAU) / A.n + A.span * RAD]);
+}
+/** The unroll's mountain ridge (25 points): `humps` humps of amp·w over the band, its base at base·w below the axis. */
+export const ridgePts = (L: number, w: number, rg: Ridge) => Array.from({ length: 25 }, (_, i): P2 => {
+  const x = lerp(0.06 * L, 0.96 * L, i / 24);
+  return [x, rg.base * w - rg.amp * w * Math.abs(Math.sin((Math.PI * rg.humps * (x - 0.06 * L)) / (0.9 * L)))];
+});
+/** The nearest size class to an enemy radius. */
+export const sizeClass = (r: number, list: readonly number[]) => list.reduce((m, q) => (Math.abs(q - r) < Math.abs(m - r) ? q : m), list[0]);
+/** The head mark an enemy wears (API §14.5): the first of priority.heads it has (`lost` is the smoke's wander). */
+export function headMark(S: ArsenalFxSpec, m: Readonly<AwakenedMarks> | undefined, t: number) {
+  if (!m) return undefined;
+  for (const key of S.priority.heads) {
+    if (key === 'stain' ? (m.stainUntil ?? 0) > t && (m.stain ?? 0) > 0 : ((m[(key === 'lost' ? 'wander' : key) as keyof AwakenedMarks] as number | undefined) ?? 0) > t) return key;
+  }
+  return undefined;
+}
+/**
+ * The crow over an enemy (API §14.5) `t` into its orbit, `top` its sprite's top: it circles (rx, top − lift + ry sin a),
+ * a = 2π·t / period, facing the way it flies; `peck` seconds after a peck it dives to the head and back over dive seconds.
+ * Under reduced motion it sits.
+ */
+export function crowAt(S: ArsenalFxSpec, t: number, top: number, peck: number, reduced: boolean) {
+  const c = S.marks.crow, q = S.overlay.crow, pecking = peck >= 0 && peck < c.dive;
+  if (reduced) return { x: q.sit[0], y: top + q.sit[1], flip: false, pecking };
+  const a = (TAU * t) / c.period, flip = Math.sin(a) > 0, k = pecking ? Math.sin((Math.PI * peck) / c.dive) : 0;
+  return { x: lerp(Math.cos(a) * c.rx, (flip ? 1 : -1) * q.dive.crow[0], k), y: lerp(top - c.lift + Math.sin(a) * c.ry, top + q.dive.crow[1], k), flip, pecking };
+}
+
 // ---- the painter ----
 
 /** A ring mark the painter draws this frame: its age and life, and its layout. */
-type Event = { m: Readonly<SkillMark>; id: string; age: number; life: number; aw: boolean; items: Item[] };
+type Event = { m: Readonly<SkillMark>; id: string; st: string; age: number; life: number; aw: boolean; items: Item[] };
+/** An awakening gimmick's zone this frame: its spec, age, alpha, cosmetic seed, and the stamps kept under the caps. */
+type ZonePlan = { z: Readonly<AwakeningZone>; Z: ZoneSpec; age: number; life: number; A: number; seed: number; items: readonly Item[]; d: number; keep: Item[] };
+/** A zone's standing piece (a grave, a pillar), sorted in among the bodies by its foot y; the box it covers. */
+export type Stand = Readonly<{ p: ZonePlan; it: Item; x: number; y: number; left: number; top: number; right: number; bottom: number }>;
+/** What the kit draws on an enemy this frame (API §14.5): its feet overlay, head mark, crow, and peck, and its overlay clock. */
+export type Over = { feet: string | null; head: string | null; crow: boolean; peck: number; t: number };
+/** What an enemy overlay needs of a body: where it stands, its sprite's top, and its entity. */
+export type OverlayBody = Readonly<{ x: number; y: number; top: number; enemy: Readonly<Entity> | null }>;
 /** The ice under a frost chain's feet stays a moment longer than the chain (SPEC life decal). */
 type Rime = { x: number; y: number; part: string; at: number };
 
@@ -501,6 +645,17 @@ export class ArsenalFxPainter {
   private readonly rimes: Rime[] = [];
   private readonly seen = new WeakSet<object>();
   private readonly events: Event[] = [];
+  private readonly zonePlans: ZonePlan[] = [];
+  private readonly standList: Stand[] = [];
+  /** Each zone's plan, kept from frame to frame (its stamps and standing pieces never move); refreshed by planZones. */
+  private readonly zoneCache = new WeakMap<object, ZonePlan>();
+  private readonly standCache = new WeakMap<Item, Stand>();
+  private readonly over = new Map<object, Over>();
+  /** Over records reused frame to frame, and the enemies whose head mark is the kit's (drawn or dropped by the cap). */
+  private readonly overPool: Over[] = [];
+  private readonly firsts = new Set<object>();
+  /** The nearest overlays of each kind this frame (distances and bodies), and the fires burning: reused frame to frame. */
+  private readonly near = { fd: [] as number[], fb: [] as OverlayBody[], hd: [] as number[], hb: [] as OverlayBody[], cd: [] as number[], cb: [] as OverlayBody[], fires: [] as Readonly<AwakeningZone>[] };
 
   /** Picks up the frame's settings; false while the weapon art or its data is missing (callers keep their fallback). */
   begin(atlas: SpriteAtlas | null, time: number, reduced: boolean, flashStrength: number, detail: VisualDetail, skills: Readonly<Partial<Record<SkillId, Readonly<SkillState>>>>) {
@@ -521,10 +676,13 @@ export class ArsenalFxPainter {
     return this.spec !== null;
   }
 
-  /** How long a weapon's blast or sweep mark stays (its ring, then its decal), when the kit draws it; else undefined. */
-  markSeconds(id: SkillId) {
-    const life = this.spec && this.drawn(id) ? this.spec.life[id] : undefined;
-    return life && Math.max(life.mark, life.decal ?? 0);
+  /**
+   * How long a weapon's blast or sweep mark stays (its ring, then its decal), or a P1 gimmick's (the eighth seal through
+   * its print, the total eclipse), when the kit draws it; else undefined.
+   */
+  markSeconds(id: SkillId, echo = false, heavy = false) {
+    const S = this.spec, st = this.markStage(id, echo, heavy), life = S && st ? S.life[id] : undefined;
+    return life && Math.max(st === 'eighth' ? S!.gimmick.seventhSeal.life : life.mark, life.decal ?? 0);
   }
 
   private drawn(id: string) {
@@ -532,14 +690,36 @@ export class ArsenalFxPainter {
     return !!meta?.done.fx && MARK_KINDS.has(meta.kind);
   }
 
-  /** Whether the kit draws this ring mark (a weapon's own blast or sweep; a gimmick's echo and the total eclipse keep theirs). */
-  handles(mark: Readonly<SkillMark>) {
-    return this.spec !== null && mark.kind === 'ring' && !mark.echo && !mark.heavy && this.drawn(mark.skillId);
+  /** Whether the kit has drawn a weapon's P1 gimmick (delivery 3a). */
+  private done(id: string) {
+    return !!this.data?.meta[id]?.done.gimmick;
   }
 
-  /** Whether the kit draws this beam or chain (a weapon's own; a gimmick's lines keep theirs). */
+  /** The stage of a drawn P1 gimmick the kit shapes itself (a zone, or SPEC.gimmick's). */
+  private gimmick(id: string) {
+    return this.done(id) ? gimmickOf(this.spec!, id)?.stage ?? zoneOf(this.spec!, id)?.stage : undefined;
+  }
+
+  /** The stage a ring mark draws as: the weapon's own blast or sweep, a seventh seal's echo (eighth), an eclipse's heavy sweep (total). */
+  private markStage(id: string, echo: boolean, heavy: boolean) {
+    if (!this.spec) return undefined;
+    if (!echo && !heavy) return this.drawn(id) ? this.data!.meta[id].main ?? undefined : undefined;
+    const st = this.gimmick(id);
+    return (echo && st === 'eighth') || (heavy && st === 'total') ? st : undefined;
+  }
+
+  /** Whether the kit draws this ring mark (a weapon's own blast or sweep, the eighth seal, the total eclipse; other echoes keep theirs). */
+  handles(mark: Readonly<SkillMark>) {
+    return mark.kind === 'ring' && !!this.markStage(mark.skillId, !!mark.echo, mark.heavy);
+  }
+
+  /** Whether the kit draws this beam or chain: a weapon's own, the tracking seals' triangle, and the unrolling scroll (other gimmicks' lines keep theirs). */
   handlesLine(line: Readonly<BeamEffect | ChainEffect>) {
-    return this.spec !== null && !!line.skillId && !line.echo && !!this.data?.meta[line.skillId]?.done.fx && !!this.spec.line[line.skillId];
+    const S = this.spec, id = line.skillId;
+    if (!S || !id) return false;
+    if ('points' in line || !this.gimmick(id)) return !line.echo && !!this.data!.meta[id]?.done.fx && !!S.line[id];
+    const st = this.gimmick(id);
+    return line.echo ? st === 'unroll' : st === 'triangle' || (!!this.data!.meta[id]?.done.fx && !!S.line[id]);
   }
 
   private seedOf(thing: object) {
@@ -552,14 +732,23 @@ export class ArsenalFxPainter {
     return this.data?.parts[group]?.[part];
   }
 
-  /** Draws a stamp with its anchor on (x, y), turned by `angle` and mirrored about the anchor; flash parts dim under reduced flash. */
+  /**
+   * Draws a stamp with its anchor on (x, y), turned by `angle` and mirrored about the anchor; flash parts dim under
+   * reduced flash. An upright stamp skips the save and transform (crowds of zone stamps and marks, review 5 perf).
+   */
   private put(ctx: CanvasRenderingContext2D, group: string, part: string, frame: number, x: number, y: number, angle = 0, flip = false, alpha = 1) {
     const f = this.atlas?.frame(`afx/${group}/${part}/${frame}`);
     if (!f || alpha <= 0.01) return;
-    const u = 1 / f.scale;
+    const u = 1 / f.scale, base = ctx.globalAlpha;
     this.left -= 1;
+    if (!angle && !flip) {
+      ctx.globalAlpha = base * Math.min(1, alpha) * (this.part(group, part)?.flash ? this.flash : 1);
+      ctx.drawImage(f.image, f.sx, f.sy, f.sw, f.sh, x - f.ax * u, y - f.ay * u, f.sw * u, f.sh * u);
+      ctx.globalAlpha = base;
+      return;
+    }
     ctx.save();
-    ctx.globalAlpha *= Math.min(1, alpha) * (this.part(group, part)?.flash ? this.flash : 1);
+    ctx.globalAlpha = base * Math.min(1, alpha) * (this.part(group, part)?.flash ? this.flash : 1);
     ctx.translate(x, y);
     if (angle) ctx.rotate(angle);
     if (flip) ctx.scale(-1, 1);
@@ -571,7 +760,7 @@ export class ArsenalFxPainter {
    * Layout items of one z at (x, y) (kit putItems): minimal drops decoration and prio-2 items, reduced every other one of
    * them, and decoration stops once the frame's stamps run out. Decals fade (SPEC decal); tilted parts turn by frame.
    */
-  private place(ctx: CanvasRenderingContext2D, id: string, items: readonly Item[], z: string, x: number, y: number, age: number, life: number, seed: number, mirror?: readonly string[], lift = 0) {
+  private place(ctx: CanvasRenderingContext2D, id: string, items: readonly Item[], z: string, x: number, y: number, age: number, life: number, seed: number, mirror?: readonly string[], lift = 0, alpha = 1) {
     const S = this.spec!, tl = S.tilt[id];
     let deco = 0;
     for (const it of items) {
@@ -584,7 +773,7 @@ export class ArsenalFxPainter {
       const fr = partFrame(P, age, life, it.phase, this.time, this.reduced, this.lod);
       let angle = P.rotate === 'none' ? 0 : it.angle;
       if (tl?.parts.includes(it.part)) angle += (jit(seed, tl.sign) < 0.5 ? -1 : 1) * tl.deg[fr] * RAD;
-      this.put(ctx, id, it.part, fr, x + it.x, y + it.y - (P.place === 'head' ? lift : 0), angle, it.flip !== !!mirror?.includes(it.part), P.window === 'decal' ? this.decalAlpha(id, age) : 1);
+      this.put(ctx, id, it.part, fr, x + it.x, y + it.y - (P.place === 'head' ? lift : 0), angle, it.flip !== !!mirror?.includes(it.part), (P.window === 'decal' ? this.decalAlpha(id, age) : 1) * alpha);
     }
   }
 
@@ -651,9 +840,10 @@ export class ArsenalFxPainter {
     const S = this.spec!, out = this.events;
     out.length = 0;
     for (const m of marks) {
-      if (!this.handles(m) || !circleVisible(view, m.x, m.y, m.radius + 70)) continue;
-      const id = m.skillId, age = m.maxLife - m.life, { mark: life, decal = 0 } = S.life[id], aw = this.skills[id]?.awakened === true;
-      if (age < (decals ? decal : life)) out.push({ m, id, age, life, aw, items: layout(S, id, this.data!.meta[id].main, { R: m.radius, L: 0, w: 0, aw, seed: m.seed ?? 1, age, life, reduced: this.reduced }) });
+      const st = m.kind === 'ring' ? this.markStage(m.skillId, !!m.echo, m.heavy) : undefined;
+      if (!st || !circleVisible(view, m.x, m.y, m.radius + 70)) continue;
+      const id = m.skillId, age = m.maxLife - m.life, life = st === 'eighth' ? S.gimmick.seventhSeal.life : S.life[id].mark, aw = this.skills[id]?.awakened === true;
+      if (age < (decals ? (st === 'total' ? life : S.life[id].decal ?? 0) : life)) out.push({ m, id, st, age, life, aw, items: layout(S, id, st, { R: m.radius, L: 0, w: 0, aw, seed: m.seed ?? 1, age, life, reduced: this.reduced }) });
     }
     return out;
   }
@@ -664,16 +854,31 @@ export class ArsenalFxPainter {
     return lm && lm.when === 'dx<0' && (e.m.dir ?? 0) < 0 ? lm.parts : undefined;
   }
 
-  /** The ground layer: the decals of the blasts (newest first, SPEC caps.decals), under the bodies; none at minimal detail. */
-  drawDecals(ctx: CanvasRenderingContext2D, marks: readonly Readonly<SkillMark>[], view: Viewport) {
-    let left = this.spec!.caps.decals[this.lod];
+  /**
+   * The ground layer, under the bodies: the total eclipse's disc and band (review 5 ②: halved under reduced flash), then
+   * the decals of the blasts and the eighth seal's print (newest first, SPEC caps.decals; none at minimal detail). A
+   * meteor brush landing where its mark lies leaves no crater of its own (the mark's floor is the same stamp).
+   */
+  drawDecals(ctx: CanvasRenderingContext2D, marks: readonly Readonly<SkillMark>[], zones: readonly Readonly<AwakeningZone>[], view: Viewport) {
+    const S = this.spec!;
+    let left = S.caps.decals[this.lod];
     const events = this.collect(marks, view, true);
     ctx.save();
+    for (const e of events) {
+      if (e.st !== 'total' || e.age >= e.life) continue;
+      const g = S.gimmick.eclipseHalo, { x, y, radius: R } = e.m, A = fadeA(S.halo[e.id].fade, e.age, e.life) * this.flash;
+      this.circle(ctx, x, y, R);
+      this.fill(ctx, g.wash.token, g.wash.alpha * A);
+      this.circle(ctx, x, y, R);
+      this.circle(ctx, x, y, R * g.band.at, -Math.PI / 2, 1.5 * Math.PI, false);
+      this.fill(ctx, g.band.token, g.band.alpha * A, 'evenodd');
+    }
     for (let i = events.length - 1; i >= 0 && left > 0; i -= 1) {
       const e = events[i];
       if (!e.items.some((it) => it.z === 'ground')) continue;
       left -= 1;
-      this.place(ctx, e.id, e.items, 'ground', e.m.x, e.m.y, e.age, e.life, e.m.seed ?? 1);
+      const marked = e.id === 'meteorBrush' && zones.some((z) => z.weapon === e.id && Math.abs(z.x - e.m.x) < 1 && Math.abs(z.y - e.m.y) < 1 && !!this.zoneSpec(z.weapon));
+      this.place(ctx, e.id, marked ? e.items.filter((it) => it.part !== zoneOf(S, e.id)!.floor) : e.items, 'ground', e.m.x, e.m.y, e.age, e.life, e.m.seed ?? 1);
     }
     ctx.restore();
   }
@@ -687,21 +892,45 @@ export class ArsenalFxPainter {
     if (!events.length) return;
     ctx.save();
     let splashes = S.caps.splash[this.lod];
-    for (const e of events) if (S.splash[e.id] && splashes > 0 && this.splash(ctx, e)) splashes -= 1;
+    const main = (e: Event) => e.st !== 'eighth' && e.st !== 'total';
+    for (const e of events) if (main(e) && S.splash[e.id] && splashes > 0 && this.splash(ctx, e)) splashes -= 1;
     events.forEach((e, i) => {
+      if (e.st === 'eighth') return this.eighth(ctx, e);
+      if (e.st === 'total') return this.total(ctx, e);
       const rs = S.ring[e.id];
-      if (rs?.wash?.union && events.findIndex((q) => q.id === e.id && q.m.life === e.m.life) === i) {
+      if (rs?.wash?.union && events.findIndex((q) => main(q) && q.id === e.id && q.m.life === e.m.life) === i) {
         // One cast's washes are one path filled once (nonzero), so overlapping seals do not stack their paper.
         ctx.beginPath();
-        for (const q of events) if (q.id === e.id && q.m.life === e.m.life) this.circle(ctx, q.m.x, q.m.y, grownR(q.m.radius, rs.grow, q.age, this.reduced), 0, TAU, false);
+        for (const q of events) if (main(q) && q.id === e.id && q.m.life === e.m.life) this.circle(ctx, q.m.x, q.m.y, grownR(q.m.radius, rs.grow, q.age, this.reduced), 0, TAU, false);
         this.fill(ctx, rs.wash.token, rs.wash.alpha * fadeA(rs.fade, e.age, e.life, rs.grow, this.reduced));
       }
       if (rs) this.ring(ctx, e, rs);
       else this.halo(ctx, e, S.halo[e.id]);
     });
     events.sort((a, b) => a.m.y - b.m.y);
-    for (const e of events) this.place(ctx, e.id, e.items, 'ally', e.m.x, e.m.y, e.age, e.life, e.m.seed ?? 1, this.mirror(e), lift ? S.headLift : 0);
+    for (const e of events) this.place(ctx, e.id, e.items, 'ally', e.m.x, e.m.y, e.age, e.life, e.m.seed ?? 1, main(e) ? this.mirror(e) : undefined, lift && main(e) ? S.headLift : 0, e.st === 'total' ? fadeA(S.halo[e.id].fade, e.age, e.life) : 1);
     ctx.restore();
+  }
+
+  /** The eighth seal's strike (API §14.4): its wash and heavy ring (gaps, grow, fade) round the seven seals' centre; the big seal is a stamp. */
+  private eighth(ctx: CanvasRenderingContext2D, e: Event) {
+    const rg = this.spec!.gimmick.seventhSeal.ring, { x, y } = e.m, R = grownR(e.m.radius, rg.grow, e.age, this.reduced), A = fadeA(rg.fade, e.age, e.life, rg.grow, this.reduced);
+    if (A <= 0.01) return;
+    this.circle(ctx, x, y, R);
+    this.fill(ctx, rg.wash.token, rg.wash.alpha * A);
+    for (const [a0, a1] of arcsBetween(gapList(rg.gaps, e.m.seed ?? 1))) {
+      this.circle(ctx, x, y, R, a0, a1);
+      this.stroke(ctx, rg.layers, A);
+    }
+  }
+
+  /** The total eclipse over the bodies (API §14.4, review 5 ②): the heavy outer rim and the awakened line; its disc and band lie on the ground. */
+  private total(ctx: CanvasRenderingContext2D, e: Event) {
+    const S = this.spec!, { x, y, radius: R } = e.m, A = fadeA(S.halo[e.id].fade, e.age, e.life);
+    this.circle(ctx, x, y, R);
+    this.stroke(ctx, S.gimmick.eclipseHalo.outer, A);
+    this.circle(ctx, x, y, R - S.awakened.inset);
+    this.stroke(ctx, S.awakened.layers, A);
   }
 
   /** A blast's ink spikes growing with R (API §7.3a): one path, filled once; drops once grown, at full detail only. */
@@ -879,8 +1108,13 @@ export class ArsenalFxPainter {
     if (c.edge) this.stroke(ctx, c.edge, a, 1, c.dash);
   }
 
-  /** A weapon's beam in its own frame (x from its start, +x along it; API §8.3): its line, then its stamps. */
+  /**
+   * A weapon's beam in its own frame (x from its start, +x along it; API §8.3): its line, then its stamps. The tracking
+   * seals' edges are drawn as their triangle (drawSeals); an echo beam is the falling scroll unrolling.
+   */
   drawBeam(ctx: CanvasRenderingContext2D, beam: Readonly<BeamEffect>) {
+    if (beam.echo) return this.unroll(ctx, beam);
+    if (!this.spec!.line[beam.skillId!]) return;
     const S = this.spec!, id = beam.skillId!, ls = S.line[id], seed = this.seedOf(beam), aw = this.skills[id]?.awakened === true, x0 = S.footClear;
     const L = Math.hypot(beam.x2 - beam.x1, beam.y2 - beam.y1), w = beam.width, life = beam.maxLife, age = life - beam.life, A = fadeA(ls.fade, age, life);
     ctx.save();
@@ -937,6 +1171,358 @@ export class ArsenalFxPainter {
     }
     this.place(ctx, id, layout(S, id, 'stroke', { R: 0, L, w, aw, seed, age, life, reduced: this.reduced }), 'ally', 0, 0, age, life, seed);
     ctx.restore();
+  }
+
+  /**
+   * The falling scroll unrolling (API §14.4) in its beam's frame from where it landed: the paper band at ±w (the hit
+   * width) with straight ink edges and the mountain ridge unrolls over grow, the rod across its head, the roller on it.
+   */
+  private unroll(ctx: CanvasRenderingContext2D, beam: Readonly<BeamEffect>) {
+    const g = this.spec!.gimmick.fallingScroll, id = beam.skillId!, L = Math.hypot(beam.x2 - beam.x1, beam.y2 - beam.y1), w = beam.width;
+    const age = beam.maxLife - beam.life, x1 = unrollHead(g, L, age, this.reduced), A = fadeA(g.fade, age, beam.maxLife), b = g.band;
+    if (x1 < 2 || A <= 0.01) return;
+    ctx.save();
+    ctx.translate(beam.x1, beam.y1);
+    ctx.rotate(Math.atan2(beam.y2 - beam.y1, beam.x2 - beam.x1));
+    this.poly(ctx, [[0, -w], [x1, -w], [x1, w], [0, w]], true);
+    this.fill(ctx, b.fill.token, b.fill.alpha * A);
+    for (const side of [-w, w]) {
+      this.poly(ctx, [[0, side], [x1, side]]);
+      this.stroke(ctx, b.edge, A);
+    }
+    const ridge = ridgePts(L, w, b.ridge).filter((p) => p[0] <= x1 - 3);
+    if (ridge.length > 1) {
+      this.smooth(ctx, ridge, false);
+      this.stroke(ctx, b.ridge.layers, A);
+    }
+    this.poly(ctx, [[x1, -w], [x1, w]]);
+    this.stroke(ctx, b.head, A);
+    const P = this.part(id, 'roller');
+    if (P) this.put(ctx, id, 'roller', partFrame(P, age, beam.maxLife, 0, this.time, this.reduced, this.lod), x1, 0, 0, false, A);
+    ctx.restore();
+  }
+
+  /**
+   * The tracking seals' triangles (API §14.4) from their three edge beams (the engine lays them a to b, b to c, c to a):
+   * pending (width 2), the threads sew the edges corner to corner and the corner prints come in; struck (width 8), the
+   * heavy edges, the paper fill for its first moment, and the strike print at the centroid. Pending ones: SPEC caps.pending.
+   */
+  drawSeals(ctx: CanvasRenderingContext2D, beams: readonly Readonly<BeamEffect>[], view: Viewport) {
+    const S = this.spec!, g = S.gimmick.trackingSeals, id = 'trackingSeals';
+    if (this.gimmick(id) !== 'triangle') return;
+    let pending = S.caps.pending[this.lod];
+    ctx.save();
+    for (let i = 0; i < beams.length; i += 1) {
+      const tri = beams.slice(i, i + 3);
+      if (tri[0].skillId !== id) continue;
+      if (tri.length < 3 || tri.some((b) => b.skillId !== id || b.life !== tri[0].life || b.width !== tri[0].width)) continue;
+      i += 2;
+      const P = tri.map((b): P2 => [b.x1, b.y1]), age = tri[0].maxLife - tri[0].life, strike = tri[0].width > 2;
+      if (!P.some(([x, y]) => circleVisible(view, x, y, 60)) || (!strike && pending-- <= 0)) continue;
+      if (!strike) {
+        const u = this.reduced ? 1 : clamp(age / tri[0].maxLife, 0, 1);
+        P.forEach((p, k) => {
+          const q = P[(k + 1) % 3], gk = clamp(3 * u - k, 0, 1);
+          if (gk <= 0.01) return;
+          this.poly(ctx, [p, [lerp(p[0], q[0], gk), lerp(p[1], q[1], gk)]]);
+          this.stroke(ctx, g.pre.layers, 1, 1, g.pre.dash, g.pre.pad);
+        });
+        for (const [x, y] of P) this.put(ctx, id, 'sealCorner', Math.min(2, Math.floor(u * 3)), x, y);
+        continue;
+      }
+      if (age < g.strike.fillSeconds) {
+        this.poly(ctx, P, true);
+        this.fill(ctx, g.strike.fill.token, g.strike.fill.alpha);
+      }
+      this.poly(ctx, P, true);
+      this.stroke(ctx, g.strike.layers, fadeA(g.strike.fade, age, tri[0].maxLife));
+      for (const [x, y] of P) this.put(ctx, id, 'sealCorner', 2, x, y);
+      const Q = this.part(id, 'sealStrike');
+      if (Q) this.put(ctx, id, 'sealStrike', partFrame(Q, age, tri[0].maxLife, 0, this.time, this.reduced, this.lod), (P[0][0] + P[1][0] + P[2][0]) / 3, (P[0][1] + P[1][1] + P[2][1]) / 3);
+    }
+    ctx.restore();
+  }
+
+  /**
+   * The eighth seal waiting to strike (API §14.4, RenderWorld pending; SPEC caps.pending): on the ground its shadow grows
+   * at the centre; over the bodies the stitches run in from the seven seals (decoration: every other one at reduced
+   * detail, none at minimal).
+   */
+  drawPending(ctx: CanvasRenderingContext2D, pending: readonly Readonly<ArsenalPending>[], view: Viewport, ground: boolean) {
+    const g = this.spec!.gimmick.seventhSeal;
+    let left = this.spec!.caps.pending[this.lod];
+    ctx.save();
+    for (const p of pending) {
+      if (this.gimmick(p.id) !== 'eighth' || !circleVisible(view, p.x, p.y, 220) || left-- <= 0) continue;
+      const u = clamp((this.time - p.born) / p.delay, 0, 1);
+      if (ground) {
+        const rx = lerp(g.shadow.rx[0], g.shadow.rx[1], u);
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, rx, 0.42 * rx, 0, 0, TAU);
+        this.fill(ctx, g.shadow.token, lerp(g.shadow.alpha[0], g.shadow.alpha[1], u));
+        continue;
+      }
+      p.points.forEach((q, k) => {
+        if (this.lod === 2 || (this.lod === 1 && k % 2)) return;
+        this.poly(ctx, [[q.x, q.y], [p.x + (q.x - p.x) * (1 - u), p.y + (q.y - p.y) * (1 - u)]]);
+        this.stroke(ctx, g.stitch.layers, 1, 1, g.stitch.dash, g.stitch.pad);
+      });
+    }
+    ctx.restore();
+  }
+
+  /** A weapon's ground zone spec when the kit draws its gimmick (delivery 3a). */
+  zoneSpec(id: string) {
+    return this.spec && this.data?.meta[id]?.done.gimmick ? zoneOf(this.spec, id) : undefined;
+  }
+
+  /**
+   * Plans this frame's gimmick zones on screen (API §14.3, §14.8), nearest the hero first: their stamps (cached per
+   * zone: their radius and cosmetic serial never change), minimal keeping the centre object alone, reduced every other
+   * decoration, and the extras within SPEC caps.zoneStamps; the standing pieces go to the bodies (stands()).
+   */
+  planZones(zones: readonly Readonly<AwakeningZone>[], view: Viewport, hx: number, hy: number) {
+    const S = this.spec!, plans = this.zonePlans;
+    plans.length = 0;
+    this.standList.length = 0;
+    for (const z of zones) {
+      const Z = this.zoneSpec(z.weapon);
+      if (!Z || z.life <= 0 || !circleVisible(view, z.x, z.y, z.radius + 90)) continue;
+      let p = this.zoneCache.get(z);
+      if (!p) {
+        const seed = this.seedOf(z);
+        this.zoneCache.set(z, (p = { z, Z, age: 0, life: z.maxLife, A: 0, seed, items: glayout(S, z.weapon, Z.stage, { R: z.radius, L: 0, w: 0, aw: true, seed, age: 0, life: z.maxLife, reduced: false }), d: 0, keep: [] }));
+      }
+      p.age = z.maxLife - z.life;
+      p.A = zoneFade(S, p.age, p.life);
+      p.d = Math.hypot(z.x - hx, z.y - hy);
+      p.keep.length = 0;
+      plans.push(p);
+    }
+    plans.sort((a, b) => a.d - b.d);
+    let left = S.caps.zoneStamps[this.lod];
+    for (const p of plans) {
+      let deco = 0;
+      for (const it of p.items) {
+        if (it.prim !== 'center') {
+          if (this.lod === 2) continue;
+          if ((this.part(p.z.weapon, it.part)?.lod === 'deco' || it.prio === 2) && (deco += 1) % 2 === 0 && this.lod === 1) continue;
+          if (left <= 0) continue;
+        }
+        left -= 1;
+        const P = it.z === 'stand' && this.part(p.z.weapon, it.part);
+        if (!P) {
+          p.keep.push(it);
+          continue;
+        }
+        let stand = this.standCache.get(it);
+        if (!stand) {
+          const x = p.z.x + it.x, y = p.z.y + it.y;
+          this.standCache.set(it, (stand = { p, it, x, y, left: x - P.anchor[0], top: y - P.anchor[1], right: x - P.anchor[0] + P.box[0], bottom: y - P.anchor[1] + P.box[1] }));
+        }
+        this.standList.push(stand);
+      }
+    }
+  }
+
+  /** The zones' standing pieces planned this frame (graves, pillars), for the bodies layer to sort in by their foot y. */
+  stands(): readonly Stand[] {
+    return this.standList;
+  }
+
+  /** One zone stamp: the centre object's start or end part (alpha 1) or its own frames, or a stamp at the zone's alpha. */
+  private piece(ctx: CanvasRenderingContext2D, p: ZonePlan, it: Readonly<Item>, x: number, y: number) {
+    if (it.prim !== 'center') {
+      // The zone's other stamps: at its alpha, by their own drive (no end parts to look for).
+      const P = this.part(p.z.weapon, it.part);
+      if (P) this.put(ctx, p.z.weapon, it.part, partFrame(P, p.age, p.life, it.phase, this.time, this.reduced, this.lod), x, y, P.rotate === 'none' ? 0 : it.angle, it.flip, p.A);
+      return;
+    }
+    const q = zonePiece(this.spec!, p.Z, it, p.age, p.life), P = this.part(p.z.weapon, q.part);
+    if (!P) return;
+    const frame = q.progress === null ? partFrame(P, p.age, p.life, it.phase, this.time, this.reduced, this.lod) : clamp(Math.floor(q.progress * P.frames), 0, P.frames - 1);
+    this.put(ctx, p.z.weapon, q.part, frame, x, y, P.rotate === 'none' ? 0 : it.angle, it.flip, q.alpha);
+  }
+
+  /** A standing piece, in the bodies layer. */
+  drawStand(ctx: CanvasRenderingContext2D, s: Stand) {
+    this.piece(ctx, s.p, s.it, s.x, s.y);
+  }
+
+  /**
+   * The zones' ground (API §14.3), first in the hazards layer: the floor (the meteor's crater), the wash and the tar's
+   * gloss at the zone's alpha; the rims for the whole life (the sewn ally dashes, all in one path as each circle starts
+   * its dashes afresh, or the meteor mark's solid rim, heavier with the hero inside); then the ground stamps.
+   */
+  drawZones(ctx: CanvasRenderingContext2D, hx: number, hy: number) {
+    const S = this.spec!, plans = this.zonePlans;
+    if (!plans.length) return;
+    ctx.save();
+    for (const { z, Z, A } of plans) {
+      const R = z.radius;
+      if (Z.floor) this.put(ctx, z.weapon, Z.floor, 0, z.x, z.y, 0, false, A);
+      if (Z.wash) {
+        this.circle(ctx, z.x, z.y, R);
+        this.fill(ctx, Z.wash.token, Z.wash.alpha * A);
+      }
+      Z.gloss?.at.forEach((k, i) => {
+        const a0 = (Z.gloss!.span[0] + 12 * i) * RAD;
+        this.circle(ctx, z.x, z.y, R * k, a0, a0 + (Z.gloss!.span[1] - Z.gloss!.span[0]) * RAD);
+        this.stroke(ctx, Z.gloss!.layers, A);
+      });
+      if (Z.rim === 'pad') {
+        this.circle(ctx, z.x, z.y, R);
+        this.stroke(ctx, Math.hypot(hx - z.x, hy - z.y) <= R ? S.rim.pad.inside : S.rim.pad.layers, 1);
+      }
+    }
+    ctx.beginPath();
+    let sewn = false;
+    for (const { z, Z } of plans) {
+      if (Z.rim !== 'ally') continue;
+      this.circle(ctx, z.x, z.y, z.radius, -Math.PI / 2, 1.5 * Math.PI, false);
+      sewn = true;
+    }
+    if (sewn) this.stroke(ctx, S.rim.ally.layers, 1, 1, S.rim.ally.dash, S.rim.ally.pad);
+    for (const p of plans) for (const it of p.keep) if (it.z === 'ground') this.piece(ctx, p, it, p.z.x + it.x, p.z.y + it.y);
+    ctx.restore();
+  }
+
+  /** The zones' pieces over the bodies, in the allyAttacks layer: the spin's turning arcs and blades, the meteor's motes. */
+  drawZoneTops(ctx: CanvasRenderingContext2D) {
+    ctx.save();
+    for (const p of this.zonePlans) {
+      const { z, Z } = p;
+      if (Z.arcs) {
+        for (const [a0, a1] of spinArcs(Z, p.seed, p.age, this.reduced)) {
+          this.circle(ctx, z.x, z.y, z.radius * Z.arcs.at, a0, a1);
+          this.stroke(ctx, Z.arcs.layers, p.A);
+        }
+      }
+      for (const it of p.keep) if (it.z === 'ally') this.piece(ctx, p, it, z.x + it.x, z.y + it.y);
+    }
+    ctx.restore();
+  }
+
+  /**
+   * Plans the enemy overlays (API §14.5, review 5 §6-6/7): one feet overlay an enemy (a freeze always; burning ink on
+   * those standing in an ink pots fire, SPEC caps.feet less the freezes), one head mark an enemy (the first of
+   * priority.heads it wears, when the kit draws it; caps.heads), and a crow (caps.crows) with its peck (caps.events, none
+   * at minimal detail); nearest the hero first. Each enemy's overlays run on a clock offset by its cosmetic serial, so a
+   * crowd's crows and tags do not move in step. Whether any enemy wears one.
+   */
+  planOverlays(bodies: readonly OverlayBody[], zones: readonly Readonly<AwakeningZone>[], hx: number, hy: number) {
+    const S = this.spec!, t = this.time, over = this.over, O = S.overlay, li = this.lod, pool = this.overPool, n = this.near, fires = n.fires;
+    for (const o of over.values()) pool.push(o);
+    over.clear();
+    this.firsts.clear();
+    for (const list of [n.fd, n.fb, n.hd, n.hb, n.cd, n.cb, fires]) list.length = 0;
+    const freeze = this.done(O.feet.freeze.group), crows = this.done(O.crow.group), frozen: OverlayBody[] = [];
+    if (this.zoneSpec(O.feet.scorch.group)) for (const z of zones) if (z.weapon === O.feet.scorch.group && z.life > 0) fires.push(z);
+    // The nearest `cap` of each kind (in order, ties first come), kept by insertion as the bodies go by: caps are small and crowds are not.
+    const keep = (ds: number[], bs: OverlayBody[], cap: number, d: number, b: OverlayBody) => {
+      let i = ds.length;
+      if (i >= cap) {
+        if (!cap || d >= ds[cap - 1]) return;
+        i = cap - 1;
+      } else {
+        ds.push(d);
+        bs.push(b);
+      }
+      for (; i > 0 && ds[i - 1] > d; i -= 1) {
+        ds[i] = ds[i - 1];
+        bs[i] = bs[i - 1];
+      }
+      ds[i] = d;
+      bs[i] = b;
+    };
+    const capHeads = S.caps.heads[li], capFeet = S.caps.feet[li], capCrows = S.caps.crows[li];
+    for (const b of bodies) {
+      const e = b.enemy, m = e?.awk;
+      if (!e || (!m && !fires.length)) continue;
+      const d = (b.x - hx) ** 2 + (b.y - hy) ** 2;
+      if (freeze && (m?.freeze ?? 0) > t) frozen.push(b);
+      else if (fires.length && fires.some((z) => Math.hypot(e.x - z.x, e.y - z.y) <= z.radius + e.radius)) keep(n.fd, n.fb, capFeet, d, b);
+      if (!m) continue;
+      const key = headMark(S, m, t);
+      if (key && O.head.parts[key] && this.done(O.head.parts[key].group)) {
+        // A head mark over the cap is dropped, and the enemy's lower marks with it (one head mark an enemy).
+        this.firsts.add(e);
+        keep(n.hd, n.hb, capHeads, d, b);
+      }
+      if (crows && (m.crow ?? 0) > t) keep(n.cd, n.cb, capCrows, d, b);
+    }
+    const get = (e: object) => {
+      let o = over.get(e);
+      if (o) return o;
+      o = pool.pop() ?? { feet: null, head: null, crow: false, peck: -1, t: Number.NaN };
+      o.feet = o.head = null;
+      o.crow = false;
+      o.peck = -1;
+      o.t = Number.NaN;
+      over.set(e, o);
+      return o;
+    };
+    for (const b of frozen) get(b.enemy!).feet = 'freeze';
+    n.fb.slice(0, Math.max(0, capFeet - frozen.length)).forEach((b) => (get(b.enemy!).feet = 'scorch'));
+    for (const b of n.hb) get(b.enemy!).head = headMark(S, b.enemy!.awk, t)!;
+    let events = S.caps.events[li];
+    for (const b of n.cb) {
+      const o = get(b.enemy!), peck = t - (b.enemy!.awk?.peckAt ?? -1e9);
+      o.crow = true;
+      if (li < 2 && peck >= 0 && peck < S.marks.crow.dive && events-- > 0) o.peck = peck;
+    }
+    return over.size > 0 || this.firsts.size > 0;
+  }
+
+  /** Whether an enemy's head mark is the kit's this frame (drawn, or dropped by the cap): its lower marks give way. */
+  firstMark(enemy: object) {
+    return this.firsts.has(enemy);
+  }
+
+  /** An enemy's overlay clock: the frame's, offset by a share of the crow's period from the enemy's cosmetic serial. */
+  private clock(o: Over, e: object) {
+    if (Number.isNaN(o.t)) o.t = this.time + this.spec!.marks.crow.period * jit(this.seedOf(e), 1970);
+    return o.t;
+  }
+
+  /** What the kit draws on an enemy this frame (planOverlays), if anything. */
+  overlayOf(enemy: object): Readonly<Over> | undefined {
+    return this.over.get(enemy);
+  }
+
+  /** An enemy's feet overlay under its body (groundMarks): the freeze's ice and back crystals. */
+  drawFeet(ctx: CanvasRenderingContext2D, b: OverlayBody, o = this.over.get(b.enemy!)) {
+    const F = this.spec!.overlay.feet.freeze;
+    if (o?.feet === 'freeze') this.put(ctx, F.group, F.back + sizeClass(b.enemy!.radius, F.r), 0, b.x, b.y);
+  }
+
+  /** An enemy's feet overlay right after its body: the freeze's front crystals, or burning ink (8 fps, still under reduced motion). */
+  drawFront(ctx: CanvasRenderingContext2D, b: OverlayBody, o = this.over.get(b.enemy!)) {
+    if (!o?.feet) return;
+    const { freeze: F, scorch: B } = this.spec!.overlay.feet;
+    if (o.feet === 'freeze') this.put(ctx, F.group, F.front + sizeClass(b.enemy!.radius, F.r), 0, b.x, b.y);
+    if (o.feet !== 'scorch') return;
+    const part = B.part + sizeClass(b.enemy!.radius, B.r), P = this.part(B.group, part);
+    if (P) this.put(ctx, B.group, part, partFrame(P, 0, 1, 0, this.clock(o, b.enemy!), this.reduced, this.lod === 2 ? 2 : 0), b.x, b.y);
+  }
+
+  /**
+   * An enemy's head mark and crow (overheads), `y` where its head mark sits (the sprite's top − 12, past its bar, elite
+   * mark, and stun): the silence bell or the prey tag (4 fps, still under reduced motion), and the crow circling over
+   * the head with its peck.
+   */
+  drawHead(ctx: CanvasRenderingContext2D, b: OverlayBody, y: number, o = this.over.get(b.enemy!)) {
+    const S = this.spec!, O = S.overlay;
+    if (!o) return;
+    if (o.head) {
+      const q = O.head.parts[o.head], P = this.part(q.group, q.part);
+      if (P) this.put(ctx, q.group, q.part, partFrame(P, 0, 1, 0, this.clock(o, b.enemy!), this.reduced, this.lod === 2 ? 2 : 0), b.x, y);
+    }
+    if (!o.crow) return;
+    const t = this.clock(o, b.enemy!), top = y - O.head.dy, c = crowAt(S, t, top, o.peck, this.reduced), P = this.part(O.crow.group, O.crow.part);
+    if (P) this.put(ctx, O.crow.group, O.crow.part, this.reduced ? P.still ?? 0 : Math.floor(t * P.fps) % P.frames, b.x + c.x, c.y, 0, c.flip);
+    const K = this.part(O.crow.group, O.crow.peck);
+    if (K && o.peck >= 0) this.put(ctx, O.crow.group, O.crow.peck, partFrame(K, o.peck, 1, 0, 0, false, 0), b.x + O.crow.dive.peck[0], top + O.crow.dive.peck[1]);
   }
 
   /** A weapon's chain (API §8.3): its line drawn out along the jumps, the stamps at the points it has reached. */

@@ -5,11 +5,11 @@ import type { AtlasManifest, SpriteAtlas } from './assets/spriteAtlas.ts';
 import { ARSENAL_FX_PACK } from './assets/slots.ts';
 import { jit } from './skillVfx.ts';
 import { makeViewport } from './viewport.ts';
-import type { SkillMark } from '../engine/worldTypes.ts';
+import type { ArsenalPending, AwakeningZone, BeamEffect, Entity, SkillMark } from '../engine/worldTypes.ts';
 import {
-  ArsenalFxPainter, LODS, bandCoreArcs, bandGeo, bandHead, bladeGeo, clearStart, coreArc, cometGeo, crescentPts, fadeA, flightFrame, gapList, grownR, jagGeo,
-  layout, linksGeo, lobPath, partFrame, punchM, raggedEdge, ropeGeo, rippleCoreArc, sagCurves, splashGeo, splashKeep, spikeTips, streakList, sweepAngle, taperRatio,
-  twistGeo, type ArsenalFxSpec,
+  ArsenalFxPainter, LODS, bandCoreArcs, bandGeo, bandHead, bladeGeo, clearStart, coreArc, cometGeo, crescentPts, crowAt, fadeA, flightFrame, gapList, grownR, headMark, jagGeo,
+  layout, linksGeo, lobPath, partFrame, punchM, raggedEdge, ridgePts, ropeGeo, rippleCoreArc, sagCurves, sizeClass, spinArcs, splashGeo, splashKeep, spikeTips, streakList, sweepAngle, taperRatio,
+  twistGeo, unrollHead, zoneFade, zoneOf, zonePiece, type ArsenalFxSpec, type OverlayBody,
 } from './arsenalFx.ts';
 
 const manifest = ATLAS_MANIFEST as unknown as AtlasManifest;
@@ -20,9 +20,27 @@ const r = (value: number, places = 2) => Math.round(value * 10 ** places) / 10 *
 const pt = (p: readonly number[]) => [r(p[0]), r(p[1])];
 type Opts = { radius?: number; inner?: number; length?: number; width?: number; seed?: number; p?: number; t?: number; awakened?: boolean; reduced?: boolean; lod?: string; points?: { x: number; y: number; r?: number }[] };
 
-/** The kit's paths() (API §8.3), composed from the ported shapes the painter draws with. */
-function paths(id: string, o: Opts) {
-  const R = o.radius ?? 0, seed = o.seed ?? 1, aw = !!o.awakened, reduced = !!o.reduced, life = S.life[id].mark, age = (o.p ?? 0.35) * life, t = o.t ?? 0.2;
+/** The life a stage's age runs over in the kit (its p): a zone's, the unrolling scroll's, else the weapon's mark. */
+const lifeOf = (id: string, stage: string) => (zoneOf(S, id)?.stage === stage ? zoneOf(S, id)!.life : stage === 'unroll' ? S.gimmick.fallingScroll.life : S.life[id]?.mark ?? 1);
+/** The kit's reference spots of a strike's n events (API §9.3), for the eighth seal's stitches. */
+const spots = (n: number, seed: number) => Array.from({ length: n }, (_, k) => {
+  const [sx, sy] = (S as unknown as { reference: { spread: [number, number] } }).reference.spread, a = (TAU * (k + 0.7 * jit(seed, 960 + k))) / n, rr = 0.35 + 0.65 * Math.sqrt(jit(seed, 980 + k));
+  return [Math.cos(a) * sx * rr, Math.sin(a) * sy * rr];
+});
+const TAU = Math.PI * 2;
+
+/** The kit's paths() (API §8.3, §14), composed from the ported shapes the painter draws with. */
+function paths(id: string, stage: string, o: Opts) {
+  const R = o.radius ?? 0, seed = o.seed ?? 1, aw = !!o.awakened, reduced = !!o.reduced, life = lifeOf(id, stage), age = (o.p ?? 0.35) * life, t = o.t ?? 0.2;
+  const P2s = (o.points ?? []).map((q) => [q.x, q.y]);
+  if (stage === 'spin') return { arcs: spinArcs(zoneOf(S, id)!, seed, age, reduced).map(([a0]) => [r((a0 / RAD) % 360), r((a0 / RAD + zoneOf(S, id)!.arcs!.span) % 360)]) };
+  if (stage === 'unroll') return { ridge: ridgePts(o.length!, o.width!, S.gimmick.fallingScroll.band.ridge).slice(0, 12).map(pt), head: [pt([unrollHead(S.gimmick.fallingScroll, o.length!, age, reduced), 0])] };
+  if (stage === 'triangle') {
+    const T = P2s.length >= 3 ? P2s : [[-110, 40], [104, 56], [-6, -92]];
+    return { corners: T.map(pt), centroid: [pt([(T[0][0] + T[1][0] + T[2][0]) / 3, (T[0][1] + T[1][1] + T[2][1]) / 3])] };
+  }
+  if (stage === 'eighth') return { stitch: spots(7, seed).map(pt) };
+  if (data.meta[id].main !== stage) return {};
   const inner = o.inner ?? 0, L = o.length ?? 0, w = o.width ?? 0, P = (o.points ?? []).map((q): [number, number] => [q.x, q.y]);
   const deg = (iv: readonly (readonly number[])[]) => iv.map(([a, b]) => [a / RAD, b / RAD]);
   const out: Record<string, (readonly number[])[]> = {};
@@ -97,43 +115,54 @@ function paths(id: string, o: Opts) {
   return Object.fromEntries(Object.entries(out).map(([name, pts]) => [name, pts.map(pt)]));
 }
 
-test('K10: the bake carries the kit SPEC, the drawn weapons, every part rule, and all 173 stamps of the 22 groups in one page, with no Korean text', () => {
+test('K10: the bake carries the kit SPEC, the drawn weapons, every part rule, and all 280 stamps of the 30 groups in one page, with no Korean text', () => {
   const pack = manifest.packs[ARSENAL_FX_PACK];
   assert.ok(pack, 'the weapon field effects have their own pack');
   assert.equal(pack.pages.length, 1, 'one atlas page');
   assert.ok(pack.pages.every((page) => page.startsWith('assets/packs/')), 'outside the initial download');
-  assert.equal(Object.keys(data.parts).length, 22);
+  assert.equal(Object.keys(data.parts).length, 30);
   let stamps = 0;
   for (const [group, rules] of Object.entries(data.parts)) {
-    assert.ok(data.meta[group]?.done.fx, `${group}'s field effect is done`);
+    assert.ok(data.meta[group]?.done.fx || data.meta[group]?.done.gimmick, `${group}'s field effect or gimmick is done`);
     const animation = manifest.animations[`afx/${group}`];
     for (const [part, rule] of Object.entries(rules)) {
       assert.equal(animation?.[part]?.frames, rule.frames, `afx/${group}/${part} is animated`);
       assert.equal(animation[part].fps > 0, rule.drive === 'loop', `${group}/${part} runs on the clock only when it loops`);
-      if (rule.drive === 'prog') assert.ok(rule.seconds !== null || ['beam', 'chain'].includes(rule.window), `${group}/${part}: a prog part has its seconds or the data's window`);
+      if (rule.drive === 'prog' || rule.drive === 'cycle') assert.ok(rule.seconds !== null || ['beam', 'chain'].includes(rule.window), `${group}/${part}: a prog or cycle part has its seconds or the data's window`);
       for (let frame = 0; frame < rule.frames; frame += 1) assert.ok(pack.frames[`afx/${group}/${part}/${frame}`], `afx/${group}/${part}/${frame} is baked`);
       stamps += rule.frames;
     }
   }
-  assert.equal(stamps, 173);
-  assert.equal(Object.keys(pack.frames).length, 173);
+  assert.equal(stamps, 280);
+  assert.equal(Object.keys(pack.frames).length, 280);
   assert.deepEqual(Object.entries(data.meta).filter(([, m]) => m.done.lob).map(([id]) => id), ['inkPots', 'clusterPots', 'tarJar', 'meteorBrush']);
-  assert.match(data.version, /^1\.0-d2/);
+  // Delivery 3a: the 17 P1 gimmicks, each its weapon's last stage, and the new rules the parts read.
+  const p1 = Object.entries(data.meta).filter(([, m]) => m.done.gimmick);
+  assert.equal(p1.length, 17);
+  for (const [id, m] of p1) assert.ok(m.stages.length >= 1, `${id} has its gimmick stage`);
+  const rules = Object.values(data.parts).flatMap((group) => Object.values(group));
+  for (const [field, values] of [['drive', ['cycle']], ['window', ['zone', 'zone-start', 'zone-end', 'status', 'event', 'variant', 'pending']], ['place', ['disc', 'over', 'orbit', 'feet']], ['rotate', ['face']]] as const) {
+    for (const value of values) assert.ok(rules.some((rule) => rule[field] === value), `a part has ${field} ${value}`);
+  }
+  for (const key of ['zone', 'gimmick', 'overlay']) assert.ok((data.spec as Record<string, unknown>)[key], `SPEC.${key} is baked`);
+  assert.match(data.version, /^1\.0-d3a/);
   assert.doesNotMatch(JSON.stringify(data), /[가-힣]/);
 });
 
-test('K10: the layout and shape ports give the kit C9 vectors (every drawn case of the brief, review 1\'s three, awakened, LOD, and reduced motion)', () => {
+test('K10: the layout and shape ports give the kit C9 vectors (every drawn case of the brief, review 1\'s three, the P1 gimmicks, awakened, LOD, and reduced motion)', () => {
   const { cases } = data.vectors;
-  assert.ok(cases.length >= 40, 'the cases the kit has drawn');
+  assert.ok(cases.length >= 60, 'the cases the kit has drawn');
   for (const [id, stage, raw, items, shapes] of cases) {
-    const o = raw as Opts, life = S.life[id].mark;
+    const o = raw as Opts, life = lifeOf(id, stage);
     const got = layout(S, id, stage, { R: o.radius ?? 0, L: o.length ?? 0, w: o.width ?? 0, aw: !!o.awakened, seed: o.seed ?? 1, age: (o.p ?? 0.35) * life, life, reduced: !!o.reduced, points: o.points });
     const label = `${id}/${stage} ${JSON.stringify(raw).slice(0, 60)}`;
     assert.deepEqual(got.map((q) => [q.part, r(q.x), r(q.y), r(q.angle, 3), q.flip ? 1 : 0, r(q.phase, 3), q.prio, q.z]), items, `${label} layout`);
-    assert.deepEqual(paths(id, o), shapes, `${label} paths`);
+    assert.deepEqual(paths(id, stage, o), shapes, `${label} paths`);
   }
   const kinds = new Set(cases.map(([id]) => data.meta[id].kind));
-  assert.deepEqual([...kinds].sort(), ['beam', 'chain', 'halo', 'lob', 'nova', 'strike']);
+  assert.deepEqual([...kinds].sort(), ['beam', 'chain', 'halo', 'lob', 'nova', 'rear', 'seeker', 'spray', 'strike', 'volley']);
+  const gimmicks = new Set(cases.filter(([id, stage]) => data.meta[id].main !== stage).map(([, stage]) => stage));
+  for (const stage of ['fire', 'gather', 'smoke', 'mark', 'spin', 'total', 'unroll', 'caltrop', 'grave', 'pillar', 'triangle', 'eighth']) assert.ok(gimmicks.has(stage), `a ${stage} case`);
 });
 
 test('K10: the lob path port gives the kit vectors (C9 lines 72-75) and the cluster pots\' mini path', () => {
@@ -229,7 +258,10 @@ test('K10: the painter takes the weapons\' own blasts and lines; a gimmick\'s ec
   assert.equal(painter.begin(atlas, 0, false, 1, 'full', {}), true);
   assert.ok(painter.handles(mark('inkPots', 0, 1.2)));
   assert.ok(!painter.handles(mark('inkPots', 0, 1.2, { echo: true })));
-  assert.ok(!painter.handles(mark('eclipseHalo', 0, 0.3, { heavy: true })));
+  assert.ok(painter.handles(mark('eclipseHalo', 0, 0.3, { heavy: true })), 'the total eclipse is the kit\'s (3a)');
+  assert.ok(painter.handles(mark('seventhSeal', 0, 1.2, { echo: true, radius: 120 })), 'so is the eighth seal');
+  assert.ok(!painter.handles(mark('thunderclap', 0, 0.3, { echo: true })), 'a P2 echo keeps the look\'s ring');
+  assert.ok(!painter.handles(mark('clusterPots', 0, 0.3, { echo: true })));
   assert.ok(!painter.handles(mark('boneMortar', 0, 0.3)));
   assert.ok(!painter.handles(mark('tailGuard', 0, 0.3)));
   assert.ok(painter.handles(mark('eclipseHalo', 0, 0.3)));
@@ -237,11 +269,16 @@ test('K10: the painter takes the weapons\' own blasts and lines; a gimmick\'s ec
   assert.equal(painter.markSeconds('seventhSeal'), 1.2);
   assert.equal(painter.markSeconds('thunderclap'), 0.3);
   assert.equal(painter.markSeconds('boneMortar'), undefined);
+  assert.equal(painter.markSeconds('seventhSeal', true), 1.2, 'the eighth seal through its print');
+  assert.equal(painter.markSeconds('eclipseHalo', false, true), 0.3);
+  assert.equal(painter.markSeconds('thunderclap', true), undefined);
   const line = { id: 1, x1: 0, y1: 0, x2: 100, y2: 0, width: 12, life: 0.2, maxLife: 0.28, owner: 'player' as const };
   assert.ok(painter.handlesLine({ ...line, skillId: 'inkLance' }));
   assert.ok(!painter.handlesLine({ ...line, skillId: 'inkLance', echo: true }), 'a fork keeps the gimmick\'s drawing');
   assert.ok(!painter.handlesLine({ ...line, skillId: 'railSpear' }));
-  assert.ok(!painter.handlesLine({ ...line, skillId: 'trackingSeals' }));
+  assert.ok(painter.handlesLine({ ...line, skillId: 'trackingSeals' }), 'the triangle seal is the kit\'s (3a)');
+  assert.ok(painter.handlesLine({ ...line, skillId: 'fallingScroll', echo: true }), 'so is the unrolling scroll');
+  assert.ok(!painter.handlesLine({ ...line, skillId: 'wideBrush', echo: true }), 'a P2 line keeps its drawing');
   assert.ok(painter.handlesLine({ id: 2, points: [{ x: 0, y: 0 }, { x: 90, y: 0 }], life: 0.1, maxLife: 0.18, skillId: 'frostChainlet' }));
   assert.ok(!painter.handlesLine({ id: 2, points: [{ x: 0, y: 0 }, { x: 90, y: 0 }], life: 0.1, maxLife: 0.18, skillId: 'frostChainlet', echo: true }));
 });
@@ -252,7 +289,7 @@ test('K10: caps — decals 16/8/0 newest first, the ring and object of every bla
     const { ctx, atlas, drawn, calls, view } = scene();
     const painter = new ArsenalFxPainter();
     painter.begin(atlas, 1, false, 1, detail, {});
-    painter.drawDecals(ctx, marks, view);
+    painter.drawDecals(ctx, marks, [], view);
     assert.equal(drawn.filter((key) => key.startsWith('afx/inkPots/splat')).length, S.caps.decals[li], `${detail} decals`);
     drawn.length = 0;
     calls.length = 0;
@@ -297,4 +334,230 @@ test('K10 review 4 F2: a meteor brush that came from the right lands mirrored ab
   assert.equal(scaled(-1), 1);
   assert.equal(scaled(1), 0);
   assert.equal(scaled(), 0, 'an unknown way keeps the baked side');
+});
+
+// ---- delivery 3a: the awakening gimmicks, P1 ----
+
+/** A canvas that records each stamp, fill, and stroke with the alpha it is drawn at (and whether the stroke is dashed). */
+function recorder(detail: 'full' | 'reduced' | 'minimal' = 'full', reduced = false, flash = 1, time = 1, skills = {}) {
+  const ops: { op: string; key: string; alpha: number; dashed: boolean }[] = [];
+  const state = { globalAlpha: 1, dash: [] as number[] }, saved: number[] = [];
+  const ctx = new Proxy(state as unknown as Record<string, unknown>, {
+    get(target, key) {
+      if (key === 'setLineDash') return (dash: number[]) => (state.dash = dash);
+      if (key === 'save') return () => saved.push(state.globalAlpha);
+      if (key === 'restore') return () => (state.globalAlpha = saved.pop() ?? 1);
+      if (key in target) return target[key as string];
+      return (...args: unknown[]) => {
+        if (key === 'drawImage') ops.push({ op: 'stamp', key: String(args[0]), alpha: state.globalAlpha, dashed: false });
+        if (key === 'fill' || key === 'stroke') ops.push({ op: String(key), key: String((target as Record<string, unknown>)[key === 'fill' ? 'fillStyle' : 'strokeStyle']), alpha: state.globalAlpha, dashed: state.dash.length > 0 });
+        if (key === 'ellipse') ops.push({ op: 'ellipse', key: '', alpha: state.globalAlpha, dashed: false });
+      };
+    },
+    set(target, key, value) {
+      target[key as string] = value;
+      return true;
+    },
+  }) as unknown as CanvasRenderingContext2D;
+  const { atlas } = scene();
+  const painter = new ArsenalFxPainter();
+  painter.begin(atlas, time, reduced, flash, detail, skills);
+  const stamps = (prefix: string) => ops.filter((o) => o.op === 'stamp' && o.key.startsWith(prefix));
+  return { ctx, painter, ops, stamps, view: makeViewport(-2000, -2000, 8000, 8000, 0) };
+}
+const zoneAt = (weapon: string, x: number, y: number, radius: number, age: number, life: number): AwakeningZone => ({ weapon: weapon as AwakeningZone['weapon'], x, y, radius, life: life - age, maxLife: life, damage: 0, next: 0, hit: [] });
+const enemyAt = (x: number, y: number, radius: number, awk: Entity['awk'] = undefined) => ({ x, y, radius, awk } as unknown as Entity);
+const bodyOf = (e: Entity, top = e.y - 40): OverlayBody => ({ x: e.x, y: e.y, top, enemy: e });
+
+test('K10 3a review 5 F2: a zone\'s rim stays, its wash and stamps fade, and its centre object hands over to its start and end parts at alpha 1', () => {
+  const at = (id: string, age: number) => {
+    const Z = zoneOf(S, id)!;
+    return zonePiece(S, Z, { prim: 'center', part: S.layout[id][Z.stage][0].parts[0], x: 0, y: 0, angle: 0, flip: false, phase: 0, prio: 0, z: 'stand' }, age, Z.life);
+  };
+  // The pillar (start and end): alpha 1 all its life; its loop between the two parts.
+  assert.deepEqual([0.06, 0.11, 0.13, 0.15, 0.84, 0.95, 0.98, 1.03, 1.14].map((a) => [at('inkLightning', a).part, at('inkLightning', a).alpha]), [
+    ['pillar-start', 1], ['pillar-start', 1], ['pillar', 1], ['pillar', 1], ['pillar', 1], ['pillar', 1], ['pillar', 1], ['pillar-end', 1], ['pillar-end', 1],
+  ]);
+  assert.equal(at('inkLightning', 1.14).progress! > 0.5, true, 'the end part plays inside the life');
+  // The spin (end only): fades in, then alpha 1 until its end part.
+  assert.deepEqual([0.1, 0.2, 0.3, 0.345, 0.355, 0.4, 0.475].map((a) => [at('twinBlades', a).part, r(at('twinBlades', a).alpha)]), [
+    ['spin', 0.67], ['spin', 1], ['spin', 1], ['spin', 1], ['spin-end', 1], ['spin-end', 1], ['spin-end', 1],
+  ]);
+  // The grave (start only): rises at alpha 1, fades over its last 0.3 s.
+  assert.deepEqual([0.05, 2.6, 2.8, 2.95].map((a) => [at('gravePins', a).part, r(at('gravePins', a).alpha)]), [['grave-rise', 1], ['grave-a', 1], ['grave-a', 0.67], ['grave-a', 0.17]]);
+  // The caltrop (neither): the zone's alpha both ways, as every other stamp, wash, and gloss.
+  assert.deepEqual([0.05, 0.75, 1.4].map((a) => r(at('pinHail', a).alpha)), [0.33, 1, 0.33]);
+  assert.equal(r(zoneFade(S, 1.14, 1.2)), 0.2);
+  // Drawn: at the pillar's last frame its rim is still whole, its stamp at alpha 1, beside a faded wash elsewhere.
+  const { ctx, painter, ops, stamps, view } = recorder('full', false, 1, 5);
+  painter.planZones([zoneAt('inkLightning', 0, 0, 40, 1.17, 1.2), zoneAt('smokeTail', 400, 0, 70, 1.9, 2)], view, 0, 0);
+  painter.drawZones(ctx, 0, 0);
+  const rims = ops.filter((o) => o.op === 'stroke' && o.dashed);
+  assert.equal(rims.length, 2, 'the two rims in one path, two dashed layers');
+  assert.ok(rims.every((o) => o.alpha === 1), 'rims at alpha 1');
+  assert.ok(ops.some((o) => o.op === 'fill' && r(o.alpha, 3) === r(0.16 * (0.1 / 0.3), 3)), 'the smoke\'s wash fades');
+  assert.deepEqual(painter.stands().map((s) => s.it.part), ['pillar']);
+  painter.drawStand(ctx, painter.stands()[0]);
+  assert.deepEqual(stamps('afx/inkLightning/').map((o) => [o.key, o.alpha]), [['afx/inkLightning/pillar-end/1', 1]]);
+});
+
+test('K10 3a: zones in their layers — floor, wash, rim, and ground stamps in the hazards; graves and pillars among the bodies; blades, arcs, and motes over them', () => {
+  const zones = [zoneAt('pinHail', 0, 0, 18, 0.5, 1.5), zoneAt('gravePins', 100, 0, 22, 1, 3), zoneAt('inkPots', 300, 0, 75, 1, 2), zoneAt('tarJar', 600, 0, 114, 0.7, 1.5), zoneAt('meteorBrush', 900, 0, 96, 1, 4), zoneAt('twinBlades', 1200, 0, 60, 0.25, 0.5), zoneAt('smokeTail', 1500, 0, 70, 1, 2), zoneAt('inkLightning', 1800, 0, 40, 0.6, 1.2)];
+  const { ctx, painter, stamps, ops, view } = recorder();
+  painter.planZones(zones, view, 0, 0);
+  painter.drawZones(ctx, 900, 0);
+  const ground = stamps('afx/').map((o) => o.key.split('/').slice(1, 3).join('/'));
+  for (const part of ['pinHail/caltrop', 'inkPots/flame', 'tarJar/jarBroken', 'tarJar/string', 'meteorBrush/crater', 'smokeTail/puff']) assert.ok(ground.some((k) => k.startsWith(part)), `${part} on the ground`);
+  for (const part of ['gravePins/', 'inkLightning/', 'twinBlades/', 'meteorBrush/mote']) assert.ok(!ground.some((k) => k.startsWith(part)), `${part} not on the ground`);
+  assert.ok(ops.some((o) => o.op === 'stroke' && !o.dashed && o.alpha === 1), 'the meteor mark\'s solid rim');
+  assert.deepEqual(painter.stands().map((s) => s.p.z.weapon).sort(), ['gravePins', 'inkLightning']);
+  for (const s of painter.stands()) assert.ok(s.bottom > s.y && s.top < s.y - 20, 'a standing piece rises over its foot');
+  ops.length = 0;
+  painter.drawZoneTops(ctx);
+  const tops = stamps('afx/').map((o) => o.key.split('/')[1]);
+  assert.ok(tops.includes('twinBlades') && tops.includes('meteorBrush'));
+  assert.equal(ops.filter((o) => o.op === 'stroke').length, 4, 'the spin\'s two arcs, two layers each');
+  // Minimal detail keeps each zone's centre object, its floor, fill, and rim.
+  const low = recorder('minimal');
+  low.painter.planZones(zones, low.view, 0, 0);
+  low.painter.drawZones(low.ctx, 0, 0);
+  low.painter.drawZoneTops(low.ctx);
+  const kept = low.stamps('afx/').map((o) => o.key.split('/')[2]);
+  for (const part of ['flame-a', 'flame-b', 'puff-a', 'puff-b', 'puff-c', 'string-a', 'string-b', 'mote-a', 'mote-b']) assert.ok(!kept.includes(part), `no ${part} at minimal`);
+  for (const part of ['jarBroken', 'crater', 'spin']) assert.ok(kept.includes(part), `${part} kept at minimal`);
+});
+
+test('K10 3a: zone stamps stay within 120/72/36 a screen (centre objects never dropped), and a meteor landing on its own mark leaves no second crater', () => {
+  const smokes = Array.from({ length: 40 }, (_, i) => zoneAt('smokeTail', (i % 8) * 150, 600 + Math.floor(i / 8) * 150, 70, 1, 2));
+  const pins = Array.from({ length: 60 }, (_, i) => zoneAt('pinHail', i * 5, 0, 18, 0.5, 1.5));
+  LODS.forEach((detail, li) => {
+    const { ctx, painter, stamps, view } = recorder(detail);
+    painter.planZones([...smokes, ...pins], view, 0, 0);
+    painter.drawZones(ctx, 0, 0);
+    assert.equal(stamps('afx/pinHail/').length, 60, `${detail}: every caltrop`);
+    assert.equal(stamps('afx/smokeTail/').length, Math.max(0, S.caps.zoneStamps[li] - 60) * (li < 2 ? 1 : 0), `${detail}: the extras fill what the cap leaves`);
+  });
+  const land = mark('meteorBrush', 0.05, 1.5, { x: 50, y: 60, radius: 160 });
+  for (const [zones, craters] of [[[zoneAt('meteorBrush', 50, 60, 96, 0.05, 4)], 0], [[zoneAt('meteorBrush', 400, 60, 96, 0.05, 4)], 1], [[], 1]] as const) {
+    const { ctx, painter, stamps, view } = recorder();
+    painter.drawDecals(ctx, [land], zones, view);
+    assert.equal(stamps('afx/meteorBrush/crater').length, craters);
+  }
+});
+
+test('K10 3a: enemy overlays — one feet overlay (a freeze never dropped, burning ink on those in an ink pots fire), one head mark by priority, crows apart, nearest the hero first', () => {
+  const t = 1;
+  const fire = zoneAt('inkPots', 0, 0, 60, 0.5, 2);
+  const inside = enemyAt(50, 0, 12), edge = enemyAt(70, 0, 12), outside = enemyAt(90, 0, 12), frozenIn = enemyAt(10, 10, 19, { freeze: 2 });
+  const { ctx, painter, stamps } = recorder('full', false, 1, t);
+  painter.planOverlays([inside, edge, outside, frozenIn].map((e) => bodyOf(e)), [fire], 0, 0);
+  assert.deepEqual([inside, edge, outside, frozenIn].map((e) => painter.overlayOf(e)?.feet ?? null), ['scorch', 'scorch', null, 'freeze'], 'by the fire\'s hit rule (R + r)');
+  painter.drawFeet(ctx, bodyOf(frozenIn));
+  painter.drawFront(ctx, bodyOf(frozenIn));
+  painter.drawFront(ctx, bodyOf(inside));
+  assert.deepEqual(stamps('afx/').map((o) => o.key.replace(/\/\d+$/, '')), ['afx/frostNeedles/freeze-back-19', 'afx/frostNeedles/freeze-front-19', 'afx/inkPots/scorch12']);
+  // Heads: silence over prey over the P2 marks; the kit draws silence and prey; a P2 mark alone keeps its vector sign.
+  const both = enemyAt(0, 0, 12, { silence: 9, prey: 9 }), prey = enemyAt(0, 0, 12, { prey: 9, fear: 9 }), fear = enemyAt(0, 0, 12, { fear: 9 }), crow = enemyAt(0, 0, 12, { crow: 9, peckAt: t - 0.05 });
+  assert.equal(headMark(S, both.awk, t), 'silence');
+  assert.equal(headMark(S, prey.awk, t), 'prey');
+  assert.equal(headMark(S, fear.awk, t), 'fear');
+  assert.equal(headMark(S, { stain: 2, stainUntil: 9 }, t), 'stain');
+  painter.planOverlays([both, prey, fear, crow].map((e) => bodyOf(e)), [], 0, 0);
+  assert.deepEqual([both, prey, fear, crow].map((e) => [painter.overlayOf(e)?.head ?? null, painter.firstMark(e), painter.overlayOf(e)?.crow ?? false]), [
+    ['silence', true, false], ['prey', true, false], [null, false, false], [null, false, true],
+  ]);
+  const before = stamps('afx/').length;
+  for (const e of [both, prey, crow]) painter.drawHead(ctx, bodyOf(e), -52);
+  assert.deepEqual(stamps('afx/').slice(before).map((o) => o.key.split('/').slice(1, 3).join('/')), ['silenceBell/mark-silence', 'huntersMarks/mark-prey', 'crowFeathers/crow', 'crowFeathers/peck']);
+  // Caps (24/16/8 heads and feet, 12/8/4 crows), nearest the hero first; every freeze stays.
+  const crowd = Array.from({ length: 40 }, (_, i) => enemyAt(100 + i * 10, 0, 12, { silence: 9, crow: 9, ...(i < 30 ? { freeze: 9 } : {}) }));
+  LODS.forEach((detail, li) => {
+    const low = recorder(detail, false, 1, t);
+    low.painter.planOverlays(crowd.map((e) => bodyOf(e)), [], 0, 0);
+    const plans = crowd.map((e) => low.painter.overlayOf(e));
+    assert.equal(plans.filter((o) => o?.head).length, S.caps.heads[li], `${detail} heads`);
+    assert.ok(plans.slice(0, S.caps.heads[li]).every((o) => o?.head), `${detail}: the nearest`);
+    assert.equal(plans.filter((o) => o?.crow).length, S.caps.crows[li], `${detail} crows`);
+    assert.equal(plans.filter((o) => o?.feet === 'freeze').length, 30, `${detail}: every freeze`);
+    assert.ok(crowd.every((e) => low.painter.firstMark(e)), 'a dropped head mark drops the lower ones too');
+  });
+});
+
+test('K10 3a: the crow circles over the head facing its way, dives to peck, and sits under reduced motion; prey tags and burning ink hold still', () => {
+  const c = S.marks.crow, q = S.overlay.crow;
+  const a = crowAt(S, 0, -40, -1, false);
+  assert.deepEqual([r(a.x), r(a.y), a.flip], [c.rx, -40 - c.lift, false]);
+  const b = crowAt(S, c.period / 4, -40, -1, false);
+  assert.deepEqual([r(b.x), r(b.y), b.flip], [0, -40 - c.lift + c.ry, true], 'flies left, mirrored');
+  const dive = crowAt(S, c.period / 4, -40, c.dive / 2, false);
+  assert.deepEqual([r(dive.x), r(dive.y), dive.pecking], [q.dive.crow[0], -40 + q.dive.crow[1], true], 'at the head mid-dive');
+  assert.deepEqual(crowAt(S, 3, -40, 0.05, true), { x: q.sit[0], y: -40 + q.sit[1], flip: false, pecking: true });
+  assert.equal(sizeClass(16, [12, 19, 28]), 19);
+  assert.equal(sizeClass(30, S.overlay.feet.scorch.r), 28);
+  // cycle: the meteor's motes rise once every 1.2 s.
+  const mote = data.parts.meteorBrush['mote-a'];
+  assert.equal(mote.drive, 'cycle');
+  assert.deepEqual([0, 0.3, 0.6, 0.9, 1.2].map((t) => partFrame(mote, 0, 1, 0, t, false, 0)), [0, 1, 2, 3, 0]);
+  assert.equal(partFrame(mote, 0, 1, 0.6, 0.9, true, 0), 2, 'its phase frame under reduced motion');
+});
+
+test('K10 3a review 5 ②: the total eclipse — disc and band on the ground under the bodies (halved under reduced flash), rim, line, corona, and ribbon over them', () => {
+  const total = mark('eclipseHalo', 0.05, 0.3, { heavy: true, radius: 276 });
+  for (const flash of [1, 0.5]) {
+    const { ctx, painter, ops, view } = recorder('full', false, flash);
+    painter.drawDecals(ctx, [total], [], view);
+    const fills = ops.filter((o) => o.op === 'fill');
+    assert.deepEqual(fills.map((o) => r(o.alpha, 3)), [r(0.2 * flash, 3), r(0.22 * flash, 3)], `disc and band at flash ${flash}`);
+    assert.ok(!ops.some((o) => o.op === 'stroke' || o.op === 'stamp'), 'nothing else on the ground');
+  }
+  const corona = (detail: 'full' | 'reduced' | 'minimal') => {
+    const { ctx, painter, ops, stamps, view } = recorder(detail);
+    painter.drawMarks(ctx, [total], view, false);
+    assert.ok(!ops.some((o) => o.op === 'fill'), `${detail}: no disc over the bodies`);
+    assert.equal(stamps('afx/eclipseHalo/ribbon').length, 1);
+    return stamps('afx/eclipseHalo/corona').length;
+  };
+  const full = corona('full');
+  assert.ok(full >= 7 && full <= 9);
+  assert.equal(corona('reduced'), Math.ceil(full / 2));
+  assert.equal(corona('minimal'), 0);
+});
+
+test('K10 3a: the triangle seal sews its edges and strikes, the scroll unrolls in place of the ink bar, and the eighth seal waits and strikes', () => {
+  const edge = (x1: number, y1: number, x2: number, y2: number, width: number, age: number, life: number): BeamEffect => ({ id: 1, x1, y1, x2, y2, width, life: life - age, maxLife: life, owner: 'player', skillId: 'trackingSeals' });
+  const tri = (width: number, age: number, life: number) => [edge(0, 0, 200, 0, width, age, life), edge(200, 0, 100, 150, width, age, life), edge(100, 150, 0, 0, width, age, life)];
+  const sew = recorder();
+  sew.painter.drawSeals(sew.ctx, tri(2, 0.3, 0.6), sew.view);
+  assert.deepEqual(sew.stamps('afx/').map((o) => o.key), Array(3).fill('afx/trackingSeals/sealCorner/1'));
+  assert.ok(sew.ops.filter((o) => o.op === 'stroke').every((o) => o.dashed), 'sewn');
+  assert.equal(sew.ops.filter((o) => o.op === 'stroke').length, 4, 'one edge and a half sewn, two layers each');
+  const hit = recorder();
+  hit.painter.drawSeals(hit.ctx, tri(8, 0.05, 0.28), hit.view);
+  assert.deepEqual(hit.stamps('afx/').map((o) => o.key), [...Array(3).fill('afx/trackingSeals/sealCorner/2'), 'afx/trackingSeals/sealStrike/0']);
+  assert.ok(hit.ops.some((o) => o.op === 'fill'), 'the paper fill in its first moment');
+  // The falling scroll's unrolling band (beam frame), its roller on the head.
+  const scroll = recorder();
+  scroll.painter.drawBeam(scroll.ctx, { id: 2, x1: 0, y1: 0, x2: 240, y2: 0, width: 50, life: 0.2, maxLife: 0.28, owner: 'player', skillId: 'fallingScroll', echo: true });
+  assert.deepEqual(scroll.stamps('afx/').map((o) => o.key.split('/')[2]), ['roller']);
+  assert.ok(scroll.ops.some((o) => o.op === 'fill' && r(o.alpha, 2) === 0.5), 'the paper band');
+  // The eighth seal: its shadow on the ground and the stitches from the seven seals while it waits.
+  const pending: ArsenalPending = { id: 'seventhSeal', x: 0, y: 0, born: 0.8, delay: 0.3, points: Array.from({ length: 7 }, (_, k) => ({ x: Math.cos(k) * 120, y: Math.sin(k) * 80 })) };
+  LODS.forEach((detail, li) => {
+    const wait = recorder(detail, false, 1, 0.95);
+    wait.painter.drawPending(wait.ctx, [pending], wait.view, true);
+    assert.equal(wait.ops.filter((o) => o.op === 'ellipse').length, 1);
+    wait.ops.length = 0;
+    wait.painter.drawPending(wait.ctx, [pending], wait.view, false);
+    assert.equal(wait.ops.filter((o) => o.op === 'stroke').length / 2, [7, 4, 0][li], `${detail} stitches`);
+  });
+  const strike = mark('seventhSeal', 0.1, 1.2, { echo: true, radius: 120 });
+  const eight = recorder();
+  eight.painter.drawDecals(eight.ctx, [strike], [], eight.view);
+  assert.deepEqual(eight.stamps('afx/').map((o) => o.key), ['afx/seventhSeal/print8/0']);
+  eight.ops.length = 0;
+  eight.painter.drawMarks(eight.ctx, [strike], eight.view, false);
+  assert.deepEqual(eight.stamps('afx/').map((o) => o.key.split('/')[2]), ['seal8'], 'no seventh seal print or ring of its own');
+  const dim = recorder('full', false, 0.5);
+  dim.painter.drawMarks(dim.ctx, [strike], dim.view, false);
+  assert.equal(dim.stamps('afx/seventhSeal/seal8')[0].alpha, 0.5, 'the big seal\'s flash halves under reduced flash');
 });

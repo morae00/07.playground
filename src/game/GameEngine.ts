@@ -128,6 +128,7 @@ import {
 
 import type {
   ArmedPattern,
+  ArsenalPending,
   AwakenedMarks,
   AwakeningZone,
   DashStep,
@@ -914,6 +915,8 @@ export class GameEngine {
   protected bossDps = 0;
   /** SYS-15: lobbed blasts on their way down, and the way the player last moved (for the weapons that fire behind). */
   protected arsenalLobs: ArsenalLob[] = [];
+  /** K10 looks only: awakening gimmicks waiting to go off (the eighth seal), for their pending art. */
+  protected arsenalPending: ArsenalPending[] = [];
   protected lastMove = { x: 1, y: 0 };
   /** FX-03: fire damage taken since the last burn number, and for how long (looks only). */
   protected burnShown = { damage: 0, time: 0 };
@@ -1069,7 +1072,7 @@ export class GameEngine {
     PICKUP_HARD_CAP,
   );
   /** Cosmetic state (particles, damage numbers, rings, shake, sound) lives here and only consumes events (TEC-02). */
-  protected presentation = new Presentation({ nextId: () => this.nextCosmeticId(), options: () => this.options, pan: (x) => this.screenPan(x), chapter: () => this.shownChapter, skills: () => this.skills, markSeconds: (id) => this.worldRenderer.markSeconds(id) });
+  protected presentation = new Presentation({ nextId: () => this.nextCosmeticId(), options: () => this.options, pan: (x) => this.screenPan(x), chapter: () => this.shownChapter, skills: () => this.skills, markSeconds: (id, echo, heavy) => this.worldRenderer.markSeconds(id, echo, heavy) });
   protected eventListeners = new Set<GameEventListener>();
   protected playerAimAngle = -Math.PI / 2;
   protected aimTargetId: number | null = null;
@@ -1359,7 +1362,7 @@ export class GameEngine {
       this.faultInjection = true;
       return 'LOOP FAULT ARMED';
     }
-    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO', 'TURN', 'PHASE', 'VFX', 'BOMB', 'FIRE', 'TERRAIN', 'BIND', 'SHOCK', 'AFX1', 'AFX2', 'AFX3', 'AFX4'].includes(code)) {
+    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO', 'TURN', 'PHASE', 'VFX', 'BOMB', 'FIRE', 'TERRAIN', 'BIND', 'SHOCK', 'AFX1', 'AFX2', 'AFX3', 'AFX4', 'AFX5', 'AFX6', 'AFX7', 'AFX8', 'AFX9', 'AFX10'].includes(code)) {
       this.invalidateInfiniteScore();
     }
     if (code === 'GOD') {
@@ -1484,8 +1487,15 @@ export class GameEngine {
     // the sizes the weapons cast it (the visual gate times its captures to these delays). AFX1: the bone mortar's six
     // look-alikes cast in turn 0.42 s on; AFX2: the chain spark's five 0.2 s on; AFX3: the four lobs thrown at once (a
     // meteor brush leftward, the cluster pots' three splitting) beside a coin, two jades, and a bone mortar shell; AFX4:
-    // six weapons awakened at level 5, one of each kind, over two hundred enemies.
-    if (/^AFX[1-4]$/.test(code)) {
+    // six weapons awakened at level 5, one of each kind, over two hundred enemies. AFX5-AFX10 stage the P1 awakening
+    // gimmicks (review 5 §6-10) with no weapons of the player's own: the ground they leave lies for its own seconds but
+    // hurts no one. AFX5: enemies standing in ink pots fire, beside smoke, tar, and the meteor's mark; AFX6: 24 caltrops
+    // and 12 graves beside a silenced enemy; AFX7: a crowd wearing the silence bell, the prey tag, and crows (one
+    // pecking), an elite and a stunned one among them; AFX8: the total eclipse round the hero over a ring of enemies, 0.1 s on; AFX9: a tracking seal triangle
+    // pending that strikes 0.6 s on, falling scrolls unrolling 0.05 and 0.55 s on, and a seventh seal's seven seals
+    // with their eighth pending, striking 0.3 s later (a second cast 0.32 s on); AFX10: lightning pillars and spins at
+    // their start, middle, and end.
+    if (/^AFX([1-9]|10)$/.test(code)) {
       const { x, y } = this.player;
       compactWhere(this.hazards, () => false);
       const radius = (id: ArsenalId) => arsenalStats(ARSENAL[id], 3, false).radius;
@@ -1497,7 +1507,100 @@ export class GameEngine {
         const delay = ARSENAL[id].delay ?? 0.6;
         this.arsenalLobs.push({ at: this.elapsed + delay, x: x + x1, y: y + y1, radius: radius(id), damage: 0, id, x0: x + x0, y0: y + y0, born: this.elapsed, delay, k, awakened: false });
       };
-      if (code === 'AFX1') {
+      // AFX5-AFX10: tough enemies that stand still and touch only, and gimmick ground at a given age that never ticks.
+      const foe = (dx: number, dy: number, tier: EnemyTier = 'small', patch: Partial<Entity> = {}) => {
+        this.spawnEnemy(1, tier);
+        const enemy = this.enemies[this.enemies.length - 1];
+        enemy.x = enemy.prevX = x + dx;
+        enemy.y = enemy.prevY = y + dy;
+        Object.assign(enemy, { hp: enemy.maxHp * 40, maxHp: enemy.maxHp * 40, speed: 0, attackStyle: 'contact', elite: undefined, bomber: undefined, ...patch });
+        return enemy;
+      };
+      const ground = (weapon: ArsenalId, dx: number, dy: number, radius: number, seconds: number, age = 0) => {
+        this.zones.push({ weapon, x: x + dx, y: y + dy, radius, life: seconds - age, maxLife: seconds, damage: 0, next: Number.POSITIVE_INFINITY, hit: [] });
+      };
+      const A = AWAKENINGS;
+      if (Number(code.slice(3)) >= 5) {
+        this.skills = {};
+        this.skillCooldowns = {};
+        this.pendingAwakenings = [];
+        this.recalculateStats(false);
+        compactWhere(this.zones, () => false);
+        compactWhere(this.arsenalPending, () => false);
+        compactWhere(this.pickups, () => false);
+      }
+      if (code === 'AFX5') {
+        // An ink pots fire (0.6 of an awakened level 5 pot's reach) with three enemies in it, one at its edge, one just
+        // outside; beside it the other ground of awakened level 5 lobs and pins: smoke, a tar gathering, and the meteor's
+        // mark under the hero.
+        const reach = (id: ArsenalId) => arsenalStats(ARSENAL[id], 5, true).radius, r = reach('inkPots') * A.inkPots.area;
+        ground('meteorBrush', 0, 0, reach('meteorBrush') * A.meteorBrush.area, A.meteorBrush.seconds, 1);
+        ground('inkPots', -320, 40, r, A.inkPots.seconds, 0.4);
+        ground('smokeTail', 320, -160, A.smokeTail.radius, A.smokeTail.seconds, 0.5);
+        ground('tarJar', 300, 170, reach('tarJar'), A.tarJar.seconds, 0.3);
+        foe(-365, 20);
+        foe(-295, 45, 'medium');
+        foe(-340, 85);
+        foe(-320 + r * 0.9, -10);
+        foe(-320 - r - 40, 100);
+      } else if (code === 'AFX6') {
+        // Caltrops where a spray of pins ended, graves where three fans of grave pins did (two still rising), and a silenced enemy between.
+        for (let k = 0; k < 24; k += 1) ground('pinHail', -260 + Math.cos(k * 2.39996) * (30 + 26 * Math.sqrt(k)), -10 + Math.sin(k * 2.39996) * (20 + 17 * Math.sqrt(k)), A.pinHail.radius, A.pinHail.seconds, 0.3);
+        for (let k = 0; k < 12; k += 1) {
+          const fan = Math.floor(k / 4), spread = (k % 4) - 1.5, grave = () => ground('gravePins', 170 + fan * 95 + spread * 8, -120 + fan * 40 + spread * 62, A.gravePins.radius, A.gravePins.seconds, k === 3 || k === 6 ? 0 : 0.6);
+          if (k === 3 || k === 6) this.after(0.24, grave);
+          else grave();
+        }
+        foe(-40, -150, 'small', { awk: { silence: Number.POSITIVE_INFINITY } });
+        foe(40, 150, 'medium');
+      } else if (code === 'AFX7') {
+        // A crowd: silence bells, prey tags, crows (one pecking at the capture), a frozen one, a frightened one (P2's vector sign), an elite, and a stunned one.
+        const marks: [number, number, EnemyTier, Partial<Entity>][] = [
+          [-300, -90, 'small', { awk: { silence: 1e9 } }], [-210, -150, 'medium', { awk: { prey: 1e9 } }], [-120, -120, 'small', { awk: { crow: 1e9, crowAt: 1e9, pecks: 0 } }],
+          [-30, -170, 'small', { awk: { silence: 1e9, prey: 1e9 } }], [70, -140, 'medium', { elite: 'haste', awk: { silence: 1e9 } }], [170, -110, 'small', { stun: 1e9, awk: { prey: 1e9 } }],
+          [270, -150, 'small', { awk: { crow: 1e9, crowAt: 1e9, pecks: 0, peckAt: this.elapsed + 0.25 } }], [330, -50, 'large', { awk: { silence: 1e9, crow: 1e9, crowAt: 1e9, pecks: 0 } }],
+          [-330, 60, 'small', { awk: { fear: 1e9 } }], [-230, 120, 'small', { awk: { freeze: 1e9 }, stun: 1e9 }], [-120, 90, 'medium', { awk: { prey: 1e9, crow: 1e9, crowAt: 1e9, pecks: 0 } }],
+          [120, 110, 'small', { elite: 'shield', awk: { prey: 1e9 } }], [220, 90, 'small', { awk: { silence: 1e9 } }], [300, 150, 'medium', { stun: 1e9, awk: { silence: 1e9, crow: 1e9, crowAt: 1e9, pecks: 0 } }],
+          [0, 170, 'small', {}],
+        ];
+        for (const [dx, dy, tier, patch] of marks) foe(dx, dy, tier, patch);
+      } else if (code === 'AFX8') {
+        // The total eclipse of an awakened level 5 halo, round the hero over a ring of enemies (the disc and band under them).
+        const R = arsenalStats(ARSENAL.eclipseHalo, 5, true).radius;
+        for (let k = 0; k < 10; k += 1) foe(Math.cos(k * 0.63 + 0.3) * R * (0.45 + 0.4 * (k % 3) / 2), Math.sin(k * 0.63 + 0.3) * R * 0.62 * (0.45 + 0.4 * (k % 3) / 2), k % 4 ? 'small' : 'medium');
+        this.after(0.2, () => this.skillMark('ring', 'eclipseHalo', this.player.x, this.player.y, R, true));
+      } else if (code === 'AFX9') {
+        // A tracking seal triangle pending (its edges, width 2), striking 0.6 s on (width 8), as the engine lays them.
+        const p = [[-410, -10], [-220, -150], [-130, 10]];
+        const seal = (width: number, life: number) => {
+          for (let k = 0; k < 3; k += 1) this.beams.push({ id: this.nextId(), x1: x + p[k][0], y1: y + p[k][1], x2: x + p[(k + 1) % 3][0], y2: y + p[(k + 1) % 3][1], width, life, maxLife: life, owner: 'player', skillId: 'trackingSeals' });
+        };
+        seal(2, A.trackingSeals.delay);
+        this.after(A.trackingSeals.delay, () => seal(8, 0.28));
+        // Falling scrolls unrolling away from the hero at their hit width, one for each look.
+        const scroll = () => this.beams.push({ id: this.nextId(), x1: x - 60, y1: y + 120, x2: x - 60 + A.fallingScroll.length, y2: y + 180, width: A.fallingScroll.width, life: 0.28, maxLife: 0.28, owner: 'player', skillId: 'fallingScroll', echo: true });
+        this.after(0.18, scroll);
+        this.after(0.54, scroll);
+        // A seventh seal's seven seals round a centre and its eighth pending, striking 0.3 s later; a second cast for the second look.
+        const sevenths = (cx: number, cy: number) => {
+          const spots = Array.from({ length: 7 }, (_, k) => ({ x: x + cx + Math.cos(k * 0.9 + 0.4) * 130 * (0.5 + (k % 3) * 0.25), y: y + cy + Math.sin(k * 0.9 + 0.4) * 80 * (0.5 + (k % 3) * 0.25) }));
+          for (const spot of spots) this.emit({ type: 'area/blast', ...spot, radius: arsenalStats(ARSENAL.seventhSeal, 5, true).radius, source: 'seventhSeal' });
+          const centre = { x: spots.reduce((sum, q) => sum + q.x, 0) / 7, y: spots.reduce((sum, q) => sum + q.y, 0) / 7 };
+          this.arsenalPending.push({ id: 'seventhSeal', ...centre, born: this.elapsed, delay: A.seventhSeal.delay, points: spots });
+          this.after(A.seventhSeal.delay, () => this.emit({ type: 'area/blast', ...centre, radius: A.seventhSeal.radius, source: 'seventhSeal', echo: true }));
+        };
+        this.after(0.12, () => sevenths(250, -110));
+        this.after(0.32, () => sevenths(280, 150));
+        foe(-260, -60);
+        foe(130, 20, 'medium');
+      } else if (code === 'AFX10') {
+        // Lightning pillars and spinning blades at their start, middle, just before and at their end, 0.3 s on (review 5 F2:
+        // pillars 0.06, 0.6, 0.97, 1.05 s into their 1.2; blades 0.1, 0.3, 0.345, 0.42 into their 0.5).
+        [-0.24, 0.3, 0.67, 0.75].forEach((age, k) => (age < 0 ? this.after(-age, () => ground('inkLightning', -430 + k * 120, -60, A.inkLightning.radius, A.inkLightning.seconds)) : ground('inkLightning', -430 + k * 120, -60, A.inkLightning.radius, A.inkLightning.seconds, age)));
+        [-0.2, 0, 0.045, 0.12].forEach((age, k) => (age < 0 ? this.after(-age, () => ground('twinBlades', -330 + k * 150, 130, A.twinBlades.radius, A.twinBlades.seconds)) : ground('twinBlades', -330 + k * 150, 130, A.twinBlades.radius, A.twinBlades.seconds, age)));
+        foe(280, -60);
+        foe(330, 120, 'medium');
+      } else if (code === 'AFX1') {
         const cells: [ArsenalId, number, number, number][] = [['brushDownpour', -470, -200, 4], ['fallingScroll', 0, -200, 1], ['inkPulse', 470, -200, 1], ['inkPots', -470, 210, 1], ['clusterPots', 0, 210, 3], ['meteorBrush', 470, 210, 1]];
         cells.forEach(([id, dx, dy, n], i) => this.after(0.42 + i * 0.02, () => blast(id, dx, dy, n)));
       } else if (code === 'AFX2') {
@@ -2008,6 +2111,7 @@ export class GameEngine {
     this.bossDps = 0;
     this.hordeCarry = { xp: 0, coin: 0 };
     this.arsenalLobs = [];
+    this.arsenalPending = [];
     this.later = [];
     this.zones = [];
     this.casts = {};
@@ -2624,9 +2728,12 @@ export class GameEngine {
         let sumX = 0;
         let sumY = 0;
         let marks = 0;
+        // K10 looks only: where the awakened seventh seal's seals land, for the eighth's pending art.
+        const spots = awake && id === 'seventhSeal' ? [] as { x: number; y: number }[] : null;
         for (let index = 0; index < stats.count && pool.length > 0; index += 1) {
           const [target] = pool.splice(Math.floor(this.gameplayRandom() * pool.length), 1);
           const { x, y } = target;
+          spots?.push({ x, y });
           // SYS-16 거세지는 폭우: each mark of a downpour lands wider than the last.
           this.arsenalBlast(id, x, y, (weapon.radius ? stats.radius : 56) * (awake && id === 'brushDownpour' ? 1 + A.brushDownpour.growth * index : 1), damage);
           sumX += x;
@@ -2637,7 +2744,10 @@ export class GameEngine {
           if (awake && id === 'fallingScroll') this.echoing(() => this.sweep(id, x, y, Math.atan2(y - py, x - px), A.fallingScroll.length, A.fallingScroll.width, damage * A.fallingScroll.damage, 0));
         }
         // SYS-16 여덟째 인장: one more seal goes off in the middle of the seven.
-        if (awake && id === 'seventhSeal' && marks > 0) this.after(A.seventhSeal.delay, () => this.echoBlast(id, sumX / marks, sumY / marks, A.seventhSeal.radius, damage * A.seventhSeal.damage));
+        if (awake && id === 'seventhSeal' && marks > 0) {
+          this.after(A.seventhSeal.delay, () => this.echoBlast(id, sumX / marks, sumY / marks, A.seventhSeal.radius, damage * A.seventhSeal.damage));
+          this.arsenalPending.push({ id, x: sumX / marks, y: sumY / marks, born: this.elapsed, delay: A.seventhSeal.delay, points: spots! });
+        }
         break;
       }
       case 'nova':
@@ -2898,6 +3008,7 @@ export class GameEngine {
       if (zone.life > 0) this.updateZone(zone, dt, t);
     }
     compactWhere(this.zones, (zone) => zone.life > 0);
+    compactWhere(this.arsenalPending, (pending) => pending.born + pending.delay > t);
     for (const enemy of this.enemies) if (enemy.awk && enemy.hp > 0) this.updateMarks(enemy, enemy.awk, t);
   }
 
@@ -2974,6 +3085,7 @@ export class GameEngine {
     if ((marks.pecks ?? 0) > 0 && (marks.crowAt ?? 0) <= t) {
       marks.pecks = (marks.pecks ?? 0) - 1;
       marks.crowAt = (marks.crowAt ?? t) + A.crowFeathers.tick;
+      marks.peckAt = t;
       this.echoHit(enemy, this.weaponHit('crowFeathers') * A.crowFeathers.damage, 'crowFeathers');
     }
   }
@@ -5589,7 +5701,7 @@ export class GameEngine {
         marks.frost = 0;
         marks.frostAt = t;
         this.stun(enemy, row.freeze, awoken);
-        enemy.frostUntil = enemy.frostRootUntil = t + row.freeze;
+        enemy.frostUntil = enemy.frostRootUntil = marks.freeze = t + row.freeze;
         break;
       case 'judgmentLine':
         // 심판의 값: what the line executes leaves twice the XP and coins.
@@ -6303,6 +6415,7 @@ export class GameEngine {
       laneTelegraphs: this.laneTelegraphs,
       chains: this.chains,
       lobs: this.arsenalLobs,
+      pending: this.arsenalPending,
       coinFrenzy: this.coinFeverRushTimer,
       objectiveMarks: this.stageObjective?.marks() ?? NO_MARKS,
       effects: this.presentation,

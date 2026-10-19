@@ -408,20 +408,24 @@ test('K11: a shock that went off stays 1.45 s (burst, then its mark) by its own 
   assert.equal(presentation.shocks.length, 0);
 });
 
-test('K10: a weapon blast lasts as long as the kit draws it, a gimmick\'s echo keeps the look\'s ring, and the lob\'s way rides along', () => {
+test('K10: a weapon blast lasts as long as the kit draws it, a gimmick\'s echo as the kit draws it or the look\'s ring, and the lob\'s way rides along', () => {
   let id = 0;
   const options = { ...createDefaultOptions(), volume: 0 };
   const seconds: Partial<Record<string, number>> = { seventhSeal: 1.2, meteorBrush: 1.5, eclipseHalo: 0.3 };
-  const presentation = new Presentation({ nextId: () => (id += 1), options: () => options, pan: () => 0, chapter: () => 1, markSeconds: (skillId) => seconds[skillId] });
+  // The host knows the kit's gimmicks: the eighth seal (an echo) lasts through its print, the total eclipse (heavy) its sweep.
+  const gimmicks: Partial<Record<string, number>> = { seventhSeal: 1.2 };
+  const presentation = new Presentation({ nextId: () => (id += 1), options: () => options, pan: () => 0, chapter: () => 1, markSeconds: (skillId, echo, heavy) => (echo ? gimmicks[skillId] : heavy ? 0.3 : seconds[skillId]) });
   presentation.reseed(1234);
   presentation.handle({ type: 'area/blast', x: 0, y: 0, radius: 58, source: 'seventhSeal' });
   presentation.handle({ type: 'area/blast', x: 0, y: 0, radius: 120, source: 'seventhSeal', echo: true });
   presentation.handle({ type: 'area/blast', x: 0, y: 0, radius: 160, source: 'meteorBrush', dir: -1 });
   presentation.handle({ type: 'area/blast', x: 0, y: 0, radius: 160, source: 'boneMortar' });
   presentation.addSkillMark('ring', 'eclipseHalo', 0, 0, 230, true, 0, 0);
+  presentation.handle({ type: 'area/blast', x: 0, y: 0, radius: 145, source: 'thunderclap', echo: true });
   assert.deepEqual(presentation.skillMarks.map((mark) => [mark.skillId, mark.maxLife, mark.echo ?? false, mark.dir ?? 0]), [
-    ['seventhSeal', 1.2, false, 0], ['seventhSeal', SKILL_MARK_SECONDS.ring, true, 0], ['meteorBrush', 1.5, false, -1], ['boneMortar', SKILL_MARK_SECONDS.ring, false, 0], ['eclipseHalo', SKILL_MARK_SECONDS.ring, false, 0],
+    ['seventhSeal', 1.2, false, 0], ['seventhSeal', 1.2, true, 0], ['meteorBrush', 1.5, false, -1], ['boneMortar', SKILL_MARK_SECONDS.ring, false, 0], ['eclipseHalo', 0.3, false, 0],
+    ['thunderclap', SKILL_MARK_SECONDS.ring, true, 0],
   ]);
-  assert.deepEqual(presentation.skillMarks.map((mark) => mark.seed), [1, 2, 3, 4, 5], 'the presentation\'s own serials');
+  assert.deepEqual(presentation.skillMarks.map((mark) => mark.seed), [1, 2, 3, 4, 5, 6], 'the presentation\'s own serials');
   assert.equal(id, 0, 'no game or cosmetic id is drawn (BUG-08)');
 });

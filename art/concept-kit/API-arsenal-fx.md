@@ -1,4 +1,4 @@
-# API — `k-arsenal-fx.js` · `PN.arsenalFx` v1.0-d2r1 (무기 44종 전장 효과 — 납품 2: lob 비행, 수정 1회차)
+# API — `k-arsenal-fx.js` · `PN.arsenalFx` v1.0-d3a-r1 (무기 44종 전장 효과 — 납품 3, 1회: 각성 기믹 P1, 검수 5차 수정)
 
 작업 지시서: `docs/art/briefs/arsenal-fx.md`(K10, R5 추가 발주 B7, 2026-10-16). 끝의 §12 메인 세션 결정과 §13 검수 1차 정정이 본문보다 앞선다(열린 질문 Q1~Q13은 모두 권고안).
 같은 물건의 꼴 기준: K9 검수 7차 §7(`docs/art/deliveries/K9-arsenal-icons.md`)과 그 뒤 R7·F2. 대조한 K9 아이콘 해시(평상/각성)는 유성 붓 `f0ap7s`/`1eekf35`, 타르 항아리 `1mq1jnw`/`chm7dz`, 일곱째 인장 `11totq1`/`1s8ck17`이다.
@@ -12,7 +12,9 @@
 | 1차 수정 1회차 | 2026-10-19 | 검수 1차(`docs/art/deliveries/K10-arsenal-fx.md` '## K10 검수 1차') 필수 M1~M4와 권장 R1~R4. 새 매개 도형 `punch`(§7.3)·`splash`(§7.3a)·`tilt`(§7.3b), 유성 붓 `streak-a/b` 삭제(141 → 137장), 착탄 물건 다시 그림(먹단지·송이 단지 0번 장, 타르 항아리·유성 붓·인영 셋, 족자는 똑바로), 서리 결정·손뼉·얼음판 금. `SPEC.version` `1.0-d1r1`. 보존 해시는 §11 |
 | 2차 | 2026-10-19 | lob 비행 4종: `flight` 단계(§9.1), 비행 물건 조각 32장(`pot`·`pot-awakened`, `pot-s`·`pot-m`, `jar`·`jar-awakened`, `comet`·`comet-awakened`), 갈라짐용 `mini` 4장, `SPEC.flight`(§7.7), `lobPath`의 `mini` 경로(§8.4), 그림자 채움 `lob.shadow`(§7.9). 검수 3차 판단 1의 `print-c` 붓 획. `SPEC.version` `1.0-d2`. 바뀐 기존 출력은 `print-c` 한 장뿐이다(§11) |
 | 2차 수정 1회차 | 2026-10-19 | 검수 4차('## K10 검수 4차') F1·F2, 규칙만(그림 그대로): F1 먹단지 `pot`·`pot-awakened`를 prog(비행 진행률로 한 번 구름, `SPEC.flight.inkPots.frame` `'progress'`), F2 유성 붓 착탄 좌우 반전 규칙(`SPEC.flight.meteorBrush.landMirror`, 참고 합성 `draw(…, 'land', {dir: −1})`). `SPEC.version` `1.0-d2r1`. 보존 해시는 §11 |
-| 3차 | — | 각성 기믹 P1 17종 → P2, 적 오버레이, `overlays` 목록, 이 문서의 기믹 절 |
+| 3차 1회(3a) | 2026-10-19 | 각성 기믹 **P1 17종**(§14): 땅 조각 8종(`SPEC.zone`), 삼각 봉인·펼쳐지는 족자·여덟째 인장·개기일식·거세지는 폭우(`SPEC.gimmick`), 적 오버레이 5종(`overlays` = silence, prey, crow, freeze, scorch, `SPEC.overlay`). 새 조각 107장(새 그룹 8 + 기존 그룹 끝에 붙임), `SPEC.layout`에 기믹 단계, `SPEC.fills` 9줄. `SPEC.version` `1.0-d3a`. 기존 출력은 그대로다(§11 `k10-keep-all-d3a`) |
+| 3차 1회 수정(3a-r1) | 2026-10-19 | 검수 5차('## K10 검수 5차') F1·F2·R3: F1 불먹 발밑 불길 `scorch12/19/28/38/54`를 땅 조각 불길(`flame-a/b`) 문체의 덩이 1~3개로 다시 그림(박스·앵커·장 수·drive·층·r 그대로), F2 땅 조각 가운데 물건의 loop·idx 장 α 규칙(§14.3), R3 §1 의존 문장. `SPEC.version` `1.0-d3a-r1`. 바뀐 출력은 scorch 다섯 조각(10장)과 그것을 쓰는 `overlay('scorch')`·불먹 맥락 그림, 번개 기둥·회전 베기 참고 합성뿐이다(§11 `k10-keep-3a-r1`) |
+| 3차 2회 | — | 각성 기믹 P2(§4.1의 P2 전부: 표식·발 오버레이·이어지는 효과), 남은 `overlays` |
 
 안 그린 단계·조각은 `META.stages`·`gimmicks`·`groups`에 없다. 그래서 지시서 §7.2의 명령이 납품마다 그대로 돈다. 메인 세션은 `META[id].done.fx === true`인 것만 등록한다.
 
@@ -24,7 +26,7 @@
 ```
 
 - 모든 선언은 IIFE 안에 있다(`window.PN = window.PN || {}`).
-- **의존 없음.** 다른 킷 모듈(`PN.skillVfx`·`PN.arsenal`(K9)·`PN.hazards`(K11)·`PN.env`·`PN.heroKit`·`PN.enemies`)을 부르지도 읽지도 않는다. `lib.js`의 도우미도 쓰지 않는다(모듈 안의 도우미만 쓴다). 그래서 로드 순서에 매이지 않는다.
+- **의존 없음.** 다른 킷 모듈(`PN.skillVfx`·`PN.arsenal`(K9)·`PN.hazards`(K11)·`PN.env`·`PN.heroKit`·`PN.enemies`)을 부르지도 읽지도 않는다. `lib.js`의 도우미도 쓰지 않는다(모듈 안의 도우미만 쓴다). 그래서 로드 순서에 매이지 않는다. 참고 합성 `context: true`만 `PN.enemies`·`PN.heroKit`을 읽는다(§14.9). `stamp`와 기본 `draw`는 의존 없음.
 - 굽기: 메인 세션이 `scripts/build-atlas.mjs:11`의 `KIT_FILES`에서 `'k-icons2.js'` 바로 뒤에 넣는다. 리뷰 시트는 이름순으로 자동으로 읽는다.
 - 반환은 늘 `<g class="kaf kaf-<group 또는 id>"><defs>…</defs>…</g>` 하나다. 호출마다 `kaf<N>_` 접두를 쓰는 `Ctx`를 갖지만, 1차 그림은 id를 쓰지 않는다(클립·패턴·필터 없음). 카운터는 되감지 않는다.
 - 결정적이다. `Math.random`·`Date`가 없다. 들쭉날쭉한 값은 모두 `jit(seed, i)`(§8.1)다. id를 빼면 같은 호출의 출력은 같다.
@@ -47,13 +49,13 @@
 
 ```js
 PN.arsenalFx = {
-  version: '1.0',   // 납품 단계는 SPEC.version(지금 '1.0-d2r1')
+  version: '1.0',   // 납품 단계는 SPEC.version(지금 '1.0-d3a-r1')
   K,          // 토큰 11개(§7.1). 이름은 PN.skillVfx.K와 같고 값은 구현값 hex
   ids,        // 44개, src/content/data/arsenal.ts 순서
   kinds,      // ['volley','burst','spray','rear','seeker','strike','nova','lob','chain','beam','halo']
   META,       // §4 (얼려 있음)
-  groups,     // 조각이 있는 무기 id: 1차 22개
-  overlays,   // 적 오버레이 키: 1차 [] (3차)
+  groups,     // 조각이 있는 무기 id: 1차 22개, 3a부터 30개(투사체 무기 8개가 기믹 조각으로 더해짐)
+  overlays,   // 적 오버레이 키: 3a ['silence', 'prey', 'crow', 'freeze', 'scorch'](P2 키는 3차 2회)
   SPEC,       // §7. 토큰 이름·숫자·영어 낱말만 → 매니페스트에 그대로
   jit,        // jit(seed, i) → 0..1
   parts(group),                        // → [{part, frames, drive, fps, seconds, still, box, anchor, place, rotate, layer, lod, flash, window, r?}] (복사본)
@@ -62,7 +64,7 @@ PN.arsenalFx = {
   paths(id, stage, opts),              // → { 이름: [[x, y], …] } 매개 도형의 정의 점(C9, §8.3). 수정 1회차에 splash·drops·tilt 키가 더해졌다
   lobPath(id, { x0, y0, x1, y1, t, mini? }),  // → { x, y, h, angle, shadow: { rx, ry, alpha } } (§8.4). mini는 송이 단지만
   draw(id, stage, opts),               // 참고 합성(리뷰·골든). 원점은 §2, lob 'flight'는 던진 자리
-  overlay(key, opts),                  // 1차: 모든 key가 모르는 key
+  overlay(key, opts),                  // 3a: silence, prey, crow, freeze, scorch(§14.5). 원점 = 적의 발, opts.r·top·t·peck·layer
 };
 ```
 
@@ -80,8 +82,11 @@ PN.arsenalFx = {
 | `radius`, `inner`, `length`, `width`, `points` | `geo`에서 | 덮어쓰기(덮어쓴 값에는 각성 ×1.2를 다시 곱하지 않는다). `points`는 `[{x, y, r?}]` 또는 `[[x, y]]` |
 | `lod` | `'full'` | `'full'`·`'reduced'`·`'minimal'` |
 | `reduced` | false | 감소 모션 |
-| `ch` | 1 | 1~5. 1차는 쓰지 않는다(3차 맥락 그림용) |
-| `context` | false | 1차는 쓰지 않는다(3차 C5) |
+| `ch` | 1 | 1~5. 맥락 그림(`context`)의 장 |
+| `context` | false | 3a부터: 기믹 단계의 참고 합성에 맥락(그 장의 먹귀, 결)을 함께 그린다(C5, §14.8). 주 단계·비행에는 쓰지 않는다 |
+| `peck` | 없음 | `overlay('crow')`·`draw('crowFeathers', 'crow')`만: 까마귀 쪼기 틱(자료 `crowAt`) 뒤 초. 0 ≤ peck < 0.12면 쪼기를 그린다(§14.5). 없으면 맴돌기만(기본 출력) |
+| `layer` | 없음 | `overlay`만: `'feet'`·`'front'`·`'head'` 중 그 층의 조각만(§14.5). 없으면 셋 다 그 순서로(기본 출력) |
+| `r`, `top` | 12, −30 | `overlay`만: 적 반지름(크기 등급), 스프라이트 꼭대기 y |
 
 **잘못된 호출**(C7 5줄 ok)
 - `parts(모르는 group)`, `stamp(모르는 group, …)`, `stamp(group, 모르는 part)`: `throw new Error('PN.arsenalFx: unknown …')`. 굽기가 조용히 다른 그림을 굽지 않게 한다.
@@ -97,9 +102,9 @@ PN.arsenalFx = {
 | inkDarts | 먹침 | common | volley | needleStorm | — | — | — | 먹 얼룩 P2 | ✗/✗/✗ |
 | brushQuills | 붓깃 | common | volley | fanKnives | — | — | — | 늦게 터지는 붓자국 P2 | ✗/✗/✗ |
 | sealArrows | 인장 화살 | rare | volley | needleStorm | — | — | — | 도미노 P2 | ✗/✗/✗ |
-| frostNeedles | 서리침 | rare | volley | needleStorm | — | — | — | 동결 P1 · 서리 수 P2 | ✗/✗/✗ |
+| frostNeedles | 서리침 | rare | volley | needleStorm | — | freeze | — | 동결 P1 · 서리 수 P2 | ✗/✗/✓ |
 | thunderNeedles | 뇌침 | rare | volley | needleStorm | — | — | — | 감전 도약 P2 | ✗/✗/✗ |
-| twinBlades | 쌍날 | common | volley | fanKnives | — | — | — | 회전 베기 P1 | ✗/✗/✗ |
+| twinBlades | 쌍날 | common | volley | fanKnives | — | spin | spin | 회전 베기 P1 | ✗/✗/✓ |
 | ghostVolley | 혼령 일제사격 | epic | volley | mirrorClone | — | — | — | (P3) | ✗/✗/✗ |
 | headsmanDarts | 망나니 침 | legendary | volley | needleStorm | — | — | — | 공포 P2 | ✗/✗/✗ |
 | paperStorm | 종이 폭풍 | rare | burst | fanKnives | — | — | — | (그림 없음) | ✗/✗/✗ |
@@ -108,26 +113,26 @@ PN.arsenalFx = {
 | starShards | 별조각 | epic | burst | mirrorClone | — | — | — | (P3) | ✗/✗/✗ |
 | sunNeedles | 해바늘 | mythic | burst | needleStorm | — | — | — | 작열 P2(렌더러 배율) | ✗/✗/✗ |
 | inkDrizzle | 먹 이슬비 | common | spray | needleStorm | — | — | — | (그림 없음) | ✗/✗/✗ |
-| pinHail | 핀 우박 | rare | spray | fanKnives | — | — | — | 마름쇠 P1 | ✗/✗/✗ |
+| pinHail | 핀 우박 | rare | spray | fanKnives | — | caltrop | caltrop-a | 마름쇠 P1 | ✗/✗/✓ |
 | tailGuard | 꼬리 방패 | common | rear | fanKnives | — | — | — | 배후 응징 P2 | ✗/✗/✗ |
-| smokeTail | 연막 꼬리 | rare | rear | needleStorm | — | — | — | 연막 P1 · 헤맴 P2 | ✗/✗/✗ |
-| gravePins | 묘침 | epic | rear | needleStorm | — | — | — | 묘비 P1 · 묶임 P2 | ✗/✗/✗ |
-| trackingSeals | 추적 인장 | rare | seeker | needleStorm | — | — | — | 삼각 봉인 P1 | ✗/✗/✗ |
-| huntersMarks | 사냥꾼 표식 | epic | seeker | mirrorClone | — | — | — | 사냥감 P1 | ✗/✗/✗ |
-| crowFeathers | 까마귀 깃 | rare | seeker | fanKnives | — | — | — | 까마귀 떼 P1 | ✗/✗/✗ |
+| smokeTail | 연막 꼬리 | rare | rear | needleStorm | — | smoke | puff-a | 연막 P1 · 헤맴 P2 | ✗/✗/✓ |
+| gravePins | 묘침 | epic | rear | needleStorm | — | grave | grave-a | 묘비 P1 · 묶임 P2 | ✗/✗/✓ |
+| trackingSeals | 추적 인장 | rare | seeker | needleStorm | — | triangle | sealStrike | 삼각 봉인 P1 | ✗/✗/✓ |
+| huntersMarks | 사냥꾼 표식 | epic | seeker | mirrorClone | — | prey | mark-prey | 사냥감 P1 | ✗/✗/✓ |
+| crowFeathers | 까마귀 깃 | rare | seeker | fanKnives | — | crow | crow | 까마귀 떼 P1 | ✗/✗/✓ |
 | bossbane | 보스 사냥침 | legendary | seeker | needleStorm | — | — | — | 균열 P2 | ✗/✗/✗ |
-| inkLightning | 먹번개 | rare | strike | chainSpark | impact | impact | bolt | 번개 기둥 P1 | ✓/✗/✗ |
-| brushDownpour | 붓 폭우 | epic | strike | boneMortar | impact | impact | stroke-a | 거세지는 폭우 P1(새 그림 없음, §12-25) | ✓/✗/✗ |
-| fallingScroll | 족자 낙하 | epic | strike | boneMortar | impact | impact | scroll | 펼쳐지는 족자 P1 | ✓/✗/✗ |
-| seventhSeal | 일곱째 인장 | mythic | strike | voidMine | impact | impact | seal | 여덟째 인장 P1 | ✓/✗/✗ |
+| inkLightning | 먹번개 | rare | strike | chainSpark | impact | impact, pillar | bolt | 번개 기둥 P1 | ✓/✗/✓ |
+| brushDownpour | 붓 폭우 | epic | strike | boneMortar | impact | impact, surge | stroke-a | 거세지는 폭우 P1(새 그림 없음, §12-25) | ✓/✗/✓ |
+| fallingScroll | 족자 낙하 | epic | strike | boneMortar | impact | impact, unroll | scroll | 펼쳐지는 족자 P1 | ✓/✗/✓ |
+| seventhSeal | 일곱째 인장 | mythic | strike | voidMine | impact | impact, eighth | seal | 여덟째 인장 P1 | ✓/✗/✓ |
 | inkPulse | 먹 파동 | common | nova | boneMortar | burst | burst | null | 밀쳐 부딪힘 P2 | ✓/✗/✗ |
 | frostRing | 서리 고리 | rare | nova | blackSun | burst | burst | shard-a | (P3) | ✓/✗/✗ |
 | thunderclap | 천둥 박수 | epic | nova | chainSpark | burst | burst | clap | 메아리 P2 | ✓/✗/✗ |
-| silenceBell | 침묵의 종 | legendary | nova | voidMine | burst | burst | bell | 침묵 P1 | ✓/✗/✗ |
-| inkPots | 먹단지 | common | lob | boneMortar | land | land, flight | pot | 불먹 P1 | ✓/✓/✗ |
+| silenceBell | 침묵의 종 | legendary | nova | voidMine | burst | burst, silence | bell | 침묵 P1 | ✓/✗/✓ |
+| inkPots | 먹단지 | common | lob | boneMortar | land | land, flight, fire | pot | 불먹 P1 | ✓/✓/✓ |
 | clusterPots | 송이 단지 | rare | lob | boneMortar | land | land, flight | pot-m | 갈라짐 P2 | ✓/✓/✗ |
-| tarJar | 타르 항아리 | epic | lob | voidMine | land | land, flight | jar | 끈끈이 모음 P1 | ✓/✓/✗ |
-| meteorBrush | 유성 붓 | legendary | lob | boneMortar | land | land, flight | comet | 별똥 자국 P1 · 결 가속 P2 | ✓/✓/✗ |
+| tarJar | 타르 항아리 | epic | lob | voidMine | land | land, flight, gather | jar | 끈끈이 모음 P1 | ✓/✓/✓ |
+| meteorBrush | 유성 붓 | legendary | lob | boneMortar | land | land, flight, mark | comet | 별똥 자국 P1 · 결 가속 P2 | ✓/✓/✓ |
 | sparkThread | 불꽃실 | common | chain | chainSpark | jump | jump | spark | 되감김 P2 | ✓/✗/✗ |
 | stormThread | 폭풍실 | epic | chain | chainSpark | jump | jump | null | 증폭 P2 | ✓/✗/✗ |
 | frostChainlet | 서리 사슬 | rare | chain | chainSpark | jump | jump | null | 묶인 사슬 P2 | ✓/✗/✗ |
@@ -137,12 +142,13 @@ PN.arsenalFx = {
 | judgmentLine | 심판선 | mythic | beam | railSpear | stroke | stroke | inkbox | (P3) | ✓/✗/✗ |
 | inkOrbit | 먹 궤도 | common | halo | orbitScythes | sweep | sweep | null | 되받기 P2 | ✓/✗/✗ |
 | wardRing | 수호 고리 | rare | halo | eclipseStep | sweep | sweep | knot-a | 약화 P2 | ✓/✗/✗ |
-| eclipseHalo | 일식 테 | legendary | halo | eclipseStep | sweep | sweep | ribbon-a | 개기일식 P1 | ✓/✗/✗ |
+| eclipseHalo | 일식 테 | legendary | halo | eclipseStep | sweep | sweep, total | ribbon-a | 개기일식 P1 | ✓/✗/✓ |
 
 - `object`: lob 4종은 1차에 착탄 조각(shatter·burst·crack·impact)을 적었고, 2차부터 비행 물건(pot·pot-m·jar·comet)이다. `stages`는 주 단계가 앞이고 `flight`가 뒤다.
+- 3차 3a(P1 기믹): 기믹 단계는 `stages` 끝에 붙고 `gimmicks` = [{stage, priority 1}], `done.gimmick` = true다(17종). 투사체 무기(주 단계 없음)의 `object`는 기믹 물건이다(C15). 서리침(동결)은 발 오버레이라 `object`가 없다. 까마귀 깃의 K9 아이콘은 깃이고 기믹 물건은 까마귀다(같은 물건이 아님, §12-63). P2 기믹이 남은 무기(서리침 서리 수, 연막 꼬리 헤맴, 묘침 묶임, 유성 붓 결 가속)도 P1만으로 `done.gimmick` = true이고 P2는 3차 2회에 `gimmicks`에 더한다.
 - 물건 조각이 없는 무기: 먹 파동(주인공이 매듭), 폭풍실·서리 사슬·십자 획·먹 궤도(선·띠가 물건이다).
 
-## 5. 굽는 조각 (`parts(group)`) — 173장, 박스 넓이 합 389,928 단위² (1차 141장 → 수정 1회차 137장(유성 붓 `streak-a/b` 삭제) → 2차 +36장: 비행 물건 32 + `mini` 4)
+## 5. 굽는 조각 (`parts(group)`) — 280장, 박스 넓이 합 522,964 단위² (1차 141장 → 수정 1회차 137장(유성 붓 `streak-a/b` 삭제) → 2차 +36장: 비행 물건 32 + `mini` 4 → 3a +107장: 기믹 P1, 표는 §14.2)
 
 - 굽기 키 `afx/<group>/<part>/<frame>`, 호출 `['PN.arsenalFx.stamp', group, part, { frame }]`, `scale: 1`.
 - `fps`는 loop만 값이 있다(나머지 0). `still`은 loop만 값이 있다(나머지 `null`).
@@ -452,6 +458,7 @@ J(i) = jit(seed, i). seed는 layout·paths·draw의 `opts.seed`(정수)다. 예�
 | 955 | 인영 좌우 반전(layout `flip`, 수정 1회차) |
 | 1700, 1701, 1710+k, 1730+k, 1740+k, 1750+k, 1760+k, 1770+k, 1780+k, 1790+k | splash 가시 수·시작각·각 흔들림·끝·폭·휨·갈래·방울 여부·방울 틈·방울 반지름(수정 1회차, §7.3a). 유성 붓 각성(n 10~12)의 k ≥ 10에서는 1730+k가 1740·1741과, 1740+k가 1750·1751과 … 겹쳐 쓰이고 1790+k는 1800·1801까지 간다. 값은 결정적이고 다른 쓰임과 겹치지 않는다(상관만 생김, 검수서 식 그대로 둠, §12-30) |
 | 1850+k | lob 비행 물건의 loop phase(`SPEC.flight.phase`, 2차). 1700~1801(splash)과 겹치지 않는다. 먹단지(prog)는 쓰지 않는다 |
+| 1950, 1951, 1960 | 3a: 마름쇠 변형, 묘비 변형, 회전 베기 호 시작각. disc prim은 k, k+40, k+80, k+120, k+160(k < 40)을 쓴다(§14.6·§14.7) |
 | 960+k, 980+k, 990+k | 참고 합성만: strike 사건 자리, 연쇄 점 |
 | 1100+k | band 매듭 폭 |
 | 1300+k, 1400+k / 1500+k, 1600+k | fringe 안쪽 건너뜀·높이 / 바깥쪽 |
@@ -516,6 +523,7 @@ J(i) = jit(seed, i). seed는 layout·paths·draw의 `opts.seed`(정수)다. 예�
 - **일곱째 인장 wash**: 같은 틱·같은 source의 사건들 원판을 한 경로로 그리고 nonzero로 한 번 채운다(겹쳐도 α가 쌓이지 않는다). 테·조각은 사건마다.
 - 한 사건 안: wash → inner → 호 → core → 각성 가는 선. 여러 사건: 데칼 전부 → **splash 전부**(§7.3a, 수정 1회차) → 고리 전부 → 물건(y 순). 고리가 먹 튐 위에 온다.
 - 족자 조각은 `SPEC.tilt`의 각으로 앵커를 축으로 돌려 놓는다(§7.3b).
+- 3a 기믹의 층: 땅 조각은 위험지형 층 맨 앞(채움·테·ground 조각), `stand` 조각은 bodies 층에서 발 y로 정렬, 오버레이는 `feet`(groundMarks)·`front`(그 적 몸 바로 뒤)·`head`(overheads)다(§14.3·§14.5).
 - **유성 붓 착탄 반전**(`SPEC.flight.meteorBrush.landMirror`, 수정 1회차 F2): 그 `area/blast`를 낸 lob이 오른쪽에서 왼쪽으로 날아왔으면(x1 < x0, 'dx<0') `impact`·`impact-awakened`의 세 장을 **앵커를 축으로 좌우 반전**해 놓는다. 붓이 오른쪽 위에서 박혀 비행 방향이 이어진다(구운 빛은 오른쪽 위가 된다. 비행 혜성도 빛이 함께 돈다). `crater`, splash, 고리는 반전하지 않는다. 방향을 모르면(lob 자료가 없거나 x1 = x0) 반전하지 않는다. 엔진은 lob이 끝나는 틱에 같은 자리의 `area/blast`로 x1 − x0의 부호를 넘겨준다. 참고 합성은 `draw('meteorBrush', 'land', {dir: −1})`로 같은 반전을 그린다(기본 출력은 그대로).
 
 ### 9.3 참고 합성(`draw`)만의 배치
@@ -536,6 +544,7 @@ J(i) = jit(seed, i). seed는 layout·paths·draw의 `opts.seed`(정수)다. 예�
 | 감소 섬광 | `flash: true` 조각(유성 붓 impact·impact-awakened)만 α × 0.5. 다른 조각의 한 장 안 종이 섬광은 박스 넓이의 30% 이하(먹단지 0번 섬광 r 23은 먹 튐 뒤에서 갈래만 보임, 손뼉 섬광 r 10.5) |
 | splash LOD | full: 가시 전부 + 방울. reduced: 짝수 k 가시만. minimal: 송이 단지 0, 나머지 가시 셋(§7.3a). 화면당 12/8/3 사건 |
 | lob 비행(2차) | full: loop 12fps(타르 8). reduced: fps 절반. minimal·감소 모션: still 장(0)과 그림자. 먹단지(prog, 수정 1회차 F1): 어느 설정에서도 진행률로 장을 고르고 minimal만 0번 장(바로 선 꼴). 화면당 12/12/6. 그림자는 어느 설정에서도 그린다 |
+| 각성 기믹 P1(3a) | §14.8 |
 
 판정 도형(고리·띠·선·캡슐·wash)은 어느 설정에서도 그린다.
 
@@ -543,7 +552,8 @@ J(i) = jit(seed, i). seed는 layout·paths·draw의 `opts.seed`(정수)다. 예�
 화면당 K10 조각 220/140/70, 데칼 16/8/0 등 지시서 §4.5·§5.4 그대로. `caps.splash` [12, 8, 3](수정 1회차). 1차 조각 중 버리는 순서: deco 조각 → 데칼 → (물건·판정 도형은 버리지 않음). splash가 상한을 넘으면 넘는 사건의 splash만 빼고 고리·물건은 그대로 그린다(어느 사건을 먼저 빼는지는 렌더러의 상한 규칙과 함께 메인 세션이 정한다).
 
 ## 10. 예산 실측
-- 조각 **173장**, 박스 넓이 합 **389,928 단위²**(C2, 2차). 1차 141장·343,592 → 수정 1회차 137장·341,032(유성 붓 `streak-a/b` 4장 삭제) → 2차 +36장·+48,896(먹단지 8,160, 송이 단지 6,848(mini 1,440 포함), 타르 10,336, 유성 붓 23,552). 지시서 상한 380장·640,000 안이고, 계획 361장·약 61만 중 1·2차 몫이다. 가장 큰 그룹: 유성 붓 65,696, 붓 폭우 59,592, 족자 43,264, 먹번개 35,808.
+- 3a 뒤: 조각 **280장**, 박스 넓이 합 **522,964 단위²**(C2). 3a가 더한 것은 107장·133,036(서리침 8,160, 쌍날 9,600, 핀 우박 3,432, 연막 꼬리 13,440, 묘침 8,640, 추적 인장 7,320, 사냥꾼 표식 1,056, 까마귀 깃 3,320, 먹번개 21,504, 족자 1,728, 인장 22,368, 침묵의 종 484, 먹단지 23,992, 타르 5,416, 유성 붓 1,120, 일식 테 1,456). 상한 380장·640,000 안이고 P2(계획 약 75장·7만)를 넣을 자리가 있다.
+- 2차까지: 조각 **173장**, 박스 넓이 합 **389,928 단위²**(C2, 2차). 1차 141장·343,592 → 수정 1회차 137장·341,032(유성 붓 `streak-a/b` 4장 삭제) → 2차 +36장·+48,896(먹단지 8,160, 송이 단지 6,848(mini 1,440 포함), 타르 10,336, 유성 붓 23,552). 지시서 상한 380장·640,000 안이고, 계획 361장·약 61만 중 1·2차 몫이다. 가장 큰 그룹: 유성 붓 65,696, 붓 폭우 59,592, 족자 43,264, 먹번개 35,808.
 - 팩 페이지 수·바이트는 메인 세션이 `npm run build:atlas`로 잰다(K4의 849,600 단위²가 1장에 들어간 것으로 보아 1장 기대).
 
 ## 11. 자가 확인 명령 (지시서 §7.2, 렌더 이름 `k10-`)
@@ -592,6 +602,23 @@ J(i) = jit(seed, i). seed는 layout·paths·draw의 `opts.seed`(정수)다. 예�
   - parts `1lej6wb len=13867` → `9on297 len=13871`(+4: pot 두 서술자의 fps 12 → 0, still 0 → null)
   - 3차부터는 이 네 값이 '3차가 더한 것만 뺀' 보존 기준이다(검수 4차 §3).
 - C1 `k10-c1-all-d2r1` ok, C6 `k10-c6-scan-d2r1` `calls=225 colours bad=0 nonhex=0 banned=0 nocyan=0 specTokens bad=0 korean=0`, C7 `k10-c7-geometry-d2r1` 1~4줄 0건·5줄 ok.
+
+**3차 1회(3a, 각성 기믹 P1)**
+- 마지막 상태에서 다시 돌린 것(이름 끝 `d3a2`·`d3a3`): C1 `k10-c1-all-d3a3` ok. C2 `k10-c2-parts-d3a2` `frames=280 ok boxArea=522964 ok badParts=0`(새 줄 44개는 §14.2). C5 `k10-c5-gimmicks-p1-d3a2`(PRI 1, 17칸, 맥락, 1배) ok. C6 `k10-c6-scan-d3a3` `calls=376 colours bad=0 nonhex=0 banned=0 nocyan=0 specTokens bad=0 korean=0`. C7 `k10-c7-geometry-d3a3` 1~4줄 0건·5줄 ok. C8 `k10-c8-unchanged-d3a2` 고정값 4개 같음, K9 `n4n4y2/2117692`·K11 `bvf9fj/934797` 전후 same, fixed set same, PN keys same, 호출 366. C9 `k10-c9-vectors-d3a2`(지시서 원문 명령) **69줄**: 기믹 사례 7개가 25~31·35~36·63~65줄을 낸다(2차까지 이 일곱 사례는 `layout []` 한 줄씩이었다). 2차 납품서의 75줄은 검수 1차가 더한 사례 셋(11줄)이 든 명령이고, 같은 명령으로 3a는 80줄이다.
+- 그림만 보는 검사(앞 회차 렌더, 그 뒤 바뀐 것은 맥락 그림의 동결 층뿐): C10 `k10-c10-contrast-d3a` `fills=24 fail=0`. C12 `k10-c12-scene` ok. C13 `k10-c13-marks-d3a`(2배, 다섯 장) ok. C14 `k10-c14-pairs-gray`·`-deutan`·`-protan` ok(일곱 쌍 모두 점선 청록 테 대 실선 색·먹 테와 무늬로 갈림). C15 `k10-c15-pairs-d3a` ok. 쪼기·층 `k10d3-crow-peck-layers`(3배)·`k10d3-crow-peck-x5`, 동결 맥락 `k10d3-freeze-ctx-x4`, 땅 조각 처음·끝 장과 LOD `k10d3-zone-ends-lod`(2배) ok.
+- **보존 해시**(검수 4차 §3 규칙: 이번 납품이 더한 조각·단계·SPEC 키만 빼고 같은 식) `k10-keep-all-d3a3`(마지막 상태): stamps `nvezmq len=535352`, draw `16q45bq len=4419724`, spec `ej7o5i len=13529`, parts `9on297 len=13871` — **2차 수정 1회차 값과 같다.** 뺀 것:
+  - 조각: 새 그룹 8개(frostNeedles, twinBlades, pinHail, smokeTail, gravePins, trackingSeals, huntersMarks, crowFeathers) 전부와, 기존 그룹 끝에 붙인 part `/^(pillar|roller|seal8|print8|mark-silence|flame-|scorch\d|string-|jarBroken|mote-|corona-)/`
+  - 단계: freeze, spin, caltrop, smoke, grave, triangle, prey, crow, pillar, surge, unroll, eighth, silence, fire, gather, mark, total
+  - SPEC: `version`, `zone`, `gimmick`, `overlay`; `fills`의 새 9줄(smokeTail.smoke, inkPots.fire, tarJar.gather, meteorBrush.mark, seventhSeal.eighth, seventhSeal.shadow, trackingSeals.fill, fallingScroll.unroll, eclipseHalo.total); `layout`의 기믹 단계 항목과 새 그룹 id 항목
+  - parts: 새 그룹과 위 part를 뺀 목록
+- 같은 명령을 아무것도 빼지 않고(검수 4차 원문 그대로) 잰 3a 뒤 값(`k10-keep-all-d3a3`의 raw 네 줄): stamps `1g0md21 len=704665`, draw `1m88g03 len=5467013`, spec `146lftr len=17916`, parts `qe5odc len=22955`. (3a-r1에서 아래 값으로 바뀌었다.)
+
+**3차 1회 수정(3a-r1, 검수 5차 F1·F2)**
+- 검수서 명령 `k10-keep-3a-r1`: `stamps raw=mwewtb/715817 | without inkPots/scorch*=15xeu33/676866`, `draw raw=7vot8j/5466897 | without inkLightning/pillar, twinBlades/spin=c3gfpf/5397061`, `spec=146lftr/17916 parts=qe5odc/22955 overlays without scorch=m2dsj8/82965`. 그대로여야 하는 다섯 값이 모두 3a와 같고, raw stamps·raw draw만 바뀌었다.
+- 원문 넷(검수 4차 명령 그대로, `k10-keep-all-3a-r1`, 글자 코드로 확인): stamps `mwewtb len=715817`, draw `7vot8j len=5466897`, spec `146lftr len=17916`, parts `qe5odc len=22955`. **3차 2회의 보존 기준이다**(그 회차가 더한 것만 빼고 잰다).
+- C1 `k10-c1-all-3a-r1` ok. C2 `k10-c2-parts-3a-r1` `frames=280 ok boxArea=522964 ok badParts=0`, scorch 다섯 줄 그대로. C6 `k10-c6-scan-3a-r1` `calls=376 colours bad=0 nonhex=0 banned=0 nocyan=0 specTokens bad=0 korean=0`. C7 `k10-c7-geometry-3a-r1` 1~4줄 0건·5줄 ok.
+- F1 렌더: 6배 `k10r5f1-scorch-x6`(scorch12~54 두 장씩 + `flame-a/b` 0번 장, 1장 바닥, 위 색·아래 흑백), 1배 `k10r5f1-c13-x1`·`k10r5f1-c13-x1-gray`(C13, 다섯 장), `k10r5f1-fire-ctx-x1`(`draw('inkPots','fire',{context:true})` ch 1·3·5, 위 색·아래 흑백).
+- F2 나이 훑기 `k10r5f2-age-sweep-alpha`(가운데 물건의 장과 α를 draw 출력에서 읽음)와 `k10r5f2-age-sweep`(2배 그림): 번개 기둥 a 0.06·0.11 `pillar-start` α1, 0.13·0.15·0.84·0.95·0.98·1.00 loop α1, 1.03·1.14 `pillar-end` α1. 회전 베기 a 0.10 α0.67(처음 조각이 없어 0.15초 페이드), 0.20·0.30·0.345 α1, 0.355·0.40·0.475 `spin-end` α1. 묘비 a 2.6 α1, 2.8 α0.67, 2.95 α0.17.
 
 ## 12. 지시서와 다르게 한 것
 
@@ -667,6 +694,31 @@ J(i) = jit(seed, i). seed는 layout·paths·draw의 `opts.seed`(정수)다. 예�
 61. **`k10-keep-all-draw`가 F1 뒤에도 그대로인 까닭**: 이 명령은 비행을 t = p × 0.3 = 0.03·0.15·0.27, seed 7로 그린다. 먹단지는 같은 자리 lob을 한 번만 그리므로 lob 0 하나이고, 전의 loop 장 ⌊t·0.55·12 + 4·J(7, 1850)⌋ mod 4는 J(7, 1850) = 0.995라 0·0·1이 된다. 새 prog 장 ⌊t·4⌋도 0·0·1이라 그린 것이 같다(`k10-pot-frame-old-new`). F1은 C11의 t에서 장을 바꾼다(2·3·0·2·3 → 0·1·2·2·3).
 62. **`SPEC.version`** `1.0-d2` → `1.0-d2r1`.
 
+**3차 1회(3a, 각성 기믹 P1)에서 정하거나 다르게 한 것**
+
+63. **P1만 먼저 납품**: 지시자가 허락한 대로 P1 17종을 `1.0-d3a`로 냈다. P2(§4.1의 P2 전부)와 남은 오버레이는 3차 2회다. 까마귀 깃의 C15는 K9 아이콘(깃)과 기믹 물건(까마귀)이 다른 물건이라 같은 꼴 대조가 아니다(아이콘이 깃이라 바꿀 수 없음).
+64. **새 SPEC 키 셋**: 지시서는 `halo.eclipseTotal`·`line.edges`·`line.unroll`처럼 기존 키 아래 이름을 적었지만, 보존 해시(검수 4차 §3)가 '더한 키만 빼기'로 재도록 기존 `ring`·`line`·`halo`·`rim`·`caps`·`marks`·`priority` 값은 건드리지 않고 `SPEC.zone`(땅 조각 8)·`SPEC.gimmick`(삼각 봉인, 펼쳐지는 족자, 여덟째 인장, 개기일식, 거세지는 폭우)·`SPEC.overlay`(오버레이)에 넣었다. 배치는 지시서대로 `SPEC.layout[id][stage]`에 붙였다(C7 3줄이 읽는다).
+65. **기믹 단계 이름**: 지시서 §7.2 명령이 쓰는 이름(fire, gather, smoke, caltrop, grave, mark, pillar, spin, total, unroll, eighth)을 썼고, 명령에 없는 것은 freeze, triangle, prey, crow, surge, silence로 정했다.
+66. **disc prim의 minGap**: §1.6의 'minGap·r'을 조각 반경 R의 몫으로 읽었다(불먹 0.35, 연막 0.45, 별가루 0.3).
+67. **ring prim과 바깥쪽**: 타르 줄은 dr −6에 있어도 +x가 바깥이다(`glayout`). 1차 layout의 ring은 dr < 0이면 안쪽을 보게 돌리지만(서릿발) 그 코드는 건드리지 않았다.
+68. **묘비 그림자 rx 21**(지시서 22): 박스 48×36에서 박스 − 3 안에 넣을 수 있는 최대다.
+69. **삼각 봉인 인영에 안쪽 네모 없음**: K9 인장은 네모 패이지만, 네모 안의 네모는 한자('回')로 읽혀 종이 네모 + 대각 반쪽 그늘 + (찍힌 장) 청록 매듭으로 그렸다.
+70. **송이·마름쇠·연막 시안**: 똑바로 선 핀 셋(둥근 고리 머리)은 작은 사람으로, 먹 짙은 연기 덩이는 바위로 읽혀 고쳤다(핀은 크게 기울이고 깊이를 엇갈림, 연기는 밝은 덩이 + 낮은 먹 심 + 밝은 컬).
+71. **펼쳐지는 족자의 띠 = 판정 폭**: 띠는 반폭 w(50)까지의 종이 띠(V4)이고, 띠 머리에 SPEC 축봉(`head` [[ink,6],[p50,3.4]])이 띠 폭 전체를 가로지른다. `roller` 조각(36×24)은 그 가운데의 말린 종이 + 청록 걸이 끈이다(박스가 띠 폭보다 작아서다).
+72. **여덟째 인장 고리의 틈**: r120 무거운 고리에 틈 둘(6~10°)을 줬다. 고른 닫힌 고리는 'O'로 읽힌다(§6 피할 것).
+73. **개기일식**: 원판 전체(inner 0)를 옅은 먹 α0.2로 덮고 0.62R~R을 먹 α0.22로 한 번 더 덮어 '닫힌 초승'을 그렸다. 굵은 바깥 테, 가장자리의 찢긴 종이 깃(corona), 리본. 검은 원반(검은 태양)이 아니도록 바닥이 비치는 반투명이다.
+74. **거세지는 폭우**: 새 그림이 없다. 참고 합성 `surge`는 같은 착탄을 R × 1·1.2·1.4·1.6으로 넷 그리고 자국 s/m/l은 반경 계단이 고른다.
+75. **참고 합성의 맥락**(opts.context): `PN.enemies`·`PN.heroKit`을 읽기만 한다(§1.1). 작은 조각(R < 50)은 적을 조각 옆에, 큰 조각은 안에 둔다.
+76. **오버레이 층과 까마귀 쪼기**(추가): `overlay(key, {layer})`가 렌더러 층 하나(`feet`·`front`·`head`)만 돌려준다. 동결의 `-back`은 몸 아래, `-front`는 몸 바로 뒤에 그려야 해서다(기본 출력은 전처럼 셋 다). 쪼기는 지시서 §4.3 문장('틱마다 0.12초 동안 머리로 내려오고 peck이 번쩍인다')을 `opts.peck`과 `SPEC.overlay.crow.dive` {crow [7, −5], peck [0, −1]}로 정했다(§14.5). 지시서에 없던 삼각 봉인 터짐 변의 fade(at 0.6)와 펼쳐지는 족자의 fade(at 0.75)는 `SPEC.gimmick`에 적었다(렌더러가 이식할 값은 모두 SPEC에 있다).
+77. **땅 조각의 처음·끝 조각은 α 1**(검수 5차 결정 ③ 수용): 지시서 §4.2의 '시작 0.15초·끝 0.3초 α'를 채움·테 밖 조각에 걸고, 가운데 물건의 `zone-start`·`zone-end` 조각(`grave-rise`, `pillar-start`·`-end`, `spin-end`)에는 걸지 않았다. 둘을 겹치면 땅에서 솟는 묘비와 내리치는 기둥의 첫 장이 α 0~0.5로 거의 안 보였다(`k10d3-zone-ends-lod`). reduced LOD에서는 deco 조각(별가루·코로나·바느질)도 prio 2 항목처럼 하나 건너 하나 뺀다.
+    - **3a-r1(검수 5차 F2)**: 가운데(center) 물건의 loop·idx 장 α = min(Z.start ? 1 : fadeIn(a), Z.end ? 1 : fadeOut(a)), fadeIn(a) = clamp(a/0.15), fadeOut(a) = clamp((life − a)/0.3). 처음·끝 조각이 있는 쪽의 페이드는 그 조각이 맡아서, 물건이 그 조각 옆에서 옅어졌다 다시 진해지지 않는다. 그래서 번개 기둥(start·end)은 loop 내내 α 1, 회전 베기(end만)는 처음 0.15초만 페이드, 묘비(start만)는 끝 0.3초만 페이드, 마름쇠·깨진 항아리(둘 다 없음)는 α(a) 그대로다. floor·wash·gloss·arcs·disc·ring 조각은 α(a), 테는 α 1이다. SPEC 값은 바꾸지 않았다(규칙은 `zone[id].start`·`end`가 있는지로 정해진다).
+78. **`SPEC.version`** `1.0-d2r1` → `1.0-d3a`.
+
+**3차 1회 수정(3a-r1, 검수 5차 F1·F2·R3)에서 정하거나 다르게 한 것**
+
+79. **발밑 불길 덩이(F1)**: 검수서 §3 F1의 덩이 표 그대로이고, 38 등급 가운데 덩이만 x −1 → −2로 옮겼다. 표대로면 덩이 중심 간격이 18·18로 같아서다(지금 17·19). 덩이의 큰 혀 끝에 덩이마다 다른 lean(+0.5, −0.6, +0.4 × H/18)을 더해 끝을 굽혔다. 바닥 타원은 덩이 가운데 (x, −1)에 rx = 덩이 반폭 + 1, ry 1.4로 두어 발 선 위에 앉힌다. 안쪽 청록 혀 폭은 min(0.52w, w − 2.4 − 0.24·|lean|)이다. 0.52w만 쓰면 곁 혀(폭 3.4)의 먹 테가 0.82가 되어 '먹 테 1.2 이상'(지시서 :308)을 밑돈다. 큰 혀(폭 5 이상)는 0.52w와 거의 같다. 종이 불티는 가장 큰 덩이의 큰 혀 끝에서 (+2.1, +1.2)에 r 0.75(먹 0.45)로 두고, 박스 − 3과 발 rect 안일 때만 그린다(19~54 등급 모두 들어감, 12 등급은 없음).
+80. **`SPEC.version`** `1.0-d3a` → `1.0-d3a-r1`. SPEC의 다른 값은 그대로다(`spec=146lftr/17916`).
+
 ## 13. 사람 원화가에게 남길 것 (바이블 §15)
 
 - 물건의 붓 외곽·블랙 스팟·비백: 번개와 먹구름, 붓 획(붓털 비백), 족자, 둥근 도장, 손, 손종, 백자 조각, 타르 항아리와 줄, 큰 붓, 먹통, 술, 리본, 매듭.
@@ -675,6 +727,203 @@ J(i) = jit(seed, i). seed는 layout·paths·draw의 `opts.seed`(정수)다. 예�
 - 수정 1회차에 더한 것: 유성 붓 꼬리 갈래의 마른 붓 끝과 짓눌린 붓털, 쓰러진 항아리의 입·굽·깨진 어깨 단면, 인영의 찍힘 질감(라틴 글자 같은 말림을 피함), 서리 결정 각기둥의 면, 먹단지 사기 조각의 휜 단면, splash 가시의 붓 질감(절차형 쐐기다).
 - 수정 2회차에 더한 것: 인영 끈(a·b)의 찍힘 질감과 끊김, 공 꼭지의 옻칠 광택.
 - 2차에 더한 것: 비행 단지의 먹 흘림과 뚜껑 붓 외곽, 송이 끈 리본의 펄럭임, 타르 줄의 윤기와 늘어짐, 유성 붓 붓털 머리(눌린 갈래)와 비행 꼬리의 마른 갈래, 인영 c의 찍힘 질감. 게임 크기(단지 약 13~18px, 송이 단지 약 7~13px)의 1배 픽셀 다듬기.
+- 3a에 더한 것: 서리 결정·얼음판의 면, 회전 날의 붓 외곽, 마름쇠 핀(1배 13px에서 작은 사람으로 읽히지 않게), 연기 덩이의 붓 질감과 컬, 묘비 핀, 네모 인영의 찍힘, 표식 셋(손종·패·까마귀 16~18px의 1배 픽셀), 번개 기둥, 말린 족자, 큰 인장과 큰 인영, 먹 불길과 불먹 발밑 불길, 타르 줄, 깨진 항아리, 별가루, 코로나 깃. 문화 검토: 묘비(십자·비문 없음 — 둥근 머리만), 까마귀(불길한 상징이 아니게), 손종(범종 아님).
+- 3a-r1에 더한 것: 발밑 불길 덩이(12 등급은 덩이 하나, 1배 약 10px)의 1배 픽셀 다듬기와 혀 끝의 붓 질감.
 - (1차의 '유성 붓 비백 줄기' 항목은 수정 1회차 M2로 줄기를 없애 지웠다.)
 - 게임 크기(1배)의 픽셀 다듬기: 머리 위 손(~30px)과 손종(~40px), 불꽃·바람 획(≤ 24px), 술·먹통(뒤쪽 26~56).
 - 정식 판독 시험(n ≥ 8)은 하지 않았다.
+
+## 14. 각성 기믹 P1 (3차 1회, 3a)
+
+지시서 §4의 P1 17종이다. §12(땅 조각·침묵·불먹 정정)와 §15-3(송이 단지 각성 비행 조각 없음)을 따른다. 단계 이름은 `META[id].gimmicks[0].stage`이고, 참고 합성은 `draw(id, stage, opts)`, 배치는 `layout`, 정의 점은 `paths`다. P2는 3차 2회다.
+
+### 14.1 단계와 자료
+
+| 무기 | 단계 | 종류 | 자료(RenderWorld) | 크기·판정 | 그리는 것 |
+|---|---|---|---|---|---|
+| frostNeedles | `freeze` | 발 오버레이 | `awk.freeze`(새) | 적 r 등급 12·19·28 | `freeze-back-<r>`(feet) + `freeze-front-<r>`(front) |
+| twinBlades | `spin` | 땅 조각 | zones: r 60, 0.5초 | 테 `rim.ally` r 60 | `spin`, 끝 0.15초는 `spin-end`. 0.75R에 도는 종이 호 둘(SPEC) |
+| pinHail | `caltrop` | 땅 조각 | zones: r 18, 1.5초, 상한 24 | 테·채움 없음 | `caltrop-a/b/c` 하나(J(1950)). 그림자 rx 18은 조각 안에 있다 |
+| smokeTail | `smoke` | 땅 조각 | zones: r 70, 2초, 상한 12 | `rim.ally` | wash ink300 α0.16 + `puff-a/b/c` 2~4(disc) |
+| gravePins | `grave` | 땅 조각(stand) | zones: r 22, 3초, 상한 24 | 테 없음 | 처음 0.15초 `grave-rise`, 그 뒤 `grave-a/b/c` 하나(J(1951)). 그림자 rx 21은 조각 안에 있다 |
+| trackingSeals | `triangle` | 대기 + 사건 | 빔 셋(폭 2 → 8)과 세 적 자리 | 변 = 빔 | 대기 0.6초: 바느질 변 + `sealCorner`. 터짐 0.28초: 굵은 변 + 채움 0.1초 + `sealStrike` |
+| huntersMarks | `prey` | 머리 표식 | `awk.prey` | — | `mark-prey` |
+| crowFeathers | `crow` | 머리 위 까마귀 | `awk.crow`·`crowAt` | — | `crow`(맴돌기) + `peck`(쪼기) |
+| inkLightning | `pillar` | 땅 조각(stand) | zones: r 40, 1.2초 | `rim.ally` r 40 | `pillar-start` 0.12초 → `pillar` loop → `pillar-end` 0.2초 |
+| brushDownpour | `surge` | 새 그림 없음 | `area/blast` 반경(커진다) | 고리 R = 사건 반경 | 주 단계 `impact` 그대로. 자국 s/m/l은 반경 계단(52·72)이 고른다 |
+| fallingScroll | `unroll` | 빔 | BeamEffect(skillId fallingScroll): 길이 240, 폭 50 | 띠 반폭 w = 판정 | 종이 띠 + 산 능선 + 머리 축봉(SPEC) + `roller` |
+| seventhSeal | `eighth` | 대기 + 사건 | 새 `pending` 0.3초 → `area/blast` echo r 120 | 고리 R 120 | 대기: 그림자 타원 + 일곱 인영에서 오는 바느질. 터짐: `print8` + wash + 무거운 고리 + `seal8` |
+| silenceBell | `silence` | 머리 표식 | `awk.silence` | — | `mark-silence`(아군 청록 실, 자수정 없음) |
+| inkPots | `fire` | 땅 조각 + 발 | zones: 0.6 × 무기 반경, 2초 | `rim.ally` | wash ink α0.24 + `flame-a/b` 2~5(disc). 안에 선 적의 발에 `scorch<r>`(산호 물듦 대신 K10 먹 불길, 청록 심) |
+| tarJar | `gather` | 땅 조각 | zones: 1 × 무기 반경, 1.5초 | `rim.ally` | wash ink700 α0.32 + 윤기 호 둘 + `jarBroken` + `string-a/b` 5~7(ring, dr −6) |
+| meteorBrush | `mark` | 땅 조각 | zones: 0.6 × 무기 반경, 4초 | `rim.pad` 실선(결이 안에 있으면 `inside`) | 바닥 `crater` + wash p50 α0.14 + `mote-a/b` 3~6(disc) |
+| eclipseHalo | `total` | halo 사건 | skillMark heavy(넷째 휘두름마다) | 바깥 R, inner 0 | 원판 먹 α0.2 + 0.62R~R 먹 α0.22 + 바깥 테 + 각성 가는 선 + `corona-a/b` 7~9 + 리본 |
+
+- 땅 조각 반경은 `SPEC.zone[id]`의 `r`(고정) 또는 `area` × 무기 반경(레벨·각성 반영)이다. 수명 `life`는 `src/content/data/awakenings.ts`에서 옮긴 참고값이다. 렌더러는 자료(zones)의 반경과 수명을 쓴다.
+- 땅 조각에는 가운데 기호 원판과 allyGlow 채움이 없다. wash는 모두 Y ≤ 0.62다(C10).
+
+### 14.2 조각 (3a: 44종 107장, 박스 넓이 133,036)
+
+C2 줄 그대로다(새 그룹 8개는 목록 앞, 기존 그룹에 붙인 것은 그 그룹 끝).
+
+```
+frostNeedles/freeze-back-12 f1 idx box36x20 a18,10 feet none feet info r12 w:status
+frostNeedles/freeze-back-19 f1 idx box48x24 a24,12 feet none feet info r19 w:status
+frostNeedles/freeze-back-28 f1 idx box64x30 a32,15 feet none feet info r28 w:status
+frostNeedles/freeze-front-12 f1 idx box32x24 a16,20 feet none front info r12 w:status
+frostNeedles/freeze-front-19 f1 idx box44x30 a22,25 feet none front info r19 w:status
+frostNeedles/freeze-front-28 f1 idx box60x38 a30,32 feet none front info r28 w:status
+twinBlades/spin f4 loop@16 still0 box40x40 a20,20 center none ally info w:zone
+twinBlades/spin-end f2 prog 0.15s box40x40 a20,20 center none ally info w:zone-end
+pinHail/caltrop-a f1 idx box44x26 a22,17 center none ground info w:variant
+pinHail/caltrop-b f1 idx box44x26 a22,17 center none ground info w:variant
+pinHail/caltrop-c f1 idx box44x26 a22,17 center none ground info w:variant
+smokeTail/puff-a f4 loop@6 still0 box40x28 a20,24 disc none ground info w:zone
+smokeTail/puff-b f4 loop@6 still0 box40x28 a20,24 disc none ground info w:zone
+smokeTail/puff-c f4 loop@6 still0 box40x28 a20,24 disc none ground info w:zone
+gravePins/grave-a f1 idx box48x36 a24,27 center none stand info w:variant
+gravePins/grave-b f1 idx box48x36 a24,27 center none stand info w:variant
+gravePins/grave-c f1 idx box48x36 a24,27 center none stand info w:variant
+gravePins/grave-rise f2 prog 0.15s box48x36 a24,27 center none stand info w:zone-start
+trackingSeals/sealCorner f3 prog 0.6s box26x20 a13,10 point none ally info w:pending
+trackingSeals/sealStrike f3 prog 0.28s box48x40 a24,22 center none ally info w:event
+huntersMarks/mark-prey f2 loop@4 still0 box22x24 a11,22 over none head info w:status
+crowFeathers/crow f6 loop@12 still0 box26x18 a13,9 orbit face head info w:status
+crowFeathers/peck f2 prog 0.12s box16x16 a8,8 orbit none head deco w:event
+inkLightning/pillar-start f2 prog 0.12s box32x84 a16,78 center none stand info w:zone-start
+inkLightning/pillar f4 loop@12 still0 box32x84 a16,78 center none stand info w:zone
+inkLightning/pillar-end f2 prog 0.2s box32x84 a16,78 center none stand info w:zone-end
+fallingScroll/roller f2 loop@12 still0 box36x24 a18,12 tip beam ally info w:beam
+seventhSeal/seal8 f4 prog 0.45s box60x80 a30,74 center none ally info flash w:mark
+seventhSeal/print8 f1 idx 1.2s box88x36 a44,18 center none ground deco w:decal
+silenceBell/mark-silence f1 idx box22x22 a11,20 over none head info w:status
+inkPots/flame-a f6 loop@12 still0 box22x28 a11,25 disc none ground info w:zone
+inkPots/flame-b f6 loop@12 still0 box22x28 a11,25 disc none ground info w:zone
+inkPots/scorch12 f2 loop@8 still0 box30x18 a15,14 feet none front info r12 w:status
+inkPots/scorch19 f2 loop@8 still0 box40x22 a20,17 feet none front info r19 w:status
+inkPots/scorch28 f2 loop@8 still0 box56x26 a28,21 feet none front info r28 w:status
+inkPots/scorch38 f2 loop@8 still0 box72x30 a36,25 feet none front info r38 w:status
+inkPots/scorch54 f2 loop@8 still0 box96x34 a48,29 feet none front info r54 w:status
+tarJar/string-a f4 loop@8 still1 box40x14 a36,7 ring radial ground info w:zone
+tarJar/string-b f4 loop@8 still1 box40x14 a36,7 ring radial ground info w:zone
+tarJar/jarBroken f1 idx box36x26 a18,18 center none ground info w:variant
+meteorBrush/mote-a f4 cycle 1.2s box10x14 a5,12 disc none ally deco w:zone
+meteorBrush/mote-b f4 cycle 1.2s box10x14 a5,12 disc none ally deco w:zone
+eclipseHalo/corona-a f2 prog 0.3s box26x14 a3,7 ring radial ally deco w:mark
+eclipseHalo/corona-b f2 prog 0.3s box26x14 a3,7 ring radial ally deco w:mark
+```
+
+- 새 창(`window`): `zone`(땅 조각 수명 동안), `zone-start`·`zone-end`(가운데 물건의 처음·끝 seconds), `status`(적 상태가 있는 동안), `event`(사건 한 번, seconds), `pending`(대기, seconds = 대기 길이), `variant`(고르는 변형, 그 조각의 수명). 새 drive `cycle`: 장 = ⌊frac(t/seconds + phase)·frames⌋(1.2초에 한 번 오르고 사라짐).
+- 새 place: `disc`(땅 조각 안 흩기), `over`(머리 위 (0, top − 12)), `orbit`(머리 위 맴돌기), `feet`(적 발). 새 rotate `face`: 까마귀는 가는 쪽을 보게 좌우 반전만 한다(돌리지 않는다).
+
+| group | 그림 | 청록 |
+|---|---|---|
+| 서리침 | `freeze-back`: 바닥에 누운 들쭉날쭉한 종이 얼음판(먹 테 1.2, p300 면 하나)과 그 뒤로 짧은 결정 넷(−114~−64°). `freeze-front`: 앞 서릿발 두 무더기(결정 여섯, −118~−64°, 높이 0.5~0.9H, H = 13·17·23 ≈ 몸 높이의 40%)와 얼음 조각 셋. 서리 고리와 같은 각기둥 결정(먹 테를 종이 아래에 깖). 눈을 가리지 않는다. 박스는 `SPEC.marks.rects` 안(C7 2줄) | 가장 높은 결정의 심 |
+| 쌍날 | `spin`: 손잡이 없는 종이 초승 날 둘(r 15, 110° 호, 두께 4.6)이 마주 보고, 날 뒤에 ink300 바람 호. 장마다 45°라 16fps 4장이 초당 2바퀴다(한 쌍은 180°마다 같다). `spin-end`: 0 = p300 날(느려짐), 1 = 납작하게 쓰러짐 α0.7 | 날 심 [ink 1.6, ally 0.8] |
+| 핀 우박 | `caltrop-a/b/c`: K9 아이콘의 단검 핀(마름모 종이 날, 속 빈 고리 손잡이 r 1.7) 2~3개가 끝을 땅에 박고 크게 기울어(−60~−126°) 깊이를 엇갈려 선다. 바닥 그림자 rx 18 α0.25, 흙 점 | 한 핀의 날 홈 |
+| 연막 꼬리 | `puff-a/b/c`: 밝은 ink300 연기 덩이(덩이 3~4, 크기 제각각) + 낮은 ink500 심 + 위의 열린 p300 컬 + ink500 아래 가장자리. 4장 동안 덩이가 굴러 흐른다 | 없음(땅 조각 테가 청록) |
+| 묘침 | `grave-a/b/c`: 땅에 박힌 K9 묘침(먹 핀대, 둥근 머리 종이 비석판 + p300 그늘, 글자·십자 없음), 기울기 −8·10·−3°, 그림자 rx 21. `grave-rise`: 0 = 둥근 머리만 땅 위로, 1 = 핀 대부분 + 흙덩이 | 핀대에 감긴 실 둘 |
+| 추적 인장 | `sealCorner`: 바닥에 납작하게 찍힌 작은 네모 인영(변 11.5, 14° 돌림): 0 옅음, 1 반쯤, 2 찍힘. `sealStrike`: 큰 네모 인영(변 22): 0 찢긴 종이 섬광, 1 ink700 먹 튐, 2 바램 α0.75. 네모 안 네모 없음(§12-69) | 2번 장 매듭, 실 끝 셋(0·1장) |
+| 사냥꾼 표식 | `mark-prey`: 구멍 뚫린 종이 패(약 9 × 10)가 끈 고리에 매달려 ±9° 흔들린다(2장 4fps) | 끈 고리 |
+| 까마귀 깃 | `crow`: 먹 까마귀(+x로 난다), 날개 가장자리 종이 획, 눈 없음, 날갯짓 6장. `peck`: 0 = 종이 6갈래 별 r 4.8, 1 = p300 작은 별 + 먹 점 둘 | 다리에 감은 실 |
+| 먹번개 | `pillar*`: 작은 먹구름(y −62~−72)에서 땅까지 서는 좁은 먹 번개 기둥(굵기 7 → 5, 좌우 ±4, 칠한 폭 ≤ 14), 발치 종이 튐. `pillar-start` 0 = 절반까지, 1 = 땅에 닿음 + 종이 섬광 r 6.2. `pillar` 4장 = 꺾임이 바뀜. `pillar-end` 0 = 두 토막(ink700), 1 = ink300 구름 + 점 잔해 α0.8 | 기둥 심 [ally 1.6, allyG 0.5] |
+| 족자 낙하 | `roller`: 띠 머리 가운데의 말린 종이(위에서 본 원통 8.4 × 15.2, p300 그늘, 감긴 결 셋이 구름, 양 끝 먹 마개). 띠 폭 전체를 가로지르는 축봉은 SPEC(§14.4) | 걸이 끈(감은 띠 + 매듭 + 뒤로 끌리는 끝) |
+| 일곱째 인장 | `seal8`: 인장 꼴 1.55배(몸 34 × 25, 목 + 공 꼭지 r 6.2). 0 = 무겁게 눌림(1.06 × 0.9) + 땅에 납작하게 깔린 찢긴 종이 섬광(`flash`) + 속도 획 둘 + 먼지, 1·2 = 8·14 들림, 3 = 18 들림 α0.55. `print8`: rx 32 납작 큰 인영 — 종이 α0.25, 두 호로 끊긴 붓 테 + 안쪽 ink300 호 둘(겹 테), 풀린 끈 한 획, 먹 점 셋 | 인면 테 [ink 3.6, ally 2] |
+| 침묵의 종 | `mark-silence`: 무기의 종이 손종(칠한 높이 약 12, 폭 14.4) | 입을 동여맨 실 두 줄 + 매듭 + 끝 |
+| 먹단지 | `flame-a/b`: 혀 셋(a)·둘(b)을 합친 먹 불길(높이 16~18), 종이 불티 둘, 6장 흔들림. `scorch<r>`(3a-r1, 검수 5차 F1): 같은 불길의 **덩이** 1~3개를 발 앞에 둔다. 덩이 [x, 배율, 혀 수]는 12: [−1, 1, 3] · 19: [−5, 1, 3], [7, 0.72, 2] · 28: [−8, 1, 3], [10, 0.76, 2] · 38: [−19, 0.8, 2], [−2, 1, 3], [17, 0.64, 2] · 54: [−30, 0.86, 3], [1, 1, 3], [29, 0.68, 2]이고, 높이 H = hm·배율(hm 9.5·12·15·18·21)이다. 혀는 `flame-a`(셋)·`flame-b`(둘)를 H/18로 줄인 것이다(큰 혀 폭 ≥ 5, 곁 혀 ≥ 3.4). 칠 순서는 혀 전부 + 덩이마다 바닥 타원(rx 반폭 + 1, ry 1.4)을 먹 한 경로로 → 안쪽 혀(0.7h, min(0.52w, w − 2.4 − 0.24·|lean|)) 청록 → 덩이마다 큰 혀에 allyG 심(0.42h, max(1.4, 0.3w)) → 19~54 등급은 가장 큰 덩이 끝 옆에 종이 불티 하나(r 0.75). 1번 장: 큰 혀 sway +1·높이 ×0.95, 곁 혀 sway −0.7·높이 ×1.05 | 불길 몸(ally) + 심(allyG). scorch도 덩이마다 같다 |
+| 타르 항아리 | `string-a/b`: 테 쪽(앵커)에서 가운데로 끌린 타르 줄(굵기 3 → 1.1 → 방울 2.4 → 끝 0.5, p300 윤기), 4장 동안 조여 든다. `jarBroken`: 착탄의 쓰러진 항아리 0.5배 + 입에서 흘러나온 타르 | 항아리 봉인 끈 |
+| 유성 붓 | `mote-a/b`: 종이 별가루(5·6갈래, r 1.85 → 1.1)가 y −2.6 → −7.6으로 오르며 바랜다(마지막 장 p300) | 없음(테가 청록) |
+| 일식 테 | `corona-a/b`: 테에서 바깥으로 나온 찢긴 종이 깃(길이 17·13.5, 끝 홈). 1 = 짧아지고 p300 | 없음(리본이 청록) |
+
+### 14.3 땅 조각 (`SPEC.zone`, 참고 = `drawZone`)
+
+- 원점 = 조각 중심. 나이 a, 수명 life(자료). α(a) = min(clamp(a/0.15), clamp((life − a)/0.3)) (`SPEC.zone.fadeIn`·`fadeOut`).
+- 그리는 순서와 층
+  1. 위험지형 층 맨 앞(아군 지대 K4, 적 위험지형 K11보다 먼저): `floor` 조각(별똥 자국 `crater`, α) → wash(원 R, token·alpha × α) → `gloss`(타르: 반지름 at[i]·R, 시작 span0 + 12i°, 길이 span1 − span0, [[p300,1.4]], α) → **테**(`rim.ally`: 점선 [6,4] pad 0.6 / `rim.pad`: 실선 [[ink,3.4],[ally,1.8],[allyG,0.6]], 결이 조각 안에 있으면 `inside` [[ink,4],[ally,2.4],[allyG,0.8]]. **α를 곱하지 않고 수명 내내 그린다**, V4) → z `ground` 조각
+  2. bodies 층: z `stand` 조각(묘비, 번개 기둥)을 발 y로 적·결과 함께 정렬
+  3. allyAttacks 층: z `ally` 조각(회전 날, 별가루), 회전 베기 호
+- 조각 장
+  - 가운데 물건(center)은 처음 `start.seconds` 동안 `start.part`(장 ⌊a/seconds·frames⌋), 끝 `end.seconds` 동안 `end.part`(장 ⌊(a − life + seconds)/seconds·frames⌋)다. start·end 조각은 물건이 나오고 사라지는 그림이라 **α 1**로 그린다. end 조각은 수명 끝의 seconds 안에서 재생하고 수명 뒤로 넘기지 않는다(V4).
+  - **가운데 물건의 loop·idx 장**(3a-r1, 검수 5차 F2): α = min(Z.start ? 1 : clamp(a/0.15), Z.end ? 1 : clamp((life − a)/0.3)). 처음·끝 조각이 있는 쪽의 페이드는 그 조각이 맡는다. 번개 기둥(start·end): 0.12~1.0초 내내 α 1. 회전 베기(end만): 처음 0.15초만 페이드, 0.15초부터 `spin-end`까지 α 1. 묘비(start만): 끝 0.3초만 페이드. 마름쇠·깨진 항아리(둘 다 없음): α(a).
+  - 나머지 조각(disc·ring 조각, floor, wash, gloss, 회전 베기 호)은 α(a)다. 테는 α 1이다.
+  - loop: ⌊t·fps + phase·frames⌋ mod frames(reduced LOD fps 절반). 감소 모션·minimal: min(frames − 1, ⌊phase·frames⌋)(phase가 0인 가운데 물건은 0번 장).
+  - cycle: ⌊frac(t/seconds + phase)·frames⌋. 감소 모션·minimal은 loop와 같다.
+  - idx: 0.
+- 회전 베기 호(`zone.twinBlades.arcs`): th0 = 2π·J(1960) + 2π·turns·a(감소 모션은 J만), 호 k = th0 + k·2π/n에서 시계 방향 span°, 반지름 at·R, 층 [[ink,3.2],[p50,1.6]], α(a).
+- 별똥 자국이 선 착탄 자리는 `land`의 `crater` 데칼을 따로 그리지 않는다(자국의 `floor`가 같은 조각이다. 두 겹 방지).
+- `zone.pinHail.shadow`·`zone.gravePins.shadow`(rx 18·21, α0.25)는 조각 안에 이미 그려진 바닥 그림자의 기록값이다. 렌더러가 따로 그리지 않는다.
+- 마름쇠(상한 24)·묘비(상한 24)·연막(12)은 조각 수가 많다. 상한은 엔진 자료(`cap`)가 지키고, 렌더러는 `caps.zoneStamps` [120, 72, 36]로 조각 수를 센다.
+
+### 14.4 `SPEC.gimmick` 도형
+
+**삼각 봉인 `triangle`**(원점 = 화면, `points` = 봉인된 세 적, 나이 a ∈ [0, 0.6 + 0.28])
+- 대기(a < `delay` 0.6): u = a/0.6(감소 모션 1). 변 k(P_k → P_{k+1})를 g_k = clamp(3u − k)만큼 `pre` 층 [[ink,2.6],[ally,1.4]] 점선 [6,4] pad 0.6으로 꿰맨다. 세 모서리에 `sealCorner` 장 min(2, ⌊3u⌋).
+- 터짐(v = a − 0.6, `life` 0.28): v < `fillSeconds` 0.1이면 삼각형 채움 p50 α0.25. 변은 `strike` 층 [[ink,4],[ally,2.2],[allyG,0.7]], α = fade(at 0.6). 모서리 `sealCorner` 2번 장. 무게중심에 `sealStrike` 장 ⌊v/0.28·3⌋.
+- 빔 판정(폭 2 → 8)은 엔진 값이고, 그림의 변은 그 빔 축 위에 있다.
+
+**펼쳐지는 족자 `unroll`**(빔 틀: 원점 = 족자 착지, +x = 빔 방향, 나이 a ∈ [0, 0.28])
+- 머리 x1 = L·easeOut(clamp(a/`grow` 0.2))(감소 모션 L). α = fade(at 0.75).
+- 띠: (0, ±w)~(x1, ±w) 종이 p50 α0.5, 위아래 곧은 가장자리 [[ink,1.6]]. 능선(`ridge`): x = lerp(0.06L, 0.96L, s)(25점), y = 0.18w − 0.25w·|sin(π·2·(x − 0.06L)/(0.9L))|, x ≤ x1 − 3만, [[ink,1.4]]. 머리 축봉 (x1, −w) → (x1, w) [[ink,6],[p50,3.4]]. `roller`를 (x1, 0)에 loop(감소 모션·minimal still 0).
+- 띠의 반폭 w = 판정 폭(V4). 지금의 폭 100 먹 막대(지시서 §0.1 ⑨)를 대신한다.
+
+**여덟째 인장 `eighth`**(원점 = 일곱 인영의 무게중심, 나이 a ∈ [0, 0.3 + 0.5])
+- 대기(a < 0.3): u = a/0.3. 그림자 타원 rx = lerp(18, 64, u), ry 0.42rx, 먹 α lerp(0.12, 0.35, u). 일곱 인영 자리 → 가운데로 (1 − u)까지 바느질 선 [[ink,2],[ally,1]] 점선 [5,4] pad 0.6(deco: minimal 없음, reduced 하나 건너 하나). 일곱 자리는 게임에서 그 시전의 사건 자리다(참고 합성은 §9.3 배치).
+- 터짐(v = a − 0.3, 수명 0.5): `print8`(데칼 1.2초, §7.2 decal 페이드) → wash p50 α0.2(원 Rg) → 무거운 고리(틈 2 · 6~10°, grow 0.7/0.08, fade 0.6, [[ink,4],[ally,2.2],[allyG,0.7]]) → `seal8` 장 ⌊v/0.45·4⌋(`sealSeconds`).
+
+**개기일식 `total`**(원점 = 주인공 발, 수명 0.3, α = fade(at 0.6))
+- 원판(inner 0) 먹 α0.2 → 0.62R~R 띠 먹 α0.22(evenodd) → 바깥 테 [[ink,4],[p50,2]] → 각성 가는 선(R − 6, §7.2) → `corona-a/b`(ring, R + 2, 7~9개, 장 ⌊a/0.3·2⌋, radial; deco) → 리본(`tail`, §8.2와 같은 식, loop).
+- 검은 원판이 아니다. 바닥이 비친다(§12-73).
+
+**거세지는 폭우 `surge`**: 새 도형이 없다. 렌더러는 커진 사건 반경으로 주 단계 고리와 자국을 그린다. `SPEC.gimmick.brushDownpour.scale` [1, 1.2, 1.4, 1.6]은 참고 합성(사건 넷, 2 × 2 배치)만 쓴다.
+
+### 14.5 적 오버레이 (`overlay(key, opts)`, `SPEC.overlay`)
+
+- 원점 = 적의 발. `opts.r`(적 반지름 → 가장 가까운 등급), `opts.top`(스프라이트 꼭대기 y, 렌더러는 실제 꼭대기), `opts.t`(시계), `opts.peck`, `opts.layer`.
+- **층**: `feet` = groundMarks(몸 아래): `freeze-back-<r>`. `front` = 그 적의 몸 바로 뒤: `freeze-front-<r>`, `scorch<r>`. `head` = overheads: `mark-silence`, `mark-prey`, `crow`, `peck`. `layer`를 주면 그 층만, 없으면 셋 다(feet → front → head).
+- **머리 표식**: 앵커를 (0, top − 12)에 둔다. 적 하나에 하나, `priority.heads` 순서(silence > prey > fear > lost > weak > stain). `mark-prey`는 loop 4fps(감소 모션·minimal still 0), `mark-silence`는 idx.
+- **까마귀**: 맴돌기 a = 2π·t/0.9, 앵커 (14·cos a, top − 8 + 5·sin a), sin a > 0(왼쪽으로 갈 때)이면 좌우 반전, 장 ⌊t·12⌋ mod 6(`marks.crow` rx 14, ry 5, period 0.9, lift 8).
+  - 쪼기(`opts.peck` = `crowAt` 틱 뒤 초, 0 ≤ peck < `marks.crow.dive` 0.12): k = sin(π·peck/0.12). 앵커가 맴돌기 자리에서 ((반전이면 +7, 아니면 −7), top − 5)까지 k만큼 갔다 돌아온다(`overlay.crow.dive.crow`, 부리가 머리 가운데를 향함). `peck`을 (0, top − 1)에 장 ⌊peck/0.12·2⌋로 그린다(`dive.peck`, deco: minimal 없음, `caps.events`로 센다).
+  - 감소 모션: (6, top − 6)에 still 0으로 앉는다(`sit`). 쪼기 조각은 그린다.
+  - `caps.crows` [12, 8, 4], 표식과 따로 센다.
+- **동결**: `freeze-back-<r>` + `freeze-front-<r>`, r = 12·19·28 중 가장 가까운 것. `priority.feet` 맨 앞이고 버리지 않는다(`priority.keep`). 백묵 절단의 분필 고리(`root<r>-awakened`) 대신 그린다(지시서 §9-4).
+- **불먹**: `scorch<r>`, r = 12·19·28·38·54, loop 8fps(감소 모션·minimal still 0). 불먹 땅 조각 안에 선 적에게 건다. 적 몸에 산호 물듦을 쓰지 않는다.
+- 상한: `caps.heads`·`feet` [24, 16, 8], 주인공에게 가까운 적부터. 발 오버레이는 적 하나에 하나(`priority.feet`).
+
+### 14.6 배치 prim (`layout`, 기믹 단계)
+
+| prim | 식 | 쓰는 곳 |
+|---|---|---|
+| center | (0, 0). `pick`이면 parts[⌊J(pick)·len⌋] | 마름쇠 1950, 묘비 1951, 회전 날, 기둥, 인장, 항아리 |
+| disc | k = 0..39: 각 2π·J(k), 거리 (R − margin)·√J(k + 40). 이미 놓인 것과 hypot(dx, 1.3dy) < minGap·R이면 버린다. n = clamp(round(R/per), min, max)개가 차면 멈춘다. 변형 parts[⌊J(k + 80)·len⌋], flip J(k + 120) < 0.5, phase J(k + 160). 앞 `info`개는 prio 0, 나머지 prio 2(`info`가 없으면 모두 0). 출력에 `margin` | 연막(per 26, 2~4, margin 16, minGap 0.45, info 1), 불먹(24, 2~5, 10, 0.35, 1), 별가루(30, 3~6, 8, 0.3) |
+| ring | 1차 ring과 같은 식(n = count0 + ⌊J(900)·…⌋, 건너뜀 J(k + 100), 각 J(k), 변형 J(k + 200), phase J(k + 400), 자리 R + dr). **angle은 늘 바깥(+x = 바깥)이다**(dr < 0이어도 돌리지 않는다) | 타르 줄(5~7, jitter 0.3, dr −6, info 3), 코로나(7~9, 0.35, dr 2) |
+| corner | `points`의 세 점(없으면 참고 삼각형 (−110, 40), (104, 56), (−6, −92)), `index` 0~2 | sealCorner |
+| centroid | 세 점의 무게중심 | sealStrike |
+| tip | (x1, 0), x1 = §14.4 족자 머리 | roller |
+| tail | §8.2 tail과 같다(평상 span) | 일식 리본 |
+
+z 순서는 ground → feet → stand → ally다.
+
+### 14.7 jit 번호대 (3a)
+- 1950: 마름쇠 변형. 1951: 묘비 변형. 1960: 회전 베기 호 시작각.
+- disc: k, k + 40, k + 80, k + 120, k + 160(k < 40). 1차 ring prim(0~399)과 번호가 겹치지만 한 단계 안에서 함께 쓰지 않는다.
+- ring(기믹): 900, k, k + 100, k + 200, k + 400(1차와 같은 쓰임). tail: 953, 410, 700.
+- 참고 합성만: 여덟째 인장의 일곱 자리 960 + k, 980 + k(§9.3).
+
+### 14.8 LOD·감소 설정·버리는 순서 (3a)
+
+| 설정 | 3a |
+|---|---|
+| full | 전부 |
+| reduced | loop fps 절반. 땅 조각 안 deco 조각과 prio 2 항목, 코로나, 여덟째 인장 바느질은 하나 건너 하나 |
+| minimal | 땅 조각은 가운데 물건 하나(마름쇠, 묘비, 기둥, 회전 날, 항아리)와 바닥(분화구)·채움·테만. 연막·불먹·별가루·타르 줄·코로나·바느질·쪼기 없음. 표식은 `caps.heads` 8까지, 동결은 남긴다 |
+| 감소 모션 | 회전 베기 호는 시작각에 멈춤, 까마귀는 앉음, loop·cycle은 phase 장, prog는 재생. 삼각 봉인 대기 변은 다 꿰맨 채(u = 1), 족자 띠는 다 펼친 채(x1 = L), 여덟째 인장 고리는 grow 없음 |
+| 감소 섬광 | `seal8`(`flash: true`)만 α × 0.5 |
+
+- 넘칠 때 버리는 순서는 `SPEC.priority.drop`(deco → 사건 → 데칼 → 먼 표식 → 먼 발 오버레이 → 땅 조각 안 여분)이다. 판정 테·선·띠, 가운데 물건, 대기 표시, 동결은 버리지 않는다(`priority.keep`).
+- 땅 조각 하나 안의 상한 `caps.perZone` {smoke 4, flame 5, string 7, mote 6}은 layout의 max와 같다.
+
+### 14.9 참고 합성의 맥락 (`context: true`, C5만)
+- `PN.enemies.meta`·`draw(ch, role, {lod: 'game'})`와 `PN.heroKit.placeSprite`를 읽기만 한다. 다른 킷 모듈이 없으면 맥락 없이 그린다.
+- 땅 조각: R < 50(마름쇠, 묘비, 기둥)은 적 하나를 조각 오른쪽(x + R + 16)에, 큰 조각은 R/75배 자리에 안에 둔다. 불먹 안의 적에게 `scorch`를 건다. 별똥 자국 안에는 결을 세운다.
+- 오버레이 맥락은 층대로 그린다: `feet` → 적 몸 → `front` → `head`.
+- 삼각 봉인은 세 모서리에, 펼쳐지는 족자는 띠 위에 적을 둔다. 개기일식은 결을 가운데에 둔다.

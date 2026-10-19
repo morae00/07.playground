@@ -450,7 +450,8 @@ export const HAZARD_RENDER = Object.freeze({ fireStamps: [120, 40, 20] });
  * part rules, and the vectors the renderer's port is tested against go into the manifest (`manifest.arsenalFx`): the
  * C9 cases [id, stage, opts] of the brief's §7.2 the kit has drawn, review 1's three, and awakened, LOD, and reduced
  * motion cases, each run through the kit's layout() and paths(); and lobPath() at five points of a throw to (320, −120),
- * and the cluster pots' mini path to (±60, 0) (delivery 2).
+ * and the cluster pots' mini path to (±60, 0) (delivery 2). Delivery 3a adds the seven P1 gimmick cases of the C9
+ * command and the other P1 stages the kit places (zones, the triangle, the eighth seal), with reduced motion cases.
  */
 const AFX_POINTS = [{ x: 0, y: 0 }, { x: 220, y: -70 }, { x: 420, y: 20 }, { x: 640, y: -40 }, { x: 860, y: 30 }];
 export const ARSENAL_FX_VECTORS = Object.freeze({
@@ -476,6 +477,17 @@ export const ARSENAL_FX_VECTORS = Object.freeze({
     ['crossStrokes', 'stroke', { length: 496, width: 16.8, seed: 2, awakened: true, p: 0.2 }], ['judgmentLine', 'stroke', { length: 1000, width: 21.6, seed: 2, awakened: true, p: 0.04 }],
     ['inkOrbit', 'sweep', { radius: 150, inner: 40, seed: 9, awakened: true, p: 0.7 }], ['wardRing', 'sweep', { radius: 110, inner: 0, seed: 3, awakened: true, p: 0.5 }],
     ['eclipseHalo', 'sweep', { radius: 250, inner: 110, seed: 2, awakened: true, p: 0.3 }], ['eclipseHalo', 'sweep', { radius: 230, inner: 110, seed: 6, p: 0.5, reduced: true }],
+    // delivery 3a: the awakening gimmicks (P1)
+    ['inkPots', 'fire', { radius: 75, seed: 9 }], ['tarJar', 'gather', { radius: 114, seed: 9 }], ['smokeTail', 'smoke', { radius: 70, seed: 2 }],
+    ['meteorBrush', 'mark', { radius: 96, seed: 4 }], ['twinBlades', 'spin', { radius: 60, seed: 4 }], ['eclipseHalo', 'total', { radius: 230, inner: 0, seed: 6, p: 0.5 }],
+    ['fallingScroll', 'unroll', { length: 240, width: 50, seed: 1 }],
+    ['inkPots', 'fire', { radius: 110, seed: 4 }], ['tarJar', 'gather', { radius: 168, seed: 3 }], ['smokeTail', 'smoke', { radius: 70, seed: 11 }],
+    ['meteorBrush', 'mark', { radius: 115, seed: 2 }], ['twinBlades', 'spin', { radius: 60, seed: 7, p: 0.6, reduced: true }], ['twinBlades', 'spin', { radius: 60, seed: 7, p: 0.9 }],
+    ['pinHail', 'caltrop', { radius: 18, seed: 5 }], ['gravePins', 'grave', { radius: 22, seed: 8 }], ['inkLightning', 'pillar', { radius: 40, seed: 2 }],
+    ['eclipseHalo', 'total', { radius: 276, inner: 0, seed: 3, p: 0.2 }], ['eclipseHalo', 'total', { radius: 276, inner: 0, seed: 3, p: 0.2, reduced: true }],
+    ['fallingScroll', 'unroll', { length: 240, width: 50, seed: 3, p: 0.2 }], ['fallingScroll', 'unroll', { length: 240, width: 50, seed: 3, p: 0.1, reduced: true }],
+    ['trackingSeals', 'triangle', { points: [{ x: -80, y: 30 }, { x: 120, y: 70 }, { x: 10, y: -110 }], seed: 2 }], ['trackingSeals', 'triangle', { seed: 2 }],
+    ['seventhSeal', 'eighth', { radius: 120, seed: 5 }],
   ],
   lob: { to: [320, -120], t: [0, 0.25, 0.5, 0.75, 1], mini: [[60, 0], [-60, 0]] },
 });

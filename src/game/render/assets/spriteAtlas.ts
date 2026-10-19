@@ -94,7 +94,7 @@ export type ArsenalFxPart = Readonly<{
 export type ArsenalFxManifest = Readonly<{
   version: string;
   spec: Readonly<Record<string, unknown>>;
-  meta: Readonly<Record<string, Readonly<{ kind: string; look: string; main: string; stages: readonly string[]; geo: Readonly<{ inner?: number; delay?: number }>; done: Readonly<{ fx: boolean; lob: boolean; gimmick: boolean }> }>>>;
+  meta: Readonly<Record<string, Readonly<{ kind: string; look: string; main: string | null; stages: readonly string[]; geo: Readonly<{ inner?: number; delay?: number }>; done: Readonly<{ fx: boolean; lob: boolean; gimmick: boolean }> }>>>;
   parts: Readonly<Record<string, Readonly<Record<string, ArsenalFxPart>>>>;
   vectors: Readonly<{
     cases: readonly (readonly [string, string, Readonly<Record<string, unknown>>, readonly (readonly (string | number)[])[], Readonly<Record<string, readonly (readonly [number, number])[]>>])[];

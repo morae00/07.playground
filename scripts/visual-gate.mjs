@@ -12,7 +12,7 @@ const requireGoldens = process.env.VISUAL_REQUIRE_GOLDENS !== '0';
 const maxDiffRatio = Number.parseFloat(process.env.VISUAL_MAX_DIFF_RATIO ?? '0.005');
 const pixelTolerance = Number.parseInt(process.env.VISUAL_PIXEL_TOLERANCE ?? '24', 10);
 // The default matrix is the platform decision (TEC-01: minimum 1024x720, reference 1280x720 and 1440x900,
-// largest verified 1920x1080): 4 viewports x DPR 1/2 x 3 modes x 20 states = 480 captures. The modes are full
+// largest verified 1920x1080): 4 viewports x DPR 1/2 x 3 modes x 27 states = 648 captures. The modes are full
 // motion, the system's reduced motion, and the reduced flash setting, which UI-08 separates from reduced motion.
 // The small sizes stay selectable by name (VISUAL_VIEWPORTS) to check the responsive layout.
 const viewportCatalog = [
@@ -24,7 +24,7 @@ const viewportCatalog = [
   { name: '1440x900', width: 1440, height: 900 },
   { name: '1920x1080', width: 1920, height: 1080 },
 ];
-const stateNames = ['menu', 'infinite-menu', 'infinite-playing', 'story', 'playing', 'paused', 'draft', 'bombers', 'burning', 'fires', 'shock', 'terrain', 'settlement', 'boss', 'terrain-ch3', 'arsenal-mortar', 'arsenal-chain', 'arsenal-lob', 'arsenal-land', 'arsenal-crowd'];
+const stateNames = ['menu', 'infinite-menu', 'infinite-playing', 'story', 'playing', 'paused', 'draft', 'bombers', 'burning', 'fires', 'shock', 'terrain', 'settlement', 'boss', 'terrain-ch3', 'arsenal-mortar', 'arsenal-chain', 'arsenal-lob', 'arsenal-land', 'arsenal-crowd', 'arsenal-fire', 'arsenal-marks', 'arsenal-eclipse', 'arsenal-seal', 'arsenal-strike', 'arsenal-ends', 'arsenal-graves'];
 
 const defaultViewports = ['1024x720', '1280x720', '1440x900', '1920x1080'];
 
@@ -569,6 +569,53 @@ async function runScenario(page, viewport, dpr, motion) {
   await page.keyboard.press('Escape');
   await settle(page, 900);
   await captureEvidence(page, viewport, dpr, motion, 'arsenal-crowd');
+  // K10 3a: the P1 awakening gimmicks (review 5 §6-10), staged with no weapons of the hero's own. Each capture comes
+  // 0.3 s of game time after its cheat (80 + 60 + 160 ms of page clock), the cheats' delays are timed to it. Ink pots
+  // fire with enemies standing in it, burning, beside smoke, a tar gathering, and the meteor's mark under the hero (a); a crowd wearing silence bells, prey tags, and crows, one pecking,
+  // among an elite, a stunned, a frozen, and a frightened enemy (c); the total eclipse 0.1 s in (d, the flash mode
+  // halves its disc); the tracking seal triangle pending, a falling scroll unrolling, and a seventh seal's eighth
+  // pending, then 0.36 s later the triangle striking, another scroll, and the eighth striking (e); lightning pillars and
+  // spinning blades at their start, middle, and end, the end frames at full strength (f, review 5 F2).
+  for (const [code, state] of [['AFX5', 'arsenal-fire'], ['AFX7', 'arsenal-marks'], ['AFX8', 'arsenal-eclipse'], ['AFX9', 'arsenal-seal'], ['AFX10', 'arsenal-ends']]) {
+    await openCheatPanel(page);
+    await enterCheat(page, 'NUKE');
+    await enterCheat(page, code);
+    await page.keyboard.press('Escape');
+    await settle(page, 60);
+    await captureEvidence(page, viewport, dpr, motion, state);
+    if (code === 'AFX9') {
+      await settle(page, 200);
+      await captureEvidence(page, viewport, dpr, motion, 'arsenal-strike');
+    }
+  }
+  // Chapter 4's floor (b): 24 caltrops and 12 graves, two still rising, and a silenced enemy beside them.
+  await page.keyboard.press('p');
+  await settle(page, 40);
+  await (await unique(page.getByRole('button', { name: 'Stage 메뉴' }), 'return to Stage menu')).click();
+  await settle(page, 40);
+  await (await unique(page.getByRole('button', { name: '포기하고 정산' }), 'confirm abandoning the run')).click();
+  await settle(page, 800);
+  await settle(page, 1000);
+  await (await unique(page.getByRole('button', { name: '메뉴로' }), 'leave the settlement for the menu')).click();
+  await settle(page, 80);
+  await (await unique(page.locator('.chapterCard').nth(3), 'chapter 4 card')).click();
+  await settle(page, 40);
+  await (await unique(page.locator('.stageNode').filter({ has: page.locator('span', { hasText: /^Stage 1$/ }) }), 'Stage 1 node')).click();
+  await settle(page, 30);
+  await (await unique(page.getByRole('button', { name: 'Ch.4 / St.1 출정' }), 'chapter 4 Stage 1 start')).click();
+  await page.locator('.storyPanels').waitFor({ timeout: 5000 });
+  await passInputGuard(page);
+  await page.keyboard.press('Escape');
+  await page.locator('.storyPanels').waitFor({ state: 'detached' });
+  await settle(page, 180);
+  if ((await waitForSprites(page)) !== 'ready') throw new Error('chapter 4 art failed to load');
+  await openCheatPanel(page);
+  await enterCheat(page, 'GOD');
+  await enterCheat(page, 'NUKE');
+  await enterCheat(page, 'AFX6');
+  await page.keyboard.press('Escape');
+  await settle(page, 60);
+  await captureEvidence(page, viewport, dpr, motion, 'arsenal-graves');
 }
 
 function escapeHtml(value) {

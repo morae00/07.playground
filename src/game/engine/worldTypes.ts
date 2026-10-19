@@ -212,6 +212,9 @@ export type AwakenedMarks = {
   crow?: number;
   crowAt?: number;
   pecks?: number;
+  /** K10 looks only (the simulation reads neither): when frostNeedles' freeze ends, and when the crow last pecked. */
+  freeze?: number;
+  peckAt?: number;
   /** bossbane: cracks on a boss. */
   crack?: number;
   /** frostChainlet: the enemies one chain linked, which share what each takes until `until`. */
@@ -464,6 +467,13 @@ export type ChainEffect = {
  * whether its weapon is awakened, for the flight art.
  */
 export type ArsenalLob = { at: number; x: number; y: number; radius: number; damage: number; id: ArsenalId; x0: number; y0: number; born: number; delay: number; k: number; awakened: boolean };
+
+/**
+ * K10 looks only (the simulation reads none of it): an awakening gimmick waiting to go off, for its pending art: the
+ * seventh seal's eighth, where it will strike (the centre of the cast's seals), when it was cast and how long it waits,
+ * and the seals it gathers from.
+ */
+export type ArsenalPending = { id: ArsenalId; x: number; y: number; born: number; delay: number; points: readonly Readonly<{ x: number; y: number }>[] };
 
 /**
  * FX-06: a skill ring or mark for the renderer: the rings no game event sizes (the white chain's last burst, the

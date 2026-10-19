@@ -28,10 +28,11 @@ export type PresentationHost = {
   /** The player's skills (FX-06): a coin's glint and the execution mark show only with their passive. */
   skills?(): Readonly<Partial<Record<SkillId, Readonly<SkillState>>>>;
   /**
-   * K10: how long a weapon's blast or sweep shows when the kit draws it (its SPEC life: the ring, then its decal), or
-   * undefined to keep SKILL_MARK_SECONDS (the look's art). Looks only.
+   * K10: how long a weapon's blast or sweep shows when the kit draws it (its SPEC life: the ring, then its decal), or a
+   * gimmick's echo blast or heavy sweep it draws (the eighth seal, the total eclipse), or undefined to keep
+   * SKILL_MARK_SECONDS (the look's art). Looks only.
    */
-  markSeconds?(skillId: SkillId): number | undefined;
+  markSeconds?(skillId: SkillId, echo: boolean, heavy: boolean): number | undefined;
 };
 
 const PARTICLE_CAP_FULL = 520;
@@ -529,12 +530,12 @@ export class Presentation {
   }
 
   /**
-   * FX-06: a skill ring or stroke from the engine; it draws no ids or cosmetic random numbers. K10: a weapon's own ring
-   * (not a gimmick's echo or the total eclipse) lasts as long as the kit's art for it, and carries the lob's way.
+   * FX-06: a skill ring or stroke from the engine; it draws no ids or cosmetic random numbers. K10: a weapon's own ring,
+   * and the gimmick rings the kit draws, last as long as the kit's art for them; a blast carries the lob's way.
    */
   addSkillMark(kind: SkillMark['kind'], skillId: SkillId, x: number, y: number, radius: number, heavy: boolean, x2: number, y2: number, target = -1, echo?: true, dir?: -1 | 1) {
     if (this.skillMarks.length >= SKILL_MARK_CAP) this.skillMarks.shift();
-    const life = (kind === 'ring' && !heavy && !echo && this.host.markSeconds?.(skillId)) || SKILL_MARK_SECONDS[kind];
+    const life = (kind === 'ring' && this.host.markSeconds?.(skillId, !!echo, heavy)) || SKILL_MARK_SECONDS[kind];
     this.skillMarks.push({ kind, skillId, x, y, radius, heavy, x2, y2, target, life, maxLife: life, seed: (this.markSerial += 1), ...(echo ? { echo } : {}), ...(dir ? { dir } : {}) });
   }
 
