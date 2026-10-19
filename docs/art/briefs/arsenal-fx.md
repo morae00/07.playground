@@ -1380,3 +1380,16 @@ node scripts/art-review-sheet.mjs expr --name k10-c15-pairs --scale 1 --check --
 4. **§3 착지**: 왼쪽으로 던진 유성 붓(x1 < x0)은 렌더러가 `impact`·`impact-awakened`를 앵커 축으로 좌우 반전한다(`SPEC.flight.meteorBrush.landMirror`). `crater`·splash·고리는 반전하지 않고, 방향을 모르면 반전하지 않는다. 반전 꼴을 따로 굽지 않는다.
 5. **보존 해시**: 다음 납품부터 '그 납품이 더한 조각·단계·SPEC 키만 빼고 같은 식으로 잰다'가 규칙이다. 기준은 F1·F2 뒤의 `k10-keep-all` 네 값(stamps는 `nvezmq/535352`)이다.
 6. **화면 검사에서 볼 것(§9-7 (c)에 더함)**: 정지 프레임에서 송이·먹단지 단지와 동전·xp 픽업, 같은 화면의 타르 항아리와 골분 박격 옹기, 올라가는 구간의 유성 붓(로켓·폭죽으로 읽히면 다음 회차에서 올라가는 동안 꼬리를 줄인다), 왼쪽 착지 반전, 송이 셋이 갈라지는 모습.
+
+## 16. 검수 5차 정정 (2026-10-19)
+
+검수 5차(`docs/art/deliveries/K10-arsenal-fx.md`, 3차 1회 P1 17종 수정 후 합격)의 정정이다.
+
+1. **§4.1 SPEC 자리**: `line.edges` → `SPEC.gimmick.trackingSeals`, `line.unroll` → `SPEC.gimmick.fallingScroll`, `halo.eclipseTotal` → `SPEC.gimmick.eclipseHalo`. P2도 `SPEC.gimmick`(사건 고리·선·띠)과 `SPEC.overlay`(표식·발 오버레이) 아래 새 하위 키로 넣고, 기존 `ring`·`line`·`halo`·`caps`·`marks`·`priority` 값은 건드리지 않는다.
+2. **개기일식**: 검은 원반이 아니라 반투명 원판 + 0.62R~R 띠다(검은 태양 금지, 결을 덮지 않음). 원판·띠는 몸 아래 바닥 층, 바깥 테·각성 선·코로나·리본은 allyAttacks 층이다. §1.4 `flash`: 섬광 감소에서 원판·띠 α에도 × 0.5를 곱한다.
+3. **§4.2 땅 조각 처음·끝**: 가운데 물건의 zone-start·zone-end 조각은 α 1이다. 그 물건의 loop·idx 장은 처음·끝 조각이 있는 쪽의 페이드를 받지 않는다: α = min(start ? 1 : fadeIn, end ? 1 : fadeOut). 테는 수명 내내 α 1, wash·gloss·floor·arcs·나머지 조각은 α(a)다. end 조각은 수명 안에서 재생한다.
+4. **§4.2 묘비 그림자**: rx 22 → 21(박스 48×36 안의 최대). 판정 반경 22는 그대로다.
+5. **§4.3 발밑 불길**: 땅 조각 flame 문체의 덩이 1~3개(혀 2~3개를 합침, allyG 심)다. 혀 하나를 줄 세우지 않는다. 같은 꼴 셋 이상을 한 줄로 두지 않는 규칙은 P2의 가시·얼룩 방울·포자·균열선에도 적용한다.
+6. **§4.4 `mini`**: 16×18·2장 → 18×20·4장(2차에서 정함).
+7. **까마귀**: K9 아이콘(깃)과 기믹 물건(까마귀)이 달라 C15 같은 꼴 대조 대신 문체 대조로 본다. 청록은 다리 실 하나다.
+8. **보존 해시**: 3차 2회의 기준은 3a-r1 원문 넷(stamps·draw·spec·parts)이고, '그 납품이 더한 것만 빼고 잰다'는 규칙은 그대로다.
