@@ -1,7 +1,7 @@
 {
   "version": 2,
   "baseline": {
-    "appJsGzip": 106910,
+    "appJsGzip": 112902,
     "vendorJsGzip": 60279,
     "recordedAt": "2026-10-19"
   },
@@ -9,10 +9,10 @@
     "appJs": {
       "bytes": 130839,
       "kib": 127.77,
-      "baselineBytes": 106910,
-      "growthRatio": 0.22382377700869882,
-      "warningBytes": 122946,
-      "failBytes": 133637,
+      "baselineBytes": 112902,
+      "growthRatio": 0.15887229632778865,
+      "warningBytes": 129837,
+      "failBytes": 141127,
       "status": "warning",
       "passed": true
     },
