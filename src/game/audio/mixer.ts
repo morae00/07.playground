@@ -134,6 +134,12 @@ export class AudioMixer implements SoundOutput {
     }, { once: true });
     source.start(now);
     source.stop(now + duration);
+    return id;
+  }
+
+  stop(voice: number) {
+    const slot = this.ledger.release(voice);
+    if (slot && this.context) this.cut(slot, this.context.currentTime);
   }
 
   /**

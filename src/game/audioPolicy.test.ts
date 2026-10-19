@@ -84,3 +84,12 @@ test('finished voices free their slots on the audio clock', () => {
   for (const cue of cues) assert.ok(ledger.request(cue, 0.04, 0.05));
   assert.equal(ledger.counts.peak, 2);
 });
+
+test('a voice stopped early frees its slot (S4)', () => {
+  const ledger = new VoiceLedger();
+  const fuse = ledger.request('bomber.fuse', 0, 1.15);
+  assert.ok(fuse);
+  assert.equal(ledger.release(fuse.voice.id)?.id, fuse.voice.id);
+  assert.equal(ledger.voices.length, 0);
+  assert.equal(ledger.release(fuse.voice.id), null, 'a voice is released once');
+});

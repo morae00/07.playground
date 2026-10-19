@@ -84,8 +84,13 @@ export function mixLevels(options: { volume: number; musicVolume: number; sfxVol
 export interface SoundOutput {
   /** Called from user gestures and run starts: browsers only start audio after a gesture. */
   unlock(): void;
-  /** pan runs from -1 (left edge of the screen) to 1 (right edge); pitch scales the frequency (1 = as authored). */
-  play(cue: CueId, pan?: number, pitch?: number): void;
+  /**
+   * pan runs from -1 (left edge of the screen) to 1 (right edge); pitch scales the frequency (1 = as authored).
+   * Returns the voice's id when it sounds, for stop.
+   */
+  play(cue: CueId, pan?: number, pitch?: number): number | void;
+  /** Fades a voice out before its end: a fuse whose bomber was felled stops ticking (S4). */
+  stop?(voice: number): void;
 }
 
 export type VoiceSlot = { id: number; cue: CueId; priority: number; endsAt: number };
@@ -147,6 +152,12 @@ export class VoiceLedger {
     this.counts.started += 1;
     this.counts.peak = Math.max(this.counts.peak, this.voices.length);
     return { voice, cut };
+  }
+
+  /** Frees a voice stopped early; the voice, or null when it already ended or was cut. */
+  release(id: number): VoiceSlot | null {
+    const index = this.voices.findIndex((voice) => voice.id === id);
+    return index < 0 ? null : this.voices.splice(index, 1)[0];
   }
 
   /** Forgets voices that have finished by audio time now. */

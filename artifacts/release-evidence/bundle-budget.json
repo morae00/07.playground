@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 130857,
-      "kib": 127.79,
+      "bytes": 131033,
+      "kib": 127.96,
       "baselineBytes": 112902,
-      "growthRatio": 0.15903172663017484,
+      "growthRatio": 0.1605906006979505,
       "warningBytes": 129837,
       "failBytes": 141127,
       "status": "warning",
@@ -43,8 +43,8 @@
       "passed": true
     },
     "installAssets": {
-      "bytes": 33315520,
-      "kib": 32534.69,
+      "bytes": 33314100,
+      "kib": 32533.3,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-s1rdBGzp.js",
+      "file": "assets/App-5LTfzAwY.js",
       "category": "appJs",
-      "sourceBytes": 406886,
-      "gzipBytes": 127305
+      "sourceBytes": 407430,
+      "gzipBytes": 127479
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -133,16 +133,16 @@
       "gzipBytes": 113032
     },
     {
-      "file": "assets/index-Br2TCAkw.js",
-      "category": "appJs",
-      "sourceBytes": 7500,
-      "gzipBytes": 3552
-    },
-    {
       "file": "assets/index-CELqW5wV.css",
       "category": "css",
       "sourceBytes": 95975,
       "gzipBytes": 17893
+    },
+    {
+      "file": "assets/index-CrVpNOlc.js",
+      "category": "appJs",
+      "sourceBytes": 7500,
+      "gzipBytes": 3554
     },
     {
       "file": "assets/keyart-DFQzyQdB.webp",
@@ -346,31 +346,31 @@
       "file": "assets/packs/sfx-common/bomber.blast-0.wav",
       "category": "audio",
       "sourceBytes": 23020,
-      "gzipBytes": 12060
+      "gzipBytes": 11931
     },
     {
       "file": "assets/packs/sfx-common/bomber.blast-1.wav",
       "category": "audio",
       "sourceBytes": 21868,
-      "gzipBytes": 11240
+      "gzipBytes": 11599
     },
     {
       "file": "assets/packs/sfx-common/bomber.blast-2.wav",
       "category": "audio",
       "sourceBytes": 23468,
-      "gzipBytes": 12411
+      "gzipBytes": 12362
     },
     {
       "file": "assets/packs/sfx-common/bomber.fuse-0.wav",
       "category": "audio",
-      "sourceBytes": 50654,
-      "gzipBytes": 47028
+      "sourceBytes": 49772,
+      "gzipBytes": 41908
     },
     {
       "file": "assets/packs/sfx-common/bomber.fuse-1.wav",
       "category": "audio",
-      "sourceBytes": 49944,
-      "gzipBytes": 46793
+      "sourceBytes": 49406,
+      "gzipBytes": 41593
     },
     {
       "file": "assets/packs/sfx-common/boss.clock-0.wav",

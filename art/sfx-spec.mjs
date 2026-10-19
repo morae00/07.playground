@@ -98,10 +98,11 @@ export const RECIPES = Object.freeze({
   'ambience.ch3': { variants: 1, loop: 8, layers: [{ noise: 'white', filter: 'bandpass', hz: 700, q: 0.6, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.8, lfo: { hz: 0.375, depth: 0.45 } }, { noise: 'white', filter: 'lowpass', hz: 220, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.6, lfo: { hz: 0.125, depth: 0.3 } }] },
   'ambience.ch4': { variants: 1, loop: 8, layers: [{ noise: 'white', filter: 'lowpass', hz: 300, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.35 }, ...Array.from({ length: 16 }, (_, index) => ({ tone: 'square', hz: index % 2 ? 1320 : 1760, attack: 0.001, decay: 0.012, gain: 0.18, at: index * 0.5 }))] },
   'ambience.ch5': { variants: 1, loop: 8, layers: [{ tone: 'sine', hz: 55, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.5, lfo: { hz: 0.125, depth: 0.5 } }, { noise: 'white', filter: 'highpass', hz: 4800, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.08, lfo: { hz: 0.5, depth: 0.8 } }] },
-  // SYS-14 bombers (appended, so every earlier file stays byte-identical): a fuse that hisses and ticks faster over
-  // its 1.15 s, and a blast with a low body under a burst of crackle.
-  'bomber.fuse': { variants: 2, layers: [{ noise: 'white', filter: 'highpass', hz: 4200, attack: 0.02, hold: 0.95, decay: 0.15, gain: 0.3 }, ...[0, 0.45, 0.75, 0.95].map((at, index) => ({ tone: 'square', hz: 1200 + index * 260, attack: 0.001, decay: 0.03, gain: 0.35, at }))] },
-  'bomber.blast': { variants: 3, layers: [{ noise: 'white', filter: 'lowpass', hz: 2400, to: 180, attack: 0.002, decay: 0.5, gain: 1 }, thud(90, 38, 0.4, 0.9), { noise: 'crackle', filter: 'highpass', hz: 2400, attack: 0.001, decay: 0.22, gain: 0.45 }] },
+  // SYS-14 bombers (appended, so every earlier file stays byte-identical). S4: the fuse burns, a paper sizzle that
+  // brightens and swells toward the blast under five amber clacks that speed up (gaps 0.45/0.30/0.20/0.12 s); the blast's
+  // body sits at 110-220 Hz where laptop speakers carry it, and its crackle stays above the warning lane.
+  'bomber.fuse': { variants: 2, layers: [{ noise: 'crackle', filter: 'highpass', hz: 3800, to: 6000, attack: 0.6, hold: 0.35, decay: 0.15, gain: 0.2 }, { noise: 'white', filter: 'bandpass', hz: 1400, to: 2200, q: 1.2, attack: 0.9, hold: 0.05, decay: 0.15, gain: 0.12 }, ...[0, 0.45, 0.75, 0.95, 1.07].flatMap((at, index) => clack(at, 2500 + index * 200, 0.7 + index * 0.075))] },
+  'bomber.blast': { variants: 3, layers: [{ noise: 'white', filter: 'lowpass', hz: 2400, to: 180, attack: 0.002, decay: 0.5, gain: 1 }, thud(110, 45, 0.4, 0.7), { tone: 'triangle', hz: 220, to: 90, attack: 0.002, decay: 0.25, gain: 0.35 }, { noise: 'crackle', filter: 'highpass', hz: 4200, attack: 0.001, decay: 0.22, gain: 0.45 }] },
   // SYS-15 arsenal casts (K10 Q7, appended so every earlier file stays byte-identical): each weapon's own object and
   // gesture (arsenal-icons §3.4, arsenal-fx §2), in the table's order. A weapon without a cue keeps its look's
   // cast.<look>, which stays the family's reference. Short (most under 0.25 s), main energy kept out of the 2.4-3.6 kHz

@@ -66,7 +66,7 @@ test('SYS-14: a fuse bomber plants itself on touch, shows its reach for the fuse
     r.probe.step(1);
     const planted = r.probe.read().enemies.find((enemy) => enemy.id === id);
     assert.ok(planted.fuseAt !== undefined, 'planted on touch');
-    assert.deepEqual(r.events.filter((event) => event.type === 'enemy/armed').map((event) => event.radius), [BOMBERS.fuse.radius]);
+    assert.deepEqual(r.events.filter((event) => event.type === 'enemy/armed').map((event) => [event.id, event.radius]), [[id, BOMBERS.fuse.radius]]);
     const hpBefore = r.probe.read().player.hp;
     r.probe.step(Math.floor(BOMBERS.fuse.seconds * 60) - 5);
     assert.ok(r.probe.read().enemies.some((enemy) => enemy.id === id), 'still burning');
@@ -106,6 +106,7 @@ test('SYS-14: stepping out of the circle dodges the blast, and killing a planted
     r.probe.patchEnemy(defused, { hp: 0 });
     r.probe.step(Math.ceil(BOMBERS.fuse.seconds * 60) + 2);
     assert.ok(!r.events.some((event) => event.type === 'enemy/blast'), 'a felled bomber never goes off');
+    assert.deepEqual(r.events.filter((event) => event.type === 'enemy/defused').map((event) => event.id), [defused], 'and says so, for its fuse sound');
   } finally {
     r.engine.dispose();
   }

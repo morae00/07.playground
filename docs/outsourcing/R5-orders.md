@@ -69,3 +69,4 @@ R4 실행서 3단계와 같다. 판정은 납품서 끝에 "검수 N차"로 붙�
 ## 5단계 — 소리 (`sound-designer`)
 
 - S4: "점검 요청: `art/sfx-spec.mjs` 끝의 `bomber.fuse`·`bomber.blast` 레시피(SYS-14)를 들어 보고, 심지가 1.15초 동안 타오르다 터진다는 것이 들리는지, 폭발이 효과음 흐름(`docs/decisions/AUD-05-loudness.md` §5) 위로 지나치게 튀지 않는지 판정하고 고칠 레시피를 제안해라." 승인된 수정만 반영한다(새 레시피는 끝에, 기존 `variants` 수는 그대로).
+  - 반영(2026-10-19): 심지·폭발 레시피 수정과 해체 때 심지 끊기. 기록은 `art/audio/arsenal-casts.md`. 무기별 시전음(K10 Q7)은 dce32cb.

@@ -100,6 +100,8 @@ export class Presentation {
   readonly blasts: BlastFlash[] = [];
   /** K11: shocks that went off, for their burst and mark. */
   readonly shocks: ShockBurst[] = [];
+  /** S4: each planted bomber's fuse voice (enemy id to voice id), stopped if the bomber is felled first. */
+  private readonly fuses = new Map<number, number>();
   readonly skillMarks: SkillMark[] = [];
   readonly corpses: Corpse[] = [];
   readonly hitStamps: HitStamp[] = [];
@@ -167,6 +169,7 @@ export class Presentation {
     this.legacyHitWait = 0;
     this.pickupCombo = 0;
     this.pickupComboWait = 0;
+    this.fuses.clear();
   }
 
   /** A new round: drop particles and damage numbers (rings clear with the round's other effects). */
@@ -304,10 +307,20 @@ export class Presentation {
         this.burst(event.x, event.y, Math.round(28 * effects), '#050505', 280);
         this.addShake(11);
         return;
-      case 'enemy/armed':
-        this.play('bomber.fuse', event.x);
+      case 'enemy/armed': {
+        const voice = this.play('bomber.fuse', event.x);
+        if (voice !== undefined) this.fuses.set(event.id, voice);
         return;
+      }
+      case 'enemy/defused': {
+        // S4: a felled bomber's fuse stops ticking, so it does not warn of a blast that will not come.
+        const voice = this.fuses.get(event.id);
+        this.fuses.delete(event.id);
+        if (voice !== undefined) this.sound?.stop?.(voice);
+        return;
+      }
       case 'enemy/blast':
+        this.fuses.delete(event.id);
         // SYS-14: the blast's reach flashes as a hostile ring, and a blast that caught the player shakes harder.
         this.impactRings.push({ x: event.x, y: event.y, radius: event.radius, life: 0.3, maxLife: 0.3, tier: 'heavy', owner: 'hostile' });
         this.blasts.push({ x: event.x, y: event.y, kind: event.kind, life: BLAST_SECONDS, maxLife: BLAST_SECONDS });
@@ -568,8 +581,9 @@ export class Presentation {
     this.recoils.push({ id, dx, dy, size, life: RECOIL_SECONDS, maxLife: RECOIL_SECONDS });
   }
 
-  private play(cue: CueId, x?: number, pitch = 1) {
-    if (this.disposed || !this.sound) return;
-    this.sound.play(cue, x === undefined ? 0 : this.host.pan(x), pitch);
+  private play(cue: CueId, x?: number, pitch = 1): number | undefined {
+    if (this.disposed || !this.sound) return undefined;
+    const voice = this.sound.play(cue, x === undefined ? 0 : this.host.pan(x), pitch);
+    return typeof voice === 'number' ? voice : undefined;
   }
 }

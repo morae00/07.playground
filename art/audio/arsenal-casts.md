@@ -266,3 +266,51 @@ R5 5단계 소리 발주(`docs/outsourcing/R5-orders.md` S4, `docs/art/briefs/ar
   - `npm run measure:loudness` 실행(메인 세션).
   - 길게는 sound-designer 허용 명령에 `^npm run measure:loudness$`를 더하는 것을 검토해 주세요. 그러면 다음부터 제가 직접 잽니다.
   - 내려받기나 외부 도구는 필요 없습니다.
+
+## 소리 납품서 S4 반영
+
+승인된 diff대로 심지·폭발 레시피를 고치고 다시 구웠습니다. 오디오 테스트는 55개 모두 통과했습니다.
+
+**바꾼 레시피**
+- 파일: `/Users/kyuukkang/CT_AX/07.playground/art/sfx-spec.mjs`, 101~106줄(주석 포함).
+- 레시피 순서와 `variants` 수(심지 2, 폭발 3)는 그대로입니다.
+- `clack` 도우미는 이미 24~28줄에 있어서 새로 만들지 않았습니다.
+
+```js
+  // SYS-14 bombers (appended, so every earlier file stays byte-identical). S4: the fuse burns, a paper sizzle that
+  // brightens and swells toward the blast under five amber clacks that speed up (gaps 0.45/0.30/0.20/0.12 s); the blast's
+  // body sits at 110-220 Hz where laptop speakers carry it, and its crackle stays above the warning lane.
+  'bomber.fuse': { variants: 2, layers: [{ noise: 'crackle', filter: 'highpass', hz: 3800, to: 6000, attack: 0.6, hold: 0.35, decay: 0.15, gain: 0.2 }, { noise: 'white', filter: 'bandpass', hz: 1400, to: 2200, q: 1.2, attack: 0.9, hold: 0.05, decay: 0.15, gain: 0.12 }, ...[0, 0.45, 0.75, 0.95, 1.07].flatMap((at, index) => clack(at, 2500 + index * 200, 0.7 + index * 0.075))] },
+  'bomber.blast': { variants: 3, layers: [{ noise: 'white', filter: 'lowpass', hz: 2400, to: 180, attack: 0.002, decay: 0.5, gain: 1 }, thud(110, 45, 0.4, 0.7), { tone: 'triangle', hz: 220, to: 90, attack: 0.002, decay: 0.25, gain: 0.35 }, { noise: 'crackle', filter: 'highpass', hz: 4200, attack: 0.001, decay: 0.22, gain: 0.45 }] },
+```
+
+**굽기 출력**
+- `npm run build:sfx`: `99 cues, 196 files, 3679 KiB`. 앞 굽기보다 2 KiB 줄었습니다. 심지 파일이 약 0.02초 짧아졌기 때문입니다.
+
+**바뀐 파일**(길이는 afinfo로 확인)
+- `public/assets/packs/sfx-common/bomber.fuse-0.wav`: 1.128초(전 1.148)
+- `public/assets/packs/sfx-common/bomber.fuse-1.wav`: 1.119초
+- `public/assets/packs/sfx-common/bomber.blast-0.wav`: 0.521초
+- `public/assets/packs/sfx-common/bomber.blast-1.wav`: 0.495초
+- `public/assets/packs/sfx-common/bomber.blast-2.wav`: 0.531초
+- `pack.json`은 내용이 같아야 합니다. 해시가 없고 파일 이름도 그대로입니다.
+- 다른 파일이 그대로인 근거는 구조입니다. 시드는 변형 순번으로 정해지고, 변형 수는 바뀌지 않았습니다. 해시는 대조하지 못했습니다. `git status --porcelain public/assets/packs/sfx-common`에 위 다섯 개만 `M`으로 나오는지 확인해 주세요.
+
+**테스트**
+- `node --test src/game/audioPolicy.test.ts src/game/audio/*.test.ts`: 55개 모두 통과. 메인 세션이 더한 "every arsenal weapon has its own cast cue"와 팩–큐 표 일치 검사도 통과합니다.
+- `npm run test:unit` 전체는 이번에 다시 돌리지 않았습니다.
+
+**알려진 한계**
+- 소리를 들어 보지 못했고, 크기도 재지 않았습니다. 앞 납품서의 추정(심지 게임 재생 약 −32, 폭발 약 −28~−29 LUFS)은 실측보다 4~6 dB 낮게 나오는 경향이 있었습니다. 판단은 메인 세션의 측정으로 해 주세요. 큐 표의 심지 gain을 1.0으로 올린 뒤의 기준은 "심지 ≤ 폭발 − 3 LU"입니다.
+- 딱따기가 피치 흔들림(레시피 ±6%, 재생 ±4%)을 받으면 끝 쪽이 2.35~3.74 kHz로 경고 대역(2.4~3.6) 끝을 조금 넘습니다. 기존 `clack`의 동작과 같습니다.
+- 마지막 딱따기(1.07초)와 폭발(1.15초)의 간격은 재생 피치 흔들림 때문에 ±0.04초 달라집니다.
+- 해체될 때 심지 소리를 끊는 코드가 들어가기 전까지는, 해체된 뒤에도 딱따기가 끝까지 울립니다.
+- 청취 확인이 필요합니다: 심지가 타오르며 빨라지는 느낌, 폭발 몸통이 노트북 스피커에서 들리는지, 폭탄병 셋이 동시에 터질 때 리미터가 숨 쉬듯 출렁이지 않는지.
+
+## 메인 세션 반영: S4 (2026-10-19)
+
+- 레시피 수정(위 납품서)을 받아들였다. 바뀐 파일은 `bomber.fuse-0/1`, `bomber.blast-0/1/2`뿐이다.
+- `npm run measure:loudness`(게임 재생 모멘터리 최대): 심지 −29.7/−31.0, 폭발 −27.4/−25.9/−26.6 LUFS. 전에는 심지 −22.1/−21.1, 폭발 −26.2/−27.6/−25.7로 심지가 약 5 LU 컸다.
+- 큐 표의 심지 gain은 0.7 그대로 둔다. 1.0으로 올리면 심지 −26.6/−27.9로 폭발과 같아져 기준('심지 ≤ 폭발 − 3 LU')을 넘는다. 0.7에서 심지는 폭발 평균보다 약 3.6 LU 작다.
+- 해체 때 심지 끊기: 엔진이 불붙은 폭탄병이 쓰러지면 `enemy/defused`(id)를 내고, `enemy/armed`·`enemy/blast`도 id를 싣는다. presentation이 폭탄병마다 심지 보이스를 기억했다가 해체되면 `SoundOutput.stop`으로 끊는다(믹서는 보이스를 장부에서 풀고 12 ms에 걸쳐 줄인다). 터지면 기억을 지운다.
+

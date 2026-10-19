@@ -4011,7 +4011,7 @@ export class GameEngine {
           this.detonate(enemy);
         } else {
           enemy.fuseAt = this.elapsed;
-          this.emit({ type: 'enemy/armed', x: enemy.x, y: enemy.y, radius: BOMBERS.fuse.radius, seconds: BOMBERS.fuse.seconds });
+          this.emit({ type: 'enemy/armed', id: enemy.id, x: enemy.x, y: enemy.y, radius: BOMBERS.fuse.radius, seconds: BOMBERS.fuse.seconds });
         }
         continue;
       }
@@ -5366,7 +5366,7 @@ export class GameEngine {
     const { radius } = BOMBERS[kind];
     const hit = distance(enemy, this.player) <= radius + HIT_RADIUS.playerContact;
     if (hit) this.damagePlayer(enemy.blastDamage ?? enemy.damage, false, 'blast', enemy);
-    this.emit({ type: 'enemy/blast', x: enemy.x, y: enemy.y, radius, kind, hit });
+    this.emit({ type: 'enemy/blast', id: enemy.id, x: enemy.x, y: enemy.y, radius, kind, hit });
     enemy.detonated = true;
     enemy.hp = 0;
   }
@@ -5662,6 +5662,7 @@ export class GameEngine {
   protected onEnemyKilled(enemy: Entity, suppressBossDraft = false) {
     // SYS-14: a bomber that went off was not felled: no kill, no XP, no coins.
     if (enemy.detonated) return;
+    if (enemy.fuseAt !== undefined) this.emit({ type: 'enemy/defused', id: enemy.id });
     // SYS-13: while a strong build keeps the infinite run's field thin, each kill brings more, so the horde stays one.
     if (this.rules.horde && this.runMode === 'infinite' && !enemy.isBoss && this.elapsed > HORDE.fill.afterSeconds && this.enemies.length < this.enemyCap() * HORDE.fill.share) {
       this.spawnBudget += HORDE.fill.perKill;

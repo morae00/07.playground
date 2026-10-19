@@ -15,12 +15,14 @@ function setup(overrides: Partial<ReturnType<typeof createDefaultOptions>> = {},
 
 function recorder() {
   const played: { cue: CueId; pan: number; pitch?: number }[] = [];
+  const stopped: number[] = [];
   let unlocks = 0;
   const sound: SoundOutput = {
     unlock: () => { unlocks += 1; },
-    play: (cue, pan = 0, pitch = 1) => { played.push(pitch === 1 ? { cue, pan } : { cue, pan, pitch }); },
+    play: (cue, pan = 0, pitch = 1) => played.push(pitch === 1 ? { cue, pan } : { cue, pan, pitch }),
+    stop: (voice) => { stopped.push(voice); },
   };
-  return { sound, played, unlocks: () => unlocks };
+  return { sound, played, stopped, unlocks: () => unlocks };
 }
 
 test('bursts respect the particle cap for the effect density and draw ids from the host', () => {
@@ -123,6 +125,20 @@ test('events play their cues on the mixer, panned by screen position', () => {
   presentation.unlockSound();
   assert.equal(played.length, 7, 'a disposed presentation sends nothing');
   assert.equal(unlocks(), 1);
+});
+
+test('a felled bomber stops its fuse; one that went off is forgotten (S4)', () => {
+  const { presentation } = setup();
+  const { sound, played, stopped } = recorder();
+  presentation.setSound(sound);
+  presentation.handle({ type: 'enemy/armed', id: 7, x: 500, y: 0, radius: 120, seconds: 1.15 });
+  presentation.handle({ type: 'enemy/armed', id: 8, x: 500, y: 0, radius: 120, seconds: 1.15 });
+  presentation.handle({ type: 'enemy/blast', id: 8, x: 500, y: 0, radius: 120, kind: 'fuse', hit: false });
+  presentation.handle({ type: 'enemy/defused', id: 8 });
+  presentation.handle({ type: 'enemy/defused', id: 7 });
+  presentation.handle({ type: 'enemy/defused', id: 7 });
+  assert.deepEqual(played.map((entry) => entry.cue), ['bomber.fuse', 'bomber.fuse', 'bomber.blast']);
+  assert.deepEqual(stopped, [1], 'only the first fuse (voice 1) stops, once');
 });
 
 test('classic rules keep 0.1.0 drawing a hit pitch from the cosmetic stream, once per hit spacing', () => {

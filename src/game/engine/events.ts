@@ -36,8 +36,10 @@ export type GameEvent =
   | { type: 'vortex/collapse'; x: number; y: number; radius: number; ring: boolean }
   | { type: 'shock/burst'; x: number; y: number; id: number; radius: number }
   /** SYS-14: a fuse bomber planted itself (its blast reach and fuse length), and a bomber went off. */
-  | { type: 'enemy/armed'; x: number; y: number; radius: number; seconds: number }
-  | { type: 'enemy/blast'; x: number; y: number; radius: number; kind: 'fuse' | 'burst'; hit: boolean }
+  | { type: 'enemy/armed'; id: number; x: number; y: number; radius: number; seconds: number }
+  | { type: 'enemy/blast'; id: number; x: number; y: number; radius: number; kind: 'fuse' | 'burst'; hit: boolean }
+  /** S4: a planted fuse bomber was felled before it went off; its fuse sound stops. */
+  | { type: 'enemy/defused'; id: number }
   | { type: 'trap/sprung'; x: number; y: number }
   | { type: 'shot/blocked'; x: number; y: number }
   /** SYS-02: a warden's shield took a hit, and a charger ran into a wall. */
