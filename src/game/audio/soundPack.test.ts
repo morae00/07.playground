@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
+import { ARSENAL_IDS } from '../arsenal.ts';
 import { CUES, SAMPLE_PEAK } from '../audioPolicy.ts';
 
 // The v0 SFX pack (AUD-02): scripts/build-sfx.mjs bakes art/sfx-spec.mjs into public/assets/packs/sfx-common.
@@ -29,4 +30,9 @@ test('pack files are 16-bit mono WAV normalized to the peak the mixer assumes', 
     for (let offset = 44; offset < data.length; offset += 2) peak = Math.max(peak, Math.abs(data.readInt16LE(offset)));
     assert.ok(Math.abs(peak / 32767 - SAMPLE_PEAK) < 0.001, `${files[0]} peaks at ${SAMPLE_PEAK}`);
   }
+});
+
+test('every arsenal weapon has its own cast cue (K10 Q7)', () => {
+  const missing = ARSENAL_IDS.filter((id) => !(`cast.${id}` in CUES));
+  assert.deepEqual(missing, []);
 });

@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 130839,
-      "kib": 127.77,
+      "bytes": 130857,
+      "kib": 127.79,
       "baselineBytes": 112902,
-      "growthRatio": 0.15887229632778865,
+      "growthRatio": 0.15903172663017484,
       "warningBytes": 129837,
       "failBytes": 141127,
       "status": "warning",
@@ -35,16 +35,16 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 2094718,
-      "kib": 2045.62,
+      "bytes": 2101817,
+      "kib": 2052.56,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 32801936,
-      "kib": 32033.14,
+      "bytes": 33315520,
+      "kib": 32534.69,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-CNLs89Vv.js",
+      "file": "assets/App-s1rdBGzp.js",
       "category": "appJs",
-      "sourceBytes": 406835,
-      "gzipBytes": 127285
+      "sourceBytes": 406886,
+      "gzipBytes": 127305
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -117,8 +117,8 @@
     {
       "file": "assets/content/tables.json",
       "category": "data",
-      "sourceBytes": 51833,
-      "gzipBytes": 10484
+      "sourceBytes": 58932,
+      "gzipBytes": 11008
     },
     {
       "file": "assets/enemy-icons-BEkQ6ASU.webp",
@@ -133,10 +133,10 @@
       "gzipBytes": 113032
     },
     {
-      "file": "assets/index-C2JC4xtr.js",
+      "file": "assets/index-Br2TCAkw.js",
       "category": "appJs",
       "sourceBytes": 7500,
-      "gzipBytes": 3554
+      "gzipBytes": 3552
     },
     {
       "file": "assets/index-CELqW5wV.css",
@@ -559,6 +559,36 @@
       "gzipBytes": 5303
     },
     {
+      "file": "assets/packs/sfx-common/cast.bossbane-0.wav",
+      "category": "audio",
+      "sourceBytes": 7542,
+      "gzipBytes": 4038
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.brushDownpour-0.wav",
+      "category": "audio",
+      "sourceBytes": 5236,
+      "gzipBytes": 3398
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.brushDownpour-1.wav",
+      "category": "audio",
+      "sourceBytes": 5072,
+      "gzipBytes": 3288
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.brushQuills-0.wav",
+      "category": "audio",
+      "sourceBytes": 4334,
+      "gzipBytes": 2715
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.brushQuills-1.wav",
+      "category": "audio",
+      "sourceBytes": 4106,
+      "gzipBytes": 2585
+    },
+    {
       "file": "assets/packs/sfx-common/cast.chainSpark-0.wav",
       "category": "audio",
       "sourceBytes": 6168,
@@ -575,6 +605,48 @@
       "category": "audio",
       "sourceBytes": 5928,
       "gzipBytes": 3390
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.clusterPots-0.wav",
+      "category": "audio",
+      "sourceBytes": 5504,
+      "gzipBytes": 3982
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.clusterPots-1.wav",
+      "category": "audio",
+      "sourceBytes": 5338,
+      "gzipBytes": 3839
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.crossStrokes-0.wav",
+      "category": "audio",
+      "sourceBytes": 5602,
+      "gzipBytes": 3870
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.crowFeathers-0.wav",
+      "category": "audio",
+      "sourceBytes": 6300,
+      "gzipBytes": 4303
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.crowFeathers-1.wav",
+      "category": "audio",
+      "sourceBytes": 6180,
+      "gzipBytes": 4299
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.eclipseHalo-0.wav",
+      "category": "audio",
+      "sourceBytes": 11952,
+      "gzipBytes": 8612
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.fallingScroll-0.wav",
+      "category": "audio",
+      "sourceBytes": 8864,
+      "gzipBytes": 5367
     },
     {
       "file": "assets/packs/sfx-common/cast.fanKnives-0.wav",
@@ -595,6 +667,18 @@
       "gzipBytes": 2678
     },
     {
+      "file": "assets/packs/sfx-common/cast.frostChainlet-0.wav",
+      "category": "audio",
+      "sourceBytes": 4748,
+      "gzipBytes": 3455
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.frostChainlet-1.wav",
+      "category": "audio",
+      "sourceBytes": 4910,
+      "gzipBytes": 3616
+    },
+    {
       "file": "assets/packs/sfx-common/cast.frostLine-0.wav",
       "category": "audio",
       "sourceBytes": 6092,
@@ -611,6 +695,186 @@
       "category": "audio",
       "sourceBytes": 6026,
       "gzipBytes": 3760
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.frostNeedles-0.wav",
+      "category": "audio",
+      "sourceBytes": 3632,
+      "gzipBytes": 2359
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.frostNeedles-1.wav",
+      "category": "audio",
+      "sourceBytes": 3544,
+      "gzipBytes": 2295
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.frostRing-0.wav",
+      "category": "audio",
+      "sourceBytes": 10556,
+      "gzipBytes": 6818
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.frostRing-1.wav",
+      "category": "audio",
+      "sourceBytes": 9830,
+      "gzipBytes": 6110
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.ghostVolley-0.wav",
+      "category": "audio",
+      "sourceBytes": 5852,
+      "gzipBytes": 4118
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.ghostVolley-1.wav",
+      "category": "audio",
+      "sourceBytes": 5496,
+      "gzipBytes": 3864
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.gravePins-0.wav",
+      "category": "audio",
+      "sourceBytes": 5728,
+      "gzipBytes": 3780
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.gravePins-1.wav",
+      "category": "audio",
+      "sourceBytes": 5744,
+      "gzipBytes": 3817
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.headsmanDarts-0.wav",
+      "category": "audio",
+      "sourceBytes": 6964,
+      "gzipBytes": 4520
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.headsmanDarts-1.wav",
+      "category": "audio",
+      "sourceBytes": 7458,
+      "gzipBytes": 4944
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.huntersMarks-0.wav",
+      "category": "audio",
+      "sourceBytes": 4474,
+      "gzipBytes": 2949
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.huntersMarks-1.wav",
+      "category": "audio",
+      "sourceBytes": 4626,
+      "gzipBytes": 2870
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.inkBloom-0.wav",
+      "category": "audio",
+      "sourceBytes": 5938,
+      "gzipBytes": 4409
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.inkBloom-1.wav",
+      "category": "audio",
+      "sourceBytes": 6038,
+      "gzipBytes": 4630
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.inkDarts-0.wav",
+      "category": "audio",
+      "sourceBytes": 4022,
+      "gzipBytes": 2270
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.inkDarts-1.wav",
+      "category": "audio",
+      "sourceBytes": 4032,
+      "gzipBytes": 2293
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.inkDrizzle-0.wav",
+      "category": "audio",
+      "sourceBytes": 2328,
+      "gzipBytes": 1298
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.inkDrizzle-1.wav",
+      "category": "audio",
+      "sourceBytes": 2384,
+      "gzipBytes": 1317
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.inkLance-0.wav",
+      "category": "audio",
+      "sourceBytes": 8622,
+      "gzipBytes": 5650
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.inkLance-1.wav",
+      "category": "audio",
+      "sourceBytes": 8418,
+      "gzipBytes": 5434
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.inkLightning-0.wav",
+      "category": "audio",
+      "sourceBytes": 11486,
+      "gzipBytes": 6538
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.inkLightning-1.wav",
+      "category": "audio",
+      "sourceBytes": 11328,
+      "gzipBytes": 6214
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.inkOrbit-0.wav",
+      "category": "audio",
+      "sourceBytes": 5422,
+      "gzipBytes": 3899
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.inkOrbit-1.wav",
+      "category": "audio",
+      "sourceBytes": 5564,
+      "gzipBytes": 4031
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.inkPots-0.wav",
+      "category": "audio",
+      "sourceBytes": 6422,
+      "gzipBytes": 4416
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.inkPots-1.wav",
+      "category": "audio",
+      "sourceBytes": 6452,
+      "gzipBytes": 4525
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.inkPulse-0.wav",
+      "category": "audio",
+      "sourceBytes": 9120,
+      "gzipBytes": 5490
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.inkPulse-1.wav",
+      "category": "audio",
+      "sourceBytes": 9218,
+      "gzipBytes": 5582
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.judgmentLine-0.wav",
+      "category": "audio",
+      "sourceBytes": 11996,
+      "gzipBytes": 7578
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.meteorBrush-0.wav",
+      "category": "audio",
+      "sourceBytes": 13716,
+      "gzipBytes": 10039
     },
     {
       "file": "assets/packs/sfx-common/cast.mirrorClone-0.wav",
@@ -631,6 +895,30 @@
       "gzipBytes": 2828
     },
     {
+      "file": "assets/packs/sfx-common/cast.paperStorm-0.wav",
+      "category": "audio",
+      "sourceBytes": 7854,
+      "gzipBytes": 5214
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.paperStorm-1.wav",
+      "category": "audio",
+      "sourceBytes": 7834,
+      "gzipBytes": 5035
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.pinHail-0.wav",
+      "category": "audio",
+      "sourceBytes": 2212,
+      "gzipBytes": 1244
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.pinHail-1.wav",
+      "category": "audio",
+      "sourceBytes": 2192,
+      "gzipBytes": 1255
+    },
+    {
       "file": "assets/packs/sfx-common/cast.railSpear-0.wav",
       "category": "audio",
       "sourceBytes": 9750,
@@ -643,6 +931,156 @@
       "gzipBytes": 5573
     },
     {
+      "file": "assets/packs/sfx-common/cast.sealArrows-0.wav",
+      "category": "audio",
+      "sourceBytes": 6546,
+      "gzipBytes": 4092
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.sealArrows-1.wav",
+      "category": "audio",
+      "sourceBytes": 6524,
+      "gzipBytes": 4154
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.seventhSeal-0.wav",
+      "category": "audio",
+      "sourceBytes": 6968,
+      "gzipBytes": 5156
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.silenceBell-0.wav",
+      "category": "audio",
+      "sourceBytes": 18656,
+      "gzipBytes": 13717
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.smokeTail-0.wav",
+      "category": "audio",
+      "sourceBytes": 6810,
+      "gzipBytes": 4515
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.smokeTail-1.wav",
+      "category": "audio",
+      "sourceBytes": 6680,
+      "gzipBytes": 4658
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.sparkThread-0.wav",
+      "category": "audio",
+      "sourceBytes": 5544,
+      "gzipBytes": 3048
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.sparkThread-1.wav",
+      "category": "audio",
+      "sourceBytes": 5424,
+      "gzipBytes": 3280
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.starShards-0.wav",
+      "category": "audio",
+      "sourceBytes": 4214,
+      "gzipBytes": 2926
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.starShards-1.wav",
+      "category": "audio",
+      "sourceBytes": 4050,
+      "gzipBytes": 2965
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.stormThread-0.wav",
+      "category": "audio",
+      "sourceBytes": 6768,
+      "gzipBytes": 4808
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.stormThread-1.wav",
+      "category": "audio",
+      "sourceBytes": 7130,
+      "gzipBytes": 5047
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.sunNeedles-0.wav",
+      "category": "audio",
+      "sourceBytes": 8028,
+      "gzipBytes": 6328
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.tailGuard-0.wav",
+      "category": "audio",
+      "sourceBytes": 4738,
+      "gzipBytes": 3441
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.tailGuard-1.wav",
+      "category": "audio",
+      "sourceBytes": 4976,
+      "gzipBytes": 3625
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.tarJar-0.wav",
+      "category": "audio",
+      "sourceBytes": 6660,
+      "gzipBytes": 4721
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.thornHalo-0.wav",
+      "category": "audio",
+      "sourceBytes": 4916,
+      "gzipBytes": 3587
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.thornHalo-1.wav",
+      "category": "audio",
+      "sourceBytes": 4978,
+      "gzipBytes": 3749
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.thunderNeedles-0.wav",
+      "category": "audio",
+      "sourceBytes": 4232,
+      "gzipBytes": 2342
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.thunderNeedles-1.wav",
+      "category": "audio",
+      "sourceBytes": 4142,
+      "gzipBytes": 2235
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.thunderclap-0.wav",
+      "category": "audio",
+      "sourceBytes": 14156,
+      "gzipBytes": 8195
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.trackingSeals-0.wav",
+      "category": "audio",
+      "sourceBytes": 4676,
+      "gzipBytes": 3271
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.trackingSeals-1.wav",
+      "category": "audio",
+      "sourceBytes": 4732,
+      "gzipBytes": 3464
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.twinBlades-0.wav",
+      "category": "audio",
+      "sourceBytes": 6830,
+      "gzipBytes": 4400
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.twinBlades-1.wav",
+      "category": "audio",
+      "sourceBytes": 6368,
+      "gzipBytes": 4168
+    },
+    {
       "file": "assets/packs/sfx-common/cast.voidMine-0.wav",
       "category": "audio",
       "sourceBytes": 10286,
@@ -653,6 +1091,30 @@
       "category": "audio",
       "sourceBytes": 10018,
       "gzipBytes": 6239
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.wardRing-0.wav",
+      "category": "audio",
+      "sourceBytes": 4898,
+      "gzipBytes": 2724
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.wardRing-1.wav",
+      "category": "audio",
+      "sourceBytes": 4882,
+      "gzipBytes": 2787
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.wideBrush-0.wav",
+      "category": "audio",
+      "sourceBytes": 7960,
+      "gzipBytes": 5547
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.wideBrush-1.wav",
+      "category": "audio",
+      "sourceBytes": 8438,
+      "gzipBytes": 6013
     },
     {
       "file": "assets/packs/sfx-common/draft.awakening-0.wav",
@@ -903,8 +1365,8 @@
     {
       "file": "assets/packs/sfx-common/pack.json",
       "category": "data",
-      "sourceBytes": 4355,
-      "gzipBytes": 851
+      "sourceBytes": 7726,
+      "gzipBytes": 1469
     },
     {
       "file": "assets/packs/sfx-common/pickup.coin-0.wav",

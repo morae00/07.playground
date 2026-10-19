@@ -230,6 +230,171 @@
    "bomber.blast-0.wav",
    "bomber.blast-1.wav",
    "bomber.blast-2.wav"
+  ],
+  "cast.inkDarts": [
+   "cast.inkDarts-0.wav",
+   "cast.inkDarts-1.wav"
+  ],
+  "cast.brushQuills": [
+   "cast.brushQuills-0.wav",
+   "cast.brushQuills-1.wav"
+  ],
+  "cast.sealArrows": [
+   "cast.sealArrows-0.wav",
+   "cast.sealArrows-1.wav"
+  ],
+  "cast.frostNeedles": [
+   "cast.frostNeedles-0.wav",
+   "cast.frostNeedles-1.wav"
+  ],
+  "cast.thunderNeedles": [
+   "cast.thunderNeedles-0.wav",
+   "cast.thunderNeedles-1.wav"
+  ],
+  "cast.twinBlades": [
+   "cast.twinBlades-0.wav",
+   "cast.twinBlades-1.wav"
+  ],
+  "cast.ghostVolley": [
+   "cast.ghostVolley-0.wav",
+   "cast.ghostVolley-1.wav"
+  ],
+  "cast.headsmanDarts": [
+   "cast.headsmanDarts-0.wav",
+   "cast.headsmanDarts-1.wav"
+  ],
+  "cast.paperStorm": [
+   "cast.paperStorm-0.wav",
+   "cast.paperStorm-1.wav"
+  ],
+  "cast.inkBloom": [
+   "cast.inkBloom-0.wav",
+   "cast.inkBloom-1.wav"
+  ],
+  "cast.thornHalo": [
+   "cast.thornHalo-0.wav",
+   "cast.thornHalo-1.wav"
+  ],
+  "cast.starShards": [
+   "cast.starShards-0.wav",
+   "cast.starShards-1.wav"
+  ],
+  "cast.sunNeedles": [
+   "cast.sunNeedles-0.wav"
+  ],
+  "cast.inkDrizzle": [
+   "cast.inkDrizzle-0.wav",
+   "cast.inkDrizzle-1.wav"
+  ],
+  "cast.pinHail": [
+   "cast.pinHail-0.wav",
+   "cast.pinHail-1.wav"
+  ],
+  "cast.tailGuard": [
+   "cast.tailGuard-0.wav",
+   "cast.tailGuard-1.wav"
+  ],
+  "cast.smokeTail": [
+   "cast.smokeTail-0.wav",
+   "cast.smokeTail-1.wav"
+  ],
+  "cast.gravePins": [
+   "cast.gravePins-0.wav",
+   "cast.gravePins-1.wav"
+  ],
+  "cast.trackingSeals": [
+   "cast.trackingSeals-0.wav",
+   "cast.trackingSeals-1.wav"
+  ],
+  "cast.huntersMarks": [
+   "cast.huntersMarks-0.wav",
+   "cast.huntersMarks-1.wav"
+  ],
+  "cast.crowFeathers": [
+   "cast.crowFeathers-0.wav",
+   "cast.crowFeathers-1.wav"
+  ],
+  "cast.bossbane": [
+   "cast.bossbane-0.wav"
+  ],
+  "cast.inkLightning": [
+   "cast.inkLightning-0.wav",
+   "cast.inkLightning-1.wav"
+  ],
+  "cast.brushDownpour": [
+   "cast.brushDownpour-0.wav",
+   "cast.brushDownpour-1.wav"
+  ],
+  "cast.fallingScroll": [
+   "cast.fallingScroll-0.wav"
+  ],
+  "cast.seventhSeal": [
+   "cast.seventhSeal-0.wav"
+  ],
+  "cast.inkPulse": [
+   "cast.inkPulse-0.wav",
+   "cast.inkPulse-1.wav"
+  ],
+  "cast.frostRing": [
+   "cast.frostRing-0.wav",
+   "cast.frostRing-1.wav"
+  ],
+  "cast.thunderclap": [
+   "cast.thunderclap-0.wav"
+  ],
+  "cast.silenceBell": [
+   "cast.silenceBell-0.wav"
+  ],
+  "cast.inkPots": [
+   "cast.inkPots-0.wav",
+   "cast.inkPots-1.wav"
+  ],
+  "cast.clusterPots": [
+   "cast.clusterPots-0.wav",
+   "cast.clusterPots-1.wav"
+  ],
+  "cast.tarJar": [
+   "cast.tarJar-0.wav"
+  ],
+  "cast.meteorBrush": [
+   "cast.meteorBrush-0.wav"
+  ],
+  "cast.sparkThread": [
+   "cast.sparkThread-0.wav",
+   "cast.sparkThread-1.wav"
+  ],
+  "cast.stormThread": [
+   "cast.stormThread-0.wav",
+   "cast.stormThread-1.wav"
+  ],
+  "cast.frostChainlet": [
+   "cast.frostChainlet-0.wav",
+   "cast.frostChainlet-1.wav"
+  ],
+  "cast.inkLance": [
+   "cast.inkLance-0.wav",
+   "cast.inkLance-1.wav"
+  ],
+  "cast.wideBrush": [
+   "cast.wideBrush-0.wav",
+   "cast.wideBrush-1.wav"
+  ],
+  "cast.crossStrokes": [
+   "cast.crossStrokes-0.wav"
+  ],
+  "cast.judgmentLine": [
+   "cast.judgmentLine-0.wav"
+  ],
+  "cast.inkOrbit": [
+   "cast.inkOrbit-0.wav",
+   "cast.inkOrbit-1.wav"
+  ],
+  "cast.wardRing": [
+   "cast.wardRing-0.wav",
+   "cast.wardRing-1.wav"
+  ],
+  "cast.eclipseHalo": [
+   "cast.eclipseHalo-0.wav"
   ]
  }
 }

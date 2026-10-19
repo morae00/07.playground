@@ -7,7 +7,7 @@ import type { GameEvent } from '../engine/events.ts';
 import { ObjectPool, compactWhere, recycleWhere } from '../objectPool.ts';
 import { createSeededRandom } from '../p0Core.ts';
 import { CHAPTER_VISUALS } from '../render/visualRegistry.ts';
-import { lookOf } from '../arsenal.ts';
+import { isArsenal, lookOf } from '../arsenal.ts';
 
 /** SYS-14 (K7): how long a bomber's blast drawing shows (API-bombers §3). */
 const BLAST_SECONDS = 0.15;
@@ -228,11 +228,13 @@ export class Presentation {
         return;
       case 'skill/cast': {
         this.playerCast = PLAYER_CAST_POSE_SECONDS;
-        // SYS-15: an arsenal weapon sounds like its look.
+        // SYS-15: an arsenal weapon shakes like its look and plays its own cast when the cue table has one (K10 Q7).
         const cast = CAST_EFFECTS[lookOf(event.skillId)];
         if (cast?.burst) this.playerBurst = PLAYER_BURST_POSE_SECONDS;
         if (cast?.shake !== undefined) this.addShake(cast.shake);
-        if (cast?.sound) this.play(cast.sound, event.x);
+        const own = `cast.${event.skillId}`;
+        const sound = isArsenal(event.skillId) && own in CUES ? (own as CueId) : cast?.sound;
+        if (sound) this.play(sound, event.x);
         return;
       }
       case 'enemy/hit': {
