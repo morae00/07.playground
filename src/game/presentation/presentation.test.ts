@@ -375,3 +375,16 @@ test('FX-06: blasts and collapses ring at their size, a coin glints under coin f
   presentation.handle({ ...crit, id: 8 });
   assert.deepEqual(presentation.skillMarks.filter((mark) => mark.kind === 'mark').map((mark) => mark.target), [7, 8]);
 });
+
+test('K11: a shock that went off stays 1.45 s (burst, then its mark) by its own id and size, and goes with the round', () => {
+  const { presentation } = setup();
+  presentation.handle({ type: 'shock/burst', x: 10, y: 20, id: 77, radius: 190 });
+  assert.deepEqual(presentation.shocks.map((shock) => [shock.id, shock.x, shock.y, shock.radius, shock.maxLife]), [[77, 10, 20, 190, 1.45]]);
+  presentation.step(1.4);
+  assert.equal(presentation.shocks.length, 1);
+  presentation.step(0.06);
+  assert.equal(presentation.shocks.length, 0);
+  presentation.handle({ type: 'shock/burst', x: 0, y: 0, id: 78, radius: 190 });
+  presentation.clearRound();
+  assert.equal(presentation.shocks.length, 0);
+});

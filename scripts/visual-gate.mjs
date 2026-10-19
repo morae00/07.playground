@@ -12,7 +12,7 @@ const requireGoldens = process.env.VISUAL_REQUIRE_GOLDENS !== '0';
 const maxDiffRatio = Number.parseFloat(process.env.VISUAL_MAX_DIFF_RATIO ?? '0.005');
 const pixelTolerance = Number.parseInt(process.env.VISUAL_PIXEL_TOLERANCE ?? '24', 10);
 // The default matrix is the platform decision (TEC-01: minimum 1024x720, reference 1280x720 and 1440x900,
-// largest verified 1920x1080): 4 viewports x DPR 1/2 x 3 modes x 12 states = 288 captures. The modes are full
+// largest verified 1920x1080): 4 viewports x DPR 1/2 x 3 modes x 15 states = 360 captures. The modes are full
 // motion, the system's reduced motion, and the reduced flash setting, which UI-08 separates from reduced motion.
 // The small sizes stay selectable by name (VISUAL_VIEWPORTS) to check the responsive layout.
 const viewportCatalog = [
@@ -24,7 +24,7 @@ const viewportCatalog = [
   { name: '1440x900', width: 1440, height: 900 },
   { name: '1920x1080', width: 1920, height: 1080 },
 ];
-const stateNames = ['menu', 'infinite-menu', 'infinite-playing', 'story', 'playing', 'paused', 'draft', 'bombers', 'burning', 'fires', 'settlement', 'boss'];
+const stateNames = ['menu', 'infinite-menu', 'infinite-playing', 'story', 'playing', 'paused', 'draft', 'bombers', 'burning', 'fires', 'shock', 'terrain', 'settlement', 'boss', 'terrain-ch3'];
 
 const defaultViewports = ['1024x720', '1280x720', '1440x900', '1920x1080'];
 
@@ -471,6 +471,23 @@ async function runScenario(page, viewport, dpr, motion) {
   await settle(page, 200);
   await captureEvidence(page, viewport, dpr, motion, 'fires');
 
+  // K11: two shocks beside the hero: one counting down (its cracks grown, the imminent rim), one just gone off (its
+  // coral burst, lit cracks, core, shards, and dust).
+  await openCheatPanel(page);
+  await enterCheat(page, 'SHOCK');
+  await page.keyboard.press('Escape');
+  await settle(page, 120);
+  await captureEvidence(page, viewport, dpr, motion, 'shock');
+
+  // K11: the other kinds in place of the fires, once the shock's mark has gone: a slow pool with the chapter's enemies
+  // standing in it, water, a null zone, a binding zone, and two traps, armed and shut.
+  await openCheatPanel(page);
+  await enterCheat(page, 'NUKE');
+  await enterCheat(page, 'TERRAIN');
+  await page.keyboard.press('Escape');
+  await settle(page, 1300);
+  await captureEvidence(page, viewport, dpr, motion, 'terrain');
+
   await openCheatPanel(page);
   await enterCheat(page, 'CLEAR');
   await unique(page.getByRole('dialog'), 'settlement dialog');
@@ -486,6 +503,37 @@ async function runScenario(page, viewport, dpr, motion) {
   await (await unique(page.getByRole('button', { name: 'Ch.1 / St.5 출정' }), 'Stage 5 start')).click();
   await settle(page, 180);
   await captureEvidence(page, viewport, dpr, motion, 'boss');
+
+  // K11: chapter 3's terrain (its wet-net trap, its own enemies on the slow pool, review 3), the hero bound by vines.
+  await page.keyboard.press('p');
+  await settle(page, 40);
+  await (await unique(page.getByRole('button', { name: 'Stage 메뉴' }), 'return to Stage menu')).click();
+  await settle(page, 40);
+  await (await unique(page.getByRole('button', { name: '포기하고 정산' }), 'confirm abandoning the run')).click();
+  await settle(page, 800);
+  await settle(page, 1000);
+  await (await unique(page.getByRole('button', { name: '메뉴로' }), 'leave the settlement for the menu')).click();
+  await settle(page, 80);
+  await (await unique(page.locator('.chapterCard').nth(2), 'chapter 3 card')).click();
+  await settle(page, 40);
+  const stageOne = await unique(page.locator('.stageNode').filter({ has: page.locator('span', { hasText: /^Stage 1$/ }) }), 'Stage 1 node');
+  await stageOne.click();
+  await settle(page, 30);
+  await (await unique(page.getByRole('button', { name: 'Ch.3 / St.1 출정' }), 'chapter 3 Stage 1 start')).click();
+  // The chapter's opening beat plays before its first run (CON-06).
+  await page.locator('.storyPanels').waitFor({ timeout: 5000 });
+  await passInputGuard(page);
+  await page.keyboard.press('Escape');
+  await page.locator('.storyPanels').waitFor({ state: 'detached' });
+  await settle(page, 180);
+  if ((await waitForSprites(page)) !== 'ready') throw new Error('chapter 3 art failed to load');
+  await openCheatPanel(page);
+  await enterCheat(page, 'GOD');
+  await enterCheat(page, 'TERRAIN');
+  await enterCheat(page, 'BIND');
+  await page.keyboard.press('Escape');
+  await settle(page, 200);
+  await captureEvidence(page, viewport, dpr, motion, 'terrain-ch3');
 }
 
 function escapeHtml(value) {

@@ -194,13 +194,15 @@ function readHazards({ vectors, render }) {
     for (const { part, ...rule } of H.parts(group)) parts[group][part] = rule;
   }
   const layout = {};
-  for (const [kind, r, seed, lod = 'full'] of vectors.layout) {
-    layout[`${kind}:${r}:${seed}${lod === 'full' ? '' : `:${lod}`}`] = H.layout(kind, r, seed, { lod }).map((q) => [q.part, round(q.x, 2), round(q.y, 2), q.flip ? 1 : 0, round(q.phase, 3), q.z, q.prio]);
+  for (const [kind, r, seed, lod = 'full', ch = 1] of vectors.layout) {
+    layout[`${kind}:${r}:${seed}${lod === 'full' ? '' : `:${lod}`}`] = H.layout(kind, r, seed, { lod, ch }).map((q) => [q.part, round(q.x, 2), round(q.y, 2), q.flip ? 1 : 0, round(q.phase, 3), q.z, q.prio]);
   }
   const slot = (q) => [q.part, round(q.x, 2), round(q.y, 2), q.frame];
   const embers = Object.fromEntries(vectors.embers.map(([r, seed, t]) => [`fire:${r}:${seed}:${t}`, H._.emberSlots(r, seed, t, 'full').map(slot)]));
   embers[`hero:${vectors.hero}`] = H._.heroEmberSlots(vectors.hero).map(slot);
-  const data = { version: H.version, spec: H.SPEC, parts, states: H.states, vectors: { layout, embers }, render };
+  // Every paths() value is a list of lines [[x, y], …][] (API §8.6).
+  const paths = Object.fromEntries(vectors.paths.map(([kind, r, seed]) => [`${kind}:${r}:${seed}`, Object.fromEntries(Object.entries(H.paths(kind, r, seed)).map(([name, lines]) => [name, lines.map((line) => line.map((p) => [round(p[0], 2), round(p[1], 2)]))]))]));
+  const data = { version: H.version, spec: H.SPEC, parts, states: H.states, vectors: { layout, embers, paths }, render };
   const text = JSON.stringify(data);
   if (/[가-힣]/.test(text)) throw new Error('hazard data carries Korean text; strings belong in the string tables');
   return JSON.parse(text);

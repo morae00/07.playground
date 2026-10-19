@@ -28,6 +28,8 @@ export const NEUTRAL = Object.freeze({
   inkSoft: '#343936',
   inkMuted: '#8c8579',
   coin: '#d8d0c0',
+  /** The erased paper of a null zone (style bible §5.1, K11). */
+  voidPaper: '#e2dbcb',
 });
 
 export type SignalFamily = 'ally' | 'hostile' | 'warn' | 'reward' | 'elite';

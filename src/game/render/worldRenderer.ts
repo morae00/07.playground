@@ -20,6 +20,7 @@ import type {
   Pickup,
   Projectile,
   Recoil,
+  ShockBurst,
   SkillId,
   SkillMark,
   SkillState,
@@ -38,13 +39,13 @@ import { AnimationBook, SPAWN_SECONDS, enemyPoses, heroPoses, poseFrame, stepBos
 import { phaseFor, type GroundTile, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
 import { CHAPTER_PACKS, COMMON_PACK, FX_SLOT, HERO_SLOT, PICKUP_SLOT, bomberSlot, characterPack, characterSlot, bossSlot, bossState, enemyDrawScale, enemySlot, frameKey, pickupState, slotEnabled, type BossPose, type BossSlot } from './assets/slots.ts';
 import { GameRenderer } from './GameRenderer.ts';
-import { HazardPainter } from './hazardArt.ts';
+import { HazardPainter, type TerrainHost } from './hazardArt.ts';
 import { NumberGlyphs, type NumberStyle } from './numberGlyphs.ts';
 import { shakeOffset } from '../presentation/viewCamera.ts';
 import { NEUTRAL, SIGNAL, rgba } from './palette.ts';
 import { createRenderFrameSnapshot } from './renderSnapshot.ts';
 import { SkillVfxPainter, blastDustSpots, wardPlateSpots } from './skillVfx.ts';
-import { CHAPTER_VISUALS, enemyRoleFor, type HazardArtProfile, type VisualDetail } from './visualRegistry.ts';
+import { CHAPTER_VISUALS, HAZARD_ART, enemyRoleFor, type HazardArtProfile, type VisualDetail } from './visualRegistry.ts';
 import {
   circleVisible,
   interpolatePosition,
@@ -96,6 +97,8 @@ const allyZone = (hazard: Readonly<Hazard>) => hazard.kind === 'warning' || haza
  * (K10 brief §0.1, §12). The kit draws each piece as its own object (K10).
  */
 const ZONE_ART: HazardArtProfile = Object.freeze({ owner: 'ally', color: SIGNAL.ally, fill: rgba(NEUTRAL.ink, 0.16), glyph: 'none' });
+/** K11: the shock's telegraph keeps the vector rim (the user's choice) over the kit's cracks, without its centre sign. */
+const SHOCK_TELEGRAPH: HazardArtProfile = Object.freeze({ ...HAZARD_ART.shock, glyph: 'none' });
 /** SYS-16: the states awakened weapons put on an enemy, each a small sign over its head: its sides and turn. */
 const MARK_SIGNS: readonly (readonly [keyof AwakenedMarks, number, number])[] = [
   ['fear', 3, -Math.PI / 2], ['weak', 3, Math.PI / 2], ['prey', 4, 0], ['thorn', 4, Math.PI / 4],
@@ -220,6 +223,8 @@ export type RenderEffects = {
   readonly impactRings: readonly Readonly<ImpactRing>[];
   /** SYS-14 (K7): bombers' blast drawings, a moment each. */
   readonly blasts: readonly Readonly<BlastFlash>[];
+  /** K11: shocks that went off, for their burst and the mark they leave. */
+  readonly shocks: readonly Readonly<ShockBurst>[];
   /** Skill rings and strokes no event sizes (FX-06). */
   readonly skillMarks: readonly Readonly<SkillMark>[];
   /** Fallen enemies (FX-03): falling bodies and their fading ink stains. */
@@ -326,8 +331,15 @@ export class WorldRenderer {
   private terrainArt = false;
   /** When the hero's burn began (sim seconds, -1 when not burning), and the burning enemies that get feet flames. */
   private burnSince = -1;
+  /** When a binding zone's vines took the hero (sim seconds, -1 when not bound by one). */
+  private bindSince = -1;
+  /** K11: what the renderer draws itself among the kit's hazards: zone fill and hatch, the shock's telegraph rim. */
+  private readonly terrainHost: TerrainHost = {
+    ground: (ctx, hazard, alpha) => this.visual.drawZoneGround(ctx, hazard, alpha),
+    telegraph: (ctx, hazard) => this.visual.drawHazard(ctx, hazard, 1, SHOCK_TELEGRAPH),
+  };
   private readonly mobFlames = new Set<number>();
-  private readonly fires: Readonly<Hazard>[] = [];
+  private readonly kitHazards: Readonly<Hazard>[] = [];
   /** Each passive as last seen ("level" plus "a" once awakened), the pops showing, and the clock they were read at. */
   private readonly passives = new Map<SkillId, string>();
   private readonly pops: { skillId: SkillId; at: number; awakened: boolean }[] = [];
@@ -413,6 +425,9 @@ export class WorldRenderer {
     this.terrainArt = this.terrain.begin(this.sprites, world.elapsed, policy.reduced, policy.flashStrength, snapshot.detail);
     if (this.terrainArt) this.terrain.track(world.hazards);
     this.burnSince = world.player.burn <= 0 ? -1 : this.burnSince < 0 || this.burnSince > world.elapsed ? world.elapsed : this.burnSince;
+    // K11: a binding zone's bind, not a trap's (its shut machine shows that one).
+    const bound = this.terrainArt && world.player.root > 0 && this.terrain.drawn('root') && world.hazards.some((h) => h.kind === 'root' && distance(h, world.player) <= h.radius);
+    this.bindSince = !bound ? -1 : this.bindSince < 0 || this.bindSince > world.elapsed ? world.elapsed : this.bindSince;
     this.trackPassives();
     this.trackInvulnerability();
     for (const key of ['silence', 'root'] as const) {
@@ -463,7 +478,7 @@ export class WorldRenderer {
       case 'ground':
         this.drawWorld(ctx);
         this.drawCorpseStains(ctx);
-        if (this.terrainArt) this.terrain.drawSoot(ctx, this.viewport);
+        if (this.terrainArt) this.terrain.drawDecals(ctx, this.viewport, this.world.effects.shocks);
         return;
       case 'hazards':
         this.drawHazards(ctx);
@@ -849,8 +864,9 @@ export class WorldRenderer {
     for (const zone of this.world.zones) {
       if (circleVisible(this.viewport, zone.x, zone.y, zone.radius + 8)) this.visual.drawHazard(ctx, zone, 1, ZONE_ART);
     }
-    const fires = this.fires;
-    fires.length = 0;
+    const kit = this.kitHazards;
+    kit.length = 0;
+    const fadedRoot = this.world.player.rootImmunity > 0;
     for (const ally of [true, false]) {
       for (const hazard of this.world.hazards) {
         if (allyZone(hazard) !== ally || !circleVisible(this.viewport, hazard.x, hazard.y, hazard.radius * 1.25 + 8)) continue;
@@ -860,14 +876,16 @@ export class WorldRenderer {
         }
         // K11: kinds the kit draws are drawn together after the rest, with no glyph and no life fade.
         if (this.terrainArt && this.terrain.drawn(hazard.kind)) {
-          fires.push(hazard);
+          kit.push(hazard);
           continue;
         }
-        const fadedRoot = hazard.kind === 'root' && this.world.player.rootImmunity > 0;
-        this.visual.drawHazard(ctx, hazard, fadedRoot ? 0.35 : 1);
+        this.visual.drawHazard(ctx, hazard, hazard.kind === 'root' && fadedRoot ? 0.35 : 1);
       }
     }
-    if (fires.length) this.terrain.drawFires(ctx, fires, this.world.player.x, this.world.player.y);
+    if (!this.terrainArt) return;
+    if (kit.length) this.terrain.drawTerrain(ctx, kit, this.world.player.x, this.world.player.y, this.world.chapter, fadedRoot, this.terrainHost);
+    // A shock's burst lies on the floor under the bodies (V4); its mark is a decal.
+    if (this.terrain.drawn('shock')) this.terrain.drawShocks(ctx, this.viewport, this.world.effects.shocks);
   }
 
   /** K11: the burning sprite enemies that get feet flames this frame, nearest the hero first, up to the cap (API §3.5). */
@@ -1722,14 +1740,19 @@ export class WorldRenderer {
       const facing = this.heroAnim?.facing ?? 1;
       // K11 (API §9): feet flames behind and before the body, the coral multiply tint, and embers; FX-03 without the art.
       const fire = this.terrainArt && this.world.player.burn > 0;
+      // The bind's vines fit the standing poses; a walk frame shown while bound (pushed along) goes without them.
+      const bind = this.bindSince >= 0 && this.heroPose !== 'run' ? this.world.elapsed - this.bindSince : -1;
       if (fire) this.terrain.heroFlames(ctx, 'back', body.x, body.y, facing);
+      if (bind >= 0) this.terrain.heroBind(ctx, 'back', body.x, body.y, facing, bind);
       this.drawHeroOutline(ctx, this.hero, body.x, body.y, facing);
       this.blit(ctx, this.hero, body.x, body.y, facing, 1);
       if (fire) {
         const hurt = this.drawHeroTint(ctx, this.hero, body.x, body.y, 1);
         this.terrain.heroFlames(ctx, 'front', body.x, body.y, facing);
+        if (bind >= 0) this.terrain.heroBind(ctx, 'front', body.x, body.y, facing, bind);
         if (hurt) this.terrain.heroEmbers(ctx, body.x, body.y, facing);
       } else if (!this.terrainArt) this.drawBurning(ctx, this.hero, body.x, body.y, facing, 1, this.world.player.burn, 0);
+      else if (bind >= 0) this.terrain.heroBind(ctx, 'front', body.x, body.y, facing, bind);
       // The paper ward's plates float round the hero while the softened hit's immunity runs (FX-06).
       if (this.skillArt && this.invulnSource === 'ward') this.vfx.stamp(ctx, 'paperWard', 'plates', body.x, body.y, 0, 1 - this.world.player.invuln / Math.max(1e-6, this.invulnSpan));
       this.drawHeroMarks(ctx, body.x, body.y, this.hero);
@@ -1921,6 +1944,7 @@ export class WorldRenderer {
         // wash the hero's feet out of the fire.
         this.drawHeroTint(ctx, this.hero, player.x, player.y, 0.6);
         if (this.terrainArt && this.world.player.burn > 0) this.terrain.heroFlames(ctx, 'front', player.x, player.y, this.heroAnim?.facing ?? 1, 0.6);
+        if (this.bindSince >= 0 && this.heroPose !== 'run') this.terrain.heroBind(ctx, 'front', player.x, player.y, this.heroAnim?.facing ?? 1, this.world.elapsed - this.bindSince, 0.6);
       }
       ctx.save();
       ctx.setLineDash([4, 4]);

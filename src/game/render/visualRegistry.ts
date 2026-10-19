@@ -202,7 +202,7 @@ export const HAZARD_ART: Readonly<Record<Hazard['kind'], HazardArtProfile>> = Ob
   fire: Object.freeze({ owner: 'hostile', color: SIGNAL.hostile, fill: SIGNAL.hostileGlow, glyph: 'flame' }),
   slow: Object.freeze({ owner: 'hostile', color: SIGNAL.warn, fill: '#f3ead7', glyph: 'wave' }),
   root: Object.freeze({ owner: 'hostile', color: SIGNAL.warn, fill: '#efe6d3', glyph: 'chain' }),
-  null: Object.freeze({ owner: 'hostile', color: SIGNAL.warn, fill: '#fbfaf5', glyph: 'null' }),
+  null: Object.freeze({ owner: 'hostile', color: SIGNAL.warn, fill: NEUTRAL.voidPaper, glyph: 'null' }),
   warning: Object.freeze({ owner: 'ally', color: SIGNAL.ally, fill: SIGNAL.allyGlow, glyph: 'star' }),
   vortex: Object.freeze({ owner: 'ally', color: SIGNAL.allyDeep, fill: '#e3ecee', glyph: 'spiral' }),
   shock: Object.freeze({ owner: 'hostile', color: SIGNAL.warn, fill: SIGNAL.warnGlow, glyph: 'shatter' }),

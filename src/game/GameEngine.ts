@@ -1358,7 +1358,7 @@ export class GameEngine {
       this.faultInjection = true;
       return 'LOOP FAULT ARMED';
     }
-    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO', 'TURN', 'PHASE', 'VFX', 'BOMB', 'FIRE'].includes(code)) {
+    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO', 'TURN', 'PHASE', 'VFX', 'BOMB', 'FIRE', 'TERRAIN', 'BIND', 'SHOCK'].includes(code)) {
       this.invalidateInfiniteScore();
     }
     if (code === 'GOD') {
@@ -1436,6 +1436,47 @@ export class GameEngine {
         this.hazards.push({ id: this.nextId(), kind: 'fire', x: this.player.x + dx, y: this.player.y + dy, radius, life: Number.POSITIVE_INFINITY, maxLife: Number.POSITIVE_INFINITY, damage: 3, slow: 1, triggered: false });
       }
       return 'FIRES';
+    }
+
+    // K11: the other terrain kinds the kit draws, round the player in place of the field's own: a slow pool with the
+    // chapter's enemies standing in it, water, a null zone and a binding zone as bosses lay them, and two traps (one
+    // armed, one just shut), to see them at the sizes stages lay.
+    if (code === 'TERRAIN') {
+      const { x, y } = this.player;
+      compactWhere(this.hazards, (hazard) => hazard.kind === 'warning' || hazard.kind === 'vortex');
+      const lay = (kind: Hazard['kind'], dx: number, dy: number, radius: number, life = Number.POSITIVE_INFINITY, triggered = false) => {
+        this.hazards.push({ id: this.nextId(), kind, x: x + dx, y: y + dy, radius, life, maxLife: life, damage: 0, slow: kind === 'slow' ? 0.42 : kind === 'water' ? 0.58 : 1, triggered });
+      };
+      lay('slow', -430, -60, 150);
+      lay('water', 420, -20, 200);
+      lay('null', -60, -290, 130, 5.4);
+      lay('root', -230, 230, 52, 7);
+      lay('trap', 60, 320, 80);
+      lay('trap', 280, 320, 80, 3.2, true);
+      for (let index = 0; index < 5; index += 1) {
+        this.spawnEnemy(1, index % 2 ? 'medium' : 'small');
+        const enemy = this.enemies[this.enemies.length - 1];
+        enemy.x = enemy.prevX = x - 430 + (index - 2) * 44;
+        enemy.y = enemy.prevY = y - 60 + (index % 2 ? 26 : -22);
+        enemy.attackStyle = 'contact';
+        Object.assign(enemy, { hp: enemy.maxHp * 40, maxHp: enemy.maxHp * 40 });
+      }
+      this.rebuildEnemyIndex();
+      return 'TERRAIN';
+    }
+
+    // K11: a binding zone at the player's feet, as the field bosses lay them, to see the hero bound.
+    if (code === 'BIND') {
+      this.hazards.push({ id: this.nextId(), kind: 'root', x: this.player.x, y: this.player.y, radius: 52, life: 7, maxLife: 7, damage: 0, slow: 1, triggered: false });
+      return 'BIND';
+    }
+
+    // K11: two shocks beside the player: one counting down with its cracks grown (imminent), one about to go off.
+    if (code === 'SHOCK') {
+      for (const [dx, life, maxLife] of [[-330, 0.6, 2], [330, 0.15, 0.52]] as const) {
+        this.hazards.push({ id: this.nextId(), kind: 'shock', x: this.player.x + dx, y: this.player.y, radius: 190, life, maxLife, damage: 0, slow: 1, triggered: false });
+      }
+      return 'SHOCK';
     }
 
     // CON-06: takes the stage's boss to just past its next phase, to see its phase move and line.
@@ -5009,7 +5050,7 @@ export class GameEngine {
       if (hazard.kind === 'shock' && !hazard.triggered && expiredThisStep(previousLife, hazard.life)) {
         hazard.triggered = true;
         if (shockHitsPlayer(hazard, hazard.radius, this.player, HIT_RADIUS.playerVsHostileShot)) this.damagePlayer(hazard.damage, false, 'shock', hazard);
-        this.emit({ type: 'shock/burst', x: hazard.x, y: hazard.y });
+        this.emit({ type: 'shock/burst', x: hazard.x, y: hazard.y, id: hazard.id, radius: hazard.radius });
       }
       if (hazard.kind === 'warning' && !hazard.triggered && expiredThisStep(previousLife, hazard.life)) {
         hazard.triggered = true;

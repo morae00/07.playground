@@ -1,6 +1,7 @@
-# API — `k-hazards.js` · `PN.hazards` v1.0 (위험지형 7종 + 주인공·적 오버레이 — 납품 2)
+# API — `k-hazards.js` · `PN.hazards` v1.0-d2r2 (위험지형 7종 + 주인공·적 오버레이 — 납품 2, 검수 3차 수정판 + 검수 4차 N1)
 
-작업 지시서: `docs/art/briefs/terrain-hazards.md`(K11, R5 추가 발주 B6). 우선순위는 §14 검수 2차 정정(S1~S5, §14-7 공용 틀) > §13 검수 1차 정정(R1~R8, §13-10) > §12 메인 세션 정정 > 본문이다.
+작업 지시서: `docs/art/briefs/terrain-hazards.md`(K11, R5 추가 발주 B6). 우선순위는 §15 검수 3차 정정 > §14 검수 2차 정정(S1~S5, §14-7 공용 틀) > §13 검수 1차 정정(R1~R8, §13-10) > §12 메인 세션 정정 > 본문이다.
+- §15: 2D 위치는 jit 두 값의 짝으로 뽑지 않고 Kronecker 열(`kron`, `scatter` pool 'kr')로 뽑는다(불 몸 무더기·char만 승인 예외). 물에 긴 수면 획 `wave-a`·`b`(W1, 물 상한 20/10/3), 묶임을 땅에서 올라와 감는 나선으로(B1), 속박 덩굴 clamp(round(r/8.5), 3, 6)(R1).
 - §12: 열린 질문 Q1~Q13은 모두 권고안이다. 불 테는 먹 + 산호이고 해칭이 없다. 그림에서는 가운데 기호를 빼고 바닥 그림으로 구분한다. **null 산호 링은 끈다**(Q3). 불 위 적은 발밑 불길만 그리고 몸 물듦이 없다. 주인공은 곱하기 산호 물듦이다.
 - §13: 몸 무더기는 m/l만 쓴다. 치마 대신 s 무더기 테두리 고리를 두른다. 낮은 불길은 작은 무더기 문법으로 그린다. 불티를 키우고, 테 안쪽에 열 띠를 넣고, 그을음 개수를 늘린다. 납품 2 전 공용 틀(§13-10): 솟는 조각은 inset 도우미, 바닥 조각은 내접 타원 ≤ r − 2, `_.check()`에 종류별 면적.
 - §14: 몸 무더기 개수를 넓이에 비례시키고 최선 후보로 흩는다. 고리는 먼 테에서 안으로 옮기고 `skirt-low`를 지운다. 상한은 고리를 고르게 솎는다. 합격선은 덮임(정의 B) ≥ 45%, 빈 자리 ≤ 44다. §14-7: 솟는 조각은 `rimPlace`/rimDist 'rise', 바닥 조각은 rimDist 'ground', 흩는 것은 모두 `scatter`, 상한은 `capCut`, 종류별 `MASKS`로 `areaOf` 면적을 보고한다.
@@ -8,10 +9,11 @@
 스타일 기준: 바이블 v1 §3·§4·§5.3·§6·§7.2·§12·§13·§15, v1.0 부록 §10.3(용광의 입: 검은 불꽃 + 산호 판정 코어, 꺼진 뒤 무해한 그을음).
 킷 출력은 잠정 아트다(바이블 §15). 붓 실루엣과 비백은 사람이 다시 긋는다(§14).
 
-**이 판은 납품 2(v1.0)이다.**
+**이 판은 납품 2의 검수 3차 수정판(v1.0-d2r1)에 검수 4차 N1을 더한 판(v1.0-d2r2)이다.** 납품 2(v1.0, 285장)에서 W1·B1·R1·R2를 바꿨고, d2r2는 null 유령 선의 중심 거리(N1)만 바꿨다(`paths('null')`·`draw('null')`만 달라진다. 조각 297장은 d2r1과 같다).
 - 들어 있는 것: 공용 틀, 7종 전부(fire·shock·slow·water·root·trap·null)의 모든 상태, 주인공 오버레이 back·front·embers·bind-back·bind-front, 적 발밑 불길 mob/front-12·19·28.
 - `kinds`·`groups`·`states`는 7종·9그룹 전체이고 `planned`와 같다.
-- **불(fire)의 출력은 수정 2회차(`1.0-d1r2`)와 같다.** C9 불 벡터 넷과 반경별 덮임·빈 자리 표가 그대로다(§12.1). 공용 `scatter()`에 더한 선택 키(`pool`, `mirror`)는 불이 쓰지 않는다.
+- **불(fire)의 출력은 수정 2회차(`1.0-d1r2`)와 같다.** C9 불 벡터 넷, 불티 벡터 다섯, 반경별 덮임·빈 자리 표가 그대로다(§12.1). 공용 `scatter()`에 더한 선택 키(`pool`, `mirror`)와 `kron`은 불이 쓰지 않는다.
+- v1.0 대비 바뀐 출력: water(새 조각 `wave-*`, 배치·prio·상한), root(덩굴 6개), hero bind-back·bind-front(8장 다시 그림), slow(기포 위치·위상만), null(부스러기와 유령 선). shock·trap·fire·hero back/front/embers·mob은 그대로다.
 
 ## 1. 로드와 의존
 
@@ -40,14 +42,14 @@
 - `overlay` 원점은 발(판정 원 중심)이다. 오른쪽을 볼 때 그리고, `facing: -1`이면 x를 반전한다.
 - 조각 박스는 [0, w] × [0, h]이고 `anchor`가 배치점에 놓인다. 칠한 영역은 박스 가장자리에서 3 안쪽이다(C7 1줄 0건).
   - 솟는 조각(불길·덩굴·기포·core)의 앵커는 땅에 닿는 밑동이다.
-  - 바닥 조각(z `ground`: char·웅덩이·물결·흐름·반짝임·부스러기·돌 조각·덫 기계)의 앵커는 박스 가운데다(돌 조각 `pebble`만 밑동 5,8).
+  - 바닥 조각(z `ground`: char·웅덩이·물결·수면 획·흐름·반짝임·부스러기·돌 조각·덫 기계)의 앵커는 박스 가운데다(돌 조각 `pebble`만 밑동 5,8).
 - 불길·덩굴·기포는 회전하지 않는다. 좌우 반전(`flip`)만 하며, 반전은 앵커를 축으로 한다: `translate(x y) scale(-1 1) translate(-ax -ay)`. 솟는 것은 언제나 화면 위쪽으로 솟는다.
 
 ## 3. 공개 API
 
 ```js
 PN.hazards = {
-  version: '1.0',
+  version: '1.0-d2r2',
   K,            // 토큰(§7.1). SPEC 이름(ink, ink700, voidPaper, hostile …)과 짧은 이름(ink7, host …) 둘 다
   kinds,        // ['fire','shock','slow','water','root','trap','null']
   groups,       // kinds + ['hero','mob']
@@ -76,6 +78,7 @@ PN.hazards = {
 | `areaOf(kind, r, seed, {step, holeStep, t, ch})` | 한 지형의 덮임·빈 자리(§8.0-5): {cover(정의 B), strict, fill, ground, hole, n, body}. 마스크는 fire·slow·water·root |
 | `rimDist(r, a, box, mode, u, o)` | 테 쪽 조각의 중심 거리 상한(§8.0-1) |
 | `scatter(r, seed, o)` · `rimPlace(r, a, box, tip, u, o)` · `capCut(items, cap, o)` | 공용 배치 도우미(§8.0). layout이 쓰는 함수를 그대로 내보낸다 |
+| `kron(seed, base)` | Kronecker 열 kr(t, n)(§8.0-0). 납품 2 종류의 모든 2D 뽑기가 쓴다 |
 | `AREA_RULES` | 종류별 면적 규칙표(§12.2) |
 | `clusterTongues(size, v, mode, fr)` | 불 무더기 한 장의 혀 목록 |
 | `emberSlots(r, seed, t, lod)` | 불티 슬롯(§8.3) |
@@ -137,7 +140,7 @@ PN.hazards = {
 
 | 상태 | 그리는 것 |
 |---|---|
-| static | 담묵 원판 → 물결 `ripple-*`(cycle) → 흐름 `flow-*`(loop) → 반짝임 `glint`(loop) → 젖은 테. 신호색·해칭 없음 |
+| static | 담묵 원판 → 바닥 조각(수면 획 `wave-*` loop, 물결 `ripple-*` cycle, 흐름 `flow-*` loop, 반짝임 `glint` loop, y 순) → 젖은 테. 신호색·해칭 없음. 감소 모션에서 수면 획은 phase 장에 멈추고(info), 흐름·반짝임은 그리지 않는다 |
 
 ### 4.5 root
 
@@ -148,7 +151,7 @@ PN.hazards = {
 | wither | 남은 수명 < 0.4초 | 1 − 남은 수명 / 0.4 | `vine-*-wither` 장 min(3, ⌊4p⌋) |
 | faded | 주인공 속박 면역 중(`player.rootImmunity > 0`) | — | 합성 전체 α 0.35, 덩굴은 phase 장에서 멈춤(현행 `worldRenderer.ts:846`과 같은 뜻) |
 
-**주인공 묶임**(`player.root > 0`, 덫의 묶임은 제외): `overlay('hero','bind-back'|'bind-front',{p})`, p = 묶인 뒤 초 / 0.2, 장 = min(3, ⌊4p⌋), 마지막 장을 유지한다.
+**주인공 묶임**(`player.root > 0`, 덫의 묶임은 제외): `overlay('hero','bind-back'|'bind-front',{p})`, p = 묶인 뒤 초 / 0.2, 장 = min(3, ⌊4p⌋), 마지막 장을 유지한다. 묶인 동안 결의 자세(idle·run·hurt)와 facing에 상관없이 같은 조각을 쓴다(§6.7).
 
 ### 4.6 trap
 
@@ -182,7 +185,7 @@ c = ch ≤ 4 ? ch : 1(`SPEC.trap.windows.fallback`).
 | trap | neutral | — | 60~98 | spring 0.15, fadeLast 0.6 |
 | null | hostile | 120, 130, 170 | 120~170 | erase 0.3, restore 0.5 |
 
-## 5. 굽는 조각 (`parts(group)`) — 285장, 박스 넓이 합 400,936 단위²
+## 5. 굽는 조각 (`parts(group)`) — 297장, 박스 넓이 합 417,736 단위²
 
 - 굽기 키는 `hazard/<group>/<part>/<frame>`이고, 호출은 `['PN.hazards.stamp', group, part, { frame }]`, `scale: 1`이다.
 - `fps`는 loop에만 값이 있다(나머지 0). `seconds`는 prog·cycle에만 있다(나머지 null).
@@ -213,6 +216,7 @@ c = ch ≤ 4 ? ch : 1(`SPEC.trap.windows.fallback`).
 | water / `ripple-a`, `ripple-b` | 8씩 | cycle | 1.6, still 3 | 40×18 | 20,9 | hazard / ground | info |
 | water / `flow-a`, `flow-b` | 6씩 | loop | 6 | 44×10 | 22,5 | hazard / ground | deco |
 | water / `glint` | 2 | loop | 2 | 14×8 | 7,4 | hazard / ground | deco |
+| water / `wave-a`, `wave-b`(W1) | 6씩 | loop | 6 | 100×14 | 50,7 | hazard / ground | **info** |
 | root / `vine-a`·`-b`·`-c` | 4씩 | loop | 6 | 26×24 | 13,20 | hazard / flame | info |
 | root / `vine-{a,b,c}-emerge` | 4씩 | prog | 0.25 | 26×24 | 13,20 | hazard / flame | info |
 | root / `vine-{a,b,c}-wither` | 4씩 | prog | 0.4 | 26×24 | 13,20 | hazard / flame | info |
@@ -230,10 +234,11 @@ c = ch ≤ 4 ? ch : 1(`SPEC.trap.windows.fallback`).
 
 | 그룹 | fire | hero | mob | shock | slow | water | root | trap | null | 합 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 장 | 116 | 20 | 12 | 28 | 20 | 30 | 36 | 20 | 3 | **285** |
-| 박스 넓이(단위²) | 164,496 | 24,696 | 11,624 | 29,968 | 28,624 | 17,024 | 22,464 | 101,680 | 360 | **400,936** |
+| 장 | 116 | 20 | 12 | 28 | 20 | 42 | 36 | 20 | 3 | **297** |
+| 박스 넓이(단위²) | 164,496 | 24,696 | 11,624 | 29,968 | 28,624 | 33,824 | 22,464 | 101,680 | 360 | **417,736** |
 
-- 지시서 표(301장)에서 불 치마 18장(R2·S5)을 빼고, 감속 `mire-xl` 2장을 더했다(§13-16).
+- 지시서 표(301장)에서 불 치마 18장(R2·S5)을 빼고, 감속 `mire-xl` 2장(§13-16)과 물 `wave-a`·`b` 12장(W1, +16,800)을 더했다.
+- v1.0(285장) 대비 새 키는 `hazard/water/wave-a/0..5`, `wave-b/0..5`다. `hazard/hero/bind-back/0..3`, `bind-front/0..3`은 키가 그대로이고 그림만 바뀌었다.
 - 테두리 고리는 별도 조각이 없다. 몸 무더기와 같은 `hazard/fire/cluster-s-*` 키를 쓴다(ignite·gutter 포함). `skirt-*` 키는 없다.
 - `char-cold-*`의 layer는 `ground`(데칼 층, soot)이지만, gutter 교차 때는 위험지형 층의 char 자리에 같이 그린다.
 - shock `shard`·`dust`는 터짐(0.25초)보다 긴 0.3초 prog다. 자국의 처음 0.05초에도 그린다(§4.2).
@@ -308,8 +313,16 @@ c = ch ≤ 4 ? ch : 1(`SPEC.trap.windows.fallback`).
 
 - **`bubble-*`**(칠한 범위 x ±3.8, y −7.6~−0.2): 0 작은 혹 → 1·2 부푸는 돔(좌상 ink500 초승, 점 아님) → 3 늘어난 돔 → 4 터진 먹 고리 + 방울 3 → 5 사라지는 ink300 고리. b는 방울 위치가 반대다. 감소 모션 2번 장.
 
-### 6.6 water — 물결
+### 6.6 water — 수면 획·물결
 
+- **`wave-a`·`-b`(W1, 칠한 범위 a x −38~28 × y −2.84~3.00 = 66.0×5.84, b x −44~36 × y −2.80~3.05 = 80.1×5.85, 상한 90×6)**: 한 조각에 끊긴 가로 수면 획 두 줄이다.
+  - 줄 [x0, x1, 중심 y, 진폭, 파장, 위상]: a 위 [−38, 22, −1.5, 0.55, 34] / 아래 [−16, 28, +1.5, 0.5, 30], b 위 [−22, 36, −1.5, 0.5, 36] / 아래 [−44, 0, +1.5, 0.55, 30]. 위 줄 58~60, 아래 줄 44 길이, 두 줄 가운데가 14~29 어긋나고 세로 간격 3이다.
+  - 줄마다 끊김 자리 둘 [c, φ](a 위 [−22, 0]·[2, 3], 아래 [−2, 1]·[16, 4] / b 위 [−8, 2]·[16, 5], 아래 [−30, 0]·[−12, 3]).
+    - 장 f의 끊김 나이 a = (f + φ) mod 6, 자리 c − 6 + 2a, 폭 [0, 4, 6, 6, 4, 0][a]다.
+    - 끊김이 장마다 오른쪽으로 2씩 흐르며 열렸다 닫힌다. 두 자리가 3장 어긋나 줄은 늘 2~3마디(최소 마디 8, 틈 4~6)다.
+    - 줄 끝은 그대로라 통째로 밀리지 않는다. 마지막 장 → 첫 장에서도 보이는 끊김은 2만 옮긴다.
+  - p300 1.6(마디 끝에서 0.8로 가늘어짐) + 0.6 아래 ink300 0.8 그늘선(물결과 같은 토큰). 닫힌 도형·점 없음.
+  - 해칭 검사(`k11-r3-water-hatch-check`): 반경 145·200·270 × seed 1~20의 840줄에서 60×60 창 안 같은 길이(±2)·같은 간격(±1.5)·겹친 평행 3줄은 0건이다. 창 하나의 최대 줄 수는 4다.
 - **`ripple-*`**(칠한 범위 x −16.4~14.3, y −5.2~5.8): 납작한 고리(ry = 0.3·rx)가 rx 3 → 16으로 퍼지고(바깥 고리 p300 1.6 → 0.8), 2번 장부터 안쪽 고리가 늦게 따라온다(rx 3 → 12). 아래 +0.6에 ink300 0.8 그늘선. 6·7번 장에서 호가 끊기며 사라진다. b는 안쪽 고리가 반대쪽으로 0.8 치우친다. 감소 모션 3번 장.
 - **`flow-*`**(x −17~16, y −1.5~2.0): 끊긴 짧은 가로 물줄 둘(p300 최대 1.4, 길이 14·11 / 13·10)이 장마다 오른쪽으로 2씩 흐른다.
 - **`glint`**(6.0×1.6): p50 짧은 렌즈(4×1.2 → 6×1.6). 별 모양 아님.
@@ -321,8 +334,18 @@ c = ch ≤ 4 ? ch : 1(`SPEC.trap.windows.fallback`).
 - **루프 4장 @6fps**: 끝이 2만큼 흔들린다(x +0.3 → −0.8 → −1.7 → −0.8, 높이 12 이상은 전부, 그 아래는 높이에 비례). 갈고리가 박스 오른쪽 여백에 닿아 있어 안쪽(−x)으로 기운다.
 - **emerge 4장**: 균열 + 담묵 흙 부스러기 → 뾰족한 두 끝 → 줄기 62% + 둘째 줄기 70% → 다 자라고 끝이 한 번 더 감김(가시는 같은 자리).
 - **wither 4장**: 갈고리가 30°·52° 처짐 → 두 토막 → 토막이 0.55배로 균열에 가라앉는다.
-- **`bind-back`·`bind-front`**: 다리마다 덩굴 두 가닥이 코트 자락 높이(y −9.4·−6.4, 다리 x ±6.5)를 ±14° 기울어 감는다(앞 반쪽이 X로 겹친다). 땅 덩굴이 x ±18(back)·±16.4(front)에서 다리로 올라온다. 장마다 0.3 / 0.6 / 0.85 / 1만큼 자라고, 마지막 장에 가시 둘씩. 먹 띠 3.6 → 1.8.
-  - 칠한 범위: back x −18.5~18.5, y −15.7~1.8(상한 [−20, −16]–[20, 2]), front x −16.9~16.9, y −11.6~2.8(상한 [−18, −15]–[18, 3]). 얼굴 금지 구역과 청록 링(y +6.8 at x ±18) 밖이다.
+- **`bind-back`·`bind-front`(B1로 다시 그림)**: 덩굴이 발밑 땅에서 나와 다리를 타고 올라 감긴다.
+  - **back**(주인공 뒤)
+    - 발밑과 양옆의 낮은 가시 뿌리 덩어리(x ±19, y −4.8~+1.7, 윗가장자리 p300 0.8)가 장마다 땅에서 솟는다(높이 0.45 → 1, 폭 0.7 → 1).
+    - 양옆에서 덩굴 하나씩이 덩어리에서 실루엣 바깥(x ±17 → ±10)을 타고 y −13.8까지 오른다. 먹 3.6 → 2.4, 빛 쪽 p300 0.8 가장자리, 그늘 쪽 가시 둘(2번 장부터).
+    - 묶인 결은 어느 자세에서도 실루엣 양옆에 '땅에서 올라온 덩굴'이 1x로 보인다.
+  - **front**(주인공 앞)
+    - 다리마다 나선 한 가닥: 다리 오른쪽 가장자리 바로 옆 땅(+1.0, +0.6)에서 나와, 다리 앞을 비스듬히 가로질러 왼쪽 가장자리 y −12.8까지 감아 오른다(다리 x ±6.5, 반폭 6.2, 3/4 시점 처짐 1.6). 두 다리가 같은 감김 방향이라 V자가 아니라 나선으로 읽힌다. 먹 3.4 → 2.4, 그늘 쪽 가시 셋.
+    - 발끝마다 짧은 뿌리 고리 하나가 장화를 땅에 붙든다(먹 2.8 → 2.0).
+  - 모든 덩굴의 빛 쪽(좌상)에 p300 0.8 가장자리가 있다. 검은 장화와 hurt 자세의 검은 코트 위에서도 덩굴이 남는다(hero 그룹 허용 색 안).
+  - 장마다 0.3 / 0.6 / 0.85 / 1만큼 자란다(덩어리·오르는 덩굴 먼저, 나선은 0.45부터). 마지막 장을 유지한다.
+  - 칠한 범위(4장 전체, 앵커 원점): back x −19.72~19.39, y −15.79~1.70(상한 [−20, −16]–[20, 2]), front x −13.88~16.15, y −13.21~2.19(상한 [−18, −15]–[18, 3]). 얼굴 금지 구역과 청록 링(아래 끝 ≤ +3) 밖이다.
+  - 1x 비교(`k11-r3-bind-x1`, `-x1-gray`): idle·run 0·run 4·hurt 0 × facing ±1의 16칸 모두에서 묶인 결이 구별된다. 4배(`k11-r3-bind-x4`)에서 덩굴이 다리를 감는다.
 
 ### 6.8 trap — 장별 기계(판은 SPEC)
 
@@ -372,7 +395,7 @@ c = ch ≤ 4 ? ch : 1(`SPEC.trap.windows.fallback`).
 
 | 키 | 값 | 렌더러 규칙 |
 |---|---|---|
-| `jit` | {mul 31, hash 2654435761, mod 1000, kron [0.7548776662466927, 0.5698402909980532, 0.6287067210378087, 0.5385972572236101, 0.4614032426986125]} | J(i) = `((Math.imul(seed*31 + i, 2654435761) >>> 0) % 1000) / 1000`. `kron`은 `scatter` pool 'kr'의 Kronecker 걸음(§8.0-2) |
+| `jit` | {mul 31, hash 2654435761, mod 1000, kron [0.7548776662466927, 0.5698402909980532, 0.6287067210378087, 0.5385972572236101, 0.4614032426986125]} | J(i) = `((Math.imul(seed*31 + i, 2654435761) >>> 0) % 1000) / 1000`. `kron`은 Kronecker 열 kr(t, n)의 걸음이다(§8.0-0). 2D 뽑기는 모두 이것을 쓴다 |
 | `caps` | {stamps [160, 90, 40]} | 한 화면 모든 지형 조각 수(full / reduced / minimal) |
 | `fire.base` | {token ink, alpha 0.30} | 반경 r 원판, 평면 |
 | `fire.rim` | [[hostile, 6, −9, 0.35], [ink, 5, 0], [hostile, 2.4, −3.6], [hostileGlow, 0.8, −3.6]] | 실선 원. 첫 행이 열 띠(R5, r − 12 ~ r − 6)다. soot를 뺀 모든 상태·LOD |
@@ -414,11 +437,11 @@ c = ch ≤ 4 ? ch : 1(`SPEC.trap.windows.fallback`).
 | `slow.end` | {seconds 0.5} | 끝 0.5초에 웅덩이·기포만 α 1 → 0(`draw`의 `end`) |
 | `slow.dial`(4장) | {ticks 24, r0 −14, r1 −6, long −3, every 6, on [[ink, 3.6], [warn, 1.6]], off [[ink, 2, 0, 0.45]], hand {len 0.78, layers [[ink, 3.4], [warn, 1.4]], hub [ink, 4]}, period 12} | 눈금 i: 각 −π/2 + 2πi/24, r + r0 → r + (i mod 6 ? r1 : long), 둥근 끝. 켜진 눈금 = ⌊진행 × 24⌋(i < 켜진 수면 on 층, 아니면 off). 바늘: 각 −π/2 + 2π·진행(감소 모션은 켜진 수/24), 길이 0.78(r + r0), 바퀴통 먹 반지름 4. 진행 §4.3 |
 | `slow.layout.mire` | {tiers [[0, m, s, 410], [100, l, m, 1000], [160, xl, l, 1000]], fill {s 220, m 524, l 1220, xl 3900}, target 0.3, min 3, max 18, minimal 3, tries 120, cand 10, reach {frac 1, pad 2}, sep 0.75, squash 2.2, mirror 2, pool 'kr', jit {base 3000, stride 5, small 6000}} | §8.8 |
-| `slow.layout.bubble` | {per 30, min 2, max 6, cycle 0.9, spread [0.7, 0.6], still 2, jit 3200} | §8.8 |
+| `slow.layout.bubble` | {per 30, min 2, max 6, cycle 0.9, spread [0.7, 0.6], still 2, jit 3200} | §8.8. 웅덩이 위 자리·위상은 kron(seed, 3200)(R2) |
 | `slow.layout.caps` | [24, 12, 3] | |
 | `root.windows` | {emerge 0.25, wither 0.4} | §4.5 |
 | `root.faded` | {alpha 0.35} | 주인공 속박 면역 중 합성 전체 α 0.35, 흔들림 정지 |
-| `root.layout` | {vine {per 12, min 3, max 6, tries 40, cand 6, reach {frac 0.72, pad 99}, gap {frac 0.5, cap 24}, squash 1.2, far 6, mirror 6, pool 'kr', jit {base 5000, stride 5}}, caps [6, 6, 6]} | §8.10 |
+| `root.layout` | {vine {per 8.5, min 3, max 6, tries 40, cand 6, reach {frac 0.72, pad 99}, gap {frac 0.5, cap 24}, squash 1.2, far 6, mirror 6, pool 'kr', jit {base 5000, stride 5}}, caps [6, 6, 6]} | §8.10. per 12 → 8.5(R1): 반경 50·52에서 6개 |
 
 ### 7.6 water·trap·null
 
@@ -426,7 +449,7 @@ c = ch ≤ 4 ? ch : 1(`SPEC.trap.windows.fallback`).
 |---|---|---|
 | `water.base` | {token ink, alpha 0.24} | 중립. 신호색·해칭 없음 |
 | `water.rim` | [[ink, 2.6, 0], [p300, 1.2, −2.4, 0.8]] | 젖은 가장자리 |
-| `water.layout` | ripple {per 40, min 3, max 7, still 3, cycle 1.6, spread [0.7, 0.6], tries 40, cand 6, reach {frac 0, pad 24}, gap {frac 1, cap 36}, squash 2, mirror 2, pool 'kr', jit {base 4000, stride 5}}, flow {per 60, min 2, max 5, tries 40, cand 6, reach {frac 0, pad 30}, gap {frac 1, cap 30}, squash 3, mirror 2, pool 'kr', jit {base 4100, stride 5}}, glint {angle −2.356, spread 0.3, at 0.45, jit 4300}, caps [13, 7, 1] | §8.9 |
+| `water.layout` | wave {area 6000, min 2, max 10, minimal 2, tries 60, cand 8, reach {frac 0, pad 28}, gap {frac 1, cap 46}, squash 3, mirror 2, pool 'kr', jit {base 4400, stride 5}}, ripple {per 40, min 3, max 7, still 3, cycle 1.6, spread [0.7, 0.6], tries 40, cand 6, reach {frac 0, pad 24}, gap {frac 1, cap 36}, squash 2, mirror 2, pool 'kr', jit {base 4000, stride 5}}, flow {per 60, min 2, max 5, tries 40, cand 6, reach {frac 0, pad 30}, gap {frac 1, cap 30}, squash 3, mirror 2, pool 'kr', jit {base 4100, stride 5}}, glint {angle −2.356, spread 0.3, at 0.45, jit 4300}, prio {wave 0, ripple 1, flow 2, glint 2}, caps [20, 10, 3], cut {even −1, keep 1} | §8.9. W1로 wave·prio·cut을 더하고 상한을 13/7/1 → 20/10/3으로 |
 | `trap.plate` | {token ink700, alpha 0.5} | 판 = 판정 원. 닫힌 뒤 α × 0.7 |
 | `trap.rim` | [[ink, 3.4, 0]] | |
 | `trap.groove` | [[ink, 1.6, −6, 0.7]] | |
@@ -435,12 +458,12 @@ c = ch ≤ 4 ? ch : 1(`SPEC.trap.windows.fallback`).
 | `trap.windows` | {spring 0.15, fadeLast 0.6, sprungAlpha 0.7, fallback {5: 1}} | §4.6 |
 | `trap.layout` | {caps [1, 1, 1]} | |
 | `null.base` | {token voidPaper, alpha 1} | |
-| `null.ghost` | {lines [4, 6], split 150, dash [4, 3], layers [[ink300, 1, 0, 0.6]], inset 6, jit {angle 2200, offset 2240}} | 식 §8.6 |
+| `null.ghost` | {lines [4, 6], split 150, dash [4, 3], layers [[ink300, 1, 0, 0.6]], inset 6, minOffset 0.15, jit {base 2200}} | 식 §8.6. 줄의 (각, 거리)는 kron(seed, 2200)(R2). 중심 거리 \|d\| ≥ minOffset·r(N1) |
 | `null.rim` | [[ink, 5.4, 0, 1, [0.1, 9]], [warn, 3, 0, 1, [0.1, 9]]] | 둥근 끝 점선. 현행과 같다 |
 | `null.active` | {**on false**, layers [[ink, 3.2], [hostile, 1.5]], at 0.9} | §12.3 Q3로 끔(그림을 다시 그리지 않고 켤 수 있다) |
 | `null.erase` | {seconds 0.3, jag {points 12, depth 6, jit 2280}} | void = jag(§8.6)를 g = 1 − (1 − p)²배 한 닫힌 Catmull-Rom(구간당 4점) |
 | `null.restore` | {seconds 0.5, line [ink300, 1.4]} | §4.7 |
-| `null.layout` | {crumb {per 16, min 5, max 9, inset {pad 2, jitter 4}, jit {angle 6000, dist 6040, variant 6080, flip 6120}}, caps [9, 0, 0]} | §8.12 |
+| `null.layout` | {crumb {per 16, min 5, max 9, inset {pad 2, jitter 4}, jit {base 6000}}, caps [9, 0, 0]} | §8.12. kron(seed, 6000)(R2) |
 
 ## 8. layout·paths 식과 jit 번호대
 
@@ -448,7 +471,19 @@ c = ch ≤ 4 ? ch : 1(`SPEC.trap.windows.fallback`).
 
 기호: J(i) = jit(seed, i), frac(v) = v − ⌊v⌋. farOK(x, y, tip, far) = !(y − tip < −√max(0, r² − x²) − far)다.
 
-**jit의 성질(이식 때 알아 둘 것)**: J(i + 1)은 J(i)로 정해진다. frac(J(i) + 0.761)(약 38%) 아니면 frac(J(i) + 0.465)(약 62%)다(2654435761 mod 1000 = 761, 2³² mod 1000 = 296). 그래서 연속한 두 값 (J(ix), J(ix+1))로 만든 2D 점은 단위 정사각형의 두 직선 위에만 있다. 불의 후보(a = 2πJ(ix), d = reach·√J(ix+1))는 원 안의 나선 두 줄 위에만 놓인다. 불은 합격한 판이라 그대로 두고, 납품 2 종류는 pool 'kr'을 쓴다.
+**jit의 성질(이식 때 알아 둘 것)**: J(i + 1)은 J(i)로 정해진다. frac(J(i) + 0.761)(약 38%) 아니면 frac(J(i) + 0.465)(약 62%)다(2654435761 mod 1000 = 761, 2³² mod 1000 = 296). 간격이 k여도 같다(J(i + k) = frac(J(i) + c_k) 또는 frac(J(i) + c_k − 0.296·m), 예: k = 40이면 +0.336 또는 +0.040). 그래서 jit 두 값으로 만든 2D 점은 단위 정사각형의 직선 몇 개 위에만 있다. 불의 후보(a = 2πJ(ix), d = reach·√J(ix+1))는 seed와 상관없이 같은 나선 두 줄 위에만 놓인다.
+
+**0. 2D 위치 규칙(검수 3차 R2, 지시서 §15-1, 범위는 검수 4차 (2))**
+- **2D 위치(두 값이 한 점의 좌표가 되는 경우: 점의 x·y, 각·거리)를 jit 두 값의 짝으로 뽑지 않는다.** 간격이 무엇이든 직선 몇 개 위에 놓인다.
+- **범위**: 한 선의 모양 매개(마디의 길이·꺾임·밀기처럼 선 하나를 이루는 값)는 jit을 써도 된다. 다만 결과에 눈에 띄는 규칙성(같은 배치가 되풀이되거나, 같은 각도로 늘어서거나, 한 곳으로 몰리는 것)이 보이면 kron으로 바꾼다.
+- 줄 하나의 (각, 중심 거리)는 그 줄의 '자리'라서 2D 위치로 본다(유령 선은 kron).
+- 대신 Kronecker 열을 쓴다: `kron(seed, base)` = kr(t, n) = frac(J(base + t) + n·SPEC.jit.kron[t]), t = 0..4, n = 0, 1, 2, ….
+  - (kr(0, n), kr(1, n))은 seed로 돌린 R2 격자 점이다(고르게 퍼진다). kr(2..4, n)은 변형·flip·위상 같은 다른 뽑기에 쓴다.
+  - `kron` 걸음 [0.7548776662466927, 0.5698402909980532]은 R2 수열(1/φ₂, 1/φ₂²), 나머지 셋은 R3·R4 계열의 무리수 걸음이다.
+- 흩는 배치는 `scatter`의 pool 'kr'(+ mirror)을 쓴다. 흩지 않는 2D 뽑기(기포의 웅덩이 위 자리, 부스러기의 칸 안 각·깊이, 유령 선의 각·거리)는 `kron`을 직접 쓴다.
+- 한 값만 뽑는 것(팔 하나 위의 위치, 테 위의 각 하나, 변형 하나)은 jit 하나를 그대로 써도 된다(shock 돌 조각·파편·먼지, 물 반짝임 각, jag 점 깊이).
+- **승인된 예외**: 불(fire) 전체 — 몸 무더기(S1 후보식), char(각 J(k+1000)·거리 J(k+1040)), 테두리 고리의 칸 안 흔들림(J(i+540)·J(i+580)), 불티·연기 슬롯. 합격한 배치이고 바꾸면 합격선(빈 자리 ≤ 44)을 넘는다(검수 3차 (1)).
+- shock 균열 마디의 (길이, 꺾임, 밀기)는 위치가 아니라 선 모양 매개라 jit 그대로 둔다(검수 4차 (2) 수용: 1x에서 규칙성 없이 자연스럽다. 합격한 균열 모양·벡터 유지).
 
 1. **`rimDist(r, a, box, mode, u, o)`**: 각 a 쪽에 놓는 조각의 중심 거리 상한이다.
    - `'rise'`(솟는 조각, 앵커는 밑동): d = r − (max(o.min, hw·|cos a| + o.pad) + o.jitter·u), hw = (box w − 6)/2. o 기본값은 `fire.layout.rim.inset` {min 12, pad 4, jitter 3}.
@@ -458,7 +493,7 @@ c = ch ≤ 4 ? ch : 1(`SPEC.trap.windows.fallback`).
      3. 마지막에 − o.pad − o.jitter·u(기본 0)를 한다. 내접 타원 전체가 r − 2 안에 든다.
 2. **`scatter(r, seed, o)`**: 최선 후보 흩기. o = {n, tries, cand, reach {frac, pad}, gap {frac, cap}, squash, mode, box, tip, far, inset, fixed, mirror, pool, jit {base, stride}}.
    - reach = max(o.reach.frac·r, r − o.reach.pad), gap = min(o.gap.frac·r, o.gap.cap), sq = o.squash.
-   - pool 'kr'이면 k0[t] = J(o.jit.base + t)(t = 0..4), kr(t, q) = frac(k0[t] + q·SPEC.jit.kron[t])다.
+   - pool 'kr'이면 kr = kron(seed, o.jit.base)다(§8.0-0).
    - k = 0..tries−1을 차례로 보며, 놓은 수가 n이 되면 멈춘다. k마다 후보 c = 0..cand−1:
      - q = k·cand + c, ix = o.jit.base + q·o.jit.stride
      - (u, v) = pool 'kr' ? (kr(0, q), kr(1, q)) : (J(ix), J(ix + 1))
@@ -474,7 +509,7 @@ c = ch ≤ 4 ? ch : 1(`SPEC.trap.windows.fallback`).
 5. **`areaOf(kind, r, seed, {step, holeStep, t, ch})`**(검사용): full LOD 항목을 그 장(loop는 시각 t, 나머지 0번 장)으로 놓고 `isPointInFill`로 잰다.
    - cover = 항목 ∪ 띠, strict = 항목만, fill = 채움 항목만, ground = 나머지 항목만(모두 πr² 대비).
    - hole = r − inset 안에서 채움 항목이 칠하지 않은 가장 큰 원의 지름(step `holeStep` 마스크, 제곱 EDT, 2·max min(√D·holeStep, (r − inset) − |p|)).
-   - `MASKS`: fire {채움 = z flame, 띠 = 열 띠, inset 12}, slow {채움 = `mire-*`, inset 6}, water {채움 = `ripple-*`·`flow-*`, inset 6, **extent**: 채움을 칠한 픽셀 대신 내접 타원(box − 6)으로 센다 — 고리가 자라며 쓸고 가는 자리}, root {채움 = `vine-*`, inset 6}. shock·trap·null은 흩는 채움이 없어 마스크가 없다.
+   - `MASKS`: fire {채움 = z flame, 띠 = 열 띠, inset 12}, slow {채움 = `mire-*`, inset 6}, water {채움 = `wave-*`·`ripple-*`·`flow-*`, inset 6, **extent**: 채움을 칠한 픽셀 대신 내접 타원(box − 6)으로 센다 — 획·고리가 흐르며 쓸고 가는 자리}, root {채움 = `vine-*`, inset 6}. shock·trap·null은 흩는 채움이 없어 마스크가 없다.
 
 ### 8.1 layout('fire', r, seed, {lod}) — 수정 2회차와 같다
 
@@ -524,7 +559,11 @@ c = ch ≤ 4 ? ch : 1(`SPEC.trap.windows.fallback`).
 - 전체 길이로 돌려준다. 렌더러가 grow(p)로 자른다(§7.4).
 
 **`paths('null', r, seed)` → {ghost, jag}**:
-- ghost: n = r < 150 ? 4 : 6줄. 줄 i: θ = π·J(2200 + i), c = clamp((J(2240 + i) − 0.5)·1.2r, −0.8r, 0.8r), R0 = r − 6, h = √max(0, R0² − c²), d = (cos θ, sin θ), m = (−sin θ, cos θ). 선 = [c·m − h·d, c·m + h·d](원 r − 6의 현).
+- ghost: n = r < 150 ? 4 : 6줄. kr = kron(seed, 2200). 줄 i:
+  - θ = π·kr(0, i), v = kr(1, i)
+  - 중심 거리 c = s·(minOffset + 1.1·|v − 0.5|)·r, s = (v < 0.5 ? −1 : +1)(v = 0.5에서도 +1이라 0이 되지 않는다). |c| ∈ [0.15r, 0.7r](검수 4차 N1: 가운데를 지나는 줄이 없어 두 줄이 가운데에서 '十·X'로 엇갈리지 않는다)
+  - R0 = r − 6, h = √max(0, R0² − c²), d = (cos θ, sin θ), m = (−sin θ, cos θ). 선 = [c·m − h·d, c·m + h·d](원 r − 6의 현)
+  - 이력: v1.0은 J(2200 + i)·J(2240 + i) 짝, d2r1은 kron + c = clamp((v − 0.5)·1.2r, ±0.8r)(가운데 엇갈림 r120·130 16.5%, r170 41%), d2r2가 지금 식(같은 기준 0%).
 - jag: **닫힌 선 하나**(12점, 목록의 0번)다. 점 k: (cos, sin)(2πk/12)·r·(1 − (6/r)·J(2280 + k)). 다 지운 크기다. 렌더러가 g배로 줄여 그린다(§7.6).
 
 ### 8.7 shock 항목과 슬롯
@@ -544,20 +583,23 @@ ch 4는 `[]`(다이얼). 그 밖:
    - 큰 것: scatter(r, seed, {n: n_big, tries 120, cand 10, reach {1, 2}(= r), gap {99, 0.75·(hw큰 + hw큰)}, squash 2.2, mirror 2, pool 'kr', mode 'ground', box 큰 것, jit {base 3000, stride 5}}).
    - 작은 것: 같은 식, n_small, gap 0.75·(hw큰 + hw작은), box 작은 것, **fixed = 큰 것의 점**, jit base 6000.
    - 항목: {part `mire-<크기>-` + (w0 < 0.5 ? a : b), x, y, flip w1 < 0.5, phase 0, z ground, prio 0, gen 단계·100 + 순번}. mire = 큰 것 + 작은 것(놓은 순서).
-3. **기포**(full만, 웅덩이가 있을 때): nb = clamp(round(r/30), 2, 6). b = 0..nb−1: q = mire[b mod mire 수], hx·hy = q 조각의 (box − 6)/2, ix = 3200 + 4b, 위치 = (q.x + (J(ix) − 0.5)·0.8hx, q.y + (J(ix+1) − 0.5)·0.6hy + 1), phase J(ix+3), part `bubble-` + (b 홀수 ? b : a), z flame, prio 2, gen 300 + b.
+3. **기포**(full만, 웅덩이가 있을 때): nb = clamp(round(r/30), 2, 6), kr = kron(seed, 3200). b = 0..nb−1: q = mire[b mod mire 수], hx·hy = q 조각의 (box − 6)/2, 위치 = (q.x + (kr(0, b) − 0.5)·0.8hx, q.y + (kr(1, b) − 0.5)·0.6hy + 1), phase kr(2, b), part `bubble-` + (b 홀수 ? b : a), z flame, prio 2, gen 300 + b. (v1.0의 J(ix)·J(ix+1) 짝을 R2로 바꿨다.)
 4. **LOD**: full = mire + 기포, reduced = mire 앞 ⌈n/2⌉(큰 것 먼저, 고르게 퍼진 순서), minimal = mire 앞 3. capCut([24, 12, 3], {even 2, keep 1}) — 넘치면 기포를 고르게 뺀다.
 
-### 8.9 layout('water', r, seed, {lod})
+### 8.9 layout('water', r, seed, {lod}) — W1
 
-1. nr = clamp(round(r/40), 3, 7), nf = clamp(round(r/60), 2, 5).
-2. 물결: scatter(r, seed, {n: nr, tries 40, cand 6, reach {0, 24}(= r − 24), gap {1, 36}(= min(r, 36)), squash 2, mirror 2, pool 'kr', mode 'ground', box [40, 18], jit {base 4000, stride 5}}) → {part `ripple-` + (w0 < 0.5 ? a : b), x, y, flip w1 < 0.5, phase w2, z ground, prio 0, gen i}.
-3. 흐름: scatter(r, seed, {n: nf, tries 40, cand 6, reach r − 30, gap min(r, 30), squash 3, mirror 2, pool 'kr', mode 'ground', box [44, 10], **fixed = 물결**, jit {base 4100, stride 5}}) → {part `flow-` + (w0 < 0.5 ? a : b), flip false, phase w2, prio 1, gen 100 + i}.
-4. 반짝임: a = −2.356 + (J(4300) − 0.5)·0.6, 위치 = (cos a, sin a)·0.45r(빛은 좌상), phase J(4301), prio 2, gen 200.
-5. LOD: full = 물결 + 흐름 + 반짝임, reduced = 물결 앞 ⌈nr/2⌉ + 흐름 앞 ⌈nf/2⌉, minimal = 물결 앞 1(3번 장 정지). capCut([13, 7, 1], {even 1, keep 1}).
+1. nw = clamp(round(r²/6000), 2, 10)(r145 4, r200 7, r270 10), nr = clamp(round(r/40), 3, 7), nf = clamp(round(r/60), 2, 5).
+2. **수면 획**: scatter(r, seed, {n: nw, tries 60, cand 8, reach {0, 28}(= r − 28), gap {1, 46}(= min(r, 46)), squash 3, mirror 2, pool 'kr', mode 'ground', box [100, 14], jit {base 4400, stride 5}}) → {part `wave-` + (w0 < 0.5 ? a : b), x, y, flip w1 < 0.5, phase w2, z ground, prio 0, gen i}.
+3. 물결: scatter(r, seed, {n: nr, tries 40, cand 6, reach {0, 24}(= r − 24), gap {1, 36}(= min(r, 36)), squash 2, mirror 2, pool 'kr', mode 'ground', box [40, 18], **fixed = 수면 획**, jit {base 4000, stride 5}}) → {part `ripple-` + (w0 < 0.5 ? a : b), x, y, flip w1 < 0.5, phase w2, z ground, prio 1, gen 100 + i}.
+4. 흐름: scatter(r, seed, {n: nf, tries 40, cand 6, reach r − 30, gap min(r, 30), squash 3, mirror 2, pool 'kr', mode 'ground', box [44, 10], **fixed = 수면 획 + 물결**, jit {base 4100, stride 5}}) → {part `flow-` + (w0 < 0.5 ? a : b), flip false, phase w2, prio 2, gen 200 + i}.
+5. 반짝임: a = −2.356 + (J(4300) − 0.5)·0.6(각 하나라 jit 그대로), 위치 = (cos a, sin a)·0.45r(빛은 좌상), phase J(4301), prio 2, gen 300.
+6. LOD: full = 수면 획 + 물결 + 흐름 + 반짝임, reduced = 수면 획 앞 ⌈nw/2⌉ + 물결 앞 ⌈nr/2⌉(흐름·반짝임 0), minimal = 수면 획 앞 2(phase 장 정지) + 물결 앞 1(3번 장 정지).
+7. 상한: capCut([20, 10, 3], {even −1, keep 1}) — 넘치면 prio 2부터, 나중 것(gen 큰 것)부터 뺀다. r270 full은 23 → 20(반짝임·흐름 둘을 뺀다).
+8. 실측 항목 수(full): r140 10(획 3 + 물결 4 + 흐름 2 + 반짝임 1), r145 11(4 + 4 + 2 + 1), r200 16(7 + 5 + 3 + 1), r270 20(10 + 7 + 3). seed 1~40 모두 같은 수다(r145·200·270). reduced 4 / 4 / 7 / 9, minimal 3.
 
 ### 8.10 layout('root', r, seed, {lod})
 
-n = clamp(round(r/12), 3, 6). scatter(r, seed, {n, tries 40, cand 6, reach {0.72, 99}(= 0.72r), gap {0.5, 24}(= min(0.5r, 24)), squash 1.2, mirror 6, pool 'kr', mode 'rise', box [26, 24], tip 20, far 6, inset 기본 {12, 4, 3}, jit {base 5000, stride 5}}) → {part `vine-` + 'abc'[min(2, ⌊3·w0⌋)], x, y, **flip = x > 0**(말림이 늘 중심을 향한다), phase w2, z flame, prio 0, gen k}. 모든 LOD 같다(info). capCut([6, 6, 6], {even −1, keep 1}).
+n = clamp(round(r/8.5), 3, 6)(R1: r50·52에서 6, seed 1~60 모두 6개를 놓는다). scatter(r, seed, {n, tries 40, cand 6, reach {0.72, 99}(= 0.72r), gap {0.5, 24}(= min(0.5r, 24)), squash 1.2, mirror 6, pool 'kr', mode 'rise', box [26, 24], tip 20, far 6, inset 기본 {12, 4, 3}, jit {base 5000, stride 5}}) → {part `vine-` + 'abc'[min(2, ⌊3·w0⌋)], x, y, **flip = x > 0**(말림이 늘 중심을 향한다), phase w2, z flame, prio 0, gen k}. 모든 LOD 같다(info). capCut([6, 6, 6], {even −1, keep 1}).
 
 ### 8.11 layout('trap', r, seed, {ch})
 
@@ -565,17 +607,17 @@ n = clamp(round(r/12), 3, 6). scatter(r, seed, {n, tries 40, cand 6, reach {0.72
 
 ### 8.12 layout('null', r, seed, {lod})
 
-full만: n = clamp(round(r/16), 5, 9). i = 0..n−1: a = 2π(i + J(6000 + i))/n, d = rimDist(r, a, [12, 10], 'ground', J(6040 + i), {pad 2, jitter 4}), part `crumb-` + 'abc'[min(2, ⌊3J(6080 + i)⌋)], flip J(6120 + i) < 0.5, z ground, prio 0. capCut([9, 0, 0]).
+full만: n = clamp(round(r/16), 5, 9), kr = kron(seed, 6000). i = 0..n−1: a = 2π(i + kr(0, i))/n, d = rimDist(r, a, [12, 10], 'ground', kr(1, i), {pad 2, jitter 4}), part `crumb-` + 'abc'[min(2, ⌊3·kr(2, i)⌋)], flip kr(3, i) < 0.5, z ground, prio 0. capCut([9, 0, 0]). (v1.0의 J(6000 + i)·J(6040 + i) 짝을 R2로 바꿨다.)
 
 ### 8.13 검증 벡터 (C9, 소수 둘째 자리 반올림, phase 셋째 자리)
 
-필드는 [part, x, y, flip, phase, z, prio]다. 원문은 2차 납품서에 있다(메인 세션 이식 시험의 기준).
+필드는 [part, x, y, flip, phase, z, prio]다. 원문은 3차 납품서에 있다(메인 세션 이식 시험의 기준).
 - 불(수정 2회차와 같음): `fire:50:1` 11항목, `fire:74:7` 20항목, `fire:98:7` 31항목, `fire:150:23` 36항목. 불티 벡터 다섯도 그대로다.
-- `slow:150:5`(ch 3) 23항목: mire-l 17 + mire-m 1 + 기포 5.
-- `water:200:3`(ch 3) 9항목: 물결 5 + 흐름 3 + 반짝임 1.
-- `root:52:9` 4항목.
-- `null:130:11` 8항목, paths ghost 4줄 + jag 1줄(12점).
-- `shock:190:11` 6항목(돌 조각), paths cracks 14줄.
+- `shock:190:11` 6항목(돌 조각), paths cracks 14줄 — v1.0과 같다.
+- `slow:150:5`(ch 3) 23항목: mire-l 17 + mire-m 1 + 기포 5 — 웅덩이는 v1.0과 같고 기포 다섯의 자리·위상만 바뀌었다(R2).
+- `water:200:3`(ch 3) 16항목: 수면 획 7 + 물결 5 + 흐름 3 + 반짝임 1 — 새 벡터(W1).
+- `root:52:9` 6항목 — 새 벡터(R1). v1.0의 네 항목은 값까지 그대로이고, 둘(vine-b −17.73,−27.34 / vine-a 17.43,30.88)이 더해졌다(놓는 순서가 같아서다).
+- `null:130:11` 8항목, paths ghost 4줄 + jag 1줄(12점) — 부스러기는 d2r1(R2)의 값, 유령 선은 d2r2(N1)의 값이다. jag는 v1.0부터 같다. 원문은 3차 수정 납품서에 있다.
 
 ## 9. 그리는 순서(렌더러, `draw`도 같은 순서)
 
@@ -588,7 +630,7 @@ full만: n = clamp(round(r/16), 5, 9). i = 0..n−1: a = 2π(i + J(6000 + i))/n,
 | shock burst | 산호 채움 → 망점 가장자리 → 섬광 띠 → 균열 → core → 파편 → 먼지 |
 | shock decal(데칼 층) | 웅덩이 → 담묵 균열 → (처음 0.05초) 파편·먼지 |
 | slow | 바닥 채움 → 해칭 → 웅덩이(ground) → 기포(flame) → 테. 4장: 바닥 → 해칭 → 다이얼 눈금 → 바늘 → 바퀴통 → 테 |
-| water | 담묵 원판 → 물결·흐름·반짝임(ground, y순) → 젖은 테 |
+| water | 담묵 원판 → 수면 획·물결·흐름·반짝임(ground, y순) → 젖은 테 |
 | root | 바닥 채움 → 해칭 → 덩굴(y순) → 테. faded는 이 전체를 α 0.35 |
 | trap | 판 → 홈 → 바퀴살 → 리벳 → 기계 조각 → 테 |
 | null | void 원판(erase는 jag) → 유령 선 → 부스러기 → (active 링, 꺼짐) → 테 |
@@ -616,7 +658,7 @@ full만: n = clamp(round(r/16), 5, 9). i = 0..n−1: a = 2π(i + J(6000 + i))/n,
 | fire | 모든 항목, 루프 12fps, 불티 E, 연기 ≤ 3 | 루프 6fps, 고리 짝수 i, char ⌈n/2⌉, 불티 ⌈E/2⌉, 연기 짝수, soot 상한 6 | 몸 ≤ 3 + char 2(phase 장 정지), 고리·불티·연기·soot 0 |
 | shock | 균열, 돌 조각 6, 파편 8, 먼지 8 | 돌 조각 0, 파편·먼지 짝수 4 | 균열·core·채움만(돌·파편·먼지 0) |
 | slow | 웅덩이 전부 + 기포 | 웅덩이 앞 ⌈n/2⌉, 기포 0 | 웅덩이 앞 3(큰 것) |
-| water | 물결 + 흐름 + 반짝임 | 물결 ⌈nr/2⌉ + 흐름 ⌈nf/2⌉ | 물결 1(3번 장 정지) |
+| water | 수면 획 + 물결 + 흐름 + 반짝임(상한 20) | 수면 획 ⌈nw/2⌉ + 물결 ⌈nr/2⌉, 흐름·반짝임 0(상한 10) | 수면 획 2(phase 장 정지) + 물결 1(3번 장 정지)(상한 3) |
 | root | 덩굴 전부, 6fps | 3fps | phase 장 정지(덩굴은 그대로, info) |
 | trap | 기계 1 | 같음 | 같음 |
 | null | 부스러기 5~9 | 부스러기 0 | 부스러기 0 |
@@ -625,12 +667,12 @@ full만: n = clamp(round(r/16), 5, 9). i = 0..n−1: a = 2π(i + J(6000 + i))/n,
 
 | 설정 | 처리 |
 |---|---|
-| 감소 모션 | 루프는 인스턴스별 phase 장에서 정지. prog(ignite·gutter·emerge·wither·spring·burst·bind)는 재생. 불티·연기·흐름·반짝임 0. 기포 2번 장, 물결 3번 장. 다이얼 바늘은 눈금 단위로 뛴다. 물듦 α 0.20 고정. 흔들림·회전·펄스 없음 |
+| 감소 모션 | 루프는 인스턴스별 phase 장에서 정지(수면 획도 정지해서 남는다, info). prog(ignite·gutter·emerge·wither·spring·burst·bind)는 재생. 불티·연기·흐름·반짝임 0. 기포 2번 장, 물결 3번 장. 다이얼 바늘은 눈금 단위로 뛴다. 물듦 α 0.20 고정. 흔들림·회전·펄스 없음 |
 | 감소 섬광(`flash: 0.5`) | 불 시작 띠, shock 섬광 띠·core·산호 채움 α × 0.5. 물듦 α 0.20 고정 |
 
 ## 11. 예산 실측
 
-- **조각**: 285장, 박스 넓이 합 400,936 단위²(상한 330장·45만). @2x 약 160만 px²로 2048² 한 장(419만 px²)에 든다.
+- **조각**: 297장, 박스 넓이 합 417,736 단위²(상한 330장·45만). @2x 약 167만 px²로 2048² 한 장(419만 px²)에 든다.
 - **한 지형 layout 항목**(seed 1·7·23, full / reduced / minimal, 평균 구성):
 
   | 종류 r | full | reduced | minimal | 상한 |
@@ -642,12 +684,12 @@ full만: n = clamp(round(r/16), 5, 9). i = 0..n−1: a = 2π(i + J(6000 + i))/n,
   | slow 145 / 150 | 23(l 15 + m 3 / l 17 + m 1, 기포 5) | 9 | 3 | |
   | slow 200 | 24(xl 6 + l 12 + 기포 6) | 9 | 3 | |
   | slow 270 | 24(xl 17 + l 1 + 기포 6) | 9 | 3 | |
-  | water 140·145 / 200 / 270 | 7 / 9 / 13 | 3 / 5 / 7 | 1 | 13 / 7 / 1 |
-  | root 50·52 | 4 | 4 | 4 | 6 |
+  | water 140 / 145 / 200 / 270 | 10 / 11 / 16 / 20(획 3·4·7·10 포함) | 4 / 4 / 7 / 9 | 3 | 20 / 10 / 3 |
+  | root 50·52 | 6 | 6 | 6 | 6 |
   | trap 60~98 | 1 | 1 | 1 | 1 |
   | null 110 / 120·130 / 170 | 7 / 8 / 9 | 0 | 0 | 9 / 0 / 0 |
 
-- **덮임·빈 자리**(`areaOf`, §8.0-5. 2차 납품서에 원문):
+- **덮임·빈 자리**(`areaOf`, §8.0-5. 3차 납품서에 원문 `k11-r3f-area-table`):
 
   | 종류 r | 채움 | 빈 자리 | seed, 격자 |
   |---|---|---|---|
@@ -655,15 +697,15 @@ full만: n = clamp(round(r/16), 5, 9). i = 0..n−1: a = 2π(i + J(6000 + i))/n,
   | slow 60 / 86 / 100 / 120 | 30.8~30.9 / 29.8~30.0 / 29.9~30.0 / 29.8~29.9 | 23.3~36.0 / 30.5~36.0 / 40.2~51.2 / 51.2~62.1 | 1·5·9, 2 |
   | slow 145 / 150 / 160 | 29.9 / 29.8~30.0 / 28.9~30.6 | 56.7~59.4 / 57.3~61.3 / 54.4~61.2 | |
   | slow 200 / 240 / 270 | 30.0~30.2 / 29.8 / 29.2~29.4 | 75.5~77.3 / 95.1~99.1 / 102.5~132.5 | |
-  | root 50 / 52 | 2.5~2.6 / 2.4~2.5 | 38.6~40.2 / 42.5~44.2 | 1·5·9, 1 |
-  | water 145 / 200 / 270 | 자리(extent) 2.2~2.3 / 1.6 / 1.2~1.3 | 116.2~124.9 / 152.0~164.7 / 184.0~201.0 | 1·3·7, 2 |
+  | root 50 / 52 | 3.8~3.9 / 3.5~3.7 | 28.8~39.6 / 34.2~37.9 | 1·5·9, 1(R1: 덩굴 6개, v1.0은 2.4~2.6% / 38.6~44.2) |
+  | water 145 / 200 / 270 | 자리(extent) 5.8~5.9 / 4.7~4.9 / 3.7 | 81.2~98.1 / 106.2~113.8 / 130.2~148.0 | 1·3·7, 2(W1: v1.0은 2.2~2.3 / 1.6 / 1.2~1.3, 빈 자리 116~201) |
 
-  - 웅덩이는 모든 반경에서 25~35% 안(28.9~30.9%)이다. 빈 자리는 웅덩이 크기와 함께 커진다(지름 대비 약 0.2~0.25).
-  - 물은 물결·흐름이 작고(40×18, 44×10) 개수 상한이 13이라, 칠한 자리가 1~2%이고 빈 자리가 크다(§15 알려진 한계).
+  - 웅덩이는 모든 반경에서 25~35% 안(28.9~30.9%)이다(R2로 바뀐 것은 기포뿐이라 같은 값). 빈 자리는 웅덩이 크기와 함께 커진다(지름 대비 약 0.2~0.25).
+  - 물의 '자리'는 수면 획(내접 타원 94×8)·물결·흐름이 흐르며 쓸고 가는 넓이다. 획은 가로로 길고 얇아서 넓이 비율은 작지만, 1x에서 원 전체에 고르게 보인다(`k11-r3-water-big-x1b`). 빈 자리는 v1.0보다 30~35% 줄었다.
 
 ## 12. 자가 확인
 
-### 12.1 명령(지시서 §7.2 C1~C12, 2차 렌더 이름 `k11-d2-`)
+### 12.1 명령(지시서 §7.2 C1~C12, 3차 렌더 이름 `k11-r3f-`, 작업 중 `k11-r3-`)
 
 | 명령 | 이번 결과 |
 |---|---|
@@ -675,13 +717,16 @@ full만: n = clamp(round(r/16), 5, 9). i = 0..n−1: a = 2π(i + J(6000 + i))/n,
 | C4-fire, C4-misc | ok |
 | C5 gray·deutan·protan·color | 모두 ok |
 | C6 | `bad colours=0 banned=0` |
-| C7 | 1~5줄 0건, 6줄 `invalid calls ok`(4줄은 `RC.back` [−22,−26,22,2]) |
+| C7 | 1~5줄 0건, 6줄 `invalid calls ok`(2줄의 물 상한은 20/10/3, 4줄은 `RC.back` [−22,−26,22,2]) |
 | C8 | `env-hazard=1t61rxb len=1541876 skillVfx=7bdpsi len=679982 enemy-all=kubxcy len=5226045` |
-| C9 | §8.13(불 넷은 수정 2회차와 같음) |
+| C9 | §8.13(불 넷·불티 다섯·shock은 그대로, water·root·slow·null 새 값) |
 | C10 | 모든 줄 ok(fire 1.78~1.82, water 1.57~1.60, trap 2.31~2.42, null 1.54~1.75, soot 1.34~1.36, 코트 Y 0.620/0.780/0.705) |
 | C11 | 40장 ok |
-| C12 | `frames=285 ok boxArea=400936 ok badDrive=0` |
-| `PN.hazards._.check()` | 0건(약 20초), `{areas: false}` 0건 |
+| C12 | `frames=297 ok boxArea=417736 ok badDrive=0` |
+| `PN.hazards._.check()` | 0건(약 22초), `{areas: false}` 0건 |
+| W1 해칭 검사 | 840줄, 같은 길이·간격 평행 3줄 0건(`k11-r3-water-hatch-check`) |
+| B1 1x 비교 | 16칸 모두 구별(`k11-r3-bind-x1`, `-x1-gray`), 4배 감김 확인(`k11-r3-bind-x4`) |
+| N1 가운데 엇갈림(d2r2) | 두 줄 모두 중심 0.12r 안 + 엇갈림 > 60°: r120·130·170 × seed 1~200에서 0건(d2r1 식은 33·33·82건), 줄 \|d\|/r 0.150~0.700(`k11-n1-ghost-cross`). C7 3줄 0건, C1 ok, 불 해시 그대로 |
 
 ### 12.2 `_.check()`의 규칙
 
@@ -694,7 +739,7 @@ full만: n = clamp(round(r/16), 5, 9). i = 0..n−1: a = 2π(i + J(6000 + i))/n,
 | `AREA_RULES.fire` | 덮임(B) ≥ 45%, 빈 자리 ≤ 44(반경 15개), r150 ≥ 27% / ≤ 84, char 단독 5~15% | §14-4 |
 | `AREA_RULES.slow` | 먹물 웅덩이(`mire-*` 칠함) 25~35%: 게임 반경 86·145·150·200·270 × seed 1·5·9, 격자 2. 60·100·120·160·240은 보고만 | §1.9, §13-10 |
 | `AREA_RULES.root` | 덩굴 칠함 ≤ 18%: 50·52 × seed 1·5·9, 격자 1 | §4.4, §13-10 |
-| `AREA_RULES.water` | 보고만(145·200·270 × seed 1·3·7) | 검수 2차 §7-4 |
+| `AREA_RULES.water` | 보고만(145·200·270 × seed 1·3·7). 채움 = 수면 획·물결·흐름의 자리(extent) | 검수 2차 §7-4, 검수 3차 W1 |
 | 빈 자리(slow·root·water) | 보고만 | 검수 2차 §7-4 |
 | 혀 | 이웃 혀 높이 차 ≥ 15%, 산호 끝은 먹 끝에서 ≥ 3 아래(낮은 불길 3.2) | §2.3 |
 
@@ -740,15 +785,35 @@ full만: n = clamp(round(r/16), 5, 9). i = 0..n−1: a = 2π(i + J(6000 + i))/n,
 28. **shock 파편·먼지 0.3초 > 터짐 0.25초**: 자국의 처음 0.05초에 마저 그린다(`draw('shock','decal')`).
 29. **덫 shut의 p**: 마지막 0.6초 안의 진행률(그 전 0). 판뿐 아니라 홈·바퀴살·리벳·기계·테가 함께 사라진다(덫 자체가 지워진다).
 30. **덩굴 그림**: 한 줄 갈고리가 1x에서 해마·올챙이로 읽혀서, 긴 낮은 줄기 + 작은 갈고리 + 둘째 줄기의 가시덤불로 그렸다. 높이 ≤ 15.5(지시서 ≤ 16). 가시는 주 줄기 바깥 3 + 안쪽 1, 둘째 줄기 1이다(지시서 "바깥 면 2~3").
-31. **묶임 오버레이 높이**: 발목(장화)은 어두워 덩굴이 묻혀서 코트 자락 높이(y −9.4·−6.4)에 감았다. 범위 상한은 지켰다.
-32. **water 면적 마스크**: 물결은 얇은 고리라서 `areaOf`가 칠한 픽셀 대신 내접 타원(자리)으로 센다(`extent`). 보고만 한다.
+31. **묶임 오버레이 높이**(v1.0): 발목(장화)은 어두워 덩굴이 묻혀서 코트 자락 높이(y −9.4·−6.4)에 감았다. 검수 3차 B1로 다시 그렸다(34).
+32. **water 면적 마스크**: 물결은 얇은 고리라서 `areaOf`가 칠한 픽셀 대신 내접 타원(자리)으로 센다(`extent`). 보고만 한다. 수면 획도 같은 마스크에 넣었다.
 33. **slow `MASKS`·`AREA_RULES.slow`의 반경**: 지시서 §13-10의 25~35%를 맵 반경(145·200·270)까지 검사한다.
+
+**검수 3차 수정판(d2r1)에서 정한 것**(지시서 §15, 검수서 §3·§4):
+
+34. **B1 묶임의 모양**: 검수서는 'front 위 가닥 y −12~−13, 다리마다 나선 한 가닥, p300 0.8 가장자리, back은 땅에서 올라오는 덩굴'을 정했다. 이것을 그대로 따르고 다음을 더했다.
+    - back에 발밑·양옆의 낮은 가시 뿌리 덩어리(x ±19, y −4.8~+1.7)를 두었다. 오르는 덩굴이 '땅에서 나온다'는 출발점이 1x에서 덩어리로 보이고, run 큰 걸음과 hurt의 검은 코트에서도 발밑이 어두운 가시 덩어리로 갈린다.
+    - front 나선은 두 다리가 같은 감김 방향이다. 거울로 그리면 두 가닥이 V자(갈매기)로 읽혔다(`k11-r3-bind-idle-x6`, 고치기 전 판).
+    - front에 발끝을 붙드는 짧은 뿌리 고리를 다리마다 하나 두었다(먹 2.8 → 2.0).
+    - 칠한 범위 back x ±19.7·y −15.8(검수서 '폭 x ±18, 높이 y −15까지'는 덩굴이 닿는 곳으로 읽었다. 가장자리·가시를 포함한 칠은 C7 범위 [−20, −16]–[20, 2] 안이다), front x −13.9~16.2·y −13.2~2.2.
+35. **W1 수면 획의 숫자**: 위 줄 58~60, 아래 줄 44(지시서 아래 25~45 안), 세로 간격 3, 줄마다 끊김 자리 둘(3장 어긋남)으로 늘 2~3마디·최소 마디 8·틈 4~6. 물결·흐름은 수면 획과 떨어지게(`fixed`) 놓았다.
+36. **물 상한 넘침의 솎기**: prio 2(흐름·반짝임)부터 나중 것부터(`cut {even −1, keep 1}`). r270 full에서 반짝임과 흐름 둘이 빠진다.
+37. **감소 모션의 수면 획**: 정보(info) 조각이라 phase 장에 멈춰 남긴다. 흐름·반짝임은 지시서대로 그리지 않는다.
+38. **R2를 6종의 남은 jit 짝에도 적용**: 기포의 웅덩이 위 자리(J(ix)·J(ix+1)), 부스러기의 칸 안 각·깊이(J(6000+i)·J(6040+i)), 유령 선의 각·거리(J(2200+i)·J(2240+i))를 `kron`으로 바꿨다. 지시서 §15-1의 승인 예외가 불 몸 무더기와 char뿐이라서다. 그래서 slow:150:5(기포만)·null:130:11(부스러기·유령 선) 벡터가 바뀌었다. 웅덩이·jag·shock은 그대로다.
+39. **shock 균열 마디**는 위치가 아니라 선 모양 매개라 jit 그대로 두었다(§8.0-0). 바꾸면 합격한 균열 모양과 벡터가 바뀐다.
+40. **버전 문자열**을 `'1.0-d2r1'`로 했다(납품 1의 `'1.0-d1r2'`와 같은 표기). 메인 세션이 285장 스냅숏(`'1.0'`)과 가를 수 있다.
+
+**검수 4차 N1(d2r2)**:
+
+41. **null 유령 선의 중심 거리 |d| ≥ 0.15r**(`SPEC.null.ghost.minOffset 0.15`, 식 §8.6). 검수서의 식 그대로이고, s = sign(v − 0.5)는 v = 0.5에서 +1로 정했다(0이 되면 가운데를 지난다). 바뀐 출력은 `paths('null').ghost`와 그것을 그리는 `draw('null')`뿐이다. 버전은 `'1.0-d2r2'`다.
+42. **2D 위치 규칙의 범위**를 §8.0-0에 적었다(검수 4차 (2)).
 
 ## 14. 사람 원화가에게 남길 것 (바이블 §15)
 
 - 불길 무더기와 낮은 불길의 붓 실루엣: 손으로 그린 불의 리듬, 끝의 비백, 그늘 쪽 먹의 붓 굵기.
 - 숯불 바닥과 그을음 얼룩의 비백, 숯덩이 모양, 빛나는 금의 붓질. 불티·연기의 붓질.
-- 먹 덩굴의 가시와 테이퍼, 묶임 덩굴이 다리를 감는 앞뒤 관계(지금은 두 가닥 X).
+- 먹 덩굴의 가시와 테이퍼, 묶임 덩굴이 다리를 감는 앞뒤 관계(지금은 앞 반바퀴 나선 + 뒤의 오르는 덩굴과 뿌리 덩어리. 자세별로 다리 위치가 달라 run 큰 걸음에서는 나선이 다리와 어긋난다).
+- 수면 획의 붓 리듬(지금은 고른 사인 물결 + 끝 테이퍼).
 - 장별 덫 기계(특히 3장 그물과 4장 톱니)의 쇠 질감.
 - shock 돌 조각·core의 판석 파편, 균열 가지의 붓 리듬.
 - 웅덩이 가장자리의 먹 번짐, 큰 웅덩이(xl)의 표면(지금은 평평한 ink700 + 초승 윤기).
@@ -758,6 +823,9 @@ full만: n = clamp(round(r/16), 5, 9). i = 0..n−1: a = 2π(i + J(6000 + i))/n,
 
 ## 15. 알려진 한계
 
-- **물의 무늬가 성기다**: 물결 40×18·흐름 44×10과 한 지형 상한 13 때문에 r ≥ 200에서 물결·흐름이 원의 1~2%만 지난다. 물은 담묵 원판 + 젖은 테로 읽히지만(T1 통과), 더 촘촘한 수면이 필요하면 xl 웅덩이처럼 큰 물결 단을 더하는 것이 같은 방식의 처방이다.
-- **불의 후보 나선**: §8.0의 jit 성질 때문에 불 몸 무더기 후보도 나선 두 줄 위에 있다. 합격 판이라 그대로 두었다.
+- **물의 수면 획(W1)**: r145·200·270에서 획 4·7·10개가 원 전체에 고르게 놓이고 1x·0.8x 흑백에서 수면으로 읽힌다. 다만 획이 모두 가로라 원의 테 근처 좌우(먼 x)에는 획이 덜 닿는다(scatter 'ground' 내접 타원이 r − 2 안이어야 해서). 넓이 비율(자리 3.7~5.9%)은 작다.
+- **묶임(B1)은 자세를 모른다**: 조각 하나를 모든 자세에 쓴다. run 큰 걸음에서 다리가 벌어지면 front 나선이 다리 사이에 걸려 보인다(1x에서는 '발밑 덩굴'로 읽힌다). 자세별 조각이 필요하면 hero 프레임 수만큼 늘어난다.
+- **불의 후보 나선**: §8.0의 jit 성질 때문에 불 몸 무더기 후보도 나선 두 줄 위에 있다. 승인된 예외라 그대로 두었다(검수 3차 (1)).
+- **shock 균열 마디의 jit 상관**: 마디 (길이, 꺾임)가 jit 연속값이라 두 갈래 관계에 묶인다. 균열 모양은 합격했고, 규칙 범위 밖으로 수용됐다(39, 검수 4차 (2)).
+- **null 유령 선의 방향**: θ = π·kr(0, i)라서 4줄은 서로 약 44°씩, 6줄이면 두 쌍이 3.5° 차이로 거의 나란하다. 가운데 엇갈림은 N1로 없앴고, 가장자리 쪽 교차는 지운 줄눈으로 읽힌다(`k11-n1-null-x1`, `-x2`).
 - **정지 렌더로 판단하지 못한 것**: 2Hz 물듦과 루프·cycle 움직임, 다이얼 바늘 쓸기, 성능.

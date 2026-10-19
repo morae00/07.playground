@@ -57,8 +57,15 @@ export type HazardManifest = Readonly<{
   spec: Readonly<Record<string, unknown>>;
   parts: Readonly<Record<string, Readonly<Record<string, HazardPart>>>>;
   states: Readonly<Record<string, readonly string[]>>;
-  /** layout `kind:r:seed[:lod]` -> [part, x, y, flip, phase, z, prio]; embers `fire:r:seed:t` / `hero:t` -> [part, x, y, frame]. */
-  vectors: Readonly<{ layout: Readonly<Record<string, readonly (readonly (string | number)[])[]>>; embers: Readonly<Record<string, readonly (readonly (string | number)[])[]>> }>;
+  /**
+   * layout `kind:r:seed[:lod]` -> [part, x, y, flip, phase, z, prio]; embers `fire:r:seed:t` / `hero:t` -> [part, x, y, frame];
+   * paths `kind:r:seed` -> the kit's paths() (shock cracks, null ghost lines and jag) as lines of points.
+   */
+  vectors: Readonly<{
+    layout: Readonly<Record<string, readonly (readonly (string | number)[])[]>>;
+    embers: Readonly<Record<string, readonly (readonly (string | number)[])[]>>;
+    paths: Readonly<Record<string, Readonly<Record<string, readonly (readonly (readonly [number, number])[])[]>>>>;
+  }>;
   render: Readonly<{ fireStamps: readonly number[] }>;
 }>;
 

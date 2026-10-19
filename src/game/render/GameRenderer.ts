@@ -662,6 +662,23 @@ export class GameRenderer {
     ctx.restore();
   }
 
+  /** K11: a control zone's own ground (its fill and hatch) under the kit's puddles or vines, with no rim and no sign. */
+  drawZoneGround(ctx: CanvasRenderingContext2D, hazard: Readonly<Pick<Hazard, 'x' | 'y' | 'radius' | 'kind'>>, alpha: number) {
+    const profile = HAZARD_ART[hazard.kind];
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(hazard.x, hazard.y, hazard.radius, 0, Math.PI * 2);
+    ctx.fillStyle = profile.fill;
+    ctx.fill();
+    const texture = this.hazardTexture(ctx, profile);
+    if (texture) {
+      ctx.fillStyle = texture;
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
   /** The hatch (hostile) or dot (ally) texture for a hazard's ground, made once per owner and colour. */
   private hazardTexture(ctx: CanvasRenderingContext2D, profile: HazardArtProfile) {
     if (profile.owner === 'neutral') return undefined;

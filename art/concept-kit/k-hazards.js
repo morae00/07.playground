@@ -13,6 +13,11 @@
 // dust), slow (ink mire by area, bubbles; the chapter-4 dial is SPEC), water (ripples, flow streaks, a glint), root
 // (bramble vines; emerge · wither), trap (the chapter machines; armed · spring · shut), null (erased ground, ghost lines,
 // eraser crumbs) — and the hero bind overlays (bind-back · bind-front). kinds · groups · states now equal `planned`.
+// Revision d2r1 (review 3, work order §15): long water surface strokes wave-a/-b (W1; water cap 20/10/3), the bind
+// overlays redrawn as a root clump + climbing tendrils + one helix strand per leg with a p300 lit edge (B1), six vines
+// at the root radii (R1), and every 2D draw of the six kinds from a Kronecker run (R2; fire stays the approved jit-pair
+// exception and its output is unchanged). Revision d2r2 (review 4 N1): null ghost lines keep |d| ≥ 0.15r from the
+// centre, so no two cross there as a '十 / X' (paths('null').ghost only).
 // Every kind places its things with the common helpers (§13-10, §14-7): rising stamps keep rimDist 'rise' + farOK
 // (scatter 'rise'; rimPlace for a rim ring), ground stamps keep rimDist 'ground' (their inscribed ellipse inside r − 2),
 // every scattered thing goes through scatter(), every per-hazard cap through capCut(), and MASKS feed areaOf().
@@ -219,21 +224,27 @@ window.PN = window.PN || {};
         // tiers [from r, big class, small class, area per puddle]: n = clamp(round(r²/area), min, max); the big class's
         // count aims the puddles at `target` of the disc with the painted areas `fill` (units², measured on the stamps)
         mire: { tiers: [[0, 'm', 's', 410], [100, 'l', 'm', 1000], [160, 'xl', 'l', 1000]], fill: { s: 220, m: 524, l: 1220, xl: 3900 }, target: 0.3, min: 3, max: 18, minimal: 3, tries: 120, cand: 10, reach: { frac: 1, pad: 2 }, sep: 0.75, squash: 2.2, mirror: 2, pool: 'kr', jit: { base: 3000, stride: 5, small: 6000 } },
+        // bubble b on mire[b mod n]: offset (kr(0, b), kr(1, b)), phase kr(2, b), kr = kron(seed, jit) (review 3 R2)
         bubble: { per: 30, min: 2, max: 6, cycle: 0.9, spread: [0.7, 0.6], still: 2, jit: 3200 },
         caps: [24, 12, 3]
       }
     },
     root: {
       rim: [['ink', 5.6, 0], ['warn', 3, 0], ['p50', 0.8, 0]], hatch: { renderer: 'current' }, windows: { emerge: 0.25, wither: 0.4 }, faded: { alpha: 0.35 },
-      layout: { vine: { per: 12, min: 3, max: 6, tries: 40, cand: 6, reach: { frac: 0.72, pad: 99 }, gap: { frac: 0.5, cap: 24 }, squash: 1.2, far: 6, mirror: 6, pool: 'kr', jit: { base: 5000, stride: 5 } }, caps: [6, 6, 6] }
+      // review 3 R1: n = clamp(round(r/8.5), 3, 6) — six vines at the game radii 50 · 52
+      layout: { vine: { per: 8.5, min: 3, max: 6, tries: 40, cand: 6, reach: { frac: 0.72, pad: 99 }, gap: { frac: 0.5, cap: 24 }, squash: 1.2, far: 6, mirror: 6, pool: 'kr', jit: { base: 5000, stride: 5 } }, caps: [6, 6, 6] }
     },
     water: {
       base: { token: 'ink', alpha: 0.24 }, rim: [['ink', 2.6, 0], ['p300', 1.2, -2.4, 0.8]],
       layout: {
+        // review 3 W1: long surface strokes first (prio 0); ripples and flows keep clear of them (scatter `fixed`)
+        wave: { area: 6000, min: 2, max: 10, minimal: 2, tries: 60, cand: 8, reach: { frac: 0, pad: 28 }, gap: { frac: 1, cap: 46 }, squash: 3, mirror: 2, pool: 'kr', jit: { base: 4400, stride: 5 } },
         ripple: { per: 40, min: 3, max: 7, still: 3, cycle: 1.6, spread: [0.7, 0.6], tries: 40, cand: 6, reach: { frac: 0, pad: 24 }, gap: { frac: 1, cap: 36 }, squash: 2, mirror: 2, pool: 'kr', jit: { base: 4000, stride: 5 } },
         flow: { per: 60, min: 2, max: 5, tries: 40, cand: 6, reach: { frac: 0, pad: 30 }, gap: { frac: 1, cap: 30 }, squash: 3, mirror: 2, pool: 'kr', jit: { base: 4100, stride: 5 } },
         glint: { angle: -2.356, spread: 0.3, at: 0.45, jit: 4300 },
-        caps: [13, 7, 1]
+        prio: { wave: 0, ripple: 1, flow: 2, glint: 2 },
+        // over the cap: prio 2 first, latest first (no even thinning), one prio-0 item always kept
+        caps: [20, 10, 3], cut: { even: -1, keep: 1 }
       }
     },
     trap: {
@@ -247,15 +258,17 @@ window.PN = window.PN || {};
     },
     null: {
       base: { token: 'voidPaper', alpha: 1 },
-      // ghost line i: angle π·J(angle + i), offset clamp((J(offset + i) − 0.5)·1.2r, ±0.8r) — a chord of the circle r − 6
-      ghost: { lines: [4, 6], split: 150, dash: [4, 3], layers: [['ink300', 1, 0, 0.6]], inset: 6, jit: { angle: 2200, offset: 2240 } },
+      // ghost line i: angle π·kr(0, i), centre distance d = s·(minOffset + 1.1·|v − 0.5|)·r, v = kr(1, i), s = v < 0.5 ? −1
+      // : +1 (|d| ∈ [0.15r, 0.7r], review 4 N1) — a chord of the circle r − 6 (kr = kron(seed, jit.base), review 3 R2)
+      ghost: { lines: [4, 6], split: 150, dash: [4, 3], layers: [['ink300', 1, 0, 0.6]], inset: 6, minOffset: 0.15, jit: { base: 2200 } },
       rim: [['ink', 5.4, 0, 1, [0.1, 9]], ['warn', 3, 0, 1, [0.1, 9]]],
       active: { on: false, layers: [['ink', 3.2], ['hostile', 1.5]], at: 0.9 },
       // jag point k: radius factor 1 − (depth/r)·J(jit + k)
       erase: { seconds: 0.3, jag: { points: 12, depth: 6, jit: 2280 } },
       restore: { seconds: 0.5, line: ['ink300', 1.4] },
-      // crumb i: angle 2π(i + J(angle + i))/n, distance rimDist(r, a, box, 'ground', J(dist + i), inset)
-      layout: { crumb: { per: 16, min: 5, max: 9, inset: { pad: 2, jitter: 4 }, jit: { angle: 6000, dist: 6040, variant: 6080, flip: 6120 } }, caps: [9, 0, 0] }
+      // crumb i: angle 2π(i + kr(0, i))/n, distance rimDist(r, a, box, 'ground', kr(1, i), inset), variant ⌊3·kr(2, i)⌋,
+      // flip kr(3, i) < 0.5 (kr = kron(seed, jit.base), review 3 R2)
+      layout: { crumb: { per: 16, min: 5, max: 9, inset: { pad: 2, jitter: 4 }, jit: { base: 6000 } }, caps: [9, 0, 0] }
     }
   };
 
@@ -819,6 +832,39 @@ window.PN = window.PN || {};
     return fillPolys(S.map((q) => { const x0 = q[0] + 2 * fr, pts = []; for (let i = 0; i <= 8; i++) pts.push([x0 + q[2] * i / 8, q[1] + 0.25 * Math.sin(Math.PI * i / 8)]); return ribbon(pts, (u) => 1.4 * Math.pow(Math.sin(Math.PI * u), 0.6)); }), 'p300');
   }
   const glintFrame = (fr) => fillPolys([lens(0, 0, fr ? 3 : 2, fr ? 0.8 : 0.6, 6)], 'p50');
+  /**
+   * Long surface strokes (review 3 W1): two broken horizontal lines per stamp (top 58–60 long, bottom 44 long, their
+   * centres 14–29 apart, 3 apart vertically), gently waving (amplitude ≤ 0.55, wavelength 30–36). Row [x0, x1, yc, amp,
+   * wavelength, phase, slots]. Each line has two break slots [c, φ] at least 18 apart: the break of slot (c, φ) at frame
+   * f has age a = (f + φ) mod 6, sits at c − 6 + 2a and is [0, 4, 6, 6, 4, 0][a] wide — it flows right 2 per frame while
+   * it opens and closes. The two slots of a line run 3 frames apart, so a line always has 1–2 breaks (2–3 segments, every
+   * segment ≥ 6), the segments flow and the breaks move while the line's ends stay (not a rigid push), and from the last
+   * frame to the first every visible break also moves by 2. p300 1.6 tapering to 0.8 at every segment end over an ink300
+   * 0.8 shadow line 0.6 below (the ripple tokens). No closed shapes, no dots (segments < 5 would be dropped; none are).
+   */
+  const WAVE = {
+    a: [[-38, 22, -1.5, 0.55, 34, 0.3, [[-22, 0], [2, 3]]], [-16, 28, 1.5, 0.5, 30, 1.9, [[-2, 1], [16, 4]]]],
+    b: [[-22, 36, -1.5, 0.5, 36, 2.4, [[-8, 2], [16, 5]]], [-44, 0, 1.5, 0.55, 30, 0.7, [[-30, 0], [-12, 3]]]]
+  };
+  const WAVE_GAP = [0, 4, 6, 6, 4, 0];
+  function waveFrame(v, fr) {
+    let shadow = [], light = [];
+    WAVE[v].forEach((L) => {
+      const y = (x) => L[2] + L[3] * Math.sin(TAU * (x - L[0]) / L[4] + L[5]);
+      const cuts = L[6].map((sl) => { const a = (fr + sl[1]) % 6, c = sl[0] - 6 + 2 * a, w = WAVE_GAP[a]; return [c - w / 2, c + w / 2, w]; }).filter((q) => q[2] > 0).sort((p, q) => p[0] - q[0]);
+      let x = L[0];
+      const segs = [];
+      cuts.forEach((q) => { segs.push([x, q[0]]); x = q[1]; });
+      segs.push([x, L[1]]);
+      segs.filter((q) => q[1] - q[0] >= 5).forEach((q) => {
+        const n = Math.max(4, Math.ceil((q[1] - q[0]) / 1.5)), pts = [];
+        for (let i = 0; i <= n; i++) { const xx = lerp(q[0], q[1], i / n); pts.push([xx, y(xx)]); }
+        light.push(ribbon(pts, (u) => 0.8 + 0.8 * Math.pow(Math.sin(Math.PI * u), 0.5)));
+        shadow.push(ribbon(pts.slice(1, -1).map((p) => [p[0], p[1] + 0.6]), () => 0.8));
+      });
+    });
+    return fillPolys(shadow, 'ink300') + fillPolys(light, 'p300');
+  }
 
   // ---- root (§4.4): an ink vine from a ground crack, creeping low, its tip rising and curling inward (+x) ----
   // line: centre line from the crack; thorns [u along the line, side (+1 = outer/upper-left)]; no round tips, no paper,
@@ -880,28 +926,83 @@ window.PN = window.PN || {};
     return s + draw(scalePts(a, k, a[0][0], a[0][1]), [[0.4, 1]], 2 * k + 0.4) + draw(fitVine(shiftPts(scalePts(b, k, b[0][0], b[0][1]), 1.5, fr === 2 ? 1 : 2.4)), [], 1.6 * k + 0.4);
   }
 
-  // ---- hero bind (§3.6): vines wrap the ankles (back half behind the legs, front half across the boots) ----
-  // Loops around each leg at the coat hem (x ±6.5, y −8.5: the light coat shows them; the dark boots would hide them);
-  // ground tendrils run out to x ±18. Frames grow 0.3 / 0.6 / 0.85 / 1, the last one with thorns (held). Back paints in
-  // [−20, −16]–[20, 2], front in [−18, −15]–[18, 3].
+  // ---- hero bind (§3.6, review 3 B1): vines come out of the ground at the feet, climb and wind round each leg ----
+  // Back layer (behind the hero): a low thorny root clump under and beside the feet (x ±19, y ≤ +1.7, its top edge lit in
+  // p300) that rises with the frames, and one tendril per side climbing from it at x ±17 up the outside of the silhouette
+  // to y −13.8 (ink 3.6 → 2.4) — the climb reads at 1x beside the coat in every pose. Front layer: one helix strand per
+  // leg, the same handedness on both legs (a spiral, not a chevron): it grows from the ground just right of the leg's
+  // right edge and winds up across the front of the leg to its left edge at y −12.8 (ink 3.4 → 2.4), plus a short
+  // root arching over each toe that pins the boot (ink 2.8 → 2.0). Every vine has a p300 0.8 edge on its lit (upper-left)
+  // side, so it stays readable on the black boots and the hurt pose's black coat. Frames grow 0.3 / 0.6 / 0.85 / 1 (the
+  // clump and climb first, then the wrap); thorns on the shadow side from frame 2. Back paints in [−20, −16]–[20, 2],
+  // front in [−18, −15]–[18, 3] (the foot ring stays clear below y +3).
+  const BIND = {
+    leg: 6.5, R: 6.2, top: -12.8, bot: -4.2, sag: 1.6, edge: 0.8, light: [-0.6, -0.8],
+    // the climb keeps to the outside of the silhouette and its paper halo (x 14–17) as long as it can
+    tendril: [[17.0, -1.4], [17.2, -4.8], [16.4, -8.6], [14.6, -11.6], [12.2, -13.4], [10.0, -13.8]],
+    // the front strand starts on the ground just right of the leg's right edge: the vine visibly comes out of the ground
+    riser: [[1.0, 0.6], [0.5, -1.8]],
+    // the root mass the vines come out of: a low thorny clump under and beside the feet (both sides show past the boots
+    // in every pose), its top edge lit in p300
+    mass: [[-19, 1.0], [-18.4, -1.2], [-16.8, -2.2], [-15.4, -4.8], [-14.0, -2.2], [-11.6, -1.8], [-10.2, -4.4], [-8.8, -1.6],
+      [-4, -1.0], [0, -0.8], [4, -1.0], [8.8, -1.6], [10.2, -4.4], [11.6, -1.8], [14.0, -2.2], [15.4, -4.8], [16.8, -2.2],
+      [18.4, -1.2], [19, 1.0], [12, 1.7], [0, 1.5], [-12, 1.7]],
+    // short roots arching over the toes in front (they pin the boots to the ground)
+    toe: [[2.6, 1.4], [4.6, -1.2], [7.4, -2.6], [10.2, -1.4], [11.6, 1.2]]
+  };
+  /**
+   * Front half of one turn around the leg on side sd (−1 left, +1 right), ordered from the ground up: the riser just
+   * right of the leg's right edge, then up across the front to the left edge at the top. Both legs use the same
+   * handedness, so the two strands read as one spiral winding each leg (mirrored legs read as a chevron). The turn
+   * continues behind the leg in the back layer.
+   */
+  function bindStrand(sd) {
+    // grown from the ground up: riser at the outer foot of the right edge, then up-left across the front of the leg
+    const pts = [], x1 = BIND.leg * sd + BIND.R;
+    BIND.riser.forEach((q) => pts.push([x1 + q[0], q[1]]));
+    for (let i = 16; i >= 0; i--) { const t = i / 16; pts.push([BIND.leg * sd - BIND.R * Math.cos(Math.PI * t), lerp(BIND.top, BIND.bot, t) + BIND.sag * Math.sin(Math.PI * t)]); }
+    return smoothOpen(pts.filter((p, i) => i < 2 || i % 2 === 0 || i === pts.length - 1), 3);
+  }
+  /** Ink ribbon with a p300 edge along its lit side (the side whose normal faces the upper-left light). */
+  function litVine(pts, wf) {
+    if (pts.length < 2) return '';
+    const n = pts.length, A = pts[0], B = pts[n - 1], tx = B[0] - A[0], ty = B[1] - A[1];
+    const sg = (ty * BIND.light[0] - tx * BIND.light[1]) >= 0 ? 1 : -1, acc = [0], edge = [];
+    for (let i = 1; i < n; i++) acc.push(acc[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    const tot = acc[n - 1] || 1;
+    for (let i = 0; i < n; i++) {
+      const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1, d = wf(acc[i] / tot) / 2 + BIND.edge / 2;
+      edge.push([pts[i][0] + sg * dy / L * d, pts[i][1] - sg * dx / L * d]);
+    }
+    return fillPolys([ribbon(edge, () => BIND.edge)], 'p300') + fillPolys([ribbon(pts, wf)], 'ink');
+  }
+  /** A thorn on the shadow side of a vine at length fraction u (size h). */
+  function bindThorn(pts, u, h) {
+    const q = along(pts, u), p = q.p, a = pts[q.i], b = pts[Math.min(pts.length - 1, q.i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1;
+    const A = pts[0], B = pts[pts.length - 1], sg = ((B[1] - A[1]) * BIND.light[0] - (B[0] - A[0]) * BIND.light[1]) >= 0 ? -1 : 1, n = [sg * dy / L, -sg * dx / L];
+    return fillPolys([[[p[0] - dx / L * 1.2, p[1] - dy / L * 1.2], [p[0] + dx / L * 1.2, p[1] + dy / L * 1.2], [p[0] + n[0] * (h || 2.6) + dx / L * 0.7, p[1] + n[1] * (h || 2.6) + dy / L * 0.7]]], 'ink');
+  }
   function bindFrame(layer, fr) {
-    const g = [0.3, 0.6, 0.85, 1][fr], out = [], thorns = [];
-    [-1, 1].forEach((sd) => {
-      // two strands per leg, tilted ±14° so their front halves cross like a wrap (an X across the leg)
-      [[-9.4, 8.4, 3.0, 14], [-6.4, 7.8, 2.6, -14]].forEach((st, si) => {
-        const cx = 6.5 * sd, cy = st[0], loop = [];
-        for (let i = 0; i <= 10; i++) { const a = layer === 'back' ? Math.PI + Math.PI * i / 10 : Math.PI * i / 10; loop.push([cx + Math.cos(a) * st[1] * sd, cy + Math.sin(a) * st[2]]); }
-        const tl0 = rot(loop, st[3] * sd, cx, cy);
-        if (g > 0.45 + si * 0.15) out.push(cutPolyline(tl0, polyLen(tl0) * clamp((g - 0.45 - si * 0.15) / 0.4, 0, 1)));
-        if (fr === 3) [0.25, 0.7].forEach((u) => thorns.push({ line: tl0, u, sd: layer === 'back' ? 1 : -1 }));
-      });
-      const tendril = layer === 'back' ? [[18 * sd, 0.1], [14.6 * sd, -1.2], [12.8 * sd, -4.2], [6.5 * sd + 8 * sd, -9]] : [[16.4 * sd, 1.1], [13.6 * sd, -0.4], [6.5 * sd + 7.4 * sd, -6.2]];
-      const tl = smoothOpen(tendril, 4);
-      out.push(cutPolyline(tl, polyLen(tl) * Math.min(1, g * 1.4)));
-    });
+    const g = [0.3, 0.6, 0.85, 1][fr];
     let s = '';
-    out.forEach((pts) => { if (pts.length > 1) s += fillPolys([ribbon(pts, (u) => lerp(3.6, 1.8, u))], 'ink'); });
-    thorns.forEach((th) => { const q = along(th.line, th.u), p = q.p, a = th.line[q.i], b = th.line[Math.min(th.line.length - 1, q.i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1, n = [dy / L * th.sd, -dx / L * th.sd]; s += fillPolys([[[p[0] - dx / L * 1.2, p[1] - dy / L * 1.2], [p[0] + dx / L * 1.2, p[1] + dy / L * 1.2], [p[0] + n[0] * 2.8, p[1] + n[1] * 2.8]]], 'ink'); });
+    if (layer === 'back') {
+      // the root mass rises first (scaled up from the ground line), then the climbs
+      const kM = Math.min(1, 0.45 + g * 0.55), mass = BIND.mass.map((p) => [p[0] * Math.min(1, 0.7 + g * 0.3), 1.0 + (p[1] - 1.0) * kM]);
+      s += fillPolys([ribbon(mass.slice(1, 18).map((p) => [p[0], p[1] - 0.45]), () => BIND.edge)], 'p300') + fillPolys([mass], 'ink');
+    }
+    [-1, 1].forEach((sd) => {
+      if (layer === 'back') {
+        const tl = smoothOpen(BIND.tendril.map((p) => [p[0] * sd, p[1]]), 4), climb = cutPolyline(tl, polyLen(tl) * Math.min(1, g * 1.25));
+        s += litVine(climb, (u) => lerp(3.6, 2.4, u));
+        if (fr >= 2) [0.36, 0.66].forEach((u) => { s += bindThorn(tl, u, 2.8); });
+      } else {
+        const st = bindStrand(sd), k = clamp((g - 0.45) / 0.55, 0, 1);
+        if (k > 0) s += litVine(cutPolyline(st, polyLen(st) * k), (u) => lerp(3.4, 2.4, u));
+        if (fr >= 2) [0.34, 0.56, 0.8].forEach((u) => { s += bindThorn(st, u, 2.8); });
+        const toe = smoothOpen(BIND.toe.map((p) => [p[0] * sd, p[1]]), 4);
+        s += litVine(cutPolyline(toe, polyLen(toe) * Math.min(1, g * 1.4)), (u) => 2.8 - 0.8 * u);
+      }
+    });
     return s;
   }
 
@@ -1030,6 +1131,8 @@ window.PN = window.PN || {};
   ['a', 'b'].forEach((v) => PARTS_RAW.water.push(['ripple-' + v, 8, 'cycle', 0, 1.6, 3, [40, 18], [20, 9], 'hazard', 'ground', 'info', false]));
   ['a', 'b'].forEach((v) => PARTS_RAW.water.push(['flow-' + v, 6, 'loop', 6, null, null, [44, 10], [22, 5], 'hazard', 'ground', 'deco', false]));
   PARTS_RAW.water.push(['glint', 2, 'loop', 2, null, null, [14, 8], [7, 4], 'hazard', 'ground', 'deco', false]);
+  // review 3 W1: the long surface strokes that make the disc read as water at 1x
+  ['a', 'b'].forEach((v) => PARTS_RAW.water.push(['wave-' + v, 6, 'loop', 6, null, null, [100, 14], [50, 7], 'hazard', 'ground', 'info', false]));
   // root (§4.4) and the hero bind overlays (§3.6)
   ['a', 'b', 'c'].forEach((v) => PARTS_RAW.root.push(['vine-' + v, 4, 'loop', 6, null, null, [26, 24], [13, 20], 'hazard', 'flame', 'info', false]));
   ['a', 'b', 'c'].forEach((v) => PARTS_RAW.root.push(['vine-' + v + '-emerge', 4, 'prog', 0, 0.25, null, [26, 24], [13, 20], 'hazard', 'flame', 'info', false]));
@@ -1081,6 +1184,7 @@ window.PN = window.PN || {};
     if (group === 'water') {
       if ((m = /^ripple-([ab])$/.exec(part))) return rippleFrame(m[1], frame);
       if ((m = /^flow-([ab])$/.exec(part))) return flowFrame(m[1], frame);
+      if ((m = /^wave-([ab])$/.exec(part))) return waveFrame(m[1], frame);
       if (part === 'glint') return glintFrame(frame);
     }
     return '';
@@ -1159,11 +1263,16 @@ window.PN = window.PN || {};
    * differ (J(ix + t) of nearby candidates step by ≈ 0.083 and repeat). w is null for the fire pool. Without o.pool and
    * o.mirror this is exactly the fire rule of S1.
    */
+  /**
+   * kron(seed, base) — the Kronecker run every 2D draw of the delivery-2 kinds uses (review 3 R2): kr(t, n) =
+   * frac(J(base + t) + n·SPEC.jit.kron[t]), t = 0..4. Two jit values are never paired into a 2D position (they lie on
+   * two lines); the pair (kr(0, n), kr(1, n)) is an R2 lattice point, kr(2..4, n) are further independent draws.
+   */
+  const kron = (seed, base) => { const KR = SPEC.jit.kron, k0 = KR.map((_, t) => jit(seed, base + t)); return (t, n) => frac(k0[t] + n * KR[t]); };
   function scatter(r, seed, o) {
     const J = (i) => jit(seed, i), out = [], sq = o.squash || 1, fixed = o.fixed || [];
     const reach = Math.max(o.reach.frac * r, r - o.reach.pad), gap = Math.min(o.gap.frac * r, o.gap.cap);
-    const KR = SPEC.jit.kron, k0 = o.pool === 'kr' ? KR.map((_, t) => J(o.jit.base + t)) : null;
-    const kr = (t, q) => frac(k0[t] + q * KR[t]);
+    const k0 = o.pool === 'kr', kr = k0 ? kron(seed, o.jit.base) : null;
     for (let k = 0; k < o.tries && out.length < o.n; k++) {
       let best = null, bestS = -Infinity;
       for (let c = 0; c < o.cand; c++) {
@@ -1376,10 +1485,11 @@ window.PN = window.PN || {};
     const keep = li === 0 ? mire : li === 1 ? mire.slice(0, Math.ceil(mire.length / 2)) : mire.slice(0, M.minimal);
     const bubbles = [];
     if (li === 0 && mire.length) {
-      const nb = clamp(Math.round(r / BB.per), BB.min, BB.max);
+      // the offset on the puddle is a 2D draw: Kronecker run (R2), not a jit pair
+      const nb = clamp(Math.round(r / BB.per), BB.min, BB.max), kr = kron(seed, BB.jit);
       for (let b = 0; b < nb; b++) {
-        const q = mire[b % mire.length], hx = (MIRE[q.size].box[0] - 6) / 2, hy = (MIRE[q.size].box[1] - 6) / 2, ix = BB.jit + 4 * b;
-        bubbles.push({ part: 'bubble-' + (b % 2 ? 'b' : 'a'), x: q.x + (J(ix) - 0.5) * 0.8 * hx, y: q.y + (J(ix + 1) - 0.5) * 0.6 * hy + 1, flip: false, phase: J(ix + 3), z: 'flame', prio: 2, gen: 300 + b });
+        const q = mire[b % mire.length], hx = (MIRE[q.size].box[0] - 6) / 2, hy = (MIRE[q.size].box[1] - 6) / 2;
+        bubbles.push({ part: 'bubble-' + (b % 2 ? 'b' : 'a'), x: q.x + (kr(0, b) - 0.5) * 0.8 * hx, y: q.y + (kr(1, b) - 0.5) * 0.6 * hy + 1, flip: false, phase: kr(2, b), z: 'flame', prio: 2, gen: 300 + b });
       }
     }
     return sortItems(capCut(keep.concat(bubbles), L.caps[li], { even: 2, keep: 1 }));
@@ -1388,15 +1498,19 @@ window.PN = window.PN || {};
   // ---- water (§1.6, §14-7): ripples and flows scattered 'ground', one glint up-left ----
   LAYOUTS.water = (r, seed, lod) => {
     const L = SPEC.water.layout, li = Math.max(0, LODS.indexOf(lod)), J = (i) => jit(seed, i);
-    const RP = L.ripple, FL = L.flow, G = L.glint;
+    const WV = L.wave, RP = L.ripple, FL = L.flow, G = L.glint, PR = L.prio;
+    const nw = clamp(Math.round(r * r / WV.area), WV.min, WV.max);
     const nr = clamp(Math.round(r / RP.per), RP.min, RP.max), nf = clamp(Math.round(r / FL.per), FL.min, FL.max);
-    const ripple = scatter(r, seed, { n: nr, tries: RP.tries, cand: RP.cand, reach: RP.reach, gap: RP.gap, squash: RP.squash, mirror: RP.mirror, pool: RP.pool, mode: 'ground', box: [40, 18], jit: RP.jit })
-      .map((p, i) => ({ part: 'ripple-' + (p.w[0] < 0.5 ? 'a' : 'b'), x: p.x, y: p.y, flip: p.w[1] < 0.5, phase: p.w[2], z: 'ground', prio: 0, gen: i }));
-    const flow = scatter(r, seed, { n: nf, tries: FL.tries, cand: FL.cand, reach: FL.reach, gap: FL.gap, squash: FL.squash, mirror: FL.mirror, pool: FL.pool, mode: 'ground', box: [44, 10], fixed: ripple, jit: FL.jit })
-      .map((p, i) => ({ part: 'flow-' + (p.w[0] < 0.5 ? 'a' : 'b'), x: p.x, y: p.y, flip: false, phase: p.w[2], z: 'ground', prio: 1, gen: 100 + i }));
-    const ga = G.angle + (J(G.jit) - 0.5) * 2 * G.spread, glint = { part: 'glint', x: Math.cos(ga) * G.at * r, y: Math.sin(ga) * G.at * r, flip: false, phase: J(G.jit + 1), z: 'ground', prio: 2, gen: 200 };
-    const keep = li === 0 ? ripple.concat(flow, [glint]) : li === 1 ? ripple.slice(0, Math.ceil(nr / 2)).concat(flow.slice(0, Math.ceil(nf / 2))) : ripple.slice(0, 1);
-    return sortItems(capCut(keep, L.caps[li], { even: 1, keep: 1 }));
+    const wave = scatter(r, seed, { n: nw, tries: WV.tries, cand: WV.cand, reach: WV.reach, gap: WV.gap, squash: WV.squash, mirror: WV.mirror, pool: WV.pool, mode: 'ground', box: [100, 14], jit: WV.jit })
+      .map((p, i) => ({ part: 'wave-' + (p.w[0] < 0.5 ? 'a' : 'b'), x: p.x, y: p.y, flip: p.w[1] < 0.5, phase: p.w[2], z: 'ground', prio: PR.wave, gen: i }));
+    const ripple = scatter(r, seed, { n: nr, tries: RP.tries, cand: RP.cand, reach: RP.reach, gap: RP.gap, squash: RP.squash, mirror: RP.mirror, pool: RP.pool, mode: 'ground', box: [40, 18], fixed: wave, jit: RP.jit })
+      .map((p, i) => ({ part: 'ripple-' + (p.w[0] < 0.5 ? 'a' : 'b'), x: p.x, y: p.y, flip: p.w[1] < 0.5, phase: p.w[2], z: 'ground', prio: PR.ripple, gen: 100 + i }));
+    const flow = scatter(r, seed, { n: nf, tries: FL.tries, cand: FL.cand, reach: FL.reach, gap: FL.gap, squash: FL.squash, mirror: FL.mirror, pool: FL.pool, mode: 'ground', box: [44, 10], fixed: wave.concat(ripple), jit: FL.jit })
+      .map((p, i) => ({ part: 'flow-' + (p.w[0] < 0.5 ? 'a' : 'b'), x: p.x, y: p.y, flip: false, phase: p.w[2], z: 'ground', prio: PR.flow, gen: 200 + i }));
+    const ga = G.angle + (J(G.jit) - 0.5) * 2 * G.spread, glint = { part: 'glint', x: Math.cos(ga) * G.at * r, y: Math.sin(ga) * G.at * r, flip: false, phase: J(G.jit + 1), z: 'ground', prio: PR.glint, gen: 300 };
+    // reduced: waves and ripples halved, no flows; minimal: two waves (held) and one ripple (still 3)
+    const keep = li === 0 ? wave.concat(ripple, flow, [glint]) : li === 1 ? wave.slice(0, Math.ceil(nw / 2)).concat(ripple.slice(0, Math.ceil(nr / 2))) : wave.slice(0, WV.minimal).concat(ripple.slice(0, 1));
+    return sortItems(capCut(keep, L.caps[li], L.cut));
   };
   // ---- root (§1.6, §14-7): vines scattered as rising stamps; flip when x > 0 so every curl faces the centre ----
   LAYOUTS.root = (r, seed, lod) => {
@@ -1412,12 +1526,13 @@ window.PN = window.PN || {};
 
   // ---- null (§1.6): crumbs inside the rim (rimDist 'ground' with pad 2, jitter 4), and the ghost lines / jag (paths) ----
   LAYOUTS.null = (r, seed, lod) => {
-    const C = SPEC.null.layout.crumb, li = Math.max(0, LODS.indexOf(lod)), J = (i) => jit(seed, i), out = [];
+    const C = SPEC.null.layout.crumb, li = Math.max(0, LODS.indexOf(lod)), out = [];
     if (li === 0) {
-      const n = clamp(Math.round(r / C.per), C.min, C.max);
+      // slot i plus a Kronecker draw for (angle in slot, depth) and the variant/flip (R2: no jit pairs)
+      const n = clamp(Math.round(r / C.per), C.min, C.max), kr = kron(seed, C.jit.base);
       for (let i = 0; i < n; i++) {
-        const a = TAU * (i + J(C.jit.angle + i)) / n, d = rimDist(r, a, [12, 10], 'ground', J(C.jit.dist + i), C.inset);
-        out.push({ part: 'crumb-' + 'abc'[Math.min(2, Math.floor(3 * J(C.jit.variant + i)))], x: Math.cos(a) * d, y: Math.sin(a) * d, flip: J(C.jit.flip + i) < 0.5, phase: 0, z: 'ground', prio: 0, gen: i });
+        const a = TAU * (i + kr(0, i)) / n, d = rimDist(r, a, [12, 10], 'ground', kr(1, i), C.inset);
+        out.push({ part: 'crumb-' + 'abc'[Math.min(2, Math.floor(3 * kr(2, i)))], x: Math.cos(a) * d, y: Math.sin(a) * d, flip: kr(3, i) < 0.5, phase: 0, z: 'ground', prio: 0, gen: i });
       }
     }
     return sortItems(capCut(out, SPEC.null.layout.caps[li], { even: -1, keep: 0 }));
@@ -1425,12 +1540,17 @@ window.PN = window.PN || {};
   /**
    * Ghost lines: chords of the circle r − inset; jag: one closed line of 12 points of the erase edge at radius factor
    * 1 − (depth/r)·J (full size; the renderer scales it by the erase progress). Every paths() value is a list of lines.
+   * Review 4 N1: no ghost line passes the centre — its distance from the centre is d = s·(minOffset + 1.1·|v − 0.5|)·r
+   * with v = kr(1, i) and s = (v < 0.5 ? −1 : +1), so |d| ∈ [0.15r, 0.7r] and two lines never cross as a '十 / X' in the
+   * middle (with the plain kron offset 16.5 % of r120·130 and 41 % of r170 did).
    */
   PATHS.null = (r, seed) => {
     const G = SPEC.null.ghost, E = SPEC.null.erase.jag, J = (i) => jit(seed, i), R0 = r - G.inset, ghost = [], jag = [];
-    const n = r < G.split ? G.lines[0] : G.lines[1];
+    const n = r < G.split ? G.lines[0] : G.lines[1], kr = kron(seed, G.jit.base);
     for (let i = 0; i < n; i++) {
-      const th = Math.PI * J(G.jit.angle + i), c = clamp((J(G.jit.offset + i) - 0.5) * 1.2 * r, -0.8 * r, 0.8 * r), h = Math.sqrt(Math.max(0, R0 * R0 - c * c));
+      // (angle, offset) of a line is a 2D draw: Kronecker run (R2); the offset keeps clear of the centre (N1)
+      const v = kr(1, i), c = (v < 0.5 ? -1 : 1) * (G.minOffset + 1.1 * Math.abs(v - 0.5)) * r;
+      const th = Math.PI * kr(0, i), h = Math.sqrt(Math.max(0, R0 * R0 - c * c));
       const dx = Math.cos(th), dy = Math.sin(th), nx = -dy, ny = dx;
       ghost.push([[c * nx - h * dx, c * ny - h * dy], [c * nx + h * dx, c * ny + h * dy]]);
     }
@@ -1731,7 +1851,7 @@ window.PN = window.PN || {};
       if (P.drive === 'cycle') {
         const fr = lod === 'minimal' ? P.still : cycleFrame(P, o.t, q.phase, cyclePeriod(S.layout.ripple.cycle, S.layout.ripple.spread, q.phase), red);
         if (fr >= 0) s += place('water', q.part, fr, q.x, q.y, q.flip);
-      } else if (!red) s += place('water', q.part, loopFrame(P, o.t, q.phase, lod, red), q.x, q.y, q.flip);
+      } else if (P.lod === 'info' || !red) s += place('water', q.part, loopFrame(P, o.t, q.phase, lod, red), q.x, q.y, q.flip); // waves hold their phase frame in reduced motion; flows and the glint are not drawn
     });
     return s + rimRows(r, S.rim);
   };
@@ -1812,7 +1932,7 @@ window.PN = window.PN || {};
     fire: { fill: (q) => q.z === 'flame', band: () => SPEC.fire.rim[0], inset: 12 },
     slow: { fill: (q) => /^mire-/.test(q.part), inset: 6 },     // ink.700 puddles (bubbles count as cover only)
     // ripples are thin rings that grow over their cycle: their reach (the inscribed ellipse of box − 6) is the fill
-    water: { fill: (q) => /^(ripple|flow)-/.test(q.part), inset: 6, extent: true },
+    water: { fill: (q) => /^(wave|ripple|flow)-/.test(q.part), inset: 6, extent: true },
     root: { fill: (q) => /^vine-/.test(q.part), inset: 6 }
   };
   const NAMES = { '#121110': 'ink', '#EF5B4F': 'cor', '#FFE4DF': 'glw', '#FAF6EC': 'p50', '#B8352B': 'dep', '#2B2926': 'ink7', '#8C8579': 'ink3', '#46423D': 'ink5' };
@@ -2039,7 +2159,9 @@ window.PN = window.PN || {};
   }
 
   PN.hazards = {
-    version: '1.0',
+    // 1.0 = delivery 2 (285 frames); 1.0-d2r1 = its review-3 revision (W1 waves, B1 bind, R1 vines, R2 kron draws);
+    // 1.0-d2r2 = review-4 N1 (null ghost lines keep clear of the centre; paths('null') only)
+    version: '1.0-d2r2',
     K,
     kinds: KINDS,
     groups: GROUPS,
@@ -2055,7 +2177,7 @@ window.PN = window.PN || {};
     draw,
     overlay,
     _: {
-      check, measure, areaOf, rimDist, scatter, rimPlace, capCut, AREA_RULES, clusterTongues, heroEmberSlots,
+      check, measure, areaOf, rimDist, scatter, rimPlace, capCut, kron, AREA_RULES, clusterTongues, heroEmberSlots,
       emberSlots: (r, seed, t, lod) => emberSlots(layoutFire(r, seed, lod || 'full').filter((q) => q.prio === SPEC.fire.layout.prio.cluster), r, seed, t, lod || 'full', null)
     }
   };

@@ -91,10 +91,11 @@ export const SKILLS_PACK = 'skills';
 /** K11: the terrain hazard stamps, loaded with the skills pack and kept for the whole session. */
 export const HAZARDS_PACK = 'hazards';
 /**
- * K11: the hazard kinds drawn from the kit, switched on one by one (brief §15: fire, then trap and null, shock, slow,
- * root, water). Every other kind, and every kind while the pack is missing or failed, keeps the vector drawing (TEC-10).
+ * K11: the hazard kinds drawn from the kit, switched on in the brief's order (§15-6: fire, then trap and null, shock,
+ * slow, root, water). Every other kind (the player's zones), and every kind while the pack is missing or failed, keeps
+ * the vector drawing (TEC-10); taking a kind out of this list rolls it back alone.
  */
-export const HAZARD_ART_KINDS: ReadonlySet<string> = new Set(['fire']);
+export const HAZARD_ART_KINDS: ReadonlySet<string> = new Set(['fire', 'trap', 'null', 'shock', 'slow', 'root', 'water']);
 
 export function enemySlot(chapter: number, tier: EnemyTier, attackStyle: 'contact' | 'ranged') {
   return `enemy/${chapter}/${enemyRoleFor(tier, attackStyle)}`;

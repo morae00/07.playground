@@ -475,6 +475,16 @@ export type SkillMark = {
 };
 
 /** SYS-14 (K7): a bomber's blast drawing, shown for a moment where it went off. */
+/** K11: a shock that went off (API-hazards §4.2): its burst, then the mark it leaves; `id` is the shock's own. */
+export type ShockBurst = {
+  id: number;
+  x: number;
+  y: number;
+  radius: number;
+  life: number;
+  maxLife: number;
+};
+
 export type BlastFlash = {
   x: number;
   y: number;

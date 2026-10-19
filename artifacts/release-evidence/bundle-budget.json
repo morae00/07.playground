@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 124847,
-      "kib": 121.92,
+      "bytes": 130839,
+      "kib": 127.77,
       "baselineBytes": 106910,
-      "growthRatio": 0.1677766345524272,
+      "growthRatio": 0.22382377700869882,
       "warningBytes": 122946,
       "failBytes": 133637,
       "status": "warning",
@@ -35,16 +35,16 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 2088029,
-      "kib": 2039.09,
+      "bytes": 2094718,
+      "kib": 2045.62,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 32763226,
-      "kib": 31995.34,
+      "bytes": 32801936,
+      "kib": 32033.14,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-CCUuogLM.js",
+      "file": "assets/App-CNLs89Vv.js",
       "category": "appJs",
-      "sourceBytes": 390702,
-      "gzipBytes": 121295
+      "sourceBytes": 406835,
+      "gzipBytes": 127285
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -69,8 +69,8 @@
     {
       "file": "assets/atlas/manifest.json",
       "category": "data",
-      "sourceBytes": 184877,
-      "gzipBytes": 29410
+      "sourceBytes": 191566,
+      "gzipBytes": 31320
     },
     {
       "file": "assets/chapter-thumbs-D_lcRDUv.webp",
@@ -133,10 +133,10 @@
       "gzipBytes": 113032
     },
     {
-      "file": "assets/index-B66FgS10.js",
+      "file": "assets/index-C2JC4xtr.js",
       "category": "appJs",
       "sourceBytes": 7500,
-      "gzipBytes": 3552
+      "gzipBytes": 3554
     },
     {
       "file": "assets/index-CELqW5wV.css",
@@ -267,8 +267,8 @@
     {
       "file": "assets/packs/hazards/atlas-0.png",
       "category": "image",
-      "sourceBytes": 593309,
-      "gzipBytes": 590181
+      "sourceBytes": 625330,
+      "gzipBytes": 621982
     },
     {
       "file": "assets/packs/hero-dan/atlas-0.png",

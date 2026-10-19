@@ -5,7 +5,7 @@
 import { FIXED_TIMESTEP } from '../p0Core';
 import type { RuleSet } from '../rules';
 import type { RenderEffects, RenderFrameStats, RenderWorld, WorldLayer } from '../render/worldRenderer';
-import type { AwakeningZone, Corpse, HitStamp, Recoil, SkillMark } from './worldTypes';
+import type { AwakeningZone, Corpse, HitStamp, Recoil, ShockBurst, SkillMark } from './worldTypes';
 import {
   GameEngine,
   type BeamEffect,
@@ -103,6 +103,7 @@ export type ProbeEffects = {
   damageNumbers: DamageNumber[];
   impactRings: ImpactRing[];
   blasts: BlastFlash[];
+  shocks: ShockBurst[];
   skillMarks: SkillMark[];
   corpses: Corpse[];
   hitStamps: HitStamp[];
@@ -287,6 +288,7 @@ export class ProbedGameEngine extends GameEngine {
         damageNumbers: copy(this.presentation.damageNumbers),
         impactRings: copy(this.presentation.impactRings),
         blasts: copy(this.presentation.blasts),
+        shocks: copy(this.presentation.shocks),
         skillMarks: copy(this.presentation.skillMarks),
         corpses: copy(this.presentation.corpses),
         hitStamps: copy(this.presentation.hitStamps),
@@ -474,6 +476,7 @@ export class ProbedGameEngine extends GameEngine {
             damageNumbers: effects.damageNumbers,
             impactRings: effects.impactRings,
             blasts: effects.blasts,
+            shocks: effects.shocks,
             skillMarks: effects.skillMarks,
             corpses: effects.corpses,
             hitStamps: effects.hitStamps,

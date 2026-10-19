@@ -34,7 +34,7 @@ export type GameEvent =
   /** A delayed skill blast (bone mortar, eclipse afterimage) went off. */
   | { type: 'area/blast'; x: number; y: number; radius: number; source: SkillId }
   | { type: 'vortex/collapse'; x: number; y: number; radius: number; ring: boolean }
-  | { type: 'shock/burst'; x: number; y: number }
+  | { type: 'shock/burst'; x: number; y: number; id: number; radius: number }
   /** SYS-14: a fuse bomber planted itself (its blast reach and fuse length), and a bomber went off. */
   | { type: 'enemy/armed'; x: number; y: number; radius: number; seconds: number }
   | { type: 'enemy/blast'; x: number; y: number; radius: number; kind: 'fuse' | 'burst'; hit: boolean }

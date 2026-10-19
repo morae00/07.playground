@@ -76,9 +76,9 @@
   - 큰 칸막이(200×130, 280×190)는 장마다 윗면을 그린다(K5, `docs/art/briefs/env-tops.md`): 1장 담장 빈터, 2장 철책 제단, 3장 갈대 둑, 4장 문자판 받침, 5장 갈라진 흑요 석판.
 - 위험지형(K11)은 스킬 VFX와 같은 혼합 방식이다(`docs/ARCHITECTURE.md` "Hazard art").
   - 반경을 따라가는 것(바닥 원판, 판정 테, 열 띠, 해칭, 균열)은 킷 `PN.hazards.SPEC`의 숫자로 렌더러가 그린다.
-  - 불 무더기·숯불 그을음·불티·연기, 주인공·적 발밑 불길 같은 '물건'은 고정 크기 조각으로 굽는다. 9그룹 285장을 `hazards` 팩(`assets/packs/hazards/`, 2048×468 한 장)에 `hazard/<group>/<part>/<frame>`으로 굽고, SPEC·조각 규칙·상태와 C9 검증 벡터는 매니페스트 `hazards`로 넘긴다. 조각은 늘이지 않는다.
-  - 원 안에 조각을 흩는 배치(`layout`)는 렌더러가 TypeScript로 옮겼다(`src/game/render/hazardArt.ts`). 매니페스트의 C9 벡터로 단위 시험한다(`hazardArt.test.ts`). 킷의 배치 식이 바뀌면 다시 굽고 이식을 고친다.
-  - 종류별로 켠다(`slots.ts` `HAZARD_ART_KINDS`). 지금은 불만 켰다. 켜지 않은 종류와 팩이 없을 때는 아래의 벡터 그림(ART-06, `GameRenderer.drawHazard`)을 쓴다.
+  - 불 무더기·숯불 그을음·불티·연기, 주인공·적 발밑 불길 같은 '물건'은 고정 크기 조각으로 굽는다. 9그룹 297장(킷 1.0-d2r2)을 `hazards` 팩(`assets/packs/hazards/`, 2048×484 한 장)에 `hazard/<group>/<part>/<frame>`으로 굽고, SPEC·조각 규칙·상태와 C9 검증 벡터는 매니페스트 `hazards`로 넘긴다. 조각은 늘이지 않는다.
+  - 원 안에 조각을 흩는 배치(`layout`)는 렌더러가 TypeScript로 옮겼다(`src/game/render/hazardArt.ts`). 매니페스트의 C9 벡터(7종 배치, 충격 균열, null 유령 선·지운 가장자리)로 단위 시험한다(`hazardArt.test.ts`). 킷의 배치 식이 바뀌면 다시 굽고 이식을 고친다.
+  - 종류별로 켠다(`slots.ts` `HAZARD_ART_KINDS`). 지금은 7종을 모두 켰다(지시서 §15-6 순서). 목록에서 뺀 종류와 팩이 없을 때는 아래의 벡터 그림(ART-06, `GameRenderer.drawHazard`)을 쓴다.
   - 킷 파일이 바뀌면(물 W1, 묶임 B1, 덩굴 R1) 다시 굽는다. 키로 찾으므로 기존 키는 그대로이고 페이지 안 위치만 바뀐다.
 - 벡터 그림(ART-06, `GameRenderer.drawHazard`)은 킷의 소속 언어를 캔버스로 그린다.
   - 적 지형: 신호색 해칭(선마다 먹 헤어라인)에 먹 테 + 호박 테

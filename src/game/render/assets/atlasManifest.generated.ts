@@ -509,14 +509,14 @@ export const ATLAS_MANIFEST = {
         "assets/packs/hazards/atlas-0.png"
       ],
       "frames": {
-        "hazard/fire/char-a/0": [0, 1144, 385, 74, 30, 37, 15],
-        "hazard/fire/char-b/0": [0, 686, 385, 70, 31, 35, 15],
-        "hazard/fire/char-c/0": [0, 1520, 385, 73, 28, 37, 14],
-        "hazard/fire/char-cold-a/0": [0, 1222, 385, 74, 30, 37, 15],
-        "hazard/fire/char-cold-b/0": [0, 760, 385, 70, 31, 35, 15],
-        "hazard/fire/char-cold-c/0": [0, 1597, 385, 73, 28, 37, 14],
-        "hazard/fire/char-cold-d/0": [0, 834, 385, 71, 31, 36, 15],
-        "hazard/fire/char-d/0": [0, 909, 385, 71, 31, 36, 15],
+        "hazard/fire/char-a/0": [0, 1214, 385, 74, 30, 37, 15],
+        "hazard/fire/char-b/0": [0, 674, 385, 70, 31, 35, 15],
+        "hazard/fire/char-c/0": [0, 1446, 385, 73, 28, 37, 14],
+        "hazard/fire/char-cold-a/0": [0, 1292, 385, 74, 30, 37, 15],
+        "hazard/fire/char-cold-b/0": [0, 748, 385, 70, 31, 35, 15],
+        "hazard/fire/char-cold-c/0": [0, 1523, 385, 73, 28, 37, 14],
+        "hazard/fire/char-cold-d/0": [0, 822, 385, 71, 31, 36, 15],
+        "hazard/fire/char-d/0": [0, 897, 385, 71, 31, 36, 15],
         "hazard/fire/cluster-l-a-gutter/0": [0, 2, 195, 81, 73, 41, 69],
         "hazard/fire/cluster-l-a-gutter/1": [0, 1310, 272, 77, 49, 39, 45],
         "hazard/fire/cluster-l-a-gutter/2": [0, 114, 336, 74, 43, 37, 39],
@@ -547,9 +547,9 @@ export const ATLAS_MANIFEST = {
         "hazard/fire/cluster-l-b/5": [0, 760, 105, 79, 82, 39, 78],
         "hazard/fire/cluster-m-a-gutter/0": [0, 597, 272, 58, 55, 29, 51],
         "hazard/fire/cluster-m-a-gutter/1": [0, 852, 336, 53, 37, 25, 33],
-        "hazard/fire/cluster-m-a-gutter/2": [0, 1618, 336, 53, 34, 25, 30],
+        "hazard/fire/cluster-m-a-gutter/2": [0, 1706, 336, 53, 34, 25, 30],
         "hazard/fire/cluster-m-a-gutter/3": [0, 874, 272, 30, 53, 15, 49],
-        "hazard/fire/cluster-m-a-ignite/0": [0, 1951, 336, 36, 33, 18, 29],
+        "hazard/fire/cluster-m-a-ignite/0": [0, 2, 385, 36, 33, 18, 29],
         "hazard/fire/cluster-m-a-ignite/1": [0, 1746, 272, 55, 47, 26, 43],
         "hazard/fire/cluster-m-a-ignite/2": [0, 254, 272, 58, 56, 29, 52],
         "hazard/fire/cluster-m-a-ignite/3": [0, 707, 195, 58, 71, 29, 67],
@@ -561,9 +561,9 @@ export const ATLAS_MANIFEST = {
         "hazard/fire/cluster-m-a/5": [0, 1524, 195, 58, 63, 29, 59],
         "hazard/fire/cluster-m-b-gutter/0": [0, 812, 272, 58, 54, 29, 50],
         "hazard/fire/cluster-m-b-gutter/1": [0, 909, 336, 55, 37, 27, 33],
-        "hazard/fire/cluster-m-b-gutter/2": [0, 345, 385, 54, 32, 27, 28],
+        "hazard/fire/cluster-m-b-gutter/2": [0, 268, 385, 54, 32, 27, 28],
         "hazard/fire/cluster-m-b-gutter/3": [0, 1092, 272, 30, 52, 15, 48],
-        "hazard/fire/cluster-m-b-ignite/0": [0, 1991, 336, 35, 33, 17, 29],
+        "hazard/fire/cluster-m-b-ignite/0": [0, 42, 385, 35, 33, 17, 29],
         "hazard/fire/cluster-m-b-ignite/1": [0, 1805, 272, 56, 47, 28, 43],
         "hazard/fire/cluster-m-b-ignite/2": [0, 659, 272, 57, 55, 28, 51],
         "hazard/fire/cluster-m-b-ignite/3": [0, 876, 195, 57, 70, 28, 66],
@@ -576,9 +576,9 @@ export const ATLAS_MANIFEST = {
         "hazard/fire/cluster-s-a-gutter/0": [0, 968, 336, 42, 37, 21, 35],
         "hazard/fire/cluster-s-a-gutter/1": [0, 39, 422, 37, 25, 19, 23],
         "hazard/fire/cluster-s-a-gutter/2": [0, 208, 422, 36, 24, 19, 22],
-        "hazard/fire/cluster-s-a-gutter/3": [0, 1494, 336, 22, 35, 11, 33],
+        "hazard/fire/cluster-s-a-gutter/3": [0, 1582, 336, 22, 35, 11, 33],
         "hazard/fire/cluster-s-a-ignite/0": [0, 420, 422, 26, 23, 13, 21],
-        "hazard/fire/cluster-s-a-ignite/1": [0, 403, 385, 38, 32, 20, 30],
+        "hazard/fire/cluster-s-a-ignite/1": [0, 326, 385, 38, 32, 20, 30],
         "hazard/fire/cluster-s-a-ignite/2": [0, 1014, 336, 42, 37, 21, 35],
         "hazard/fire/cluster-s-a-ignite/3": [0, 1470, 272, 42, 48, 21, 46],
         "hazard/fire/cluster-s-a/0": [0, 1911, 272, 42, 46, 21, 44],
@@ -590,9 +590,9 @@ export const ATLAS_MANIFEST = {
         "hazard/fire/cluster-s-b-gutter/0": [0, 1153, 336, 42, 36, 21, 34],
         "hazard/fire/cluster-s-b-gutter/1": [0, 80, 422, 38, 25, 20, 23],
         "hazard/fire/cluster-s-b-gutter/2": [0, 450, 422, 36, 23, 20, 21],
-        "hazard/fire/cluster-s-b-gutter/3": [0, 1675, 336, 22, 34, 11, 32],
-        "hazard/fire/cluster-s-b-ignite/0": [0, 848, 422, 26, 22, 13, 20],
-        "hazard/fire/cluster-s-b-ignite/1": [0, 445, 385, 39, 32, 21, 30],
+        "hazard/fire/cluster-s-b-gutter/3": [0, 1763, 336, 22, 34, 11, 32],
+        "hazard/fire/cluster-s-b-ignite/0": [0, 776, 422, 26, 22, 13, 20],
+        "hazard/fire/cluster-s-b-ignite/1": [0, 368, 385, 39, 32, 21, 30],
         "hazard/fire/cluster-s-b-ignite/2": [0, 1199, 336, 42, 36, 21, 34],
         "hazard/fire/cluster-s-b-ignite/3": [0, 1957, 272, 42, 46, 21, 44],
         "hazard/fire/cluster-s-b/0": [0, 2003, 272, 42, 45, 21, 43],
@@ -601,145 +601,145 @@ export const ATLAS_MANIFEST = {
         "hazard/fire/cluster-s-b/3": [0, 1264, 272, 42, 51, 21, 49],
         "hazard/fire/cluster-s-b/4": [0, 610, 336, 42, 39, 21, 37],
         "hazard/fire/cluster-s-b/5": [0, 499, 336, 42, 41, 21, 39],
-        "hazard/fire/ember-a/0": [0, 1703, 422, 10, 14, 5, 7],
-        "hazard/fire/ember-a/1": [0, 305, 452, 10, 12, 5, 6],
-        "hazard/fire/ember-a/2": [0, 1717, 422, 10, 14, 5, 7],
-        "hazard/fire/ember-a/3": [0, 1548, 422, 9, 15, 4, 8],
-        "hazard/fire/ember-a/4": [0, 576, 452, 8, 10, 4, 5],
-        "hazard/fire/ember-a/5": [0, 1856, 452, 6, 5, 3, 3],
-        "hazard/fire/ember-b/0": [0, 1731, 422, 10, 14, 5, 7],
-        "hazard/fire/ember-b/1": [0, 319, 452, 10, 12, 5, 6],
-        "hazard/fire/ember-b/2": [0, 1745, 422, 10, 14, 5, 7],
-        "hazard/fire/ember-b/3": [0, 1561, 422, 9, 15, 5, 8],
-        "hazard/fire/ember-b/4": [0, 588, 452, 8, 10, 4, 5],
-        "hazard/fire/ember-b/5": [0, 1866, 452, 6, 5, 3, 3],
-        "hazard/fire/smoke-a/0": [0, 1143, 422, 8, 20, 3, 21],
-        "hazard/fire/smoke-a/1": [0, 488, 385, 11, 32, 5, 33],
+        "hazard/fire/ember-a/0": [0, 1773, 422, 10, 14, 5, 7],
+        "hazard/fire/ember-a/1": [0, 377, 452, 10, 12, 5, 6],
+        "hazard/fire/ember-a/2": [0, 1787, 422, 10, 14, 5, 7],
+        "hazard/fire/ember-a/3": [0, 1618, 422, 9, 15, 4, 8],
+        "hazard/fire/ember-a/4": [0, 457, 470, 8, 10, 4, 5],
+        "hazard/fire/ember-a/5": [0, 1587, 470, 6, 5, 3, 3],
+        "hazard/fire/ember-b/0": [0, 1801, 422, 10, 14, 5, 7],
+        "hazard/fire/ember-b/1": [0, 391, 452, 10, 12, 5, 6],
+        "hazard/fire/ember-b/2": [0, 1815, 422, 10, 14, 5, 7],
+        "hazard/fire/ember-b/3": [0, 1631, 422, 9, 15, 5, 8],
+        "hazard/fire/ember-b/4": [0, 469, 470, 8, 10, 4, 5],
+        "hazard/fire/ember-b/5": [0, 1597, 470, 6, 5, 3, 3],
+        "hazard/fire/smoke-a/0": [0, 1071, 422, 8, 20, 3, 21],
+        "hazard/fire/smoke-a/1": [0, 411, 385, 11, 32, 5, 33],
         "hazard/fire/smoke-a/2": [0, 385, 336, 14, 42, 6, 45],
         "hazard/fire/smoke-a/3": [0, 94, 336, 16, 44, 6, 51],
         "hazard/fire/smoke-a/4": [0, 296, 336, 16, 43, 5, 54],
-        "hazard/fire/smoke-a/5": [0, 503, 385, 15, 32, 5, 53],
-        "hazard/fire/smoke-b/0": [0, 1155, 422, 9, 19, 4, 20],
-        "hazard/fire/smoke-b/1": [0, 984, 385, 12, 31, 6, 32],
+        "hazard/fire/smoke-a/5": [0, 426, 385, 15, 32, 5, 53],
+        "hazard/fire/smoke-b/0": [0, 1083, 422, 9, 19, 4, 20],
+        "hazard/fire/smoke-b/1": [0, 972, 385, 12, 31, 6, 32],
         "hazard/fire/smoke-b/2": [0, 545, 336, 15, 41, 7, 44],
         "hazard/fire/smoke-b/3": [0, 316, 336, 19, 43, 10, 50],
         "hazard/fire/smoke-b/4": [0, 403, 336, 17, 42, 11, 53],
-        "hazard/fire/smoke-b/5": [0, 522, 385, 16, 32, 10, 53],
+        "hazard/fire/smoke-b/5": [0, 445, 385, 16, 32, 10, 53],
         "hazard/hero/back/0": [0, 908, 272, 88, 53, 44, 49],
         "hazard/hero/back/1": [0, 720, 272, 88, 55, 44, 51],
         "hazard/hero/back/2": [0, 1000, 272, 88, 53, 44, 49],
         "hazard/hero/back/3": [0, 1562, 272, 88, 48, 44, 44],
         "hazard/hero/back/4": [0, 2, 336, 88, 45, 44, 41],
         "hazard/hero/back/5": [0, 1654, 272, 88, 48, 44, 44],
-        "hazard/hero/bind-back/0": [0, 600, 452, 74, 10, 37, 6],
-        "hazard/hero/bind-back/1": [0, 2, 385, 74, 33, 37, 29],
-        "hazard/hero/bind-back/2": [0, 80, 385, 74, 33, 37, 29],
-        "hazard/hero/bind-back/3": [0, 1245, 336, 74, 36, 37, 32],
-        "hazard/hero/bind-front/0": [0, 888, 452, 68, 8, 34, 2],
-        "hazard/hero/bind-front/1": [0, 490, 422, 68, 23, 34, 17],
-        "hazard/hero/bind-front/2": [0, 1300, 385, 68, 30, 34, 24],
-        "hazard/hero/bind-front/3": [0, 1372, 385, 68, 30, 34, 24],
-        "hazard/hero/front/0": [0, 1701, 336, 72, 34, 36, 28],
-        "hazard/hero/front/1": [0, 1323, 336, 72, 36, 36, 30],
-        "hazard/hero/front/2": [0, 1777, 336, 72, 34, 36, 28],
-        "hazard/hero/front/3": [0, 542, 385, 72, 32, 36, 26],
-        "hazard/hero/front/4": [0, 1444, 385, 72, 30, 36, 24],
-        "hazard/hero/front/5": [0, 1000, 385, 72, 31, 36, 25],
+        "hazard/hero/bind-back/0": [0, 1096, 422, 78, 19, 40, 16],
+        "hazard/hero/bind-back/1": [0, 988, 385, 78, 31, 40, 28],
+        "hazard/hero/bind-back/2": [0, 1245, 336, 79, 36, 40, 32],
+        "hazard/hero/bind-back/3": [0, 1328, 336, 79, 36, 40, 32],
+        "hazard/hero/bind-front/0": [0, 42, 452, 28, 13, 14, 8],
+        "hazard/hero/bind-front/1": [0, 1412, 422, 56, 17, 25, 12],
+        "hazard/hero/bind-front/2": [0, 1969, 385, 60, 26, 27, 21],
+        "hazard/hero/bind-front/3": [0, 465, 385, 61, 32, 28, 27],
+        "hazard/hero/front/0": [0, 1789, 336, 72, 34, 36, 28],
+        "hazard/hero/front/1": [0, 1411, 336, 72, 36, 36, 30],
+        "hazard/hero/front/2": [0, 1865, 336, 72, 34, 36, 28],
+        "hazard/hero/front/3": [0, 530, 385, 72, 32, 36, 26],
+        "hazard/hero/front/4": [0, 1370, 385, 72, 30, 36, 24],
+        "hazard/hero/front/5": [0, 1070, 385, 72, 31, 36, 25],
         "hazard/mob/front-12/0": [0, 248, 422, 46, 24, 24, 20],
         "hazard/mob/front-12/1": [0, 122, 422, 46, 25, 24, 21],
-        "hazard/mob/front-12/2": [0, 878, 422, 45, 22, 23, 18],
-        "hazard/mob/front-12/3": [0, 927, 422, 45, 21, 23, 17],
-        "hazard/mob/front-19/0": [0, 1076, 385, 64, 31, 33, 27],
-        "hazard/mob/front-19/1": [0, 618, 385, 64, 32, 33, 28],
-        "hazard/mob/front-19/2": [0, 1674, 385, 64, 28, 33, 24],
-        "hazard/mob/front-19/3": [0, 1742, 385, 64, 27, 33, 23],
+        "hazard/mob/front-12/2": [0, 806, 422, 45, 22, 23, 18],
+        "hazard/mob/front-12/3": [0, 855, 422, 45, 21, 23, 17],
+        "hazard/mob/front-19/0": [0, 1146, 385, 64, 31, 33, 27],
+        "hazard/mob/front-19/1": [0, 606, 385, 64, 32, 33, 28],
+        "hazard/mob/front-19/2": [0, 1600, 385, 64, 28, 33, 24],
+        "hazard/mob/front-19/3": [0, 1668, 385, 64, 27, 33, 23],
         "hazard/mob/front-28/0": [0, 754, 336, 94, 38, 48, 34],
         "hazard/mob/front-28/1": [0, 656, 336, 94, 39, 48, 35],
-        "hazard/mob/front-28/2": [0, 1520, 336, 94, 35, 48, 31],
-        "hazard/mob/front-28/3": [0, 1853, 336, 94, 34, 48, 30],
-        "hazard/null/crumb-a/0": [0, 960, 452, 12, 8, 6, 4],
-        "hazard/null/crumb-b/0": [0, 976, 452, 11, 8, 5, 4],
-        "hazard/null/crumb-c/0": [0, 1117, 452, 11, 7, 5, 4],
-        "hazard/root/vine-a-emerge/0": [0, 1132, 452, 22, 7, 19, 5],
-        "hazard/root/vine-a-emerge/1": [0, 1759, 422, 22, 14, 19, 12],
-        "hazard/root/vine-a-emerge/2": [0, 1325, 422, 31, 18, 19, 16],
-        "hazard/root/vine-a-emerge/3": [0, 1810, 385, 38, 27, 19, 25],
-        "hazard/root/vine-a-wither/0": [0, 1360, 422, 38, 18, 19, 16],
-        "hazard/root/vine-a-wither/1": [0, 1785, 422, 38, 14, 19, 12],
-        "hazard/root/vine-a-wither/2": [0, 2, 452, 38, 13, 19, 11],
-        "hazard/root/vine-a-wither/3": [0, 777, 452, 37, 9, 19, 7],
-        "hazard/root/vine-a/0": [0, 1852, 385, 38, 27, 19, 25],
-        "hazard/root/vine-a/1": [0, 1894, 385, 36, 27, 19, 25],
-        "hazard/root/vine-a/2": [0, 1934, 385, 35, 27, 19, 25],
-        "hazard/root/vine-a/3": [0, 1973, 385, 36, 27, 19, 25],
-        "hazard/root/vine-b-emerge/0": [0, 1158, 452, 22, 7, 18, 5],
-        "hazard/root/vine-b-emerge/1": [0, 1827, 422, 22, 14, 18, 12],
-        "hazard/root/vine-b-emerge/2": [0, 44, 452, 31, 13, 18, 11],
-        "hazard/root/vine-b-emerge/3": [0, 976, 422, 37, 21, 18, 19],
-        "hazard/root/vine-b-wither/0": [0, 1402, 422, 38, 17, 18, 15],
-        "hazard/root/vine-b-wither/1": [0, 79, 452, 38, 13, 18, 11],
-        "hazard/root/vine-b-wither/2": [0, 449, 452, 36, 11, 18, 9],
-        "hazard/root/vine-b-wither/3": [0, 818, 452, 36, 9, 18, 7],
-        "hazard/root/vine-b/0": [0, 562, 422, 37, 23, 18, 21],
-        "hazard/root/vine-b/1": [0, 603, 422, 36, 23, 18, 21],
-        "hazard/root/vine-b/2": [0, 643, 422, 35, 23, 18, 21],
-        "hazard/root/vine-b/3": [0, 682, 422, 36, 23, 18, 21],
-        "hazard/root/vine-c-emerge/0": [0, 1184, 452, 20, 7, 19, 5],
-        "hazard/root/vine-c-emerge/1": [0, 1853, 422, 20, 14, 19, 12],
-        "hazard/root/vine-c-emerge/2": [0, 2013, 385, 26, 27, 19, 25],
-        "hazard/root/vine-c-emerge/3": [0, 158, 385, 35, 33, 19, 31],
+        "hazard/mob/front-28/2": [0, 1608, 336, 94, 35, 48, 31],
+        "hazard/mob/front-28/3": [0, 1941, 336, 94, 34, 48, 30],
+        "hazard/null/crumb-a/0": [0, 691, 470, 12, 8, 6, 4],
+        "hazard/null/crumb-b/0": [0, 707, 470, 11, 8, 5, 4],
+        "hazard/null/crumb-c/0": [0, 848, 470, 11, 7, 5, 4],
+        "hazard/root/vine-a-emerge/0": [0, 863, 470, 22, 7, 19, 5],
+        "hazard/root/vine-a-emerge/1": [0, 1829, 422, 22, 14, 19, 12],
+        "hazard/root/vine-a-emerge/2": [0, 1335, 422, 31, 18, 19, 16],
+        "hazard/root/vine-a-emerge/3": [0, 1736, 385, 38, 27, 19, 25],
+        "hazard/root/vine-a-wither/0": [0, 1370, 422, 38, 18, 19, 16],
+        "hazard/root/vine-a-wither/1": [0, 1855, 422, 38, 14, 19, 12],
+        "hazard/root/vine-a-wither/2": [0, 74, 452, 38, 13, 19, 11],
+        "hazard/root/vine-a-wither/3": [0, 580, 470, 37, 9, 19, 7],
+        "hazard/root/vine-a/0": [0, 1778, 385, 38, 27, 19, 25],
+        "hazard/root/vine-a/1": [0, 1820, 385, 36, 27, 19, 25],
+        "hazard/root/vine-a/2": [0, 1860, 385, 35, 27, 19, 25],
+        "hazard/root/vine-a/3": [0, 1899, 385, 36, 27, 19, 25],
+        "hazard/root/vine-b-emerge/0": [0, 889, 470, 22, 7, 18, 5],
+        "hazard/root/vine-b-emerge/1": [0, 1897, 422, 22, 14, 18, 12],
+        "hazard/root/vine-b-emerge/2": [0, 116, 452, 31, 13, 18, 11],
+        "hazard/root/vine-b-emerge/3": [0, 904, 422, 37, 21, 18, 19],
+        "hazard/root/vine-b-wither/0": [0, 1472, 422, 38, 17, 18, 15],
+        "hazard/root/vine-b-wither/1": [0, 151, 452, 38, 13, 18, 11],
+        "hazard/root/vine-b-wither/2": [0, 330, 470, 36, 11, 18, 9],
+        "hazard/root/vine-b-wither/3": [0, 621, 470, 36, 9, 18, 7],
+        "hazard/root/vine-b/0": [0, 490, 422, 37, 23, 18, 21],
+        "hazard/root/vine-b/1": [0, 531, 422, 36, 23, 18, 21],
+        "hazard/root/vine-b/2": [0, 571, 422, 35, 23, 18, 21],
+        "hazard/root/vine-b/3": [0, 610, 422, 36, 23, 18, 21],
+        "hazard/root/vine-c-emerge/0": [0, 915, 470, 20, 7, 19, 5],
+        "hazard/root/vine-c-emerge/1": [0, 1923, 422, 20, 14, 19, 12],
+        "hazard/root/vine-c-emerge/2": [0, 1939, 385, 26, 27, 19, 25],
+        "hazard/root/vine-c-emerge/3": [0, 81, 385, 35, 33, 19, 31],
         "hazard/root/vine-c-wither/0": [0, 2, 422, 33, 26, 19, 24],
         "hazard/root/vine-c-wither/1": [0, 172, 422, 32, 25, 19, 23],
-        "hazard/root/vine-c-wither/2": [0, 1168, 422, 37, 19, 19, 17],
-        "hazard/root/vine-c-wither/3": [0, 1574, 422, 33, 15, 19, 13],
-        "hazard/root/vine-c/0": [0, 197, 385, 35, 33, 19, 31],
-        "hazard/root/vine-c/1": [0, 236, 385, 33, 33, 19, 31],
-        "hazard/root/vine-c/2": [0, 273, 385, 31, 33, 19, 31],
-        "hazard/root/vine-c/3": [0, 308, 385, 33, 33, 19, 31],
+        "hazard/root/vine-c-wither/2": [0, 1178, 422, 37, 19, 19, 17],
+        "hazard/root/vine-c-wither/3": [0, 1644, 422, 33, 15, 19, 13],
+        "hazard/root/vine-c/0": [0, 120, 385, 35, 33, 19, 31],
+        "hazard/root/vine-c/1": [0, 159, 385, 33, 33, 19, 31],
+        "hazard/root/vine-c/2": [0, 196, 385, 31, 33, 19, 31],
+        "hazard/root/vine-c/3": [0, 231, 385, 33, 33, 19, 31],
         "hazard/shock/core/0": [0, 1429, 105, 108, 78, 53, 55],
         "hazard/shock/core/1": [0, 2, 105, 100, 86, 53, 63],
         "hazard/shock/core/2": [0, 1937, 105, 100, 74, 53, 51],
         "hazard/shock/core/3": [0, 1190, 195, 99, 66, 52, 40],
-        "hazard/shock/dust-a/0": [0, 678, 452, 20, 10, 10, 10],
-        "hazard/shock/dust-a/1": [0, 121, 452, 34, 13, 16, 14],
-        "hazard/shock/dust-a/2": [0, 1877, 422, 39, 14, 20, 18],
-        "hazard/shock/dust-a/3": [0, 333, 452, 40, 12, 20, 20],
-        "hazard/shock/dust-b/0": [0, 702, 452, 20, 10, 10, 10],
-        "hazard/shock/dust-b/1": [0, 159, 452, 34, 13, 19, 14],
-        "hazard/shock/dust-b/2": [0, 1920, 422, 39, 14, 19, 18],
-        "hazard/shock/dust-b/3": [0, 377, 452, 40, 12, 20, 20],
-        "hazard/shock/pebble-a/0": [0, 1876, 452, 6, 5, 3, 7],
-        "hazard/shock/pebble-a/1": [0, 991, 452, 6, 8, 3, 10],
-        "hazard/shock/pebble-b/0": [0, 1886, 452, 7, 5, 4, 7],
-        "hazard/shock/pebble-b/1": [0, 1001, 452, 7, 8, 4, 10],
-        "hazard/shock/shard-a/0": [0, 1012, 452, 14, 8, 7, 16],
-        "hazard/shock/shard-a/1": [0, 421, 452, 10, 12, 4, 18],
-        "hazard/shock/shard-a/2": [0, 489, 452, 11, 11, 5, 17],
-        "hazard/shock/shard-a/3": [0, 858, 452, 10, 9, 5, 16],
-        "hazard/shock/shard-b/0": [0, 726, 452, 11, 10, 6, 17],
-        "hazard/shock/shard-b/1": [0, 504, 452, 8, 11, 4, 18],
-        "hazard/shock/shard-b/2": [0, 872, 452, 12, 9, 6, 17],
-        "hazard/shock/shard-b/3": [0, 1030, 452, 8, 8, 4, 16],
-        "hazard/shock/shard-c/0": [0, 1042, 452, 15, 8, 7, 16],
-        "hazard/shock/shard-c/1": [0, 435, 452, 10, 12, 5, 18],
-        "hazard/shock/shard-c/2": [0, 1963, 422, 10, 14, 5, 19],
-        "hazard/shock/shard-c/3": [0, 1061, 452, 12, 8, 6, 16],
-        "hazard/slow/bubble-a/0": [0, 1897, 452, 8, 4, 4, 4],
-        "hazard/slow/bubble-a/1": [0, 1208, 452, 12, 7, 6, 7],
-        "hazard/slow/bubble-a/2": [0, 741, 452, 14, 10, 7, 10],
-        "hazard/slow/bubble-a/3": [0, 197, 452, 12, 13, 6, 13],
-        "hazard/slow/bubble-a/4": [0, 1977, 422, 16, 14, 8, 15],
-        "hazard/slow/bubble-a/5": [0, 1224, 452, 16, 7, 8, 8],
-        "hazard/slow/bubble-b/0": [0, 1909, 452, 8, 4, 4, 4],
-        "hazard/slow/bubble-b/1": [0, 1244, 452, 12, 7, 6, 7],
-        "hazard/slow/bubble-b/2": [0, 759, 452, 14, 10, 7, 10],
-        "hazard/slow/bubble-b/3": [0, 213, 452, 12, 13, 6, 13],
-        "hazard/slow/bubble-b/4": [0, 1997, 422, 16, 14, 8, 15],
-        "hazard/slow/bubble-b/5": [0, 1260, 452, 16, 7, 8, 8],
+        "hazard/shock/dust-a/0": [0, 481, 470, 20, 10, 10, 10],
+        "hazard/shock/dust-a/1": [0, 193, 452, 34, 13, 16, 14],
+        "hazard/shock/dust-a/2": [0, 1947, 422, 39, 14, 20, 18],
+        "hazard/shock/dust-a/3": [0, 405, 452, 40, 12, 20, 20],
+        "hazard/shock/dust-b/0": [0, 505, 470, 20, 10, 10, 10],
+        "hazard/shock/dust-b/1": [0, 231, 452, 34, 13, 19, 14],
+        "hazard/shock/dust-b/2": [0, 1990, 422, 39, 14, 19, 18],
+        "hazard/shock/dust-b/3": [0, 449, 452, 40, 12, 20, 20],
+        "hazard/shock/pebble-a/0": [0, 1607, 470, 6, 5, 3, 7],
+        "hazard/shock/pebble-a/1": [0, 722, 470, 6, 8, 3, 10],
+        "hazard/shock/pebble-b/0": [0, 1617, 470, 7, 5, 4, 7],
+        "hazard/shock/pebble-b/1": [0, 732, 470, 7, 8, 4, 10],
+        "hazard/shock/shard-a/0": [0, 743, 470, 14, 8, 7, 16],
+        "hazard/shock/shard-a/1": [0, 493, 452, 10, 12, 4, 18],
+        "hazard/shock/shard-a/2": [0, 370, 470, 11, 11, 5, 17],
+        "hazard/shock/shard-a/3": [0, 661, 470, 10, 9, 5, 16],
+        "hazard/shock/shard-b/0": [0, 529, 470, 11, 10, 6, 17],
+        "hazard/shock/shard-b/1": [0, 385, 470, 8, 11, 4, 18],
+        "hazard/shock/shard-b/2": [0, 675, 470, 12, 9, 6, 17],
+        "hazard/shock/shard-b/3": [0, 761, 470, 8, 8, 4, 16],
+        "hazard/shock/shard-c/0": [0, 773, 470, 15, 8, 7, 16],
+        "hazard/shock/shard-c/1": [0, 507, 452, 10, 12, 5, 18],
+        "hazard/shock/shard-c/2": [0, 2033, 422, 10, 14, 5, 19],
+        "hazard/shock/shard-c/3": [0, 792, 470, 12, 8, 6, 16],
+        "hazard/slow/bubble-a/0": [0, 1628, 470, 8, 4, 4, 4],
+        "hazard/slow/bubble-a/1": [0, 939, 470, 12, 7, 6, 7],
+        "hazard/slow/bubble-a/2": [0, 544, 470, 14, 10, 7, 10],
+        "hazard/slow/bubble-a/3": [0, 269, 452, 12, 13, 6, 13],
+        "hazard/slow/bubble-a/4": [0, 2, 452, 16, 14, 8, 15],
+        "hazard/slow/bubble-a/5": [0, 955, 470, 16, 7, 8, 8],
+        "hazard/slow/bubble-b/0": [0, 1640, 470, 8, 4, 4, 4],
+        "hazard/slow/bubble-b/1": [0, 975, 470, 12, 7, 6, 7],
+        "hazard/slow/bubble-b/2": [0, 562, 470, 14, 10, 7, 10],
+        "hazard/slow/bubble-b/3": [0, 285, 452, 12, 13, 6, 13],
+        "hazard/slow/bubble-b/4": [0, 22, 452, 16, 14, 8, 15],
+        "hazard/slow/bubble-b/5": [0, 991, 470, 16, 7, 8, 8],
         "hazard/slow/mire-l-a/0": [0, 316, 272, 135, 56, 67, 27],
         "hazard/slow/mire-l-b/0": [0, 455, 272, 138, 56, 68, 29],
         "hazard/slow/mire-m-a/0": [0, 1060, 336, 89, 37, 44, 18],
-        "hazard/slow/mire-m-b/0": [0, 1399, 336, 91, 36, 45, 19],
+        "hazard/slow/mire-m-b/0": [0, 1487, 336, 91, 36, 45, 19],
         "hazard/slow/mire-s-a/0": [0, 298, 422, 54, 24, 24, 12],
         "hazard/slow/mire-s-b/0": [0, 356, 422, 60, 24, 30, 13],
         "hazard/slow/mire-xl-a/0": [0, 2, 2, 237, 99, 117, 48],
@@ -764,36 +764,48 @@ export const ATLAS_MANIFEST = {
         "hazard/trap/spring-ch4/0": [0, 106, 105, 127, 85, 63, 42],
         "hazard/trap/spring-ch4/1": [0, 237, 105, 141, 85, 73, 42],
         "hazard/trap/spring-ch4/2": [0, 382, 105, 147, 85, 74, 42],
-        "hazard/water/flow-a/0": [0, 1280, 452, 44, 7, 34, 3],
-        "hazard/water/flow-a/1": [0, 1328, 452, 44, 7, 30, 3],
-        "hazard/water/flow-a/2": [0, 1376, 452, 44, 7, 26, 3],
-        "hazard/water/flow-a/3": [0, 1424, 452, 44, 7, 22, 3],
-        "hazard/water/flow-a/4": [0, 1472, 452, 44, 7, 18, 3],
-        "hazard/water/flow-a/5": [0, 1520, 452, 44, 7, 14, 3],
-        "hazard/water/flow-b/0": [0, 1568, 452, 44, 7, 32, 3],
-        "hazard/water/flow-b/1": [0, 1616, 452, 44, 7, 28, 3],
-        "hazard/water/flow-b/2": [0, 1664, 452, 44, 7, 24, 3],
-        "hazard/water/flow-b/3": [0, 1712, 452, 44, 7, 20, 3],
-        "hazard/water/flow-b/4": [0, 1760, 452, 44, 7, 16, 3],
-        "hazard/water/flow-b/5": [0, 1808, 452, 44, 7, 12, 3],
-        "hazard/water/glint/0": [0, 1921, 452, 8, 4, 4, 2],
-        "hazard/water/glint/1": [0, 1933, 452, 12, 4, 6, 2],
-        "hazard/water/ripple-a/0": [0, 1077, 452, 16, 8, 8, 4],
-        "hazard/water/ripple-a/1": [0, 516, 452, 26, 11, 13, 5],
-        "hazard/water/ripple-a/2": [0, 229, 452, 34, 13, 17, 6],
-        "hazard/water/ripple-a/3": [0, 1611, 422, 42, 15, 21, 7],
-        "hazard/water/ripple-a/4": [0, 1444, 422, 48, 17, 24, 8],
-        "hazard/water/ripple-a/5": [0, 1209, 422, 54, 19, 27, 9],
-        "hazard/water/ripple-a/6": [0, 1017, 422, 59, 21, 30, 10],
-        "hazard/water/ripple-a/7": [0, 722, 422, 59, 23, 33, 11],
-        "hazard/water/ripple-b/0": [0, 1097, 452, 16, 8, 8, 4],
-        "hazard/water/ripple-b/1": [0, 546, 452, 26, 11, 13, 5],
-        "hazard/water/ripple-b/2": [0, 267, 452, 34, 13, 17, 6],
-        "hazard/water/ripple-b/3": [0, 1657, 422, 42, 15, 21, 7],
-        "hazard/water/ripple-b/4": [0, 1496, 422, 48, 17, 24, 8],
-        "hazard/water/ripple-b/5": [0, 1267, 422, 54, 19, 27, 9],
-        "hazard/water/ripple-b/6": [0, 1080, 422, 59, 21, 30, 10],
-        "hazard/water/ripple-b/7": [0, 785, 422, 59, 23, 33, 11]
+        "hazard/water/flow-a/0": [0, 1011, 470, 44, 7, 34, 3],
+        "hazard/water/flow-a/1": [0, 1059, 470, 44, 7, 30, 3],
+        "hazard/water/flow-a/2": [0, 1107, 470, 44, 7, 26, 3],
+        "hazard/water/flow-a/3": [0, 1155, 470, 44, 7, 22, 3],
+        "hazard/water/flow-a/4": [0, 1203, 470, 44, 7, 18, 3],
+        "hazard/water/flow-a/5": [0, 1251, 470, 44, 7, 14, 3],
+        "hazard/water/flow-b/0": [0, 1299, 470, 44, 7, 32, 3],
+        "hazard/water/flow-b/1": [0, 1347, 470, 44, 7, 28, 3],
+        "hazard/water/flow-b/2": [0, 1395, 470, 44, 7, 24, 3],
+        "hazard/water/flow-b/3": [0, 1443, 470, 44, 7, 20, 3],
+        "hazard/water/flow-b/4": [0, 1491, 470, 44, 7, 16, 3],
+        "hazard/water/flow-b/5": [0, 1539, 470, 44, 7, 12, 3],
+        "hazard/water/glint/0": [0, 1652, 470, 8, 4, 4, 2],
+        "hazard/water/glint/1": [0, 1664, 470, 12, 4, 6, 2],
+        "hazard/water/ripple-a/0": [0, 808, 470, 16, 8, 8, 4],
+        "hazard/water/ripple-a/1": [0, 397, 470, 26, 11, 13, 5],
+        "hazard/water/ripple-a/2": [0, 301, 452, 34, 13, 17, 6],
+        "hazard/water/ripple-a/3": [0, 1681, 422, 42, 15, 21, 7],
+        "hazard/water/ripple-a/4": [0, 1514, 422, 48, 17, 24, 8],
+        "hazard/water/ripple-a/5": [0, 1219, 422, 54, 19, 27, 9],
+        "hazard/water/ripple-a/6": [0, 945, 422, 59, 21, 30, 10],
+        "hazard/water/ripple-a/7": [0, 650, 422, 59, 23, 33, 11],
+        "hazard/water/ripple-b/0": [0, 828, 470, 16, 8, 8, 4],
+        "hazard/water/ripple-b/1": [0, 427, 470, 26, 11, 13, 5],
+        "hazard/water/ripple-b/2": [0, 339, 452, 34, 13, 17, 6],
+        "hazard/water/ripple-b/3": [0, 1727, 422, 42, 15, 21, 7],
+        "hazard/water/ripple-b/4": [0, 1566, 422, 48, 17, 24, 8],
+        "hazard/water/ripple-b/5": [0, 1277, 422, 54, 19, 27, 9],
+        "hazard/water/ripple-b/6": [0, 1008, 422, 59, 21, 30, 10],
+        "hazard/water/ripple-b/7": [0, 713, 422, 59, 23, 33, 11],
+        "hazard/water/wave-a/0": [0, 521, 452, 133, 12, 77, 6],
+        "hazard/water/wave-a/1": [0, 658, 452, 133, 12, 77, 6],
+        "hazard/water/wave-a/2": [0, 795, 452, 133, 12, 77, 6],
+        "hazard/water/wave-a/3": [0, 932, 452, 133, 12, 77, 6],
+        "hazard/water/wave-a/4": [0, 1069, 452, 133, 12, 77, 6],
+        "hazard/water/wave-a/5": [0, 1206, 452, 133, 12, 77, 6],
+        "hazard/water/wave-b/0": [0, 1343, 452, 160, 12, 88, 6],
+        "hazard/water/wave-b/1": [0, 1507, 452, 160, 12, 88, 6],
+        "hazard/water/wave-b/2": [0, 1671, 452, 160, 12, 88, 6],
+        "hazard/water/wave-b/3": [0, 1835, 452, 160, 12, 88, 6],
+        "hazard/water/wave-b/4": [0, 2, 470, 160, 12, 88, 6],
+        "hazard/water/wave-b/5": [0, 166, 470, 160, 12, 88, 6]
       }
     },
     "chapter-01": {
@@ -4401,6 +4413,14 @@ export const ATLAS_MANIFEST = {
       "glint": {
         "frames": 2,
         "fps": 2
+      },
+      "wave-a": {
+        "frames": 6,
+        "fps": 6
+      },
+      "wave-b": {
+        "frames": 6,
+        "fps": 6
       }
     },
     "hero": {
@@ -7976,7 +7996,7 @@ export const ATLAS_MANIFEST = {
     }
   },
   "hazards": {
-    "version": "1.0",
+    "version": "1.0-d2r2",
     "spec": {
       "jit": {
         "mul": 31,
@@ -8563,7 +8583,7 @@ export const ATLAS_MANIFEST = {
         },
         "layout": {
           "vine": {
-            "per": 12,
+            "per": 8.5,
             "min": 3,
             "max": 6,
             "tries": 40,
@@ -8607,6 +8627,29 @@ export const ATLAS_MANIFEST = {
           ]
         ],
         "layout": {
+          "wave": {
+            "area": 6000,
+            "min": 2,
+            "max": 10,
+            "minimal": 2,
+            "tries": 60,
+            "cand": 8,
+            "reach": {
+              "frac": 0,
+              "pad": 28
+            },
+            "gap": {
+              "frac": 1,
+              "cap": 46
+            },
+            "squash": 3,
+            "mirror": 2,
+            "pool": "kr",
+            "jit": {
+              "base": 4400,
+              "stride": 5
+            }
+          },
           "ripple": {
             "per": 40,
             "min": 3,
@@ -8660,7 +8703,17 @@ export const ATLAS_MANIFEST = {
             "at": 0.45,
             "jit": 4300
           },
-          "caps": [13, 7, 1]
+          "prio": {
+            "wave": 0,
+            "ripple": 1,
+            "flow": 2,
+            "glint": 2
+          },
+          "caps": [20, 10, 3],
+          "cut": {
+            "even": -1,
+            "keep": 1
+          }
         }
       },
       "trap": {
@@ -8734,9 +8787,9 @@ export const ATLAS_MANIFEST = {
             ]
           ],
           "inset": 6,
+          "minOffset": 0.15,
           "jit": {
-            "angle": 2200,
-            "offset": 2240
+            "base": 2200
           }
         },
         "rim": [
@@ -8794,10 +8847,7 @@ export const ATLAS_MANIFEST = {
               "jitter": 4
             },
             "jit": {
-              "angle": 6000,
-              "dist": 6040,
-              "variant": 6080,
-              "flip": 6120
+              "base": 6000
             }
           },
           "caps": [9, 0, 0]
@@ -9551,6 +9601,34 @@ export const ATLAS_MANIFEST = {
           "layer": "hazard",
           "z": "ground",
           "lod": "deco",
+          "flash": false,
+          "ch": null
+        },
+        "wave-a": {
+          "frames": 6,
+          "drive": "loop",
+          "fps": 6,
+          "seconds": null,
+          "still": null,
+          "box": [100, 14],
+          "anchor": [50, 7],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
+          "flash": false,
+          "ch": null
+        },
+        "wave-b": {
+          "frames": 6,
+          "drive": "loop",
+          "fps": 6,
+          "seconds": null,
+          "still": null,
+          "box": [100, 14],
+          "anchor": [50, 7],
+          "layer": "hazard",
+          "z": "ground",
+          "lod": "info",
           "flash": false,
           "ch": null
         }
@@ -11173,6 +11251,782 @@ export const ATLAS_MANIFEST = {
             "flame",
             0
           ]
+        ],
+        "shock:190:11": [
+          [
+            "pebble-a",
+            76.32,
+            -61.32,
+            0,
+            0.908,
+            "ground",
+            1
+          ],
+          [
+            "pebble-b",
+            -103.32,
+            -40.51,
+            1,
+            0.443,
+            "ground",
+            1
+          ],
+          [
+            "pebble-a",
+            113.37,
+            -10.29,
+            1,
+            0.217,
+            "ground",
+            1
+          ],
+          [
+            "pebble-b",
+            73.51,
+            -6.5,
+            1,
+            0.669,
+            "ground",
+            1
+          ],
+          [
+            "pebble-a",
+            -3.99,
+            86.36,
+            0,
+            0.978,
+            "ground",
+            1
+          ],
+          [
+            "pebble-a",
+            -4.16,
+            94.16,
+            0,
+            0.134,
+            "ground",
+            1
+          ]
+        ],
+        "slow:150:5": [
+          [
+            "mire-l-b",
+            -38.1,
+            -110.91,
+            1,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-a",
+            31.65,
+            -73.92,
+            1,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-b",
+            94.91,
+            -68.09,
+            1,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-a",
+            -37.74,
+            -65.51,
+            0,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-b",
+            -56.25,
+            -40.75,
+            1,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-a",
+            70.45,
+            -22.42,
+            1,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-a",
+            -87.54,
+            -9.26,
+            1,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-a",
+            -20.7,
+            -1.4,
+            0,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-b",
+            88.55,
+            16.32,
+            0,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-b",
+            34.62,
+            21.98,
+            0,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-a",
+            -103.08,
+            27.68,
+            0,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-b",
+            -57.19,
+            51.92,
+            0,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-a",
+            9.53,
+            58.08,
+            0,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-b",
+            81.1,
+            64.6,
+            0,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-m-a",
+            -27.88,
+            75.92,
+            0,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-a",
+            39.37,
+            95.18,
+            0,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-a",
+            -59.03,
+            103.24,
+            1,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-b",
+            -10.44,
+            126.2,
+            1,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "bubble-b",
+            -29.38,
+            -107.65,
+            0,
+            0.659,
+            "flame",
+            2
+          ],
+          [
+            "bubble-b",
+            -61.8,
+            -38.91,
+            0,
+            0.402,
+            "flame",
+            2
+          ],
+          [
+            "bubble-a",
+            -18.84,
+            -2.53,
+            0,
+            0.288,
+            "flame",
+            2
+          ],
+          [
+            "bubble-a",
+            35.93,
+            18,
+            0,
+            0.773,
+            "flame",
+            2
+          ],
+          [
+            "bubble-a",
+            26.96,
+            92.63,
+            0,
+            0.03,
+            "flame",
+            2
+          ]
+        ],
+        "slow:150:5:reduced": [
+          [
+            "mire-l-b",
+            -38.1,
+            -110.91,
+            1,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-a",
+            31.65,
+            -73.92,
+            1,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-a",
+            -37.74,
+            -65.51,
+            0,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-b",
+            -56.25,
+            -40.75,
+            1,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-a",
+            70.45,
+            -22.42,
+            1,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-a",
+            -20.7,
+            -1.4,
+            0,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-b",
+            34.62,
+            21.98,
+            0,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-b",
+            -57.19,
+            51.92,
+            0,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-l-a",
+            39.37,
+            95.18,
+            0,
+            0,
+            "ground",
+            0
+          ]
+        ],
+        "slow:270:2:minimal": [
+          [
+            "mire-xl-b",
+            29.72,
+            -174.71,
+            0,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-xl-a",
+            -21.42,
+            -44.98,
+            0,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "mire-xl-a",
+            46.82,
+            175.61,
+            1,
+            0,
+            "ground",
+            0
+          ]
+        ],
+        "water:200:3": [
+          [
+            "ripple-a",
+            -49.62,
+            -148.74,
+            0,
+            0.345,
+            "ground",
+            1
+          ],
+          [
+            "wave-a",
+            37.31,
+            -114.42,
+            0,
+            0.094,
+            "ground",
+            0
+          ],
+          [
+            "flow-a",
+            -20.47,
+            -82.71,
+            0,
+            0.389,
+            "ground",
+            2
+          ],
+          [
+            "glint",
+            -66.13,
+            -61.04,
+            0,
+            0.194,
+            "ground",
+            2
+          ],
+          [
+            "wave-b",
+            -48.49,
+            -53.68,
+            1,
+            0.479,
+            "ground",
+            0
+          ],
+          [
+            "ripple-a",
+            -145.6,
+            -48.51,
+            1,
+            0.729,
+            "ground",
+            1
+          ],
+          [
+            "wave-b",
+            105.81,
+            -44.42,
+            0,
+            0.94,
+            "ground",
+            0
+          ],
+          [
+            "wave-a",
+            48.99,
+            -4.09,
+            1,
+            0.633,
+            "ground",
+            0
+          ],
+          [
+            "wave-a",
+            -64.89,
+            5.92,
+            1,
+            0.401,
+            "ground",
+            0
+          ],
+          [
+            "ripple-b",
+            101.84,
+            14.12,
+            0,
+            0.268,
+            "ground",
+            1
+          ],
+          [
+            "ripple-a",
+            -139.11,
+            23.7,
+            1,
+            0.806,
+            "ground",
+            1
+          ],
+          [
+            "wave-a",
+            -43.43,
+            60.63,
+            0,
+            0.017,
+            "ground",
+            0
+          ],
+          [
+            "ripple-b",
+            154.88,
+            62.38,
+            1,
+            0.191,
+            "ground",
+            1
+          ],
+          [
+            "flow-b",
+            19.17,
+            104.54,
+            0,
+            0.85,
+            "ground",
+            2
+          ],
+          [
+            "wave-b",
+            -50.16,
+            126.89,
+            1,
+            0.556,
+            "ground",
+            0
+          ],
+          [
+            "flow-a",
+            -10.57,
+            165.32,
+            0,
+            0.312,
+            "ground",
+            2
+          ]
+        ],
+        "water:270:1:reduced": [
+          [
+            "ripple-a",
+            68.93,
+            -196.17,
+            1,
+            0.168,
+            "ground",
+            1
+          ],
+          [
+            "wave-a",
+            -34.28,
+            -171.49,
+            1,
+            0.841,
+            "ground",
+            0
+          ],
+          [
+            "wave-a",
+            120.28,
+            -134.43,
+            0,
+            0.456,
+            "ground",
+            0
+          ],
+          [
+            "ripple-a",
+            -184.64,
+            -130.07,
+            0,
+            0.091,
+            "ground",
+            1
+          ],
+          [
+            "ripple-a",
+            8.99,
+            -96.65,
+            0,
+            0.707,
+            "ground",
+            1
+          ],
+          [
+            "wave-b",
+            -20.86,
+            -5.78,
+            1,
+            0.995,
+            "ground",
+            0
+          ],
+          [
+            "wave-b",
+            -161.96,
+            70.75,
+            0,
+            0.379,
+            "ground",
+            0
+          ],
+          [
+            "ripple-b",
+            -44.79,
+            77.91,
+            1,
+            0.63,
+            "ground",
+            1
+          ],
+          [
+            "wave-a",
+            104.68,
+            144.67,
+            1,
+            0.918,
+            "ground",
+            0
+          ]
+        ],
+        "water:270:1:minimal": [
+          [
+            "wave-a",
+            120.28,
+            -134.43,
+            0,
+            0.456,
+            "ground",
+            0
+          ],
+          [
+            "ripple-a",
+            8.99,
+            -96.65,
+            0,
+            0.707,
+            "ground",
+            1
+          ],
+          [
+            "wave-b",
+            -20.86,
+            -5.78,
+            1,
+            0.995,
+            "ground",
+            0
+          ]
+        ],
+        "root:52:9": [
+          [
+            "vine-b",
+            -17.73,
+            -27.34,
+            0,
+            0.769,
+            "flame",
+            0
+          ],
+          [
+            "vine-a",
+            12.45,
+            -18.3,
+            1,
+            0.846,
+            "flame",
+            0
+          ],
+          [
+            "vine-c",
+            -10.31,
+            -2.74,
+            0,
+            0.923,
+            "flame",
+            0
+          ],
+          [
+            "vine-b",
+            23.91,
+            11.37,
+            1,
+            0.384,
+            "flame",
+            0
+          ],
+          [
+            "vine-c",
+            -23.11,
+            23.31,
+            0,
+            0.307,
+            "flame",
+            0
+          ],
+          [
+            "vine-a",
+            17.43,
+            30.88,
+            1,
+            0.23,
+            "flame",
+            0
+          ]
+        ],
+        "trap:80:4": [
+          [
+            "armed-ch3",
+            0,
+            0,
+            0,
+            0,
+            "ground",
+            0
+          ]
+        ],
+        "null:130:11": [
+          [
+            "crumb-b",
+            28.53,
+            -117.9,
+            0,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "crumb-c",
+            -42.98,
+            -115.78,
+            1,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "crumb-a",
+            90.42,
+            -82.65,
+            1,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "crumb-a",
+            -98.49,
+            -70.68,
+            0,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "crumb-c",
+            100.47,
+            69.79,
+            1,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "crumb-b",
+            -87.06,
+            82.06,
+            1,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "crumb-a",
+            43.71,
+            112.41,
+            1,
+            0,
+            "ground",
+            0
+          ],
+          [
+            "crumb-c",
+            -26.97,
+            119.42,
+            0,
+            0,
+            "ground",
+            0
+          ]
         ]
       },
       "embers": {
@@ -11366,6 +12220,166 @@ export const ATLAS_MANIFEST = {
             5
           ]
         ]
+      },
+      "paths": {
+        "shock:190:11": {
+          "cracks": [
+            [
+              [10, -0.08],
+              [28.11, -0.51],
+              [55.54, -0.49],
+              [78.81, -8.27],
+              [96.43, -12.5],
+              [124.07, -8.89],
+              [152.45, -5.73],
+              [166.6, -14.2]
+            ],
+            [
+              [4.18, 9.09],
+              [22.66, 19.28],
+              [25.34, 48.22],
+              [41.5, 67.16],
+              [55.26, 85.11],
+              [61.62, 103.01],
+              [65.16, 118.68],
+              [86.54, 134.8],
+              [90.26, 140.75]
+            ],
+            [
+              [-1.78, 9.84],
+              [7.02, 29.5],
+              [-4.7, 46.37],
+              [-3.75, 75.46],
+              [-4.26, 98.63],
+              [-10.17, 117.05],
+              [-21.53, 130.64],
+              [-21.55, 156.41],
+              [-22.39, 165.69]
+            ],
+            [
+              [-8.12, 5.84],
+              [-18.45, 29.5],
+              [-39.75, 32.37],
+              [-50.5, 44.5],
+              [-73.35, 55.42],
+              [-83, 75.85],
+              [-101.35, 77.16],
+              [-113.58, 88.55],
+              [-130.45, 104.59]
+            ],
+            [
+              [-8.65, -5.01],
+              [-35.18, -5.18],
+              [-53.2, -12.2],
+              [-65.7, -21.43],
+              [-84.95, -39],
+              [-111.7, -41.21],
+              [-122.51, -61.44],
+              [-138.3, -68.19],
+              [-150.13, -73.6]
+            ],
+            [
+              [-2.74, -9.62],
+              [-14.55, -32.27],
+              [-22.18, -50.78],
+              [-23.75, -70.45],
+              [-24.35, -87.6],
+              [-40.17, -109.13],
+              [-32.29, -131.77],
+              [-33.22, -148.18],
+              [-33.82, -163.74]
+            ],
+            [
+              [7.65, -6.44],
+              [17.18, -20.35],
+              [34.15, -38.07],
+              [51.78, -47.45],
+              [68.42, -54.27],
+              [88.01, -71.74],
+              [104.41, -86.01],
+              [119.63, -93.08],
+              [134.82, -98.89]
+            ],
+            [
+              [96.84, -12.45],
+              [110.32, -21.49],
+              [126.35, -25.24],
+              [141.24, -30.32]
+            ],
+            [
+              [51.55, 80.28],
+              [55.89, 96.61],
+              [54.92, 113.34],
+              [54.91, 129.81]
+            ],
+            [
+              [-4.2, 95.85],
+              [-9.1, 112.36],
+              [-19.62, 125.24],
+              [-28.82, 139.1]
+            ],
+            [
+              [-75.3, 59.54],
+              [-75.56, 76.08],
+              [-72.1, 92.45],
+              [-63.47, 107.86]
+            ],
+            [
+              [-89.55, -39.38],
+              [-101.47, -50.8],
+              [-115.59, -58.96],
+              [-126.55, -70.98]
+            ],
+            [
+              [-29.31, -94.35],
+              [-44.89, -99.65],
+              [-59.59, -107.56],
+              [-74.52, -114.09]
+            ],
+            [
+              [75.03, -60.17],
+              [89.96, -67.6],
+              [105.94, -68.84],
+              [121.76, -71.16]
+            ]
+          ]
+        },
+        "null:130:11": {
+          "ghost": [
+            [
+              [122.38, 19.96],
+              [-119.14, 34.39]
+            ],
+            [
+              [123.94, -4],
+              [7, 123.8]
+            ],
+            [
+              [-35.22, -118.89],
+              [-28.26, 120.74]
+            ],
+            [
+              [-26.01, -121.24],
+              [121.91, 22.67]
+            ]
+          ],
+          "jag": [
+            [
+              [127.86, 0],
+              [108.31, 62.53],
+              [64.14, 111.09],
+              [0, 129.71],
+              [-63.46, 109.92],
+              [-111.16, 64.18],
+              [-125.57, 0],
+              [-111.52, -64.39],
+              [-62.11, -107.57],
+              [0, -127.42],
+              [62.32, -107.93],
+              [109.17, -63.03]
+            ]
+          ]
+        }
       }
     },
     "render": {

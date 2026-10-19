@@ -426,15 +426,21 @@ export const SKILL_VFX_RENDER = Object.freeze({ cloneAlpha: 0.8, popRise: 4, pop
  * Terrain hazards (K11; kit PN.hazards, API-hazards): the bake expands every stamp of the nine groups (seven kinds, the
  * hero's and enemies' overlays) into a pack of their own, `hazard/<group>/<part>/<frame>`. The kit's SPEC, part rules,
  * and states go into the manifest as data (`manifest.hazards`), with the layout and ember vectors the renderer's port is
- * tested against (API §8.13, C9): [kind, r, seed, lod] and [r, seed, t]; `hero` is the hero's ember clock.
+ * tested against (API §8.13, C9): [kind, r, seed, lod, chapter] and [r, seed, t]; `hero` is the hero's ember clock;
+ * `paths` [kind, r, seed] are the shock cracks and the null ghost lines and jag (delivery 3 and its N1 fix).
  * `render.fireStamps` is the renderer's cap on fire stamps a screen (full, reduced, minimal). The kit's SPEC fire.caps
  * is 72 / 40 / 20; full detail is raised to 120 of the 160 terrain stamps (review 2 §8-5), measured on the bench's
  * terrain bundle (docs/QUALITY_GATES.md), so a screen of map fires keeps their rim rings.
  */
 export const HAZARD_VECTORS = Object.freeze({
-  layout: [['fire', 50, 1], ['fire', 74, 7], ['fire', 98, 7], ['fire', 150, 23], ['fire', 150, 23, 'reduced'], ['fire', 150, 23, 'minimal']],
+  layout: [
+    ['fire', 50, 1], ['fire', 74, 7], ['fire', 98, 7], ['fire', 150, 23], ['fire', 150, 23, 'reduced'], ['fire', 150, 23, 'minimal'],
+    ['shock', 190, 11], ['slow', 150, 5, 'full', 3], ['slow', 150, 5, 'reduced', 3], ['slow', 270, 2, 'minimal', 3], ['water', 200, 3, 'full', 3],
+    ['water', 270, 1, 'reduced', 3], ['water', 270, 1, 'minimal', 3], ['root', 52, 9], ['trap', 80, 4, 'full', 3], ['null', 130, 11],
+  ],
   embers: [[50, 1, 0.3], [74, 7, 0.3], [98, 7, 0.3], [150, 23, 0.3]],
   hero: 0.3,
+  paths: [['shock', 190, 11], ['null', 130, 11]],
 });
 export const HAZARD_RENDER = Object.freeze({ fireStamps: [120, 40, 20] });
 

@@ -3,18 +3,17 @@ import test from 'node:test';
 import { ATLAS_MANIFEST } from './assets/atlasManifest.generated.ts';
 import type { AtlasManifest } from './assets/spriteAtlas.ts';
 import { HAZARD_ART_KINDS } from './assets/slots.ts';
-import { capCut, emberSlots, fireItems, fireState, hazardTokenColor, heroEmberSlots, layoutFire, screenCut, type FireItem, type HazardSpec } from './hazardArt.ts';
-import { signalFamily } from './palette.ts';
+import { capCut, emberSlots, fireItems, fireState, heroEmberSlots, layoutFire, layoutZone, nullPaths, screenCut, shockCracks, shockSlots, trapState, windowOf, type FireItem, type HazardSpec } from './hazardArt.ts';
 
 const manifest = ATLAS_MANIFEST as unknown as AtlasManifest;
 const data = manifest.hazards!;
 const spec = data.spec as unknown as HazardSpec;
 const parts = data.parts.fire;
 const LODS = ['full', 'reduced', 'minimal'];
-const round = (value: number, places: number) => Math.round(value * 10 ** places) / 10 ** places;
+const round = (value: number, places: number) => Math.round(value * 10 ** places) / 10 ** places + 0;
 const item = (q: FireItem) => [q.part, round(q.x, 2), round(q.y, 2), q.flip ? 1 : 0, round(q.phase, 3), q.z, q.prio];
 
-test('K11: the bake carries the kit SPEC, every part rule, and all 285 stamps of the nine groups, with no Korean text', () => {
+test('K11: the bake carries the kit SPEC, every part rule, and all 297 stamps of the nine groups, with no Korean text', () => {
   const pack = manifest.packs.hazards;
   assert.ok(pack, 'the hazard stamps have their own pack');
   assert.equal(pack.pages.length, 1, 'one atlas page');
@@ -30,25 +29,19 @@ test('K11: the bake carries the kit SPEC, every part rule, and all 285 stamps of
       stamps += rule.frames;
     }
   }
-  assert.equal(stamps, 285);
-  assert.equal(Object.keys(pack.frames).length, 285);
+  assert.equal(stamps, 297);
+  assert.equal(Object.keys(pack.frames).length, 297);
+  assert.equal(data.version, '1.0-d2r2');
   assert.doesNotMatch(JSON.stringify(data), /[가-힣]/);
 });
 
-test('K11: only fire is switched on, and fire SPEC colours are coral or neutral palette tokens (V2)', () => {
-  assert.deepEqual([...HAZARD_ART_KINDS], ['fire']);
-  const tokens = new Set<string>();
-  JSON.stringify([spec.fire, spec.hero], (key, value) => {
-    if (Array.isArray(value) && typeof value[0] === 'string' && typeof value[1] === 'number') tokens.add(value[0]);
-    if (key === 'token' && typeof value === 'string') tokens.add(value);
-    return value;
-  });
-  assert.deepEqual([...tokens].sort(), ['hostile', 'hostileGlow', 'ink']);
-  for (const token of tokens) assert.ok([null, 'hostile'].includes(signalFamily(hazardTokenColor(token))), `${token} reads as ${signalFamily(hazardTokenColor(token))}`);
+test('K11: every terrain kind is switched on, in the brief\'s order (§15-6); the player\'s zones keep their own art', () => {
+  assert.deepEqual([...HAZARD_ART_KINDS], ['fire', 'trap', 'null', 'shock', 'slow', 'root', 'water']);
+  assert.ok(!HAZARD_ART_KINDS.has('warning') && !HAZARD_ART_KINDS.has('vortex'));
 });
 
 test('K11: the fire layout port gives the kit C9 vectors (fire 50:1, 74:7, 98:7, 150:23, and r150 reduced and minimal)', () => {
-  const vectors = Object.entries(data.vectors.layout);
+  const vectors = Object.entries(data.vectors.layout).filter(([key]) => key.startsWith('fire:'));
   assert.equal(vectors.length, 6);
   for (const [key, expected] of vectors) {
     const [, r, seed, lod = 'full'] = key.split(':');
@@ -130,4 +123,93 @@ test('K11: fire states follow the kit windows; map fires always burn', () => {
   assert.equal(gutter.state, 'gutter');
   assert.equal(gutter.age.toFixed(2), '0.40');
   assert.equal(fireState(spec, { life: Number.POSITIVE_INFINITY, maxLife: Number.POSITIVE_INFINITY }).state, 'burn');
+});
+
+test('K11: the other kinds\' layout ports give the kit vectors (delivery 3 and N1: shock, slow, water, root, trap, null)', () => {
+  const vectors = Object.entries(data.vectors.layout).filter(([key]) => !key.startsWith('fire:'));
+  assert.deepEqual(vectors.map(([key]) => key.split(':')[0]).sort(), ['null', 'root', 'shock', 'slow', 'slow', 'slow', 'trap', 'water', 'water', 'water']);
+  for (const [key, expected] of vectors) {
+    const [kind, r, seed, lod = 'full'] = key.split(':');
+    // Baked in chapter 3 (the trap's wet net); the other kinds draw the same in every chapter but slow in 4.
+    const items = layoutZone(spec, data.parts, kind, Number(r), Number(seed), 3)[LODS.indexOf(lod)];
+    assert.deepEqual(items.map(item), expected, key);
+  }
+  // Delivery 3's counts: water r200 has 7 strokes, 5 ripples, 3 flows, and the glint; root r52 six vines (R1).
+  const water = data.vectors.layout['water:200:3'];
+  assert.deepEqual(['wave', 'ripple', 'flow', 'glint'].map((name) => water.filter((q) => String(q[0]).startsWith(name)).length), [7, 5, 3, 1]);
+  assert.equal(data.vectors.layout['root:52:9'].length, 6);
+});
+
+test('K11: the shock cracks and the null lines and erase edge are the kit\'s paths', () => {
+  const line = (points: readonly (readonly number[])[]) => points.map((p) => [round(p[0], 2), round(p[1], 2)]);
+  const cracks = shockCracks(spec, 190, 11);
+  assert.deepEqual(cracks.arms.concat(cracks.branches).map(line), data.vectors.paths['shock:190:11'].cracks);
+  assert.equal(cracks.arms.length + cracks.branches.length, 14, 'seven arms and their branches');
+  const lines = nullPaths(spec, 130, 11);
+  assert.deepEqual(lines.ghost.map(line), data.vectors.paths['null:130:11'].ghost);
+  assert.deepEqual(lines.jag.map(line), data.vectors.paths['null:130:11'].jag);
+  // N1: no ghost line passes within 0.15 r of the centre.
+  for (const r of [120, 130, 170]) {
+    for (let seed = 1; seed <= 60; seed += 1) {
+      for (const [[x0, y0], [x1, y1]] of nullPaths(spec, r, seed).ghost) assert.ok(Math.abs(x0 * y1 - x1 * y0) / Math.hypot(x1 - x0, y1 - y0) >= 0.15 * r - 1e-6);
+    }
+  }
+});
+
+test('K11: zone LOD rules and caps — water 20/10/3, slow 24/12/3 (the dial in chapter 4), root six at every level, crumbs and pebbles only at full', () => {
+  const kinds = (items: FireItem[], name: string) => items.filter((q) => q.part.startsWith(name)).length;
+  for (const seed of [1, 3, 7, 23, 42]) {
+    for (const r of [145, 200, 250, 270]) {
+      const [full, reduced, minimal] = layoutZone(spec, data.parts, 'water', r, seed, 3);
+      const nw = Math.min(10, Math.max(2, Math.round((r * r) / 6000)));
+      assert.ok(full.length <= 20 && reduced.length <= 10 && minimal.length <= 3, `water r${r}`);
+      assert.equal(kinds(full, 'wave'), nw, 'every surface stroke at full');
+      assert.equal(kinds(reduced, 'flow') + kinds(reduced, 'glint'), 0, 'no flows or glint at reduced');
+      assert.deepEqual([kinds(minimal, 'wave'), kinds(minimal, 'ripple')], [2, 1]);
+    }
+    for (const r of [86, 150, 200, 270]) {
+      const [full, reduced, minimal] = layoutZone(spec, data.parts, 'slow', r, seed, 3);
+      const mire = kinds(full, 'mire');
+      assert.ok(full.length <= 24 && mire >= 3, `slow r${r}`);
+      assert.equal(kinds(full, 'bubble'), Math.min(6, Math.max(2, Math.round(r / 30))));
+      assert.deepEqual([reduced.length, kinds(reduced, 'bubble'), minimal.length], [Math.ceil(mire / 2), 0, 3]);
+      assert.ok(layoutZone(spec, data.parts, 'slow', r, seed, 4).every((items) => items.length === 0), 'chapter 4 draws the dial');
+    }
+    for (const r of [50, 52]) assert.ok(layoutZone(spec, data.parts, 'root', r, seed, 1).every((items) => items.length === 6 && items.every((q) => q.flip === q.x > 0)), 'six vines curling to the centre');
+    const crumbs = layoutZone(spec, data.parts, 'null', 170, seed, 5);
+    assert.deepEqual(crumbs.map((items) => items.length), [9, 0, 0]);
+    assert.deepEqual(layoutZone(spec, data.parts, 'shock', 190, seed, 1).map((items) => items.length), [6, 0, 0]);
+  }
+  assert.deepEqual([1, 2, 3, 4, 5].map((ch) => layoutZone(spec, data.parts, 'trap', 80, 1, ch)[0][0].part), ['armed-ch1', 'armed-ch2', 'armed-ch3', 'armed-ch4', 'armed-ch1']);
+});
+
+test('K11: zone states follow the kit windows — trap spring and shut fade, emerge and wither, erase and restore, and the slow fade', () => {
+  assert.deepEqual(trapState(spec, { life: Number.POSITIVE_INFINITY, maxLife: Number.POSITIVE_INFINITY, triggered: false }), { state: 'armed', p: 0, k: 1 });
+  // A sprung trap's life and length are cut to 3.2 s together.
+  assert.equal(trapState(spec, { life: 3.1, maxLife: 3.2, triggered: true }).state, 'spring');
+  assert.deepEqual(trapState(spec, { life: 2, maxLife: 3.2, triggered: true }), { state: 'shut', p: 0, k: 1 });
+  assert.deepEqual(trapState(spec, { life: 0.3, maxLife: 3.2, triggered: true }), { state: 'shut', p: 0.5, k: 0.5 });
+  const root = (life: number) => windowOf({ life, maxLife: 7 }, spec.root.windows.emerge, spec.root.windows.wither);
+  assert.deepEqual([root(7), root(6.9), root(3), root(0.2)].map(([at, p]) => [at, round(p, 2)]), [[-1, 0], [-1, 0.4], [0, 0], [1, 0.5]]);
+  const nul = (life: number) => windowOf({ life, maxLife: 5.4 }, spec.null.erase.seconds, spec.null.restore.seconds);
+  assert.deepEqual([nul(5.25), nul(2), nul(0.1)].map(([at, p]) => [at, round(p, 2)]), [[-1, 0.5], [0, 0], [1, 0.8]]);
+  assert.deepEqual(windowOf({ life: 0.25, maxLife: 4.6 }, 0, spec.slow.end.seconds), [1, 0.5]);
+  assert.deepEqual(windowOf({ life: Number.POSITIVE_INFINITY, maxLife: Number.POSITIVE_INFINITY }, 0.3, 0.5), [0, 0], 'map hazards stand between');
+});
+
+test('K11: a shock\'s shards and dust fly for 0.3 s from the burst, every other one at reduced detail, none at minimal', () => {
+  const { arms } = shockCracks(spec, 190, 11);
+  const count = (age: number, li: number) => shockSlots(spec, arms, 190, 11, age, li).length;
+  assert.deepEqual([count(0, 0), count(0.1, 1), count(0.1, 2), count(0.299, 0), count(0.3, 0)], [16, 8, 0, 16, 0]);
+  const late = shockSlots(spec, arms, 190, 11, 0.29, 0);
+  assert.ok(late.every((s) => s.frame === 3), 'the last frame at the end');
+  assert.ok(late.filter((s) => s.part.startsWith('dust')).every((s) => Math.abs(Math.hypot(s.x, s.y) - (190 + spec.shock.burst.dust.at)) < 1e-6), 'dust on the rim');
+});
+
+test('K11: the screen cap keeps every zone its first item (a trap its machine), then shares the rest by class', () => {
+  // Nine bindings and two traps at minimal detail with 9 stamps left after the fires: one each, even past the cap.
+  const keep = screenCut([...Array.from({ length: 9 }, () => [6, 0, 0] as const), [1, 0, 0], [1, 0, 0]], 9);
+  assert.ok(keep.every((k) => k[0] >= 1));
+  // Slow puddles (prio 0) before its bubbles (prio 2); water strokes, then ripples, then flows and the glint.
+  assert.deepEqual(screenCut([[18, 0, 6], [7, 5, 4]], 30), [[18, 0, 0], [7, 5, 0]]);
 });

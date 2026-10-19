@@ -290,10 +290,13 @@ test('shock expires against the player without damaging enemies', () => {
     slow: 1,
     triggered: false,
   });
+  const shockId = probe.read().hazards.find((hazard) => hazard.kind === 'shock').id;
   probe.step(1);
   const world = probe.read();
   assert.ok(world.player.hp < startingHp);
   assert.equal(enemyById(world, enemyId).hp, 50);
+  // K11: the burst is kept for its drawing by the shock's own id and size (looks only).
+  assert.deepEqual(probe.effects().shocks.map((shock) => [shock.id, shock.radius]), [[shockId, 100]]);
   engine.dispose();
 });
 

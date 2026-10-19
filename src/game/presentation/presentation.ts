@@ -1,6 +1,6 @@
 // Presentation layer (TEC-02): turns game events into particles, damage numbers, impact rings, screen shake,
 // and sound cues for the app's mixer (AUD-01). It owns only cosmetic state; the simulation never reads it back.
-import type { BlastFlash, Corpse, DamageNumber, EffectOwner, HitStamp, ImpactRing, Particle, Recoil, SkillId, SkillMark, SkillState } from '../engine/worldTypes.ts';
+import type { BlastFlash, Corpse, DamageNumber, EffectOwner, HitStamp, ImpactRing, Particle, Recoil, ShockBurst, SkillId, SkillMark, SkillState } from '../engine/worldTypes.ts';
 import type { GameOptions } from '../../platform/save.ts';
 import { CUES, HIT_CUES, KILL_CUES, type CueId, type SoundOutput } from '../audioPolicy.ts';
 import type { GameEvent } from '../engine/events.ts';
@@ -11,6 +11,8 @@ import { lookOf } from '../arsenal.ts';
 
 /** SYS-14 (K7): how long a bomber's blast drawing shows (API-bombers §3). */
 const BLAST_SECONDS = 0.15;
+/** K11: how long a shock's burst and the mark it leaves show (API-hazards §4.2: burst 0.25 s, decal 1.2 s). */
+const SHOCK_SECONDS = 1.45;
 
 export type PresentationHost = {
   /**
@@ -96,6 +98,8 @@ export class Presentation {
   readonly impactRings: ImpactRing[] = [];
   /** SYS-14 (K7): bombers' blast drawings, a moment each. */
   readonly blasts: BlastFlash[] = [];
+  /** K11: shocks that went off, for their burst and mark. */
+  readonly shocks: ShockBurst[] = [];
   readonly skillMarks: SkillMark[] = [];
   readonly corpses: Corpse[] = [];
   readonly hitStamps: HitStamp[] = [];
@@ -178,6 +182,7 @@ export class Presentation {
     this.hitStamps.length = 0;
     this.impactRings.length = 0;
     this.blasts.length = 0;
+    this.shocks.length = 0;
     this.skillMarks.length = 0;
     this.playerHurt = 0;
     this.playerBurst = 0;
@@ -293,6 +298,7 @@ export class Presentation {
         this.addShake(12);
         return;
       case 'shock/burst':
+        this.shocks.push({ id: event.id, x: event.x, y: event.y, radius: event.radius, life: SHOCK_SECONDS, maxLife: SHOCK_SECONDS });
         this.burst(event.x, event.y, Math.round(28 * effects), '#050505', 280);
         this.addShake(11);
         return;
@@ -401,6 +407,7 @@ export class Presentation {
     this.playerCast = Math.max(0, this.playerCast - dt);
     for (const ring of this.impactRings) ring.life -= dt;
     for (const blast of this.blasts) blast.life -= dt;
+    for (const shock of this.shocks) shock.life -= dt;
     for (const mark of this.skillMarks) mark.life -= dt;
     for (const number of this.damageNumbers) {
       number.life -= dt;
@@ -408,6 +415,7 @@ export class Presentation {
     }
     compactWhere(this.impactRings, (ring) => ring.life > 0);
     compactWhere(this.blasts, (blast) => blast.life > 0);
+    compactWhere(this.shocks, (shock) => shock.life > 0);
     compactWhere(this.skillMarks, (mark) => mark.life > 0);
     recycleWhere(this.damageNumbers, (number) => number.life > 0, this.damageNumberPool);
   }

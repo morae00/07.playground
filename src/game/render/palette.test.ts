@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { ATLAS_MANIFEST } from './assets/atlasManifest.generated.ts';
+import { hazardTokenColor } from './hazardArt.ts';
 import { NEUTRAL, SIGNAL, signalFamily } from './palette.ts';
 import { BOSS_ART, CHAPTER_ART, HAZARD_ART, HOSTILE_PROJECTILE_ART, VISUAL_PALETTE } from './visualRegistry.ts';
 
@@ -50,6 +52,37 @@ test('hazards are coloured by owner: player skills cyan, enemy damage coral, ene
   for (const [kind, profile] of Object.entries(HAZARD_ART)) {
     for (const color of colorsOf(profile)) {
       assert.ok(allowed[kind].includes(signalFamily(color)), `${kind} hazard uses ${color} (${signalFamily(color)})`);
+    }
+  }
+  // K11 (style bible §5.1): a null zone is erased paper, the void paper token, in the vector fallback too.
+  assert.equal(HAZARD_ART.null.fill, NEUTRAL.voidPaper);
+});
+
+test('K11: the kit SPEC of each hazard kind keeps its owner\'s colours (brief §9-6), every token a palette colour', () => {
+  const spec = (ATLAS_MANIFEST.hazards.spec as unknown) as Record<string, Record<string, unknown>>;
+  // fire coral; the shock telegraph amber and its burst coral; control zones amber; null amber (its coral ring is off,
+  // Q3); water and traps neutral.
+  const allowed: Record<string, Array<string | null>> = {
+    fire: ['hostile', null],
+    shock: ['warn', 'hostile', null],
+    slow: ['warn', null],
+    root: ['warn', null],
+    null: spec.null.active && (spec.null.active as { on: boolean }).on ? ['warn', 'hostile', null] : ['warn', null],
+    water: [null],
+    trap: [null],
+  };
+  for (const [kind, families] of Object.entries(allowed)) {
+    const tokens = new Set<string>();
+    JSON.stringify({ ...spec[kind], ...(kind === 'fire' ? { hero: spec.hero } : {}), ...(kind === 'null' && !families.includes('hostile') ? { active: null } : {}) }, (key, value) => {
+      if (Array.isArray(value) && typeof value[0] === 'string' && typeof value[1] === 'number') tokens.add(value[0]);
+      if (key === 'token' && typeof value === 'string') tokens.add(value);
+      return value;
+    });
+    assert.ok(tokens.size > 0, `${kind} has SPEC colours`);
+    for (const token of tokens) {
+      const color = hazardTokenColor(token);
+      assert.ok(color, `${kind} token ${token} maps to the palette`);
+      assert.ok(families.includes(signalFamily(color)), `${kind} ${token} reads as ${signalFamily(color)}`);
     }
   }
 });
