@@ -5,8 +5,13 @@
 // lob landing, chain jump, beam stroke, halo sweep). Delivery 2: the lob flight of the four lob weapons (stage
 // 'flight', the flying objects, SPEC.flight, the cluster pots' `mini` and lobPath's mini path). Delivery 3, round 1
 // (3a): the 17 P1 awakening gimmicks (one stage each, GSTAGE; ground pieces SPEC.zone, the drawn shapes SPEC.gimmick,
-// the enemy overlays SPEC.overlay / overlay()). The P2 gimmicks (round 2) are not drawn yet and are listed nowhere
-// (META.stages / gimmicks / groups / overlays hold only what is drawn).
+// the enemy overlays SPEC.overlay / overlay()). Delivery 3, round 2, part 1 (3b1): the P2 gimmicks that are enemy
+// marks and feet overlays (GSTAGE2, more overlay keys), the crow's primaries (review 5 R1) and the eclipse's layers
+// (decision 2). Part 2 (3b2): the P2 follow-up effects (work order §4.4: bursts, event rings, the leap, the rewound,
+// amplified and linked chains, the branch lances, the re-sweep, the deflected shot, the hero's haste, the caltrop snap;
+// their SPEC under new SPEC.gimmick keys), joined to the 3b1 stages where the gimmick is the same (stain, fear, crack,
+// pollen), and review 7 F1 (lost), F2 (thorn), R2 (stain 1), R4 (frost 1, class 12), §5-6 (the spores' size). 3b2-r1
+// (review 8 F1): the pollen ring back to the brief's ink + cyan dashed sandwich (SPEC and its draw only, no stamp).
 // Two forms, as in K4 / K11: (1) fixed-size stamps baked into the arsenal-fx pack as afx/<group>/<part>/<frame>
 // (stamp()), never stretched; (2) shapes that follow a radius, a length or a list of points, drawn by the renderer
 // from the numbers in SPEC (draw() paints the same rules as reference / golden art; layout(), paths() and lobPath()
@@ -383,12 +388,21 @@ window.PN = window.PN || {};
     huntersMarks: 'prey', crowFeathers: 'crow', inkLightning: 'pillar', brushDownpour: 'surge', fallingScroll: 'unroll',
     seventhSeal: 'eighth', silenceBell: 'silence', inkPots: 'fire', tarJar: 'gather', meteorBrush: 'mark', eclipseHalo: 'total'
   };
+  // delivery 3b1: the P2 gimmicks drawn as enemy marks and feet overlays (work order §4.3), one stage each (priority 2).
+  // 3b2 adds the follow-up effects (§4.4): to the same stage where the gimmick already has one (stain, fear, crack,
+  // pollen: the burst or the ring joins the marks), a new stage for the rest (priority 2)
+  const GSTAGE2 = { inkDarts: 'stain', headsmanDarts: 'fear', inkBloom: 'pollen', thornHalo: 'thorn', smokeTail: 'lost', gravePins: 'bound', bossbane: 'crack', frostNeedles: 'frost', wardRing: 'weak',
+    brushQuills: 'dab', sealArrows: 'topple', thunderNeedles: 'leap', tailGuard: 'rear', inkPulse: 'bump', thunderclap: 'echo', clusterPots: 'split', sparkThread: 'rewind',
+    stormThread: 'amplify', frostChainlet: 'link', inkLance: 'branch', wideBrush: 'resweep', inkOrbit: 'deflect', meteorBrush: 'haste', pinHail: 'snap' };
+  const isGimmick = (id, stage) => GSTAGE[id] === stage || GSTAGE2[id] === stage;
   // the object stamp of the weapons that fire projectiles, from their gimmick (C15 against the K9 icon); null: none
-  const GOBJECT = { twinBlades: 'spin', pinHail: 'caltrop-a', smokeTail: 'puff-a', gravePins: 'grave-a', trackingSeals: 'sealStrike', huntersMarks: 'mark-prey', crowFeathers: 'crow' };
+  const GOBJECT = { twinBlades: 'spin', pinHail: 'caltrop-a', smokeTail: 'puff-a', gravePins: 'grave-a', trackingSeals: 'sealStrike', huntersMarks: 'mark-prey', crowFeathers: 'crow',
+    inkDarts: 'mark-stain2', headsmanDarts: 'mark-fear', inkBloom: 'spore-a', thornHalo: 'thorn28', bossbane: 'mark-crack3',
+    brushQuills: 'dab', sealArrows: 'topple', thunderNeedles: 'leapHit', tailGuard: 'rearHit' };
 
   /** Parametric shapes and placement rules (work order §1.5); token names, numbers and English words only. */
   const SPEC = {
-    version: '1.0-d3a-r1',
+    version: '1.0-d3b2-r1',
     jit: { mul: 31, hash: 2654435761, mod: 1000 },
     headY: -66, headLift: 26, footClear: 26, faceZone: [-8, -58, 18, -34],
     rim: {
@@ -537,18 +551,66 @@ window.PN = window.PN || {};
       trackingSeals: { stage: 'triangle', delay: 0.6, life: 0.28, pre: { layers: [['ink', 2.6], ['ally', 1.4]], dash: [6, 4], pad: 0.6, sewn: true }, strike: { layers: [['ink', 4], ['ally', 2.2], ['allyG', 0.7]], fill: { token: 'p50', alpha: 0.25 }, fillSeconds: 0.1, fade: { at: 0.6 } } },
       fallingScroll: { stage: 'unroll', length: 240, width: 50, life: 0.28, grow: 0.2, fade: { at: 0.75 }, band: { fill: { token: 'p50', alpha: 0.5 }, edge: [['ink', 1.6]], ridge: { humps: 2, amp: 0.25, base: 0.18, layers: [['ink', 1.4]] }, head: [['ink', 6], ['p50', 3.4]] } },
       seventhSeal: { stage: 'eighth', r: 120, delay: 0.3, life: 0.5, shadow: { token: 'ink', rx: [18, 64], alpha: [0.12, 0.35] }, stitch: { layers: [['ink', 2], ['ally', 1]], dash: [5, 4], pad: 0.6 }, ring: { layers: [['ink', 4], ['ally', 2.2], ['allyG', 0.7]], gaps: { n: [2, 2], deg: [6, 10] }, wash: { token: 'p50', alpha: 0.2 }, grow: { from: 0.7, seconds: 0.08 }, fade: { at: 0.6 } }, sealSeconds: 0.45 },
-      eclipseHalo: { stage: 'total', inner: 0, wash: { token: 'ink', alpha: 0.2 }, band: { token: 'ink', alpha: 0.22, at: 0.62 }, outer: [['ink', 4], ['p50', 2]] },
-      brushDownpour: { stage: 'surge', scale: [1, 1.2, 1.4, 1.6] }
+      eclipseHalo: { stage: 'total', inner: 0, wash: { token: 'ink', alpha: 0.2 }, band: { token: 'ink', alpha: 0.22, at: 0.62 }, outer: [['ink', 4], ['p50', 2]],
+        // review 5 decision 2 (3b1): the disc and the band lie on the ground under the bodies, the rest over them; under
+        // reduced flash the disc's and the band's alpha are multiplied by reducedFlash
+        layers: { wash: 'ground', band: 'ground', outer: 'ally', inset: 'ally', corona: 'ally', ribbon: 'ally' }, reducedFlash: 0.5 },
+      brushDownpour: { stage: 'surge', scale: [1, 1.2, 1.4, 1.6] },
+      // ---- delivery 3b2, P2 follow-up effects (§4.4). Event rings (centre line exactly on R; gaps, so never an even
+      // closed ring; solid rings carry cyan only on a core of at most 120°; no awakened inset line): prim stroke / band
+      // (as SPEC.ring), torn (a paper band, its inner edge torn), dashed (the ink + cyan dashed sandwich all round, the ink
+      // dash pad past both ends: 3b2-r1), jag (as SPEC.ring, with gaps and a core). life = the event's seconds; the burst
+      // stamp is the event's centre object. lift = height above the feet where a line meets an enemy (reference) ----
+      inkDarts: { stage: 'stain', stacks: 3, r: 70, life: 0.3, burst: 'stainBurst',
+        ring: { prim: 'stroke', layers: [['ink', 3.2], ['p50', 1.2]], gaps: { n: [3, 4], deg: [9, 18] }, core: { layers: [['ink', 3.6], ['ally', 1.6], ['allyG', 0.5]], span: [60, 100] }, punch: { scale: 1.8, seconds: 0.1, reducedMax: 1.5 }, grow: { from: 0.7, seconds: 0.08 }, fade: { at: 0.6 } } },
+      brushQuills: { stage: 'dab', delay: 0.6, r: 50, life: 0.24, dab: 'dab', burst: 'dabBurst',
+        ring: { prim: 'band', token: 'ink', width: [2.4, 5], knots: 10, gaps: { n: [3, 3], deg: [10, 18] }, endTaper: 9, core: { layers: [['ink', 3.6], ['ally', 1.6], ['allyG', 0.5]], span: [40, 70], at: 'mid', dab: true }, grow: { from: 0.75, seconds: 0.06 }, fade: { at: 0.6 } } },
+      sealArrows: { stage: 'topple', life: 0.16, event: 'topple', window: 0.4 },
+      thunderNeedles: { stage: 'leap', range: 200, life: 0.2, hit: 'leapHit', lift: 14,
+        line: { prim: 'kink', seg: 24, n: [3, 8], shift: 0.5, push: [3, 8], layers: [['ink', 3.4], ['ally', 1.8], ['allyG', 0.6]], flicker: { fps: 12, seeds: [3, 4] }, grow: { frac: 0.35 }, fade: { at: 0.6 } } },
+      headsmanDarts: { stage: 'fear', r: 160, life: 0.45,
+        ring: { prim: 'torn', token: 'p50', width: 3, alpha: 0.85, edge: [['ink', 1.2]], tear: { pitch: 6, depth: [0.4, 2.6], skip: 0.3, end: 1.6, layers: [['ink', 1]] }, gaps: { n: [2, 2], deg: [5, 9] }, grow: { from: 0.4, seconds: 0.15 }, fade: { at: 0.6 } } },
+      // review 8 F1 (3b2-r1): the pollen ring is the brief's ink + cyan dashed sandwich all round (the ally grammar of
+      // rim.ally); bare ink dashes round an enemy read as an enemy telegraph's dashed rim
+      inkBloom: { stage: 'pollen', r: 50, tick: 0.5, life: 0.45, puff: 'pollenPuff',
+        ring: { prim: 'dashed', layers: [['ink', 1.6], ['ally', 1]], dash: [4, 5], pad: 0.6, gaps: { n: [2, 2], deg: [16, 28] }, grow: { from: 0.6, seconds: 0.25 }, fade: { at: 0.6 } } },
+      tailGuard: { stage: 'rear', reach: 200, arc: 70, life: 0.2, hit: 'rearHit', lift: 14 },
+      bossbane: { stage: 'crack', r: 90, life: 0.3, burst: 'crackBurst',
+        ring: { prim: 'stroke', layers: [['ink', 3.4], ['p50', 1.6]], gaps: { n: [2, 3], deg: [8, 16] }, core: { layers: [['ink', 3.6], ['ally', 1.8], ['allyG', 0.6]], span: [70, 110] }, punch: { scale: 2, seconds: 0.1, reducedMax: 1.5 }, grow: { from: 0.65, seconds: 0.09 }, fade: { at: 0.6 } },
+        cracks: { n: [6, 8], from: 0.24, to: [0.55, 0.9], jitter: 0.35, steps: [0.32, 0.26, 0.24, 0.18], bend: [8, 22], layers: [['ink', 3], ['p50', 1.4]], core: { n: 2, layers: [['ink', 3], ['ally', 1.4], ['allyG', 0.4]] }, fork: { n: 1, at: 2, deg: 30, len: 0.26 }, grow: { from: 0.4, seconds: 0.09 } } },
+      inkPulse: { stage: 'bump', life: 0.16, event: 'bump', window: 0.5 },
+      thunderclap: { stage: 'echo', delay: 0.5, reach: 1.4, life: 0.3,
+        ring: { prim: 'jag', alpha: 0.75, layers: [['ink300', 3.4], ['p300', 1.2]], core: { layers: [['ink300', 3.4], ['ally', 1.6]], span: [80, 110] }, seg: 26, amp: [1.5, 6.5], forks: { n: 0, len: [0, 0] }, gaps: { n: [2, 2], deg: [10, 16] }, flicker: { fps: 12, seeds: [7, 8] }, grow: { from: 0.85, seconds: 0.08 }, fade: { at: 0.6 } } },
+      clusterPots: { stage: 'split', delay: 0.35, offset: 60, area: 0.6, mini: 'mini', burst: 'burst', ring: 'clusterPots' },
+      sparkThread: { stage: 'rewind', hit: 'spark', line: { prim: 'sag', sag: -0.16, step: 8, from: 'tail', layers: [['ink', 2.6], ['ally', 1.4], ['allyG', 0.5]], grow: { frac: 0.4 }, fade: { at: 0.65, dash: [5, 4] } } },
+      stormThread: { stage: 'amplify', width: 0.15, amp: 0.1, big: { part: 'gust-b', from: 3 } },
+      frostChainlet: { stage: 'link', life: 2, line: { prim: 'links', pitch: 20, alpha: 0.45, clear: 0 }, share: { seconds: 0.18, alpha: 1 }, fade: { at: 0.85 } },
+      inkLance: { stage: 'branch', angle: 35, branch: 0.4, fork: 'fork', head: 0.85, tassel: false },
+      wideBrush: { stage: 'resweep', delay: 0.3, alpha: 0.65, seed: 500, head: 'mirror' },
+      inkOrbit: { stage: 'deflect', speed: 2, life: 1.2, hitR: 7, start: 'deflect-start', travel: 'deflect-travel', end: 'deflect-end' },
+      meteorBrush: { stage: 'haste', part: 'haste', at: 'feet', rim: 'inside' },
+      pinHail: { stage: 'snap', life: 0.15, event: 'caltrop-snap' },
+      // the scorching needles: no art; the renderer scales the needle's shot stamps by the shot's radius over the weapon's
+      // size (data shot.radius / geo.size), at most max (the one exception to 'stamps are never stretched')
+      sunNeedles: { scale: { by: 'radius', over: 'size', max: 1.6 } }
     },
     // ---- enemy overlays (§4.3): head marks at (0, top + dy) (top = the sprite's top), one per enemy by priority.heads;
     // feet overlays by the nearest size class r, one per enemy by priority.feet (-back under the body, -front in front);
     // the crow orbits (marks.crow) or sits at (sit) under reduced motion. At each crow hit tick it dives for marks.crow.dive
     // seconds: its anchor goes to dive.crow (x on the side it faces from) and back, the peck stamp shows at dive.peck
     // (both from (0, top)) ----
+    // 3b1 (P2): more head marks (stain by stack 1-3; fear mirrored with the enemy, rotate 'face'), the boss's crack plate
+    // (stack 1-5, at (0, top + dy), or `beside` to the right when a head mark is shown; never dropped), the pollen spores
+    // (two slots at `at`, each rising marks.spores.rise and drifting outward marks.spores.drift over its cycle, phase
+    // apart), and the feet: frost (stack 1-2), bound and thorn, all three in front of the body ----
     overlay: {
-      head: { dy: -12, parts: { silence: { group: 'silenceBell', part: 'mark-silence' }, prey: { group: 'huntersMarks', part: 'mark-prey' } } },
-      feet: { freeze: { group: 'frostNeedles', back: 'freeze-back-', front: 'freeze-front-', r: [12, 19, 28] }, scorch: { group: 'inkPots', part: 'scorch', r: [12, 19, 28, 38, 54] } },
-      crow: { group: 'crowFeathers', part: 'crow', peck: 'peck', sit: [6, -6], dive: { crow: [7, -5], peck: [0, -1] } }
+      head: { dy: -12, parts: { silence: { group: 'silenceBell', part: 'mark-silence' }, prey: { group: 'huntersMarks', part: 'mark-prey' },
+        fear: { group: 'headsmanDarts', part: 'mark-fear' }, lost: { group: 'smokeTail', part: 'lost' }, weak: { group: 'wardRing', part: 'mark-weak' }, stain: { group: 'inkDarts', part: 'mark-stain', stack: [1, 3] } } },
+      feet: { freeze: { group: 'frostNeedles', back: 'freeze-back-', front: 'freeze-front-', r: [12, 19, 28] }, scorch: { group: 'inkPots', part: 'scorch', r: [12, 19, 28, 38, 54] },
+        frost: { group: 'frostNeedles', part: 'frost', stack: [1, 2], r: [12, 19, 28] }, bound: { group: 'gravePins', part: 'bound', r: [12, 19, 28] }, thorn: { group: 'thornHalo', part: 'thorn', r: [12, 19, 28, 38, 54] } },
+      crow: { group: 'crowFeathers', part: 'crow', peck: 'peck', sit: [6, -6], dive: { crow: [7, -5], peck: [0, -1] } },
+      crack: { group: 'bossbane', part: 'mark-crack', stack: [1, 5], dy: -12, beside: 26 },
+      pollen: { group: 'inkBloom', parts: ['spore-a', 'spore-b'], at: [[-6, 2], [5, -1]], phase: [0, 0.5] }
     },
     reference: { chainStep: [90, 40], spread: [120, 80] },
     // screen caps (full / reduced / minimal, §4.5 / §5.4) and the order things are dropped in when over
@@ -615,18 +677,66 @@ window.PN = window.PN || {};
 
   const META = {};
   ROWS.forEach(([id, name, rarity, kind, look, geo]) => {
-    const fx = DRAWN_FX.has(id), lob = DRAWN_LOB.has(id), gm = GSTAGE[id] || null, main = MAIN[kind] || null;
+    const fx = DRAWN_FX.has(id), lob = DRAWN_LOB.has(id), gm = GSTAGE[id] || null, gm2 = GSTAGE2[id] || null, main = MAIN[kind] || null;
     META[id] = Object.freeze({
       name, rarity, kind, look, geo: Object.freeze(Object.assign({}, geo)), main,
-      stages: Object.freeze((fx ? [main].concat(lob ? ['flight'] : []) : []).concat(gm ? [gm] : [])),
-      gimmicks: Object.freeze(gm ? [Object.freeze({ stage: gm, priority: 1 })] : []), object: fx ? OBJECT[id] : (GOBJECT[id] || null),
-      done: Object.freeze({ fx, lob, gimmick: !!gm })
+      stages: Object.freeze((fx ? [main].concat(lob ? ['flight'] : []) : []).concat(gm ? [gm] : []).concat(gm2 ? [gm2] : [])),
+      gimmicks: Object.freeze((gm ? [Object.freeze({ stage: gm, priority: 1 })] : []).concat(gm2 ? [Object.freeze({ stage: gm2, priority: 2 })] : [])),
+      object: fx ? OBJECT[id] : (GOBJECT[id] || null),
+      done: Object.freeze({ fx, lob, gimmick: !!(gm || gm2) })
     });
   });
   Object.freeze(META);
 
   // ---- baked parts (work order §2): [part, frames, drive, fps, seconds, window, box, anchor, place, rotate, layer, lod, extra] ----
   const PT = {
+    // delivery 3b1: new groups of projectile weapons whose P2 gimmick is an enemy mark or a feet overlay (§4.3)
+    inkDarts: [
+      ['mark-stain1', 1, 'idx', 0, null, 'stack', [22, 22], [11, 20], 'over', 'none', 'head', 'info'],
+      ['mark-stain2', 1, 'idx', 0, null, 'stack', [22, 22], [11, 20], 'over', 'none', 'head', 'info'],
+      ['mark-stain3', 1, 'idx', 0, null, 'stack', [22, 22], [11, 20], 'over', 'none', 'head', 'info'],
+      // delivery 3b2: the third stain's burst (with SPEC.gimmick.inkDarts.ring r 70)
+      ['stainBurst', 3, 'prog', 0, 0.3, 'event', [64, 52], [32, 30], 'center', 'none', 'ally', 'info']
+    ],
+    headsmanDarts: [
+      ['mark-fear', 1, 'idx', 0, null, 'status', [22, 22], [11, 20], 'over', 'face', 'head', 'info']
+    ],
+    inkBloom: [
+      ['spore-a', 4, 'cycle', 0, 1, 'status', [10, 14], [5, 12], 'over', 'none', 'head', 'deco'],
+      ['spore-b', 4, 'cycle', 0, 1, 'status', [10, 14], [5, 12], 'over', 'none', 'head', 'deco'],
+      // delivery 3b2: the pollen puff every tick (with SPEC.gimmick.inkBloom.ring r 50)
+      ['pollenPuff', 3, 'prog', 0, 0.3, 'event', [36, 28], [18, 18], 'target', 'none', 'ally', 'deco']
+    ],
+    // delivery 3b2: new groups of projectile weapons whose P2 gimmick is a follow-up effect (§4.4)
+    brushQuills: [
+      ['dab', 3, 'prog', 0, null, 'pending', [28, 18], [14, 9], 'target', 'none', 'ground', 'info'],
+      ['dabBurst', 3, 'prog', 0, 0.24, 'event', [52, 40], [26, 24], 'center', 'none', 'ally', 'info']
+    ],
+    sealArrows: [
+      ['topple', 2, 'prog', 0, 0.16, 'event', [32, 28], [16, 14], 'event', 'none', 'ally', 'deco']
+    ],
+    thunderNeedles: [
+      ['leapHit', 2, 'prog', 0, null, 'chain', [24, 24], [12, 12], 'point', 'none', 'ally', 'deco']
+    ],
+    tailGuard: [
+      ['rearHit', 3, 'prog', 0, 0.2, 'event', [40, 32], [20, 18], 'target', 'none', 'ally', 'deco']
+    ],
+    thornHalo: [
+      ['thorn12', 1, 'idx', 0, null, 'status', [30, 16], [15, 8], 'feet', 'none', 'front', 'info', { r: 12 }],
+      ['thorn19', 1, 'idx', 0, null, 'status', [40, 18], [20, 9], 'feet', 'none', 'front', 'info', { r: 19 }],
+      ['thorn28', 1, 'idx', 0, null, 'status', [56, 22], [28, 11], 'feet', 'none', 'front', 'info', { r: 28 }],
+      ['thorn38', 1, 'idx', 0, null, 'status', [72, 26], [36, 13], 'feet', 'none', 'front', 'info', { r: 38 }],
+      ['thorn54', 1, 'idx', 0, null, 'status', [96, 30], [48, 15], 'feet', 'none', 'front', 'info', { r: 54 }]
+    ],
+    bossbane: [
+      ['mark-crack1', 1, 'idx', 0, null, 'stack', [26, 24], [13, 22], 'over', 'none', 'head', 'info'],
+      ['mark-crack2', 1, 'idx', 0, null, 'stack', [26, 24], [13, 22], 'over', 'none', 'head', 'info'],
+      ['mark-crack3', 1, 'idx', 0, null, 'stack', [26, 24], [13, 22], 'over', 'none', 'head', 'info'],
+      ['mark-crack4', 1, 'idx', 0, null, 'stack', [26, 24], [13, 22], 'over', 'none', 'head', 'info'],
+      ['mark-crack5', 1, 'idx', 0, null, 'stack', [26, 24], [13, 22], 'over', 'none', 'head', 'info'],
+      // delivery 3b2: the fifth crack's burst (with SPEC.gimmick.bossbane.ring r 90 and the paper crack lines)
+      ['crackBurst', 3, 'prog', 0, 0.3, 'event', [56, 48], [28, 30], 'center', 'none', 'ally', 'info']
+    ],
     // delivery 3a: the groups of the projectile weapons hold only their P1 gimmick's stamps (work order §4.2-§4.4)
     frostNeedles: [
       ['freeze-back-12', 1, 'idx', 0, null, 'status', [36, 20], [18, 10], 'feet', 'none', 'feet', 'info', { r: 12 }],
@@ -634,7 +744,14 @@ window.PN = window.PN || {};
       ['freeze-back-28', 1, 'idx', 0, null, 'status', [64, 30], [32, 15], 'feet', 'none', 'feet', 'info', { r: 28 }],
       ['freeze-front-12', 1, 'idx', 0, null, 'status', [32, 24], [16, 20], 'feet', 'none', 'front', 'info', { r: 12 }],
       ['freeze-front-19', 1, 'idx', 0, null, 'status', [44, 30], [22, 25], 'feet', 'none', 'front', 'info', { r: 19 }],
-      ['freeze-front-28', 1, 'idx', 0, null, 'status', [60, 38], [30, 32], 'feet', 'none', 'front', 'info', { r: 28 }]
+      ['freeze-front-28', 1, 'idx', 0, null, 'status', [60, 38], [30, 32], 'feet', 'none', 'front', 'info', { r: 28 }],
+      // delivery 3b1: the frost marks (stack 1-2) that come before the freeze
+      ['frost1-12', 1, 'idx', 0, null, 'stack', [36, 20], [18, 10], 'feet', 'none', 'front', 'info', { r: 12 }],
+      ['frost1-19', 1, 'idx', 0, null, 'stack', [48, 24], [24, 12], 'feet', 'none', 'front', 'info', { r: 19 }],
+      ['frost1-28', 1, 'idx', 0, null, 'stack', [64, 30], [32, 15], 'feet', 'none', 'front', 'info', { r: 28 }],
+      ['frost2-12', 1, 'idx', 0, null, 'stack', [36, 20], [18, 10], 'feet', 'none', 'front', 'info', { r: 12 }],
+      ['frost2-19', 1, 'idx', 0, null, 'stack', [48, 24], [24, 12], 'feet', 'none', 'front', 'info', { r: 19 }],
+      ['frost2-28', 1, 'idx', 0, null, 'stack', [64, 30], [32, 15], 'feet', 'none', 'front', 'info', { r: 28 }]
     ],
     twinBlades: [
       ['spin', 4, 'loop', 16, null, 'zone', [40, 40], [20, 20], 'center', 'none', 'ally', 'info', { still: 0 }],
@@ -643,18 +760,26 @@ window.PN = window.PN || {};
     pinHail: [
       ['caltrop-a', 1, 'idx', 0, null, 'variant', [44, 26], [22, 17], 'center', 'none', 'ground', 'info'],
       ['caltrop-b', 1, 'idx', 0, null, 'variant', [44, 26], [22, 17], 'center', 'none', 'ground', 'info'],
-      ['caltrop-c', 1, 'idx', 0, null, 'variant', [44, 26], [22, 17], 'center', 'none', 'ground', 'info']
+      ['caltrop-c', 1, 'idx', 0, null, 'variant', [44, 26], [22, 17], 'center', 'none', 'ground', 'info'],
+      // delivery 3b2: the caltrop snapping under the first enemy to step on it
+      ['caltrop-snap', 2, 'prog', 0, 0.15, 'event', [44, 30], [22, 19], 'center', 'none', 'ally', 'deco']
     ],
     smokeTail: [
       ['puff-a', 4, 'loop', 6, null, 'zone', [40, 28], [20, 24], 'disc', 'none', 'ground', 'info', { still: 0 }],
       ['puff-b', 4, 'loop', 6, null, 'zone', [40, 28], [20, 24], 'disc', 'none', 'ground', 'info', { still: 0 }],
-      ['puff-c', 4, 'loop', 6, null, 'zone', [40, 28], [20, 24], 'disc', 'none', 'ground', 'info', { still: 0 }]
+      ['puff-c', 4, 'loop', 6, null, 'zone', [40, 28], [20, 24], 'disc', 'none', 'ground', 'info', { still: 0 }],
+      // delivery 3b1: the wander mark (two smoke curls circling over the head)
+      ['lost', 4, 'loop', 8, null, 'status', [24, 14], [12, 10], 'over', 'none', 'head', 'deco', { still: 0 }]
     ],
     gravePins: [
       ['grave-a', 1, 'idx', 0, null, 'variant', [48, 36], [24, 27], 'center', 'none', 'stand', 'info'],
       ['grave-b', 1, 'idx', 0, null, 'variant', [48, 36], [24, 27], 'center', 'none', 'stand', 'info'],
       ['grave-c', 1, 'idx', 0, null, 'variant', [48, 36], [24, 27], 'center', 'none', 'stand', 'info'],
-      ['grave-rise', 2, 'prog', 0, 0.15, 'zone-start', [48, 36], [24, 27], 'center', 'none', 'stand', 'info']
+      ['grave-rise', 2, 'prog', 0, 0.15, 'zone-start', [48, 36], [24, 27], 'center', 'none', 'stand', 'info'],
+      // delivery 3b1: bound feet (the thread sewing them down, a small grave pin beside), in front of the body
+      ['bound12', 1, 'idx', 0, null, 'status', [34, 20], [17, 10], 'feet', 'none', 'front', 'info', { r: 12 }],
+      ['bound19', 1, 'idx', 0, null, 'status', [46, 24], [23, 12], 'feet', 'none', 'front', 'info', { r: 19 }],
+      ['bound28', 1, 'idx', 0, null, 'status', [62, 30], [31, 15], 'feet', 'none', 'front', 'info', { r: 28 }]
     ],
     trackingSeals: [
       ['sealCorner', 3, 'prog', 0, 0.6, 'pending', [26, 20], [13, 10], 'point', 'none', 'ally', 'info'],
@@ -703,7 +828,9 @@ window.PN = window.PN || {};
     ],
     inkPulse: [
       ['splash-a', 3, 'prog', 0, 0.3, 'mark', [40, 28], [6, 14], 'ring', 'radial', 'ally', 'deco'],
-      ['splash-b', 3, 'prog', 0, 0.3, 'mark', [40, 28], [6, 14], 'ring', 'radial', 'ally', 'deco']
+      ['splash-b', 3, 'prog', 0, 0.3, 'mark', [40, 28], [6, 14], 'ring', 'radial', 'ally', 'deco'],
+      // delivery 3b2: a pushed enemy striking a wall
+      ['bump', 2, 'prog', 0, 0.16, 'event', [32, 32], [16, 16], 'event', 'none', 'ally', 'deco']
     ],
     frostRing: [
       ['shard-a', 3, 'prog', 0, 0.45, 'mark', [36, 32], [6, 16], 'ring', 'radial', 'ally', 'info'],
@@ -762,7 +889,9 @@ window.PN = window.PN || {};
       ['comet-awakened', 4, 'loop', 12, null, 'flight', [32, 92], [16, 14], 'air', 'path', 'air', 'info', { still: 0 }],
       // delivery 3a: the star mark (zone) - paper star motes rising
       ['mote-a', 4, 'cycle', 0, 1.2, 'zone', [10, 14], [5, 12], 'disc', 'none', 'ally', 'deco'],
-      ['mote-b', 4, 'cycle', 0, 1.2, 'zone', [10, 14], [5, 12], 'disc', 'none', 'ally', 'deco']
+      ['mote-b', 4, 'cycle', 0, 1.2, 'zone', [10, 14], [5, 12], 'disc', 'none', 'ally', 'deco'],
+      // delivery 3b2: the hero's haste while standing in the star mark (right after the hero's body)
+      ['haste', 4, 'loop', 12, null, 'status', [52, 40], [26, 36], 'hero', 'face', 'front', 'info', { still: 0 }]
     ],
     sparkThread: [
       ['spark', 2, 'prog', 0, null, 'chain', [24, 24], [12, 12], 'point', 'none', 'ally', 'deco'],
@@ -779,7 +908,9 @@ window.PN = window.PN || {};
     ],
     inkLance: [
       ['tassel', 2, 'prog', 0, null, 'beam', [60, 22], [56, 11], 'origin', 'beam', 'ally', 'info'],
-      ['tassel-awakened', 2, 'prog', 0, null, 'beam', [60, 22], [56, 11], 'origin', 'beam', 'ally', 'info']
+      ['tassel-awakened', 2, 'prog', 0, null, 'beam', [60, 22], [56, 11], 'origin', 'beam', 'ally', 'info'],
+      // delivery 3b2: where the lance's tip splits into its two branch lances (place 'point', not 'origin': §12)
+      ['fork', 2, 'prog', 0, 0.2, 'event', [28, 28], [14, 14], 'point', 'beam', 'ally', 'deco']
     ],
     wideBrush: [
       ['brush', 3, 'prog', 0, null, 'beam', [56, 48], [14, 24], 'tip', 'beam', 'ally', 'info'],
@@ -797,11 +928,17 @@ window.PN = window.PN || {};
     ],
     inkOrbit: [
       ['chip-a', 2, 'prog', 0, 0.24, 'mark', [16, 12], [4, 6], 'ring', 'radial', 'ally', 'deco'],
-      ['chip-b', 2, 'prog', 0, 0.24, 'mark', [16, 12], [4, 6], 'ring', 'radial', 'ally', 'deco']
+      ['chip-b', 2, 'prog', 0, 0.24, 'mark', [16, 12], [4, 6], 'ring', 'radial', 'ally', 'deco'],
+      // delivery 3b2: an enemy shot turned back by the band (hit r 7), turned along its velocity
+      ['deflect-start', 2, 'prog', 0, 0.06, 'vel', [40, 18], [27, 9], 'air', 'vel', 'ally', 'info'],
+      ['deflect-travel', 2, 'loop', 12, null, 'vel', [40, 18], [27, 9], 'air', 'vel', 'ally', 'info', { still: 0 }],
+      ['deflect-end', 2, 'prog', 0, 0.1, 'vel', [40, 18], [27, 9], 'air', 'vel', 'ally', 'info']
     ],
     wardRing: [
       ['knot-a', 1, 'idx', 0, null, 'variant', [22, 18], [11, 9], 'ring', 'radial', 'ally', 'info'],
-      ['knot-b', 1, 'idx', 0, null, 'variant', [22, 18], [11, 9], 'ring', 'radial', 'ally', 'info']
+      ['knot-b', 1, 'idx', 0, null, 'variant', [22, 18], [11, 9], 'ring', 'radial', 'ally', 'info'],
+      // delivery 3b1: the weaken mark over an enemy's head
+      ['mark-weak', 1, 'idx', 0, null, 'status', [22, 22], [11, 20], 'over', 'none', 'head', 'info']
     ],
     eclipseHalo: [
       ['ribbon-a', 3, 'loop', 12, null, 'mark', [36, 18], [32, 9], 'ring', 'tangent', 'ally', 'info', { still: 0 }],
@@ -1997,14 +2134,26 @@ window.PN = window.PN || {};
   // wing edges, cyan thread on a leg, no eye (6-frame wing beat). peck: a small paper burst where it pecks ----
   const CROW_BODY = smooth([[-5, -0.6], [-2, -2.4], [2.4, -2.4], [4.8, -1.4], [5.2, 0.6], [2.6, 2.2], [-2.2, 2], [-5.2, 0.9]], true);
   const CROW_WING = [[0, 0], [-2.6, -1.4], [-6.4, -2], [-9.4, -1.6], [-7.4, -0.2], [-4, 0.9]];
+  // R1 (review 5, 3b1): the raised and level frames open the wing's tip into four primaries, each the K9 feather (a
+  // pointed ink feather with a paper shaft stroke); the down-beat frame keeps the closed wing. The beak is heavier and
+  // longer (a crow, not a small bird). No eye; frames, box and the one cyan (the leg thread) as before
+  // the open wing: the closed wing's tip split by three notches into four pointed primaries (the fingers show against
+  // the ground when the wing is up); paper shaft strokes on the two longest only (four read as a comb)
+  const CROW_WING_OPEN = [[0, 0], [-2.6, -1.4], [-5.6, -2.1], [-7, -2.2], [-8.7, -2.3], [-7.6, -1.5], [-9.3, -1.2], [-7.8, -0.6], [-9.1, 0.1], [-7.4, 0.3], [-8.1, 1.1], [-6.2, 0.8], [-4, 0.9]];
+  const CROW_SHAFTS = [[[-7.2, -2], [-8.3, -2.2]], [[-7.7, -1.1], [-8.9, -1.2]]];
+  function crowWing(m, open, col, edge) {
+    if (!open) return F(smooth(CROW_WING.map((p) => apM(m, p)), true), col) + (edge ? S(smooth(CROW_WING.slice(0, 4).map((p) => apM(m, p))), 'p50', 0.7) : '');
+    return F(line(CROW_WING_OPEN.map((p) => apM(m, p)), true), col) + (edge ? S(smooth(CROW_WING_OPEN.slice(0, 4).map((p) => apM(m, p))), 'p50', 0.7) +
+      CROW_SHAFTS.map((q) => S(line(q.map((p) => apM(m, p))), 'p50', 0.42)).join('') : '');
+  }
   function crowArt(fr) {
-    const el = [18, 9, -4, -20, -9, 8][fr], sh = [-0.4, -0.8];
-    const wing = (dx, dy, k) => { const m = chainM(transM(sh[0] + dx, sh[1] + dy), rotM(el * k)); return CROW_WING.map((p) => apM(m, p)); };
-    const far = wing(1.2, -0.6, 0.8), near = wing(0, 0, 1);
-    let s = F(smooth(far, true), 'ink700');
-    s += F(line([[-4.4, -0.8], [-9.6, -2.2], [-8.9, -0.2], [-9.8, 1.6], [-4.4, 1.1]], true), 'ink') + F(CROW_BODY, 'ink') + Cir(5.4, -1.7, 2.4, 'ink') + F(line([[7.4, -2.5], [9.6, -1.6], [7.4, -0.9]], true), 'ink');
+    const el = [18, 9, -4, -20, -9, 8][fr], open = fr !== 3;
+    const wm = (dx, dy, k) => chainM(transM(-0.4 + dx, -0.8 + dy), rotM(el * k));
+    let s = crowWing(wm(1.2, -0.6, 0.8), open, 'ink700', false);
+    s += F(line([[-4.4, -0.8], [-9.6, -2.2], [-8.9, -0.2], [-9.8, 1.6], [-4.4, 1.1]], true), 'ink') + F(CROW_BODY, 'ink') + Cir(5.3, -1.7, 2.4, 'ink') +
+      F(line([[6.7, -2.9], [8.6, -2.5], [9.9, -1.5], [8.5, -1], [6.7, -0.5]], true), 'ink');
     s += S('M-0.6,2 L-1.3,4 M1,2.1 L0.6,4.1', 'ink', 0.9) + SW('M-2.1,3.5 L0.3,3.2', [['ink', 1.4], ['ally', 0.75]]) + SW('M-2.1,3.5 C-3.4,3.9 -4.4,4.6 -5.4,4.8', [['ink', 1.2], ['ally', 0.6]]);
-    s += F(smooth(near, true), 'ink') + S(smooth(near.slice(0, 4)), 'p50', 0.7);
+    s += crowWing(wm(0, 0, 1), open, 'ink', true);
     return s;
   }
   ART.crowFeathers.crow = (fr) => crowArt(fr);
@@ -2174,6 +2323,495 @@ window.PN = window.PN || {};
   }
   ART.eclipseHalo['corona-a'] = (fr) => coronaArt(fr, 0);
   ART.eclipseHalo['corona-b'] = (fr) => coronaArt(fr, 1);
+
+  // ==== 3c. awakening gimmicks, P2 (delivery 3b1, work order §4.3): enemy marks and feet overlays ====
+  // Head marks paint 16-18 inside the box - 3 with an outline of 1.2-1.6; each is the gimmick's object and carries the
+  // weapon's cyan on ink (with an allyG or paper heart). None may read as the bell's dome, the tag's square and loop, the
+  // elite's three beads or affix signs, the stun's three dots, a pickup, a face or a letter.
+
+  // -- headsmanDarts mark-fear: one paper cold-sweat drop (ink rim, p300 shade, a cyan glint) set to the back of the
+  //    head; rotate 'face': the renderer mirrors it with the enemy. White with an ink rim and a glint, tilted: never the
+  //    elite's filled drain drop --
+  const dropD = (cx, cy, k) => `M${f(cx)},${f(cy - 7 * k)} C${f(cx + 1.3 * k)},${f(cy - 4.6 * k)} ${f(cx + 3.9 * k)},${f(cy - 1.8 * k)} ${f(cx + 3.9 * k)},${f(cy + 1.5 * k)} A${f(3.9 * k)},${f(3.9 * k)} 0 1 1 ${f(cx - 3.9 * k)},${f(cy + 1.5 * k)} C${f(cx - 3.9 * k)},${f(cy - 1.8 * k)} ${f(cx - 1.3 * k)},${f(cy - 4.6 * k)} ${f(cx)},${f(cy - 7 * k)} Z`;
+  ART.headsmanDarts['mark-fear'] = () => {
+    const body = F(dropD(0, 0, 1), 'p50') + F(dropD(0, 0, 1) + ' ' + dropD(-0.6, -0.7, 0.78), 'p300', { rule: 'evenodd' }) + S(dropD(0, 0, 1), 'ink', 1.4);
+    return TX(body + SW('M-1.8,-2.4 C-2.5,-1 -2.6,0.6 -2.1,2', [['ink', 2], ['ally', 1.1], ['allyG', 0.4]]), chainM(transM(-2.6, -9.6), rotM(-16)));
+  };
+
+  // -- wardRing mark-weak: a short piece of the ward's twisted rope tied in one lumpy knot off centre, one end hanging
+  //    long and the other short (a cord, never a ribbon bow); one cyan stitch through the knot --
+  function ropeBand(pts, w0, w1) { const P = crPts(pts, 6); return { d: brushD(P, (t) => lerp(w0, w1, t)), P }; }
+  ART.wardRing['mark-weak'] = () => {
+    const L = ropeBand([[-5.4, -2.6], [-5.9, -6.4], [-3.8, -9.8], [-1.2, -11]], 2.6, 3.6), R = ropeBand([[1.6, -10.8], [4.2, -10.8], [5.9, -8.8], [6, -6]], 3.6, 2.6);
+    let s = F(L.d, 'p50', { st: 'ink', sw: 1.3 }) + F(R.d, 'p50', { st: 'ink', sw: 1.3 });
+    // the twist: slanted wraps across each band, uneven in spacing (no hatching)
+    [[L.P, [0.24, 0.6]], [R.P, [0.4, 0.82]]].forEach(([P, ts]) => ts.forEach((t) => {
+      const i = Math.round(t * (P.length - 1)), a = P[Math.max(0, i - 1)], b = P[Math.min(P.length - 1, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l, c = P[i];
+      s += S(`M${P2([c[0] - uy * 1.4 - ux * 0.6, c[1] + ux * 1.4 - uy * 0.6])} Q${P2([c[0] + ux * 0.3, c[1] + uy * 0.3])} ${P2([c[0] + uy * 1.4 + ux * 0.7, c[1] - ux * 1.4 + uy * 0.7])}`, 'ink', 0.9);
+    }));
+    // the frayed free ends
+    s += S('M-6.2,-2.8 L-6.6,-1.6 M-5.1,-2.6 L-4.9,-1.4', 'ink', 0.8) + S('M5.2,-6.2 L5,-5 M6.6,-6.2 L6.9,-5.1', 'ink', 0.8);
+    // the knot: a lumpy paper lump, its lower side in p300, the wrap crossing it; one cyan stitch through it
+    const knot = blotE(0.2, -10.9, 3.4, 2.9, 431, 9, 0.24);
+    s += F(knot, 'p50') + F(knot + ' ' + blotE(-0.2, -11.3, 2.3, 1.95, 431, 9, 0.24), 'p300', { rule: 'evenodd' }) + S(knot, 'ink', 1.3) + S('M-2.6,-9.8 C-1,-12.3 1.2,-12.5 2.7,-11', 'ink', 1);
+    return s + SW('M-1.4,-13.3 L1.6,-8.7', [['ink', 2.2], ['ally', 1.2], ['allyG', 0.4]]);
+  };
+
+  // -- inkDarts mark-stain<n>: the ink stain grows with each hit: a blot (1), bigger with a drop (2), a big wet stain with
+  //    two drops at its edge (3); a paper rim 1.2 round every piece; a cyan wet glint on the ink. Lobed: never a round
+  //    disc (3 is not an 18 px black coin), the drops never two like dots side by side --
+  // [r, lobe amplitude, drops [dx, dy, r], x and y radius factors]. Review 7 R2 (3b2): stain 1 more lobed (0.34) and a
+  // little wide (1.15 r × 0.85 r), a spread stain and not a ball even without drops; 2 and 3 as in 3b1
+  const STAINS = { 1: [3.6, 0.34, [], 1.15, 0.85], 2: [4.8, 0.28, [[5.1, 3.4, 1.3]], 1, 0.92], 3: [5.8, 0.34, [[6.1, 3.7, 1.5], [-5.3, 4.8, 1]], 1, 0.92] };
+  function stainArt(n) {
+    const [r, amp, drops, kx, ky] = STAINS[n], cx = -0.4, cy = -9.2;
+    const pieces = [blotE(cx, cy, r * kx, r * ky, 470 + n, 10, amp)].concat(drops.map(([dx, dy, rr], i) => blotE(cx + dx, cy + dy, rr, rr * 1.12, 480 + 3 * n + i, 6, 0.2))).join(' ');
+    return S(pieces, 'ink', 3.6) + S(pieces, 'p50', 2.4) + F(pieces, 'ink') + SW(arc(r * 0.56, -2.55, 1.15, cx, cy), [['ally', 1.1], ['allyG', 0.4]]);
+  }
+  [1, 2, 3].forEach((n) => { ART.inkDarts['mark-stain' + n] = () => stainArt(n); });
+
+  // -- bossbane mark-crack<n>: the boss's crack plate: a torn paper tab (no circle, no holes: never a mask, a dial or a
+  //    bag) with n cracks fanning from its upper left corner, uneven in angle and length, the long ones forking once;
+  //    the newest crack has the cyan heart --
+  const CRACK_PLATE = [[-9.4, -15.2], [-3, -16.4], [3.2, -15.6], [9.2, -16.2], [9.6, -10.2], [9, -4], [2.4, -3.4], [-3.4, -4], [-9.4, -3.6], [-8.8, -9.6]];
+  const CRACK_SHADE = [[9.6, -10.2], [9, -4], [2.4, -3.4], [-3.4, -4], [-9.4, -3.6], [-9.2, -5.2], [-3.2, -5.6], [2.2, -5], [7.6, -5.6], [8.2, -10]];
+  const CRACKS = [[12, 15.6], [30, 10.2], [49, 13.2], [61, 8.4], [82, 9.4]];   // [deg from the corner, length], in the order they come
+  function crackPts(k) {
+    const [deg, L] = CRACKS[k], sg = k % 2 ? -1 : 1, out = [[-8, -14.4]];
+    [[0.42, 7 * 0.8], [0.36, -9], [0.22, 6 * 0.8]].forEach(([sh, dd]) => { const p = out[out.length - 1], a = (deg + dd * sg) * RAD; out.push([p[0] + Math.cos(a) * L * sh, p[1] + Math.sin(a) * L * sh]); });
+    return out;
+  }
+  function crackArt(n) {
+    let s = F(line(CRACK_PLATE, true), 'p50') + F(line(CRACK_SHADE, true), 'p300') + S(line(CRACK_PLATE, true), 'ink', 1.4);
+    for (let k = 0; k < n; k++) {
+      const P = crackPts(k), a = (CRACKS[k][0] + 34) * RAD;
+      const d = line(P) + (CRACKS[k][1] > 12 ? ` M${P2(P[1])} L${P2([P[1][0] + Math.cos(a) * 3.4, P[1][1] + Math.sin(a) * 3.4])}` : '');
+      s += k === n - 1 ? SW(d, [['ink', 2], ['ally', 1], ['allyG', 0.35]], { join: 'miter', miter: 4 }) : S(d, 'ink', 1, { join: 'miter', miter: 4 });
+    }
+    return s;
+  }
+  [1, 2, 3, 4, 5].forEach((n) => { ART.bossbane['mark-crack' + n] = () => crackArt(n); });
+
+  // -- smokeTail lost: two smoke curls circling over the head (two open curls, never the stun's three dots), each
+  //    trailing a small cyan ribbon (the tail's ribbon, K9); the four frames turn them half way round (they look alike).
+  //    Review 7 F1 (3b2): an ink rim on both (the near curl [ink 3.4, p300 1], the far one [ink 2.8, ink300 0.8]: the
+  //    light heart is the pale smoke, size and heart tone tell near from far), the curl k·1.6 (from 1.2), the orbit 4.7
+  //    wide (from 3.6; 1.7 and 5 went past the box - 3 once the open ends face outward).
+  //    The pair rocks 0 → 13° → 25° → 13° round the head while each curl spins, its open end kept on its own outer side
+  //    (a half revolution put them one behind the other at 90°, one blob in a 14 high box; open ends turned inward
+  //    touched) --
+  function curlPts(cx, cy, k, ph) { return samp((u) => { const a = ph + u * 4.4, rr = k * (2.3 - 1.5 * u); return [cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.82]; }, 14); }
+  const LOST_ROCK = [0, 0.22, 0.44, 0.22], LOST_SPIN = [0, 0.45, 0.9, 0.45];
+  ART.smokeTail.lost = (fr) => {
+    let back = '', front = '';
+    [0, 1].forEach((i) => {
+      const th = LOST_ROCK[fr] + i * Math.PI, near = i === 0, k = near ? 1 : 0.84;
+      const P = curlPts(Math.cos(th) * 4.7, -3.4 + Math.sin(th) * 0.4, k * 1.6, i * Math.PI - 0.35 + LOST_SPIN[fr]);
+      const e = P[0], dx = e[0] - P[1][0], dy = e[1] - P[1][1], l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l;
+      const c = SW(smooth(P), near ? [['ink', 3.4], ['p300', 1]] : [['ink', 2.8], ['ink300', 0.8]]) +
+        SW(`M${P2(e)} Q${P2([e[0] + ux * 0.9 - uy * 0.45, e[1] + uy * 0.9 + ux * 0.45])} ${P2([e[0] + ux * 1.6, e[1] + uy * 1.6 + 0.2])}`, [['ink', 2.2], ['ally', 1.2], ['allyG', 0.4]]);
+      if (near) front += c; else back += c;
+    });
+    return back + front;
+  };
+
+  // -- inkBloom spore-a/b: a grain of the flower's cyan pollen in an ink rim; over its 1 s cycle it opens (0), floats
+  //    (1, 2) and fades (3). The renderer lifts and drifts it (marks.spores); deco. No paper ball with a dark heart:
+  //    that read as an eye. Review 7 §5-6 (3b2): about 5 px at 1x (radius 2 inside the box - 3, the rim makes 2.5) and
+  //    light: an allyG body in a thin cyan ring, the glint off the centre, so it rises as a light grain in grey (the
+  //    stun's dots are dark) --
+  function sporeArt(fr, v) {
+    // no tail (a dot with a tail read as the figure 9)
+    const k = [0.72, 1, 1, 0.9][fr], last = fr === 3, cy = -5, rim = last ? 'ink300' : 'ink', rx = 2 * k, ry = (v ? 1.7 : 2.2) * k;
+    let s = E(0, cy, rx, ry, last ? 'allyD' : 'ally', { st: rim, sw: 1 });
+    if (!last) s += E(-0.2 * k, cy - 0.15 * k, rx * 0.62, ry * 0.62, 'allyG') + Cir(-0.85 * k, cy - (v ? 0.6 : 0.85) * k, 0.42 * k, 'p50');
+    return s;
+  }
+  ART.inkBloom['spore-a'] = (fr) => sporeArt(fr, 0);
+  ART.inkBloom['spore-b'] = (fr) => sporeArt(fr, 1);
+
+  // -- frostNeedles frost<n>-<r>: the frost marks before the freeze: short crystal prisms on the ground just in front of
+  //    the feet (front layer: under the body the feet hid them); one cluster at stack 1, two clusters and a thin ice
+  //    sliver at stack 2; no taller than a quarter of the body (the freeze is the 40 % fans on a plate); the tallest
+  //    crystal has the needle's cyan core --
+  // review 7 R4 (3b2): frost 1 of class 12 from 4.6 to 5.6 high (still under a quarter of the body)
+  const FROST = { 12: { H: [5.6, 6.2], w: 1.8, rx: 12 }, 19: { H: [5.8, 8], w: 2.2, rx: 17 }, 28: { H: [7.4, 10.6], w: 2.6, rx: 25 } };
+  // clusters [x share of rx, root y, [[deg, length share], ...]]
+  const FROST_CL = { 1: [[-0.42, 0.6, [[-122, 0.62], [-97, 1], [-74, 0.7]]]], 2: [[-0.5, 0.5, [[-124, 0.6], [-99, 1], [-79, 0.76]]], [0.44, 1.1, [[-106, 0.7], [-83, 0.88]]]] };
+  function frostArt(n, rc) {
+    const q = FROST[rc], H = q.H[n - 1];
+    let s = n === 2 ? F(ellD(0, 0.8, q.rx * 0.72, 1.1), 'p50', { st: 'ink', sw: 1 }) : '', tall = null;
+    FROST_CL[n].forEach(([xs, y, cr], ci) => {
+      const list = cr.map(([deg, ls], j) => [deg, H * ls * (ci ? 0.84 : 1), q.rx * xs + (j - (cr.length - 1) / 2) * q.w * 0.95, y]);
+      s += crystalFan(list, q.w);
+      list.forEach((c) => { if (!tall || c[1] > tall[1]) tall = c; });
+    });
+    const a = tall[0] * RAD;
+    s += SW(`M${P2([tall[2], tall[3] - 0.5])} L${P2([tall[2] + Math.cos(a) * tall[1] * 0.66, tall[3] + Math.sin(a) * tall[1] * 0.66])}`, [['ink', 1.2], ['ally', 0.7]]);
+    // chips of ice on the ground
+    [[q.rx * 0.12, 1.8, 0], [q.rx * 0.78, 0.6, 1]].slice(0, n).forEach(([x, y, i]) => { s += F(chipD(x, y, q.w * 0.55, 600 + rc + i, 0.5 + i), 'p50', { st: 'ink', sw: 0.9 }); });
+    return s;
+  }
+  [1, 2].forEach((n) => [12, 19, 28].forEach((rc) => { ART.frostNeedles['frost' + n + '-' + rc] = () => frostArt(n, rc); }));
+
+  // -- gravePins bound<r>: the cyan thread sews the feet to the ground: a running stitch along the front of the feet (an
+  //    open arc: the hero's foot ring is a small closed cyan ring), its loose end lying on the ground; a small grave pin
+  //    (3a's pin) stuck beside the feet with the thread tied to it --
+  const BOUND = { 12: { rx: 10, cy: -0.4, pin: [-10, 2.6, 4.2, 4.4], px: 10.4 }, 19: { rx: 14.6, cy: -1.4, pin: [-8, 3.4, 5.2, 5.6], px: 15.4 }, 28: { rx: 21.4, cy: -3, pin: [-6, 4.6, 6.6, 7.2], px: 22.6 } };
+  function boundArt(rc) {
+    const q = BOUND[rc], ry = q.rx * 0.36;
+    const P = samp((u) => { const a = lerp(0.18, Math.PI - 0.14, u); return [Math.cos(a) * q.rx, q.cy + Math.sin(a) * ry]; }, 24), e = P[P.length - 1], b = P[0];
+    let s = SWD(smooth(P), [['ink', 2.2], ['ally', 1.2]], [3.4, 2.4], 0.6);
+    s += SW(`M${P2(e)} C${P2([e[0] - 1.4, e[1] - 1])} ${P2([e[0] - 2.8, e[1] - 0.1])} ${P2([e[0] - 3.4, e[1] + 1.2])}`, [['ink', 2], ['ally', 1], ['allyG', 0.35]]);
+    return s + TX(gravePin(q.pin, 1), transM(q.px, 0.4)) + SW(`M${P2(b)} Q${P2([q.px - 1.4, b[1] - 0.6])} ${P2([q.px - 0.6, -1.2])}`, [['ink', 2], ['ally', 1.1]]);
+  }
+  [12, 19, 28].forEach((rc) => { ART.gravePins['bound' + rc] = () => boundArt(rc); });
+
+  // -- thornHalo thorn<r>: three curved rose thorns stuck in the ground round the feet (beside them and in front),
+  //    different in size and hook; ink with the outer half in paper; one has the cyan heart. Never round the head (a
+  //    crown of thorns), never straight cones --
+  const thornPts = (x, y0, b, h, hook) => [[x - b / 2, y0], [x - b * 0.3 + hook * h * 0.18, y0 - h * 0.44], [x - b * 0.06 + hook * h * 0.6, y0 - h * 0.8], [x + hook * h, y0 - h], [x + b * 0.12 + hook * h * 0.5, y0 - h * 0.6], [x + b * 0.32 + hook * h * 0.14, y0 - h * 0.28], [x + b / 2, y0]];
+  const thornD = (x, y0, b, h, hook) => smooth(thornPts(x, y0, b, h, hook), true);
+  // [x, ground y, base, height, hook (tip offset share of the height), cyan]
+  // Review 7 F2 (3b2): dark hooks. The front thorn is the biggest and stands lowest (in front of the feet line); the side
+  // thorns (0.78 and 0.62 of it) stand higher, near the feet line at the sides, so the three lie on a shallow arc round
+  // the feet (not a row); base about 0.75 of the height; each class as big as its box - 3 and feet rect allow (front
+  // 6.4 / 7.6 / 9.6 / 11.6 / 13.6). Hooks as in 3b1 (the side thorns bend in, the front one to the right). The cyan heart
+  // is on the front thorn (the biggest: it shows at 1x)
+  const THORNS = {
+    12: [[-8.6, 1, 3.75, 5, 0.55, 0], [8.8, 0.2, 2.98, 3.97, -0.6, 0], [-1.2, 2.8, 4.8, 6.4, 0.5, 1]],
+    19: [[-13, 0.9, 4.45, 5.93, 0.55, 0], [13.2, 0.1, 3.53, 4.71, -0.6, 0], [-1.8, 2.7, 5.7, 7.6, 0.48, 1]],
+    28: [[-19.5, 1.2, 5.62, 7.49, 0.55, 0], [19.5, 0.3, 4.46, 5.95, -0.6, 0], [-2.6, 3.4, 7.2, 9.6, 0.5, 1]],
+    38: [[-26.5, 1.6, 6.79, 9.05, 0.55, 0], [26.5, 0.4, 5.39, 7.19, -0.6, 0], [-3.4, 4.1, 8.7, 11.6, 0.5, 1]],
+    54: [[-37, 2, 7.96, 10.6, 0.55, 0], [37, 0.6, 6.32, 8.43, -0.6, 0], [-4.6, 4.8, 10.2, 13.6, 0.5, 1]]
+  };
+  function thornArt(rc) {
+    return THORNS[rc].map(([x, y0, b, h, hook, cy]) => {
+      // an ink thorn; paper only as a thin lit band (0.25 × the base wide at the root, to nothing at the tip) inside its
+      // convex edge; an ink outline 1.2 (marks' 1.2-1.6); the cyan heart runs up the ink between the middle and the
+      // concave side of one thorn
+      const p = thornPts(x, y0, b, h, hook), d = thornD(x, y0, b, h, hook), C = crClosed(p, 6), N = outNormals(C), mid = (a, c) => [(p[a][0] + p[c][0]) / 2, (p[a][1] + p[c][1]) / 2];
+      const idx = [];
+      if (hook > 0) for (let i = 0; i <= 18; i++) idx.push(i); else for (let i = 36; i >= 18; i--) idx.push(i);
+      const edge = idx.map((i) => C[i]), band = idx.map((i, j) => { const w = 0.25 * b * Math.pow(1 - j / (idx.length - 1), 0.9); return [C[i][0] - N[i][0] * w, C[i][1] - N[i][1] * w]; });
+      const inner = hook > 0 ? [p[6], p[5], p[4]] : [p[0], p[1], p[2]], M = [mid(0, 6), mid(1, 5), mid(2, 4)];
+      let s = E(x, y0 + 0.2, b * 0.55, b * 0.18, 'ink700', { a: 0.6 }) + F(d, 'ink') + F(line(edge.concat(band.reverse()), true), 'p50') + S(d, 'ink', 1.2);
+      if (cy) s += SW(smooth(M.map((q, i) => [(q[0] + inner[i][0]) / 2, (q[1] + inner[i][1]) / 2 - (i ? 0 : 0.3)])), [['ally', 1], ['allyG', 0.35]]);
+      return s;
+    }).join('');
+  }
+  [12, 19, 28, 38, 54].forEach((rc) => { ART.thornHalo['thorn' + rc] = () => thornArt(rc); });
+
+  // ==== 3d. awakening gimmicks, P2 follow-up effects (delivery 3b2, work order §4.4): stamps ====
+  // Event pieces are short (0.15-0.3 s); each is the weapon's object or its K9 cyan element at the moment of the event.
+  /** The pieces of an ink burst (a blot, arms [deg, reach × r, width × r, drop 0/1], drops) as inkBurstAt shapes them, as
+   *  path data one piece each (their windings differ, so each is filled on its own). */
+  function burstPieces(cx, cy, r, seed, arms, flat) {
+    const fy = flat || 1, out = [blotE(cx, cy, r, r * fy, seed, 10, 0.35)];
+    arms.forEach(([deg, reach, wk, drop], i) => {
+      const a = deg * RAD, L = r * reach, w = r * wk, c = Math.cos(a), sn = Math.sin(a), bend = (jit(seed, i + 380) - 0.5) * 0.5;
+      const p0 = [cx + c * r * 0.55, cy + sn * r * 0.55 * fy], p1 = [cx + c * L, cy + sn * L * fy];
+      const pm = [lerp(p0[0], p1[0], 0.55) - sn * L * bend * 0.3, lerp(p0[1], p1[1], 0.55) + c * L * bend * 0.3 * fy];
+      out.push(brushD([p0, pm, p1], (t) => w * Math.pow(1 - t, 0.8) + 0.3));
+      if (drop) out.push(circD(p1[0] + c * w * 1.1, p1[1] + sn * w * 1.1 * fy, Math.max(0.6, w * 0.42)));
+    });
+    return out;
+  }
+  /** The stain's grammar (mark-stain): ink pieces in a paper rim 1.2 with an ink line outside it. */
+  const stainRim = (pieces) => { const d = pieces.join(' '); return S(d, 'ink', 3.6) + S(d, 'p50', 2.4) + pieces.map((q) => F(q, 'ink')).join(''); };
+
+  // -- inkDarts stainBurst: the third stain bursts off the enemy: the wet stain torn open into arms and drops, every piece
+  //    in the mark's paper rim, the mark's cyan wet glint (0); the stain flies apart in rimmed pieces (1); spent ink700
+  //    drops lying on the ground (2). Paper-rimmed ink: not the pot's white shards, not a round splat --
+  ART.inkDarts.stainBurst = (fr) => {
+    if (fr === 0) {
+      // the rim on the stain itself; the arms and drops thrown off it are bare ink (rimmed sticks and drops read as a
+      // molecule model)
+      const p = burstPieces(0, -8.4, 6.8, 711, [[-170, 2.5, 0.42, 1], [-128, 1.9, 0.38, 0], [-88, 2.15, 0.4, 1], [-46, 2.2, 0.36, 0], [-8, 2.7, 0.44, 1], [36, 2, 0.4, 1], [86, 1.6, 0.42, 0], [134, 2.2, 0.38, 1]], 0.9);
+      return stainRim([p[0]]) + p.slice(1).map((q) => F(q, 'ink')).join('') + Cir(-24, -15.4, 1.3, 'ink') + Cir(23.4, -18.4, 1.1, 'ink') + Cir(25.2, 3.2, 1, 'ink') +
+        SW(arc(3.6, -2.6, 1.3, -1.2, -9.4), [['ally', 1.4], ['allyG', 0.5]]);
+    }
+    if (fr === 1) {
+      // the stain flies apart in rimmed pieces; short spent streaks from the middle (never reaching them), bare drops
+      const pieces = [blotE(-13.6, -13.8, 4.4, 3.5, 712, 9, 0.34), blotE(12.4, -16, 3.7, 3.1, 713, 8, 0.32), blotE(16.2, -2.6, 3.2, 2.7, 714, 8, 0.3), blotE(-12, 0.4, 3, 2.5, 715, 8, 0.3)];
+      let s = taper([[-1.6, -9], [-6.4, -11.4]], 2, 0.3, 'ink700') + taper([[1.6, -9.6], [6.6, -12.6]], 1.8, 0.3, 'ink700') + taper([[2, -7.2], [8, -5.2]], 1.6, 0.3, 'ink700') + F(blotE(0, -8, 3.2, 2.8, 716, 8, 0.36), 'ink700');
+      s += Cir(-24, -21, 1.2, 'ink') + Cir(22.6, -23.4, 1, 'ink') + Cir(26, 4.6, 1.1, 'ink') + Cir(-25.2, 5.4, 0.9, 'ink') + Cir(2.4, -24, 0.8, 'ink');
+      return s + stainRim(pieces) + SW(arc(2.4, -2.5, 1.2, -14.2, -14.4), [['ally', 1.2], ['allyG', 0.4]]);
+    }
+    const lie = [blotE(-15, 2.6, 3.8, 1.6, 717, 8, 0.3), blotE(14.4, 4.2, 3.2, 1.4, 718, 8, 0.3), blotE(-3, 6.2, 2.6, 1.1, 719, 7, 0.3), circD(-24, 7.4, 0.9), circD(23.4, 9.6, 0.8), circD(6.6, 11.4, 0.7)];
+    return S(lie.join(' '), 'p300', 1.4) + lie.map((q) => F(q, 'ink700')).join('') + Cir(-8, -6, 0.8, 'ink300') + Cir(9, -9, 0.7, 'ink300');
+  };
+
+  // -- brushQuills dab: where a quill first hit, the pen's ink lies flat on the ground until it bursts: a lobed wet pool
+  //    (no tail, no dot near an end: a tail and a dot read as a fish's eye) with the quill pen's cyan stroke, a tick of
+  //    the nib across its sheen; it swells, satellite drops trembling (1); its skin bulges, beads rising off it, the
+  //    tick brightest (2). A dark flat pool: not a pickup disc, not a cyan ring on the ground --
+  /** The pen's cyan tick: a short tapered stroke (ink under, cyan, an allyG hair). */
+  function penTick(pts, w) {
+    const P = crPts(pts, 6);
+    return F(brushD(P, (t) => lerp(w + 1, 0.6, t)), 'ink') + F(brushD(P, (t) => lerp(w, 0.2, t)), 'ally') + S(line(cutAlong(P, 0.08, 0.45)), 'allyG', 0.45);
+  }
+  ART.brushQuills.dab = (fr) => {
+    const k = [1, 1.08, 1.16][fr];
+    let s = F(blotE(0, 0.6, 8.2 * k, 3.8 * k, 721, 9, 0.28), 'ink') + F(blotE(-7.6 * k, 2.6, 1.3, 0.8, 722, 6, 0.3), 'ink') + F(blotE(7.2 * k, 2.8, 1, 0.7, 723, 6, 0.3), 'ink');
+    s += S(ellArc(4.8 * k, 1.8 * k, -0.6, -0.2, Math.PI + 0.35, 1.3), 'p300', 0.8, { a: 0.85 });
+    if (fr) s += Cir(-8.2 * k, -1.6, 0.6, 'ink') + Cir(8 * k, -1.2, 0.55, 'ink');
+    if (fr === 2) s += S(ellArc(3.4, 1.2, 1.2, 0.2, Math.PI + 0.5, 1.2), 'ink500', 0.8) + Cir(-2.8, -4.6, 0.7, 'ink') + Cir(1.6, -5.2, 0.55, 'ink');
+    return s + penTick([[-1.4 * k, -0.2], [1.4 * k, -1.4], [4.4 * k, -0.9]], [1.3, 1.5, 1.7][fr]);
+  };
+
+  // -- brushQuills dabBurst: the dab erupts: pen flicks of ink thrown up and out of the flat dab (thick at the root, a
+  //    hooked thin end, uneven in angle and length), two torn shreds of the quill's paper vane, the pen's cyan point flung
+  //    up (0); fewer, thinner flicks breaking into drops, the shreds floating (1); the flat dab in ink700 and drops (2) --
+  /** A pen flick from p0 to p1 bowing by bow (share of its length), root width w, its last fifth hooking by hook. */
+  function flick(p0, p1, w, bow, hook, col) {
+    const dx = p1[0] - p0[0], dy = p1[1] - p0[1], L = Math.hypot(dx, dy) || 1, n = [-dy / L, dx / L];
+    const pts = samp((t) => { const h = t > 0.8 ? (t - 0.8) / 0.2 : 0, b = bow * L * Math.sin(Math.PI * t) + hook * h * h; return [p0[0] + dx * t + n[0] * b, p0[1] + dy * t + n[1] * b]; }, 12);
+    return F(brushD(pts, (t) => lerp(w, 0.3, Math.pow(t, 0.8))), col || 'ink');
+  }
+  /** A torn shred of the quill's paper vane: an uneven leaf, ink rim, two barb lines (turned deg, scaled k). */
+  function vaneShred(cx, cy, deg, k, col) {
+    const m = chainM(transM(cx, cy), rotM(deg), scaleM(k)), A = (q) => q.map((p) => apM(m, p));
+    return F(line(A([[-3.6, 0.4], [-2.4, -1.6], [0.4, -2.2], [3.2, -1.4], [4.2, 0.2], [2.4, 0.6], [1.6, 1.4], [-0.6, 0.8], [-2, 1.6]]), true), col, { st: 'ink', sw: 0.9 }) +
+      S(line(A([[-1.6, -0.6], [0.8, -1.4]])), 'ink300', 0.7) + S(line(A([[0, 0.2], [2.4, -0.6]])), 'ink300', 0.7);
+  }
+  ART.brushQuills.dabBurst = (fr) => {
+    let s = F(blotE(0, 0.4, 9.4, 3.6, 731, 10, 0.26), fr === 2 ? 'ink700' : 'ink');
+    if (fr === 0) {
+      // nearly straight flicks (bowed ones read as a tuft of grass), drops off their ends, the pen's cyan tick flung up
+      [[[-3, -1], [-19.6, -7.6], 3, 0.04, 0.6], [[-1.6, -1.4], [-12.4, -17.6], 2.6, -0.03, -0.6], [[0, -1.6], [-2.4, -19.4], 3.2, 0.03, 0.6], [[1.4, -1.4], [9.6, -18.2], 2.4, -0.04, -0.5], [[3, -1], [17.8, -11.4], 2.8, 0.03, 0.6], [[3.6, -0.4], [20.6, -2.6], 2, -0.03, -0.4]]
+        .forEach(([a, b, w, bow, hook]) => { s += flick(a, b, w, bow, hook); });
+      s += Cir(-21.6, -9, 0.9, 'ink') + Cir(11, -19.6, 0.8, 'ink') + Cir(21.6, -4.4, 0.7, 'ink');
+      s += vaneShred(-15.2, -14.6, -30, 1, 'p50') + vaneShred(13.4, -16.6, 24, 0.85, 'p50');
+      s += penTick([[2.4, -10.4], [4.6, -13.4], [7.6, -14.6]], 1.4);
+    } else if (fr === 1) {
+      [[[-4, -2], [-21, -10.4], 1.8, 0.05, 0.6], [[-2, -3], [-13.8, -18.8], 1.6, -0.04, -0.6], [[2, -3], [11.6, -18.6], 1.6, -0.04, -0.6], [[4, -1.6], [20.4, -6.4], 1.5, 0.04, 0.5]]
+        .forEach(([a, b, w, bow, hook]) => { s += flick(a, b, w, bow, hook, 'ink700'); });
+      s += Cir(-20, -13.6, 1.1, 'ink') + Cir(-3.8, -19.4, 1, 'ink') + Cir(15.2, -15.4, 0.9, 'ink') + Cir(21.6, -9.6, 0.8, 'ink');
+      s += vaneShred(-17.2, -16.4, -44, 0.9, 'p50') + vaneShred(16.2, -16.8, 38, 0.8, 'p300');
+      s += penTick([[5.4, -14.6], [7.8, -16.8], [10.6, -17.4]], 1.2);
+    } else {
+      s += Cir(-16, 3.2, 1.2, 'ink700') + Cir(13.4, 4.6, 1, 'ink700') + Cir(-6, 7, 0.8, 'ink300') + Cir(19.6, 1.6, 0.8, 'ink300') + vaneShred(-18.6, 0.6, -70, 0.7, 'p300');
+    }
+    return s;
+  };
+
+  // -- sealArrows topple: domino: the arrow's seal head (K9: a squat paper block, its inked face below with the cyan face
+  //    rim) tipping over where the pushed enemy struck the next one, a torn paper burst at the blow and two fall strokes
+  //    (0); almost down, dust (1). No letters on the face; no knob (with one it read as a bottle) --
+  function sealBlock(m, last) {
+    const ln = last ? 'ink300' : 'ink';
+    let b = F('M-4.6,-9 L4.6,-9 L4.6,0 L-4.6,0 Z', last ? 'p300' : 'p50', { st: ln, sw: 1.4 }) + F('M1.6,-9 L4.6,-9 L4.6,-2.6 L1.6,-2.6 Z', 'p300', { a: last ? 0.6 : 1 });
+    b += F('M-4.6,-2.6 L4.6,-2.6 L4.6,0 L-4.6,0 Z', ln) + SW('M-5,-1.3 L5,-1.3', last ? [['ink300', 1.6], ['allyD', 0.8]] : [['ink', 2], ['ally', 1.1]]);
+    return TX(b, m);
+  }
+  ART.sealArrows.topple = (fr) => {
+    if (fr === 0) {
+      return S('M-6.4,-3.2 C-5.6,-6.2 -3.2,-8.4 0.2,-8.8', 'ink300', 1.1) + S('M-8.6,0.4 C-8.6,-2.2 -7.6,-4.2 -6,-5.4', 'ink300', 0.9) +
+        TX(F(tornD(0, 0, [[-160, 5.2], [-112, 3.6], [-64, 5.6], [-18, 4], [30, 5.4], [80, 3.4], [128, 4.8]], 0.45, 741), 'p50', { st: 'ink', sw: 1 }), transM(7.6, -2.4)) +
+        sealBlock(chainM(transM(-1, 6), rotM(28, 4.6, 0)), false);
+    }
+    return F(chipD(-8.6, 8.4, 1.3, 742, 0.4), 'ink300') + F(chipD(-3.4, 9.6, 1, 743, 1.1), 'ink300') + F(chipD(10.6, 8.6, 1.1, 744, 0.7), 'ink300') +
+      TX(F(tornD(0, 0, [[-150, 3.6], [-90, 2.6], [-30, 3.8], [40, 2.8], [110, 3.4]], 0.45, 745), 'p300', { st: 'ink300', sw: 0.8 }), transM(8.6, 3.2)) +
+      sealBlock(chainM(transM(-4, 6), rotM(62, 4.6, 0)), true);
+  };
+
+  // -- thunderNeedles leapHit: where the leaping bolt strikes: three short kinked bolt prongs of uneven length and angle
+  //    (ink, the needle's cyan bolt core, allyG) and a small paper flash at the point (0); shorter and spent (1). Not the
+  //    spark thread's paper star --
+  const PRONGS = [[-132, 8.2, 1], [-28, 7.4, -1], [58, 6.2, 1], [154, 3.6, -1]];
+  function prongPts(deg, len, side, k) {
+    const a = deg * RAD, u = [Math.cos(a), Math.sin(a)], n = [-u[1], u[0]], L = len * k;
+    return [[u[0] * 1.2, u[1] * 1.2], [u[0] * L * 0.48 + n[0] * side * 1.5, u[1] * L * 0.48 + n[1] * side * 1.5], [u[0] * L, u[1] * L]];
+  }
+  ART.thunderNeedles.leapHit = (fr) => {
+    const P = PRONGS.map(([d, l, sd]) => prongPts(d, l, sd, fr ? 0.62 : 1));
+    let s = P.map((p) => F(brushD(p, (t) => lerp(fr ? 1.8 : 2.8, 0.5, t)), fr ? 'ink300' : 'ink')).join('');
+    s += P.slice(0, 3).map((p) => F(brushD(p, (t) => lerp(fr ? 0.9 : 1.4, 0.2, t)), fr ? 'allyD' : 'ally')).join('');
+    if (!fr) s += S(line(cutAlong(P[0], 0, 0.55)), 'allyG', 0.5);
+    return s + F(starD(0, 0, fr ? 2.4 : 3.4, 5, 746 + fr, 0.2, 0.46), fr ? 'p300' : 'p50', { st: 'ink', sw: 0.8 });
+  };
+
+  // -- inkPulse bump: a pushed enemy strikes a wall: the pulse's black band breaks on it: a squashed ink smack with short
+  //    heavy arms, a torn paper flash behind it and a piece of the band's cyan leading arc over it (0); ink700, the flash
+  //    in p300 (1). Round (rotate none): the wall's side is not known to the stamp --
+  ART.inkPulse.bump = (fr) => {
+    if (fr === 0) {
+      let s = TX(F(tornD(0, 0, [[-176, 11.6], [-140, 8], [-104, 10.4], [-70, 7.4], [-30, 11.8], [6, 9], [44, 12.2], [86, 7.6], [122, 10.6], [158, 8.4]], 0.45, 751), 'p50', { st: 'ink', sw: 1.1 }), scaleM(1, 0.8));
+      s += inkBurstAt(0, 0.6, 5.2, 752, [[-160, 1.7, 0.6, 1], [-96, 1.6, 0.56, 0], [-30, 1.8, 0.62, 1], [24, 1.7, 0.6, 0], [92, 1.5, 0.56, 1], [148, 1.9, 0.6, 0]], { flat: 0.62 });
+      // a broken piece of the black band with its cyan leading edge, low on the left (over the top it read as a brow)
+      return s + SW(arc(8, 2.15, 1.25), [['ink', 5]]) + SW(arc(9.6, 2.2, 1.1), [['ink', 2.6], ['ally', 1.4], ['allyG', 0.45]]);
+    }
+    let s = TX(F(tornD(0, 0, [[-170, 7.4], [-120, 5.4], [-66, 7], [-14, 5.6], [40, 7.8], [100, 5.2], [150, 6.6]], 0.45, 753), 'p300', { st: 'ink300', sw: 0.9 }), scaleM(1, 0.8));
+    s += F(blotE(0, 0.8, 4.4, 2.6, 754, 9, 0.3), 'ink700') + Cir(-10.6, -4, 1.1, 'ink700') + Cir(10.8, 3.6, 1, 'ink700') + Cir(-6, 7.2, 0.8, 'ink300') + Cir(8.2, -7.4, 0.7, 'ink300');
+    return s + SW(arc(8.8, 2.3, 0.9), [['ink300', 2.4], ['allyD', 1.2]]);
+  };
+
+  // -- inkBloom pollenPuff: every half second a puff of the flower's cyan pollen leaves the enemy: grains of different size
+  //    (the spores' light grain: ink rim, cyan ring, allyG body, an off-centre glint) in a loose cluster with two pale puff
+  //    curls (0); spreading up and out (1); small, allyD, fading (2) --
+  const PUFF_GRAINS = [[-2.4, -1.8, 1.9], [2.6, -3, 1.5], [0.4, 1.2, 1.3], [5.2, 0.2, 1.1], [-5.4, 0.8, 1.2], [-1.2, -4.2, 1]];
+  function grain(x, y, r, last) {
+    if (last) return Cir(x, y, r, 'allyD', { st: 'ink300', sw: 0.7 });
+    return Cir(x, y, r, 'ally', { st: 'ink', sw: 0.7 }) + Cir(x - r * 0.1, y - r * 0.08, r * 0.6, 'allyG') + Cir(x - r * 0.42, y - r * 0.42, Math.max(0.3, r * 0.22), 'p50');
+  }
+  ART.inkBloom.pollenPuff = (fr) => {
+    const sp = [1, 1.6, 2.1][fr], up = [0, 1.6, 3][fr], k = [1, 0.95, 0.7][fr];
+    let s = '';
+    if (fr < 2) {
+      s += S(`M${f(-7 * sp)},${f(-2 - up)} C${f(-8.4 * sp)},${f(-6 - up)} ${f(-4.6 * sp)},${f(-9 - up)} ${f(-1.6 * sp)},${f(-7.6 - up)}`, 'ink300', 0.9, { a: fr ? 0.6 : 0.9 });
+      s += S(`M${f(6.6 * sp)},${f(-1.6 - up)} C${f(8.2 * sp)},${f(-4.8 - up)} ${f(6.2 * sp)},${f(-7.6 - up)} ${f(3.6 * sp)},${f(-7.4 - up)}`, 'ink300', 0.8, { a: fr ? 0.5 : 0.8 });
+    }
+    PUFF_GRAINS.forEach(([x, y, r]) => { s += grain(x * sp, -4 + y * sp * 0.8 - up, r * k, fr === 2); });
+    return s;
+  };
+
+  // -- tailGuard rearHit: a hit from behind takes double: the guard's dagger (K9: a paper blade with a round paper guard,
+  //    no centre dot) stabs in through a paper slash, a short cyan ribbon (the rear weapons' scarf colour) flicking off
+  //    its grip (0); a second cut beside the first, not crossing it (two cuts, not an ✕) (1); both cuts fade, drops (2) --
+  function slashD(x0, y0, x1, y1, bow, w) {
+    const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy) || 1, n = [-dy / L, dx / L];
+    return brushD(samp((t) => { const b = bow * L * Math.sin(Math.PI * t); return [x0 + dx * t + n[0] * b, y0 + dy * t + n[1] * b]; }, 14), (t) => w * Math.pow(Math.sin(Math.PI * t), 0.7) + 0.2);
+  }
+  function guardDagger(m) {
+    const b = F('M2.4,-1.5 L12.6,-0.6 L15,0 L12.6,0.6 L2.4,1.5 Z', 'p50', { st: 'ink', sw: 1.2 }) + F('M2.4,0.25 L12.6,0.3 L15,0 L12.6,0.6 L2.4,1.5 Z', 'p300') +
+      F('M-5,-1.1 L-0.8,-1.1 L-0.8,1.1 L-5,1.1 Z', 'ink') + Cir(0.8, 0, 2.5, 'p50', { st: 'ink', sw: 1.2 });
+    return TX(b, m);
+  }
+  ART.tailGuard.rearHit = (fr) => {
+    const cutA = slashD(-14, -10.4, 6.6, 6.8, 0.12, 3.4), cutB = slashD(-6.4, -12.6, 11.4, 1.6, 0.12, 2.6);
+    if (fr === 2) return F(cutA, 'p300', { st: 'ink300', sw: 0.8 }) + F(cutB, 'p300', { st: 'ink300', sw: 0.7 }) + Cir(-14.6, 2.4, 0.9, 'ink700') + Cir(9.6, 8.4, 0.8, 'ink700') + Cir(13.4, -5, 0.7, 'ink300');
+    const back = fr ? [2, -1.4] : [0, 0], m = chainM(transM(7.4 + back[0], -7.6 + back[1]), rotM(150)), g = apM(m, [-5, 0]), rv = fr ? [2.4, -2.8] : [4, -2.6];
+    let s = F(cutA, 'p50', { st: 'ink', sw: 1.1 });
+    if (fr) s += F(cutB, 'p50', { st: 'ink', sw: 1 }) + Cir(-15.4, -12.2, 1.1, 'ink') + Cir(8.6, 9, 1, 'ink') + Cir(13.6, 3.2, 0.8, 'ink');
+    else s += inkBurstAt(-3.6, -1.8, 2.6, 755, [[-150, 2.2, 0.5, 1], [-60, 1.9, 0.46, 0], [40, 2.1, 0.5, 1], [120, 1.8, 0.46, 0]], {});
+    s += guardDagger(m);
+    const rib = samp((t) => [g[0] + rv[0] * t + 0.5 * Math.sin(t * 5 + fr), g[1] + rv[1] * t - 0.5 * Math.sin(t * 4 + fr * 1.7)], 8);
+    return s + F(brushD(rib, (t) => lerp(2.2, 0.8, t)), 'ally', { st: 'ink', sw: 0.8 }) + S(line(cutAlong(rib, 0.1, 0.5)), 'allyG', 0.45);
+  };
+
+  // -- inkLance fork: where the lance's tip splits into its two branch lances (+x = the lance's way): a small ink burst
+  //    thrown forward, a torn paper flash behind it, the tassel's cyan knot band wrapped across it (0); ink700, p300 (1).
+  //    The branches are the SPEC lances (no V is drawn here) --
+  ART.inkLance.fork = (fr) => {
+    if (fr === 0) {
+      let s = TX(F(tornD(0, 0, [[-170, 8.4], [-128, 6.6], [-86, 8], [-40, 5.8], [6, 7], [52, 5.6], [96, 8.2], [140, 6.4]], 0.45, 761), 'p50', { st: 'ink', sw: 1 }), chainM(transM(-2.2, 0), scaleM(1, 0.85)));
+      s += inkBurstAt(0.6, 0, 3.8, 762, [[-48, 2.1, 0.55, 1], [-8, 2.2, 0.5, 0], [34, 2, 0.52, 1], [146, 1.4, 0.5, 0]], {});
+      return s + SW('M-1.4,-3.8 C0,-1.4 0,1.4 -1.2,3.8', [['ink', 3], ['ally', 1.6], ['allyG', 0.5]]);
+    }
+    return TX(F(tornD(0, 0, [[-160, 5.6], [-100, 4.4], [-40, 5.2], [20, 4], [90, 5.4], [150, 4.2]], 0.45, 763), 'p300', { st: 'ink300', sw: 0.8 }), transM(-2.6, 0)) +
+      F(blotE(1.4, 0, 2.6, 2.2, 764, 8, 0.3), 'ink700') + Cir(7.6, -4.2, 0.8, 'ink700') + Cir(8.8, 3.4, 0.7, 'ink700') + SW('M-1,-3 C0.2,-1 0.2,1 -0.8,3', [['ink300', 2.2], ['allyD', 1.1]]);
+  };
+
+  // -- inkOrbit deflect-start / -travel / -end: an enemy shot turned back by the band becomes a paper shard comet (+x =
+  //    its way): an angular paper shard head (ink rim, a p300 face and a crease), the orbit's cyan swirl at its back
+  //    flowing into the paper comet tail, the tail breaking into shards. Hit r 7: the front at +8.6, the sides within
+  //    ±5.2, the tail to -22 (K9 §4.2). Light with an ink rim: never the enemy shot's ink ball with a paper dot, no coral;
+  //    the swirl is an open curl off the head's middle (a centred spiral in a white oval read as an eye) --
+  const DF_HEAD = [[8.6, 0.8], [4.6, -3.4], [0.6, -5], [-3.8, -4], [-5.6, -1.2], [-4.8, 2.2], [-1.6, 4.6], [1, 3.2], [2.8, 4], [5.6, 3]];
+  const DF_TAIL = [[-4.4, -4], [-9.8, -3.2], [-15.2, -2.2], [-20.6, -1], [-22.2, 0.2], [-19.6, 1.3], [-14, 2.4], [-8.6, 3.4], [-4, 3.8]];
+  // the swirl: a swoosh entering the head from its upper middle, bending down and back along the tail's middle (a loop
+  // in it read as a 'G'); ph shifts its bend (the travel frames)
+  const dfSwirl = (ph) => smooth([[4 - ph, -1.8], [1, -2.6 + ph * 0.5], [-2, -1.4], [-5.6, 0.2 - ph * 0.3], [-10, 0.5], [-14, 0.6]]);
+  function dfHead(m, ph, last) {
+    const P = DF_HEAD.map((p) => apM(m, p)), d = line(P, true);
+    let s = S(d, last ? 'ink300' : 'ink', 3) + F(d, last ? 'p300' : 'p50') + F(shadeBand(P, 1.8), 'p300') + S(line([apM(m, [6.4, -1.6]), apM(m, [2, 0.6])]), 'ink300', 0.8);
+    if (!last) s += SW(txPath(dfSwirl(ph), m), [['ink', 2], ['ally', 1.1], ['allyG', 0.35]]);
+    return s;
+  }
+  function dfTail(fr, len) {
+    const k = len / 22, J = (i) => (jit(771 + fr, i) - 0.5) * 0.8, T = DF_TAIL.map(([x, y], i) => [-4.4 + (x + 4.4) * k + (i > 1 && i < 8 ? J(i) : 0), y + (i > 1 && i < 8 ? J(i + 10) * 0.5 : 0)]);
+    const d = line(T, true);
+    return S(d, 'ink', 2) + F(d, 'p300') + S(line([[-6.4, -0.6], [-6.4 - 12 * k, -0.2 + J(30) * 0.4]]), 'ink300', 0.8);
+  }
+  const dfChips = (fr) => [[-15.6 - fr, -4.6 + fr * 0.6, 1.3], [-20.6 + fr * 0.4, 3.4 - fr * 0.4, 1.1], [-23 + fr * 0.8, -2.2 - fr * 0.2, 0.9]].map(([x, y, r], i) => F(chipD(x, y, r, 781 + i + 3 * fr, 0.4 + i), 'p50', { st: 'ink', sw: 0.7 })).join('');
+  ART.inkOrbit['deflect-start'] = (fr) => (fr === 0
+    ? TX(F(tornD(0, 0, [[-176, 10.6], [-136, 7.4], [-96, 9.6], [-52, 6.8], [-14, 8.4], [30, 7], [76, 9.2], [122, 7.2], [158, 9.8]], 0.42, 785), 'p50', { st: 'ink', sw: 1 }), chainM(transM(-3, 0), scaleM(1, 0.56))) + dfHead(transM(0, 0), 0, false)
+    : TX(F(tornD(0, 0, [[-170, 6.8], [-110, 5], [-50, 6.2], [10, 4.6], [70, 6], [130, 4.8]], 0.42, 786), 'p300', { st: 'ink300', sw: 0.8 }), chainM(transM(-8, 0), scaleM(1, 0.6))) + dfTail(0, 9) + dfHead(transM(0, 0), 0.4, false));
+  ART.inkOrbit['deflect-travel'] = (fr) => dfTail(fr, 22) + dfChips(fr) + dfHead(transM(0, 0), fr ? 0.6 : 0, false);
+  ART.inkOrbit['deflect-end'] = (fr) => {
+    if (fr === 1) return [[-2, -3, 2, 0.2], [3.4, 2.6, 1.6, 1.4], [-8, 1.8, 1.4, 2.1], [6.6, -3.2, 1.2, 0.9]].map(([x, y, r, a], i) => F(chipD(x, y, r, 791 + i, a), 'p300', { st: 'ink300', sw: 0.7 })).join('') + Cir(8.4, 1.2, 0.8, 'ink700') + Cir(-12, -1.6, 0.7, 'ink300');
+    // the head breaks in three, an ink splash at its front, a piece of the swirl
+    let s = inkBurstAt(5.6, 0.2, 2.2, 792, [[-40, 1.6, 0.5, 1], [20, 1.3, 0.46, 0], [70, 1.4, 0.5, 0]], { flat: 0.8 });
+    [[[1.6, -5.2], [6, -3.4], [8.6, 0.3], [3.2, -0.6]], [[3.2, -0.6], [8.6, 0.3], [4, 4.2], [-1.2, 5], [0.4, 0.8]], [[-3, -4.6], [1.6, -5.2], [3.2, -0.6], [0.4, 0.8], [-1.2, 5], [-4.8, 2.6], [-5.4, -1.6]]].forEach((P, i) => {
+      const o = [[0.6, -0.7], [1, 0.8], [-1.4, 0]][i], Q = P.map(([x, y]) => [x + o[0], y + o[1]]);
+      s += S(line(Q, true), 'ink', 2.6) + F(line(Q, true), i === 2 ? 'p50' : 'p300');
+    });
+    return s + SW(arc(2.2, -1.2, 2.2, -1.6, 0.2), [['ink', 2], ['ally', 1.1]]);
+  };
+
+  // -- meteorBrush haste: inside the star mark the hero's cooldowns run fast: two cyan speed strokes winding up from
+  //    behind the feet (ink edge, cyan, an allyG run that climbs over the four frames) and two paper star motes rising (the
+  //    mark's motes); painted y -33..-11 and behind the hero (+x = the way the hero faces; the renderer mirrors it with the
+  //    hero): clear of the face zone and the foot ring --
+  // two rising streaks of different length and bend, both sweeping up and back (curled back on themselves they read as
+  // nested 'C's / crescent moons), not crossing
+  // thin ribbons (a fat middle tapering both ways read as leaves): the width rises over the first 18 % and falls over the
+  // last 30 %
+  const HASTE = [{ P: [[-4.6, -12.6], [-10, -13.6], [-14.4, -16.4], [-17.2, -20.6], [-18.4, -25.4], [-20.6, -30.6]], w: [1.9, 1] }, { P: [[-12.6, -13.2], [-16.4, -14.8], [-19.6, -17.8], [-21.2, -21.6]], w: [1.5, 0.8] }];
+  const ribbonW = (t) => clamp(Math.min(t / 0.18, (1 - t) / 0.3), 0, 1);
+  ART.meteorBrush.haste = (fr) => {
+    let s = '';
+    HASTE.forEach(({ P, w }, i) => {
+      const sway = [0, 0.5, 0.2, -0.4][(fr + i) % 4], pts = crPts(P.map(([x, y], j) => [x - sway * j * 0.25, y]), 6);
+      s += F(brushD(pts, (t) => 0.5 + w[0] * ribbonW(t)), 'ink') + F(brushD(pts, (t) => 0.15 + w[1] * ribbonW(t)), 'ally');
+      const a = (fr / 4 + i * 0.3) % 1;
+      s += S(line(cutAlong(pts, 0.1 + 0.55 * a, 0.3 + 0.55 * a)), 'allyG', 0.6);
+    });
+    [[-14.2, -27.6, 1.8, 5, 0], [-8.4, -21.6, 1.5, 6, 1]].forEach(([x, y, r, n, i]) => {
+      const rise = [0, 1.2, 2.4, 3.4][(fr + 2 * i) % 4];
+      s += F(starD(x, y - rise, r * [1, 0.9, 1.08, 0.86][(fr + i) % 4], n, 801 + i * 4 + fr, -Math.PI / 2, 0.42), 'p50', { st: 'ink', sw: 0.5 });
+    });
+    return s;
+  };
+
+  // -- pinHail caltrop-snap: the first enemy to step on a caltrop snaps it: the dagger pins break and fly (a blade half
+  //    with the cyan groove up to the left, the ring handle half up to the right), a flat torn paper flash on the ground,
+  //    chips (0); higher, in p300, falling (1) --
+  function pinHalf(m, len, top, cyan, last) {
+    const pc = last ? 'p300' : 'p50', ln = last ? 'ink300' : 'ink', br = [[0.55 * len, -2.3], [0.5 * len, -0.8], [0.6 * len, 0.5], [0.55 * len, 2.3]];
+    let b;
+    if (!top) {
+      b = F(line([[0, -1.4]].concat(br, [[0, 1.4]]), true), pc, { st: ln, sw: 1.1 }) + F(line([[0, 0.2], [0.6 * len, 0.5], [0.55 * len, 2.3], [0, 1.4]], true), 'p300');
+      b += cyan && !last ? SW(`M${f(0.1 * len)},0 L${f(0.45 * len)},0`, [['ink', 1.1], ['ally', 0.6]]) : S(`M${f(0.1 * len)},0 L${f(0.45 * len)},0`, ln, 0.8);
+    } else {
+      b = F(line([br[0], [len, -0.7], [len, 0.7], br[3], br[2], br[1]], true), pc, { st: ln, sw: 1.1 }) + F(line([[0.6 * len, 0.5], [len, 0.2], [len, 0.7], [0.55 * len, 2.3]], true), 'p300');
+      b += S(`M${f(len)},0 L${f(len + 0.7)},0`, ln, 1.4) + Cir(len + 2.5, 0, 1.7, 'none', { st: ln, sw: 1.2 });
+    }
+    return TX(b, m);
+  }
+  ART.pinHail['caltrop-snap'] = (fr) => {
+    if (fr === 0) {
+      return TX(F(tornD(0, 0, [[-172, 13.4], [-134, 9], [-96, 11.6], [-56, 8.4], [-18, 12.6], [22, 9.4], [60, 13], [104, 8.6], [144, 11]], 0.42, 811), 'p50', { st: 'ink', sw: 1.1 }), chainM(transM(0, -1.4), scaleM(1, 0.5))) +
+        F(chipD(-4.2, -11.4, 1.2, 812, 0.3), 'ink') + F(chipD(11.6, -4.2, 1, 813, 1), 'ink') + Cir(-12.6, -2.6, 0.7, 'ink') + Cir(3.6, -13.6, 0.6, 'ink') +
+        pinHalf(chainM(transM(-6.6, -6.6), rotM(-150)), 8.4, false, true, false) + pinHalf(chainM(transM(2.4, -2.4), rotM(-58)), 8.2, true, false, false);
+    }
+    return F(chipD(-6, 2.6, 1, 814, 0.6), 'ink300') + F(chipD(12.6, 4.4, 0.9, 815, 1.2), 'ink300') + Cir(-14, 5.4, 0.6, 'ink300') +
+      pinHalf(chainM(transM(-10.2, -10.4), rotM(-196)), 8.4, false, false, true) + pinHalf(chainM(transM(3.2, -9.6), rotM(-14)), 8.2, true, false, true);
+  };
+
+  // -- bossbane crackBurst: the fifth crack bursts the boss's plate: a torn paper flash and the plate's shards flung out
+  //    (paper, a p300 underside, ink cracks; the newest crack's cyan on the biggest shard) (0); further, over a small ink
+  //    burst (1); the shards falling in p300 (2) --
+  const CB_SHARDS = [[[-4.6, -3.4], [3.2, -4.4], [4.4, 1.2], [-1.2, 3.6], [-5, 0.8]], [[-3.4, -2.6], [3, -2.2], [2.4, 2.6], [-2.8, 2]], [[-3, -2], [2.6, -2.8], [3.2, 1.8], [-1.6, 2.4]], [[-2.6, -1.8], [2.4, -1.4], [1.6, 2], [-2.2, 1.6]]];
+  const CB_AT = [[[-10.6, -17, -18, 1.5], [11.6, -18.6, 16, 1.5], [14.6, -6, 34, 1.4], [-12.6, -4, -40, 1.4]],
+    [[-15.6, -18.8, -38, 1.35], [16.4, -19.6, 32, 1.35], [19.4, -6.4, 62, 1.3], [-18.4, -3.6, -66, 1.3]],
+    [[-16.6, 3.6, -80, 1.2], [15.6, 5.4, 70, 1.2], [21, 9, 100, 1.1], [-20.4, 8.4, -100, 1.1]]];
+  function cbShard(i, x, y, deg, k, last, cyan) {
+    const m = chainM(transM(x, y), rotM(deg), scaleM(k)), P = CB_SHARDS[i].map((p) => apM(m, p)), d = line(P, true);
+    let s = F(d, last ? 'p300' : 'p50', { st: last ? 'ink300' : 'ink', sw: 1.2 }) + F(shadeBand(P, 1.4 * k), 'p300');
+    const a = apM(m, [-2.4, -1.6]), b = apM(m, [0.4, 0.2]), c = apM(m, [2.4, 1.6]);
+    s += cyan ? SW(line([a, b, c]), [['ink', 2], ['ally', 1], ['allyG', 0.35]], { join: 'miter', miter: 4 }) : S(line([a, b]), last ? 'ink300' : 'ink', 0.9);
+    return s;
+  }
+  ART.bossbane.crackBurst = (fr) => {
+    let s = '';
+    if (fr === 0) s += TX(F(tornD(0, 0, [[-172, 19], [-140, 12.4], [-108, 17], [-74, 11.4], [-40, 18.6], [-6, 13], [28, 19.4], [66, 12], [100, 16], [136, 11.6]], 0.42, 821), 'p50', { st: 'ink', sw: 1.4 }), chainM(transM(0, -9), scaleM(1, 0.72)));
+    if (fr === 1) s += TX(F(tornD(0, 0, [[-160, 11], [-110, 8], [-60, 12], [-10, 8.6], [40, 11.4], [92, 7.8], [140, 10]], 0.42, 822), 'p300', { st: 'ink300', sw: 1 }), chainM(transM(0, -9), scaleM(1, 0.7))) +
+      inkBurst(0, -8, 3.6, 823, { arms: 6, reach: [1.5, 2.4], flat: 0.8, drops: 0.6, col: 'ink700' });
+    CB_AT[fr].forEach(([x, y, deg, k], i) => { s += cbShard(i, x, y, deg, k, fr === 2, i === 0 && fr < 2); });
+    return s;
+  };
 
   function stamp(group, part, o) {
     o = o || {};
@@ -2558,7 +3196,7 @@ window.PN = window.PN || {};
   }
 
   function layout(id, stage, opts) {
-    if (GSTAGE[id] === stage) return glayout(id, stage, norm(opts));
+    if (isGimmick(id, stage)) return glayout(id, stage, norm(opts));
     const L = SPEC.layout[id] && SPEC.layout[id][stage];
     if (!L) return [];
     const o = norm(opts), st = stats(id, o), R = st.radius, seed = o.seed, life = lifeOf(id), age = o.p * life, out = [];
@@ -2618,6 +3256,30 @@ window.PN = window.PN || {};
     if (stage === 'unroll') { const g = SPEC.gimmick[id], Lb = o.length != null ? +o.length : g.length, w = o.width != null ? +o.width : g.width; out.ridge = ridgePts(Lb, w, g.band.ridge).slice(0, 12); out.head = [[glayout(id, stage, o)[0].x, 0]]; }
     if (stage === 'triangle') { const P = triPts(o); out.corners = P; out.centroid = [[(P[0][0] + P[1][0] + P[2][0]) / 3, (P[0][1] + P[1][1] + P[2][1]) / 3]]; }
     if (stage === 'eighth') out.stitch = eventPositions(id, 7, o).map((q) => [q.x, q.y]);
+    // 3b2: the follow-up effects' defining points (event rings: gaps and core [start°, end°], band knots [θ°, width], the
+    // torn band's inner edge, jag vertices; crack lines; the kink; the rewound sag's controls; the amplified strands;
+    // links; branch tips; the re-sweep's edge and head; the split's landing points and mini path)
+    const g = SPEC.gimmick[id] && SPEC.gimmick[id].stage === stage ? SPEC.gimmick[id] : null;
+    if (g && g.ring && typeof g.ring === 'object') {
+      const rs = g.ring, R = stage === 'echo' ? stats(id, o).radius * g.reach : g.r, gaps = gapList(rs.gaps, o.seed);
+      out.gaps = deg2(gaps);
+      if (rs.prim === 'band') { const B = bandGeo(R, rs, o.seed); out.knots = B.wf.knots.map((w, k) => [k * 360 / B.wf.knots.length, w]); out.core = deg2(bandCoreArcs(rs, B, o.seed, false)); }
+      else if (rs.core) out.core = deg2(clipToArcs(coreArc(rs.core, o.seed, false), arcsBetween(gaps)));
+      if (rs.prim === 'torn') out.torn = tornRing(R, rs, o.seed, R)[0].rest.slice(2, 14);
+      if (rs.prim === 'jag') out.jag = jagGeo(R, rs, rs.flicker.seeds[0]).V.slice(0, 12);
+    }
+    if (stage === 'crack') { const C = crackLines(g.r, g.cracks, o.seed); out.cracks = [].concat.apply([], C.slice(0, 3).map((q) => q.pts)); out.fork = C.filter((q) => q.fork)[0].fork; out.coreLines = C.filter((q) => q.core).map((q) => [q.k, C.length]); }
+    if (stage === 'leap') { const Q = ptsOf(o), A0 = Q.length > 1 ? Q[0] : [-92, 26], B0 = Q.length > 1 ? Q[1] : [84, -14]; out.kink = kinkPts([A0[0], A0[1] - g.lift], [B0[0], B0[1] - g.lift], g.line, o.seed * 13 + g.line.flicker.seeds[0]); }
+    if (stage === 'rewind') { const P = chainPts(id, o), q = sagCurves(P, g.line.sag, g.line.step); out.controls = q.ctrls; out.end = [clearStart(q.pts, SPEC.footClear)[0]]; }
+    if (stage === 'amplify') { const P = chainPts(id, o), ls = SPEC.line[id]; out.scale = P.slice(1).map((p, i) => [1 + g.width * i, 1 + g.amp * i]); out.strandA = twistGeo([P[1], P[2]], Object.assign({}, ls, { amp: ls.amp * (1 + g.amp) }), ls.flicker.seeds[0] + 31).A.slice(0, 12); }
+    if (stage === 'link') { const P = o.points && o.points.length > 1 ? ptsOf(o) : chainPts(id, o).slice(1); out.links = linksGeo(P, Object.assign({}, SPEC.line[id], { pitch: g.line.pitch }), g.line.clear).slice(0, 12).map((it) => [it.x, it.y]); }
+    if (stage === 'branch') { const L = stats(id, o).length; out.tips = [-1, 1].map((sg) => [L + Math.cos(sg * g.angle * RAD) * g.branch * L, Math.sin(sg * g.angle * RAD) * g.branch * L]); }
+    if (stage === 'resweep') {
+      const ls = SPEC.line[id], st = stats(id, o), life = lifeOf(id), x0 = SPEC.footClear;
+      out.top = raggedEdge(x0, st.length, () => st.width, ls.edge.ragged, o.seed + g.seed, 100, -1).slice(0, 12);
+      out.head = [[st.length - (st.length - x0) * easeOut(clamp(o.p * life / (ls.grow.frac * life), 0, 1)), 0]];
+    }
+    if (stage === 'split') { out.land = [[-g.offset, 0], [g.offset, 0]]; out.mini = [0.25, 0.5, 0.75].map((t) => { const L = lobPath(id, { x0: 0, y0: 0, x1: g.offset, y1: 0, t, mini: true }); return [L.x, L.y - L.h]; }); }
     Object.keys(out).forEach((k) => { out[k] = out[k].map((p) => [f(p[0]), f(p[1])]); });
     return out;
   }
@@ -2625,7 +3287,7 @@ window.PN = window.PN || {};
   const ridgePts = (Lb, w, rg) => samp((t) => { const x = lerp(0.06 * Lb, 0.96 * Lb, t); return [x, rg.base * w - rg.amp * w * Math.abs(Math.sin(Math.PI * rg.humps * (x - 0.06 * Lb) / (0.9 * Lb)))]; }, 24);
   function paths(id, stage, opts) {
     if (!META[id] || META[id].stages.indexOf(stage) < 0) return {};
-    if (GSTAGE[id] === stage) return gpaths(id, stage, norm(opts));
+    if (isGimmick(id, stage)) return gpaths(id, stage, norm(opts));
     const o = norm(opts), st = stats(id, o), R = st.radius, seed = o.seed, life = lifeOf(id), age = o.p * life, out = {};
     const rs = SPEC.ring[id], ls = SPEC.line[id], hs = SPEC.halo[id], aw = o.awakened;
     if (rs) {
@@ -3042,10 +3704,32 @@ window.PN = window.PN || {};
     const OV = SPEC.overlay, t = o.t, want = (ly) => !layer || layer === ly;
     if (OV.head.parts[key]) {
       if (!want('head')) return '';
-      const q = OV.head.parts[key], P = partOf(q.group, q.part);
+      // stacked marks pick their part by opts.stack; deco marks are left out at minimal LOD; rotate 'face' marks are
+      // mirrored with the enemy (opts.facing -1)
+      const q = OV.head.parts[key], part = q.stack ? q.part + clamp(Math.round(+o.stack || 1), q.stack[0], q.stack[1]) : q.part, P = partOf(q.group, part);
+      if (P.lod === 'deco' && minimal(o)) return '';
       const fr = P.drive === 'loop' ? (o.reduced || minimal(o) ? P.still : Math.floor(t * P.fps) % P.frames) : 0;
-      return place(q.group, q.part, fr, 0, top + OV.head.dy, 0);
+      return place(q.group, part, fr, 0, top + OV.head.dy, 0, P.rotate === 'face' && +o.facing < 0 ? { flip: true } : undefined);
     }
+    if (key === 'crack') {
+      if (!want('head')) return '';
+      const q = OV.crack;
+      return place(q.group, q.part + clamp(Math.round(+o.stack || 1), q.stack[0], q.stack[1]), 0, 0, top + q.dy, 0);
+    }
+    if (key === 'pollen') {
+      // two spores, each rising and drifting outward over its cycle, phase apart (still at their phase under reduced
+      // motion; deco: none at minimal LOD)
+      if (!want('head') || minimal(o)) return '';
+      const q = OV.pollen, sp = SPEC.marks.spores;
+      return q.parts.map((part, i) => {
+        const P = partOf(q.group, part), u = o.reduced ? q.phase[i] : ((((t / P.seconds) + q.phase[i]) % 1) + 1) % 1, side = q.at[i][0] < 0 ? -1 : 1;
+        return place(q.group, part, Math.min(P.frames - 1, Math.floor(u * P.frames)), q.at[i][0] + side * sp.drift * u, top + q.at[i][1] - sp.rise * u, 0);
+      }).join('');
+    }
+    // frost, bound and thorn stand in front of the body (under it, the feet hide them: §12)
+    if (key === 'frost') { if (!want('front')) return ''; const q = OV.feet.frost; return place(q.group, q.part + clamp(Math.round(+o.stack || 1), q.stack[0], q.stack[1]) + '-' + rClass(r, q.r), 0, 0, 0, 0); }
+    if (key === 'bound') { if (!want('front')) return ''; const q = OV.feet.bound; return place(q.group, q.part + rClass(r, q.r), 0, 0, 0, 0); }
+    if (key === 'thorn') { if (!want('front')) return ''; const q = OV.feet.thorn; return place(q.group, q.part + rClass(r, q.r), 0, 0, 0, 0); }
     if (key === 'crow') {
       if (!want('head')) return '';
       const c = SPEC.marks.crow, q = OV.crow, P = partOf(q.group, q.part), Pk = partOf(q.group, q.peck);
@@ -3064,14 +3748,18 @@ window.PN = window.PN || {};
   }
   // reference context (opts.context, C5): enemies of chapter ch (and the hero) read only from PN.enemies / PN.heroKit
   const CTX_SCL = { stalker: 0.9, charger: 0.963, shooter: 0.783, warden: 1 }, CTX_TOP = { stalker: -30, charger: -40, shooter: -44, warden: -74 };
-  function ctxEnemy(role, x, y, o, ov) {
+  function ctxEnemy(role, x, y, o, ov, heads) {
     const EN = PN.enemies;
     if (!EN || !EN.meta) return '';
     const m = EN.meta(o.ch, role), k = m.displayScale * (CTX_SCL[role] || 1);
-    // the overlay in the renderer's layers: feet under the body, front right after it, head marks over it
+    // the overlay in the renderer's layers: feet under the body, front right after it, head marks over it (3b2: pushed to
+    // `heads` instead when given, so a caller can draw an event between the bodies and the overheads)
     const lay = (ly) => { const b = ov ? ovBody(ov, o, m.r, CTX_TOP[role] || -34, ly) : ''; return b ? G(tr(x, y), b) : ''; };
-    return E(x, y, m.r, m.r * 0.42, 'ink', { a: 0.3 }) + lay('feet') + `<g transform="translate(${f(x - m.feet[0] * k)} ${f(y - m.feet[1] * k)}) scale(${f(k)})">${EN.draw(o.ch, role, { lod: 'game' })}</g>` + lay('front') + lay('head');
+    const body = E(x, y, m.r, m.r * 0.42, 'ink', { a: 0.3 }) + lay('feet') + `<g transform="translate(${f(x - m.feet[0] * k)} ${f(y - m.feet[1] * k)}) scale(${f(k)})">${EN.draw(o.ch, role, { lod: 'game' })}</g>` + lay('front');
+    if (heads) { heads.push(lay('head')); return body; }
+    return body + lay('head');
   }
+  const ctxHero = (state, fr, x, y) => (PN.heroKit && PN.heroKit.placeSprite ? PN.heroKit.placeSprite(state, fr, x, y, 1) : '');
   const ZONE_CTX = { inkPots: [['stalker', -24, 12, 'scorch'], ['charger', 28, -12, 'scorch']], tarJar: [['stalker', -72, 26], ['shooter', 60, -46]], smokeTail: [['charger', -16, 10]], pinHail: [['stalker', 26, 6]], gravePins: [['stalker', 30, 4]], inkLightning: [['charger', 34, 10]], twinBlades: [['stalker', -42, 18], ['shooter', 46, -8]] };
   const zoneAlpha = (age, life) => Math.min(clamp(age / SPEC.zone.fadeIn, 0, 1), clamp((life - age) / SPEC.zone.fadeOut, 0, 1));
   /** Frame of a zone stamp: cycle by o.t / seconds + phase; loop and idx as frameFor. */
@@ -3091,7 +3779,7 @@ window.PN = window.PN || {};
     if (Z.wash) ground += F(circ(R), Z.wash.token, { a: Z.wash.alpha * A });
     if (Z.gloss) Z.gloss.at.forEach((k, i) => { ground += SW(arc(R * k, (Z.gloss.span[0] + i * 12) * RAD, (Z.gloss.span[1] - Z.gloss.span[0]) * RAD), Z.gloss.layers, { a: A }); });
     if (Z.rim === 'ally') ground += SWD(circ(R), SPEC.rim.ally.layers, SPEC.rim.ally.dash, SPEC.rim.ally.pad);
-    else if (Z.rim === 'pad') ground += SW(circ(R), o.context ? SPEC.rim.pad.inside : SPEC.rim.pad.layers);
+    else if (Z.rim === 'pad') ground += SW(circ(R), o.context || o.inside ? SPEC.rim.pad.inside : SPEC.rim.pad.layers);
     if (Z.arcs) {
       const th0 = TAU * jit(o.seed, Z.arcs.start) + (o.reduced ? 0 : TAU * Z.arcs.turns * age);
       for (let k = 0; k < Z.arcs.n; k++) ally += SW(arc(R * Z.arcs.at, th0 + k * TAU / Z.arcs.n, Z.arcs.span * RAD), Z.arcs.layers, { a: A });
@@ -3117,10 +3805,53 @@ window.PN = window.PN || {};
     }
     return ground + stand.sort((a, b) => a[0] - b[0]).map((q) => q[1]).join('') + ally;
   }
-  /** Head and feet marks as a gimmick stage: the overlay alone (r 19), or three enemies wearing it (context). */
+  /** Head and feet marks as a gimmick stage: the overlay alone (r 19), or three enemies wearing it (context; stacked
+   *  marks show their stacks, the boss's crack plate stands on three wardens). */
+  const MARK_STAGES = ['freeze', 'prey', 'crow', 'silence', 'stain', 'fear', 'weak', 'crack', 'lost', 'pollen', 'frost', 'bound', 'thorn'];
+  const MARK_CTX = {
+    stain: [['shooter', 10, -40, 1], ['stalker', -70, 40, 2], ['charger', 50, 70, 3]],
+    crack: [['warden', -80, 70, 1], ['warden', 84, 84, 3], ['warden', 0, -10, 5]],
+    frost: [['shooter', 10, -40, 1], ['stalker', -70, 40, 2], ['charger', 50, 70, 2]]
+  };
+  // 3b2: the follow-up event of four of these gimmicks joins its stage: the stain's burst, the fear ring, the crack's
+  // burst, the pollen ring and puff (every tick). Reference: age = p × life (pollen: p × the tick)
+  const MARK_EVENT = { stain: 1, fear: 1, crack: 1, pollen: 1 };
+  // context of those four: [role, x, y, stack, overlay key (default the stage; null none)] and the event's place [role or
+  // null, x, y] (the burst's enemy carries no mark: the burst resets it)
+  const EVENT_CTX = {
+    stain: { list: [['shooter', -150, -56, 1], ['charger', -64, 64, 2]], at: ['stalker', 92, 4] },
+    fear: { list: [['shooter', 10, -40], ['stalker', -70, 40], ['charger', 50, 70]], at: [null, 0, 0] },
+    crack: { list: [['warden', -176, 64, 1], ['warden', 176, 44, 3]], at: ['warden', 0, 0] },
+    pollen: { list: [['shooter', 84, -54], ['stalker', -60, 30], ['charger', -22, 64, 0, null]], at: [null, -60, 30] }
+  };
+  /** The event of a mark stage at an enemy (origin = its feet): burst stamp + event ring (+ the crack lines), the fear
+   *  ring, the pollen ring (none at minimal LOD) + the puff (deco). */
+  function markEvent(id, stage, o, age) {
+    const g = SPEC.gimmick[id];
+    if (stage === 'stain' || stage === 'crack') {
+      const P = partOf(id, g.burst), fr = clamp(Math.floor(age / P.seconds * P.frames), 0, P.frames - 1);
+      const cr = stage === 'crack' ? drawCracks(g.cracks, g.r, o.seed, age, fadeA(g.ring.fade, age, g.life, g.ring.grow, o.reduced), o) : '';
+      return cr + eventRing(g.ring, g.r, o.seed, age, g.life, o) + place(id, g.burst, fr, 0, 0, 0);
+    }
+    if (stage === 'fear') return eventRing(g.ring, g.r, o.seed, age, g.life, o);
+    if (stage === 'pollen') {
+      if (minimal(o)) return '';
+      const P = partOf(id, g.puff);
+      return eventRing(g.ring, g.r, o.seed, age, g.life, o) + (age < P.seconds ? place(id, g.puff, clamp(Math.floor(age / P.seconds * P.frames), 0, P.frames - 1), 0, 0, 0) : '');
+    }
+    return '';
+  }
   function drawMarks(id, stage, o) {
-    if (o.context) return [['shooter', 10, -40], ['stalker', -70, 40], ['charger', 50, 70]].map(([r, x, y]) => ctxEnemy(r, x, y, o, stage)).join('');
-    return ovBody(stage, o, 19, -40);
+    const ev = MARK_EVENT[stage], g = SPEC.gimmick[id], age = ev ? clamp(o.p, 0, 1) * (stage === 'pollen' ? g.tick : g.life) : 0;
+    if (o.context && ev) {
+      // bodies (feet and front overlays), then the event over them, then the head marks (the overheads pass)
+      const C = EVENT_CTX[stage], heads = [];
+      let s = C.list.map(([r, x, y, st, ov]) => ctxEnemy(r, x, y, st ? Object.assign({}, o, { stack: st }) : o, ov === undefined ? stage : ov, heads)).join('');
+      if (C.at[0]) s += ctxEnemy(C.at[0], C.at[1], C.at[2], o, null);
+      return s + G(tr(C.at[1], C.at[2]), markEvent(id, stage, o, age)) + heads.join('');
+    }
+    if (o.context) return (MARK_CTX[stage] || [['shooter', 10, -40], ['stalker', -70, 40], ['charger', 50, 70]]).map(([r, x, y, st]) => ctxEnemy(r, x, y, st ? Object.assign({}, o, { stack: st }) : o, stage)).join('');
+    return ovBody(stage, o, 19, -40) + (ev ? markEvent(id, stage, o, age) : '');
   }
   /** The triangle seal (§4.4): pending (delay) the threads sew the edges corner to corner and the corner prints come in;
    *  then the strike edges, the triangle's paper fill for fillSeconds and the strike print at the centroid. */
@@ -3176,7 +3907,9 @@ window.PN = window.PN || {};
    *  heavy outer rim, the corona flags round the rim and the ribbons (translucent: never the black sun's solid disc). */
   function drawTotal(id, o) {
     const hs = SPEC.halo[id], g = SPEC.gimmick[id], R = stageR(id, 'total', o), life = lifeOf(id), age = clamp(o.p, 0, 1) * life, A = fadeA(hs.fade, age, life);
-    let s = F(circ(R), g.wash.token, { a: g.wash.alpha * A }) + F(circ(R) + ' ' + circ(R * g.band.at), g.band.token, { rule: 'evenodd', a: g.band.alpha * A });
+    // the disc and the band lie on the ground (g.layers); under reduced flash (opts.reducedFlash) their alpha × reducedFlash
+    const kf = o.reducedFlash ? g.reducedFlash : 1;
+    let s = F(circ(R), g.wash.token, { a: g.wash.alpha * A * kf }) + F(circ(R) + ' ' + circ(R * g.band.at), g.band.token, { rule: 'evenodd', a: g.band.alpha * A * kf });
     s += SW(circ(R), g.outer, { a: A }) + SW(circ(R - SPEC.awakened.inset), SPEC.awakened.layers, { a: A });
     let deco = 0;   // the corona flags are deco: none at minimal LOD, every other one at reduced
     glayout(id, 'total', o).forEach((it) => { if (it.prim === 'ring' && (minimal(o) || (o.lod === 'reduced' && deco++ % 2))) return; const P = partOf(id, it.part); s += place(id, it.part, P.drive === 'loop' ? frameFor(P, o, age, life, it.phase) : clamp(Math.floor(age / P.seconds * P.frames), 0, P.frames - 1), it.x, it.y, it.angle, { a: A }); });
@@ -3191,14 +3924,305 @@ window.PN = window.PN || {};
       return G(tr(pos[i][0], pos[i][1]), putItems(id, items, oe, age, life, 'ground') + drawRing(id, R, seed, age, o) + putItems(id, items, oe, age, life, 'ally'));
     }).join('');
   }
+  // -- awakening gimmicks, P2 follow-up effects (delivery 3b2) --
+  /** An event ring (SPEC.gimmick[id].ring): the centre line on R(grow); gaps (gapList: J(10), J(20+k), J(40+k)); cyan only
+   *  on the core arc (coreArc J(60), J(61), never × coreScale; no awakened inset line). alpha × rs.alpha (torn, jag).
+   *  stroke and band as SPEC.ring (punch on stroke); torn: tornRing; dashed: the ink + cyan dashed sandwich on every arc
+   *  between gaps (3b2-r1, no core); jag: jagGeo at R0 by the flicker seed, scaled by R/R0, the vertices on each arc
+   *  between gaps as one open line, the core's vertices again in the core layers. */
+  function eventRing(rs, R0, seed, age, life, o) {
+    const R = grownR(R0, rs.grow, age, o.reduced), A = fadeA(rs.fade, age, life, rs.grow, o.reduced) * (rs.alpha == null ? 1 : rs.alpha);
+    if (A <= 0.01) return '';
+    const arcs = arcsBetween(gapList(rs.gaps, seed)), core = rs.core ? clipToArcs(coreArc(rs.core, seed, false), arcs) : [];
+    let s = '';
+    if (rs.prim === 'stroke') {
+      const pm = punchM(rs.punch, age, o.reduced);
+      arcs.forEach(([a0, a1]) => { s += SW(arc(R, a0, a1 - a0), thick(rs.layers, pm), { a: A }); });
+      core.forEach(([a0, a1]) => { s += SW(arc(R, a0, a1 - a0), thick(rs.core.layers, pm), { a: A }); });
+    } else if (rs.prim === 'band') {
+      const B = bandGeo(R, rs, seed, { R0 });
+      B.segs.forEach((sg) => { s += F(sg.closed ? line(sg.outer, true) + ' ' + line(sg.inner, true) : line(sg.outer.concat(sg.inner.slice().reverse()), true), rs.token, { rule: sg.closed ? 'evenodd' : null, a: A }); });
+      bandCoreArcs(rs, B, seed, false).forEach(([a0, a1]) => { s += SW(line(samp((t) => polar(R, lerp(a0, a1, t)), Math.max(4, Math.ceil((a1 - a0) * R / 6)))), rs.core.layers, { a: A }); });
+    } else if (rs.prim === 'torn') {
+      tornRing(R, rs, seed, R0).forEach((q) => { s += F(q.d, rs.token, { a: A }) + SW(line(q.outer), rs.edge, { a: A }) + SW(line(q.rest), rs.tear.layers, { a: A }); });
+    } else if (rs.prim === 'dashed') {
+      // the ally dashed sandwich (as rim.ally, review 8 F1): over each arc between gaps the ink dashes and on them the cyan
+      // ones in the same phase; the ink dash runs pad past both ends of each cyan dash (SWD: ink [d0 + 2 pad, d1 - 2 pad]
+      // offset pad, cyan [d0, d1], butt ends; each arc's pattern starts at its own start)
+      arcs.forEach(([a0, a1]) => { s += SWD(arc(R, a0, a1 - a0), rs.layers, rs.dash, rs.pad, { a: A }); });
+    } else if (rs.prim === 'jag') {
+      const fs = rs.flicker.seeds[o.reduced ? 0 : Math.floor(o.t * rs.flicker.fps) % 2], sc = R / R0, V = jagGeo(R0, rs, fs).V.map(([x, y]) => [x * sc, y * sc]), ang = V.map(([x, y]) => Math.atan2(y, x));
+      const run = ([a0, a1]) => V.map((p, k) => [a0 + ((((ang[k] - a0) % TAU) + TAU) % TAU), p]).filter((q) => q[0] <= a1).sort((a, b) => a[0] - b[0]).map((q) => q[1]);
+      arcs.forEach((iv) => { const P = run(iv); if (P.length > 1) s += SW(line(P), rs.layers, { join: 'miter', miter: 6, a: A }); });
+      core.forEach((iv) => { const P = run(iv); if (P.length > 1) s += SW(line(P), rs.core.layers, { join: 'miter', miter: 6, a: A }); });
+    }
+    return s;
+  }
+  /** The torn paper band (prim torn) per arc a between gaps: n = max(6, round((a1 - a0)·R0 / pitch)) steps; the outer
+   *  edge on R + w/2; the inner edge on R - w/2, every even inner vertex (not the ends) pushed in by lerp(depth,
+   *  J(2150 + 97a + k)) unless J(2100 + 97a + k) < skip; each end torn across: the band's middle juts `end` past it. */
+  function tornRing(R, rs, seed, R0) {
+    const w = rs.width, tr = rs.tear;
+    return arcsBetween(gapList(rs.gaps, seed)).map(([a0, a1], ai) => {
+      const n = Math.max(6, Math.round((a1 - a0) * R0 / tr.pitch)), outer = [], inner = [];
+      for (let k = 0; k <= n; k++) {
+        const th = lerp(a0, a1, k / n), j = 97 * ai + k, d = k % 2 || k === 0 || k === n ? 0 : (jit(seed, 2100 + j) < tr.skip ? 0 : lerp(tr.depth[0], tr.depth[1], jit(seed, 2150 + j)));
+        outer.push(polar(R + w / 2, th)); inner.push(polar(R - w / 2 - d, th));
+      }
+      const e0 = polar(R, a0 - tr.end / R), e1 = polar(R, a1 + tr.end / R), back = inner.slice().reverse();
+      return { outer, d: line(outer.concat([e1], back, [e0]), true), rest: [outer[n], e1].concat(back, [e0, outer[0]]) };
+    });
+  }
+  /** The crack burst's paper crack lines (SPEC.gimmick.bossbane.cracks): n = n0 + ⌊J(1900)·(n1 - n0 + 1)⌋ lines; θk =
+   *  2π·J(1901) + (k + 0.5 + (J(1910 + k) - 0.5)·2·jitter)·2π/n; from from·R, length L = lerp(to, J(1930 + k))·R in four
+   *  steps (steps × (L - from·R)), step j heading θk ± lerp(bend, J(1980 + 4k + j))° (minus when J(1950 + 4k + j) < 0.5),
+   *  so never past L ≤ 0.9 R; line ⌊J(1902)·n⌋ forks once at its vertex `at` (len·L at θk ± deg, minus when J(1904) <
+   *  0.5); lines c = ⌊J(1903)·n⌋ and (c + ⌊n/2⌋) mod n take the core layers. */
+  function crackLines(R, cs, seed) {
+    const n = cs.n[0] + Math.floor(jit(seed, 1900) * (cs.n[1] - cs.n[0] + 1)), a0 = TAU * jit(seed, 1901), fk = Math.floor(jit(seed, 1902) * n), c1 = Math.floor(jit(seed, 1903) * n), c2 = (c1 + Math.floor(n / 2)) % n, out = [];
+    for (let k = 0; k < n; k++) {
+      const th = a0 + (k + 0.5 + (jit(seed, 1910 + k) - 0.5) * 2 * cs.jitter) * TAU / n, r0 = cs.from * R, L = lerp(cs.to[0], cs.to[1], jit(seed, 1930 + k)) * R, pts = [polar(r0, th)];
+      cs.steps.forEach((st, j) => {
+        const a = th + (jit(seed, 1950 + 4 * k + j) < 0.5 ? -1 : 1) * lerp(cs.bend[0], cs.bend[1], jit(seed, 1980 + 4 * k + j)) * RAD, p = pts[pts.length - 1];
+        pts.push([p[0] + Math.cos(a) * (L - r0) * st, p[1] + Math.sin(a) * (L - r0) * st]);
+      });
+      let fork = null;
+      if (k === fk) { const p = pts[cs.fork.at], a = th + (jit(seed, 1904) < 0.5 ? -1 : 1) * cs.fork.deg * RAD; fork = [p, [p[0] + Math.cos(a) * cs.fork.len * L, p[1] + Math.sin(a) * cs.fork.len * L]]; }
+      out.push({ k, pts, fork, core: k === c1 || k === c2 });
+    }
+    return out;
+  }
+  /** The crack lines growing out (length × lerp(from, 1, easeOut(age / seconds)); full at once under reduced motion), the
+   *  fork once the line is three quarters out; alpha A (the ring's). */
+  function drawCracks(cs, R, seed, age, A, o) {
+    if (A <= 0.01) return '';
+    const g = o.reduced ? 1 : cs.grow.from + (1 - cs.grow.from) * easeOut(clamp(age / cs.grow.seconds, 0, 1));
+    return crackLines(R, cs, seed).map((q) => SW(line(g < 1 ? cutAlong(q.pts, 0, g) : q.pts), q.core ? cs.core.layers : cs.layers, { join: 'miter', miter: 4, a: A }) +
+      (q.fork && g >= 0.75 ? SW(line(q.fork), cs.layers, { join: 'miter', miter: 4, a: A }) : '')).join('');
+  }
+  /** The leap's kinked bolt from A to B (the K4 bolt manner): n = clamp(round(|AB| / seg), n0, n1) steps; inner vertex i
+   *  at (i + (J(2000 + i) - 0.5)·shift)/n along AB, pushed lerp(push, J(2020 + i)) across it, sides alternating; J with
+   *  the seed (event seed)·13 + the flicker seed. */
+  function kinkPts(A, B, sp, js) {
+    const dx = B[0] - A[0], dy = B[1] - A[1], L = Math.hypot(dx, dy) || 1, nn = [-dy / L, dx / L], n = clamp(Math.round(L / sp.seg), sp.n[0], sp.n[1]), out = [A.slice()];
+    for (let i = 1; i < n; i++) {
+      const t = (i + (jit(js, 2000 + i) - 0.5) * sp.shift) / n, push = lerp(sp.push[0], sp.push[1], jit(js, 2020 + i)) * (i % 2 ? 1 : -1);
+      out.push([A[0] + dx * t + nn[0] * push, A[1] + dy * t + nn[1] * push]);
+    }
+    out.push(B.slice());
+    return out;
+  }
+  /** Frame of an event stamp: prog by its own seconds. */
+  const evFrame = (P, age) => clamp(Math.floor(age / P.seconds * P.frames), 0, P.frames - 1);
+  /** The late dab (brushQuills): pending (delay), the dab by its progress; then the burst stamp and the event ring r. */
+  function dabEvent(id, g, age, seed, o) {
+    if (age < g.delay) { const P = partOf(id, g.dab); return place(id, g.dab, clamp(Math.floor(age / g.delay * P.frames), 0, P.frames - 1), 0, 0, 0); }
+    const v = age - g.delay;
+    return eventRing(g.ring, g.r, seed, v, g.life, o) + place(id, g.burst, evFrame(partOf(id, g.burst), v), 0, 0, 0);
+  }
+  function drawDab(id, o) {
+    const g = SPEC.gimmick[id], u = clamp(o.p, 0, 1);
+    if (!o.context) return dabEvent(id, g, u * (g.delay + g.life), o.seed, o);
+    // two quills' first hits: one dab waiting on the ground by the enemy it hit, one bursting among two enemies
+    return G(tr(-122, 28), dabEvent(id, g, u * g.delay, o.seed, o)) + ctxEnemy('stalker', -96, 10, o) + ctxEnemy('charger', 96, -6, o) + ctxEnemy('shooter', 128, 34, o) +
+      G(tr(104, 12), dabEvent(id, g, g.delay + u * g.life, o.seed + 17, o));
+  }
+  function drawTopple(id, o) {
+    const g = SPEC.gimmick[id], fr = evFrame(partOf(id, g.event), clamp(o.p, 0, 1) * g.life);
+    if (!o.context) return place(id, g.event, fr, 0, 0, 0);
+    // a pushed enemy has struck the next one: the topple at the blow between their bodies
+    return ctxEnemy('stalker', -18, 12, o) + ctxEnemy('charger', 22, 2, o) + place(id, g.event, fr, 2, -16, 0);
+  }
+  function drawLeap(id, o) {
+    const g = SPEC.gimmick[id], ls = g.line, age = clamp(o.p, 0, 1) * g.life, u = age / g.life, Q = ptsOf(o);
+    const A0 = Q.length > 1 ? Q[0] : [-92, 26], B0 = Q.length > 1 ? Q[1] : [84, -14], A = [A0[0], A0[1] - g.lift], B = [B0[0], B0[1] - g.lift];
+    const fs = ls.flicker.seeds[o.reduced ? 0 : Math.floor(o.t * ls.flicker.fps) % 2], gr = clamp(u / ls.grow.frac, 0, 1);
+    let pts = kinkPts(A, B, ls, o.seed * 13 + fs);
+    if (gr < 1) pts = cutAlong(pts, 0, gr);
+    let s = o.context ? ctxEnemy('charger', A0[0], A0[1], o) + ctxEnemy('stalker', B0[0], B0[1], o) : '';
+    s += SW(line(pts), ls.layers, { join: 'miter', miter: 5, a: fadeA(ls.fade, age, g.life) });
+    // the strike where it lands (deco: none at minimal LOD)
+    if (gr >= 1 && !minimal(o)) s += place(id, g.hit, u < 0.6 ? 0 : 1, B[0], B[1], 0);
+    return s;
+  }
+  function drawRear(id, o) {
+    const g = SPEC.gimmick[id], P = partOf(id, g.hit), fr = evFrame(P, clamp(o.p, 0, 1) * g.life);
+    if (!o.context) return place(id, g.hit, fr, 0, -g.lift, 0);
+    // the hero runs right; enemies behind (within 70° of straight back, 200 away) take the doubled hits
+    return ctxEnemy('stalker', -124, 14, o) + ctxEnemy('charger', -92, -64, o) + ctxHero('run', 1, 0, 0) + place(id, g.hit, fr, -124, 14 - g.lift, 0) + place(id, g.hit, Math.min(P.frames - 1, fr + 1), -92, -64 - 20, 0);
+  }
+  function drawBump(id, o) {
+    const g = SPEC.gimmick[id], fr = evFrame(partOf(id, g.event), clamp(o.p, 0, 1) * g.life);
+    if (!o.context) return place(id, g.event, fr, 0, 0, 0);
+    // a pushed enemy has struck the arena's edge (a reference wall line, not K10 art) and is stunned
+    return S('M156,-120 L150,-30 L156,60 L152,140', 'ink700', 4) + ctxEnemy('charger', 128, 12, o) + place(id, g.event, fr, 144, -14, 0);
+  }
+  function drawEcho(id, o) {
+    const g = SPEC.gimmick[id], R = stats(id, o).radius * g.reach;
+    // enemies just outside the clap's own radius, inside the echo's
+    const s = o.context ? [[190, 'stalker'], [-30, 'charger'], [40, 'shooter']].map(([deg, r]) => ctxEnemy(r, Math.cos(deg * RAD) * R * 0.88, Math.sin(deg * RAD) * R * 0.66, o)).join('') + ctxHero('idle', 0, 0, 0) : '';
+    return s + eventRing(g.ring, R, o.seed, clamp(o.p, 0, 1) * g.life, g.life, o);
+  }
+  function drawSplit(id, o) {
+    const g = SPEC.gimmick[id], R = stats(id, o).radius * g.area, life = lifeOf(id), u = clamp(o.p, 0, 1);
+    // reference: the two minis fly to ±offset for delay (the lobMini path), then burst (the land stamp, the ring at
+    // area·R, plain: no awakened line); with context the burst moment
+    const age = o.context ? g.delay + u * life : u * (g.delay + life);
+    let s = o.context ? ctxEnemy('stalker', -84, 20, o) + ctxEnemy('charger', 70, -16, o) : '';
+    if (age < g.delay) {
+      const t = age / g.delay, Pm = partOf(id, g.mini);
+      [-1, 1].forEach((sg, k) => {
+        const L = lobPath(id, { x0: 0, y0: 0, x1: sg * g.offset, y1: 0, t, mini: true });
+        s += E(L.x, L.y, L.shadow.rx, L.shadow.ry, SPEC.flight.shadow.token, { a: L.shadow.alpha }) + place(id, g.mini, flightFrame(Pm, o, t, age, jit(o.seed, SPEC.flight.phase + k), false), L.x, L.y - L.h, 0);
+      });
+      return s;
+    }
+    const v = age - g.delay, fr = evFrame(partOf(id, g.burst), v), oa = Object.assign({}, o, { awakened: false });
+    [-1, 1].forEach((sg, k) => { s += G(tr(sg * g.offset, 0), drawRing(id, R, o.seed + 17 * k, v, oa) + place(id, g.burst, fr, 0, 0, 0)); });
+    return s;
+  }
+  /** The chain's points with an enemy on each but the first (the hero), for the chain gimmicks' context. */
+  const ctxChain = (P, o) => P.slice(1).map((p, i) => ctxEnemy(['stalker', 'charger', 'shooter'][i % 3], p[0], p[1] + 8, o)).join('') + ctxHero('idle', 0, P[0][0], P[0][1]);
+  /** With context and no opts.points: a compact chain for the board's cells (at most six points 64 apart from x -170;
+   *  the reference chain without context is chainPts'). */
+  function ctxPoints(id, o) {
+    if (!o.context || (o.points && o.points.length > 1)) return o;
+    const n = Math.min(6, stats(id, o).jumps + 1), P = [];
+    for (let k = 0; k < n; k++) P.push([-170 + 64 * k, k ? (k % 2 ? -1 : 1) * 34 * (0.6 + 0.4 * jit(o.seed, 990 + k)) : 0]);
+    return Object.assign({}, o, { points: P });
+  }
+  function drawRewind(id, o) {
+    o = ctxPoints(id, o);
+    const g = SPEC.gimmick[id], ls = g.line, life = lifeOf(id), age = o.p * life, u = clamp(age / life, 0, 1), P = chainPts(id, o), A = fadeA(ls.fade, age, life);
+    // the same sag manner bowed the other way, drawn from the last point back to the hero (cleared 26 there)
+    let pts = clearStart(sagCurves(P, ls.sag, ls.step).pts, SPEC.footClear).reverse();
+    const gr = clamp(u / ls.grow.frac, 0, 1);
+    if (gr < 1) pts = cutAlong(pts, 0, gr);
+    let s = o.context ? ctxChain(P, o) : '';
+    s += u > ls.fade.at ? S(smooth(pts), 'ink', ls.layers[0][1] * 0.7, { cap: 'butt', dash: ls.fade.dash, a: A }) : SW(smooth(pts), ls.layers, {});
+    // a spark on each enemy the rewound thread has reached (straight-line share from the tail; never on the hero)
+    const cum = [0];
+    for (let i = P.length - 1; i > 0; i--) cum.push(cum[cum.length - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]));
+    const reach = gr * cum[cum.length - 1];
+    for (let j = 0; j < P.length - 1; j++) { const p = P[P.length - 1 - j]; if (cum[j] <= reach + 0.5) s += place(id, g.hit, u < 0.5 ? 0 : 1, p[0], p[1], 0); }
+    return s;
+  }
+  function drawAmplify(id, o) {
+    o = ctxPoints(id, o);
+    const g = SPEC.gimmick[id], ls = SPEC.line[id], life = lifeOf(id), age = o.p * life, u = clamp(age / life, 0, 1), P = chainPts(id, o), A = fadeA(ls.fade, age, life);
+    const fs = ls.flicker.seeds[o.reduced ? 0 : Math.floor(o.t * ls.flicker.fps) % 2], cum = [0];
+    for (let i = 1; i < P.length; i++) cum.push(cum[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]));
+    const reach = clamp(u / ls.grow.frac, 0, 1) * cum[cum.length - 1];
+    let s = o.context ? ctxChain(P, o) : '';
+    // segment i: the strands × (1 + width·i) wide, the twist × (1 + amp·i)
+    for (let i = 0; i + 1 < P.length && reach > cum[i]; i++) {
+      const tw = twistGeo([P[i], P[i + 1]], Object.assign({}, ls, { amp: ls.amp * (1 + g.amp * i) }), fs + 31 * i), k = 1 + g.width * i, gr = clamp((reach - cum[i]) / (cum[i + 1] - cum[i]), 0, 1);
+      const cut = (q) => { let r = i === 0 ? clearStart(q, SPEC.footClear) : q; if (gr < 1) r = cutAlong(r, 0, gr); return r; };
+      s += SW(line(cut(tw.B)), thick(ls.strands[1], k), { a: A }) + SW(line(cut(tw.A)), thick(ls.strands[0], k), { join: 'miter', miter: 5, a: A });
+    }
+    // the gust at each point reached: gust-b from segment big.from on
+    P.slice(1).forEach((p, j) => { if (cum[j + 1] > reach + 0.5) return; const part = j >= g.big.from ? g.big.part : 'gust-a'; s += place(id, part, u < 0.5 ? 0 : 1, p[0], p[1], 0, { flip: jit(o.seed, 650 + j) < 0.5 }); });
+    return s;
+  }
+  function drawLink(id, o) {
+    const g = SPEC.gimmick[id], ls = SPEC.line[id], age = clamp(o.p, 0, 1) * g.life, P = o.points && o.points.length > 1 ? ptsOf(o) : chainPts(id, ctxPoints(id, o)).slice(1);
+    // links between the living members in order, light for the 2 s; whole for share.seconds after a shared hit (opts.share
+    // = seconds since it); minimal LOD: one bent line
+    const share = o.share != null && +o.share >= 0 && +o.share < g.share.seconds, A = (share ? g.share.alpha : g.line.alpha) * fadeA(g.fade, age, g.life);
+    let s = o.context ? P.map((p, i) => ctxEnemy(['stalker', 'charger', 'shooter'][i % 3], p[0], p[1] + 8, o)).join('') : '';
+    if (A <= 0.01) return s;
+    if (minimal(o)) return s + SW(line(P), ls.minimal.layers, { join: 'miter', miter: 5, a: A });
+    linksGeo(P, Object.assign({}, ls, { pitch: g.line.pitch }), g.line.clear).forEach((it) => {
+      const deg = it.angle / RAD;
+      if (it.type === 'ring') s += G(tr(it.x, it.y, deg), SW(ellD(0, 0, ls.ellipse.rx, ls.ellipse.ry), it.core ? ls.core.layers : ls.ellipse.layers, {}), A);
+      else s += G(tr(it.x, it.y, deg), F(line([[-ls.bar.len / 2, -ls.bar.h / 2], [ls.bar.len / 2, -ls.bar.h / 2], [ls.bar.len / 2, ls.bar.h / 2], [-ls.bar.len / 2, ls.bar.h / 2]], true), ls.bar.fill, { st: ls.bar.edge[0], sw: ls.bar.edge[1] }), A);
+      if (it.nub) s += G(tr(it.x, it.y, deg), Cir(0, it.nub * (ls.ellipse.ry + ls.nubs.r), ls.nubs.r, ls.nubs.fill, { st: ls.nubs.edge[0], sw: ls.nubs.edge[1] }), A);
+    });
+    return s;
+  }
+  /** A branch lance (+x from the lance's tip): the lance's blade manner without the tassel: thrust and retract over its
+   *  life, the leaf head × hk, the capsule of its hit from 0 (it starts at the lance's tip, not at the hero). */
+  function branchBody(ls, Lb, w, age, life, aw, hk) {
+    const u = clamp(age / life, 0, 1), rt = ls.retract, hs = (aw ? ls.awakened.headScale : 1) * hk;
+    let tip = u < ls.thrust ? lerp(4, Lb, easeOut(u / ls.thrust)) : Lb, a = 1;
+    if (u > rt.at) { const v = (u - rt.at) / (1 - rt.at); tip = lerp(Lb, rt.to * Lb, v); a = 1 - v; }
+    if (a <= 0.01) return '';
+    const hl = Math.min(ls.head.len * hs, tip * 0.8), hh = ls.head.half * hs, xb = tip - hl, c = ls.capsule;
+    const head = [[xb, -1.6], [xb + hl * 0.18, -hh * 0.85], [xb + hl * 0.35, -hh], [xb + hl * 0.62, -hh * 0.62], [xb + hl * 0.86, -hh * 0.22], [tip, 0], [xb + hl * 0.86, hh * 0.22], [xb + hl * 0.62, hh * 0.62], [xb + hl * 0.35, hh], [xb + hl * 0.18, hh * 0.85], [xb, 1.6]];
+    const cap = `M0,${f(-w)} L${f(Lb)},${f(-w)} A${f(w)},${f(w)} 0 0 1 ${f(Lb)},${f(w)} L0,${f(w)} Z`;
+    let s = F(cap, c.fill[0], { a: c.fill[1] * a }) + SW(cap, c.edge, { a });
+    if (xb > 1) s += F(brushD([[0, 0], [xb + 1, 0]], (t) => lerp(ls.shaft.width[0], ls.shaft.width[1], t)), ls.shaft.token, { a }) + S(`M2,-0.9 L${f(xb - 2)},-0.7`, ls.shaft.grain[0], ls.shaft.grain[1], { a });
+    return s + F(smooth(head, true), ls.head.fill, { st: ls.head.edge[0], sw: ls.head.edge[1], a }) + S(`M${f(xb + 3)},-0.3 L${f(tip - 5)},-0.2`, 'ink300', 0.8, { a });
+  }
+  function drawBranch(id, o) {
+    // with context the lance is cut to 300 and the hero set 210 left (the board's cells are 520 wide)
+    if (o.context && o.length == null && !o.ctxShifted) return G(tr(-210, 0), drawBranch(id, Object.assign({}, o, { length: Math.min(stats(id, o).length, 300), ctxShifted: true })));
+    const g = SPEC.gimmick[id], ls = SPEC.line[id], st = stats(id, o), L = st.length, w = st.width, life = lifeOf(id), delay = ls.thrust * life, age = clamp(o.p, 0, 1) * (delay + life);
+    let s = o.context ? ctxHero('throw', 1, 0, 0) + ctxEnemy('stalker', L + 0.3 * L * Math.cos(g.angle * RAD), -0.3 * L * Math.sin(g.angle * RAD) + 8, o) + ctxEnemy('charger', L + 0.32 * L * Math.cos(g.angle * RAD), 0.32 * L * Math.sin(g.angle * RAD) + 8, o) : '';
+    // the lance itself (its stroke stage), then at its tip the two branches at ±angle, branch × L long, and the fork
+    const am = Math.min(age, life);
+    s += drawBeamOne(id, o, L, w, am, life, o.seed) + putItems(id, layout(id, 'stroke', o), o, am, life, 'ally');
+    const v = age - delay;
+    if (v >= 0) {
+      [-1, 1].forEach((sg) => { s += G(tr(L, 0, sg * g.angle), branchBody(ls, g.branch * L, w, v, life, o.awakened, g.head)); });
+      const P = partOf(id, g.fork);
+      if (v < P.seconds && !minimal(o)) s += place(id, g.fork, evFrame(P, v), L, 0, 0);
+    }
+    return s;
+  }
+  function drawResweep(id, o) {
+    if (o.context && o.length == null && !o.ctxShifted) return G(tr(-190, 0), drawResweep(id, Object.assign({}, o, { length: Math.min(stats(id, o).length, 380), ctxShifted: true })));
+    const g = SPEC.gimmick[id], ls = SPEC.line[id], st = stats(id, o), L = st.length, w = st.width, life = lifeOf(id), age = clamp(o.p, 0, 1) * life, x0 = SPEC.footClear, seed = o.seed + g.seed;
+    // the same wide band at alpha × 0.65, its head running back from the far end to the hero's clear (the brush
+    // mirrored: it sweeps the other way); ragged edges and streaks by seed + 500
+    const A = fadeA(ls.fade, age, life) * g.alpha, x1 = L - (L - x0) * easeOut(clamp(age / (ls.grow.frac * life), 0, 1));
+    let s = o.context ? ctxHero('idle', 0, 0, 0) + ctxEnemy('stalker', L * 0.42, 10, o) + ctxEnemy('shooter', L * 0.74, -6, o) : '';
+    if (L - x1 > 2 && A > 0.01) {
+      const hw = () => w, top = raggedEdge(x1, L, hw, ls.edge.ragged, seed, 100, -1), bot = raggedEdge(x1, L, hw, ls.edge.ragged, seed, 200, 1), span = L - x1;
+      s += F(line(top.concat(bot.slice().reverse()), true), ls.fill[0], { a: ls.fill[1] * A }) + SW(line(top), ls.edge.layers, { a: A }) + SW(line(bot), ls.edge.layers, { a: A });
+      const n = ls.streaks.n[0] + Math.floor(jit(seed, 300) * (ls.streaks.n[1] - ls.streaks.n[0] + 1));
+      for (let j = 0; j < n; j++) {
+        const len = lerp(ls.streaks.len[0], ls.streaks.len[1], jit(seed, 320 + j)) * span, xa = L - len - jit(seed, 330 + j) * (span - len), y = (2 * jit(seed, 310 + j) - 1) * 0.7 * w;
+        s += SW(`M${f(xa)},${f(y)} L${f(xa + len)},${f(y + 0.6)}`, ls.streaks.layers, { a: A });
+      }
+      s += SW(`M${f(x1 + 4)},${f(-w)} Q${f(x1 - 3)},0 ${f(x1 + 4)},${f(w)}`, ls.front.layers, { a: A });
+    }
+    const part = o.awakened ? 'brush-awakened' : 'brush', P = partOf(id, part);
+    return s + place(id, part, clamp(Math.floor(age / life * P.frames), 0, P.frames - 1), x1, 0, 0, { flip: true, a: A });
+  }
+  function drawDeflect(id, o) {
+    const g = SPEC.gimmick[id], R = stats(id, o).radius, u0 = clamp(o.p, 0, 1);
+    let s = o.context ? ctxEnemy('shooter', 222, -78, o) + ctxEnemy('shooter', 196, 70, o) + ctxHero('idle', 0, 0, 0) + DRAW.halo(id, 'sweep', o) : '';
+    // three turned shots flying out from the band (reference: 90 further over their life): starting, travelling, ending
+    [[-20, 0], [-46, 1 / 3], [14, 2 / 3]].forEach(([deg, ph], k) => {
+      const u = (u0 + ph) % 1, d = R + 4 + u * 90, a = deg * RAD;
+      let part = g.travel, fr = o.reduced || minimal(o) ? 0 : Math.floor(o.t * 12 + k) % 2;
+      if (u < 0.08) { part = g.start; fr = Math.min(1, Math.floor(u / 0.04)); } else if (u > 0.9) { part = g.end; fr = Math.min(1, Math.floor((u - 0.9) / 0.05)); }
+      s += place(id, part, fr, Math.cos(a) * d, Math.sin(a) * d, a);
+    });
+    return s;
+  }
+  function drawHaste(id, o) {
+    const g = SPEC.gimmick[id], P = partOf(id, g.part), fr = o.reduced || minimal(o) ? P.still : Math.floor(o.t * (o.lod === 'reduced' ? P.fps / 2 : P.fps)) % P.frames;
+    // the star mark with the hero inside (its rim the 'inside' layers), the hero, the haste right after the hero's body
+    return drawZone(id, 'mark', Object.assign({}, o, { context: false, inside: true })) + (o.context ? ctxHero('run', 2, -10, 8) : '') + place(id, g.part, fr, -10, 8, 0, +o.facing < 0 ? { flip: true } : undefined);
+  }
+  function drawSnap(id, o) {
+    const g = SPEC.gimmick[id], fr = evFrame(partOf(id, g.event), clamp(o.p, 0, 1) * g.life);
+    // the enemy that stepped on it and an untouched caltrop beside
+    return (o.context ? place(id, 'caltrop-b', 0, 70, 26, 0) + ctxEnemy('stalker', 4, 8, o) : '') + place(id, g.event, fr, 0, 0, 0);
+  }
+  const P2_DRAW = { dab: drawDab, topple: drawTopple, leap: drawLeap, rear: drawRear, bump: drawBump, echo: drawEcho, split: drawSplit, rewind: drawRewind, amplify: drawAmplify, link: drawLink, branch: drawBranch, resweep: drawResweep, deflect: drawDeflect, haste: drawHaste, snap: drawSnap };
+
   function drawGimmick(id, stage, o) {
     if (SPEC.zone[id] && SPEC.zone[id].stage === stage) return drawZone(id, stage, o);
-    if (stage === 'freeze' || stage === 'prey' || stage === 'crow' || stage === 'silence') return drawMarks(id, stage, o);
+    if (MARK_STAGES.indexOf(stage) >= 0) return drawMarks(id, stage, o);
     if (stage === 'triangle') return drawTriangle(id, o);
     if (stage === 'unroll') return drawUnroll(id, o);
     if (stage === 'eighth') return drawEighth(id, o);
     if (stage === 'total') return drawTotal(id, o);
     if (stage === 'surge') return drawSurge(id, o);
+    if (P2_DRAW[stage] && GSTAGE2[id] === stage) return P2_DRAW[stage](id, o);
     return '';
   }
 
@@ -3208,13 +4232,14 @@ window.PN = window.PN || {};
       return '<g/>';
     }
     const o = norm(opts), c = Ctx();
-    if (GSTAGE[id] === stage) return c.out(drawGimmick(id, stage, o), id);
+    if (isGimmick(id, stage)) return c.out(drawGimmick(id, stage, o), id);
     return c.out(DRAW[META[id].kind](id, stage, o, c), id);
   }
-  /** Enemy overlays (§4.3; P1: silence, prey, crow, freeze, scorch; the rest come with P2). Origin = the enemy's feet;
-   *  opts.r = its radius (size class), opts.top = its sprite's top (y), opts.t = clock, opts.peck = seconds since the
-   *  crow's hit tick, opts.layer = 'feet' | 'front' | 'head' (one layer only; default all). */
-  const OVERLAYS = ['silence', 'prey', 'crow', 'freeze', 'scorch'];
+  /** Enemy overlays (§4.3; P1: silence, prey, crow, freeze, scorch; 3b1 (P2): fear, lost, weak, stain, crack, pollen,
+   *  frost, bound, thorn). Origin = the enemy's feet; opts.r = its radius (size class), opts.top = its sprite's top (y),
+   *  opts.t = clock, opts.stack = stain 1-3 / crack 1-5 / frost 1-2, opts.facing = -1 mirrors the fear drop,
+   *  opts.peck = seconds since the crow's hit tick, opts.layer = 'feet' | 'front' | 'head' (one layer only; default all). */
+  const OVERLAYS = ['silence', 'prey', 'crow', 'freeze', 'scorch', 'fear', 'lost', 'weak', 'stain', 'crack', 'pollen', 'frost', 'bound', 'thorn'];
   function overlay(key, opts) {
     if (OVERLAYS.indexOf(key) < 0) {
       if (typeof console !== 'undefined') console.warn('PN.arsenalFx: unknown overlay ' + key);
@@ -3226,7 +4251,7 @@ window.PN = window.PN || {};
   }
 
   PN.arsenalFx = Object.freeze({
-    version: '1.0',   // the delivery stage is SPEC.version (now '1.0-d3a-r1')
+    version: '1.0',   // the delivery stage is SPEC.version (now '1.0-d3b2-r1')
     K, ids: Object.freeze(IDS.slice()), kinds: Object.freeze(KINDS.slice()), META,
     groups: Object.freeze(GROUPS.slice()), overlays: Object.freeze(OVERLAYS.slice()),
     SPEC, jit,

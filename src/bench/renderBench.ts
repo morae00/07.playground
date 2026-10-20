@@ -6,8 +6,10 @@
 // and 160 damage numbers around the player, topped up every simulation step, on the K11 terrain bundle (brief §9-7:
 // fires drawn from the kit, the other kinds as vectors). `game` plays a real stage late in its clock (spawns, boss,
 // hazards, and a mid-game build) in god mode. `arsenal` (K10, brief §9-6) is the stress scene without the terrain, its
-// enemies under fire from six awakened weapons (pin hail, grave pins, smoke tail, seventh seal, frost chainlet, silence
-// bell). Query: scene, chapter, stage, progress, scale (render scale cap), sprites (on/off), terrain (on/off, stress),
+// enemies under fire from awakened weapons: six whose P1 gimmicks leave ground and marks (pin hail, grave pins, smoke
+// tail, seventh seal, frost chainlet, silence bell) and ten whose P2 gimmicks mark enemies, burst, and draw lines of their
+// own (ink darts, headsman darts, ink bloom, thorn halo, frost needles, ward ring, thunderclap, storm thread, ink lance,
+// wide brush). Query: scene, chapter, stage, progress, scale (render scale cap), sprites (on/off), terrain (on/off, stress),
 // afx (on/off: the weapons' field effects pack), enemies (stress count; 60 keeps full detail), warmup and seconds.
 import { ProbedGameEngine } from '../game/engine/probe';
 import type { Hazard } from '../game/engine/worldTypes';
@@ -182,7 +184,11 @@ async function run(): Promise<RenderBenchResult> {
     setUpStressScene(probe);
     if (scene === 'arsenal') {
       const awakened = { level: 5, awakened: true };
-      probe.setSkills({ pinHail: awakened, gravePins: awakened, smokeTail: awakened, seventhSeal: awakened, frostChainlet: awakened, silenceBell: awakened });
+      probe.setSkills({
+        pinHail: awakened, gravePins: awakened, smokeTail: awakened, seventhSeal: awakened, frostChainlet: awakened, silenceBell: awakened,
+        inkDarts: awakened, headsmanDarts: awakened, inkBloom: awakened, thornHalo: awakened, frostNeedles: awakened, wardRing: awakened,
+        thunderclap: awakened, stormThread: awakened, inkLance: awakened, wideBrush: awakened,
+      });
       probe.setPlayer({ nextXp: 1e12 });
     }
   }

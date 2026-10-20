@@ -120,6 +120,27 @@ test('K10 3a: the awakening gimmicks\' shapes are the player\'s too: every token
   }
 });
 
+test('K10 3b: the P2 gimmicks\' rings, lines, and cracks are the player\'s, and an event ring\'s cyan stays in its core (a stroke, torn, or jag ring\'s own layers are ink and paper; the fear ring has none)', () => {
+  const gimmick = (ATLAS_MANIFEST.arsenalFx.spec as unknown as { gimmick: Record<string, { ring?: { prim?: string; layers?: [string, number][]; token?: string; edge?: [string, number][] } }> }).gimmick;
+  const tokens = new Set<string>();
+  JSON.stringify(gimmick, (key, value) => {
+    if (Array.isArray(value) && typeof value[0] === 'string' && typeof value[1] === 'number') tokens.add(value[0]);
+    if (key === 'token' && typeof value === 'string') tokens.add(value);
+    return value;
+  });
+  for (const token of tokens) {
+    const color = tokenColor(token as Token);
+    assert.ok(color, `${token} maps to the palette`);
+    assert.ok([null, 'ally'].includes(signalFamily(color)), `${token} reads as ${signalFamily(color)}`);
+  }
+  const rings = Object.entries(gimmick).filter(([, g]) => g.ring && typeof g.ring === 'object' && ['stroke', 'torn', 'jag'].includes(g.ring.prim ?? ''));
+  assert.ok(rings.length >= 4, 'the stain, crack, fear, and echo rings');
+  for (const [id, { ring }] of rings) {
+    for (const [token] of [...(ring!.layers ?? []), ...(ring!.edge ?? [])]) assert.equal(signalFamily(tokenColor(token as Token)!), null, `${id}'s ring layer ${token} is ink or paper`);
+  }
+  assert.ok(!JSON.stringify(gimmick.headsmanDarts).includes('ally'), 'the fear ring has no cyan');
+});
+
 test('renderer and engine sources draw signal colours only through palette tokens', () => {
   for (const file of ['../GameEngine.ts', './GameRenderer.ts', './skillVfx.ts', './hazardArt.ts', './arsenalFx.ts']) {
     const source = readFileSync(new URL(file, import.meta.url), 'utf8');

@@ -488,6 +488,15 @@ export const ARSENAL_FX_VECTORS = Object.freeze({
     ['fallingScroll', 'unroll', { length: 240, width: 50, seed: 3, p: 0.2 }], ['fallingScroll', 'unroll', { length: 240, width: 50, seed: 3, p: 0.1, reduced: true }],
     ['trackingSeals', 'triangle', { points: [{ x: -80, y: 30 }, { x: 120, y: 70 }, { x: 10, y: -110 }], seed: 2 }], ['trackingSeals', 'triangle', { seed: 2 }],
     ['seventhSeal', 'eighth', { radius: 120, seed: 5 }],
+    // delivery 3b2: the P2 follow-up effects, the cases of API §14.11 (event rings, crack lines, the kink, the rewound and
+    // amplified chains, the links, the branches, the re-sweep, the split), and a second seed of each event ring
+    ['inkDarts', 'stain', { seed: 7 }], ['brushQuills', 'dab', { seed: 7 }], ['headsmanDarts', 'fear', { seed: 7 }], ['inkBloom', 'pollen', { seed: 7 }],
+    ['bossbane', 'crack', { seed: 7 }], ['thunderclap', 'echo', { radius: 136, seed: 5 }], ['thunderNeedles', 'leap', { points: [{ x: 0, y: 0 }, { x: 180, y: -60 }], seed: 3 }],
+    ['sparkThread', 'rewind', { points: AFX_POINTS, seed: 1 }], ['stormThread', 'amplify', { points: AFX_POINTS, seed: 1 }], ['frostChainlet', 'link', { points: AFX_POINTS.slice(1), seed: 1 }],
+    ['inkLance', 'branch', { length: 640, width: 12, seed: 1 }], ['wideBrush', 'resweep', { length: 410, width: 34, seed: 1, p: 0.5 }], ['clusterPots', 'split', { radius: 64, seed: 3 }],
+    ['inkDarts', 'stain', { seed: 12 }], ['brushQuills', 'dab', { seed: 4 }], ['headsmanDarts', 'fear', { seed: 9 }], ['inkBloom', 'pollen', { seed: 2 }],
+    ['bossbane', 'crack', { seed: 3 }], ['thunderclap', 'echo', { radius: 150, seed: 2 }], ['thunderNeedles', 'leap', { points: [{ x: 20, y: 10 }, { x: -120, y: 90 }], seed: 8 }],
+    ['wideBrush', 'resweep', { length: 480, width: 40.8, seed: 5, p: 0.1 }],
   ],
   lob: { to: [320, -120], t: [0, 0.25, 0.5, 0.75, 1], mini: [[60, 0], [-60, 0]] },
 });

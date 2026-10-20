@@ -24,8 +24,9 @@ const CONFIGS = [
   { name: 'stress DPR2 2.0 sprites bare', scene: 'stress', dpr: 2, scale: 2, sprites: true, terrain: false },
   { name: 'terrain DPR2 2.0 sprites', scene: 'stress', dpr: 2, scale: 2, sprites: true, enemies: 60 },
   { name: 'terrain DPR2 2.0 sprites bare', scene: 'stress', dpr: 2, scale: 2, sprites: true, enemies: 60, terrain: false },
-  // K10: six awakened weapons firing on the stress crowd without the terrain (minimal detail), and on 60 enemies (full
-  // detail), with the weapons' field effects pack and without it (brief §9-6: work p95 +0.4 ms and +0.6 ms at most).
+  // K10: sixteen awakened weapons (the P1 and P2 gimmicks) firing on the stress crowd without the terrain (minimal
+  // detail), and on 60 enemies (full detail), with the weapons' field effects pack and without it (brief §9-6: work p95
+  // +0.4 ms and +0.6 ms at most).
   { name: 'arsenal DPR2 2.0 sprites', scene: 'arsenal', dpr: 2, scale: 2, sprites: true },
   { name: 'arsenal DPR2 2.0 sprites bare', scene: 'arsenal', dpr: 2, scale: 2, sprites: true, afx: false },
   { name: 'arsenal full DPR2 2.0 sprites', scene: 'arsenal', dpr: 2, scale: 2, sprites: true, enemies: 60 },

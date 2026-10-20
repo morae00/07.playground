@@ -447,3 +447,65 @@ test('SYS-16: prey takes a quarter more from every source, and pollen slows thos
     r.engine.dispose();
   }
 });
+
+// K10 (FX-08, delivery 3b): what the P2 gimmicks' art draws from beyond the simulation's own state, all looks only:
+// a late dab and a split's small pots waiting, a topple, a bump, and a caltrop's snap as moments, a grave's bind end,
+// a link's last shared hit, the whole thread a rewind runs back along, an amplifying cast, and the fear, pollen, and
+// rear rings marked as the gimmick's (echo).
+const LOOKS = {
+  brushQuills: (w) => w.pending.some((p) => p.id === 'brushQuills' && p.points.length === 0),
+  clusterPots: (w) => w.pending.some((p) => p.id === 'clusterPots' && p.points.length === 2),
+  sealArrows: (w) => w.pending.some((p) => p.id === 'sealArrows'),
+  inkPulse: (w) => w.pending.some((p) => p.id === 'inkPulse'),
+  gravePins: (w) => w.enemies.some((enemy) => (enemy.awk?.bound ?? 0) > w.elapsed),
+  pinHail: (w) => w.pending.some((p) => p.id === 'pinHail'),
+  sparkThread: (w) => w.chains.some((chain) => chain.echo && chain.thread?.length >= 3),
+  stormThread: (w) => w.chains.some((chain) => chain.skillId === 'stormThread' && chain.gimmick),
+  headsmanDarts: (w) => w.effects.skillMarks.some((m) => m.skillId === 'headsmanDarts' && m.echo),
+  inkBloom: (w) => w.effects.skillMarks.some((m) => m.skillId === 'inkBloom' && m.echo),
+  tailGuard: (w) => w.effects.skillMarks.some((m) => m.skillId === 'tailGuard' && m.echo),
+};
+
+test('K10 3b: the P2 gimmicks leave the looks-only records their art draws from, under the rule only', () => {
+  const missing = [];
+  for (const [id, look] of Object.entries(LOOKS)) {
+    for (const mode of ['on', 'off']) {
+      // Graves and caltrops act on an enemy stepping on them: one walks in through where the graves fall behind the hero
+      // (a fan about 600 back), or from ahead into the caltrops.
+      const scenario = id === 'gravePins' || id === 'pinHail' ? { steps: 300, setup: (f) => (id === 'gravePins' ? f(-700, 63, { speed: 50 }) : f(320, 0, { speed: 50 })) } : SCENARIOS[id], r = arena();
+      try {
+        r.probe.setSkills({ [id]: { level: 5, awakened: true } });
+        if (mode === 'off') r.probe.patchRules({ awakeningGimmicks: false });
+        if (scenario.crit !== undefined) r.probe.setPlayer({ stats: { critChance: scenario.crit } });
+        scenario.setup((dx, dy, extra = {}) => r.probe.spawnEnemy({ tier: 'small', x: r.player.x + dx, y: r.player.y + dy, hp: 1e6, speed: 0, damage: 0, ...extra }), r);
+        let seen = false;
+        for (let tick = 0; tick < scenario.steps + 60 && !seen; tick += 1) {
+          r.probe.step(1);
+          if (tick % 3 === 0) seen = look(r.probe.renderWorld());
+        }
+        if (seen !== (mode === 'on')) missing.push(`${id} ${mode}: ${seen ? 'seen' : 'not seen'}`);
+      } finally {
+        r.engine.dispose();
+      }
+    }
+  }
+  assert.deepEqual(missing, []);
+});
+
+test('K10 3b: linked enemies record when they last shared a hit', () => {
+  const r = arena();
+  try {
+    r.probe.setSkills({ frostChainlet: { level: 5, awakened: true } });
+    for (const dx of [150, 260, 370]) r.probe.spawnEnemy({ tier: 'small', x: r.player.x + dx, y: r.player.y, hp: 1e6, speed: 0, damage: 0 });
+    r.probe.step(3);
+    const linked = r.probe.read().enemies.find((enemy) => enemy.awk?.link);
+    assert.ok(linked, 'linked');
+    // Then one bossbane shot strikes the nearest enemy alone, and the others share it.
+    r.probe.setSkills({ bossbane: { level: 1 } });
+    r.probe.step(20);
+    const world = r.probe.read(), shared = world.enemies.find((enemy) => enemy.awk?.link?.sharedAt !== undefined)?.awk.link.sharedAt;
+    assert.ok(shared !== undefined && shared > linked.awk.link.until - 2 && shared <= world.elapsed, 'a shared hit is recorded at its time');
+  } finally {
+    r.engine.dispose();
+  }
+});

@@ -3791,3 +3791,644 @@ node scripts/art-review-sheet.mjs expr --name k10-keep-3b1-r1 --scale 1 --crop 0
 - `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/API-arsenal-fx.md` (`:740-751` §12-81~91, `:963-1032` §14.10)
 - `/Users/kyuukkang/CT_AX/07.playground/docs/art/briefs/arsenal-fx.md` (`:297`, `:298`, `:308`, `:317`, `:320`, `:862-909`, `:1059`)
 - `/Users/kyuukkang/CT_AX/07.playground/docs/art/deliveries/K10-arsenal-fx.md` (3b1 납품서 `:3245-3563`)
+
+## K10 3차 2회 2/2 납품서
+
+**3b2: 각성 기믹 P2의 이어지는 효과 + 검수 7차 F1·F2·R2·R4·§5-6 · `SPEC.version` `1.0-d3b2`**
+
+kit-artist, 2026-10-19. 검수 7차 수정(F1·F2)과 권장(R2·R4), §5-6(포자)을 3b2에 함께 넣었습니다. 3b1은 아직 굽지 않았으므로 3b1 36장과 3b2 38장을 한 번에 구우면 됩니다.
+
+**검수자가 먼저 볼 것**
+- **검사**: `--check`는 모두 ok, kit error 0건입니다. C2·C6·C7·C8·C10은 기준 안이고, C9 지시서 명령의 출력은 3b1과 같습니다.
+- **보존 해시**: 넓힌 식으로 잰 다섯 값(stamps, draw, spec, parts, overlays)이 3b1 코드에서 먼저 잰 기준과 모두 같습니다(§7).
+- **판단 요청 둘**
+  - 공포 고리의 종이 띠(p50 α0.85, 폭 3, 0.45초)를 C10의 면으로 세지 않았습니다. 면으로 센다면 기준을 넘습니다(§9-4).
+  - F1 헤맴은 처방보다 조금 작고(k·1.6, 궤도 4.7), 4장의 움직임이 반 바퀴 돌기에서 흔들기로 바뀌었습니다(§9-13).
+- **지시서와 다르게 한 것 중 셋**
+  - 균열 터짐 가운데 조각 `crackBurst` 3장을 더했습니다. §4.4 표에는 없고 본문에만 있습니다.
+  - 가지창 `fork`의 place는 `point`입니다(지시서 `origin`). `origin`이면 C7 2줄이 실패합니다.
+  - 꽃가루 고리·메아리의 청록은 1/3 이하로 줄였습니다(검수 7차 §5-3을 지시서 값보다 앞세움).
+
+**고친 파일 둘**
+- `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/k-arsenal-fx.js`
+- `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/API-arsenal-fx.md`
+  - 머리말과 납품 표, §3 opts(`share`, 3b2의 `points`·`context`), §4 META, §5, §10, §11, §12-92~118, §13, §14.10 수정 행
+  - 새 §14.11: 단계, 조각, 그림, SPEC, 식, 층·LOD·상한, jit, 참고 합성, C9 벡터
+
+#### 1. 만든 것과 done 목록
+
+**코드 위치(k-arsenal-fx.js)**
+
+| 무엇 | 줄 |
+|---|---|
+| 머리 주석 | `:3-13` |
+| `GSTAGE2`(새 단계 15), `GOBJECT` 새 4 | `:390-400` |
+| `SPEC.version` | `:404` |
+| `SPEC.gimmick` 새 키 20 | `:558-592` |
+| 조각 표: `stainBurst`, `pollenPuff`, 새 그룹 4 | `:695-720` |
+| 조각 표: 기존 그룹 끝(`crackBurst`, `caltrop-snap`, `bump`, `haste`, `fork`, `deflect-*`) | 각 그룹 끝 |
+| 검수 7차 수정: R2 얼룩 | `:2357-2367` |
+| 검수 7차 수정: F1 헤맴 | `:2392-2413` |
+| 검수 7차 수정: §5-6 포자 | `:2415-2428` |
+| 검수 7차 수정: R4 서리(`FROST`) | `:2436` 안팎 |
+| 검수 7차 수정: F2 가시 | `:2467-2500` |
+| 새 그림 §3d | `:2502-2811` |
+| `paths` 3b2 | `:3256-3280` |
+| `ctxEnemy`의 `heads` 인자, `ctxHero` | `:3748-3759` |
+| `MARK_EVENT`·`EVENT_CTX`·`markEvent`·`drawMarks` | `:3813-3850` |
+| `eventRing`·`tornRing`·`crackLines`·`drawCracks`·`kinkPts`와 새 단계 15 | `:3924-4216` |
+| `drawGimmick` 분기 | `:4218-4232` |
+
+**공개 API에 생긴 것**
+- `groups` 35 → 39: brushQuills, sealArrows, thunderNeedles, tailGuard
+- `overlays`는 14키 그대로입니다.
+- 새 opts `share`(묶인 사슬)
+- 조각 316 → **354장**, 박스 넓이 549,380 → **603,884**
+
+**새 단계 15(우선 2, done.gimmick ✓)**
+
+| 무기 | 단계 | 비고 |
+|---|---|---|
+| brushQuills | dab | 이번에 처음 done |
+| sealArrows | topple | 이번에 처음 done |
+| thunderNeedles | leap | 이번에 처음 done |
+| tailGuard | rear | 이번에 처음 done |
+| inkPulse | bump | 주 단계가 있던 무기, 기믹 done은 처음 |
+| thunderclap | echo | 위와 같음 |
+| clusterPots | split | 위와 같음 |
+| sparkThread | rewind | 위와 같음 |
+| stormThread | amplify | 위와 같음 |
+| frostChainlet | link | 위와 같음 |
+| inkLance | branch | 위와 같음 |
+| wideBrush | resweep | 위와 같음 |
+| inkOrbit | deflect | 위와 같음 |
+| meteorBrush | haste | |
+| pinHail | snap | |
+
+- 3b1 단계 넷(stain, fear, crack, pollen)에는 사건(터짐·고리)을 더했습니다.
+- 해바늘은 규칙만 있습니다(`SPEC.gimmick.sunNeedles.scale`). 단계가 없어 done.gimmick은 false입니다.
+- P2 단계는 모두 24개입니다.
+
+#### 2. 무기별 요약
+
+| 무기 / 단계 | 물건·도형 | 청록 |
+|---|---|---|
+| 먹침 / stain | `stainBurst`: 종이 테를 두른 얼룩 몸이 터지고, 테 없는 먹 팔과 방울이 나간다. 1장은 테를 두른 조각 넷, 2장은 땅에 누운 ink700. 고리 r70은 stroke [[ink,3.2],[p50,1.2]], 틈 3~4 | 젖은 반짝 호, 고리 core 60~100° |
+| 붓깃 / dab | `dab`: 들쭉날쭉한 먹 웅덩이에 펜촉 획, 대기 0.6초 동안 부푼다. `dabBurst`: 곧은 펜 튐 여섯과 깃 날개 조각. 고리 r50은 band ink 2.4~5, 틈 3 | 펜촉 획, core 40~70° |
+| 인장 화살 / topple | K9 인장 머리(종이 덩이 + 먹 인면 띠)가 28° → 62° 넘어지고, 부딪힌 자리에 찢긴 종이 터짐 | 인면 테 |
+| 뇌침 / leap | kink 번개(n 3~8, 옆 3~8 번갈아, [[ink,3.4],[ally,1.8],[allyG,0.6]])와 `leapHit`(꺾인 가지 셋 + 작은 종이 섬광) | 번개 심 |
+| 망나니 침 / fear | r160 찢긴 종이 띠(p50 3, 먹 테 1.2, 안쪽 찢김), 찢어진 곳 둘, 0.4R → R을 0.15초, α0.85. 점선·물방울 머리 없음 | 없음(지시서대로) |
+| 먹꽃 / pollen | r50 먹 점선 [4,5] + `pollenPuff`(밝은 알갱이 여섯) | core 60~100°에만 청록 점선 |
+| 꼬리 방패 / rear | 둥근 날밑 단검과 종이 베기, 1장에서 베기 둘(엇갈림, ✕ 아님) | 손잡이 끝 리본 |
+| 보스 사냥침 / crack | `crackBurst`(판 파편 + 찢긴 섬광), 고리 r90 stroke [[ink,3.4],[p50,1.6]], 종이 균열선 6~8([[ink,3],[p50,1.4]], ≤ 0.9R, 갈래 하나) | 고리 core 70~110°, 균열선 둘, 파편의 새 금 |
+| 먹 파동 / bump | 둥근 충격(먹 덩이 + 찢긴 섬광)과 검은 띠 조각(회전 없음) | 띠 앞선 |
+| 천둥 박수 / echo | 1.4R jag [[ink300,3.4],[p300,1.2]] α0.75, 틈 둘, 손 없음 | core 80~110°에만 |
+| 송이 단지 / split | `mini` 둘이 ±60으로 lobMini 0.35초, `burst` + 송이 단지 고리 0.6R(평상) | 고리 |
+| 불꽃실 / rewind | sag −0.16 [[ink,2.6],[ally,1.4],[allyG,0.5]], 꼬리에서 머리로, 닿은 적에 `spark` | 실 |
+| 폭풍실 / amplify | 구간 i마다 굵기 ×(1 + 0.15i), 진폭 ×(1 + 0.1i), i ≥ 3이면 `gust-b` | 가닥 |
+| 서리 사슬 / link | 구성원 사이 links pitch 20, α0.45, 공유 피해 뒤 0.18초는 α1 | 구간 가운데 고리 |
+| 먹창 / branch | 창 끝에서 ±35°, 0.4L 가지 창(술 없음, 창날 ×0.85, 캡슐은 0부터) + `fork` | 매듭 띠 |
+| 넓은 붓 / resweep | 같은 띠 α×0.65, 머리가 먼 끝에서 결 쪽으로, 붓 좌우 반전 | 앞선 |
+| 먹 궤도 / deflect | 종이 파편 혜성(각진 머리: 앞끝 +8.6, 옆 ±5.2, 꼬리 −22), 산호 없음 | 소용돌이 획 |
+| 유성 붓 / haste | 결 발 뒤로 감아 오르는 청록 띠 둘 + 종이 별가루, y −32.7~−12, 자국 테는 inside | 띠 |
+| 핀 우박 / snap | 땅에 납작한 찢긴 섬광, 부러진 핀 반쪽 둘 | 날 홈 |
+
+**검수 7차 수정**
+- **F1 헤맴**: 층은 처방대로 앞 [[ink,3.4],[p300,1]], 뒤 [[ink,2.8],[ink300,0.8]]입니다. 크기는 컬 k·1.6, 궤도 4.7입니다. 4장 동안 쌍이 0→13→25→13°로 흔들리며 각 컬이 돕니다. 열린 끝은 늘 바깥이고 리본은 [ink 2.2, ally 1.2, allyG 0.4]입니다.
+- **F2 가시**: 먹 몸에 볼록 가장자리를 따라 종이 띠(0.25b → 0), 먹 외곽 1.2입니다. 앞 가시 높이는 6.4/7.6/9.6/11.6/13.6이고, 곁 가시는 그 0.78·0.62배, 밑동은 높이의 0.75배입니다. 앞 가시가 가장 낮고 셋이 얕은 호에 놓입니다. 청록 심은 앞 가시로 옮겼습니다.
+- **R2**: 얼룩 1은 amp 0.34, rx 1.15r, ry 0.85r입니다.
+- **R4**: 서리 1의 r12 키는 5.6입니다.
+- **§5-6 포자**: 반지름 2(박스 10×14 − 3 안의 최대, 먹 테까지 약 5px), allyG 몸, 반짝은 비켜 둠, 꼬리 없음입니다.
+
+#### 3. C 검사 출력 원문
+
+렌더 위치: `/var/folders/p6/8x9_dsj97mbg_d6323ptytvc0000gn/T/blackline-art-review/`. 명령은 모두 단일 `node scripts/art-review-sheet.mjs …`입니다.
+
+- **C1** `k10-c1-all-d3b2`: `ok`
+
+**C2** `k10-c2-parts-d3b2`(첫 줄과 새 줄)
+```
+frames=354 ok boxArea=603884 ok badParts=0
+inkDarts/stainBurst f3 prog 0.3s box64x52 a32,30 center none ally info w:event
+brushQuills/dab f3 prog box28x18 a14,9 target none ground info w:pending
+brushQuills/dabBurst f3 prog 0.24s box52x40 a26,24 center none ally info w:event
+sealArrows/topple f2 prog 0.16s box32x28 a16,14 event none ally deco w:event
+thunderNeedles/leapHit f2 prog box24x24 a12,12 point none ally deco w:chain
+inkBloom/pollenPuff f3 prog 0.3s box36x28 a18,18 target none ally deco w:event
+pinHail/caltrop-snap f2 prog 0.15s box44x30 a22,19 center none ally deco w:event
+tailGuard/rearHit f3 prog 0.2s box40x32 a20,18 target none ally deco w:event
+bossbane/crackBurst f3 prog 0.3s box56x48 a28,30 center none ally info w:event
+inkPulse/bump f2 prog 0.16s box32x32 a16,16 event none ally deco w:event
+meteorBrush/haste f4 loop@12 still0 box52x40 a26,36 hero face front info w:status
+inkLance/fork f2 prog 0.2s box28x28 a14,14 point beam ally deco w:event
+inkOrbit/deflect-start f2 prog 0.06s box40x18 a27,9 air vel ally info w:vel
+inkOrbit/deflect-travel f2 loop@12 still0 box40x18 a27,9 air vel ally info w:vel
+inkOrbit/deflect-end f2 prog 0.1s box40x18 a27,9 air vel ally info w:vel
+```
+
+**C6** `k10-c6-scan-d3b2`
+```
+calls=516 colours bad=0 nonhex=0 banned=0 nocyan=0 specTokens bad=0 korean=0
+bad={} banned: nocyan: tokens:
+```
+
+**C7** `k10-c7-geometry-d3b2`(마지막 상태)
+```
+1 stamps outside box-3: 0
+2 head objects below their anchor: 0 | feet overlays outside their rect: 0 | hero overlays in the face zone or over the foot ring: 0 | origin stamps within 26 of the hero: 0
+3 layout placements off their shape: 0
+4 lob paths wrong: 0
+5 invalid calls ok
+```
+
+**C8** `k10-c8-unchanged-d3b2`
+```
+fixed: k4=taptby/681935 icons=10absaa/1414173 enemies=1eysntd/554335 hero=v9hbkt/51244
+in-flight (before -> after must match): k9 n4n4y2/2117692 -> n4n4y2/2117692 same | k11 bvf9fj/934797 -> bvf9fj/934797 same | fixed set same
+PN keys same: C,_hk,_ki,arsenal,arsenalFx,bombers,bossesA,bossesB,bossesC,characters,defs,enemies,env,fieldBosses,halftone,hazards,heroKit,icons,rng,skillVfx,speedLines,splat,story,taper,tapers,vfx
+arsenalFx calls: 488
+```
+
+**C9**
+- 지시서 명령 `k10-c9-count-d3b2`: `C9 lines=69 text hash=19cnic1 len=8948`(3b1과 같음)
+- 3b2 단계 벡터 `k10-c9b-vectors-d3b2`는 31줄입니다. 원문은 API §14.11에 있습니다. 대표 줄:
+```
+inkDarts/stain path gaps [[8.78,25.06],[186.99,198.45],[276.21,291.87]]
+inkDarts/stain path core [[65.16,162.84]]
+thunderclap/echo path core [[195.48,275.72]]
+thunderNeedles/leap path kink [[0,-14],[23.03,-17.91],[39.85,-33.5],[70.93,-32.69],[83.7,-49.31],[118.37,-48.86],[132.47,-61.49],[162.94,-62.53],[180,-74]]
+bossbane/crack path coreLines [[0,8],[4,8]]
+inkLance/branch path tips [[849.7,-146.84],[849.7,146.84]]
+clusterPots/split path mini [[15,-21],[30,-28],[45,-21]]
+```
+
+**C10** `k10-c10-contrast-d3b2`
+```
+fills=24 fail=0 (persistent over 0.3 s: Y max 0.62; brief: Y max 0.69; hero coat Y 0.902, contrast min 1.25)
+```
+- 채움 줄을 더하지 않았습니다(§9-4).
+
+**C5·C12·C13·C15**(모두 ok)
+- C5: `k10-c5-gimmicks-p2-d3b2`(이름표, 24칸), `-blind-gray-d3b2`
+- C13: `k10-c13-marks-d3b2`, `-gray-d3b2`, `-d3b2-x4`
+- C12: `k10-c12-scene-p2-d3b2`, `-gray-x08-d3b2`
+- C15: `k10-c15-pairs-d3b2`
+
+**다시 돌리지 않은 것**
+- C3·C4·C11·C14: 주 단계, 비행, 땅 조각이 바뀌지 않았습니다(제한 draw 해시가 같음).
+
+#### 4. 직접 본 렌더
+
+| 배율 | 렌더 |
+|---|---|
+| 1배 | `k10-c5-gimmicks-p2-d3b2`, 칸 확대 `k10-c5-p2-crop-a~d`, `k10-c13-marks-d3b2`, `k10-c12-scene-p2-d3b2` |
+| F1·F2 합격 판(검수 7차와 같은 짜임) | `k10b2-feet7-x1`(발 일곱 + 없음 × 1·3·5장 × 색·흑백), `k10b2-heads-x1`(머리 표식, 포자, 균열판, 정예, 기절 점, xp, 동전, 회복, 자석) |
+| 0.6·0.8배 흑백 | `k10-c5-gimmicks-p2-blind-gray-d3b2`, `k10-c12-scene-p2-gray-x08-d3b2`, `k10-c13-marks-gray-d3b2` |
+| 확대 | `k10b2-feet7-zoom-x4`, `k10b2-heads-lost-x6`, `k10b2-lost-x8d`(헤맴 장별, 박스 − 3, 색·흑백), `k10-c13-marks-d3b2-x4` |
+| 새 조각 | `k10b2-new-parts-x3`·`-x3b`·`-x3c` |
+| 고리 | `k10b2-rings-x2`, `k10b2-dabring-x5` |
+| LOD·감소 설정 | `k10b2-variants`(588호출) |
+| 대조 | `k10-c15-pairs-d3b2` |
+
+**고친 시안**
+- 얼룩 터짐: 팔·방울까지 종이 테를 두르니 분자 모형으로 읽혔습니다.
+- dab: 꼬리와 점을 단 덩이가 눈 달린 물고기로 읽혔습니다.
+- 되받은 탄: 가운데 소용돌이는 눈으로, 말린 고리는 'G'로 읽혔습니다.
+- 결 가속: 말려 돌아오는 띠는 'C'·초승달로, 가운데가 두꺼운 띠는 잎으로 읽혔습니다.
+- 인장: 꼭지를 단 덩이가 병으로 읽혔습니다.
+- 부딪힘: 위쪽 호가 눈썹으로 읽혔습니다.
+- dab 고리: 이웃한 틈 둘이 'C'를 만들어 틈을 셋으로 바꿨습니다.
+
+#### 5. 자가 판정
+
+**T4 기믹(C5, 24칸)**
+- 이름표 판 1배에서 24칸이 모두 §4.1 표의 그림과 맞습니다.
+- BLIND 흑백 0.6배에서 22~24/24로 판단합니다(≥ 90%).
+- 약점
+  - 마름쇠 꺾임은 작은 deco 조각입니다.
+  - 되감김은 꼬리에서 머리로 가는 방향이 움직임에서만 보입니다.
+  - 12 등급의 묶임·가시는 작습니다.
+
+**T5 표식(C13, 1·4배, 흑백)**
+- 헤맴: 먹 테 컬 둘이 1배에서 보이고, 기절 점 셋·약화 아치와 갈립니다.
+- 포자: 흑백에서 밝은 알갱이입니다(기절 점은 어두움).
+- 가시: '발치의 어두운 갈고리'이고, 서리 1·2(흰 결정)와 명도로 갈립니다. 셋이 한 줄로 서지 않습니다.
+- 얼룩 1과 동전은 명도가 반대입니다.
+
+**T6 혼잡(C12, 상한대로 P2를 더한 스트레스 판)**
+- 결, 산호 적 탄, 호박 예고가 그대로 읽힙니다.
+- 새 고리는 가는 선입니다. 가장 밝은 새 요소는 공포 고리입니다(r160, 0.45초).
+
+**T7**: 땅 조각이 바뀌지 않아 해당이 없습니다.
+
+#### 6. 메인 세션 등록값
+
+**굽기**(HEAD 스냅숏): 354장, 603,884
+- 3b1 새 키 36장. 그중 `lost`, `thorn*`, `mark-stain1`, `frost1-12`, `spore-a/b`는 이번에 고친 그림입니다.
+- `afx/crowFeathers/crow/0~5` 다시 굽기
+- 3b2 새 키 38장
+  - `afx/inkDarts/stainBurst/0~2`
+  - `afx/brushQuills/dab/0~2`, `dabBurst/0~2`
+  - `afx/sealArrows/topple/0~1`
+  - `afx/thunderNeedles/leapHit/0~1`
+  - `afx/inkBloom/pollenPuff/0~2`
+  - `afx/pinHail/caltrop-snap/0~1`
+  - `afx/tailGuard/rearHit/0~2`
+  - `afx/bossbane/crackBurst/0~2`
+  - `afx/inkPulse/bump/0~1`
+  - `afx/meteorBrush/haste/0~3`
+  - `afx/inkLance/fork/0~1`
+  - `afx/inkOrbit/deflect-start|travel|end/0~1`
+- 새 그룹: brushQuills, sealArrows, thunderNeedles, tailGuard
+
+**애니메이션**
+- loop: `deflect-travel` 12fps still 0, `haste` 12fps still 0
+- 나머지 3b2 조각은 prog입니다(seconds는 C2). `dab`은 대기 진행률, `leapHit`은 연쇄 창입니다.
+
+**매니페스트**
+- `SPEC.gimmick` 새 키 20
+- 새 window 값 `vel`
+
+**렌더러**(API §14.11)
+- 사건 고리 다섯 prim(stroke·band·torn·dashed·jag: 틈, core만 청록, 각성 선 없음)
+- 균열선, kink, 되감김, 증폭, 묶인 사슬(`share`), 가지창(캡슐은 0부터), 되쓸기(반전, α0.65)
+- 되받은 탄(+x = 속도), 결 가속(결 몸 바로 뒤, face 반전, 자국 테 inside)
+- 갈라짐(lobMini + burst + 0.6R 고리), 해바늘 배율(≤ 1.6)
+- 상한: `caps.events` 16/10/4, `pollenRings` 8/4/0, `links` 120/60/0
+
+**엔진·표시 자료**(지시서 §9-3)
+
+| 자료 | 무기 |
+|---|---|
+| 얼룩·균열 터짐 `area/blast` echo | inkDarts, bossbane |
+| `pending` 붓자국(자리, born, 0.6) | brushQuills |
+| `enemy/stunned` source와 부딪힌 자리 | sealArrows, inkPulse |
+| 도약 점 둘 | thunderNeedles |
+| 처형 자리 | headsmanDarts |
+| 꽃가루 틱 | inkBloom |
+| 뒤쪽 명중 표시 | tailGuard |
+| 메아리 blast | thunderclap |
+| 작은 단지 pending 둘 | clusterPots |
+| 되감김 echo | sparkThread |
+| 구간 번호 | stormThread |
+| 새 `awk.link`(구성원, 공유 시각) | frostChainlet |
+| 가지 BeamEffect 둘 | inkLance |
+| 되쓸기 echo | wideBrush |
+| 되받은 탄 표시·나이 | inkOrbit |
+| 결이 자국 안 | meteorBrush |
+| 마름쇠 발동 | pinHail |
+| `shot.radius` | sunNeedles |
+
+**지시서 정정**
+- §4.4 표에 `crackBurst` 줄을 더합니다.
+- `fork`의 place를 `point`로 고칩니다.
+- `ring.*`·`line.*` 이름을 `SPEC.gimmick` 키로 바꿉니다(§12-92).
+- 꽃가루·메아리 청록을 core에만 둡니다.
+
+#### 7. 보존 해시 결과
+
+검수 7차 §3 끝 `k10-keep-3b1-r1`을 넓힌 식입니다. 같은 식을 3b1 코드에서 먼저 쟀고(`k10-keep-3b2-base`), 같은 3b1 코드에서 검수서 식은 `1d1pfw/759026`, `i29rer/5642637`, `18o4se4/846311`로 검수서 값과 같았습니다.
+
+**뺀 것과 이유**
+- **3b2가 더한 것**
+  - 새 그룹 4개
+  - 기존 그룹 끝 part 10개(`stainBurst`, `pollenPuff`, `crackBurst`, `bump`, `fork`, `deflect-*`, `haste`, `caltrop-snap`)
+  - 새 단계 15
+  - SPEC `version`과 `gimmick`의 새 키 20
+- **사건을 더한 단계**: stain, fear, crack, pollen의 draw
+- **검수 7차로 고친 조각**: `lost`, `thorn*`(F1·F2), `mark-stain1`(R2), `frost1-12`(R4), `spore-a/b`(§5-6). 포자는 지시자 목록에 없지만 검수 7차 §5-6이 요청한 변경입니다.
+- **그 조각을 쓰는 단계와 오버레이 조합**: 단계 `lost`·`thorn`, 오버레이 `lost`·`thorn`·`pollen` 전부, `stain` stack 1, `frost` r12 stack 1
+
+| 측정 | 3b1 코드 | 3b2 코드 |
+|---|---|---|
+| stamps | `1h66c1i/754425` | 같음 |
+| draw | `ob7a83/5582105` | 같음 |
+| spec | `p3d9vk/18629` | 같음(= 3b1 원문) |
+| parts | `1fawmjd/28554` | 같음(= 3b1 원문) |
+| overlays | `1c7d5xg/807605` | 같음 |
+
+**원문**(아무것도 빼지 않음, `k10-keep-3b2-final`). 다음 회차의 기준입니다.
+
+| 항목 | 값 |
+|---|---|
+| stamps | `l0nap6/878803` |
+| draw | `8crhz3/7063925` |
+| spec | `128ji9u/22506` |
+| parts | `qxfght/31609` |
+| overlays | `1umqwpr/1079940` |
+
+- version `1.0-d3b2`, 그룹 39, 단계 67
+
+**명령**: `k10-keep-3b2-final`의 식(위 목록대로 건너뜀)을 그대로 다시 돌리면 됩니다. 넓힌 식의 3b1 쪽 값은 3b1 코드에서만 잴 수 있어, 검수자가 지금 코드에서 다시 잴 수는 없습니다.
+
+#### 8. 사람 클린업
+
+- 사건 조각의 붓 질감: 먹 튐, 찢긴 섬광, 파편, 펜 튐, 깃 조각, 인장 덩이, 단검, 균열판 파편, 되받은 탄 머리·꼬리, 결 가속 띠, 핀 반쪽
+- 1배 픽셀 다듬기: `leapHit`, 꽃가루 알갱이, 헤맴 컬(약 8px), 12 등급 가시(6.4)·서리 수
+- 공포 띠의 찢김과 꽃가루 점선의 붓 질감
+- 검수 7차 R3(약화 매듭)과 균열판 1~2의 첫 금(✉로 읽힘)은 사람 몫으로 남겼습니다.
+- 문화 검토: 배후 응징(종이 베기, 피 없음), 인장(글자 없음)
+
+#### 9. 지시서와 다르게 한 것 (API §12-92~118)
+
+1. **SPEC 자리**: 모든 새 SPEC을 `SPEC.gimmick[id]`에 넣었습니다(대응표는 §12-92). `layout`·`fills`는 늘리지 않았습니다.
+2. **`crackBurst` 추가**: 3장, 8,064.
+3. **사건 고리**: 꽃가루·메아리의 청록을 core에만 두었습니다. 층이 없던 세 터짐 고리는 층을 정했습니다. 공포 고리에는 청록이 없습니다. 사건 고리에는 각성 선과 coreScale을 쓰지 않습니다.
+4. **C10(판단 요청)**: 되쓸기는 α0.29라 기존 줄보다 어둡습니다. 공포 띠는 선으로 보았습니다. 면이면 α나 폭을 바꿔야 합니다.
+5. **해바늘**: 규칙만 있고 단계·C5 칸이 없습니다.
+6. **`fork`의 place = `point`**: C7 origin 규칙 때문입니다.
+7. **window**: event, pending, chain, vel, status
+8. **되쓸기**: 같은 축에서 먼 끝 → 결로 돌아오는 띠, 붓 좌우 반전, seed + 500
+9. **가지창**: 창이 끝에 닿은 뒤 시작, 창날 ×0.85
+10. **되감김·증폭·묶인 사슬·kink 식**: §12-101~104
+11. **갈라짐 참고 자리**: ±60을 x축 위에 둡니다.
+12. **그림을 고친 이유**: 결 가속·되받은 탄·dab·얼룩 터짐·인장·부딪힘을 고친 이유는 §4 '고친 시안'과 같습니다.
+13. **F1**: k·1.6, 궤도 4.7('안팎'). 반 바퀴 돌기는 90° 장에서 두 컬이 겹쳐 한 덩이가 되고, 43°에서는 맞닿아 흔들기로 바꿨습니다. 4장·loop 8·deco·박스·앵커·리본은 그대로입니다.
+14. **F2 갈고리 방향**: 3b1 그대로(곁 둘은 안쪽, 앞은 오른쪽)입니다. 검수서의 '둘은 바깥' 서술과 다를 수 있습니다. 청록 심은 앞 가시로 옮겼습니다.
+15. **포자**: 박스를 그대로 두어 반지름이 2입니다(2.4가 꼭 필요하면 박스를 12×14로 넓혀야 함).
+16. **참고 합성(context)**: 몸 → 사건 → 머리 표식 순으로 그립니다. 연쇄는 점 6개, 빔은 300·380으로 줄였습니다.
+17. **`drawZone` 내부 옵션 `inside`**: 기존 출력은 그대로입니다.
+18. **version**: `1.0-d3b2`
+
+#### 10. 알려진 한계
+
+- 실제 렌더러·DPR1 화면(움직이는 헤맴·포자, 되감김 방향, 사건 상한)은 아직 확인하지 않았습니다.
+- 정식 판독 시험(n ≥ 8), 성능, 팩 페이지·바이트는 메인 세션 몫입니다.
+- C12는 한 빌드보다 많은 무기를 섞은 스트레스 판입니다.
+- C5·C12의 보스 효과는 간수로 대신 그렸습니다.
+- 남은 예산은 26장, 36,116입니다.
+
+## K10 검수 8차: 3차 2회 2/2(3b2, `1.0-d3b2`) + P1 연결 캡처, art-director, 2026-10-20
+
+**판정: 수정 후 합격.**
+- 고칠 것은 하나입니다(F1). 꽃가루 고리를 지시서의 먹 + 청록 점선으로 되돌립니다.
+  - 이 문제는 제 검수 7차 §5-3이 꽃가루 고리까지 '청록 1/3 이하'에 넣어서 생겼습니다.
+  - 바뀌는 것은 `SPEC.gimmick.inkBloom.ring`과 pollen 단계 draw뿐이고, 조각(stamp)은 하나도 바뀌지 않습니다.
+  - 그래서 메인 세션은 354장 팩을 지금 구워도 됩니다. F1 뒤에는 매니페스트 SPEC만 바꿉니다.
+- 검수 7차 수정은 모두 합격 기준을 맞췄습니다: F1 헤맴, F2 가시, R2 얼룩 1, R4 서리 1, §5-6 포자.
+- 판단 요청 넷과 다르게 한 것(§12-92~118)은 꽃가루 고리 하나만 빼고 받습니다.
+- P1 연결 캡처 일곱 장면(검수 5차 §6-10 (a)~(f))은 합격입니다. 아래 §5에 주의 하나를 적었습니다.
+
+### 1. 확인한 것
+
+렌더 위치: `/var/folders/p6/8x9_dsj97mbg_d6323ptytvc0000gn/T/blackline-art-review/k10r8-*.png`. 모두 `--check` ok입니다.
+
+| 검사 | 결과 |
+|---|---|
+| 원문 해시(`k10r8-keep`, 제가 다시 짠 식) | stamps `l0nap6/878803`, draw `8crhz3/7063925`, spec `128ji9u/22506`, parts `qxfght/31609`, overlays `1umqwpr/1079940`. version `1.0-d3b2`, 그룹 39. 납품서 §7과 같습니다 |
+| 넓힌 식 다섯 값 | stamps `1h66c1i/754425`, draw `ob7a83/5582105`, spec `p3d9vk/18629`, parts `1fawmjd/28554`, overlays `1c7d5xg/807605`. 납품서와 같습니다 |
+| 넓힌 spec·parts의 독립 확인 | 제가 검수 7차에 3b1 코드에서 직접 잰 원문(`k10r7-keep`)과 같습니다. 나머지 셋의 3b1 쪽 값은 작가가 잰 값입니다(§6) |
+| C2 | `frames=354 ok boxArea=603884 ok badParts=0` |
+| C6 | `calls=516`, 모두 0 |
+| C7 | 1~4줄 0건, 5줄 ok |
+| C8 | 고정 값, k9·k11, PN 키 같음. calls 488 |
+| C9 | 69줄, `19cnic1`(8948) |
+| C10 | `fills=24 fail=0` |
+| 검수 7차 F1·F2 합격 판(`k10r8-heads-x1`, `k10r8-feet7-x1`) | 1배, 1·3·5장, 색·흑백, 검수 7차와 같은 짜임입니다. 결과는 아래 |
+| C5 PRI 2 24칸(`k10r8-c5-p2`, 1.5배 자른 판 `-crop1`·`-crop2`) | 이름표 판에서는 24칸 모두 §4.1 그림과 맞습니다. T4 판정은 아래 |
+| C12(작가 `k10-c12-scene-p2-gray-x08-d3b2`) | 결, 적 탄, 호박 예고가 그대로 읽힙니다. 새 요소 중 가장 밝은 것은 공포 고리이고, 가는 선입니다 |
+| 새 조각 38장 3배(`k10r8-parts-x3`) | 작가가 고친 시안의 문제(분자 모형, 눈 달린 물고기, 'G', 'C')가 지금 그림에는 남아 있지 않습니다 |
+
+**검수 7차 수정 판정**
+- **F1 헤맴**: 1배 색·흑백 모두에서 먹 테 두른 곱슬 둘(약 8px)이 보입니다. 기절 점 셋, 약화 아치와 갈립니다. 합격입니다.
+- **F2 가시**: 흑백 1배에서 '발치의 어두운 갈고리'로 읽히고, 서리 1·2의 흰 결정과 명도로 갈립니다. 셋이 얕은 호에 놓여 한 줄로 서지 않습니다. 합격입니다.
+  - 불먹 덩이(어두운 덩이 + 밝은 심)와는 심이 있느냐로 갈립니다.
+- **R2 얼룩 1**: 가로로 넓고 들쭉날쭉한 번짐이 됐습니다.
+- **R4 서리 1**: r12 키 5.6입니다.
+- **§5-6 포자**: 흑백에서 밝은 알갱이(약 5px)라 검은 기절 점과 갈립니다.
+
+**T4(P2 ≥ 90%, 지시서 `:1059`)는 경계선입니다.**
+- 1배 정지 화면에서 블라인드로 맞힐 수 있다고 보는 것은 24칸 중 21~22칸입니다.
+- 약한 칸
+  - 사건 조각이 작은 셋: 도미노(넘어지는 인장 머리), 마름쇠 꺾임, 밀쳐 부딪힘
+  - 되감김: 정지 화면에서는 '꼬리 쪽에만 붙은 덜 그린 선'일 뿐이고, 방향은 움직임에서 보입니다(`k10r8-rewind-ages`)
+- 지금 고칠 것은 아닙니다. 정식 판독 시험(n ≥ 8, 움직임 포함)으로 판정합니다.
+
+**1배 판독 위험(요청 4)**
+- **되감김 방향**: 꼬리(마지막 적)에서 결 쪽으로 그려 나가고, 결 쪽 26 안은 비웁니다. 움직임에서 읽힙니다.
+- **마름쇠 꺾임**: 작지만 '찢긴 섬광 + 부러진 핀 반쪽'으로 마름쇠 자리에 맞습니다(deco).
+- **12 등급 묶임·가시**: 1배에서 둘 다 보입니다. 묶임은 청록 점선 호 + 핀, 가시는 어두운 갈고리입니다.
+- **공포 고리 대 적 예고 테**(`k10r8-rings-vs-tele`): 공포 고리는 채움 없는 흰 찢긴 띠이고 틈이 둘입니다. 적 예고는 호박 해칭 원판 + 먹 테·눈금, active는 산호 원판입니다. 흑백에서도 해칭 유무와 테 굵기로 갈립니다. 갈립니다.
+- **균열 터짐 금 대 K11 shock 예고 금**(같은 판): 균열 터짐은 가는 끊긴 고리 + 밝은 심 금(종이)입니다. shock은 굵은 먹 테 + 눈금 + 호박 심 금이고, 흑백에서는 중간 회색 심입니다. 테 굵기와 금 심 명도로 갈립니다.
+- **되받은 탄 대 적 탄**(`k10r8-deflect-haste-x3`): 되받은 탄은 흰 각진 종이 파편 + 청록 소용돌이 획, 적 탄은 먹 테 + 산호 + 먹 심 + 흰 점입니다. 흑백에서도 바깥 명도(흰 대 어두움)와 꼴로 갈립니다.
+- **결 가속**
+  - 청록 띠 둘이 결 뒤쪽 가장자리에 조금 겹치지만 얼굴 금지 구역과 발밑 링은 비어 있습니다(C7 2줄 0).
+  - 결이 여전히 가장 밝습니다.
+
+### 2. 결정
+
+1. **공포 고리 종이 띠(p50 α0.85, 폭 3, 0.45초)를 C10 면으로 세지 않음: 받습니다.**
+   - 폭 3의 테는 선입니다. 침묵의 종 고리 `[[ink,5.4],[p50,2.6]]`, 개기일식 바깥 테 같은 종이 획을 C10에 넣지 않은 것과 같은 규칙입니다.
+   - 규칙: **폭 3 이하의 테·획은 C10 면이 아니다. 원판, 띠 채움, 폭이 3보다 넓은 것만 센다.**
+   - kit-artist는 F1 때 API §14.11에 이 규칙을 한 줄 적습니다.
+2. **F1 헤맴이 처방보다 조금 작은 것(k·1.6, 궤도 4.7)과 4장 흔들기: 받습니다.**
+   - 1배에서 보인다는 합격 기준을 맞췄습니다.
+   - 반 바퀴 돌기의 90° 장에서 두 곱슬이 한 덩이가 된다는 이유가 맞습니다.
+3. **F2 갈고리 방향(곁 둘은 안쪽, 앞은 오른쪽): 받습니다.**
+   - 검수 7차 처방의 '둘은 바깥, 하나는 안쪽'은 3b1 그림을 잘못 읽고 쓴 서술이라 철회합니다.
+   - 안쪽으로 굽은 곁 가시는 '발을 조이는 가시'로 읽힙니다.
+4. **포자 반지름 2(박스 그대로): 받습니다.** 흑백 1배에서 밝은 알갱이로 갈리므로 박스를 12×14로 넓히지 않습니다.
+5. **`crackBurst` 추가(3장, 8,064): 받습니다.** 지시서 §4.4 본문의 '가운데 조각'을 표에 옮긴 것입니다. 지시서 정정 대상입니다.
+6. **`fork` place = `point`: 받습니다.** 렌더러는 이 조각을 주 창 빔 틀의 끝 (L, 0)에 둡니다(§4).
+7. **청록을 core에만 둔 것**
+   - **메아리: 받습니다.** 회색 jag + 종이 심은 천둥 박수 고리의 '잔향'으로 읽히고, 어떤 적 예고와도 꼴이 다릅니다.
+   - **꽃가루 고리: 되돌립니다(F1).** 근거는 아래와 같습니다.
+     - 지금 꼴은 r50 고리 대부분이 맨 먹 점선이라 '적 예고의 붓 점선 테'(지시서 §1.7 `:317`)에 가깝습니다.
+     - 0.5초마다 적 둘레에 맨 먹 점선 원이 생기면 흑백·색각 사용자에게 '적 범위 공격 준비'로 오독될 수 있습니다.
+     - 점선 고리의 아군 문법은 `rim.ally`와 같은 먹 + 청록 샌드위치입니다.
+     - 검수 7차 §5-3의 '청록 1/3 이하'는 실선 사건 고리용이었는데 꽃가루 고리까지 넣은 것이 제 잘못입니다.
+8. **§12-92~118의 나머지: 모두 받습니다.**
+   - SPEC 자리를 모두 `SPEC.gimmick`에 둔 것
+   - 터짐 고리 셋의 층, 사건 고리에 각성 선과 coreScale을 쓰지 않은 것
+   - 해바늘 배율 규칙만 둔 것
+   - window, 되쓸기·가지창·되감김·증폭·묶인 사슬·kink 식
+   - 갈라짐 참고 자리, 고친 시안, context 그리는 순서, `drawZone`의 `inside`, version
+   - 가지창의 Y(V)자는 자료가 정한 기하(창 끝 ±35°)라 글자 금지 조항의 예외로 봅니다.
+
+### 3. 고칠 것 (kit-artist, `k-arsenal-fx.js`·`API-arsenal-fx.md`만, `1.0-d3b2-r1`)
+
+**F1. 꽃가루 고리를 먹 + 청록 점선 샌드위치로**
+
+처방:
+- `SPEC.gimmick.inkBloom.ring`
+  - 지시서 값으로 돌립니다: dashed, layers `[[ink,1.6],[ally,1]]`, dash `[4,5]`, pad 0.6. 지시서 `docs/art/briefs/arsenal-fx.md:909`.
+  - 틈 둘(16~28°), grow 0.6 → 1 / 0.25초, 수명 0.45, fade 0.6은 그대로입니다.
+  - 따로 둔 `core`는 지우거나 쓰지 않습니다.
+- 점선 고리 그리기(사건 고리 dashed prim, API §14.11 'dashed')
+  - 틈 사이 호마다 먹 점선 위에 같은 위상의 청록 점선을 고리 전체에 겹칩니다.
+  - 샌드위치 규칙(§1.5 `:218`)대로, 먹 층의 대시를 양 끝으로 0.6씩 늘립니다.
+- API §14.11 'dashed' 식과 표의 꽃가루 줄을 고치고, §12에 되돌린 까닭을 적습니다.
+- 위 결정 1의 C10 규칙 한 줄도 같은 API 수정에 넣습니다.
+
+합격 기준:
+- `k10r8-rings-vs-tele`와 같은 판(1배, 1장, 색·흑백, 적 예고 preview·imminent·active r50 옆)에서 보이는 것
+  - 색: 꽃가루 고리가 고리 전체에서 청록 점선으로 읽힙니다.
+  - 흑백: 점선마다 밝은 심이 보여, 적 예고의 맨 먹 점선·해칭과 갈립니다.
+- C6 0건, C7 0건, `--check` ok
+- 보존 해시
+  - 그대로여야 하는 값
+    - stamps `l0nap6/878803`, parts `qxfght/31609`, overlays `1umqwpr/1079940`
+    - draw without inkBloom/pollen `1skcben/7041757`
+    - spec without gimmick.inkBloom `1ba8cfh/22210`
+  - 바뀌는 것은 raw draw·spec뿐입니다.
+  - 고친 뒤의 원문 다섯을 다음 기준으로 적습니다.
+
+```
+node scripts/art-review-sheet.mjs expr --name k10-keep-3b2-r1 --scale 1 --crop 0,0,1700,140 --expr '(function(){var X=PN.arsenalFx;function norm(m){return String(m).replace(/\bkaf\d+_/g,"kaf_");}function h(s){var x=5381;for(var i=0;i<s.length;i++){x=((x*33)^s.charCodeAt(i))>>>0;}return x.toString(36)+"/"+s.length;}var A="",B="",B2="",O="";X.groups.forEach(function(g){X.parts(g).forEach(function(p){for(var f=0;f<p.frames;f++)A+=norm(X.stamp(g,p.part,{frame:f}));});});X.ids.forEach(function(id){(X.META[id].stages||[]).forEach(function(st){[false,true].forEach(function(aw){[1,5].forEach(function(lv){[0.1,0.5,0.9].forEach(function(p){var m=norm(X.draw(id,st,{level:lv,awakened:aw,p:p,t:p*0.3,seed:7}));B+=m;if(!(id==="inkBloom"&&st==="pollen"))B2+=m;});});});});});X.overlays.forEach(function(k){[12,19,28,38,54].forEach(function(r){[1,2,3].forEach(function(stk){[0,0.3].forEach(function(t){O+=norm(X.overlay(k,{r:r,top:-30,t:t,stack:stk}));});});});});var S=JSON.parse(JSON.stringify(X.SPEC));delete S.version;var C0=JSON.stringify(S);delete S.gimmick.inkBloom;var C1=JSON.stringify(S);var L=["stamps="+h(A)+" parts="+h(JSON.stringify(X.groups.map(function(g){return X.parts(g);})))+" overlays="+h(O),"draw raw="+h(B)+" | without inkBloom/pollen="+h(B2),"spec raw="+h(C0)+" | without gimmick.inkBloom="+h(C1)+" version="+X.SPEC.version];return "<rect width=\"1700\" height=\"140\" fill=\"#fff\"/>"+L.map(function(t,i){return "<text x=\"4\" y=\""+(24+i*26)+"\" font-size=\"12\" font-family=\"monospace\">"+t+"</text>";}).join("");})()'
+```
+
+**사람 클린업(지금 고치지 않음)**
+- 납품서 §8 목록
+- 도미노 인장 머리가 1배에서 작은 깡통처럼 보이는 것
+- 꽃가루 퍼짐 알갱이가 거품처럼 보이는 것
+- 균열판 1~2의 첫 금이 ✉로 보이는 것
+- 약화 매듭(검수 7차 R3)
+
+### 4. 메인 세션 굽기·등록 주의
+
+- **굽기**
+  - 지금 판(`1.0-d3b2`)의 조각으로 354장, 603,884를 구워도 됩니다. F1은 조각을 바꾸지 않습니다.
+  - 들어가는 키
+    - 3b1 36장. lost, thorn*, mark-stain1, frost1-12, spore-a/b는 고친 그림입니다.
+    - `crowFeathers/crow/0~5` 다시 굽기
+    - 3b2 38장
+  - 2048² 1장(최대 2장) 기대입니다. 페이지와 바이트는 `npm run bench:packs`로 잽니다.
+  - F1 뒤에는 매니페스트 SPEC(`gimmick.inkBloom.ring`)만 다시 냅니다.
+- **렌더러**(API §14.11)
+  - 사건 고리 prim 다섯: stroke, band, torn, dashed, jag. 꽃가루 dashed는 F1의 샌드위치입니다.
+  - 균열선, kink, 되감김(점 순서를 뒤집어 그려 나감, 결 쪽 26 비움), 증폭
+  - 묶인 사슬: `share` 0.18초 α 1
+  - 가지창: 주 창이 끝에 닿은 뒤 시작, 캡슐은 0부터. `fork`는 주 창 끝 (L, 0)
+  - 되쓸기: 반전, α0.65
+  - 되받은 탄: +x = 속도
+  - 결 가속: 결 몸 바로 뒤 front, 보는 쪽 반전, 자국 테 inside
+  - 갈라짐, 해바늘 배율 ≤ 1.6
+- **층과 상한**
+  - 대기 `dab`은 바닥 층, 그 밖의 사건·선은 allyAttacks(적 탄·예고 아래)
+  - 상한: events 16/10/4, pollenRings 8/4/0, links 120/60/0
+- **엔진 자료**: 납품서 §6 표 그대로입니다.
+- **test:visual에 더할 장면(제안)**
+  - 1024x720 DPR1과 흑백 확인용 flash 모드를 함께 넣습니다.
+  - (a) 꽃가루 고리를 두른 적 + 적 예고 preview 원
+  - (b) 공포 고리
+  - (c) 보스 균열 터짐 + K11 shock 예고
+  - (d) 적 탄 사이의 되받은 탄
+  - (e) 별똥 자국 안의 결 가속
+  - (f) 되감김·증폭·묶인 사슬 연쇄
+  - (g) 가지창·되쓸기 빔
+  - (h) 대기 붓자국 → 터짐
+  - (i) 12 등급 적의 가시·묶임·서리
+- **지시서 정정**
+  - §4.4에 `crackBurst` 줄
+  - `fork` place → point
+  - `ring.*`·`line.*` 이름 → `SPEC.gimmick` 키
+  - 메아리 청록은 core만
+  - 가시 갈고리 방향(곁 안쪽, 앞 오른쪽)
+  - C10 규칙(폭 3 이하의 테는 면이 아님)
+  - 꽃가루 고리는 지시서 원래 값 그대로라 정정하지 않습니다.
+
+### 5. P1 연결 캡처 판정 (`r5-k10p1/visual/actual/`, 1024x720 DPR1 일곱 장면 + 1440x900 DPR2 marks + flash eclipse + reduce ends·marks)
+
+| 장면 | 판정 |
+|---|---|
+| fire | 합격. 불먹 지대(점선 청록 테, 먹 wash, 청록 불길)와 발밑 불길, 결이 선 별똥 자국(inside 실선 테), 연막, 끈끈이가 모두 읽힙니다 |
+| marks | 합격. 손종, 패, 까마귀가 DPR1·DPR2 모두에서 정예 표시(자수정 고리 + »)·기절 점과 갈립니다 |
+| graves(4장) | 합격. 묘비(흰 둥근 판 + 그림자)와 마름쇠 덩이가 바닥 톱니 무늬, 손종 표식과 갈립니다. 마름쇠가 바둑판처럼 놓인 것은 장면 배치 탓입니다 |
+| seal, strike | 합격. 삼각 봉인 대기·터짐, 펼친 족자 띠, 여덟째 인장(무거운 고리 + 일곱 인영)이 읽힙니다. 일곱째 인장 덩어리가 붐비는 것은 일곱 사건이 한자리라서입니다 |
+| ends | 합격. 기둥 처음·loop·끝, 회전 베기가 읽힙니다. reduce 모드에서는 호가 멈춥니다. F2의 이어짐은 정지 화면으로는 볼 수 없습니다(메인 세션 틱 확인 몫) |
+| eclipse | 합격. 원판·띠가 적 몸 아래에 깔리고 결이 가장 밝습니다. flash 모드에서 원판이 절반으로 옅어집니다 |
+
+- **주의(미확인)**: marks 장면에서 기절 점을 단 적 셋이 온몸 흰색으로 그려졌습니다.
+  - 피격 섬광이면 문제없습니다.
+  - 동결 동안 흰 틴트를 쓰는 것이라면 K10 동결 서릿발(흰 결정)이 흰 몸에 묻힙니다. 메인 세션이 확인합니다.
+
+### 6. 미확인
+
+- **해시**: 넓힌 식 stamps·draw·overlays의 3b1 쪽 값은 작가가 3b1 코드에서 잰 값이라 제가 다시 잴 수 없습니다. spec·parts는 제 검수 7차 측정값과 같습니다.
+- **움직임 판독**: 되감김 방향, 헤맴 흔들기, 포자 오름, 되받은 탄 loop, 사건 상한(P2 연결 전)
+- **T4**: 정식 판독 시험(n ≥ 8)
+- **그 밖**: 성능, 팩 페이지·바이트
+- **기절 점**: 제 대조 렌더의 기절 점은 점 셋으로 그린 근사입니다.
+- **F1 결과**: 다음 짧은 확인에서 봅니다(렌더 하나 + 해시).
+
+**관련 파일**
+- `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/k-arsenal-fx.js` (`:558-592` SPEC.gimmick, `:3924-4216` 사건 고리·새 단계)
+- `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/API-arsenal-fx.md` (`:1088-1241` §14.11)
+- `/Users/kyuukkang/CT_AX/07.playground/docs/art/briefs/arsenal-fx.md` (`:218`, `:301-303`, `:314`, `:317`, `:909`, `:1059`)
+- `/Users/kyuukkang/CT_AX/07.playground/docs/art/deliveries/K10-arsenal-fx.md` (3b2 납품서 `:3795-4160`)
+
+## K10 3b2 수정 납품서
+
+**3b2-r1: 검수 8차 F1 · `SPEC.version` `1.0-d3b2-r1`** (kit-artist, 2026-10-20)
+
+꽃가루 고리를 지시서의 먹 + 청록 점선 샌드위치로 되돌렸습니다. 조각(stamp)은 바뀌지 않았으므로 354장 팩을 지금 구워도 됩니다. F1 뒤에 다시 낼 것은 매니페스트 SPEC(`gimmick.inkBloom.ring`)뿐입니다.
+
+#### 바뀐 곳
+
+**`/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/k-arsenal-fx.js`**
+- `SPEC.gimmick.inkBloom.ring`을 지시서 `:909` 값으로 돌렸습니다: dashed, layers `[[ink,1.6],[ally,1]]`, dash `[4,5]`, pad 0.6. `core`는 지웠습니다.
+- 틈 둘(16~28°), grow 0.6 → 1 / 0.25초, 수명 0.45, fade 0.6은 그대로입니다.
+- `eventRing`의 dashed 갈래를 고쳤습니다.
+  - 틈 사이 호마다 `rim.ally`와 같은 SWD로 그립니다.
+  - 청록 [ally,1]은 점선 [4,5], 먹 [ink,1.6]은 같은 위상에서 양 끝으로 0.6씩 늘린 [5.2,3.8], 오프셋 0.6입니다.
+  - 고리 전체를 이렇게 그리고, 호마다 무늬가 그 호의 시작에서 다시 시작합니다.
+- 머리 주석, SPEC 주석, `eventRing` 주석을 고쳤고, `SPEC.version`을 `1.0-d3b2-r1`로 바꿨습니다.
+
+**`/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/API-arsenal-fx.md`**
+- 머리말 버전, 납품 표의 3b2-r1 줄, §3 버전 주석
+- §11에 3b2-r1 결과
+- §12: 94의 꽃가루 항목에 '되돌림' 표시, 119(되돌린 까닭), 120(version)
+- §14.11
+  - 사건 고리 공통: 점선 고리는 고리 전체가 샌드위치
+  - **C10 규칙 한 줄**: "폭 3 이하의 테·획은 C10 면이 아니다. 원판, 띠 채움, 폭이 3보다 넓은 것만 센다."
+  - 'dashed' 식, 단계 표와 SPEC 표의 꽃가루 줄
+  - C9 벡터에서 `inkBloom/pollen path core` 줄 삭제
+
+#### 해시 출력 원문
+
+검수서 명령 `k10-keep-3b2-r1`을 그대로 돌렸습니다.
+```
+stamps=l0nap6/878803 parts=qxfght/31609 overlays=1umqwpr/1079940
+draw raw=v80e67/7065693 | without inkBloom/pollen=1skcben/7041757
+spec raw=ii86b1/22458 | without gimmick.inkBloom=1ba8cfh/22210 version=1.0-d3b2-r1
+```
+- 그대로여야 하는 다섯 값이 모두 같습니다.
+- 바뀐 것은 raw draw(`8crhz3/7063925` → `v80e67/7065693`)와 raw spec(`128ji9u/22506` → `ii86b1/22458`)뿐입니다. 글자는 `k10-keep-3b2-r1-x2`에서 대·소문자로 확인했습니다.
+
+**다음 기준(원문 다섯)**
+
+| 항목 | 값 |
+|---|---|
+| stamps | `l0nap6/878803` |
+| draw | `v80e67/7065693` |
+| spec | `ii86b1/22458` |
+| parts | `qxfght/31609` |
+| overlays | `1umqwpr/1079940` |
+
+**검사**
+- C6 `k10-c6-scan-d3b2-r1`: `calls=516 colours bad=0 nonhex=0 banned=0 nocyan=0 specTokens bad=0 korean=0`
+- C7 `k10-c7-geometry-d3b2-r1`: 1~4줄 0건, 5줄 `invalid calls ok`
+- C1 `k10-c1-all-d3b2-r1`: ok
+- 모든 명령이 `--check` ok입니다.
+
+#### 렌더 경로
+
+- **합격 판**: `/var/folders/p6/8x9_dsj97mbg_d6323ptytvc0000gn/T/blackline-art-review/k10b2r1-rings-vs-tele.png`
+  - 1배, 1장, 위 색·아래 흑백
+  - 적 예고 preview·imminent·active r50 옆에 꽃가루 고리 셋(p 0.35, p 0.6, 추적자를 두른 p 0.5)
+  - 색: 고리 전체가 청록 점선으로 읽힙니다.
+  - 흑백: 꽃가루 점선은 적 preview의 맨 먹 점선보다 밝은 회색 대시로 보이고, 해칭·물방울 머리·눈금이 없습니다.
+- **흑백 3배 확대**: `/var/folders/p6/8x9_dsj97mbg_d6323ptytvc0000gn/T/blackline-art-review/k10b2r1-rings-vs-tele-gray-x3.png`. 대시마다 먹 테 안의 밝은 심이 보입니다.
+
+#### 알려진 한계
+
+- 1배 흑백에서 '밝은 심'은 대시(굵기 1.6, 심 1)가 맨 먹 대시보다 밝은 회색으로 보이는 정도입니다. 심이 테와 따로 갈려 보이는 것은 3배부터입니다. 굵기는 지시서 값 그대로입니다.
+- 정정: 3b2 납품서와 API에 3b2 단계 C9 벡터를 '31줄'이라 적었는데, 세어 보니 29줄이었습니다. 3b2-r1은 28줄입니다(`k10-c9b-count-d3b2-r1`). API는 고쳤습니다. 지시서 C9 명령의 출력(69줄, `19cnic1`)은 이 수정과 관계없습니다.
+- 실제 렌더러에서 확인하는 것은 메인 세션 몫입니다(test:visual 장면 (a)).
+
+## 메인 세션 확인: 3b2 수정 (2026-10-20)
+
+검수 8차가 맡긴 짧은 확인(렌더 하나 + 해시)을 메인 세션이 했다. 조각이 바뀌지 않는 SPEC 수정이라 2차 수정 1회차와 같은 방식이다. 받아들인다(굽는 판 `1.0-d3b2-r1`).
+- `k10-keep-3b2-r1`: stamps `l0nap6/878803`, parts `qxfght/31609`, overlays `1umqwpr/1079940`, draw without inkBloom/pollen `1skcben/7041757`, spec without gimmick.inkBloom `1ba8cfh/22210` 모두 그대로. raw draw `v80e67/7065693`, raw spec `ii86b1/22458`, version `1.0-d3b2-r1`.
+- `k10b2r1-rings-vs-tele`: 색에서 꽃가루 고리 셋이 고리 전체 청록 점선으로 읽히고, 흑백에서 적 예고(해칭 원판, 물방울 붓 머리, 굵은 테·눈금)와 갈린다. 1배 흑백의 '밝은 심'은 맨 먹 점선보다 밝은 회색 대시 정도다(지시서 굵기 그대로).
+- 다음 납품의 보존 기준은 위 원문 다섯이다.

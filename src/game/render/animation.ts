@@ -72,8 +72,13 @@ export function heroPoses(state: PlayerAnim) {
   return HERO_POSES[state];
 }
 
-/** Pose chain for an enemy state; spawning and attacking bodies that are moving borrow the walk cycle. */
-export function enemyPoses(state: EnemyAnim, moving: boolean): readonly string[] {
+/**
+ * Pose chain for an enemy state; spawning and attacking bodies that are moving borrow the walk cycle. A frozen body
+ * (K10: frostNeedles' freeze, a stun) holds its idle pose: the stun's fallback is the white negative hit frame, which
+ * would hide the freeze's white crystals for the whole freeze (the caller holds the idle's first frame).
+ */
+export function enemyPoses(state: EnemyAnim, moving: boolean, frozen = false): readonly string[] {
+  if (frozen) return ENEMY_POSES.idle;
   if (moving && (state === 'spawn' || state === 'attack')) return [state, 'walk'];
   return ENEMY_POSES[state];
 }

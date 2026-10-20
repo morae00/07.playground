@@ -90,6 +90,16 @@ test('states without their own art borrow the nearest baked pose', () => {
   assert.deepEqual(enemyPoses('stunned', false), ['stunned', 'hit']);
 });
 
+test('K10: a frozen enemy holds its idle frame, still and dark, not the stun\'s white hit fallback; other stuns keep theirs', () => {
+  assert.deepEqual(enemyPoses('stunned', false, true), ['idle']);
+  assert.deepEqual(enemyPoses('stunned', true, true), ['idle'], 'pushed or not');
+  assert.deepEqual(enemyPoses('hurt', false, true), ['idle'], 'struck while frozen');
+  assert.deepEqual(enemyPoses('stunned', false, false), ['stunned', 'hit']);
+  // The renderer asks for the minimal-detail frame: the pose's first, whatever the clock.
+  const idle = { frames: 4, fps: 6 };
+  assert.deepEqual([0, 0.3, 1.7].map((now) => poseFrame(idle, 'idle', 0, now, 0.4, 'minimal')), [0, 0, 0]);
+});
+
 test('the book forgets characters not drawn in a frame and starts over when the clock runs backwards', () => {
   const book = new AnimationBook();
   book.beginFrame(1);

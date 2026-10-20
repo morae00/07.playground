@@ -1,4 +1,4 @@
-# API — `k-arsenal-fx.js` · `PN.arsenalFx` v1.0-d3a-r1 (무기 44종 전장 효과 — 납품 3, 1회: 각성 기믹 P1, 검수 5차 수정)
+# API — `k-arsenal-fx.js` · `PN.arsenalFx` v1.0-d3b2-r1 (무기 44종 전장 효과 — 납품 3, 2회 2/2 수정: 각성 기믹 P2 이어지는 효과 + 검수 7차 F1·F2 + 검수 8차 F1)
 
 작업 지시서: `docs/art/briefs/arsenal-fx.md`(K10, R5 추가 발주 B7, 2026-10-16). 끝의 §12 메인 세션 결정과 §13 검수 1차 정정이 본문보다 앞선다(열린 질문 Q1~Q13은 모두 권고안).
 같은 물건의 꼴 기준: K9 검수 7차 §7(`docs/art/deliveries/K9-arsenal-icons.md`)과 그 뒤 R7·F2. 대조한 K9 아이콘 해시(평상/각성)는 유성 붓 `f0ap7s`/`1eekf35`, 타르 항아리 `1mq1jnw`/`chm7dz`, 일곱째 인장 `11totq1`/`1s8ck17`이다.
@@ -14,7 +14,9 @@
 | 2차 수정 1회차 | 2026-10-19 | 검수 4차('## K10 검수 4차') F1·F2, 규칙만(그림 그대로): F1 먹단지 `pot`·`pot-awakened`를 prog(비행 진행률로 한 번 구름, `SPEC.flight.inkPots.frame` `'progress'`), F2 유성 붓 착탄 좌우 반전 규칙(`SPEC.flight.meteorBrush.landMirror`, 참고 합성 `draw(…, 'land', {dir: −1})`). `SPEC.version` `1.0-d2r1`. 보존 해시는 §11 |
 | 3차 1회(3a) | 2026-10-19 | 각성 기믹 **P1 17종**(§14): 땅 조각 8종(`SPEC.zone`), 삼각 봉인·펼쳐지는 족자·여덟째 인장·개기일식·거세지는 폭우(`SPEC.gimmick`), 적 오버레이 5종(`overlays` = silence, prey, crow, freeze, scorch, `SPEC.overlay`). 새 조각 107장(새 그룹 8 + 기존 그룹 끝에 붙임), `SPEC.layout`에 기믹 단계, `SPEC.fills` 9줄. `SPEC.version` `1.0-d3a`. 기존 출력은 그대로다(§11 `k10-keep-all-d3a`) |
 | 3차 1회 수정(3a-r1) | 2026-10-19 | 검수 5차('## K10 검수 5차') F1·F2·R3: F1 불먹 발밑 불길 `scorch12/19/28/38/54`를 땅 조각 불길(`flame-a/b`) 문체의 덩이 1~3개로 다시 그림(박스·앵커·장 수·drive·층·r 그대로), F2 땅 조각 가운데 물건의 loop·idx 장 α 규칙(§14.3), R3 §1 의존 문장. `SPEC.version` `1.0-d3a-r1`. 바뀐 출력은 scorch 다섯 조각(10장)과 그것을 쓰는 `overlay('scorch')`·불먹 맥락 그림, 번개 기둥·회전 베기 참고 합성뿐이다(§11 `k10-keep-3a-r1`) |
-| 3차 2회 | — | 각성 기믹 P2(§4.1의 P2 전부: 표식·발 오버레이·이어지는 효과), 남은 `overlays` |
+| 3차 2회 1/2(3b1) | 2026-10-19 | 각성 기믹 P2의 **적 표식·발 오버레이 9종**(§14.10): 머리 표식 공포·약화·얼룩 1~3·헤맴, 보스 균열판 1~5, 꽃가루 포자, 발 서리 수 1·2·묶임·가시. 새 조각 36장(새 그룹 5 + 기존 그룹 끝에 붙임), `overlays` 9키, `SPEC.overlay` 새 하위 키, 단계 9(우선 2). 검수 5차 R1 까마귀(첫째 깃·부리)와 결정 ②의 SPEC 기록(`SPEC.gimmick.eclipseHalo.layers`·`reducedFlash`). `SPEC.version` `1.0-d3b1`. 바뀐 기존 출력은 까마귀 조각 6장과 그것을 쓰는 단계·오버레이뿐이다(§11 `k10-keep-3b1`) |
+| 3차 2회 2/2(3b2) | 2026-10-19 | 각성 기믹 P2의 **이어지는 효과**(§14.11: 얼룩 터짐, 늦은 붓자국, 도미노, 감전 도약, 공포 고리, 꽃가루 고리·퍼짐, 배후 응징, 균열 터짐, 밀쳐 부딪힘, 메아리, 갈라짐, 되감김, 증폭, 묶인 사슬, 가지창, 되쓸기, 되받기, 결 가속, 마름쇠 꺾임, 해바늘 배율 규칙). 새 조각 38장(새 그룹 4 + 기존 그룹 끝), `SPEC.gimmick` 새 키 20, 새 단계 15(우선 2), 3b1 단계 넷(stain·fear·crack·pollen)에 사건을 더함. 검수 7차 F1(헤맴 `lost`)·F2(가시 `thorn<r>`)·R2(얼룩 1)·R4(서리 1, 12 등급)·§5-6(포자). `SPEC.version` `1.0-d3b2`. 바뀐 기존 출력은 고친 조각(`lost`, `thorn12~54`, `mark-stain1`, `frost1-12`, `spore-a/b`)과 그것을 쓰는 단계·오버레이, 사건을 더한 네 단계뿐이다(§11 `k10-keep-3b2`) |
+| 3차 2회 2/2 수정(3b2-r1) | 2026-10-20 | 검수 8차('## K10 검수 8차') F1: 꽃가루 고리(`SPEC.gimmick.inkBloom.ring`)를 지시서의 먹 + 청록 점선 샌드위치로 되돌림(고리 전체, 먹 대시가 청록 대시 양 끝으로 0.6씩 김). 조각은 바뀌지 않는다. API §14.11에 C10 규칙(폭 3 이하의 테·획은 면이 아니다)을 적음. `SPEC.version` `1.0-d3b2-r1`. 바뀐 출력은 `inkBloom/pollen` 단계 draw와 SPEC의 `gimmick.inkBloom`뿐이다(§11 `k10-keep-3b2-r1`) |
 
 안 그린 단계·조각은 `META.stages`·`gimmicks`·`groups`에 없다. 그래서 지시서 §7.2의 명령이 납품마다 그대로 돈다. 메인 세션은 `META[id].done.fx === true`인 것만 등록한다.
 
@@ -49,13 +51,13 @@
 
 ```js
 PN.arsenalFx = {
-  version: '1.0',   // 납품 단계는 SPEC.version(지금 '1.0-d3a-r1')
+  version: '1.0',   // 납품 단계는 SPEC.version(지금 '1.0-d3b2-r1')
   K,          // 토큰 11개(§7.1). 이름은 PN.skillVfx.K와 같고 값은 구현값 hex
   ids,        // 44개, src/content/data/arsenal.ts 순서
   kinds,      // ['volley','burst','spray','rear','seeker','strike','nova','lob','chain','beam','halo']
   META,       // §4 (얼려 있음)
-  groups,     // 조각이 있는 무기 id: 1차 22개, 3a부터 30개(투사체 무기 8개가 기믹 조각으로 더해짐)
-  overlays,   // 적 오버레이 키: 3a ['silence', 'prey', 'crow', 'freeze', 'scorch'](P2 키는 3차 2회)
+  groups,     // 조각이 있는 무기 id: 1차 22개, 3a부터 30개(투사체 무기 8개가 기믹 조각으로 더해짐), 3b1부터 35개(+inkDarts, headsmanDarts, inkBloom, thornHalo, bossbane), 3b2부터 39개(+brushQuills, sealArrows, thunderNeedles, tailGuard)
+  overlays,   // 적 오버레이 키: 3a ['silence', 'prey', 'crow', 'freeze', 'scorch'] + 3b1 ['fear', 'lost', 'weak', 'stain', 'crack', 'pollen', 'frost', 'bound', 'thorn']
   SPEC,       // §7. 토큰 이름·숫자·영어 낱말만 → 매니페스트에 그대로
   jit,        // jit(seed, i) → 0..1
   parts(group),                        // → [{part, frames, drive, fps, seconds, still, box, anchor, place, rotate, layer, lod, flash, window, r?}] (복사본)
@@ -64,7 +66,7 @@ PN.arsenalFx = {
   paths(id, stage, opts),              // → { 이름: [[x, y], …] } 매개 도형의 정의 점(C9, §8.3). 수정 1회차에 splash·drops·tilt 키가 더해졌다
   lobPath(id, { x0, y0, x1, y1, t, mini? }),  // → { x, y, h, angle, shadow: { rx, ry, alpha } } (§8.4). mini는 송이 단지만
   draw(id, stage, opts),               // 참고 합성(리뷰·골든). 원점은 §2, lob 'flight'는 던진 자리
-  overlay(key, opts),                  // 3a: silence, prey, crow, freeze, scorch(§14.5). 원점 = 적의 발, opts.r·top·t·peck·layer
+  overlay(key, opts),                  // §14.5·§14.10. 원점 = 적의 발, opts.r·top·t·stack·facing·peck·layer
 };
 ```
 
@@ -87,6 +89,13 @@ PN.arsenalFx = {
 | `peck` | 없음 | `overlay('crow')`·`draw('crowFeathers', 'crow')`만: 까마귀 쪼기 틱(자료 `crowAt`) 뒤 초. 0 ≤ peck < 0.12면 쪼기를 그린다(§14.5). 없으면 맴돌기만(기본 출력) |
 | `layer` | 없음 | `overlay`만: `'feet'`·`'front'`·`'head'` 중 그 층의 조각만(§14.5). 없으면 셋 다 그 순서로(기본 출력) |
 | `r`, `top` | 12, −30 | `overlay`만: 적 반지름(크기 등급), 스프라이트 꼭대기 y |
+| `stack` | 1 | `overlay`·표식 단계만(3b1): 얼룩 1~3, 균열 1~5, 서리 수 1~2. 범위 밖은 자른다 |
+| `facing` | 1 | `overlay`만(3b1): −1이면 `rotate: 'face'` 표식(공포 땀방울)을 좌우 반전한다(적이 왼쪽을 볼 때) |
+| `reducedFlash` | false | `draw('eclipseHalo', 'total')`만(3b1): 섬광 감소. 원판·띠 α × `SPEC.gimmick.eclipseHalo.reducedFlash`(0.5) |
+| `share` | 없음 | `draw('frostChainlet', 'link')`만(3b2): 공유 피해 뒤 초. 0 ≤ share < 0.18이면 links를 α 1로 그린다(§14.11). 없으면 α 0.45(기본 출력) |
+
+- 3b2 단계에서 `points`: `leap`은 [튄 적, 맞은 적] 둘, `link`는 사슬 구성원(결 없음), `rewind`·`amplify`는 결부터의 연쇄 점이다. `facing`(−1)은 `haste`도 좌우 반전한다.
+- 3b2 단계의 `context`(C5 판): 연쇄 셋은 점 최대 여섯을 64 간격으로(x −170부터), 빔 둘은 길이를 300(가지창)·380(되쓸기)으로 자르고 결을 왼쪽으로 옮겨 그린다(칸 520 안). `context` 없는 참고 합성은 지시서 값 그대로다.
 
 **잘못된 호출**(C7 5줄 ok)
 - `parts(모르는 group)`, `stamp(모르는 group, …)`, `stamp(group, 모르는 part)`: `throw new Error('PN.arsenalFx: unknown …')`. 굽기가 조용히 다른 그림을 굽지 않게 한다.
@@ -99,56 +108,58 @@ PN.arsenalFx = {
 
 | id | 이름 | 등급 | kind | look | main | stages | object | 기믹(지시서 §4.1, 3차) | done fx/lob/gimmick |
 |---|---|---|---|---|---|---|---|---|---|
-| inkDarts | 먹침 | common | volley | needleStorm | — | — | — | 먹 얼룩 P2 | ✗/✗/✗ |
-| brushQuills | 붓깃 | common | volley | fanKnives | — | — | — | 늦게 터지는 붓자국 P2 | ✗/✗/✗ |
-| sealArrows | 인장 화살 | rare | volley | needleStorm | — | — | — | 도미노 P2 | ✗/✗/✗ |
-| frostNeedles | 서리침 | rare | volley | needleStorm | — | freeze | — | 동결 P1 · 서리 수 P2 | ✗/✗/✓ |
-| thunderNeedles | 뇌침 | rare | volley | needleStorm | — | — | — | 감전 도약 P2 | ✗/✗/✗ |
+| inkDarts | 먹침 | common | volley | needleStorm | — | stain | mark-stain2 | 먹 얼룩 P2(표식 3b1, 터짐 3b2) | ✗/✗/✓ |
+| brushQuills | 붓깃 | common | volley | fanKnives | — | dab | dab | 늦게 터지는 붓자국 P2(3b2) | ✗/✗/✓ |
+| sealArrows | 인장 화살 | rare | volley | needleStorm | — | topple | topple | 도미노 P2(3b2) | ✗/✗/✓ |
+| frostNeedles | 서리침 | rare | volley | needleStorm | — | freeze, frost | — | 동결 P1 · 서리 수 P2(3b1) | ✗/✗/✓ |
+| thunderNeedles | 뇌침 | rare | volley | needleStorm | — | leap | leapHit | 감전 도약 P2(3b2) | ✗/✗/✓ |
 | twinBlades | 쌍날 | common | volley | fanKnives | — | spin | spin | 회전 베기 P1 | ✗/✗/✓ |
 | ghostVolley | 혼령 일제사격 | epic | volley | mirrorClone | — | — | — | (P3) | ✗/✗/✗ |
-| headsmanDarts | 망나니 침 | legendary | volley | needleStorm | — | — | — | 공포 P2 | ✗/✗/✗ |
+| headsmanDarts | 망나니 침 | legendary | volley | needleStorm | — | fear | mark-fear | 공포 P2(표식 3b1, 고리 3b2) | ✗/✗/✓ |
 | paperStorm | 종이 폭풍 | rare | burst | fanKnives | — | — | — | (그림 없음) | ✗/✗/✗ |
-| inkBloom | 먹꽃 | rare | burst | needleStorm | — | — | — | 꽃가루 P2 | ✗/✗/✗ |
-| thornHalo | 가시 테 | epic | burst | needleStorm | — | — | — | 가시 박힘 P2 | ✗/✗/✗ |
+| inkBloom | 먹꽃 | rare | burst | needleStorm | — | pollen | spore-a | 꽃가루 P2(포자 3b1, 고리·퍼짐 3b2) | ✗/✗/✓ |
+| thornHalo | 가시 테 | epic | burst | needleStorm | — | thorn | thorn28 | 가시 박힘 P2(3b1) | ✗/✗/✓ |
 | starShards | 별조각 | epic | burst | mirrorClone | — | — | — | (P3) | ✗/✗/✗ |
-| sunNeedles | 해바늘 | mythic | burst | needleStorm | — | — | — | 작열 P2(렌더러 배율) | ✗/✗/✗ |
+| sunNeedles | 해바늘 | mythic | burst | needleStorm | — | — | — | 작열 P2(렌더러 배율 규칙만, `SPEC.gimmick.sunNeedles`, 단계 없음) | ✗/✗/✗ |
 | inkDrizzle | 먹 이슬비 | common | spray | needleStorm | — | — | — | (그림 없음) | ✗/✗/✗ |
-| pinHail | 핀 우박 | rare | spray | fanKnives | — | caltrop | caltrop-a | 마름쇠 P1 | ✗/✗/✓ |
-| tailGuard | 꼬리 방패 | common | rear | fanKnives | — | — | — | 배후 응징 P2 | ✗/✗/✗ |
-| smokeTail | 연막 꼬리 | rare | rear | needleStorm | — | smoke | puff-a | 연막 P1 · 헤맴 P2 | ✗/✗/✓ |
-| gravePins | 묘침 | epic | rear | needleStorm | — | grave | grave-a | 묘비 P1 · 묶임 P2 | ✗/✗/✓ |
+| pinHail | 핀 우박 | rare | spray | fanKnives | — | caltrop, snap | caltrop-a | 마름쇠 P1 · 꺾임 P2(3b2) | ✗/✗/✓ |
+| tailGuard | 꼬리 방패 | common | rear | fanKnives | — | rear | rearHit | 배후 응징 P2(3b2) | ✗/✗/✓ |
+| smokeTail | 연막 꼬리 | rare | rear | needleStorm | — | smoke, lost | puff-a | 연막 P1 · 헤맴 P2(3b1) | ✗/✗/✓ |
+| gravePins | 묘침 | epic | rear | needleStorm | — | grave, bound | grave-a | 묘비 P1 · 묶임 P2(3b1) | ✗/✗/✓ |
 | trackingSeals | 추적 인장 | rare | seeker | needleStorm | — | triangle | sealStrike | 삼각 봉인 P1 | ✗/✗/✓ |
 | huntersMarks | 사냥꾼 표식 | epic | seeker | mirrorClone | — | prey | mark-prey | 사냥감 P1 | ✗/✗/✓ |
 | crowFeathers | 까마귀 깃 | rare | seeker | fanKnives | — | crow | crow | 까마귀 떼 P1 | ✗/✗/✓ |
-| bossbane | 보스 사냥침 | legendary | seeker | needleStorm | — | — | — | 균열 P2 | ✗/✗/✗ |
+| bossbane | 보스 사냥침 | legendary | seeker | needleStorm | — | crack | mark-crack3 | 균열 P2(균열판 3b1, 터짐 3b2) | ✗/✗/✓ |
 | inkLightning | 먹번개 | rare | strike | chainSpark | impact | impact, pillar | bolt | 번개 기둥 P1 | ✓/✗/✓ |
 | brushDownpour | 붓 폭우 | epic | strike | boneMortar | impact | impact, surge | stroke-a | 거세지는 폭우 P1(새 그림 없음, §12-25) | ✓/✗/✓ |
 | fallingScroll | 족자 낙하 | epic | strike | boneMortar | impact | impact, unroll | scroll | 펼쳐지는 족자 P1 | ✓/✗/✓ |
 | seventhSeal | 일곱째 인장 | mythic | strike | voidMine | impact | impact, eighth | seal | 여덟째 인장 P1 | ✓/✗/✓ |
-| inkPulse | 먹 파동 | common | nova | boneMortar | burst | burst | null | 밀쳐 부딪힘 P2 | ✓/✗/✗ |
+| inkPulse | 먹 파동 | common | nova | boneMortar | burst | burst, bump | null | 밀쳐 부딪힘 P2(3b2) | ✓/✗/✓ |
 | frostRing | 서리 고리 | rare | nova | blackSun | burst | burst | shard-a | (P3) | ✓/✗/✗ |
-| thunderclap | 천둥 박수 | epic | nova | chainSpark | burst | burst | clap | 메아리 P2 | ✓/✗/✗ |
+| thunderclap | 천둥 박수 | epic | nova | chainSpark | burst | burst, echo | clap | 메아리 P2(3b2) | ✓/✗/✓ |
 | silenceBell | 침묵의 종 | legendary | nova | voidMine | burst | burst, silence | bell | 침묵 P1 | ✓/✗/✓ |
 | inkPots | 먹단지 | common | lob | boneMortar | land | land, flight, fire | pot | 불먹 P1 | ✓/✓/✓ |
-| clusterPots | 송이 단지 | rare | lob | boneMortar | land | land, flight | pot-m | 갈라짐 P2 | ✓/✓/✗ |
+| clusterPots | 송이 단지 | rare | lob | boneMortar | land | land, flight, split | pot-m | 갈라짐 P2(3b2) | ✓/✓/✓ |
 | tarJar | 타르 항아리 | epic | lob | voidMine | land | land, flight, gather | jar | 끈끈이 모음 P1 | ✓/✓/✓ |
-| meteorBrush | 유성 붓 | legendary | lob | boneMortar | land | land, flight, mark | comet | 별똥 자국 P1 · 결 가속 P2 | ✓/✓/✓ |
-| sparkThread | 불꽃실 | common | chain | chainSpark | jump | jump | spark | 되감김 P2 | ✓/✗/✗ |
-| stormThread | 폭풍실 | epic | chain | chainSpark | jump | jump | null | 증폭 P2 | ✓/✗/✗ |
-| frostChainlet | 서리 사슬 | rare | chain | chainSpark | jump | jump | null | 묶인 사슬 P2 | ✓/✗/✗ |
-| inkLance | 먹창 | rare | beam | railSpear | stroke | stroke | tassel | 가지창 P2 | ✓/✗/✗ |
-| wideBrush | 넓은 붓 | epic | beam | frostLine | stroke | stroke | brush | 되쓸기 P2 | ✓/✗/✗ |
+| meteorBrush | 유성 붓 | legendary | lob | boneMortar | land | land, flight, mark, haste | comet | 별똥 자국 P1 · 결 가속 P2(3b2) | ✓/✓/✓ |
+| sparkThread | 불꽃실 | common | chain | chainSpark | jump | jump, rewind | spark | 되감김 P2(3b2) | ✓/✗/✓ |
+| stormThread | 폭풍실 | epic | chain | chainSpark | jump | jump, amplify | null | 증폭 P2(3b2) | ✓/✗/✓ |
+| frostChainlet | 서리 사슬 | rare | chain | chainSpark | jump | jump, link | null | 묶인 사슬 P2(3b2) | ✓/✗/✓ |
+| inkLance | 먹창 | rare | beam | railSpear | stroke | stroke, branch | tassel | 가지창 P2(3b2) | ✓/✗/✓ |
+| wideBrush | 넓은 붓 | epic | beam | frostLine | stroke | stroke, resweep | brush | 되쓸기 P2(3b2) | ✓/✗/✓ |
 | crossStrokes | 십자 획 | epic | beam | railSpear | stroke | stroke | null | (P3) | ✓/✗/✗ |
 | judgmentLine | 심판선 | mythic | beam | railSpear | stroke | stroke | inkbox | (P3) | ✓/✗/✗ |
-| inkOrbit | 먹 궤도 | common | halo | orbitScythes | sweep | sweep | null | 되받기 P2 | ✓/✗/✗ |
-| wardRing | 수호 고리 | rare | halo | eclipseStep | sweep | sweep | knot-a | 약화 P2 | ✓/✗/✗ |
+| inkOrbit | 먹 궤도 | common | halo | orbitScythes | sweep | sweep, deflect | null | 되받기 P2(3b2) | ✓/✗/✓ |
+| wardRing | 수호 고리 | rare | halo | eclipseStep | sweep | sweep, weak | knot-a | 약화 P2(3b1) | ✓/✗/✓ |
 | eclipseHalo | 일식 테 | legendary | halo | eclipseStep | sweep | sweep, total | ribbon-a | 개기일식 P1 | ✓/✗/✓ |
 
 - `object`: lob 4종은 1차에 착탄 조각(shatter·burst·crack·impact)을 적었고, 2차부터 비행 물건(pot·pot-m·jar·comet)이다. `stages`는 주 단계가 앞이고 `flight`가 뒤다.
 - 3차 3a(P1 기믹): 기믹 단계는 `stages` 끝에 붙고 `gimmicks` = [{stage, priority 1}], `done.gimmick` = true다(17종). 투사체 무기(주 단계 없음)의 `object`는 기믹 물건이다(C15). 서리침(동결)은 발 오버레이라 `object`가 없다. 까마귀 깃의 K9 아이콘은 깃이고 기믹 물건은 까마귀다(같은 물건이 아님, §12-63). P2 기믹이 남은 무기(서리침 서리 수, 연막 꼬리 헤맴, 묘침 묶임, 유성 붓 결 가속)도 P1만으로 `done.gimmick` = true이고 P2는 3차 2회에 `gimmicks`에 더한다.
 - 물건 조각이 없는 무기: 먹 파동(주인공이 매듭), 폭풍실·서리 사슬·십자 획·먹 궤도(선·띠가 물건이다).
+- 3차 3b1(P2 표식·발 오버레이): 단계는 `stages` 끝에 붙고 `gimmicks`에 {stage, priority 2}가 더해진다(9종). 주 단계도 P1도 없던 무기(먹침, 망나니 침, 먹꽃, 가시 테, 보스 사냥침)는 이 단계로 `done.gimmick` = true가 되고, `object`는 기믹 물건(표식·가시·포자)이다. 터짐·고리처럼 같은 기믹의 이어지는 효과는 3b2에서 같은 단계에 더한다(그때 그 단계의 참고 합성이 바뀐다).
+- 3차 3b2(P2 이어지는 효과): 새 단계 15개가 `stages` 끝에 붙고 `gimmicks`에 {stage, priority 2}가 더해진다(P2 단계는 모두 24개). 그림이 없던 투사체 무기 넷(붓깃, 인장 화살, 뇌침, 꼬리 방패)은 이 단계로 `done.gimmick` = true가 되고 `object`는 그 사건 조각이다(`dab`, `topple`, `leapHit`, `rearHit`). 주 단계가 있던 무기(먹 파동, 천둥 박수, 송이 단지, 불꽃실, 폭풍실, 서리 사슬, 먹창, 넓은 붓, 먹 궤도)는 `done.gimmick`이 처음 true가 된다. 해바늘은 규칙(`SPEC.gimmick.sunNeedles`)만 있고 단계가 없어 `done.gimmick`이 false로 남는다.
 
-## 5. 굽는 조각 (`parts(group)`) — 280장, 박스 넓이 합 522,964 단위² (1차 141장 → 수정 1회차 137장(유성 붓 `streak-a/b` 삭제) → 2차 +36장: 비행 물건 32 + `mini` 4 → 3a +107장: 기믹 P1, 표는 §14.2)
+## 5. 굽는 조각 (`parts(group)`) — 354장, 박스 넓이 합 603,884 단위² (1차 141장 → 수정 1회차 137장(유성 붓 `streak-a/b` 삭제) → 2차 +36장: 비행 물건 32 + `mini` 4 → 3a +107장: 기믹 P1, 표는 §14.2 → 3b1 +36장: P2 표식·발 오버레이, 표는 §14.10 → 3b2 +38장: P2 이어지는 효과, 표는 §14.11)
 
 - 굽기 키 `afx/<group>/<part>/<frame>`, 호출 `['PN.arsenalFx.stamp', group, part, { frame }]`, `scale: 1`.
 - `fps`는 loop만 값이 있다(나머지 0). `still`은 loop만 값이 있다(나머지 `null`).
@@ -552,6 +563,8 @@ J(i) = jit(seed, i). seed는 layout·paths·draw의 `opts.seed`(정수)다. 예�
 화면당 K10 조각 220/140/70, 데칼 16/8/0 등 지시서 §4.5·§5.4 그대로. `caps.splash` [12, 8, 3](수정 1회차). 1차 조각 중 버리는 순서: deco 조각 → 데칼 → (물건·판정 도형은 버리지 않음). splash가 상한을 넘으면 넘는 사건의 splash만 빼고 고리·물건은 그대로 그린다(어느 사건을 먼저 빼는지는 렌더러의 상한 규칙과 함께 메인 세션이 정한다).
 
 ## 10. 예산 실측
+- 3b2 뒤: 조각 **354장**, 박스 넓이 합 **603,884 단위²**(C2). 3b2가 더한 것은 38장·54,504(먹침 9,984, 붓깃 7,752, 인장 화살 1,792, 뇌침 1,152, 먹꽃 3,024, 핀 우박 2,640, 꼬리 방패 3,840, 보스 사냥침 8,064, 먹 파동 2,048, 유성 붓 8,320, 먹창 1,568, 먹 궤도 4,320). 지시서 계획(35장·46,440)에 균열 터짐 가운데 조각 `crackBurst`(3장·8,064, §12-93)를 더했다. 상한 380장·640,000까지 26장·36,116이 남는다.
+- 3b1 뒤: 조각 **316장**, 박스 넓이 합 **549,380 단위²**(C2). 3b1이 더한 것은 36장·26,416(먹침 1,452, 망나니 침 484, 먹꽃 1,120, 가시 테 7,184, 보스 사냥침 3,120, 서리침 7,584, 연막 꼬리 1,344, 묘침 3,644, 수호 고리 484). 상한 380장·640,000까지 64장·90,620이 남고, 3b2(이어지는 효과 35장·46,440 계획)를 넣을 자리가 있다.
 - 3a 뒤: 조각 **280장**, 박스 넓이 합 **522,964 단위²**(C2). 3a가 더한 것은 107장·133,036(서리침 8,160, 쌍날 9,600, 핀 우박 3,432, 연막 꼬리 13,440, 묘침 8,640, 추적 인장 7,320, 사냥꾼 표식 1,056, 까마귀 깃 3,320, 먹번개 21,504, 족자 1,728, 인장 22,368, 침묵의 종 484, 먹단지 23,992, 타르 5,416, 유성 붓 1,120, 일식 테 1,456). 상한 380장·640,000 안이고 P2(계획 약 75장·7만)를 넣을 자리가 있다.
 - 2차까지: 조각 **173장**, 박스 넓이 합 **389,928 단위²**(C2, 2차). 1차 141장·343,592 → 수정 1회차 137장·341,032(유성 붓 `streak-a/b` 4장 삭제) → 2차 +36장·+48,896(먹단지 8,160, 송이 단지 6,848(mini 1,440 포함), 타르 10,336, 유성 붓 23,552). 지시서 상한 380장·640,000 안이고, 계획 361장·약 61만 중 1·2차 몫이다. 가장 큰 그룹: 유성 붓 65,696, 붓 폭우 59,592, 족자 43,264, 먹번개 35,808.
 - 팩 페이지 수·바이트는 메인 세션이 `npm run build:atlas`로 잰다(K4의 849,600 단위²가 1장에 들어간 것으로 보아 1장 기대).
@@ -619,6 +632,36 @@ J(i) = jit(seed, i). seed는 layout·paths·draw의 `opts.seed`(정수)다. 예�
 - C1 `k10-c1-all-3a-r1` ok. C2 `k10-c2-parts-3a-r1` `frames=280 ok boxArea=522964 ok badParts=0`, scorch 다섯 줄 그대로. C6 `k10-c6-scan-3a-r1` `calls=376 colours bad=0 nonhex=0 banned=0 nocyan=0 specTokens bad=0 korean=0`. C7 `k10-c7-geometry-3a-r1` 1~4줄 0건·5줄 ok.
 - F1 렌더: 6배 `k10r5f1-scorch-x6`(scorch12~54 두 장씩 + `flame-a/b` 0번 장, 1장 바닥, 위 색·아래 흑백), 1배 `k10r5f1-c13-x1`·`k10r5f1-c13-x1-gray`(C13, 다섯 장), `k10r5f1-fire-ctx-x1`(`draw('inkPots','fire',{context:true})` ch 1·3·5, 위 색·아래 흑백).
 - F2 나이 훑기 `k10r5f2-age-sweep-alpha`(가운데 물건의 장과 α를 draw 출력에서 읽음)와 `k10r5f2-age-sweep`(2배 그림): 번개 기둥 a 0.06·0.11 `pillar-start` α1, 0.13·0.15·0.84·0.95·0.98·1.00 loop α1, 1.03·1.14 `pillar-end` α1. 회전 베기 a 0.10 α0.67(처음 조각이 없어 0.15초 페이드), 0.20·0.30·0.345 α1, 0.355·0.40·0.475 `spin-end` α1. 묘비 a 2.6 α1, 2.8 α0.67, 2.95 α0.17.
+
+**3차 2회 1/2(3b1, P2 표식·발 오버레이 + R1 까마귀 + 결정 ② 기록)**
+- **보존 해시** `k10-keep-3b1`(검수 4차 `k10-keep-all` 식에서 이번에 더한 것만 뺌, 글자 코드로 확인). 뺀 것: 새 그룹 5개(inkDarts, headsmanDarts, inkBloom, thornHalo, bossbane), 기존 그룹 끝의 part `/^(mark-weak|lost|frost[12]-\d+|bound\d+)$/`, 단계 9개(stain, fear, weak, crack, lost, pollen, frost, bound, thorn), SPEC의 `version`·`overlay.head.parts.{fear, lost, weak, stain}`·`overlay.feet.{frost, bound, thorn}`·`overlay.{crack, pollen}`·`gimmick.eclipseHalo.{layers, reducedFlash}`.
+  - spec `146lftr len=17916`, parts `qe5odc len=22955`: 3a-r1과 **같다**.
+  - stamps `ege9ps len=716624`(3a-r1 `mwewtb/715817`), draw `1nsdkzn len=5468237`(3a-r1 `7vot8j/5466897`): R1이 기존 조각 `crowFeathers/crow`(6장)를 고쳐서 바뀌었다.
+  - 그 조각과 그 조각을 그리는 단계(`crowFeathers/crow`)까지 빼면 stamps `mk33bj len=704087`, draw `rq8mbn len=5442029`다. 3b1을 시작하기 전 3a-r1 코드에서 같은 식으로 잰 값(`k10-keep-3b1-base`)과 **같다**. 그래서 바뀐 기존 출력은 까마귀 조각뿐이다(오버레이 `crow`, C12·C13의 까마귀도 이 조각을 쓴다).
+- 원문 넷(아무것도 빼지 않음, `k10-keep-all-3b1`): stamps `ornn3o len=786972`, draw `1mc15ab len=5720453`, spec `p3d9vk len=18629`, parts `1fawmjd len=28554`. 3b2의 보존 기준이다.
+- C1 `k10-c1-all-d3b1` ok. C2 `k10-c2-parts-d3b1` `frames=316 ok boxArea=549380 ok badParts=0`(새 줄 27개는 §14.10). C6 `k10-c6-scan-d3b1` `calls=448 colours bad=0 nonhex=0 banned=0 nocyan=0 specTokens bad=0 korean=0`. C7 `k10-c7-geometry-d3b1` 1~4줄 0건·5줄 ok. C8 `k10-c8-unchanged-d3b1` 고정값 4개 같음, K9 `n4n4y2/2117692`·K11 `bvf9fj/934797` 전후 same, PN keys same, 호출 420. C9 `k10-c9-vectors-d3b1` 69줄(3b1은 layout·paths를 더하지 않는다, `k10-c9-count-d3b1` 글자 해시 `19cnic1` len 8948). C10 `k10-c10-contrast-d3b1` `fills=24 fail=0`(채움을 더하지 않음).
+- 그림 검사: C5 PRI 2 `k10-c5-gimmicks-p2-d3b1`(이름표, 9칸)·`k10-c5-gimmicks-p2-blind-gray-d3b1`(BLIND·흑백) ok. C13 `k10-c13-marks-d3b1`·`-gray-d3b1`(다섯 장, P1·P2 오버레이 14키 + 정예·기절·xp·동전 대조 칸, 렌더러 층 순서 feet → 몸 → front·head)·`-gray-d3b1-x4`·`k10-c13-marks-d3b1-x4a`·`-x4b`(4배) ok. C12 `k10-c12-scene-p2`(1배 색)·`-p2-gray-x08`(0.8배 흑백): 적 200에 머리 표식 24·발 오버레이 24·까마귀 12·포자 8마리(상한대로 주인공에게 가까운 적부터) ok. C15 `k10-c15-pairs-d3b1` ok.
+- 확대·대조: `k10d3b-marks-x6`(머리 표식·포자 6배), `k10d3b-feet-x4`(발 오버레이와 박스·rect 4배), `k10d3b-feet7-x3`(발 오버레이 일곱 종을 한 적에 층대로, 색·흑백 3배), `k10d3b-feet-ctx-x3`·`k10d3b-c5-cells-x3`(맥락 칸 확대), `k10d3b-crow-before-x8`·`k10d3b-crow-after-x10`(R1 전후), `k10d3b-k9-p2-icons`(K9 대조).
+
+**3차 2회 2/2(3b2, P2 이어지는 효과 + 검수 7차 F1·F2·R2·R4·§5-6)**
+- **보존 해시** `k10-keep-3b2`(검수 7차 §3 끝 `k10-keep-3b1-r1`을 넓힌 식, 글자 코드로 확인). 같은 식을 3b1 코드에서 먼저 잰 값(`k10-keep-3b2-base`)과 비교했다.
+  - 뺀 것(3b2가 더한 것): 새 그룹 4개(brushQuills, sealArrows, thunderNeedles, tailGuard), 기존 그룹 끝의 part `inkDarts/stainBurst`·`inkBloom/pollenPuff`·`bossbane/crackBurst`·`inkPulse/bump`·`inkLance/fork`·`inkOrbit/deflect-start|travel|end`·`meteorBrush/haste`·`pinHail/caltrop-snap`, 새 단계 15개(dab, topple, leap, rear, bump, echo, split, rewind, amplify, link, branch, resweep, deflect, haste, snap), SPEC의 `version`·`gimmick`의 새 키 20(inkDarts … sunNeedles).
+  - 뺀 것(이번에 바뀐 기존 출력): 사건을 더한 단계 넷(stain, fear, crack, pollen)의 draw, 고친 조각 `smokeTail/lost`·`thornHalo/*`(F1·F2)·`inkDarts/mark-stain1`(R2)·`frostNeedles/frost1-12`(R4)·`inkBloom/spore-a|b`(§5-6)와 단계 `lost`·`thorn`, 오버레이에서 그 조각을 쓰는 조합(`lost`, `thorn`, `pollen` 전부, `stain` stack 1, `frost` r 12·stack 1).
+  - 결과(3b1 코드 → 3b2 코드): stamps `1h66c1i/754425` → 같음, draw `ob7a83/5582105` → 같음, spec `p3d9vk/18629` → 같음(= 3b1 원문 spec), parts `1fawmjd/28554` → 같음(= 3b1 원문 parts), overlays `1c7d5xg/807605` → 같음.
+  - 같은 3b1 코드에서 검수 7차 식(lost·thorn만 뺌)은 stamps `1d1pfw/759026`, draw `i29rer/5642637`, overlays `18o4se4/846311`로 검수서 값과 같았다(측정 식 확인).
+- 원문 다섯(아무것도 빼지 않음, `k10-keep-3b2-final`): stamps `l0nap6/878803`, draw `8crhz3/7063925`, spec `128ji9u/22506`, parts `qxfght/31609`, overlays `1umqwpr/1079940`. 다음 회차의 보존 기준이다.
+- C1 `k10-c1-all-d3b2` ok. C2 `k10-c2-parts-d3b2` `frames=354 ok boxArea=603884 ok badParts=0`(새 줄 15개는 §14.11). C6 `k10-c6-scan-d3b2` `calls=516 colours bad=0 nonhex=0 banned=0 nocyan=0 specTokens bad=0 korean=0`. C7 `k10-c7-geometry-d3b2` 1~4줄 0건·5줄 ok. C8 `k10-c8-unchanged-d3b2` 고정값 4개 같음, K9 `n4n4y2/2117692`·K11 `bvf9fj/934797` 전후 same, fixed set same, PN keys same, 호출 488. C9 지시서 명령 `k10-c9-count-d3b2` 69줄·글자 해시 `19cnic1` len 8948(3b1과 같음), 3b2 단계 벡터 `k10-c9b-vectors-d3b2` 29줄(§14.11, 3b2-r1에서 28줄). C10 `k10-c10-contrast-d3b2` `fills=24 fail=0`(채움 줄을 더하지 않음, §12-95).
+- 그림 검사: C5 PRI 2 `k10-c5-gimmicks-p2-d3b2`(이름표, 24칸, 1배; 칸 확대 `k10-c5-p2-crop-a~d`)·`k10-c5-gimmicks-p2-blind-gray-d3b2`(BLIND·흑백 0.6배) ok. C13 `k10-c13-marks-d3b2`·`-gray-d3b2`(1배, 14키 + 정예·기절 점·xp·동전)·`-d3b2-x4`(4배) ok. C12 `k10-c12-scene-p2-d3b2`(1배 색)·`-gray-x08-d3b2`(0.8배 흑백) ok. C15 `k10-c15-pairs-d3b2` ok.
+- F1·F2 합격 판(검수 7차 판과 같은 짜임): `k10b2-feet7-x1`(발 오버레이 일곱 + 없음 × 1·3·5장 × 색·흑백, 1배)·`k10b2-feet7-zoom-x4`, `k10b2-heads-x1`(머리 표식·포자·균열판 + 정예·기절 점·xp·동전·회복·자석, 1배)·`k10b2-heads-lost-x6`, 헤맴 장별 `k10b2-lost-x8d`(8배, 박스 − 3 표시, 색·흑백).
+- 그 밖: 새 조각 `k10b2-new-parts-x3`·`-x3b`·`-x3c`(3·4배, 박스·앵커), 사건 고리 `k10b2-rings-x2`·`k10b2-dabring-x5`, LOD·감소 설정 588호출 `k10b2-variants`(빈 출력 16 = minimal의 꽃가루·헤맴, deco).
+
+**3차 2회 2/2 수정(3b2-r1, 검수 8차 F1)**
+- 보존 해시(검수서 명령 `k10-keep-3b2-r1` 그대로):
+  - 그대로여야 하는 값: stamps `l0nap6/878803`, parts `qxfght/31609`, overlays `1umqwpr/1079940`, draw without inkBloom/pollen `1skcben/7041757`, spec without gimmick.inkBloom `1ba8cfh/22210` — **모두 같다.**
+  - 바뀐 것: draw raw `8crhz3/7063925` → `v80e67/7065693`, spec raw `128ji9u/22506` → `ii86b1/22458`(글자는 `k10-keep-3b2-r1-x2`에서 대·소문자로 확인).
+- 원문 다섯(다음 기준): stamps `l0nap6/878803`, draw `v80e67/7065693`, spec `ii86b1/22458`, parts `qxfght/31609`, overlays `1umqwpr/1079940`. version `1.0-d3b2-r1`.
+- C1 `k10-c1-all-d3b2-r1` ok. C6 `k10-c6-scan-d3b2-r1` `calls=516 colours bad=0 nonhex=0 banned=0 nocyan=0 specTokens bad=0 korean=0`. C7 `k10-c7-geometry-d3b2-r1` 1~4줄 0건·5줄 ok.
+- 합격 판: `k10b2r1-rings-vs-tele`(1배, 1장, 위 색·아래 흑백, 적 예고 preview·imminent·active r50 옆에 꽃가루 고리 셋 — p 0.35·0.6, 추적자를 두른 p 0.5), 흑백 3배 확대 `k10b2r1-rings-vs-tele-gray-x3`.
 
 ## 12. 지시서와 다르게 한 것
 
@@ -719,6 +762,60 @@ J(i) = jit(seed, i). seed는 layout·paths·draw의 `opts.seed`(정수)다. 예�
 79. **발밑 불길 덩이(F1)**: 검수서 §3 F1의 덩이 표 그대로이고, 38 등급 가운데 덩이만 x −1 → −2로 옮겼다. 표대로면 덩이 중심 간격이 18·18로 같아서다(지금 17·19). 덩이의 큰 혀 끝에 덩이마다 다른 lean(+0.5, −0.6, +0.4 × H/18)을 더해 끝을 굽혔다. 바닥 타원은 덩이 가운데 (x, −1)에 rx = 덩이 반폭 + 1, ry 1.4로 두어 발 선 위에 앉힌다. 안쪽 청록 혀 폭은 min(0.52w, w − 2.4 − 0.24·|lean|)이다. 0.52w만 쓰면 곁 혀(폭 3.4)의 먹 테가 0.82가 되어 '먹 테 1.2 이상'(지시서 :308)을 밑돈다. 큰 혀(폭 5 이상)는 0.52w와 거의 같다. 종이 불티는 가장 큰 덩이의 큰 혀 끝에서 (+2.1, +1.2)에 r 0.75(먹 0.45)로 두고, 박스 − 3과 발 rect 안일 때만 그린다(19~54 등급 모두 들어감, 12 등급은 없음).
 80. **`SPEC.version`** `1.0-d3a` → `1.0-d3a-r1`. SPEC의 다른 값은 그대로다(`spec=146lftr/17916`).
 
+**3차 2회 1/2(3b1, P2 표식·발 오버레이)에서 정하거나 다르게 한 것**
+
+81. **둘로 나눠 납품**: 지시자가 허락한 대로 표식·발 오버레이를 먼저(`1.0-d3b1`), 이어지는 효과를 다음(`1.0-d3b2`)에 낸다. 같은 기믹의 두 부분(먹 얼룩 표식 + 터짐, 공포 표식 + 고리, 균열판 + 균열 터짐, 꽃가루 포자 + 고리·퍼짐)은 한 단계(stain, fear, crack, pollen)에 모으고, 3b2에서 그 단계의 참고 합성에 사건을 더한다(그때 그 네 단계의 draw 해시가 바뀐다).
+82. **발 오버레이 셋의 층 = front**: 지시서 §4.3 표는 서리 수 1·2와 가시를 `feet`(몸 아래) 층에 두었다. 그 층에서는 적의 발과 몸이 거의 다 가렸다(`k10d3b-feet-ctx-x3` 앞 렌더, 1배에서 보이지 않음). 박스·rect를 넓히지 않고 보이게 하려고 묶임과 같이 `front`(그 몸 바로 뒤)에 두고, 키를 몸 높이의 25% 이하로 두었다. 가시는 발 선 앞 땅과 옆에 꽂았다(발 뒤에 둔 가시는 앞 층에서도 앞뒤가 어긋난다).
+83. **오버레이 키**: `frost`(stack 1~2 = 서리 1·2), `stain`(1~3), `crack`(1~5)은 한 키에 `opts.stack`을 받는다. `SPEC.priority.feet`의 `frost1`·`frost2`는 `frost`의 stack 1·2다. 균열판은 `priority.heads`에 넣지 않고 늘 그린다(지시서 §4.5). 다른 머리 표식과 함께면 `SPEC.overlay.crack.beside`(26)만큼 오른쪽에 둔다.
+84. **꽃가루 포자**: 둘을 `SPEC.overlay.pollen.at`의 두 자리에서 cycle 1초로 띄운다(`marks.spores` rise 16·drift 6, 반 주기 엇갈림). 포자는 먹 테를 두른 청록 알갱이 + allyG 점이다. 종이 알갱이 안에 먹 점을 둔 첫 시안은 눈알로 읽혔고, 꼬리를 단 시안은 숫자 9로 읽혀 꼬리를 뺐다. 3px라 '먹 ≥ 2 + 청록 + 심'은 줄여 먹 1 + 청록 + allyG다.
+85. **공포 땀방울 `rotate: 'face'`**: 머리 뒤쪽에 비켜 둔 방울을 렌더러가 적이 보는 쪽에 맞춰 좌우 반전한다(`opts.facing`). 정예의 흡혈 방울(채운 자수정)과는 종이 + 먹 테 + 청록 반짝 + 기울기로 갈린다.
+86. **약화 매듭**: 수호 고리의 꼰 줄 한 토막을 가운데에서 한 번 묶고 두 끝을 길이가 다르게 늘어뜨렸다(리본 나비가 아니게). 청록은 매듭을 꿰는 바느질 한 땀이다.
+87. **얼룩**: 얼룩 1·2·3 모두 종이 테 1.2 + 먹 바깥 선. 청록은 젖은 먹 위의 반짝 호(먹 위 청록 + allyG)다(지시서 표에는 청록이 없지만 모든 오버레이에 청록이 있어야 한다, C6 nocyan).
+88. **헤맴**: 연기 컬 둘에 각각 작은 청록 리본 끝을 달았다(연막 꼬리의 K9 청록 리본). 컬 둘이 같은 꼴이라 4장이 반 바퀴로 이어진다.
+89. **R1 까마귀**(검수 5차): 든 장·수평 장(0·1·2·4·5)의 날개 끝을 홈 셋으로 갈라 첫째 깃 넷을 벌리고, 가장 긴 둘에만 종이 깃대 획을 둔다(넷 모두 두면 빗살로 읽혔다, `k10d3b-crow-after-x10` 이전 시안). 내린 장(3)은 닫힌 날개 그대로다. 부리는 밑동 1.6 → 2.4, 길이 2.2 → 3.2로 굵고 길게 했다. 눈 없음, 6장, 박스 26×18, 청록(다리 실) 그대로다.
+90. **결정 ②의 SPEC 기록**: `SPEC.gimmick.eclipseHalo.layers` {wash: ground, band: ground, outer·inset·corona·ribbon: ally}, `reducedFlash` 0.5(원판·띠 α에 곱함). 참고 합성은 `opts.reducedFlash`로 같은 규칙을 그린다(기본 출력 그대로).
+91. **`SPEC.version`** `1.0-d3a-r1` → `1.0-d3b1`.
+
+**3차 2회 2/2(3b2, P2 이어지는 효과 + 검수 7차 수정)에서 정하거나 다르게 한 것**
+
+92. **SPEC 자리**: 지시서의 `ring.stainBurst`·`ring.dabBurst`·`ring.crackBurst`·`ring.fear`·`ring.pollen`·`ring.thunderclapEcho`·`line.leap`·`line.frostLink` 같은 이름 대신, 모두 `SPEC.gimmick[id]`의 새 키에 넣었다(검수 7차 §5-1). 대응: ring.stainBurst = `gimmick.inkDarts.ring`, ring.dabBurst = `gimmick.brushQuills.ring`, ring.crackBurst = `gimmick.bossbane.ring`(+ `cracks`), ring.fear = `gimmick.headsmanDarts.ring`, ring.pollen = `gimmick.inkBloom.ring`, ring.thunderclapEcho = `gimmick.thunderclap.ring`, line.leap = `gimmick.thunderNeedles.line`, line.frostLink = `gimmick.frostChainlet.line`. 배치도 `SPEC.layout`에 더하지 않고 같은 키(`burst`, `dab`, `hit`, `event`, `fork`, `start`·`travel`·`end`, `part`)에 적었다.
+93. **균열 터짐 가운데 조각 `crackBurst`(추가)**: 지시서 §4.1·§4.4 본문은 세 터짐 모두 '가운데 조각 + SPEC 고리'인데 §4.4 조각 표에는 균열 터짐 조각이 없다. 얼룩 터짐과 같은 문법으로 3장(56×48, 앵커 28,30, prog 0.3, center·ally·info)을 더했다(+3장·8,064).
+94. **사건 고리**: 검수 7차 §5-3(중심선 R, 고른 닫힌 고리 금지, 청록 ≤ 1/3)을 지시서 값보다 앞세웠다.
+    - ~~꽃가루: 먹 점선은 호 전체, 청록은 core 60~100°에만~~ → **3b2-r1에서 지시서 값으로 되돌림**(§12-119).
+    - 메아리: 지시서 [[ink300,3.4],[ally,1.6]] → 호 전체 [[ink300,3.4],[p300,1.2]], 청록 층 [[ink300,3.4],[ally,1.6]]은 core 80~110°에만, 틈 둘(10~16°), 갈래 없음, α0.75.
+    - 얼룩 터짐·늦은 붓자국·균열 터짐: 층이 정해지지 않아 stroke [[ink,3.2],[p50,1.2]]·band ink 2.4~5·stroke [[ink,3.4],[p50,1.6]]으로 했다. 청록은 core 60~100°·40~70°·70~110°다(모두 120° 이하).
+    - 공포: 지시서대로 청록이 없다. p50 3 + 먹 테 1.2, 안쪽 찢김, 찢어진 곳 둘(5~9°), 끝은 찢긴 혀. 적 예고의 점선 테·물방울 붓 머리가 없다.
+    - 사건 고리에는 각성 가는 선(R − 6)과 core × 1.5를 쓰지 않는다. 기믹은 각성에서만 일어나므로 각성 표지가 아니라 사건 문법이다.
+95. **C10 줄을 더하지 않음(판단 요청)**: 새 SPEC은 gimmick·overlay 아래에만 넣으므로 `SPEC.fills`를 늘리지 않았다. 되쓸기 띠는 넓은 붓 띠(`wideBrush.band` p50 α0.45)에 0.65를 곱한 α0.29라 이미 있는 줄보다 어둡다. 공포 고리의 종이 띠(폭 3, α0.85, 0.45초)는 침묵의 종 고리의 종이 심(2.6)과 같은 선으로 보아 면으로 세지 않았다(§7.9). 면으로 센다면 C10 기준(0.3초를 넘는 채움 Y ≤ 0.62)을 넘으므로 α나 폭을 바꿔야 한다.
+96. **해바늘**: 그림·단계가 없다. 규칙만 `SPEC.gimmick.sunNeedles.scale` {by 'radius', over 'size', max 1.6}에 적었다(렌더러가 탄 조각을 shot.radius / geo.size배, 1.6까지 키움 — '조각을 늘이지 않는다'의 유일한 예외, 지시서 §4.1). `META.gimmicks`에 넣지 않아 C5 칸이 없다.
+97. **가지창 `fork`의 place = 'point'**(지시서 'origin'): C7 2줄은 'origin' 조각이 앵커에서 26 안에 칠하면 실패로 센다(결 발밑 규칙). `fork`는 결이 아니라 창 끝(가지의 시작)에 놓이므로 'point'로 했다. rotate는 지시서대로 'beam'이다.
+98. **window**: 사건 조각은 `event`, 대기 `dab`은 `pending`(seconds 없음, 자료의 대기), 도약 `leapHit`은 `chain`(seconds 없음), 되받은 탄은 `vel`, 결 가속은 `status`다.
+99. **되쓸기**: '같은 넓은 붓 띠를 α0.65로, 붓 방향을 뒤집어'를 같은 빔 축에서 머리가 먼 끝(L)에서 결 쪽(26)으로 돌아오는 띠로 그렸다(띠는 [x1, L]). 붓 조각은 앵커를 축으로 좌우 반전(`head: 'mirror'`)하고, 띠·테·비백·앞선·붓 모두 α × 0.65다. 가장자리·비백은 seed + 500이다(첫 쓸기와 다르게).
+100. **가지창**: 창 끝(x = L)에서 ±35°, 길이 0.4L. 가지는 창의 blade 문법(thrust 0.18, retract 0.7 → 0.6L, 창날 × 0.85)에서 술을 뺀 것이다. 판정 캡슐(p50 α0.16 + 먹 1.2)은 가지 시작(0)에서 곧게 시작한다(결이 아니므로 26을 비우지 않는다). 가지는 창이 끝에 닿은 뒤(thrust × 수명 = 0.05초) 시작하고, `fork`는 그때부터 0.2초다.
+101. **되감김**: sag −0.16은 구간마다 원래 실과 반대쪽으로 휜 곡선이다. 그 곡선을 결 쪽 26에서 자른 뒤 거꾸로(꼬리 → 머리) 그려 나간다. 층은 지시서 [[ink,2.6],[ally,1.4],[allyG,0.5]]. 닿은 적에는 평상 `spark`(덧타격이라 작은 쪽)를 둔다.
+102. **증폭**: 구간 i(0 = 결 → 첫 적)의 두 가닥 층 굵기 × (1 + 0.15i), 진폭 × (1 + 0.1i), 꺾음 seed = flicker seed + 31i. 점 조각은 그 점에서 끝나는 구간 i ≥ 3이면 `gust-b`, 아니면 `gust-a`다(1차의 J(600) 고르기 대신).
+103. **묶인 사슬**: 구성원(결 없음)을 차례로 잇는 links(서리 사슬 문법, pitch 20, 처음 비움 0). α0.45, 공유 피해 뒤 0.18초(`opts.share`)는 α 1, 수명 2초의 끝 15%(fade at 0.85)에 사라진다. minimal은 꺾은 줄 하나다.
+104. **감전 도약 kink**: 지시서 §1.5의 'kink | seg, push'를 n = clamp(round(L/24), 3, 8) 구간, 꼭짓점 자리 흔들림 0.5/n, 옆으로 3~8을 번갈아 미는 것으로 정했다. 층은 먹번개 고리와 같은 [[ink,3.4],[ally,1.8],[allyG,0.6]], 깜빡임 seed [3,4](12fps), 수명 0.2초의 앞 35% 동안 그려 나가고 닿은 점에 `leapHit`.
+105. **갈라짐**: 새 조각이 없다. 작은 단지는 `mini`(4장 loop)로 lobMini를 0.35초 날고, 터지면 송이 단지 `burst`와 송이 단지 고리를 0.6R로 그린다(평상: 각성 가는 선 없음). 참고 합성은 ±60을 x축 위에 둔다(게임은 자료의 자리).
+106. **결 가속**: 칠한 범위 y −32.7 ~ −12(지시서 −34 ~ −11 안), 얼굴 구역 밖, 발밑 링 밖(C7 2줄). 띠 둘은 결 발 뒤(−x)에서 뒤·위로 감아 오른다. 뒤로 말려 돌아오는 띠 둘은 4배에서 겹친 'C'·초승달로, 가운데가 두꺼운 띠는 잎 둘로 읽혀 굵기 ≤ 2.4의 길쭉한 띠(길이 다름, 엇갈리지 않음)로 바꿨다.
+107. **되받은 탄의 소용돌이**: 머리 가운데의 동심 소용돌이는 흰 타원 속 검은 고리라 '눈'으로, 머리 뒤에서 말리는 고리는 'G'로 읽혔다. 머리 위쪽에서 들어와 뒤로 휘어 꼬리 가운데로 빠지는 한 획(소용돌이치는 혜성 심)으로 그렸다. 머리는 각진 파편(타원이 아님)이다.
+108. **늦은 붓자국 `dab`**: 끝에 꼬리와 점이 있는 납작한 먹 덩이는 '눈 달린 물고기'로 읽혀, 들쭉날쭉한 먹 웅덩이 + 펜촉의 청록 획(먹 밑 + 청록 + allyG)으로 그렸다. K9의 청록 요소는 펜촉 끝 점이지만, 땅 위의 작은 청록 점은 눈이나 결 발밑 링으로 읽힐 수 있어 획으로 했다.
+109. **얼룩 터짐**: 팔·방울까지 종이 테를 두르면 분자 모형(공과 막대)으로 읽혀, 종이 테는 얼룩 몸(0번 장)과 흩어진 조각(1번 장)에만 둔다.
+110. **도미노 `topple`**: K9 인장 머리(종이 덩이 + 아래 먹 인면 띠 + 청록 테)가 넘어진다. 처음 그린 꼭지는 병으로 읽혀 뺐다.
+111. **밀쳐 부딪힘 `bump`**: 지시서 표에 회전이 없어 벽 쪽을 모른다. 둥근 충격(먹 덩이 + 찢긴 종이 섬광)에 먹 파동의 검은 띠 조각과 청록 앞선을 왼쪽 아래에 둔다(위에 둔 호는 눈썹으로 읽혔다).
+112. **배후 응징 `rearHit`**: 두 배 피해를 베기 둘로 그렸다(1번 장). 둘은 나란히 엇갈리고 겹치지 않는다(✕ 아님). 청록은 rear 무기의 목도리 색으로, 단검 손잡이 끝의 짧은 리본이다.
+113. **헤맴(검수 7차 F1)**: 층은 처방 그대로다. 크기는 처방 k·1.7·궤도 5 대신 k·1.6·궤도 4.7('안팎')이다. 컬의 열린 끝을 늘 바깥으로 두면 1.7·5에서 x가 박스 − 3(±9)을 0.5 넘었다. 4장은 반 바퀴 돌기(0·45·90·135°) 대신, 쌍이 0 → 13° → 25° → 13°로 흔들리며 컬마다 돈다. 반 바퀴 돌기는 90° 장에서 두 컬이 앞뒤로 겹쳐 한 덩이가 됐다(높이 14 박스라 위아래로 벌릴 수 없음). 43°까지 흔들면 맞닿았다(`k10b2-lost-x8`, `-x8b`). 4장, loop 8, deco, 박스, 앵커, 리본은 그대로다.
+114. **가시(검수 7차 F2)**: 갈고리 방향은 3b1 그대로다(옆 가시 둘은 안쪽, 앞 가시는 오른쪽으로 휨). 검수서의 '둘은 바깥, 하나는 안쪽'과 다르게 읽힐 수 있어 적는다. 청록 심은 앞 가시(가장 큰 것)로 옮겼다(1배에서 보이게). 종이 띠는 볼록한 가장자리를 따라 밑동 0.25·b에서 끝 0으로 가늘어진다.
+115. **포자(검수 7차 §5-6)**: 반지름 2로 키웠다(박스 10×14 − 3 안의 최대, 먹 테까지 지름 약 5px). 박스는 그대로다. 몸은 allyG(0.62배)를 청록 테가 두르고, 종이 반짝은 왼쪽 위로 비켰다. 꼬리 없음.
+116. **3b1 단계의 참고 합성(context)**: 사건이 있는 네 단계는 몸 → 사건 → 머리 표식 순으로 그린다(사건이 머리 표식을 덮지 않게, `ctxEnemy`의 `heads` 인자). 터지는 적에는 표식을 걸지 않는다(터지면 초기화된다).
+117. **별똥 자국의 'inside' 테**: `drawZone`이 내부 옵션 `inside`를 받아 결 가속 참고 합성에서 `rim.pad.inside`를 그린다. 기존 호출의 출력은 그대로다(보존 해시).
+118. **`SPEC.version`** `1.0-d3b1` → `1.0-d3b2`.
+
+**3차 2회 2/2 수정(3b2-r1, 검수 8차 F1)에서 정하거나 다르게 한 것**
+
+119. **꽃가루 고리를 먹 + 청록 점선 샌드위치로 되돌림**(검수 8차 결정 7·F1): 3b2는 검수 7차 §5-3('청록 1/3 이하')을 꽃가루 고리에도 걸어 고리 대부분을 맨 먹 점선으로 그렸다. r 50의 맨 먹 점선 원이 0.5초마다 적 둘레에 생기면 적 예고의 붓 점선 테(지시서 §1.7 `:317`)로 읽혀 '적 범위 공격 준비'로 오독될 수 있다. 점선 고리의 아군 문법은 `rim.ally`와 같은 먹 + 청록 샌드위치다. 그래서 `SPEC.gimmick.inkBloom.ring`을 지시서 `:909` 값(dashed, [[ink,1.6],[ally,1]], dash [4,5], pad 0.6)으로 돌리고 `core`를 지웠다. 틈 둘(16~28°), grow 0.6 → 1 / 0.25초, 수명 0.45, fade 0.6은 그대로다. '청록 1/3 이하'는 실선 사건 고리(얼룩·늦은 붓자국·균열 터짐·메아리)에만 남는다. 조각은 바뀌지 않았다.
+120. **`SPEC.version`** `1.0-d3b2` → `1.0-d3b2-r1`.
+
 ## 13. 사람 원화가에게 남길 것 (바이블 §15)
 
 - 물건의 붓 외곽·블랙 스팟·비백: 번개와 먹구름, 붓 획(붓털 비백), 족자, 둥근 도장, 손, 손종, 백자 조각, 타르 항아리와 줄, 큰 붓, 먹통, 술, 리본, 매듭.
@@ -729,6 +826,8 @@ J(i) = jit(seed, i). seed는 layout·paths·draw의 `opts.seed`(정수)다. 예�
 - 2차에 더한 것: 비행 단지의 먹 흘림과 뚜껑 붓 외곽, 송이 끈 리본의 펄럭임, 타르 줄의 윤기와 늘어짐, 유성 붓 붓털 머리(눌린 갈래)와 비행 꼬리의 마른 갈래, 인영 c의 찍힘 질감. 게임 크기(단지 약 13~18px, 송이 단지 약 7~13px)의 1배 픽셀 다듬기.
 - 3a에 더한 것: 서리 결정·얼음판의 면, 회전 날의 붓 외곽, 마름쇠 핀(1배 13px에서 작은 사람으로 읽히지 않게), 연기 덩이의 붓 질감과 컬, 묘비 핀, 네모 인영의 찍힘, 표식 셋(손종·패·까마귀 16~18px의 1배 픽셀), 번개 기둥, 말린 족자, 큰 인장과 큰 인영, 먹 불길과 불먹 발밑 불길, 타르 줄, 깨진 항아리, 별가루, 코로나 깃. 문화 검토: 묘비(십자·비문 없음 — 둥근 머리만), 까마귀(불길한 상징이 아니게), 손종(범종 아님).
 - 3a-r1에 더한 것: 발밑 불길 덩이(12 등급은 덩이 하나, 1배 약 10px)의 1배 픽셀 다듬기와 혀 끝의 붓 질감.
+- 3b1에 더한 것: 머리 표식 넷(땀방울, 꼰 줄 매듭, 얼룩 1~3, 연기 컬)과 보스 균열판 1~5의 16~18px 1배 픽셀 다듬기와 찢긴 종이 가장자리, 포자(3px), 서리 결정의 면, 가시의 휜 꼴과 종이 면, 묶임 바느질의 들고 나는 땀과 작은 묘침, 까마귀 첫째 깃의 마른 붓 끝. 1배에서 작은 등급(12)의 가시·서리 수는 몇 px라 사람 다듬기가 필요하다. 문화 검토: 땀방울(만화 기호가 우스꽝스럽지 않게), 가시(가시관 아님 — 발치 땅에만).
+- 3b2에 더한 것: 사건 조각의 붓 질감(먹 튐·찢긴 종이 섬광·종이 파편), 늦은 붓자국 웅덩이와 펜 튐, 깃 날개 조각, 인장 덩이, 단검과 둥근 날밑, 균열판 파편, 되받은 탄의 파편 머리·꼬리·소용돌이 획, 결 가속 띠, 부러진 핀 반쪽. 1배 픽셀 다듬기: `leapHit`(24 박스), 꽃가루 알갱이, 헤맴 컬(약 8px), 12 등급 가시(앞 가시 6.4)·서리 수. 사건 고리의 붓 질감(공포 고리의 찢긴 종이 띠, 꽃가루 점선)과 균열선의 종이 결. 검수 7차 R3(약화 매듭이 자석 말굽 ∩와 갈리게 줄이 한 번 교차하는 매듭)과 균열판 1~2의 첫 금(봉투 ✉로 읽히지 않게 모서리 대각선보다 들쭉날쭉하게)은 사람 몫으로 남겼다. 문화 검토: 배후 응징(베기는 종이 획, 피·절단면 없음), 도미노 인장(글자 없음).
 - (1차의 '유성 붓 비백 줄기' 항목은 수정 1회차 M2로 줄기를 없애 지웠다.)
 - 게임 크기(1배)의 픽셀 다듬기: 머리 위 손(~30px)과 손종(~40px), 불꽃·바람 획(≤ 24px), 술·먹통(뒤쪽 26~56).
 - 정식 판독 시험(n ≥ 8)은 하지 않았다.
@@ -927,3 +1026,230 @@ z 순서는 ground → feet → stand → ally다.
 - 땅 조각: R < 50(마름쇠, 묘비, 기둥)은 적 하나를 조각 오른쪽(x + R + 16)에, 큰 조각은 R/75배 자리에 안에 둔다. 불먹 안의 적에게 `scorch`를 건다. 별똥 자국 안에는 결을 세운다.
 - 오버레이 맥락은 층대로 그린다: `feet` → 적 몸 → `front` → `head`.
 - 삼각 봉인은 세 모서리에, 펼쳐지는 족자는 띠 위에 적을 둔다. 개기일식은 결을 가운데에 둔다.
+- 3b1 표식 단계: 적 셋(사수, 추적자, 돌격자)에 그 오버레이를 건다. 쌓이는 표식은 겹 수를 바꿔 건다(얼룩 1·2·3, 서리 수 1·2·2). 보스 균열판은 보스 대신 간수 셋에 1·3·5겹으로 건다(참고 합성만).
+
+### 14.10 P2 표식·발 오버레이 (3차 2회 1/2, 3b1)
+
+지시서 §4.3의 P2 표식·발 오버레이 9종이다. 이어지는 효과(§4.4)는 §14.11(3b2)이다. 3b2에서 검수 7차 F1·F2·R2·R4·§5-6으로 `lost`·`thorn<r>`·`mark-stain1`·`frost1-12`·`spore-a/b`의 그림을 고쳤다(아래 표의 굵은 글씨, 박스·앵커·장 수·drive·층은 그대로).
+
+| 무기 | 단계 | 오버레이 키 | 자료(Entity.awk) | 조각 | 층 | 우선·상한 |
+|---|---|---|---|---|---|---|
+| inkDarts | `stain` | `stain` (stack 1~3) | `awk.stain`·`stainUntil` | `mark-stain1~3` | head | heads 마지막(stain) |
+| headsmanDarts | `fear` | `fear` | `awk.fear` | `mark-fear`(rotate face) | head | heads 셋째 |
+| wardRing | `weak` | `weak` | `awk.weak` | `mark-weak` | head | heads 다섯째 |
+| smokeTail | `lost` | `lost` | `awk.wander` | `lost`(loop 8, deco) | head | heads 넷째 |
+| bossbane | `crack` | `crack` (stack 1~5) | `awk.crack` | `mark-crack1~5` | head | 우선순위 밖, 늘 그림(보스만) |
+| inkBloom | `pollen` | `pollen` | `awk.pollen` | `spore-a/b`(cycle 1초, deco) | head | `caps.spores` [16, 8, 0](포자 수) |
+| frostNeedles | `frost` | `frost` (stack 1~2) | `awk.frost` | `frost1-<r>`, `frost2-<r>` | front | feet: frost2 > frost1 |
+| gravePins | `bound` | `bound` | `awk.bound`(새) | `bound<r>` | front | feet 둘째 |
+| thornHalo | `thorn` | `thorn` | `awk.thorn` | `thorn<r>` | front | feet 여섯째 |
+
+- 머리 표식은 적 하나에 하나(`priority.heads`: silence > prey > fear > lost > weak > stain), 발 오버레이도 하나(`priority.feet`: freeze > bound > scorch > frost2 > frost1 > thorn > rime). 화면 상한은 `caps.heads`·`feet` [24, 16, 8], 주인공에게 가까운 적부터. 까마귀와 포자는 따로 센다.
+- 균열판은 보스에 늘 그린다. 머리 표식이 함께 있으면 x + `SPEC.overlay.crack.beside`(26)에 둔다.
+
+**조각(C2 줄, 3b1의 27줄 36장)**
+```
+inkDarts/mark-stain1 f1 idx box22x22 a11,20 over none head info w:stack
+inkDarts/mark-stain2 f1 idx box22x22 a11,20 over none head info w:stack
+inkDarts/mark-stain3 f1 idx box22x22 a11,20 over none head info w:stack
+frostNeedles/frost1-12 f1 idx box36x20 a18,10 feet none front info r12 w:stack
+frostNeedles/frost1-19 f1 idx box48x24 a24,12 feet none front info r19 w:stack
+frostNeedles/frost1-28 f1 idx box64x30 a32,15 feet none front info r28 w:stack
+frostNeedles/frost2-12 f1 idx box36x20 a18,10 feet none front info r12 w:stack
+frostNeedles/frost2-19 f1 idx box48x24 a24,12 feet none front info r19 w:stack
+frostNeedles/frost2-28 f1 idx box64x30 a32,15 feet none front info r28 w:stack
+headsmanDarts/mark-fear f1 idx box22x22 a11,20 over face head info w:status
+inkBloom/spore-a f4 cycle 1s box10x14 a5,12 over none head deco w:status
+inkBloom/spore-b f4 cycle 1s box10x14 a5,12 over none head deco w:status
+thornHalo/thorn12 f1 idx box30x16 a15,8 feet none front info r12 w:status
+thornHalo/thorn19 f1 idx box40x18 a20,9 feet none front info r19 w:status
+thornHalo/thorn28 f1 idx box56x22 a28,11 feet none front info r28 w:status
+thornHalo/thorn38 f1 idx box72x26 a36,13 feet none front info r38 w:status
+thornHalo/thorn54 f1 idx box96x30 a48,15 feet none front info r54 w:status
+smokeTail/lost f4 loop@8 still0 box24x14 a12,10 over none head deco w:status
+gravePins/bound12 f1 idx box34x20 a17,10 feet none front info r12 w:status
+gravePins/bound19 f1 idx box46x24 a23,12 feet none front info r19 w:status
+gravePins/bound28 f1 idx box62x30 a31,15 feet none front info r28 w:status
+bossbane/mark-crack1 f1 idx box26x24 a13,22 over none head info w:stack
+bossbane/mark-crack2 f1 idx box26x24 a13,22 over none head info w:stack
+bossbane/mark-crack3 f1 idx box26x24 a13,22 over none head info w:stack
+bossbane/mark-crack4 f1 idx box26x24 a13,22 over none head info w:stack
+bossbane/mark-crack5 f1 idx box26x24 a13,22 over none head info w:stack
+wardRing/mark-weak f1 idx box22x22 a11,20 over none head info w:status
+```
+박스·앵커는 지시서 §4.3 표 그대로다. 층만 서리 수·가시가 `feet` → `front`다(§12-82).
+
+| 조각 | 그림 | 청록 |
+|---|---|---|
+| `mark-fear` | 종이 식은땀 방울 하나(높이 12.4, 먹 테 1.4, 오른쪽 아래 p300), −16° 기울여 머리 뒤쪽(−x)에 둔다 | 방울 안 반짝 획 [ink 2, ally 1.1, allyG 0.4] |
+| `mark-weak` | 수호 고리의 꼰 줄 한 토막(종이, 먹 테 1.3, 비스듬한 꼰 자국)을 가운데에서 한 번 묶은 혹 매듭, 왼쪽 끝은 길게·오른쪽 끝은 짧게 늘어지고 끝이 풀림 | 매듭을 꿰는 바느질 한 땀 |
+| `mark-stain1~3` | 먹 얼룩(1: r 3.6, 2: r 4.8 + 방울 하나, 3: r 5.8 + 가장자리 방울 둘, 들쭉날쭉), 둘레에 종이 테 1.2 + 먹 바깥 선. **3b2 R2**: 얼룩 1은 가로로 넓고(rx 1.15r, ry 0.85r) 더 들쭉날쭉하다(0.26 → 0.34) — 방울 없이도 '번짐'. 2·3은 그대로 | 젖은 먹 위 반짝 호 |
+| `mark-crack1~5` | 찢긴 종이판(19 × 13, 먹 테 1.4, 아래·오른쪽 p300)에 왼쪽 위 모서리에서 갈라지는 금 n개(각 12·30·49·61·82°, 길이 15.6·10.2·13.2·8.4·9.4, 두 번 꺾임, 긴 금은 한 번 가지) | 가장 새 금 [ink 2, ally 1, allyG 0.35] |
+| `lost` | **3b2 F1**: 머리 위 연기 컬 둘, 먹 테를 두른 열린 곱슬(앞 [ink 3.4, p300 1], 뒤 [ink 2.8, ink300 0.8] — 앞뒤는 크기와 심 명도로 가른다), 컬 k·1.6(3b1 1.2), 궤도 x ±4.7(3b1 3.6). 4장 동안 쌍이 0 → 13° → 25° → 13°로 흔들리며 컬마다 돈다(열린 끝은 늘 바깥). 칠한 범위 x −8.9 ~ 9.0, y −5.9 ~ −0.5(박스 24×14 − 3 안) | 컬 끝의 작은 리본 [ink 2.2, ally 1.2, allyG 0.4] |
+| `spore-a/b` | **3b2 §5-6**: 꽃가루 알갱이 반지름 2(먹 테 1까지 지름 약 5px, a 2 × 2.2, b 2 × 1.7), 몸은 allyG(0.62배)를 청록 테가 두르고 종이 반짝은 왼쪽 위. 0: 0.72배, 1·2: 다 핌, 3: allyD·ink300 테로 바램. 꼬리 없음 | 알갱이 자체 |
+| `frost1/2-<r>` | 발 앞 땅에서 솟은 짧은 결정 각기둥(서리 고리·동결과 같은 결정). 1: 한 무더기 셋 + 얼음 조각, 2: 두 무더기(셋 + 둘) + 얇은 얼음 판 + 조각 둘. 가장 높은 결정 H = **5.6**(3b2 R4, 3b1 4.6)·5.8·7.4(1), 6.2·8·10.6(2) = 몸 높이의 25% 이하 | 가장 높은 결정의 심 |
+| `bound<r>` | 발 앞을 지나는 열린 호(rx 10·14.6·21.4) 위의 청록 홈질(점선 [3.4, 2.4] pad 0.6), 왼쪽 끝은 땅에 누운 풀린 실, 오른쪽에 3a 묘침을 줄인 작은 핀(머리 4.2~6.6)과 실 매듭. 닫힌 고리가 아니다(주인공 발밑 링과 갈림) | 실, 핀대의 감긴 실 |
+| `thorn<r>` | **3b2 F2**: 발치 땅에 박힌 어두운 갈고리 셋. 먹 몸 + 볼록한 가장자리를 따라 가늘어지는 종이 띠(밑동 0.25·b → 끝 0), 먹 외곽 1.2, 밑동의 땅 패임(ink700 α0.6). 앞 가시가 가장 크고 가장 앞(땅 y 가장 큼): 높이 6.4·7.6·9.6·11.6·13.6(12·19·28·38·54), 곁 가시는 그 0.78·0.62배로 발 선 가까이 더 위, 밑동 폭은 높이의 0.75배 — 셋이 발 둘레의 얕은 호에 놓인다. 갈고리는 3b1 그대로(곁 둘은 안쪽, 앞은 오른쪽) | 앞 가시의 안쪽 반을 따라 [ally 1, allyG 0.35] |
+
+**규칙(`SPEC.overlay`, 렌더러)**
+- 머리 표식은 (0, top + `head.dy`)에 앵커를 둔다(dy −12). `head.parts[key].stack`이 있으면 조각 = part + clamp(stack). `lost`는 loop 8fps(감소 모션·minimal은 still 0, deco라 minimal에서 빼는 것이 먼저다). `mark-fear`는 적이 왼쪽을 보면 좌우 반전한다.
+- 균열판: (0, top + `crack.dy`), 다른 머리 표식이 있으면 x = `crack.beside`. 조각 = `mark-crack` + clamp(stack, 1, 5).
+- 꽃가루: 포자 i(0·1)는 `pollen.parts[i]`, u = frac(t/1 + `phase[i]`)(감소 모션은 u = phase[i]로 멈춤), 자리 = (`at[i].x` + side·drift·u, top + `at[i].y` − rise·u), side = at[i].x의 부호, drift 6·rise 16(`marks.spores`), 장 = ⌊u·4⌋. minimal에서는 그리지 않는다(deco).
+- 발 오버레이: 조각 = part + (stack +) 가장 가까운 등급. 서리 수·묶임·가시 모두 `front` 층.
+- 까마귀(R1): 조각만 바뀌고 규칙(§14.5)은 그대로다.
+- 개기일식(결정 ②): `SPEC.gimmick.eclipseHalo.layers`대로 원판·띠는 ground(몸 아래), 바깥 테·각성 선·코로나·리본은 ally. 섬광 감소에서 원판·띠 α × `reducedFlash` 0.5.
+
+### 14.11 P2 이어지는 효과 (3차 2회 2/2, 3b2)
+
+지시서 §4.1·§4.4의 P2 이어지는 효과다. 같은 기믹의 표식이 3b1에 있는 넷(stain, fear, crack, pollen)은 그 단계에 사건을 더했고, 나머지 15개는 새 단계(우선 2)다. SPEC은 모두 `SPEC.gimmick[id]`의 새 키다(§12-92).
+
+**단계와 자료**
+
+| 무기 | 단계 | 자료(엔진) | 판정(V4) | 그리는 것 |
+|---|---|---|---|---|
+| inkDarts | `stain`(+ 터짐) | 셋째 얼룩: `area/blast` echo r 70 | 고리 r 70 | `stainBurst`(적 자리, 0.3초) + 사건 고리(stroke) |
+| brushQuills | `dab` | 새 `pending` 0.6초 → `area/blast` r 50 | 고리 r 50 | 대기 `dab`(첫 명중 자리, ground, 대기 진행률로 장) → `dabBurst`(0.24초) + 사건 고리(band) |
+| sealArrows | `topple` | `enemy/stunned` source(밀린 적이 0.4초 안에 다른 적과 닿음) | — | `topple`(부딪힌 자리, 0.16초, deco) |
+| thunderNeedles | `leap` | ChainEffect skillId(기절한 적 → 200 안 가장 가까운 적) | 점 둘 | kink 선(SPEC) + 닿은 점에 `leapHit`(deco) |
+| headsmanDarts | `fear`(+ 고리) | 처형 자리, r 160 | 고리 r 160 | 찢긴 종이 띠 고리(torn) |
+| inkBloom | `pollen`(+ 고리·퍼짐) | `awk.pollen`, 0.5초마다, r 50 | 고리 r 50 | 먹 + 청록 점선 고리(dashed, 고리 전체, 0.45초) + `pollenPuff`(0.3초, deco) |
+| tailGuard | `rear` | skillMark(뒤쪽 ±70°, 200 안에서 맞으면 두 배) | — | 맞은 적에 `rearHit`(0.2초, deco) |
+| bossbane | `crack`(+ 터짐) | 다섯째 균열: `area/blast` r 90(보스 자리) | 고리 r 90 | 종이 균열선(SPEC) + 사건 고리(stroke) + `crackBurst`(0.3초) |
+| inkPulse | `bump` | `enemy/stunned` source(밀린 적이 0.5초 안에 장애물·가장자리에 부딪힘) | — | `bump`(부딪힌 자리, 0.16초, deco) |
+| thunderclap | `echo` | `area/blast` echo, 0.5초 뒤, 반경 × 1.4 | 고리 1.4R | jag 고리(손 없음, 0.3초) |
+| clusterPots | `split` | 새 `pending` 0.35초(작은 단지 둘) → `area/blast` echo 둘(±60, 반경 × 0.6) | 고리 0.6R 둘 | `mini` 비행(lobMini) → `burst` + 송이 단지 고리 |
+| sparkThread | `rewind` | ChainEffect echo(마지막 적 → 처음 적) | 점 목록 | sag −0.16 선(꼬리에서 머리로) + 닿은 적에 `spark` |
+| stormThread | `amplify` | ChainEffect(건너뛸 때마다 +15%) | 점 목록 | twist, 구간마다 굵어지고 출렁임이 커짐, 점 조각 `gust-a`·`gust-b` |
+| frostChainlet | `link` | 새 `awk.link`(2초, 구성원 목록, 공유 피해 순간) | 구성원 점 | links α0.45 pitch 20, 공유 피해 뒤 0.18초 α 1 |
+| inkLance | `branch` | BeamEffect echo 둘(창 끝에서 ±35°, 길이 0.4L) | 캡슐 둘 | 가지 창(술 없음) + 창 끝에 `fork`(deco) |
+| wideBrush | `resweep` | BeamEffect echo(0.3초 뒤, 같은 선) | 같은 캡슐 | 같은 띠 α × 0.65, 머리가 먼 끝에서 결 쪽으로, 붓 좌우 반전 |
+| inkOrbit | `deflect` | Projectile echo(되받은 적 탄, 속도 × 2, 1.2초) | 탄 r 7 | `deflect-start`(0.06초) → `deflect-travel`(loop) → `deflect-end`(0.1초), +x = 속도 |
+| meteorBrush | `haste` | 별똥 자국 안의 결 | — | 결 몸 바로 뒤 `haste`(loop 12) + 자국 테 `rim.pad.inside` |
+| pinHail | `snap` | 마름쇠 zone 끝(처음 밟은 적) | — | 마름쇠 자리에 `caltrop-snap`(0.15초, deco) |
+| sunNeedles | (없음) | `shot.radius` | 탄 r | 그림 없음. 렌더러가 탄 조각을 shot.radius / geo.size(≤ 1.6)배로 키운다 |
+
+**조각(C2 줄, 3b2의 15줄 38장, 박스 넓이 54,504)**
+```
+inkDarts/stainBurst f3 prog 0.3s box64x52 a32,30 center none ally info w:event
+brushQuills/dab f3 prog box28x18 a14,9 target none ground info w:pending
+brushQuills/dabBurst f3 prog 0.24s box52x40 a26,24 center none ally info w:event
+sealArrows/topple f2 prog 0.16s box32x28 a16,14 event none ally deco w:event
+thunderNeedles/leapHit f2 prog box24x24 a12,12 point none ally deco w:chain
+inkBloom/pollenPuff f3 prog 0.3s box36x28 a18,18 target none ally deco w:event
+pinHail/caltrop-snap f2 prog 0.15s box44x30 a22,19 center none ally deco w:event
+tailGuard/rearHit f3 prog 0.2s box40x32 a20,18 target none ally deco w:event
+bossbane/crackBurst f3 prog 0.3s box56x48 a28,30 center none ally info w:event
+inkPulse/bump f2 prog 0.16s box32x32 a16,16 event none ally deco w:event
+meteorBrush/haste f4 loop@12 still0 box52x40 a26,36 hero face front info w:status
+inkLance/fork f2 prog 0.2s box28x28 a14,14 point beam ally deco w:event
+inkOrbit/deflect-start f2 prog 0.06s box40x18 a27,9 air vel ally info w:vel
+inkOrbit/deflect-travel f2 loop@12 still0 box40x18 a27,9 air vel ally info w:vel
+inkOrbit/deflect-end f2 prog 0.1s box40x18 a27,9 air vel ally info w:vel
+```
+박스·앵커·장 수·drive·층은 지시서 §4.4 표 그대로다. 다른 것은 `crackBurst`(추가, §12-93)와 `fork`의 place(`point`, §12-97)뿐이다. 새 그룹 넷(brushQuills, sealArrows, thunderNeedles, tailGuard)은 `groups` 앞쪽(IDS 순서), 나머지는 그 그룹 목록 끝에 붙었다.
+
+| 조각 | 그림 | 청록 |
+|---|---|---|
+| `stainBurst` | 0 = 셋째 얼룩이 터짐: 종이 테 1.2를 두른 젖은 얼룩 몸(r 6.8)에서 테 없는 먹 팔 여덟과 방울. 1 = 테를 두른 얼룩 조각 넷이 흩어지고, 가운데는 ink700 잔해와 짧은 줄기(조각에 닿지 않음), 방울은 맨 먹. 2 = 땅에 누운 ink700 얼룩(p300 테)과 방울 | 젖은 먹 위 반짝 호(표식과 같음, 0·1장) |
+| `dab` | 납작하고 들쭉날쭉한 먹 웅덩이(rx 8.2, 위성 방울 둘) + p300 윤기 호 + 펜촉의 청록 획. 1 = 1.08배, 방울이 떨림. 2 = 1.16배, 표면이 부풂(ink500 호) + 위로 뜨는 방울 둘 | 펜촉 획(먹 밑 + 청록 + allyG) |
+| `dabBurst` | 0 = 납작한 자국에서 곧은 펜 튐 여섯(밑이 굵고 끝이 갈고리로 가늚, 각·길이 제각각) + 끝 방울 + 깃 날개 종이 조각 둘 + 펜촉 획이 위로. 1 = 가는 튐 넷이 방울로 끊김, 조각이 뜸. 2 = ink700 자국 + 방울 + p300 조각 | 펜촉 획(0·1장) |
+| `topple` | 인장 머리(종이 덩이 9.2 × 9, 아래 먹 인면 띠 + 청록 테)가 28° → 62° 넘어짐. 0 = 부딪힌 자리의 찢긴 종이 터짐 + 넘어지는 획 둘, 1 = p300 터짐 + 흙. 글자·꼭지 없음 | 인면 테 [ink 2, ally 1.1] |
+| `leapHit` | 닿은 점에서 길이·각이 다른 꺾인 번개 가지 셋 + 짧은 하나(먹, 청록 심, 첫 가지 allyG) + 가운데 작은 종이 섬광(5갈래 r 3.4). 1 = 0.62배, ink300·allyD. 불꽃실의 종이 별과 다르다 | 번개 심 |
+| `pollenPuff` | 꽃가루 알갱이 여섯(r 1~1.9, 포자와 같은 밝은 알갱이)이 모여 나오고 옅은 ink300 컬 둘. 1 = 1.6배로 퍼지며 오름, 2 = 2.1배, 작고 allyD | 알갱이 |
+| `caltrop-snap` | 0 = 마름쇠가 꺾임: 땅에 납작한 찢긴 종이 섬광 + 부러진 핀 반쪽 둘(날 끝 반쪽에 청록 홈, 손잡이 반쪽에 속 빈 고리) + 먹 조각. 1 = 더 높이, p300·ink300 | 날 홈(0장) |
+| `rearHit` | 0 = 꼬리 방패 단검(종이 날, 둥근 종이 날밑, 가운데 점 없음)이 종이 베기 획을 지나 찌름 + 먹 튐 + 손잡이 끝의 짧은 청록 리본. 1 = 둘째 베기(첫째 옆, 겹치지 않음) + 단검이 물러남 + 먹 방울. 2 = p300 베기 둘 + 방울 | 리본(0·1장) |
+| `crackBurst` | 0 = 균열판이 터짐: 찢긴 종이 섬광(먹 테 1.4) + 판 조각 넷(종이, p300 그늘, 먹 금), 가장 큰 조각에 가장 새 금의 청록. 1 = 더 멀리 + 작은 ink700 먹 튐. 2 = p300 조각이 떨어짐 | 가장 새 금(0·1장) |
+| `bump` | 0 = 납작한 먹 덩이와 굵고 짧은 팔 + 뒤의 찢긴 종이 섬광 + 왼쪽 아래의 검은 띠 조각(먹 5)과 그 바깥 청록 앞선. 1 = ink700, p300 섬광, allyD 띠 조각. 회전 없음 | 띠 앞선 |
+| `haste` | 결 발 뒤(−x)로 감아 오르는 청록 띠 둘(먹 테, 굵기 ≤ 2.4, 길이 다르게 뒤·위로, 엇갈리지 않음) + 올라가는 종이 별가루 둘(5·6갈래). 4장 동안 띠가 흔들리고 allyG가 위로 오르고 별가루가 오른다. 칠한 범위 y −32.7 ~ −12 | 띠 |
+| `fork` | 0 = 창 끝의 작은 먹 튐(앞으로 쏠림) + 뒤의 찢긴 종이 섬광 + 술의 청록 매듭 띠가 가로지름. 1 = ink700, p300, allyD. 가지 둘은 SPEC 창이다(V를 따로 그리지 않음) | 매듭 띠 |
+| `deflect-*` | 종이 파편 혜성: 각진 종이 파편 머리(앞끝 +8.6, 옆 ±5.2, 먹 테 1.5, p300 면 + 접힌 선) + 머리 위쪽에서 들어와 뒤로 휘어 꼬리 가운데로 나가는 소용돌이 획 + 종이 꼬리(−22까지, 끝이 파편으로 끊김). start 0 = 찢긴 종이 섬광 + 머리, 1 = 짧은 꼬리. travel 0·1 = 꼬리·파편이 흔들림. end 0 = 머리가 셋으로 깨지고 앞에 먹 튐 + 소용돌이 토막, 1 = p300 파편만. 먹알 + 종이 점(적 탄)이 아니고 산호가 없다 | 소용돌이 획 [ink 2, ally 1.1, allyG 0.35] |
+
+**`SPEC.gimmick` 새 키(20)**
+
+| 키 | 값 |
+|---|---|
+| inkDarts | stage stain, stacks 3, r 70, life 0.3, burst `stainBurst`, ring {stroke, [[ink,3.2],[p50,1.2]], gaps 3~4 · 9~18°, core [[ink,3.6],[ally,1.6],[allyG,0.5]] 60~100°, punch 1.8/0.1/1.5, grow 0.7/0.08, fade 0.6} |
+| brushQuills | stage dab, delay 0.6, r 50, life 0.24, dab `dab`, burst `dabBurst`, ring {band ink, width 2.4~5, knots 10, gaps 3 · 10~18°, endTaper 9, core [[ink,3.6],[ally,1.6],[allyG,0.5]] 40~70° mid dab, grow 0.75/0.06, fade 0.6} |
+| sealArrows | stage topple, life 0.16, event `topple`, window 0.4 |
+| thunderNeedles | stage leap, range 200, life 0.2, hit `leapHit`, lift 14, line {kink, seg 24, n 3~8, shift 0.5, push 3~8, [[ink,3.4],[ally,1.8],[allyG,0.6]], flicker 12fps [3,4], grow frac 0.35, fade 0.6} |
+| headsmanDarts | stage fear, r 160, life 0.45, ring {torn, p50 width 3, alpha 0.85, edge [[ink,1.2]], tear {pitch 6, depth 0.4~2.6, skip 0.3, end 1.6, [[ink,1]]}, gaps 2 · 5~9°, grow 0.4/0.15, fade 0.6} |
+| inkBloom | stage pollen, r 50, tick 0.5, life 0.45, puff `pollenPuff`, ring {dashed, [[ink,1.6],[ally,1]], dash [4,5], pad 0.6, gaps 2 · 16~28°, grow 0.6/0.25, fade 0.6}(3b2-r1: 지시서 값, core 없음) |
+| tailGuard | stage rear, reach 200, arc 70, life 0.2, hit `rearHit`, lift 14 |
+| bossbane | stage crack, r 90, life 0.3, burst `crackBurst`, ring {stroke, [[ink,3.4],[p50,1.6]], gaps 2~3 · 8~16°, core [[ink,3.6],[ally,1.8],[allyG,0.6]] 70~110°, punch 2/0.1/1.5, grow 0.65/0.09, fade 0.6}, cracks {n 6~8, from 0.24, to 0.55~0.9, jitter 0.35, steps [0.32,0.26,0.24,0.18], bend 8~22°, [[ink,3],[p50,1.4]], core {n 2, [[ink,3],[ally,1.4],[allyG,0.4]]}, fork {n 1, at 2, deg 30, len 0.26}, grow 0.4/0.09} |
+| inkPulse | stage bump, life 0.16, event `bump`, window 0.5 |
+| thunderclap | stage echo, delay 0.5, reach 1.4, life 0.3, ring {jag, alpha 0.75, [[ink300,3.4],[p300,1.2]], core [[ink300,3.4],[ally,1.6]] 80~110°, seg 26, amp 1.5~6.5, forks 0, gaps 2 · 10~16°, flicker 12fps [7,8], grow 0.85/0.08, fade 0.6} |
+| clusterPots | stage split, delay 0.35, offset 60, area 0.6, mini `mini`, burst `burst`, ring 'clusterPots'(= `SPEC.ring.clusterPots`) |
+| sparkThread | stage rewind, hit `spark`, line {sag, sag −0.16, step 8, from 'tail', [[ink,2.6],[ally,1.4],[allyG,0.5]], grow frac 0.4, fade 0.65 dash [5,4]} |
+| stormThread | stage amplify, width 0.15, amp 0.1, big {part `gust-b`, from 3} |
+| frostChainlet | stage link, life 2, line {links, pitch 20, alpha 0.45, clear 0}, share {seconds 0.18, alpha 1}, fade 0.85 |
+| inkLance | stage branch, angle 35, branch 0.4, fork `fork`, head 0.85, tassel false |
+| wideBrush | stage resweep, delay 0.3, alpha 0.65, seed 500, head 'mirror' |
+| inkOrbit | stage deflect, speed 2, life 1.2, hitR 7, start/travel/end `deflect-*` |
+| meteorBrush | stage haste, part `haste`, at 'feet', rim 'inside' |
+| pinHail | stage snap, life 0.15, event `caltrop-snap` |
+| sunNeedles | scale {by 'radius', over 'size', max 1.6}(단계 없음) |
+
+**식(렌더러가 옮길 규칙, `draw`가 같은 규칙을 그린다)**
+- **사건 고리 공통**: R(grow) 위에 중심선. 틈은 SPEC.ring과 같은 gapList(J(10), J(20 + k), J(40 + k)). 실선 고리(stroke·band·jag)의 청록은 core 호에만(coreArc: 시작 2π·J(60), 길이 lerp(span, J(61))°, × 1.5 하지 않음). 점선 고리(dashed)는 고리 전체가 먹 + 청록 샌드위치다(3b2-r1). 각성 가는 선 없음. α = fade(at, 수명 = life) × alpha(torn 0.85, jag 0.75). 감소 모션은 grow 없이 α가 grow 시간 동안 들어온다(§7.2), punch ≤ 1.5.
+- **C10 규칙**(검수 8차 결정 1): 폭 3 이하의 테·획은 C10 면이 아니다. 원판, 띠 채움, 폭이 3보다 넓은 것만 센다. 그래서 공포 고리의 종이 띠(폭 3)와 사건 고리의 종이 심은 `SPEC.fills`에 없다.
+- **stroke**(얼룩 터짐 r 70, 균열 터짐 r 90): 틈 사이 호마다 layers(× punch m), 그 위 core 호에 core 층(× m).
+- **band**(늦은 붓자국 r 50): §7.3 band와 같다(fringe 없음, 닫힌 띠 없음). core는 가장 긴 찍음 가운데(dab).
+- **torn**(공포 r 160): 틈 사이 호 a(번호 ai)마다 n = max(6, round((a1 − a0)·R0/6)). 바깥 가장자리 R + 1.5, 안쪽 R − 1.5 − d_k: 짝수 k(끝 제외)만 d = J(2100 + 97ai + k) < 0.3이면 0, 아니면 lerp(0.4, 2.6, J(2150 + 97ai + k)). 끝은 가운데가 1.6만큼 틈으로 내민 찢긴 혀. 채움 p50(α), 바깥 가장자리 [[ink,1.2]], 안쪽 가장자리와 두 끝 [[ink,1]]. grow 0.4 → 1을 0.15초.
+- **dashed**(꽃가루 r 50, 3b2-r1): 틈 사이 호마다 먹 + 청록 점선 샌드위치를 고리 전체에 그린다(`rim.ally`와 같은 규칙, 지시서 §1.5 `:218`). 청록 [ally,1]은 점선 [4, 5](butt, 호 시작에서 위상 0), 먹 [ink,1.6]은 같은 위상에서 대시를 양 끝으로 pad 0.6씩 늘린 점선 [5.2, 3.8], dashoffset 0.6이다. 호마다 무늬가 그 호의 시작에서 다시 시작한다. grow 0.6 → 1을 0.25초, 수명 0.45초, fade 0.6.
+- **jag**(메아리 1.4R): 꼭짓점은 §8.3 jag을 R0(= 1.4 × 사건 반경)에서 flicker seed [7,8]로 만들고 R/R0로 늘인다(갈래 없음). 틈(사건 seed) 사이 호마다 각이 그 호 안인 꼭짓점을 각 순서로 이은 열린 꺾은선에 layers(miter 6), core 구간의 꼭짓점을 core 층으로 한 번 더.
+- **균열선**(균열 터짐): n = 6 + ⌊J(1900)·3⌋줄, θk = 2π·J(1901) + (k + 0.5 + (J(1910 + k) − 0.5)·0.7)·2π/n. 시작 0.24R, 길이 L = lerp(0.55, 0.9, J(1930 + k))·R. 네 걸음(걸음 j 길이 steps_j·(L − 0.24R)), 걸음 j 방향 θk ± lerp(8, 22, J(1980 + 4k + j))°(J(1950 + 4k + j) < 0.5면 −). 줄 ⌊J(1902)·n⌋은 꼭짓점 2에서 θk ± 30°(J(1904) < 0.5면 −)로 0.26L 갈래. 줄 c = ⌊J(1903)·n⌋와 (c + ⌊n/2⌋) mod n은 core 층. 자람: 길이 × lerp(0.4, 1, easeOut(나이/0.09))(감소 모션 1), 갈래는 0.75부터. α는 고리 α.
+- **kink**(감전 도약): A, B = 두 적 자리 − (0, lift 14). n = clamp(round(|AB|/24), 3, 8). 안쪽 꼭짓점 i: t = (i + (J(2000 + i) − 0.5)·0.5)/n, 옆으로 lerp(3, 8, J(2020 + i))·(i 홀수 +, 짝수 −). J의 seed = 사건 seed·13 + flicker seed([3,4][⌊t·12⌋ mod 2], 감소 모션 3). 수명 0.2초의 앞 35% 동안 A에서 길이를 따라 그려 나가고, 닿으면 B에 `leapHit`(장: 수명의 60% 전 0, 뒤 1). fade 0.6.
+- **되감김**: 점 목록(결 = 첫 점)에 sag −0.16의 sagCurves(구간 i 제어점 = 중점 + 법선·(±0.16·L)·(−1), 짝수 +), 결 쪽 26 안을 자른 뒤 점 순서를 뒤집어 그려 나간다(수명 앞 40%). 0.65 뒤 먹 1.82 점선 [5,4]. 꼬리부터 곧은 길이 누적이 도달 길이 안인 적에 `spark`(장: 수명 절반 전 0, 뒤 1).
+- **증폭**: 구간 i마다 twistGeo(그 구간 두 점, amp 4·(1 + 0.1i), 꺾음 seed = flicker seed + 31i). 가닥 층 굵기 × (1 + 0.15i). 결 쪽 첫 구간만 26 안을 자른다. grow 0.3: 도달 길이(곧은 길이 누적)까지 구간마다 잘라 그림. 점 조각: 점 j(구간 j에서 끝남)가 j ≥ 3이면 `gust-b`, 아니면 `gust-a`, 반전 J(650 + j) < 0.5.
+- **묶인 사슬**: §8.3 links를 구성원 점에 pitch 20, 처음 비움 0으로(고리·막대·혹, 구간마다 가운데 고리 청록). α = (공유 뒤 0.18초면 1, 아니면 0.45) × fade(at 0.85, 수명 2). minimal: 꺾은 줄 [[ink,3],[ally,1.6]].
+- **가지창**: 창(stroke 단계)을 그대로 그리고, 창 끝 (L, 0)에서 ±35°로 돌린 가지 틀(+x = 가지 방향)에 길이 0.4L의 blade를 그린다: 나이 v = 나이 − 0.18·0.28. 끝 = v/수명 < 0.18이면 lerp(4, 0.4L, easeOut), 0.7 뒤 0.6·0.4L로 물러나며 α 1 − v'. 창날 길이 30·0.85(각성 × 1.2), 반폭 6.5·0.85, 창대 4.8 → 3. 판정 캡슐: (0, ±w)에서 (0.4L, ±w) + 끝 반원, p50 α0.16 + [[ink,1.2]]. `fork`를 (L, 0)에 v < 0.2 동안(장 ⌊v/0.2·2⌋, deco).
+- **되쓸기**: 머리 x1 = L − (L − 26)·easeOut(나이/(0.3·0.28)). 띠 [x1, L]: 위·아래 가장자리 raggedEdge(seed + 500, §8.3 brushBand), 채움 p50 α0.45 × A, 가장자리 [[ink,2]], 비백 n = 3 + ⌊J(300)·3⌋줄(길이 lerp(0.3, 0.8, J(320 + j))·(L − x1), 끝이 L에서 J(330 + j)만큼 안), 앞선 (x1 + 4, −w) → Q (x1 − 3, 0) → (x1 + 4, w). A = fade(0.6) × 0.65. 붓 조각을 (x1, 0)에 좌우 반전·α A로.
+- **되받은 탄**: 조각 +x = 탄 속도. 시작 0.06초 `deflect-start`(장 ⌊나이/0.03⌋), 그 뒤 `deflect-travel` loop 12fps(감소 모션·minimal still 0), 끝 0.1초 `deflect-end`. 판정 r 7(앞끝 +8.6 ≤ r + 2.5, 옆 5.2 ≤ r + 2.5, 뒤 22 ≤ 8r).
+- **결 가속**: 결 발(앵커 26,36)에 front 층, loop 12fps(still 0), 결이 왼쪽을 보면 좌우 반전(rotate 'face'). 같은 때 별똥 자국 테는 `rim.pad.inside`.
+- **갈라짐**: 작은 단지 k(±1): lobPath(clusterPots, {x0, y0 = 터진 자리, x1 = ±60 자리, t = 나이/0.35, mini: true})의 그림자 타원 + `mini`(loop, phase J(1850 + k)). 0.35초 뒤 그 자리마다 `burst`(장 ⌊v/0.24·3⌋)와 SPEC.ring.clusterPots 고리(반경 0.6 × 사건 반경, seed + 17k, 평상).
+- **해바늘**: 탄 조각을 앵커를 축으로 s = clamp(shot.radius / geo.size, 1, 1.6)배로 그린다(이 규칙만 조각을 키운다).
+
+**층·LOD·상한**
+- 층: 사건 고리·균열선·사건 조각·도약·되감김·증폭·묶인 사슬·가지창·되쓸기·되받은 탄 = allyAttacks(몸 위, 적 탄·예고 아래). 대기 `dab` = 바닥(ground, 위험지형 층 앞). `haste` = 결 몸 바로 뒤(front). 꽃가루 고리·퍼짐은 적 자리, 공포 고리는 처형 자리.
+- LOD: deco 조각(`topple`, `leapHit`, `bump`, `pollenPuff`, `rearHit`, `fork`, `caltrop-snap`)은 minimal에 없고 reduced에서 하나 건너 하나. 꽃가루 고리는 minimal 0(`caps.pollenRings` [8, 4, 0]). 묶인 사슬은 minimal에서 꺾은 줄. 사건 고리·균열선·도약·가지 캡슐·되쓸기 띠·대기 `dab`·되받은 탄은 어느 설정에서도 그린다.
+- 감소 모션: 고리 grow 없음, jag·kink 첫 seed, loop는 still 장, prog는 재생.
+- 상한: 사건 조각은 `caps.events` [16, 10, 4], 사슬 도형은 `caps.links` [120, 60, 0], 대기 표시는 `caps.pending` [12, 12, 12], 비행(작은 단지)은 `caps.flights`. 넘칠 때 버리는 순서는 §14.8.
+
+**jit 번호대(3b2)**: 10·20 + k·40 + k(틈), 60·61(core), 1900~1904·1910 + k·1930 + k·1950 + 4k + j·1980 + 4k + j(균열선), 2000 + i·2020 + i(kink, seed·13 + flicker), 2100 + 97a + k·2150 + 97a + k(찢김), 650 + j(증폭 바람 획 반전), 1850 + k(작은 단지 phase). 사건 seed = 그 사건의 표시 일련번호.
+
+**참고 합성(`draw`)**
+- 사건이 있는 3b1 단계: context 없으면 r 19 표식 + 원점의 사건(나이 = p × 수명, 꽃가루는 p × 0.5). context: 몸(발·front) → 사건 → 머리 표식. 얼룩은 표식 1·2 적 둘 + 터지는 적, 공포는 표식 적 셋 + 원점의 고리, 균열은 균열판 1·3 간수 둘 + 터지는 간수, 꽃가루는 포자 적 둘(고리·퍼짐은 추적자에서) + 고리 안의 돌격자.
+- 새 단계: `dab`(context 없으면 대기 → 터짐 한 사건, 있으면 대기 하나 + 터짐 하나), `topple`·`bump`·`rear`·`snap`(사건 조각, context는 적·결·벽 선·마름쇠), `leap`(두 적 사이), `echo`(결 둘레 1.4R), `split`(context는 터지는 순간), `rewind`·`amplify`·`link`(context는 점 최대 여섯 64 간격), `branch`(context는 창 300, 결 −210), `resweep`(context는 380, 결 −190), `deflect`(context는 먹 궤도 훑기 + 사수 둘 + 탄 셋), `haste`(별똥 자국 + 결 + 결 가속).
+
+**C9 벡터(3b2 단계, 28줄, `k10-c9b-count-d3b2-r1`로 셈. 3b2의 `k10-c9b-vectors-d3b2`는 29줄이었다(3b2 납품서의 '31줄'은 잘못 센 것). 3b2-r1이 꽃가루 고리의 core를 지워 `inkBloom/pollen path core` 줄이 빠졌고, 나머지 줄은 같다)**
+```
+inkDarts/stain path gaps [[8.78,25.06],[186.99,198.45],[276.21,291.87]]
+inkDarts/stain path core [[65.16,162.84]]
+brushQuills/dab path gaps [[8.68,25.16],[186.62,198.82],[276.08,292]]
+brushQuills/dab path knots [[0,3.93],[36,2.54],[72,3.75],[108,3.13],[144,4.34],[180,2.95],[216,4.92],[252,3.53],[288,2.91],[324,4.12]]
+brushQuills/dab path core [[71.76,140.02]]
+headsmanDarts/fear path gaps [[21.26,29.5],[286.03,292.13]]
+headsmanDarts/fear path torn [[43.77,-152.34],[37.53,-151.94],[32.2,-155.2],[26.09,-154.82],[20.44,-157.18],[14.42,-156.84],[8.56,-158.27],[2.61,-158.48],[-3.36,-158.46],[-9.32,-158.23],[-15.26,-157.76],[-21.19,-157.08]]
+inkBloom/pollen path gaps [[12.53,38.23],[279.44,298.72]]
+bossbane/crack path gaps [[18.14,32.62],[283.98,294.18]]
+bossbane/crack path core [[65.16,172.84]]
+bossbane/crack path cracks [[-5.34,-20.93],[-5.97,-33.58],[-5.32,-43.85],[-5.96,-53.33],[-10.09,-59.14],[5.17,-20.97],[5.24,-38.33],[11,-51.2],[10.33,-64.2],[14.16,-73.17],[21.43,-2.7],[32.08,-8.16]]
+  [[41.23,-11.42],[50.01,-9.59],[56.22,-12.2]]
+bossbane/crack path fork [[-5.32,-43.85],[-16.43,-55.24]]
+bossbane/crack path coreLines [[0,8],[4,8]]
+thunderclap/echo path gaps [[29.64,44.88],[348.22,360.26]]
+thunderclap/echo path core [[195.48,275.72]]
+thunderclap/echo path jag [[188.19,-0.35],[193.56,23.03],[179.43,52.91],[180.04,77.62],[156,101.18],[147.2,117.93],[136.12,138.95],[106.9,154.02],[94.94,171.06],[58.75,178.41],[39.81,179.67],[18.95,193.17]]
+thunderNeedles/leap path kink [[0,-14],[23.03,-17.91],[39.85,-33.5],[70.93,-32.69],[83.7,-49.31],[118.37,-48.86],[132.47,-61.49],[162.94,-62.53],[180,-74]]
+sparkThread/rewind path controls [[98.8,-70.2],[305.6,7],[520.4,-45.2],[738.8,30.2]]
+sparkThread/rewind path end [[21.67,-14.37]]
+stormThread/amplify path scale [[1,1],[1.15,1.1],[1.3,1.2],[1.45,1.3]]
+stormThread/amplify path strandA [[220,-70],[225.27,-67.28],[230.54,-64.54],[234.32,-58.5],[242.13,-61.39],[247.69,-59.32],[251.89,-54.2],[257.01,-51.13],[262.21,-48.24],[269.17,-49.26],[275.13,-48.07],[280.81,-46.23]]
+frostChainlet/link path links [[237.93,-61.93],[256.17,-53.73],[274.4,-45.52],[292.64,-37.31],[310.88,-29.1],[329.12,-20.9],[347.36,-12.69],[365.6,-4.48],[383.83,3.73],[402.07,11.93],[433.52,16.31],[452.82,11.05]]
+inkLance/branch path tips [[849.7,-146.84],[849.7,146.84]]
+wideBrush/resweep path top [[26,-36.16],[35.85,-32.91],[45.69,-34.61],[55.54,-32.46],[65.38,-32.93],[75.23,-36],[85.08,-33.07],[94.92,-36.45],[104.77,-32.62],[114.62,-31.69],[124.46,-35.83],[134.31,-33.24]]
+wideBrush/resweep path head [[26,0]]
+clusterPots/split path land [[-60,0],[60,0]]
+clusterPots/split path mini [[15,-21],[30,-28],[45,-21]]
+```
+사례: stain·dab·fear·pollen·crack seed 7, echo radius 136 seed 5, leap points (0,0)→(180,−60) seed 3, rewind·amplify points = 지시서 C9의 PTS seed 1, link points = PTS의 결 뺀 넷, branch length 640 width 12, resweep length 410 width 34 p 0.5, split radius 64 seed 3. `coreLines`는 [줄 번호, 줄 수], `scale`은 [굵기 배율, 진폭 배율].

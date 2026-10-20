@@ -603,6 +603,8 @@ const DYNAMIC_TERRAIN: ReadonlySet<Hazard['kind']> = new Set(['fire', 'slow', 'r
 const NO_MARKS: readonly ObjectiveMark[] = [];
 /** SYS-16: the marks an awakened weapon's own hit leaves for its row's `seconds` (src/content/data/awakenings.ts). */
 const TIMED_MARKS: Partial<Record<ArsenalId, 'domino' | 'bump' | 'silence' | 'weak' | 'thorn'>> = { sealArrows: 'domino', inkPulse: 'bump', silenceBell: 'silence', wardRing: 'weak', thornHalo: 'thorn' };
+/** K10 looks only: how long a gimmick's moment (a topple, a bump, a caltrop's snap) stays for its art (the kit plays them in 0.15-0.16 s). */
+const ARSENAL_MOMENT_SECONDS = 0.2;
 /** CON-03: the ground the terrain goal counts time in. */
 const TERRAIN_KINDS: ReadonlySet<Hazard['kind']> = new Set(['water', 'slow', 'trap', 'root', 'fire', 'null']);
 /** SYS-11: after silence ends, ready skills fire one at a time this far apart instead of all at once. */
@@ -1362,7 +1364,7 @@ export class GameEngine {
       this.faultInjection = true;
       return 'LOOP FAULT ARMED';
     }
-    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO', 'TURN', 'PHASE', 'VFX', 'BOMB', 'FIRE', 'TERRAIN', 'BIND', 'SHOCK', 'AFX1', 'AFX2', 'AFX3', 'AFX4', 'AFX5', 'AFX6', 'AFX7', 'AFX8', 'AFX9', 'AFX10'].includes(code)) {
+    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO', 'TURN', 'PHASE', 'VFX', 'BOMB', 'FIRE', 'TERRAIN', 'BIND', 'SHOCK', 'AFX1', 'AFX2', 'AFX3', 'AFX4', 'AFX5', 'AFX6', 'AFX7', 'AFX8', 'AFX9', 'AFX10', 'AFX11', 'AFX12', 'AFX13', 'AFX14', 'AFX15', 'AFX16'].includes(code)) {
       this.invalidateInfiniteScore();
     }
     if (code === 'GOD') {
@@ -1494,8 +1496,12 @@ export class GameEngine {
     // pecking), an elite and a stunned one among them; AFX8: the total eclipse round the hero over a ring of enemies, 0.1 s on; AFX9: a tracking seal triangle
     // pending that strikes 0.6 s on, falling scrolls unrolling 0.05 and 0.55 s on, and a seventh seal's seven seals
     // with their eighth pending, striking 0.3 s later (a second cast 0.32 s on); AFX10: lightning pillars and spins at
-    // their start, middle, and end.
-    if (/^AFX([1-9]|10)$/.test(code)) {
+    // their start, middle, and end. AFX11-AFX16 stage the P2 gimmicks (K10 3b) the same way, each placed to be mid-way
+    // 0.3 s on: AFX11 the head marks; AFX12 the feet overlays on small and large enemies; AFX13 the event rings and
+    // bursts; AFX14 the gimmicks' chains and beams; AFX15 the small pots, turned shots among enemy shots, the hero's haste
+    // in the meteor's mark, a caltrop snapping, the echo; AFX16 a field boss wearing its crack plate, bursting 1.45 s on
+    // (past its title card) beside a shock telegraph.
+    if (/^AFX([1-9]|1[0-6])$/.test(code)) {
       const { x, y } = this.player;
       compactWhere(this.hazards, () => false);
       const radius = (id: ArsenalId) => arsenalStats(ARSENAL[id], 3, false).radius;
@@ -1520,6 +1526,13 @@ export class GameEngine {
         this.zones.push({ weapon, x: x + dx, y: y + dy, radius, life: seconds - age, maxLife: seconds, damage: 0, next: Number.POSITIVE_INFINITY, hit: [] });
       };
       const A = AWAKENINGS;
+      // AFX11-AFX15: a gimmick's echo blast, ring, or moment `delay` seconds on, and a chain or beam of its own.
+      const echo = (id: ArsenalId, dx: number, dy: number, radius: number, delay: number) => this.after(delay, () => this.emit({ type: 'area/blast', x: x + dx, y: y + dy, radius, source: id, echo: true }));
+      const ring = (id: ArsenalId, dx: number, dy: number, radius: number, delay: number) => this.after(delay, () => this.skillMark('ring', id, x + dx, y + dy, radius, false, x + dx, y + dy, true));
+      const moment = (id: ArsenalId, dx: number, dy: number, delay: number) => this.after(delay, () => this.moment(id, x + dx, y + dy));
+      const at = (points: number[][]) => points.map(([dx, dy]) => ({ x: x + dx, y: y + dy }));
+      const line = (id: ArsenalId, points: number[][], delay: number, extra: Partial<ChainEffect> = {}) => this.after(delay, () => this.chains.push({ id: this.nextId(), points: at(points), life: 0.18, maxLife: 0.18, skillId: id, ...extra }));
+      const beam = (id: ArsenalId, dx1: number, dy1: number, dx2: number, dy2: number, width: number, delay: number, echoed = false) => this.after(delay, () => this.beams.push({ id: this.nextId(), x1: x + dx1, y1: y + dy1, x2: x + dx2, y2: y + dy2, width, life: 0.28, maxLife: 0.28, owner: 'player', skillId: id, ...(echoed ? { echo: true as const } : {}) }));
       if (Number(code.slice(3)) >= 5) {
         this.skills = {};
         this.skillCooldowns = {};
@@ -1600,6 +1613,98 @@ export class GameEngine {
         [-0.2, 0, 0.045, 0.12].forEach((age, k) => (age < 0 ? this.after(-age, () => ground('twinBlades', -330 + k * 150, 130, A.twinBlades.radius, A.twinBlades.seconds)) : ground('twinBlades', -330 + k * 150, 130, A.twinBlades.radius, A.twinBlades.seconds, age)));
         foe(280, -60);
         foe(330, 120, 'medium');
+      } else if (code === 'AFX11') {
+        // The P2 head marks by kind (stains 1-3, fear facing either way, weak, the wander's curl alone and over weak,
+        // spores), among two elites and stunned ones, coins and jades beside a stain and the weak mark, and a pollen
+        // ring pulsing (0.15 s on) beside a ranged enemy's coral ring.
+        const marks: [number, number, EnemyTier, Partial<Entity>][] = [
+          [-360, -150, 'small', { awk: { stain: 1, stainUntil: 1e9 } }], [-270, -170, 'small', { awk: { stain: 2, stainUntil: 1e9 } }], [-170, -150, 'medium', { awk: { stain: 3, stainUntil: 1e9 } }],
+          [-60, -170, 'small', { awk: { fear: 1e9 } }], [60, -150, 'small', { awk: { fear: 1e9 } }], [160, -170, 'medium', { awk: { weak: 1e9 } }],
+          [260, -150, 'small', { awk: { wander: 1e9 } }], [360, -170, 'small', { awk: { wander: 1e9, weak: 1e9 } }],
+          [-360, 60, 'small', { elite: 'haste', awk: { weak: 1e9 } }], [-260, 90, 'small', { stun: 1e9, awk: { fear: 1e9 } }], [-150, 60, 'large', { awk: { pollen: 1e9 } }],
+          [120, 90, 'small', { awk: { pollen: 1e9, stain: 1, stainUntil: 1e9 } }], [220, 60, 'small', { elite: 'shield', stun: 1e9, awk: { wander: 1e9 } }],
+          [340, 130, 'small', { awk: { pollen: 1e9 } }], [420, 190, 'small', { attackStyle: 'ranged', rangedCooldown: 1e9 }],
+        ];
+        for (const [dx, dy, tier, patch] of marks) foe(dx, dy, tier, patch);
+        this.spawnPickup('coin', x - 330, y - 135, 0, 0, 9, 12);
+        this.spawnPickup('xp', x + 185, y - 150, 0, 0, 7, 30);
+        this.spawnPickup('coin', x + 150, y + 110, 0, 0, 9, 12);
+        ring('inkBloom', 340, 130, A.inkBloom.radius, 0.15);
+      } else if (code === 'AFX12') {
+        // The feet overlays on small enemies (r 12) and large ones (r 28), one each: the freeze (stunned, as it freezes),
+        // frost 1 and 2, a grave's bind, burning ink in an ink pots fire, and thorns.
+        const feet: Partial<Entity>[] = [{ stun: 1e9, awk: { freeze: 1e9 } }, { awk: { frost: 1, frostAt: 1e9 } }, { awk: { frost: 2, frostAt: 1e9 } }, { awk: { bound: 1e9 } }, {}, { awk: { thorn: 1e9 } }];
+        for (const [tier, dy] of [['small', -110], ['large', 120]] as const) {
+          feet.forEach((patch, k) => foe(-375 + k * 150, dy, tier, patch));
+          ground('inkPots', 225, dy, 48, A.inkPots.seconds, 0.4);
+        }
+      } else if (code === 'AFX13') {
+        // The P2 events 0.1-0.15 s into their life: a stain's burst among stained enemies, a quill's dab waiting and
+        // another bursting, a crack burst beside a shock telegraph, the fear ring, the pollen ring and puff, a rear hit,
+        // a topple, and a bump.
+        for (const [dx, dy, n] of [[-300, -100, 1], [-430, -80, 2]]) foe(dx, dy, 'small', { awk: { stain: n, stainUntil: 1e9 } });
+        foe(-380, -150);
+        echo('inkDarts', -380, -150, A.inkDarts.radius, 0.15);
+        this.arsenalPending.push({ id: 'brushQuills', x: x - 190, y: y - 175, born: this.elapsed, delay: A.brushQuills.delay, points: [] });
+        echo('brushQuills', -90, -110, A.brushQuills.radius, 0.18);
+        echo('bossbane', 290, -80, A.bossbane.radius, 0.15);
+        this.hazards.push({ id: this.nextId(), kind: 'shock', x: x + 420, y: y + 110, radius: 120, life: 0.9, maxLife: 2, damage: 0, slow: 1, triggered: false });
+        for (const [dx, dy] of [[-80, 150], [60, 175], [100, 90]]) foe(dx, dy, 'small', { awk: { fear: 1e9 } });
+        ring('headsmanDarts', 0, 130, A.headsmanDarts.radius, 0.15);
+        foe(-340, 120, 'small', { awk: { pollen: 1e9 } });
+        ring('inkBloom', -340, 120, A.inkBloom.radius, 0.15);
+        foe(-200, 60);
+        ring('tailGuard', -200, 60, 20, 0.22);
+        foe(180, 150);
+        foe(204, 158);
+        moment('sealArrows', 192, 154, 0.22);
+        foe(330, -200, 'medium');
+        moment('inkPulse', 350, -200, 0.22);
+      } else if (code === 'AFX14') {
+        // The P2 lines 0.1-0.15 s into their life: a leap between two enemies, a thread rewound along its jumps, a storm
+        // thread amplifying jump by jump, frost links (one group sharing a hit), a lance's two branches, and the wide
+        // brush sweeping back.
+        const rewind = [[-250, -190], [-160, -130], [-70, -185], [20, -125]], storm = [[90, -190], [180, -120], [270, -185], [360, -115], [450, -175]];
+        for (const [dx, dy] of [[-440, -150], [-300, -110], ...rewind.slice(1), ...storm.slice(1), [-400, 170], [-320, 200], [-240, 165], [-140, 190], [-60, 160]]) foe(dx, dy);
+        line('thunderNeedles', [[-440, -150], [-300, -110]], 0.18, { echo: true });
+        this.after(0.2, () => this.chains.push({ id: this.nextId(), points: at([rewind[3], rewind[1]]), life: 0.18, maxLife: 0.18, skillId: 'sparkThread', echo: true, thread: at(rewind) }));
+        line('stormThread', storm, 0.2, { gimmick: true });
+        const group = (from: number, to: number, shared: number) => {
+          const members = this.enemies.slice(from, to), link = { until: this.elapsed + A.frostChainlet.seconds, members, flashAt: 0, sharedAt: shared };
+          for (const enemy of members) enemy.awk = { link };
+        };
+        const n = this.enemies.length;
+        group(n - 5, n - 2, this.elapsed + 0.25);
+        group(n - 2, n, -1);
+        beam('inkLance', 0, 0, 280, 80, 12, 0.15);
+        const aim = Math.atan2(80, 280), reach = Math.hypot(280, 80) * A.inkLance.branch;
+        for (const side of [-1, 1]) beam('inkLance', 280, 80, 280 + Math.cos(aim + (side * A.inkLance.angle * Math.PI) / 180) * reach, 80 + Math.sin(aim + (side * A.inkLance.angle * Math.PI) / 180) * reach, 12, 0.15, true);
+        beam('wideBrush', 0, 0, -400, 40, 40, 0.2, true);
+      } else if (code === 'AFX15') {
+        // Two small pots flying to their bursts (0.1 s on) and two others bursting (0.2 s on), turned shots among enemy
+        // shots, the hero's haste inside the meteor's mark, a caltrop snapping among caltrops, and the clap's echo round the hero.
+        const reach = (id: ArsenalId) => arsenalStats(ARSENAL[id], 5, true).radius;
+        ground('meteorBrush', 0, 0, reach('meteorBrush') * A.meteorBrush.area, A.meteorBrush.seconds, 1);
+        this.after(0.1, () => this.arsenalPending.push({ id: 'clusterPots', x: x - 320, y: y - 100, born: this.elapsed, delay: A.clusterPots.delay, points: at([[-380, -140], [-260, -60]]) }));
+        for (const [dx, dy] of [[-360, 110], [-240, 150]]) echo('clusterPots', dx, dy, reach('clusterPots') * A.clusterPots.area, 0.2);
+        for (const [dx, dy, vx, vy, life] of [[150, -120, 420, -120, 1.2], [200, -40, 400, 60, 1.2], [140, -200, 360, -200, 0.35]]) {
+          this.spawnProjectile('inkOrbit', x + dx, y + dy, vx, vy, 7, 0, 1.2, 0, 0, true, -1, ARSENAL.inkOrbit.look, true);
+          this.projectiles[this.projectiles.length - 1].life = life;
+        }
+        this.after(0.27, () => this.spawnProjectile('inkOrbit', x + 230, y - 150, 400, -40, 7, 0, 1.2, 0, 0, true, -1, ARSENAL.inkOrbit.look, true));
+        for (const [dx, dy] of [[330, -150], [390, -60], [300, -10], [420, -190]]) this.spawnBossProjectile(x + dx, y + dy, -40, 20, 9, 0, 3, 'enemy');
+        for (let k = 0; k < 5; k += 1) ground('pinHail', 260 + k * 40, 150 + (k % 2) * 30, A.pinHail.radius, A.pinHail.seconds, 0.3);
+        foe(300, 170);
+        moment('pinHail', 300, 170, 0.22);
+        echo('thunderclap', 0, 0, reach('thunderclap') * A.thunderclap.reach, 0.15);
+      } else if (code === 'AFX16') {
+        // A field boss wearing its crack plate beside its prey tag; its fifth crack bursts 1.45 s on (after its title card)
+        // where it stands, beside a shock telegraph still counting down.
+        this.spawnBoss('normal', false);
+        const boss = this.enemies[this.enemies.length - 1];
+        Object.assign(boss, { x: x + 200, y: y - 40, prevX: x + 200, prevY: y - 40, hp: boss.maxHp * 40, maxHp: boss.maxHp * 40, awk: { crack: 4, prey: 1e9 } });
+        this.after(1.45, () => this.emit({ type: 'area/blast', x: boss.x, y: boss.y, radius: A.bossbane.radius, source: 'bossbane', echo: true }));
+        this.hazards.push({ id: this.nextId(), kind: 'shock', x: x + 360, y: y + 130, radius: 130, life: 2.4, maxLife: 3, damage: 0, slow: 1, triggered: false });
       } else if (code === 'AFX1') {
         const cells: [ArsenalId, number, number, number][] = [['brushDownpour', -470, -200, 4], ['fallingScroll', 0, -200, 1], ['inkPulse', 470, -200, 1], ['inkPots', -470, 210, 1], ['clusterPots', 0, 210, 3], ['meteorBrush', 470, 210, 1]];
         cells.forEach(([id, dx, dy, n], i) => this.after(0.42 + i * 0.02, () => blast(id, dx, dy, n)));
@@ -2778,12 +2883,12 @@ export class GameEngine {
           this.dealDamage(target, awake && id === 'stormThread' ? damage * (1 + A.stormThread.damage * jump) : damage, id, knockback, false);
           target = this.findNearestEnemyFrom(target.x, target.y, weapon.hop ?? 260, hit);
         }
-        this.chains.push({ id: this.nextId(), points, life: 0.18, maxLife: 0.18, skillId: id });
+        this.chains.push({ id: this.nextId(), points, life: 0.18, maxLife: 0.18, skillId: id, ...(awake ? { gimmick: true as const } : {}) });
         const [head] = chained;
         const tail = chained[chained.length - 1];
         if (awake && id === 'sparkThread' && tail !== head) {
           // SYS-16 되감김: the thread runs back from the last enemy to the first.
-          this.chains.push({ id: this.nextId(), points: [{ x: tail.x, y: tail.y }, { x: head.x, y: head.y }], life: 0.18, maxLife: 0.18, skillId: id, echo: true });
+          this.chains.push({ id: this.nextId(), points: [{ x: tail.x, y: tail.y }, { x: head.x, y: head.y }], life: 0.18, maxLife: 0.18, skillId: id, echo: true, thread: points });
           this.echoHit(head, damage * A.sparkThread.damage, id, tail);
         } else if (awake && id === 'frostChainlet') {
           // SYS-16 묶인 사슬: the chained enemies share what each of them takes for a while.
@@ -2872,10 +2977,10 @@ export class GameEngine {
     if (id === 'meteorBrush') this.addZone(id, x, y, radius * A.meteorBrush.area, A.meteorBrush.seconds);
     if (id !== 'clusterPots') return;
     const away = normalize(x - this.player.x, y - this.player.y);
-    for (const side of [-1, 1]) {
-      const offset = side * A.clusterPots.offset;
-      this.after(A.clusterPots.delay, () => this.echoBlast(id, x - away.y * offset, y + away.x * offset, radius * A.clusterPots.area, damage * A.clusterPots.damage));
-    }
+    const points = [-1, 1].map((side) => ({ x: x - away.y * side * A.clusterPots.offset, y: y + away.x * side * A.clusterPots.offset }));
+    for (const point of points) this.after(A.clusterPots.delay, () => this.echoBlast(id, point.x, point.y, radius * A.clusterPots.area, damage * A.clusterPots.damage));
+    // K10 looks only: the two small pots fly to where they burst.
+    this.arsenalPending.push({ id, x, y, born: this.elapsed, delay: A.clusterPots.delay, points });
   }
 
   /** SYS-16: runs `run` once `seconds` of run time have passed (before the next round). */
@@ -3030,6 +3135,7 @@ export class GameEngine {
       } else if (id === 'pinHail') {
         this.echoHit(enemy, zone.damage, id, zone);
         zone.life = 0;
+        this.moment(id, zone.x, zone.y);
         return;
       } else if (enemy.isBoss) {
         continue;
@@ -3041,6 +3147,7 @@ export class GameEngine {
         enemy.y += (zone.y - enemy.y) * step;
       } else if (id === 'gravePins') {
         enemy.root = Math.max(enemy.root, A.gravePins.root);
+        this.marks(enemy).bound = t + A.gravePins.root;
         zone.life = 0;
         return;
       } else if (!zone.hit.includes(enemy.id)) {
@@ -3061,6 +3168,9 @@ export class GameEngine {
       if (other) {
         marks.domino = 0;
         const damage = this.weaponHit('sealArrows') * A.sealArrows.damage;
+        // K10 looks only: the topple where the two bodies meet.
+        const share = enemy.radius / (enemy.radius + other.radius);
+        this.moment('sealArrows', enemy.x + (other.x - enemy.x) * share, enemy.y + (other.y - enemy.y) * share);
         for (const [body, from] of [[enemy, other], [other, enemy]]) {
           this.echoHit(body, damage, 'sealArrows', from);
           this.stun(body, A.sealArrows.stun, 'sealArrows');
@@ -3069,6 +3179,9 @@ export class GameEngine {
     }
     if ((marks.bump ?? 0) > t && this.againstWall(enemy)) {
       marks.bump = 0;
+      // K10 looks only: the bump on the side of the body the pulse drove it to.
+      const away = normalize(enemy.x - this.player.x, enemy.y - this.player.y);
+      this.moment('inkPulse', enemy.x + away.x * enemy.radius, enemy.y + away.y * enemy.radius);
       this.stun(enemy, A.inkPulse.stun, 'inkPulse');
     }
     if ((marks.pollen ?? 0) > t && (marks.pollenAt ?? 0) <= t) {
@@ -3076,7 +3189,7 @@ export class GameEngine {
       for (const other of this.enemyIndex.queryCircle(enemy.x, enemy.y, A.inkBloom.radius)) {
         if (other !== enemy && other.hp > 0 && !other.isBoss && distance(other, enemy) <= A.inkBloom.radius + other.radius) this.slowBy(other, ARSENAL.inkBloom.slow!);
       }
-      this.skillMark('ring', 'inkBloom', enemy.x, enemy.y, A.inkBloom.radius);
+      this.skillMark('ring', 'inkBloom', enemy.x, enemy.y, A.inkBloom.radius, false, enemy.x, enemy.y, true);
     }
     if ((marks.thorn ?? 0) > t) {
       marks.run = (marks.run ?? 0) + Math.hypot(enemy.x - enemy.prevX, enemy.y - enemy.prevY);
@@ -5621,7 +5734,7 @@ export class GameEngine {
       const dy = enemy.y - this.player.y;
       const gap = Math.hypot(dx, dy);
       if (gap > A.tailGuard.reach || -(dx * this.lastMove.x + dy * this.lastMove.y) < gap * Math.cos((A.tailGuard.arc * Math.PI) / 180)) return scale;
-      this.skillMark('ring', awoken, enemy.x, enemy.y, enemy.radius + 8);
+      this.skillMark('ring', awoken, enemy.x, enemy.y, enemy.radius + 8, false, enemy.x, enemy.y, true);
       return scale * A.tailGuard.times;
     }
     const next = awoken === 'thunderNeedles' && enemy.stun > 0 ? this.findNearestEnemyFrom(enemy.x, enemy.y, A.thunderNeedles.range, new Set([enemy.id])) : undefined;
@@ -5645,6 +5758,7 @@ export class GameEngine {
       this.sharing = true;
       for (const other of link.members) if (other !== enemy) this.echoHit(other, dealt * AWAKENINGS.frostChainlet.share, 'frostChainlet', enemy);
       this.sharing = false;
+      link.sharedAt = t;
       if (link.flashAt <= t) {
         link.flashAt = t + 0.15;
         this.chains.push({ id: this.nextId(), points: link.members.filter((member) => member.hp > 0).map(({ x, y }) => ({ x, y })), life: 0.18, maxLife: 0.18, skillId: 'frostChainlet', echo: true });
@@ -5680,7 +5794,11 @@ export class GameEngine {
         break;
       case 'brushQuills':
         // 늦게 터지는 붓자국: where a quill first strikes bursts a moment later.
-        if (first) this.after(row.delay, burst);
+        if (first) {
+          this.after(row.delay, burst);
+          // K10 looks only: the dab waits on the ground where the quill struck.
+          this.arsenalPending.push({ id: awoken, x, y, born: t, delay: row.delay, points: [] });
+        }
         break;
       case 'ghostVolley':
       case 'starShards': {
@@ -5714,7 +5832,7 @@ export class GameEngine {
         // 공포: an execution frightens the ordinary enemies round it.
         if (!executed) break;
         for (const other of this.enemyIndex.queryCircle(x, y, row.radius)) if (!other.isBoss) this.marks(other).fear = t + row.seconds;
-        this.skillMark('ring', awoken, x, y, row.radius);
+        this.skillMark('ring', awoken, x, y, row.radius, false, x, y, true);
         break;
       case 'trackingSeals': {
         // 삼각 봉인: the first three different enemies this cast's seals pin.
@@ -6440,8 +6558,14 @@ export class GameEngine {
    * FX-06: hands presentation a skill ring or stroke the events do not size. It bypasses the event stream, so replay
    * fingerprints, which cover every event, stay the same.
    */
-  protected skillMark(kind: SkillMark['kind'], skillId: SkillId, x: number, y: number, radius: number, heavy = false, x2 = x, y2 = y) {
-    if (!this.replaying) this.presentation.addSkillMark(kind, skillId, x, y, radius, heavy, x2, y2);
+  /** `echo` (K10 looks only): an awakening gimmick's ring (the fear, the pollen, the rear hit), drawn as the gimmick's. */
+  protected skillMark(kind: SkillMark['kind'], skillId: SkillId, x: number, y: number, radius: number, heavy = false, x2 = x, y2 = y, echo?: true) {
+    if (!this.replaying) this.presentation.addSkillMark(kind, skillId, x, y, radius, heavy, x2, y2, -1, echo);
+  }
+
+  /** K10 looks only: a gimmick's moment the simulation reports nowhere else (a topple, a bump, a caltrop's snap), for its art. */
+  protected moment(id: ArsenalId, x: number, y: number) {
+    this.arsenalPending.push({ id, x, y, born: this.elapsed, delay: ARSENAL_MOMENT_SECONDS, points: [] });
   }
 
   /** Subscribes to the game event stream (tools, replays, telemetry). Returns an unsubscribe function. */

@@ -12,7 +12,7 @@ const requireGoldens = process.env.VISUAL_REQUIRE_GOLDENS !== '0';
 const maxDiffRatio = Number.parseFloat(process.env.VISUAL_MAX_DIFF_RATIO ?? '0.005');
 const pixelTolerance = Number.parseInt(process.env.VISUAL_PIXEL_TOLERANCE ?? '24', 10);
 // The default matrix is the platform decision (TEC-01: minimum 1024x720, reference 1280x720 and 1440x900,
-// largest verified 1920x1080): 4 viewports x DPR 1/2 x 3 modes x 27 states = 648 captures. The modes are full
+// largest verified 1920x1080): 4 viewports x DPR 1/2 x 3 modes x 33 states = 792 captures. The modes are full
 // motion, the system's reduced motion, and the reduced flash setting, which UI-08 separates from reduced motion.
 // The small sizes stay selectable by name (VISUAL_VIEWPORTS) to check the responsive layout.
 const viewportCatalog = [
@@ -24,7 +24,7 @@ const viewportCatalog = [
   { name: '1440x900', width: 1440, height: 900 },
   { name: '1920x1080', width: 1920, height: 1080 },
 ];
-const stateNames = ['menu', 'infinite-menu', 'infinite-playing', 'story', 'playing', 'paused', 'draft', 'bombers', 'burning', 'fires', 'shock', 'terrain', 'settlement', 'boss', 'terrain-ch3', 'arsenal-mortar', 'arsenal-chain', 'arsenal-lob', 'arsenal-land', 'arsenal-crowd', 'arsenal-fire', 'arsenal-marks', 'arsenal-eclipse', 'arsenal-seal', 'arsenal-strike', 'arsenal-ends', 'arsenal-graves'];
+const stateNames = ['menu', 'infinite-menu', 'infinite-playing', 'story', 'playing', 'paused', 'draft', 'bombers', 'burning', 'fires', 'shock', 'terrain', 'settlement', 'boss', 'terrain-ch3', 'arsenal-mortar', 'arsenal-chain', 'arsenal-lob', 'arsenal-land', 'arsenal-crowd', 'arsenal-fire', 'arsenal-marks', 'arsenal-eclipse', 'arsenal-seal', 'arsenal-strike', 'arsenal-ends', 'arsenal-heads', 'arsenal-feet', 'arsenal-events', 'arsenal-lines', 'arsenal-turns', 'arsenal-crack', 'arsenal-graves'];
 
 const defaultViewports = ['1024x720', '1280x720', '1440x900', '1920x1080'];
 
@@ -575,8 +575,13 @@ async function runScenario(page, viewport, dpr, motion) {
   // among an elite, a stunned, a frozen, and a frightened enemy (c); the total eclipse 0.1 s in (d, the flash mode
   // halves its disc); the tracking seal triangle pending, a falling scroll unrolling, and a seventh seal's eighth
   // pending, then 0.36 s later the triangle striking, another scroll, and the eighth striking (e); lightning pillars and
-  // spinning blades at their start, middle, and end, the end frames at full strength (f, review 5 F2).
-  for (const [code, state] of [['AFX5', 'arsenal-fire'], ['AFX7', 'arsenal-marks'], ['AFX8', 'arsenal-eclipse'], ['AFX9', 'arsenal-seal'], ['AFX10', 'arsenal-ends']]) {
+  // spinning blades at their start, middle, and end, the end frames at full strength (f, review 5 F2). K10 3b, the P2
+  // gimmicks (review 7 §6, review 8): the head marks by kind among an elite, stunned enemies, coins, and jades, a pollen
+  // ring beside a ranged enemy's ring (g); the feet overlays on small and large enemies (h); the event rings and bursts,
+  // a crack burst beside a shock telegraph (i); the chains and beams (j); the small pots, turned shots among enemy shots,
+  // the hero's haste in the meteor's mark, a caltrop snapping, and the clap's echo (k); then a field boss wearing its crack
+  // plate beside its prey tag, its crack bursting beside a shock telegraph once its title card has gone (l, 1.6 s on).
+  for (const [code, state] of [['AFX5', 'arsenal-fire'], ['AFX7', 'arsenal-marks'], ['AFX8', 'arsenal-eclipse'], ['AFX9', 'arsenal-seal'], ['AFX10', 'arsenal-ends'], ['AFX11', 'arsenal-heads'], ['AFX12', 'arsenal-feet'], ['AFX13', 'arsenal-events'], ['AFX14', 'arsenal-lines'], ['AFX15', 'arsenal-turns']]) {
     await openCheatPanel(page);
     await enterCheat(page, 'NUKE');
     await enterCheat(page, code);
@@ -588,6 +593,12 @@ async function runScenario(page, viewport, dpr, motion) {
       await captureEvidence(page, viewport, dpr, motion, 'arsenal-strike');
     }
   }
+  await openCheatPanel(page);
+  await enterCheat(page, 'NUKE');
+  await enterCheat(page, 'AFX16');
+  await page.keyboard.press('Escape');
+  await settle(page, 1360);
+  await captureEvidence(page, viewport, dpr, motion, 'arsenal-crack');
   // Chapter 4's floor (b): 24 caltrops and 12 graves, two still rising, and a silenced enemy beside them.
   await page.keyboard.press('p');
   await settle(page, 40);

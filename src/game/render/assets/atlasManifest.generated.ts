@@ -813,9 +813,17 @@ export const ATLAS_MANIFEST = {
         "assets/packs/arsenal-fx/atlas-0.png"
       ],
       "frames": {
-        "afx/brushDownpour/mark-l/0": [0, 505, 547, 126, 51, 66, 16],
-        "afx/brushDownpour/mark-m/0": [0, 129, 607, 95, 42, 50, 15],
-        "afx/brushDownpour/mark-s/0": [0, 1048, 654, 71, 33, 37, 12],
+        "afx/bossbane/crackBurst/0": [0, 1933, 471, 80, 57, 39, 51],
+        "afx/bossbane/crackBurst/1": [0, 394, 547, 98, 55, 48, 54],
+        "afx/bossbane/crackBurst/2": [0, 1065, 702, 95, 30, 46, 4],
+        "afx/bossbane/mark-crack1/0": [0, 1164, 702, 42, 30, 21, 35],
+        "afx/bossbane/mark-crack2/0": [0, 1210, 702, 42, 30, 21, 35],
+        "afx/bossbane/mark-crack3/0": [0, 1256, 702, 42, 30, 21, 35],
+        "afx/bossbane/mark-crack4/0": [0, 1302, 702, 42, 30, 21, 35],
+        "afx/bossbane/mark-crack5/0": [0, 1348, 702, 42, 30, 21, 35],
+        "afx/brushDownpour/mark-l/0": [0, 899, 547, 126, 51, 66, 16],
+        "afx/brushDownpour/mark-m/0": [0, 1005, 608, 95, 42, 50, 15],
+        "afx/brushDownpour/mark-s/0": [0, 456, 702, 71, 33, 37, 12],
         "afx/brushDownpour/stroke-a-awakened/0": [0, 1966, 2, 68, 149, 22, 142],
         "afx/brushDownpour/stroke-a-awakened/1": [0, 154, 234, 64, 125, 22, 118],
         "afx/brushDownpour/stroke-a-awakened/2": [0, 1820, 234, 48, 89, 18, 89],
@@ -828,45 +836,51 @@ export const ATLAS_MANIFEST = {
         "afx/brushDownpour/stroke-b/0": [0, 2, 234, 82, 140, 22, 135],
         "afx/brushDownpour/stroke-b/1": [0, 745, 234, 70, 113, 18, 112],
         "afx/brushDownpour/stroke-b/2": [0, 2, 378, 60, 89, 18, 89],
-        "afx/clusterPots/burst/0": [0, 1631, 471, 78, 59, 39, 41],
+        "afx/brushQuills/dab/0": [0, 1976, 775, 35, 16, 18, 6],
+        "afx/brushQuills/dab/1": [0, 1787, 775, 38, 17, 19, 7],
+        "afx/brushQuills/dab/2": [0, 1718, 742, 41, 23, 21, 12],
+        "afx/brushQuills/dabBurst/0": [0, 1165, 547, 90, 50, 45, 41],
+        "afx/brushQuills/dabBurst/1": [0, 1259, 547, 88, 50, 43, 41],
+        "afx/brushQuills/dabBurst/2": [0, 1763, 742, 83, 23, 42, 7],
+        "afx/clusterPots/burst/0": [0, 1851, 471, 78, 59, 39, 41],
         "afx/clusterPots/burst/1": [0, 350, 471, 88, 68, 49, 50],
-        "afx/clusterPots/burst/2": [0, 1291, 607, 78, 38, 40, 23],
-        "afx/clusterPots/mini/0": [0, 23, 727, 21, 17, 9, 8],
-        "afx/clusterPots/mini/1": [0, 48, 727, 20, 17, 9, 8],
-        "afx/clusterPots/mini/2": [0, 72, 727, 19, 17, 9, 8],
-        "afx/clusterPots/mini/3": [0, 95, 727, 20, 17, 9, 8],
-        "afx/clusterPots/pot-m/0": [0, 1301, 654, 36, 30, 15, 15],
-        "afx/clusterPots/pot-m/1": [0, 1341, 654, 34, 30, 15, 15],
-        "afx/clusterPots/pot-m/2": [0, 1379, 654, 33, 30, 15, 15],
-        "afx/clusterPots/pot-m/3": [0, 1416, 654, 34, 30, 15, 15],
-        "afx/clusterPots/pot-s/0": [0, 335, 695, 27, 24, 15, 12],
-        "afx/clusterPots/pot-s/1": [0, 366, 695, 28, 24, 16, 12],
-        "afx/clusterPots/pot-s/2": [0, 398, 695, 29, 24, 17, 12],
-        "afx/clusterPots/pot-s/3": [0, 431, 695, 27, 24, 15, 12],
-        "afx/crossStrokes/scrap-a/0": [0, 1135, 695, 27, 20, 13, 10],
-        "afx/crossStrokes/scrap-a/1": [0, 1575, 695, 26, 19, 12, 10],
-        "afx/crossStrokes/scrap-b/0": [0, 238, 727, 25, 15, 13, 9],
-        "afx/crossStrokes/scrap-b/1": [0, 1817, 695, 23, 18, 10, 10],
-        "afx/crowFeathers/crow/0": [0, 580, 695, 40, 23, 20, 12],
-        "afx/crowFeathers/crow/1": [0, 1166, 695, 40, 20, 20, 9],
-        "afx/crowFeathers/crow/2": [0, 1210, 695, 41, 20, 21, 9],
-        "afx/crowFeathers/crow/3": [0, 1255, 695, 41, 20, 21, 9],
-        "afx/crowFeathers/crow/4": [0, 1300, 695, 41, 20, 21, 9],
-        "afx/crowFeathers/crow/5": [0, 1345, 695, 40, 20, 20, 9],
-        "afx/crowFeathers/peck/0": [0, 1605, 695, 15, 19, 6, 9],
-        "afx/crowFeathers/peck/1": [0, 267, 727, 18, 13, 9, 6],
-        "afx/eclipseHalo/corona-a/0": [0, 289, 727, 37, 12, 1, 6],
-        "afx/eclipseHalo/corona-a/1": [0, 330, 727, 31, 12, 1, 6],
-        "afx/eclipseHalo/corona-b/0": [0, 365, 727, 31, 12, 1, 6],
-        "afx/eclipseHalo/corona-b/1": [0, 400, 727, 25, 12, 1, 6],
-        "afx/eclipseHalo/ribbon-a/0": [0, 624, 695, 60, 23, 58, 12],
-        "afx/eclipseHalo/ribbon-a/1": [0, 1389, 695, 60, 20, 58, 10],
-        "afx/eclipseHalo/ribbon-a/2": [0, 958, 695, 60, 21, 58, 13],
-        "afx/eclipseHalo/ribbon-b/0": [0, 1022, 695, 60, 21, 58, 11],
-        "afx/eclipseHalo/ribbon-b/1": [0, 830, 695, 60, 22, 58, 13],
-        "afx/eclipseHalo/ribbon-b/2": [0, 894, 695, 60, 22, 58, 12],
-        "afx/fallingScroll/roller/0": [0, 289, 654, 40, 36, 28, 18],
-        "afx/fallingScroll/roller/1": [0, 333, 654, 40, 36, 28, 18],
+        "afx/clusterPots/burst/2": [0, 461, 658, 78, 38, 40, 23],
+        "afx/clusterPots/mini/0": [0, 1829, 775, 21, 17, 9, 8],
+        "afx/clusterPots/mini/1": [0, 1854, 775, 20, 17, 9, 8],
+        "afx/clusterPots/mini/2": [0, 1878, 775, 19, 17, 9, 8],
+        "afx/clusterPots/mini/3": [0, 1901, 775, 20, 17, 9, 8],
+        "afx/clusterPots/pot-m/0": [0, 1394, 702, 36, 30, 15, 15],
+        "afx/clusterPots/pot-m/1": [0, 1434, 702, 34, 30, 15, 15],
+        "afx/clusterPots/pot-m/2": [0, 1472, 702, 33, 30, 15, 15],
+        "afx/clusterPots/pot-m/3": [0, 1509, 702, 34, 30, 15, 15],
+        "afx/clusterPots/pot-s/0": [0, 1167, 742, 27, 24, 15, 12],
+        "afx/clusterPots/pot-s/1": [0, 1198, 742, 28, 24, 16, 12],
+        "afx/clusterPots/pot-s/2": [0, 1230, 742, 29, 24, 17, 12],
+        "afx/clusterPots/pot-s/3": [0, 1263, 742, 27, 24, 15, 12],
+        "afx/crossStrokes/scrap-a/0": [0, 587, 775, 27, 20, 13, 10],
+        "afx/crossStrokes/scrap-a/1": [0, 1117, 775, 26, 19, 12, 10],
+        "afx/crossStrokes/scrap-b/0": [0, 194, 802, 25, 15, 13, 9],
+        "afx/crossStrokes/scrap-b/1": [0, 1445, 775, 23, 18, 10, 10],
+        "afx/crowFeathers/crow/0": [0, 1850, 742, 40, 23, 20, 12],
+        "afx/crowFeathers/crow/1": [0, 274, 775, 40, 21, 20, 10],
+        "afx/crowFeathers/crow/2": [0, 618, 775, 40, 20, 20, 9],
+        "afx/crowFeathers/crow/3": [0, 662, 775, 41, 20, 21, 9],
+        "afx/crowFeathers/crow/4": [0, 707, 775, 40, 20, 20, 9],
+        "afx/crowFeathers/crow/5": [0, 318, 775, 40, 21, 20, 10],
+        "afx/crowFeathers/peck/0": [0, 1147, 775, 15, 19, 6, 9],
+        "afx/crowFeathers/peck/1": [0, 286, 802, 18, 13, 9, 6],
+        "afx/eclipseHalo/corona-a/0": [0, 308, 802, 37, 12, 1, 6],
+        "afx/eclipseHalo/corona-a/1": [0, 349, 802, 31, 12, 1, 6],
+        "afx/eclipseHalo/corona-b/0": [0, 384, 802, 31, 12, 1, 6],
+        "afx/eclipseHalo/corona-b/1": [0, 419, 802, 25, 12, 1, 6],
+        "afx/eclipseHalo/ribbon-a/0": [0, 1894, 742, 60, 23, 58, 12],
+        "afx/eclipseHalo/ribbon-a/1": [0, 751, 775, 60, 20, 58, 10],
+        "afx/eclipseHalo/ribbon-a/2": [0, 362, 775, 60, 21, 58, 13],
+        "afx/eclipseHalo/ribbon-b/0": [0, 426, 775, 60, 21, 58, 11],
+        "afx/eclipseHalo/ribbon-b/1": [0, 106, 775, 60, 22, 58, 13],
+        "afx/eclipseHalo/ribbon-b/2": [0, 170, 775, 60, 22, 58, 12],
+        "afx/fallingScroll/roller/0": [0, 1585, 658, 40, 36, 28, 18],
+        "afx/fallingScroll/roller/1": [0, 1629, 658, 40, 36, 28, 18],
         "afx/fallingScroll/scroll-awakened/0": [0, 502, 2, 98, 199, 49, 189],
         "afx/fallingScroll/scroll-awakened/1": [0, 604, 2, 96, 199, 48, 189],
         "afx/fallingScroll/scroll-awakened/2": [0, 704, 2, 96, 199, 48, 189],
@@ -875,41 +889,70 @@ export const ATLAS_MANIFEST = {
         "afx/fallingScroll/scroll/1": [0, 984, 2, 84, 188, 42, 189],
         "afx/fallingScroll/scroll/2": [0, 1072, 2, 84, 188, 42, 189],
         "afx/fallingScroll/scroll/3": [0, 1160, 2, 84, 188, 42, 189],
-        "afx/frostChainlet/rime12/0": [0, 1453, 695, 58, 20, 30, 12],
-        "afx/frostChainlet/rime19/0": [0, 688, 695, 82, 23, 42, 15],
-        "afx/frostChainlet/rime28/0": [0, 1777, 654, 112, 29, 57, 22],
-        "afx/frostNeedles/freeze-back-12/0": [0, 774, 695, 52, 23, 26, 16],
-        "afx/frostNeedles/freeze-back-19/0": [0, 1893, 654, 72, 29, 36, 20],
-        "afx/frostNeedles/freeze-back-28/0": [0, 1599, 607, 101, 37, 51, 27],
-        "afx/frostNeedles/freeze-front-12/0": [0, 1454, 654, 47, 30, 21, 26],
-        "afx/frostNeedles/freeze-front-19/0": [0, 1704, 607, 63, 37, 28, 32],
-        "afx/frostNeedles/freeze-front-28/0": [0, 949, 547, 84, 48, 39, 42],
-        "afx/frostRing/shard-a/0": [0, 1771, 547, 42, 43, 9, 21],
-        "afx/frostRing/shard-a/1": [0, 162, 547, 66, 53, 9, 26],
-        "afx/frostRing/shard-a/2": [0, 232, 547, 57, 53, 9, 26],
-        "afx/frostRing/shard-awakened-a/0": [0, 102, 547, 56, 55, 12, 27],
+        "afx/frostChainlet/rime12/0": [0, 815, 775, 58, 20, 30, 12],
+        "afx/frostChainlet/rime19/0": [0, 1958, 742, 82, 23, 42, 15],
+        "afx/frostChainlet/rime28/0": [0, 2, 742, 112, 29, 57, 22],
+        "afx/frostNeedles/freeze-back-12/0": [0, 2, 775, 52, 23, 26, 16],
+        "afx/frostNeedles/freeze-back-19/0": [0, 118, 742, 72, 29, 36, 20],
+        "afx/frostNeedles/freeze-back-28/0": [0, 847, 658, 101, 37, 51, 27],
+        "afx/frostNeedles/freeze-front-12/0": [0, 1547, 702, 47, 30, 21, 26],
+        "afx/frostNeedles/freeze-front-19/0": [0, 952, 658, 63, 37, 28, 32],
+        "afx/frostNeedles/freeze-front-28/0": [0, 1600, 547, 84, 48, 39, 42],
+        "afx/frostNeedles/frost1-12/0": [0, 877, 775, 25, 20, 20, 13],
+        "afx/frostNeedles/frost1-19/0": [0, 1166, 775, 33, 19, 26, 13],
+        "afx/frostNeedles/frost1-28/0": [0, 58, 775, 44, 23, 34, 16],
+        "afx/frostNeedles/frost2-12/0": [0, 490, 775, 44, 21, 23, 14],
+        "afx/frostNeedles/frost2-19/0": [0, 1294, 742, 59, 24, 30, 18],
+        "afx/frostNeedles/frost2-28/0": [0, 1598, 702, 82, 30, 40, 23],
+        "afx/frostRing/shard-a/0": [0, 615, 608, 42, 43, 9, 21],
+        "afx/frostRing/shard-a/1": [0, 556, 547, 66, 53, 9, 26],
+        "afx/frostRing/shard-a/2": [0, 626, 547, 57, 53, 9, 26],
+        "afx/frostRing/shard-awakened-a/0": [0, 496, 547, 56, 55, 12, 27],
         "afx/frostRing/shard-awakened-a/1": [0, 260, 471, 86, 70, 12, 34],
         "afx/frostRing/shard-awakened-a/2": [0, 767, 471, 70, 64, 9, 31],
-        "afx/frostRing/shard-awakened-b/0": [0, 844, 547, 57, 49, 12, 24],
+        "afx/frostRing/shard-awakened-b/0": [0, 1495, 547, 57, 49, 12, 24],
         "afx/frostRing/shard-awakened-b/1": [0, 565, 471, 88, 66, 12, 33],
-        "afx/frostRing/shard-awakened-b/2": [0, 1291, 471, 66, 60, 9, 30],
-        "afx/frostRing/shard-b/0": [0, 377, 654, 42, 36, 9, 18],
-        "afx/frostRing/shard-b/1": [0, 1037, 547, 66, 47, 9, 23],
-        "afx/frostRing/shard-b/2": [0, 1107, 547, 54, 47, 9, 23],
-        "afx/frostRing/shard-c/0": [0, 1449, 547, 41, 44, 9, 21],
-        "afx/frostRing/shard-c/1": [0, 1713, 471, 63, 57, 9, 28],
-        "afx/frostRing/shard-c/2": [0, 1780, 471, 63, 57, 9, 28],
-        "afx/gravePins/grave-a/0": [0, 635, 547, 86, 51, 43, 39],
-        "afx/gravePins/grave-b/0": [0, 1165, 547, 86, 47, 43, 35],
-        "afx/gravePins/grave-c/0": [0, 1847, 471, 86, 56, 43, 44],
-        "afx/gravePins/grave-rise/0": [0, 423, 654, 86, 36, 43, 24],
-        "afx/gravePins/grave-rise/1": [0, 1494, 547, 86, 44, 43, 32],
-        "afx/huntersMarks/mark-prey/0": [0, 1771, 607, 24, 37, 15, 40],
-        "afx/huntersMarks/mark-prey/1": [0, 1373, 607, 24, 38, 9, 40],
-        "afx/inkLance/tassel-awakened/0": [0, 513, 654, 61, 36, 107, 15],
-        "afx/inkLance/tassel-awakened/1": [0, 578, 654, 61, 36, 107, 15],
-        "afx/inkLance/tassel/0": [0, 37, 695, 49, 26, 101, 11],
-        "afx/inkLance/tassel/1": [0, 90, 695, 49, 26, 101, 11],
+        "afx/frostRing/shard-awakened-b/2": [0, 1403, 471, 66, 60, 9, 30],
+        "afx/frostRing/shard-b/0": [0, 1673, 658, 42, 36, 9, 18],
+        "afx/frostRing/shard-b/1": [0, 1688, 547, 66, 47, 9, 23],
+        "afx/frostRing/shard-b/2": [0, 1758, 547, 54, 47, 9, 23],
+        "afx/frostRing/shard-c/0": [0, 293, 608, 41, 44, 9, 21],
+        "afx/frostRing/shard-c/1": [0, 2, 547, 63, 57, 9, 28],
+        "afx/frostRing/shard-c/2": [0, 69, 547, 63, 57, 9, 28],
+        "afx/gravePins/bound12/0": [0, 1357, 742, 59, 24, 29, 15],
+        "afx/gravePins/bound19/0": [0, 194, 742, 78, 29, 38, 19],
+        "afx/gravePins/bound28/0": [0, 1719, 658, 106, 36, 52, 24],
+        "afx/gravePins/grave-a/0": [0, 1029, 547, 86, 51, 43, 39],
+        "afx/gravePins/grave-b/0": [0, 1816, 547, 86, 47, 43, 35],
+        "afx/gravePins/grave-c/0": [0, 136, 547, 86, 56, 43, 44],
+        "afx/gravePins/grave-rise/0": [0, 1829, 658, 86, 36, 43, 24],
+        "afx/gravePins/grave-rise/1": [0, 338, 608, 86, 44, 43, 32],
+        "afx/headsmanDarts/mark-fear/0": [0, 516, 742, 19, 27, 14, 34],
+        "afx/huntersMarks/mark-prey/0": [0, 1019, 658, 24, 37, 15, 40],
+        "afx/huntersMarks/mark-prey/1": [0, 543, 658, 24, 38, 9, 40],
+        "afx/inkBloom/pollenPuff/0": [0, 2, 802, 32, 16, 16, 18],
+        "afx/inkBloom/pollenPuff/1": [0, 906, 775, 49, 20, 25, 25],
+        "afx/inkBloom/pollenPuff/2": [0, 1420, 742, 51, 24, 26, 31],
+        "afx/inkBloom/spore-a/0": [0, 476, 802, 8, 10, 4, 15],
+        "afx/inkBloom/spore-a/1": [0, 448, 802, 10, 12, 5, 16],
+        "afx/inkBloom/spore-a/2": [0, 462, 802, 10, 12, 5, 16],
+        "afx/inkBloom/spore-a/3": [0, 488, 802, 10, 10, 5, 15],
+        "afx/inkBloom/spore-b/0": [0, 686, 802, 8, 8, 4, 14],
+        "afx/inkBloom/spore-b/1": [0, 502, 802, 10, 10, 5, 15],
+        "afx/inkBloom/spore-b/2": [0, 516, 802, 10, 10, 5, 15],
+        "afx/inkBloom/spore-b/3": [0, 698, 802, 10, 8, 5, 14],
+        "afx/inkDarts/mark-stain1/0": [0, 959, 775, 26, 20, 14, 28],
+        "afx/inkDarts/mark-stain2/0": [0, 539, 742, 31, 27, 15, 32],
+        "afx/inkDarts/mark-stain3/0": [0, 802, 702, 35, 32, 17, 34],
+        "afx/inkDarts/stainBurst/0": [0, 1473, 471, 104, 60, 51, 51],
+        "afx/inkDarts/stainBurst/1": [0, 1105, 471, 108, 63, 53, 50],
+        "afx/inkDarts/stainBurst/2": [0, 2, 608, 102, 46, 52, 20],
+        "afx/inkLance/fork/0": [0, 841, 702, 42, 32, 22, 17],
+        "afx/inkLance/fork/1": [0, 234, 775, 36, 22, 17, 10],
+        "afx/inkLance/tassel-awakened/0": [0, 1919, 658, 61, 36, 107, 15],
+        "afx/inkLance/tassel-awakened/1": [0, 1984, 658, 61, 36, 107, 15],
+        "afx/inkLance/tassel/0": [0, 612, 742, 49, 26, 101, 11],
+        "afx/inkLance/tassel/1": [0, 665, 742, 49, 26, 101, 11],
         "afx/inkLightning/bolt-awakened/0": [0, 2, 2, 67, 228, 35, 221],
         "afx/inkLightning/bolt-awakened/1": [0, 73, 2, 67, 228, 35, 221],
         "afx/inkLightning/bolt-awakened/2": [0, 144, 2, 67, 228, 35, 221],
@@ -926,59 +969,67 @@ export const ATLAS_MANIFEST = {
         "afx/inkLightning/pillar/1": [0, 1624, 2, 46, 156, 24, 150],
         "afx/inkLightning/pillar/2": [0, 1674, 2, 46, 156, 24, 150],
         "afx/inkLightning/pillar/3": [0, 1724, 2, 46, 156, 24, 150],
-        "afx/inkLightning/scorch/0": [0, 1969, 654, 75, 28, 36, 14],
-        "afx/inkOrbit/chip-a/0": [0, 585, 727, 12, 8, -2, 4],
-        "afx/inkOrbit/chip-a/1": [0, 493, 727, 11, 9, -7, 5],
-        "afx/inkOrbit/chip-b/0": [0, 508, 727, 14, 9, -1, 5],
-        "afx/inkOrbit/chip-b/1": [0, 601, 727, 9, 8, -9, 4],
-        "afx/inkPots/flame-a/0": [0, 228, 607, 29, 42, 15, 42],
-        "afx/inkPots/flame-a/1": [0, 1817, 547, 28, 43, 14, 43],
-        "afx/inkPots/flame-a/2": [0, 293, 607, 27, 41, 13, 41],
-        "afx/inkPots/flame-a/3": [0, 261, 607, 28, 42, 14, 42],
-        "afx/inkPots/flame-a/4": [0, 687, 607, 30, 40, 16, 40],
-        "afx/inkPots/flame-a/5": [0, 1849, 547, 31, 43, 17, 43],
-        "afx/inkPots/flame-b/0": [0, 1401, 607, 26, 38, 12, 38],
-        "afx/inkPots/flame-b/1": [0, 721, 607, 26, 40, 12, 40],
-        "afx/inkPots/flame-b/2": [0, 1431, 607, 26, 38, 12, 38],
-        "afx/inkPots/flame-b/3": [0, 965, 607, 26, 39, 12, 39],
-        "afx/inkPots/flame-b/4": [0, 1799, 607, 26, 37, 12, 37],
-        "afx/inkPots/flame-b/5": [0, 995, 607, 26, 39, 12, 39],
-        "afx/inkPots/pot-awakened/0": [0, 905, 547, 40, 49, 20, 26],
-        "afx/inkPots/pot-awakened/1": [0, 725, 547, 42, 51, 21, 26],
-        "afx/inkPots/pot-awakened/2": [0, 1328, 547, 49, 46, 24, 23],
-        "afx/inkPots/pot-awakened/3": [0, 1025, 607, 51, 39, 25, 19],
-        "afx/inkPots/pot/0": [0, 1461, 607, 30, 38, 15, 19],
-        "afx/inkPots/pot/1": [0, 751, 607, 31, 40, 16, 20],
-        "afx/inkPots/pot/2": [0, 800, 654, 38, 35, 19, 17],
-        "afx/inkPots/pot/3": [0, 1157, 654, 40, 31, 20, 15],
-        "afx/inkPots/scorch12/0": [0, 1515, 695, 20, 20, 12, 19],
-        "afx/inkPots/scorch12/1": [0, 1624, 695, 20, 19, 12, 18],
-        "afx/inkPots/scorch19/0": [0, 223, 695, 44, 25, 21, 24],
-        "afx/inkPots/scorch19/1": [0, 462, 695, 44, 24, 21, 23],
-        "afx/inkPots/scorch28/0": [0, 1201, 654, 59, 31, 29, 30],
-        "afx/inkPots/scorch28/1": [0, 1505, 654, 59, 30, 29, 29],
-        "afx/inkPots/scorch38/0": [0, 1829, 607, 95, 37, 50, 36],
-        "afx/inkPots/scorch38/1": [0, 643, 654, 95, 36, 50, 35],
-        "afx/inkPots/scorch54/0": [0, 1884, 547, 146, 43, 76, 42],
-        "afx/inkPots/scorch54/1": [0, 324, 607, 146, 41, 76, 40],
+        "afx/inkLightning/scorch/0": [0, 402, 742, 75, 28, 36, 14],
+        "afx/inkOrbit/chip-a/0": [0, 712, 802, 12, 8, -2, 4],
+        "afx/inkOrbit/chip-a/1": [0, 594, 802, 11, 9, -7, 5],
+        "afx/inkOrbit/chip-b/0": [0, 609, 802, 14, 9, -1, 5],
+        "afx/inkOrbit/chip-b/1": [0, 728, 802, 9, 8, -9, 4],
+        "afx/inkOrbit/deflect-end/0": [0, 1684, 702, 39, 30, 17, 15],
+        "afx/inkOrbit/deflect-end/1": [0, 1203, 775, 45, 19, 26, 10],
+        "afx/inkOrbit/deflect-start/0": [0, 718, 742, 51, 26, 30, 13],
+        "afx/inkOrbit/deflect-start/1": [0, 773, 742, 52, 26, 31, 13],
+        "afx/inkOrbit/deflect-travel/0": [0, 829, 742, 70, 26, 49, 13],
+        "afx/inkOrbit/deflect-travel/1": [0, 903, 742, 68, 26, 47, 13],
+        "afx/inkPots/flame-a/0": [0, 1104, 608, 29, 42, 15, 42],
+        "afx/inkPots/flame-a/1": [0, 661, 608, 28, 43, 14, 43],
+        "afx/inkPots/flame-a/2": [0, 1235, 608, 27, 41, 13, 41],
+        "afx/inkPots/flame-a/3": [0, 1137, 608, 28, 42, 14, 42],
+        "afx/inkPots/flame-a/4": [0, 1735, 608, 30, 40, 16, 40],
+        "afx/inkPots/flame-a/5": [0, 693, 608, 31, 43, 17, 43],
+        "afx/inkPots/flame-b/0": [0, 571, 658, 26, 38, 12, 38],
+        "afx/inkPots/flame-b/1": [0, 1769, 608, 26, 40, 12, 40],
+        "afx/inkPots/flame-b/2": [0, 601, 658, 26, 38, 12, 38],
+        "afx/inkPots/flame-b/3": [0, 78, 658, 26, 39, 12, 39],
+        "afx/inkPots/flame-b/4": [0, 1047, 658, 26, 37, 12, 37],
+        "afx/inkPots/flame-b/5": [0, 108, 658, 26, 39, 12, 39],
+        "afx/inkPots/pot-awakened/0": [0, 1556, 547, 40, 49, 20, 26],
+        "afx/inkPots/pot-awakened/1": [0, 1119, 547, 42, 51, 21, 26],
+        "afx/inkPots/pot-awakened/2": [0, 108, 608, 49, 46, 24, 23],
+        "afx/inkPots/pot-awakened/3": [0, 138, 658, 51, 39, 25, 19],
+        "afx/inkPots/pot/0": [0, 631, 658, 30, 38, 15, 19],
+        "afx/inkPots/pot/1": [0, 1799, 608, 31, 40, 16, 20],
+        "afx/inkPots/pot/2": [0, 208, 702, 38, 35, 19, 17],
+        "afx/inkPots/pot/3": [0, 921, 702, 40, 31, 20, 15],
+        "afx/inkPots/scorch12/0": [0, 989, 775, 20, 20, 12, 19],
+        "afx/inkPots/scorch12/1": [0, 1252, 775, 20, 19, 12, 18],
+        "afx/inkPots/scorch19/0": [0, 1055, 742, 44, 25, 21, 24],
+        "afx/inkPots/scorch19/1": [0, 1475, 742, 44, 24, 21, 23],
+        "afx/inkPots/scorch28/0": [0, 965, 702, 59, 31, 29, 30],
+        "afx/inkPots/scorch28/1": [0, 1727, 702, 59, 30, 29, 29],
+        "afx/inkPots/scorch38/0": [0, 1077, 658, 95, 37, 50, 36],
+        "afx/inkPots/scorch38/1": [0, 2, 702, 95, 36, 50, 35],
+        "afx/inkPots/scorch54/0": [0, 728, 608, 146, 43, 76, 42],
+        "afx/inkPots/scorch54/1": [0, 1266, 608, 146, 41, 76, 40],
         "afx/inkPots/shatter/0": [0, 1223, 234, 98, 104, 45, 68],
         "afx/inkPots/shatter/1": [0, 1325, 234, 109, 103, 54, 67],
         "afx/inkPots/shatter/2": [0, 1092, 234, 127, 107, 61, 65],
-        "afx/inkPots/splat/0": [0, 786, 607, 99, 40, 49, 21],
-        "afx/inkPulse/splash-a/0": [0, 1844, 695, 54, 18, 1, 11],
-        "afx/inkPulse/splash-a/1": [0, 1648, 695, 54, 19, -5, 10],
-        "afx/inkPulse/splash-a/2": [0, 1902, 695, 39, 18, -21, 10],
-        "afx/inkPulse/splash-b/0": [0, 1945, 695, 54, 18, 1, 12],
-        "afx/inkPulse/splash-b/1": [0, 1706, 695, 54, 19, -5, 13],
-        "afx/inkPulse/splash-b/2": [0, 2003, 695, 39, 18, -21, 12],
-        "afx/judgmentLine/flick-a/0": [0, 2, 727, 17, 18, 9, 11],
-        "afx/judgmentLine/flick-a/1": [0, 1764, 695, 23, 19, 12, 11],
-        "afx/judgmentLine/flick-b/0": [0, 119, 727, 19, 17, 9, 7],
-        "afx/judgmentLine/flick-b/1": [0, 614, 727, 19, 8, 12, -2],
-        "afx/judgmentLine/inkbox-awakened/0": [0, 1255, 547, 69, 47, 117, 29],
-        "afx/judgmentLine/inkbox-awakened/1": [0, 771, 547, 69, 50, 117, 29],
-        "afx/judgmentLine/inkbox/0": [0, 1080, 607, 64, 39, 113, 25],
-        "afx/judgmentLine/inkbox/1": [0, 1381, 547, 64, 46, 113, 25],
+        "afx/inkPots/splat/0": [0, 1834, 608, 99, 40, 49, 21],
+        "afx/inkPulse/bump/0": [0, 1176, 658, 52, 37, 26, 18],
+        "afx/inkPulse/bump/1": [0, 531, 702, 48, 33, 24, 17],
+        "afx/inkPulse/splash-a/0": [0, 1472, 775, 54, 18, 1, 11],
+        "afx/inkPulse/splash-a/1": [0, 1276, 775, 54, 19, -5, 10],
+        "afx/inkPulse/splash-a/2": [0, 1530, 775, 39, 18, -21, 10],
+        "afx/inkPulse/splash-b/0": [0, 1573, 775, 54, 18, 1, 12],
+        "afx/inkPulse/splash-b/1": [0, 1334, 775, 54, 19, -5, 13],
+        "afx/inkPulse/splash-b/2": [0, 1631, 775, 39, 18, -21, 12],
+        "afx/judgmentLine/flick-a/0": [0, 1674, 775, 17, 18, 9, 11],
+        "afx/judgmentLine/flick-a/1": [0, 1392, 775, 23, 19, 12, 11],
+        "afx/judgmentLine/flick-b/0": [0, 1925, 775, 19, 17, 9, 7],
+        "afx/judgmentLine/flick-b/1": [0, 741, 802, 19, 8, 12, -2],
+        "afx/judgmentLine/inkbox-awakened/0": [0, 1906, 547, 69, 47, 117, 29],
+        "afx/judgmentLine/inkbox-awakened/1": [0, 1351, 547, 69, 50, 117, 29],
+        "afx/judgmentLine/inkbox/0": [0, 193, 658, 64, 39, 113, 25],
+        "afx/judgmentLine/inkbox/1": [0, 161, 608, 64, 46, 113, 25],
         "afx/meteorBrush/comet-awakened/0": [0, 1353, 2, 33, 171, 15, 24],
         "afx/meteorBrush/comet-awakened/1": [0, 1248, 2, 31, 172, 15, 24],
         "afx/meteorBrush/comet-awakened/2": [0, 1283, 2, 31, 172, 15, 24],
@@ -988,27 +1039,35 @@ export const ATLAS_MANIFEST = {
         "afx/meteorBrush/comet/2": [0, 1423, 2, 30, 166, 14, 18],
         "afx/meteorBrush/comet/3": [0, 1457, 2, 30, 166, 14, 18],
         "afx/meteorBrush/crater/0": [0, 778, 378, 191, 76, 98, 38],
+        "afx/meteorBrush/haste/0": [0, 665, 658, 35, 38, 44, 62],
+        "afx/meteorBrush/haste/1": [0, 704, 658, 35, 38, 44, 62],
+        "afx/meteorBrush/haste/2": [0, 1937, 608, 34, 40, 43, 64],
+        "afx/meteorBrush/haste/3": [0, 1416, 608, 34, 41, 43, 65],
         "afx/meteorBrush/impact-awakened/0": [0, 385, 234, 147, 118, 81, 85],
         "afx/meteorBrush/impact-awakened/1": [0, 116, 378, 145, 89, 71, 55],
-        "afx/meteorBrush/impact-awakened/2": [0, 1361, 471, 120, 60, 59, 36],
+        "afx/meteorBrush/impact-awakened/2": [0, 1581, 471, 120, 60, 59, 36],
         "afx/meteorBrush/impact/0": [0, 536, 234, 147, 118, 81, 85],
         "afx/meteorBrush/impact/1": [0, 1566, 234, 136, 96, 62, 60],
         "afx/meteorBrush/impact/2": [0, 442, 471, 119, 68, 58, 42],
-        "afx/meteorBrush/mote-a/0": [0, 974, 727, 8, 6, 5, 8],
-        "afx/meteorBrush/mote-a/1": [0, 986, 727, 7, 6, 5, 12],
-        "afx/meteorBrush/mote-a/2": [0, 997, 727, 6, 6, 4, 15],
-        "afx/meteorBrush/mote-a/3": [0, 1018, 727, 4, 5, 3, 18],
-        "afx/meteorBrush/mote-b/0": [0, 806, 727, 7, 7, 3, 9],
-        "afx/meteorBrush/mote-b/1": [0, 1007, 727, 7, 6, 3, 12],
-        "afx/meteorBrush/mote-b/2": [0, 1026, 727, 6, 5, 2, 15],
-        "afx/meteorBrush/mote-b/3": [0, 1036, 727, 5, 5, 2, 18],
-        "afx/pinHail/caltrop-a/0": [0, 1148, 607, 72, 39, 36, 27],
-        "afx/pinHail/caltrop-b/0": [0, 889, 607, 72, 40, 36, 28],
-        "afx/pinHail/caltrop-c/0": [0, 474, 607, 72, 41, 36, 29],
-        "afx/seventhSeal/print-a/0": [0, 968, 654, 76, 34, 39, 16],
-        "afx/seventhSeal/print-b/0": [0, 271, 695, 60, 25, 28, 12],
-        "afx/seventhSeal/print-c/0": [0, 1086, 695, 45, 21, 23, 11],
-        "afx/seventhSeal/print8/0": [0, 1485, 471, 142, 60, 71, 30],
+        "afx/meteorBrush/mote-a/0": [0, 1101, 802, 8, 6, 5, 8],
+        "afx/meteorBrush/mote-a/1": [0, 1113, 802, 7, 6, 5, 12],
+        "afx/meteorBrush/mote-a/2": [0, 1124, 802, 6, 6, 4, 15],
+        "afx/meteorBrush/mote-a/3": [0, 1145, 802, 4, 5, 3, 18],
+        "afx/meteorBrush/mote-b/0": [0, 933, 802, 7, 7, 3, 9],
+        "afx/meteorBrush/mote-b/1": [0, 1134, 802, 7, 6, 3, 12],
+        "afx/meteorBrush/mote-b/2": [0, 1153, 802, 6, 5, 2, 15],
+        "afx/meteorBrush/mote-b/3": [0, 1163, 802, 5, 5, 2, 18],
+        "afx/pinHail/caltrop-a/0": [0, 261, 658, 72, 39, 36, 27],
+        "afx/pinHail/caltrop-b/0": [0, 2, 658, 72, 40, 36, 28],
+        "afx/pinHail/caltrop-c/0": [0, 1454, 608, 72, 41, 36, 29],
+        "afx/pinHail/caltrop-snap/0": [0, 337, 658, 53, 39, 28, 29],
+        "afx/pinHail/caltrop-snap/1": [0, 1530, 608, 64, 41, 32, 29],
+        "afx/sealArrows/topple/0": [0, 583, 702, 45, 33, 19, 19],
+        "afx/sealArrows/topple/1": [0, 101, 702, 45, 36, 20, 15],
+        "afx/seventhSeal/print-a/0": [0, 376, 702, 76, 34, 39, 16],
+        "afx/seventhSeal/print-b/0": [0, 1103, 742, 60, 25, 28, 12],
+        "afx/seventhSeal/print-c/0": [0, 538, 775, 45, 21, 23, 11],
+        "afx/seventhSeal/print8/0": [0, 1705, 471, 142, 60, 71, 30],
         "afx/seventhSeal/seal-awakened/0": [0, 1666, 378, 67, 74, 35, 66],
         "afx/seventhSeal/seal-awakened/1": [0, 1706, 234, 56, 96, 28, 91],
         "afx/seventhSeal/seal-awakened/2": [0, 81, 471, 50, 71, 25, 93],
@@ -1025,74 +1084,89 @@ export const ATLAS_MANIFEST = {
         "afx/silenceBell/bell/0": [0, 437, 378, 52, 86, 20, 89],
         "afx/silenceBell/bell/1": [0, 381, 378, 52, 87, 32, 89],
         "afx/silenceBell/bell/2": [0, 323, 378, 54, 88, 27, 90],
-        "afx/silenceBell/mark-silence/0": [0, 1264, 654, 33, 31, 16, 34],
-        "afx/smokeTail/puff-a/0": [0, 2, 607, 60, 43, 31, 42],
-        "afx/smokeTail/puff-a/1": [0, 66, 607, 59, 43, 29, 42],
-        "afx/smokeTail/puff-a/2": [0, 550, 607, 64, 41, 30, 41],
-        "afx/smokeTail/puff-a/3": [0, 618, 607, 65, 41, 33, 41],
-        "afx/smokeTail/puff-b/0": [0, 1495, 607, 54, 38, 26, 36],
-        "afx/smokeTail/puff-b/1": [0, 742, 654, 54, 36, 24, 36],
-        "afx/smokeTail/puff-b/2": [0, 842, 654, 58, 35, 25, 35],
-        "afx/smokeTail/puff-b/3": [0, 904, 654, 60, 35, 28, 35],
-        "afx/smokeTail/puff-c/0": [0, 1224, 607, 63, 39, 32, 38],
-        "afx/smokeTail/puff-c/1": [0, 1928, 607, 62, 37, 29, 37],
-        "afx/smokeTail/puff-c/2": [0, 2, 654, 61, 37, 31, 37],
-        "afx/smokeTail/puff-c/3": [0, 67, 654, 62, 37, 33, 37],
-        "afx/sparkThread/spark-awakened/0": [0, 1123, 654, 30, 32, 16, 16],
-        "afx/sparkThread/spark-awakened/1": [0, 143, 695, 27, 26, 16, 14],
-        "afx/sparkThread/spark/0": [0, 1568, 654, 29, 30, 15, 15],
-        "afx/sparkThread/spark/1": [0, 2, 695, 31, 28, 15, 16],
-        "afx/stormThread/gust-a/0": [0, 142, 727, 24, 17, 17, 8],
-        "afx/stormThread/gust-a/1": [0, 1791, 695, 22, 19, 14, 11],
-        "afx/stormThread/gust-b/0": [0, 174, 695, 45, 26, 25, 11],
-        "afx/stormThread/gust-b/1": [0, 1601, 654, 42, 30, 21, 15],
+        "afx/silenceBell/mark-silence/0": [0, 1028, 702, 33, 31, 16, 34],
+        "afx/smokeTail/lost/0": [0, 223, 802, 39, 15, 19, 14],
+        "afx/smokeTail/lost/1": [0, 38, 802, 40, 16, 19, 14],
+        "afx/smokeTail/lost/2": [0, 1695, 775, 39, 18, 19, 15],
+        "afx/smokeTail/lost/3": [0, 82, 802, 40, 16, 19, 14],
+        "afx/smokeTail/puff-a/0": [0, 878, 608, 60, 43, 31, 42],
+        "afx/smokeTail/puff-a/1": [0, 942, 608, 59, 43, 29, 42],
+        "afx/smokeTail/puff-a/2": [0, 1598, 608, 64, 41, 30, 41],
+        "afx/smokeTail/puff-a/3": [0, 1666, 608, 65, 41, 33, 41],
+        "afx/smokeTail/puff-b/0": [0, 743, 658, 54, 38, 26, 36],
+        "afx/smokeTail/puff-b/1": [0, 150, 702, 54, 36, 24, 36],
+        "afx/smokeTail/puff-b/2": [0, 250, 702, 58, 35, 25, 35],
+        "afx/smokeTail/puff-b/3": [0, 312, 702, 60, 35, 28, 35],
+        "afx/smokeTail/puff-c/0": [0, 394, 658, 63, 39, 32, 38],
+        "afx/smokeTail/puff-c/1": [0, 1232, 658, 62, 37, 29, 37],
+        "afx/smokeTail/puff-c/2": [0, 1298, 658, 61, 37, 31, 37],
+        "afx/smokeTail/puff-c/3": [0, 1363, 658, 62, 37, 33, 37],
+        "afx/sparkThread/spark-awakened/0": [0, 887, 702, 30, 32, 16, 16],
+        "afx/sparkThread/spark-awakened/1": [0, 975, 742, 27, 26, 16, 14],
+        "afx/sparkThread/spark/0": [0, 1790, 702, 29, 30, 15, 15],
+        "afx/sparkThread/spark/1": [0, 481, 742, 31, 28, 15, 16],
+        "afx/stormThread/gust-a/0": [0, 1948, 775, 24, 17, 17, 8],
+        "afx/stormThread/gust-a/1": [0, 1419, 775, 22, 19, 14, 11],
+        "afx/stormThread/gust-b/0": [0, 1006, 742, 45, 26, 25, 11],
+        "afx/stormThread/gust-b/1": [0, 1823, 702, 42, 30, 21, 15],
+        "afx/tailGuard/rearHit/0": [0, 1169, 608, 62, 42, 30, 27],
+        "afx/tailGuard/rearHit/1": [0, 1424, 547, 67, 50, 33, 30],
+        "afx/tailGuard/rearHit/2": [0, 229, 608, 60, 45, 31, 26],
         "afx/tarJar/crack/0": [0, 973, 378, 123, 75, 63, 41],
         "afx/tarJar/crack/1": [0, 1100, 378, 123, 75, 63, 41],
         "afx/tarJar/crack/2": [0, 1227, 378, 123, 75, 63, 41],
-        "afx/tarJar/jar-awakened/0": [0, 293, 547, 49, 53, 23, 28],
-        "afx/tarJar/jar-awakened/1": [0, 346, 547, 49, 53, 23, 28],
-        "afx/tarJar/jar-awakened/2": [0, 399, 547, 49, 53, 23, 28],
-        "afx/tarJar/jar-awakened/3": [0, 452, 547, 49, 53, 23, 28],
-        "afx/tarJar/jar/0": [0, 1584, 547, 43, 44, 18, 24],
-        "afx/tarJar/jar/1": [0, 1631, 547, 44, 44, 18, 24],
-        "afx/tarJar/jar/2": [0, 1679, 547, 43, 44, 18, 24],
-        "afx/tarJar/jar/3": [0, 1726, 547, 41, 44, 18, 24],
-        "afx/tarJar/jarBroken/0": [0, 1553, 607, 42, 38, 18, 28],
-        "afx/tarJar/pool/0": [0, 1105, 471, 182, 62, 92, 28],
-        "afx/tarJar/string-a/0": [0, 429, 727, 60, 10, 61, 3],
-        "afx/tarJar/string-a/1": [0, 637, 727, 54, 8, 55, 3],
-        "afx/tarJar/string-a/2": [0, 817, 727, 50, 7, 51, 3],
-        "afx/tarJar/string-a/3": [0, 695, 727, 53, 8, 54, 3],
-        "afx/tarJar/string-b/0": [0, 526, 727, 55, 9, 56, 6],
-        "afx/tarJar/string-b/1": [0, 752, 727, 50, 8, 51, 5],
-        "afx/tarJar/string-b/2": [0, 871, 727, 46, 7, 47, 4],
-        "afx/tarJar/string-b/3": [0, 921, 727, 49, 7, 50, 4],
+        "afx/tarJar/jar-awakened/0": [0, 687, 547, 49, 53, 23, 28],
+        "afx/tarJar/jar-awakened/1": [0, 740, 547, 49, 53, 23, 28],
+        "afx/tarJar/jar-awakened/2": [0, 793, 547, 49, 53, 23, 28],
+        "afx/tarJar/jar-awakened/3": [0, 846, 547, 49, 53, 23, 28],
+        "afx/tarJar/jar/0": [0, 428, 608, 43, 44, 18, 24],
+        "afx/tarJar/jar/1": [0, 475, 608, 44, 44, 18, 24],
+        "afx/tarJar/jar/2": [0, 523, 608, 43, 44, 18, 24],
+        "afx/tarJar/jar/3": [0, 570, 608, 41, 44, 18, 24],
+        "afx/tarJar/jarBroken/0": [0, 801, 658, 42, 38, 18, 28],
+        "afx/tarJar/pool/0": [0, 1217, 471, 182, 62, 92, 28],
+        "afx/tarJar/string-a/0": [0, 530, 802, 60, 10, 61, 3],
+        "afx/tarJar/string-a/1": [0, 764, 802, 54, 8, 55, 3],
+        "afx/tarJar/string-a/2": [0, 944, 802, 50, 7, 51, 3],
+        "afx/tarJar/string-a/3": [0, 822, 802, 53, 8, 54, 3],
+        "afx/tarJar/string-b/0": [0, 627, 802, 55, 9, 56, 6],
+        "afx/tarJar/string-b/1": [0, 879, 802, 50, 8, 51, 5],
+        "afx/tarJar/string-b/2": [0, 998, 802, 46, 7, 47, 4],
+        "afx/tarJar/string-b/3": [0, 1048, 802, 49, 7, 50, 4],
+        "afx/thornHalo/thorn12/0": [0, 1738, 775, 45, 18, 23, 10],
+        "afx/thornHalo/thorn19/0": [0, 1013, 775, 64, 20, 32, 12],
+        "afx/thornHalo/thorn28/0": [0, 1523, 742, 91, 24, 46, 14],
+        "afx/thornHalo/thorn38/0": [0, 276, 742, 122, 29, 62, 17],
+        "afx/thornHalo/thorn54/0": [0, 632, 702, 166, 33, 84, 19],
         "afx/thunderclap/clap-awakened/0": [0, 493, 378, 90, 83, 38, 83],
         "afx/thunderclap/clap-awakened/1": [0, 587, 378, 77, 78, 30, 76],
         "afx/thunderclap/clap-awakened/2": [0, 1826, 378, 75, 72, 31, 77],
         "afx/thunderclap/clap/0": [0, 1737, 378, 85, 74, 33, 79],
         "afx/thunderclap/clap/1": [0, 1905, 378, 73, 72, 26, 74],
         "afx/thunderclap/clap/2": [0, 2, 471, 75, 72, 31, 77],
-        "afx/trackingSeals/sealCorner/0": [0, 170, 727, 30, 16, 15, 8],
-        "afx/trackingSeals/sealCorner/1": [0, 204, 727, 30, 16, 15, 8],
-        "afx/trackingSeals/sealCorner/2": [0, 1539, 695, 32, 20, 16, 11],
-        "afx/trackingSeals/sealStrike/0": [0, 133, 654, 74, 37, 37, 24],
-        "afx/trackingSeals/sealStrike/1": [0, 211, 654, 74, 37, 37, 24],
-        "afx/trackingSeals/sealStrike/2": [0, 1647, 654, 58, 30, 29, 19],
+        "afx/thunderNeedles/leapHit/0": [0, 1618, 742, 26, 24, 12, 13],
+        "afx/thunderNeedles/leapHit/1": [0, 266, 802, 16, 15, 7, 8],
+        "afx/trackingSeals/sealCorner/0": [0, 126, 802, 30, 16, 15, 8],
+        "afx/trackingSeals/sealCorner/1": [0, 160, 802, 30, 16, 15, 8],
+        "afx/trackingSeals/sealCorner/2": [0, 1081, 775, 32, 20, 16, 11],
+        "afx/trackingSeals/sealStrike/0": [0, 1429, 658, 74, 37, 37, 24],
+        "afx/trackingSeals/sealStrike/1": [0, 1507, 658, 74, 37, 37, 24],
+        "afx/trackingSeals/sealStrike/2": [0, 1869, 702, 58, 30, 29, 19],
         "afx/twinBlades/spin-end/0": [0, 841, 471, 64, 64, 32, 32],
-        "afx/twinBlades/spin-end/1": [0, 1709, 654, 64, 30, 32, 15],
+        "afx/twinBlades/spin-end/1": [0, 1931, 702, 64, 30, 32, 15],
         "afx/twinBlades/spin/0": [0, 909, 471, 56, 64, 28, 32],
         "afx/twinBlades/spin/1": [0, 969, 471, 64, 64, 32, 32],
-        "afx/twinBlades/spin/2": [0, 1937, 471, 64, 56, 32, 28],
+        "afx/twinBlades/spin/2": [0, 226, 547, 64, 56, 32, 28],
         "afx/twinBlades/spin/3": [0, 1037, 471, 64, 64, 32, 32],
-        "afx/wardRing/knot-a/0": [0, 510, 695, 31, 24, 16, 12],
-        "afx/wardRing/knot-b/0": [0, 545, 695, 31, 24, 15, 12],
+        "afx/wardRing/knot-a/0": [0, 1648, 742, 31, 24, 16, 12],
+        "afx/wardRing/knot-b/0": [0, 1683, 742, 31, 24, 15, 12],
+        "afx/wardRing/mark-weak/0": [0, 574, 742, 34, 27, 17, 29],
         "afx/wideBrush/brush-awakened/0": [0, 668, 378, 106, 78, 25, 40],
         "afx/wideBrush/brush-awakened/1": [0, 1354, 378, 106, 75, 25, 37],
         "afx/wideBrush/brush-awakened/2": [0, 657, 471, 106, 66, 25, 37],
         "afx/wideBrush/brush/0": [0, 1464, 378, 97, 75, 20, 37],
         "afx/wideBrush/brush/1": [0, 1565, 378, 97, 75, 20, 37],
-        "afx/wideBrush/brush/2": [0, 2, 547, 96, 56, 19, 33]
+        "afx/wideBrush/brush/2": [0, 294, 547, 96, 56, 19, 33]
       }
     },
     "chapter-01": {
@@ -2218,6 +2292,32 @@ export const ATLAS_MANIFEST = {
     }
   },
   "animations": {
+    "afx/bossbane": {
+      "mark-crack1": {
+        "frames": 1,
+        "fps": 0
+      },
+      "mark-crack2": {
+        "frames": 1,
+        "fps": 0
+      },
+      "mark-crack3": {
+        "frames": 1,
+        "fps": 0
+      },
+      "mark-crack4": {
+        "frames": 1,
+        "fps": 0
+      },
+      "mark-crack5": {
+        "frames": 1,
+        "fps": 0
+      },
+      "crackBurst": {
+        "frames": 3,
+        "fps": 0
+      }
+    },
     "afx/brushDownpour": {
       "stroke-a": {
         "frames": 3,
@@ -2245,6 +2345,16 @@ export const ATLAS_MANIFEST = {
       },
       "mark-l": {
         "frames": 1,
+        "fps": 0
+      }
+    },
+    "afx/brushQuills": {
+      "dab": {
+        "frames": 3,
+        "fps": 0
+      },
+      "dabBurst": {
+        "frames": 3,
         "fps": 0
       }
     },
@@ -2356,6 +2466,30 @@ export const ATLAS_MANIFEST = {
       "freeze-front-28": {
         "frames": 1,
         "fps": 0
+      },
+      "frost1-12": {
+        "frames": 1,
+        "fps": 0
+      },
+      "frost1-19": {
+        "frames": 1,
+        "fps": 0
+      },
+      "frost1-28": {
+        "frames": 1,
+        "fps": 0
+      },
+      "frost2-12": {
+        "frames": 1,
+        "fps": 0
+      },
+      "frost2-19": {
+        "frames": 1,
+        "fps": 0
+      },
+      "frost2-28": {
+        "frames": 1,
+        "fps": 0
       }
     },
     "afx/frostRing": {
@@ -2396,6 +2530,24 @@ export const ATLAS_MANIFEST = {
       "grave-rise": {
         "frames": 2,
         "fps": 0
+      },
+      "bound12": {
+        "frames": 1,
+        "fps": 0
+      },
+      "bound19": {
+        "frames": 1,
+        "fps": 0
+      },
+      "bound28": {
+        "frames": 1,
+        "fps": 0
+      }
+    },
+    "afx/headsmanDarts": {
+      "mark-fear": {
+        "frames": 1,
+        "fps": 0
       }
     },
     "afx/huntersMarks": {
@@ -2404,12 +2556,48 @@ export const ATLAS_MANIFEST = {
         "fps": 4
       }
     },
+    "afx/inkBloom": {
+      "spore-a": {
+        "frames": 4,
+        "fps": 0
+      },
+      "spore-b": {
+        "frames": 4,
+        "fps": 0
+      },
+      "pollenPuff": {
+        "frames": 3,
+        "fps": 0
+      }
+    },
+    "afx/inkDarts": {
+      "mark-stain1": {
+        "frames": 1,
+        "fps": 0
+      },
+      "mark-stain2": {
+        "frames": 1,
+        "fps": 0
+      },
+      "mark-stain3": {
+        "frames": 1,
+        "fps": 0
+      },
+      "stainBurst": {
+        "frames": 3,
+        "fps": 0
+      }
+    },
     "afx/inkLance": {
       "tassel": {
         "frames": 2,
         "fps": 0
       },
       "tassel-awakened": {
+        "frames": 2,
+        "fps": 0
+      },
+      "fork": {
         "frames": 2,
         "fps": 0
       }
@@ -2446,6 +2634,18 @@ export const ATLAS_MANIFEST = {
         "fps": 0
       },
       "chip-b": {
+        "frames": 2,
+        "fps": 0
+      },
+      "deflect-start": {
+        "frames": 2,
+        "fps": 0
+      },
+      "deflect-travel": {
+        "frames": 2,
+        "fps": 12
+      },
+      "deflect-end": {
         "frames": 2,
         "fps": 0
       }
@@ -2504,6 +2704,10 @@ export const ATLAS_MANIFEST = {
       "splash-b": {
         "frames": 3,
         "fps": 0
+      },
+      "bump": {
+        "frames": 2,
+        "fps": 0
       }
     },
     "afx/judgmentLine": {
@@ -2552,6 +2756,10 @@ export const ATLAS_MANIFEST = {
       "mote-b": {
         "frames": 4,
         "fps": 0
+      },
+      "haste": {
+        "frames": 4,
+        "fps": 12
       }
     },
     "afx/pinHail": {
@@ -2565,6 +2773,16 @@ export const ATLAS_MANIFEST = {
       },
       "caltrop-c": {
         "frames": 1,
+        "fps": 0
+      },
+      "caltrop-snap": {
+        "frames": 2,
+        "fps": 0
+      }
+    },
+    "afx/sealArrows": {
+      "topple": {
+        "frames": 2,
         "fps": 0
       }
     },
@@ -2624,6 +2842,10 @@ export const ATLAS_MANIFEST = {
       "puff-c": {
         "frames": 4,
         "fps": 6
+      },
+      "lost": {
+        "frames": 4,
+        "fps": 8
       }
     },
     "afx/sparkThread": {
@@ -2643,6 +2865,12 @@ export const ATLAS_MANIFEST = {
       },
       "gust-b": {
         "frames": 2,
+        "fps": 0
+      }
+    },
+    "afx/tailGuard": {
+      "rearHit": {
+        "frames": 3,
         "fps": 0
       }
     },
@@ -2676,6 +2904,28 @@ export const ATLAS_MANIFEST = {
         "fps": 0
       }
     },
+    "afx/thornHalo": {
+      "thorn12": {
+        "frames": 1,
+        "fps": 0
+      },
+      "thorn19": {
+        "frames": 1,
+        "fps": 0
+      },
+      "thorn28": {
+        "frames": 1,
+        "fps": 0
+      },
+      "thorn38": {
+        "frames": 1,
+        "fps": 0
+      },
+      "thorn54": {
+        "frames": 1,
+        "fps": 0
+      }
+    },
     "afx/thunderclap": {
       "clap": {
         "frames": 3,
@@ -2683,6 +2933,12 @@ export const ATLAS_MANIFEST = {
       },
       "clap-awakened": {
         "frames": 3,
+        "fps": 0
+      }
+    },
+    "afx/thunderNeedles": {
+      "leapHit": {
+        "frames": 2,
         "fps": 0
       }
     },
@@ -2712,6 +2968,10 @@ export const ATLAS_MANIFEST = {
         "fps": 0
       },
       "knot-b": {
+        "frames": 1,
+        "fps": 0
+      },
+      "mark-weak": {
         "frames": 1,
         "fps": 0
       }
@@ -13182,9 +13442,9 @@ export const ATLAS_MANIFEST = {
     }
   },
   "arsenalFx": {
-    "version": "1.0-d3a-r1",
+    "version": "1.0-d3b2-r1",
     "spec": {
-      "version": "1.0-d3a-r1",
+      "version": "1.0-d3b2-r1",
       "jit": {
         "mul": 31,
         "hash": 2654435761,
@@ -15364,11 +15624,508 @@ export const ATLAS_MANIFEST = {
               "p50",
               2
             ]
-          ]
+          ],
+          "layers": {
+            "wash": "ground",
+            "band": "ground",
+            "outer": "ally",
+            "inset": "ally",
+            "corona": "ally",
+            "ribbon": "ally"
+          },
+          "reducedFlash": 0.5
         },
         "brushDownpour": {
           "stage": "surge",
           "scale": [1, 1.2, 1.4, 1.6]
+        },
+        "inkDarts": {
+          "stage": "stain",
+          "stacks": 3,
+          "r": 70,
+          "life": 0.3,
+          "burst": "stainBurst",
+          "ring": {
+            "prim": "stroke",
+            "layers": [
+              [
+                "ink",
+                3.2
+              ],
+              [
+                "p50",
+                1.2
+              ]
+            ],
+            "gaps": {
+              "n": [3, 4],
+              "deg": [9, 18]
+            },
+            "core": {
+              "layers": [
+                [
+                  "ink",
+                  3.6
+                ],
+                [
+                  "ally",
+                  1.6
+                ],
+                [
+                  "allyG",
+                  0.5
+                ]
+              ],
+              "span": [60, 100]
+            },
+            "punch": {
+              "scale": 1.8,
+              "seconds": 0.1,
+              "reducedMax": 1.5
+            },
+            "grow": {
+              "from": 0.7,
+              "seconds": 0.08
+            },
+            "fade": {
+              "at": 0.6
+            }
+          }
+        },
+        "brushQuills": {
+          "stage": "dab",
+          "delay": 0.6,
+          "r": 50,
+          "life": 0.24,
+          "dab": "dab",
+          "burst": "dabBurst",
+          "ring": {
+            "prim": "band",
+            "token": "ink",
+            "width": [2.4, 5],
+            "knots": 10,
+            "gaps": {
+              "n": [3, 3],
+              "deg": [10, 18]
+            },
+            "endTaper": 9,
+            "core": {
+              "layers": [
+                [
+                  "ink",
+                  3.6
+                ],
+                [
+                  "ally",
+                  1.6
+                ],
+                [
+                  "allyG",
+                  0.5
+                ]
+              ],
+              "span": [40, 70],
+              "at": "mid",
+              "dab": true
+            },
+            "grow": {
+              "from": 0.75,
+              "seconds": 0.06
+            },
+            "fade": {
+              "at": 0.6
+            }
+          }
+        },
+        "sealArrows": {
+          "stage": "topple",
+          "life": 0.16,
+          "event": "topple",
+          "window": 0.4
+        },
+        "thunderNeedles": {
+          "stage": "leap",
+          "range": 200,
+          "life": 0.2,
+          "hit": "leapHit",
+          "lift": 14,
+          "line": {
+            "prim": "kink",
+            "seg": 24,
+            "n": [3, 8],
+            "shift": 0.5,
+            "push": [3, 8],
+            "layers": [
+              [
+                "ink",
+                3.4
+              ],
+              [
+                "ally",
+                1.8
+              ],
+              [
+                "allyG",
+                0.6
+              ]
+            ],
+            "flicker": {
+              "fps": 12,
+              "seeds": [3, 4]
+            },
+            "grow": {
+              "frac": 0.35
+            },
+            "fade": {
+              "at": 0.6
+            }
+          }
+        },
+        "headsmanDarts": {
+          "stage": "fear",
+          "r": 160,
+          "life": 0.45,
+          "ring": {
+            "prim": "torn",
+            "token": "p50",
+            "width": 3,
+            "alpha": 0.85,
+            "edge": [
+              [
+                "ink",
+                1.2
+              ]
+            ],
+            "tear": {
+              "pitch": 6,
+              "depth": [0.4, 2.6],
+              "skip": 0.3,
+              "end": 1.6,
+              "layers": [
+                [
+                  "ink",
+                  1
+                ]
+              ]
+            },
+            "gaps": {
+              "n": [2, 2],
+              "deg": [5, 9]
+            },
+            "grow": {
+              "from": 0.4,
+              "seconds": 0.15
+            },
+            "fade": {
+              "at": 0.6
+            }
+          }
+        },
+        "inkBloom": {
+          "stage": "pollen",
+          "r": 50,
+          "tick": 0.5,
+          "life": 0.45,
+          "puff": "pollenPuff",
+          "ring": {
+            "prim": "dashed",
+            "layers": [
+              [
+                "ink",
+                1.6
+              ],
+              [
+                "ally",
+                1
+              ]
+            ],
+            "dash": [4, 5],
+            "pad": 0.6,
+            "gaps": {
+              "n": [2, 2],
+              "deg": [16, 28]
+            },
+            "grow": {
+              "from": 0.6,
+              "seconds": 0.25
+            },
+            "fade": {
+              "at": 0.6
+            }
+          }
+        },
+        "tailGuard": {
+          "stage": "rear",
+          "reach": 200,
+          "arc": 70,
+          "life": 0.2,
+          "hit": "rearHit",
+          "lift": 14
+        },
+        "bossbane": {
+          "stage": "crack",
+          "r": 90,
+          "life": 0.3,
+          "burst": "crackBurst",
+          "ring": {
+            "prim": "stroke",
+            "layers": [
+              [
+                "ink",
+                3.4
+              ],
+              [
+                "p50",
+                1.6
+              ]
+            ],
+            "gaps": {
+              "n": [2, 3],
+              "deg": [8, 16]
+            },
+            "core": {
+              "layers": [
+                [
+                  "ink",
+                  3.6
+                ],
+                [
+                  "ally",
+                  1.8
+                ],
+                [
+                  "allyG",
+                  0.6
+                ]
+              ],
+              "span": [70, 110]
+            },
+            "punch": {
+              "scale": 2,
+              "seconds": 0.1,
+              "reducedMax": 1.5
+            },
+            "grow": {
+              "from": 0.65,
+              "seconds": 0.09
+            },
+            "fade": {
+              "at": 0.6
+            }
+          },
+          "cracks": {
+            "n": [6, 8],
+            "from": 0.24,
+            "to": [0.55, 0.9],
+            "jitter": 0.35,
+            "steps": [0.32, 0.26, 0.24, 0.18],
+            "bend": [8, 22],
+            "layers": [
+              [
+                "ink",
+                3
+              ],
+              [
+                "p50",
+                1.4
+              ]
+            ],
+            "core": {
+              "n": 2,
+              "layers": [
+                [
+                  "ink",
+                  3
+                ],
+                [
+                  "ally",
+                  1.4
+                ],
+                [
+                  "allyG",
+                  0.4
+                ]
+              ]
+            },
+            "fork": {
+              "n": 1,
+              "at": 2,
+              "deg": 30,
+              "len": 0.26
+            },
+            "grow": {
+              "from": 0.4,
+              "seconds": 0.09
+            }
+          }
+        },
+        "inkPulse": {
+          "stage": "bump",
+          "life": 0.16,
+          "event": "bump",
+          "window": 0.5
+        },
+        "thunderclap": {
+          "stage": "echo",
+          "delay": 0.5,
+          "reach": 1.4,
+          "life": 0.3,
+          "ring": {
+            "prim": "jag",
+            "alpha": 0.75,
+            "layers": [
+              [
+                "ink300",
+                3.4
+              ],
+              [
+                "p300",
+                1.2
+              ]
+            ],
+            "core": {
+              "layers": [
+                [
+                  "ink300",
+                  3.4
+                ],
+                [
+                  "ally",
+                  1.6
+                ]
+              ],
+              "span": [80, 110]
+            },
+            "seg": 26,
+            "amp": [1.5, 6.5],
+            "forks": {
+              "n": 0,
+              "len": [0, 0]
+            },
+            "gaps": {
+              "n": [2, 2],
+              "deg": [10, 16]
+            },
+            "flicker": {
+              "fps": 12,
+              "seeds": [7, 8]
+            },
+            "grow": {
+              "from": 0.85,
+              "seconds": 0.08
+            },
+            "fade": {
+              "at": 0.6
+            }
+          }
+        },
+        "clusterPots": {
+          "stage": "split",
+          "delay": 0.35,
+          "offset": 60,
+          "area": 0.6,
+          "mini": "mini",
+          "burst": "burst",
+          "ring": "clusterPots"
+        },
+        "sparkThread": {
+          "stage": "rewind",
+          "hit": "spark",
+          "line": {
+            "prim": "sag",
+            "sag": -0.16,
+            "step": 8,
+            "from": "tail",
+            "layers": [
+              [
+                "ink",
+                2.6
+              ],
+              [
+                "ally",
+                1.4
+              ],
+              [
+                "allyG",
+                0.5
+              ]
+            ],
+            "grow": {
+              "frac": 0.4
+            },
+            "fade": {
+              "at": 0.65,
+              "dash": [5, 4]
+            }
+          }
+        },
+        "stormThread": {
+          "stage": "amplify",
+          "width": 0.15,
+          "amp": 0.1,
+          "big": {
+            "part": "gust-b",
+            "from": 3
+          }
+        },
+        "frostChainlet": {
+          "stage": "link",
+          "life": 2,
+          "line": {
+            "prim": "links",
+            "pitch": 20,
+            "alpha": 0.45,
+            "clear": 0
+          },
+          "share": {
+            "seconds": 0.18,
+            "alpha": 1
+          },
+          "fade": {
+            "at": 0.85
+          }
+        },
+        "inkLance": {
+          "stage": "branch",
+          "angle": 35,
+          "branch": 0.4,
+          "fork": "fork",
+          "head": 0.85,
+          "tassel": false
+        },
+        "wideBrush": {
+          "stage": "resweep",
+          "delay": 0.3,
+          "alpha": 0.65,
+          "seed": 500,
+          "head": "mirror"
+        },
+        "inkOrbit": {
+          "stage": "deflect",
+          "speed": 2,
+          "life": 1.2,
+          "hitR": 7,
+          "start": "deflect-start",
+          "travel": "deflect-travel",
+          "end": "deflect-end"
+        },
+        "meteorBrush": {
+          "stage": "haste",
+          "part": "haste",
+          "at": "feet",
+          "rim": "inside"
+        },
+        "pinHail": {
+          "stage": "snap",
+          "life": 0.15,
+          "event": "caltrop-snap"
+        },
+        "sunNeedles": {
+          "scale": {
+            "by": "radius",
+            "over": "size",
+            "max": 1.6
+          }
         }
       },
       "overlay": {
@@ -15382,6 +16139,23 @@ export const ATLAS_MANIFEST = {
             "prey": {
               "group": "huntersMarks",
               "part": "mark-prey"
+            },
+            "fear": {
+              "group": "headsmanDarts",
+              "part": "mark-fear"
+            },
+            "lost": {
+              "group": "smokeTail",
+              "part": "lost"
+            },
+            "weak": {
+              "group": "wardRing",
+              "part": "mark-weak"
+            },
+            "stain": {
+              "group": "inkDarts",
+              "part": "mark-stain",
+              "stack": [1, 3]
             }
           }
         },
@@ -15396,6 +16170,22 @@ export const ATLAS_MANIFEST = {
             "group": "inkPots",
             "part": "scorch",
             "r": [12, 19, 28, 38, 54]
+          },
+          "frost": {
+            "group": "frostNeedles",
+            "part": "frost",
+            "stack": [1, 2],
+            "r": [12, 19, 28]
+          },
+          "bound": {
+            "group": "gravePins",
+            "part": "bound",
+            "r": [12, 19, 28]
+          },
+          "thorn": {
+            "group": "thornHalo",
+            "part": "thorn",
+            "r": [12, 19, 28, 38, 54]
           }
         },
         "crow": {
@@ -15407,6 +16197,25 @@ export const ATLAS_MANIFEST = {
             "crow": [7, -5],
             "peck": [0, -1]
           }
+        },
+        "crack": {
+          "group": "bossbane",
+          "part": "mark-crack",
+          "stack": [1, 5],
+          "dy": -12,
+          "beside": 26
+        },
+        "pollen": {
+          "group": "inkBloom",
+          "parts": [
+            "spore-a",
+            "spore-b"
+          ],
+          "at": [
+            [-6, 2],
+            [5, -1]
+          ],
+          "phase": [0, 0.5]
         }
       },
       "reference": {
@@ -15641,6 +16450,57 @@ export const ATLAS_MANIFEST = {
       ]
     },
     "meta": {
+      "inkDarts": {
+        "kind": "volley",
+        "look": "needleStorm",
+        "geo": {
+          "count": [2, 0.25],
+          "size": 4
+        },
+        "main": null,
+        "stages": [
+          "stain"
+        ],
+        "done": {
+          "fx": false,
+          "lob": false,
+          "gimmick": true
+        }
+      },
+      "brushQuills": {
+        "kind": "volley",
+        "look": "fanKnives",
+        "geo": {
+          "count": [3, 0.5],
+          "size": 5
+        },
+        "main": null,
+        "stages": [
+          "dab"
+        ],
+        "done": {
+          "fx": false,
+          "lob": false,
+          "gimmick": true
+        }
+      },
+      "sealArrows": {
+        "kind": "volley",
+        "look": "needleStorm",
+        "geo": {
+          "count": [1, 0.25],
+          "size": 6
+        },
+        "main": null,
+        "stages": [
+          "topple"
+        ],
+        "done": {
+          "fx": false,
+          "lob": false,
+          "gimmick": true
+        }
+      },
       "frostNeedles": {
         "kind": "volley",
         "look": "needleStorm",
@@ -15650,7 +16510,25 @@ export const ATLAS_MANIFEST = {
         },
         "main": null,
         "stages": [
-          "freeze"
+          "freeze",
+          "frost"
+        ],
+        "done": {
+          "fx": false,
+          "lob": false,
+          "gimmick": true
+        }
+      },
+      "thunderNeedles": {
+        "kind": "volley",
+        "look": "needleStorm",
+        "geo": {
+          "count": [1, 0.5],
+          "size": 4.5
+        },
+        "main": null,
+        "stages": [
+          "leap"
         ],
         "done": {
           "fx": false,
@@ -15675,6 +16553,57 @@ export const ATLAS_MANIFEST = {
           "gimmick": true
         }
       },
+      "headsmanDarts": {
+        "kind": "volley",
+        "look": "needleStorm",
+        "geo": {
+          "count": [1, 0.5],
+          "size": 4.5
+        },
+        "main": null,
+        "stages": [
+          "fear"
+        ],
+        "done": {
+          "fx": false,
+          "lob": false,
+          "gimmick": true
+        }
+      },
+      "inkBloom": {
+        "kind": "burst",
+        "look": "needleStorm",
+        "geo": {
+          "count": [6, 1],
+          "size": 4.5
+        },
+        "main": null,
+        "stages": [
+          "pollen"
+        ],
+        "done": {
+          "fx": false,
+          "lob": false,
+          "gimmick": true
+        }
+      },
+      "thornHalo": {
+        "kind": "burst",
+        "look": "needleStorm",
+        "geo": {
+          "count": [12, 1.5],
+          "size": 4
+        },
+        "main": null,
+        "stages": [
+          "thorn"
+        ],
+        "done": {
+          "fx": false,
+          "lob": false,
+          "gimmick": true
+        }
+      },
       "pinHail": {
         "kind": "spray",
         "look": "fanKnives",
@@ -15684,7 +16613,25 @@ export const ATLAS_MANIFEST = {
         },
         "main": null,
         "stages": [
-          "caltrop"
+          "caltrop",
+          "snap"
+        ],
+        "done": {
+          "fx": false,
+          "lob": false,
+          "gimmick": true
+        }
+      },
+      "tailGuard": {
+        "kind": "rear",
+        "look": "fanKnives",
+        "geo": {
+          "count": [3, 0.5],
+          "size": 5
+        },
+        "main": null,
+        "stages": [
+          "rear"
         ],
         "done": {
           "fx": false,
@@ -15701,7 +16648,8 @@ export const ATLAS_MANIFEST = {
         },
         "main": null,
         "stages": [
-          "smoke"
+          "smoke",
+          "lost"
         ],
         "done": {
           "fx": false,
@@ -15718,7 +16666,8 @@ export const ATLAS_MANIFEST = {
         },
         "main": null,
         "stages": [
-          "grave"
+          "grave",
+          "bound"
         ],
         "done": {
           "fx": false,
@@ -15770,6 +16719,23 @@ export const ATLAS_MANIFEST = {
         "main": null,
         "stages": [
           "crow"
+        ],
+        "done": {
+          "fx": false,
+          "lob": false,
+          "gimmick": true
+        }
+      },
+      "bossbane": {
+        "kind": "seeker",
+        "look": "needleStorm",
+        "geo": {
+          "count": [1, 0.25],
+          "size": 5.5
+        },
+        "main": null,
+        "stages": [
+          "crack"
         ],
         "done": {
           "fx": false,
@@ -15857,12 +16823,13 @@ export const ATLAS_MANIFEST = {
         },
         "main": "burst",
         "stages": [
-          "burst"
+          "burst",
+          "bump"
         ],
         "done": {
           "fx": true,
           "lob": false,
-          "gimmick": false
+          "gimmick": true
         }
       },
       "frostRing": {
@@ -15889,12 +16856,13 @@ export const ATLAS_MANIFEST = {
         },
         "main": "burst",
         "stages": [
-          "burst"
+          "burst",
+          "echo"
         ],
         "done": {
           "fx": true,
           "lob": false,
-          "gimmick": false
+          "gimmick": true
         }
       },
       "silenceBell": {
@@ -15947,12 +16915,13 @@ export const ATLAS_MANIFEST = {
         "main": "land",
         "stages": [
           "land",
-          "flight"
+          "flight",
+          "split"
         ],
         "done": {
           "fx": true,
           "lob": true,
-          "gimmick": false
+          "gimmick": true
         }
       },
       "tarJar": {
@@ -15989,7 +16958,8 @@ export const ATLAS_MANIFEST = {
         "stages": [
           "land",
           "flight",
-          "mark"
+          "mark",
+          "haste"
         ],
         "done": {
           "fx": true,
@@ -16006,12 +16976,13 @@ export const ATLAS_MANIFEST = {
         },
         "main": "jump",
         "stages": [
-          "jump"
+          "jump",
+          "rewind"
         ],
         "done": {
           "fx": true,
           "lob": false,
-          "gimmick": false
+          "gimmick": true
         }
       },
       "stormThread": {
@@ -16023,12 +16994,13 @@ export const ATLAS_MANIFEST = {
         },
         "main": "jump",
         "stages": [
-          "jump"
+          "jump",
+          "amplify"
         ],
         "done": {
           "fx": true,
           "lob": false,
-          "gimmick": false
+          "gimmick": true
         }
       },
       "frostChainlet": {
@@ -16040,12 +17012,13 @@ export const ATLAS_MANIFEST = {
         },
         "main": "jump",
         "stages": [
-          "jump"
+          "jump",
+          "link"
         ],
         "done": {
           "fx": true,
           "lob": false,
-          "gimmick": false
+          "gimmick": true
         }
       },
       "inkLance": {
@@ -16058,12 +17031,13 @@ export const ATLAS_MANIFEST = {
         },
         "main": "stroke",
         "stages": [
-          "stroke"
+          "stroke",
+          "branch"
         ],
         "done": {
           "fx": true,
           "lob": false,
-          "gimmick": false
+          "gimmick": true
         }
       },
       "wideBrush": {
@@ -16076,12 +17050,13 @@ export const ATLAS_MANIFEST = {
         },
         "main": "stroke",
         "stages": [
-          "stroke"
+          "stroke",
+          "resweep"
         ],
         "done": {
           "fx": true,
           "lob": false,
-          "gimmick": false
+          "gimmick": true
         }
       },
       "crossStrokes": {
@@ -16129,12 +17104,13 @@ export const ATLAS_MANIFEST = {
         },
         "main": "sweep",
         "stages": [
-          "sweep"
+          "sweep",
+          "deflect"
         ],
         "done": {
           "fx": true,
           "lob": false,
-          "gimmick": false
+          "gimmick": true
         }
       },
       "wardRing": {
@@ -16146,12 +17122,13 @@ export const ATLAS_MANIFEST = {
         },
         "main": "sweep",
         "stages": [
-          "sweep"
+          "sweep",
+          "weak"
         ],
         "done": {
           "fx": true,
           "lob": false,
-          "gimmick": false
+          "gimmick": true
         }
       },
       "eclipseHalo": {
@@ -16174,6 +17151,117 @@ export const ATLAS_MANIFEST = {
       }
     },
     "parts": {
+      "inkDarts": {
+        "mark-stain1": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [22, 22],
+          "anchor": [11, 20],
+          "place": "over",
+          "rotate": "none",
+          "layer": "head",
+          "lod": "info",
+          "flash": false,
+          "window": "stack"
+        },
+        "mark-stain2": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [22, 22],
+          "anchor": [11, 20],
+          "place": "over",
+          "rotate": "none",
+          "layer": "head",
+          "lod": "info",
+          "flash": false,
+          "window": "stack"
+        },
+        "mark-stain3": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [22, 22],
+          "anchor": [11, 20],
+          "place": "over",
+          "rotate": "none",
+          "layer": "head",
+          "lod": "info",
+          "flash": false,
+          "window": "stack"
+        },
+        "stainBurst": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.3,
+          "still": null,
+          "box": [64, 52],
+          "anchor": [32, 30],
+          "place": "center",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "event"
+        }
+      },
+      "brushQuills": {
+        "dab": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [28, 18],
+          "anchor": [14, 9],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ground",
+          "lod": "info",
+          "flash": false,
+          "window": "pending"
+        },
+        "dabBurst": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.24,
+          "still": null,
+          "box": [52, 40],
+          "anchor": [26, 24],
+          "place": "center",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "event"
+        }
+      },
+      "sealArrows": {
+        "topple": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.16,
+          "still": null,
+          "box": [32, 28],
+          "anchor": [16, 14],
+          "place": "event",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "deco",
+          "flash": false,
+          "window": "event"
+        }
+      },
       "frostNeedles": {
         "freeze-back-12": {
           "frames": 1,
@@ -16270,6 +17358,119 @@ export const ATLAS_MANIFEST = {
           "flash": false,
           "window": "status",
           "r": 28
+        },
+        "frost1-12": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [36, 20],
+          "anchor": [18, 10],
+          "place": "feet",
+          "rotate": "none",
+          "layer": "front",
+          "lod": "info",
+          "flash": false,
+          "window": "stack",
+          "r": 12
+        },
+        "frost1-19": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [48, 24],
+          "anchor": [24, 12],
+          "place": "feet",
+          "rotate": "none",
+          "layer": "front",
+          "lod": "info",
+          "flash": false,
+          "window": "stack",
+          "r": 19
+        },
+        "frost1-28": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [64, 30],
+          "anchor": [32, 15],
+          "place": "feet",
+          "rotate": "none",
+          "layer": "front",
+          "lod": "info",
+          "flash": false,
+          "window": "stack",
+          "r": 28
+        },
+        "frost2-12": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [36, 20],
+          "anchor": [18, 10],
+          "place": "feet",
+          "rotate": "none",
+          "layer": "front",
+          "lod": "info",
+          "flash": false,
+          "window": "stack",
+          "r": 12
+        },
+        "frost2-19": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [48, 24],
+          "anchor": [24, 12],
+          "place": "feet",
+          "rotate": "none",
+          "layer": "front",
+          "lod": "info",
+          "flash": false,
+          "window": "stack",
+          "r": 19
+        },
+        "frost2-28": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [64, 30],
+          "anchor": [32, 15],
+          "place": "feet",
+          "rotate": "none",
+          "layer": "front",
+          "lod": "info",
+          "flash": false,
+          "window": "stack",
+          "r": 28
+        }
+      },
+      "thunderNeedles": {
+        "leapHit": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [24, 24],
+          "anchor": [12, 12],
+          "place": "point",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "deco",
+          "flash": false,
+          "window": "chain"
         }
       },
       "twinBlades": {
@@ -16302,6 +17503,152 @@ export const ATLAS_MANIFEST = {
           "lod": "info",
           "flash": false,
           "window": "zone-end"
+        }
+      },
+      "headsmanDarts": {
+        "mark-fear": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [22, 22],
+          "anchor": [11, 20],
+          "place": "over",
+          "rotate": "face",
+          "layer": "head",
+          "lod": "info",
+          "flash": false,
+          "window": "status"
+        }
+      },
+      "inkBloom": {
+        "spore-a": {
+          "frames": 4,
+          "drive": "cycle",
+          "fps": 0,
+          "seconds": 1,
+          "still": null,
+          "box": [10, 14],
+          "anchor": [5, 12],
+          "place": "over",
+          "rotate": "none",
+          "layer": "head",
+          "lod": "deco",
+          "flash": false,
+          "window": "status"
+        },
+        "spore-b": {
+          "frames": 4,
+          "drive": "cycle",
+          "fps": 0,
+          "seconds": 1,
+          "still": null,
+          "box": [10, 14],
+          "anchor": [5, 12],
+          "place": "over",
+          "rotate": "none",
+          "layer": "head",
+          "lod": "deco",
+          "flash": false,
+          "window": "status"
+        },
+        "pollenPuff": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.3,
+          "still": null,
+          "box": [36, 28],
+          "anchor": [18, 18],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "deco",
+          "flash": false,
+          "window": "event"
+        }
+      },
+      "thornHalo": {
+        "thorn12": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [30, 16],
+          "anchor": [15, 8],
+          "place": "feet",
+          "rotate": "none",
+          "layer": "front",
+          "lod": "info",
+          "flash": false,
+          "window": "status",
+          "r": 12
+        },
+        "thorn19": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [40, 18],
+          "anchor": [20, 9],
+          "place": "feet",
+          "rotate": "none",
+          "layer": "front",
+          "lod": "info",
+          "flash": false,
+          "window": "status",
+          "r": 19
+        },
+        "thorn28": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [56, 22],
+          "anchor": [28, 11],
+          "place": "feet",
+          "rotate": "none",
+          "layer": "front",
+          "lod": "info",
+          "flash": false,
+          "window": "status",
+          "r": 28
+        },
+        "thorn38": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [72, 26],
+          "anchor": [36, 13],
+          "place": "feet",
+          "rotate": "none",
+          "layer": "front",
+          "lod": "info",
+          "flash": false,
+          "window": "status",
+          "r": 38
+        },
+        "thorn54": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [96, 30],
+          "anchor": [48, 15],
+          "place": "feet",
+          "rotate": "none",
+          "layer": "front",
+          "lod": "info",
+          "flash": false,
+          "window": "status",
+          "r": 54
         }
       },
       "pinHail": {
@@ -16349,6 +17696,38 @@ export const ATLAS_MANIFEST = {
           "lod": "info",
           "flash": false,
           "window": "variant"
+        },
+        "caltrop-snap": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.15,
+          "still": null,
+          "box": [44, 30],
+          "anchor": [22, 19],
+          "place": "center",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "deco",
+          "flash": false,
+          "window": "event"
+        }
+      },
+      "tailGuard": {
+        "rearHit": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.2,
+          "still": null,
+          "box": [40, 32],
+          "anchor": [20, 18],
+          "place": "target",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "deco",
+          "flash": false,
+          "window": "event"
         }
       },
       "smokeTail": {
@@ -16396,6 +17775,21 @@ export const ATLAS_MANIFEST = {
           "lod": "info",
           "flash": false,
           "window": "zone"
+        },
+        "lost": {
+          "frames": 4,
+          "drive": "loop",
+          "fps": 8,
+          "seconds": null,
+          "still": 0,
+          "box": [24, 14],
+          "anchor": [12, 10],
+          "place": "over",
+          "rotate": "none",
+          "layer": "head",
+          "lod": "deco",
+          "flash": false,
+          "window": "status"
         }
       },
       "gravePins": {
@@ -16458,6 +17852,54 @@ export const ATLAS_MANIFEST = {
           "lod": "info",
           "flash": false,
           "window": "zone-start"
+        },
+        "bound12": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [34, 20],
+          "anchor": [17, 10],
+          "place": "feet",
+          "rotate": "none",
+          "layer": "front",
+          "lod": "info",
+          "flash": false,
+          "window": "status",
+          "r": 12
+        },
+        "bound19": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [46, 24],
+          "anchor": [23, 12],
+          "place": "feet",
+          "rotate": "none",
+          "layer": "front",
+          "lod": "info",
+          "flash": false,
+          "window": "status",
+          "r": 19
+        },
+        "bound28": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [62, 30],
+          "anchor": [31, 15],
+          "place": "feet",
+          "rotate": "none",
+          "layer": "front",
+          "lod": "info",
+          "flash": false,
+          "window": "status",
+          "r": 28
         }
       },
       "trackingSeals": {
@@ -16537,6 +17979,98 @@ export const ATLAS_MANIFEST = {
           "rotate": "none",
           "layer": "head",
           "lod": "deco",
+          "flash": false,
+          "window": "event"
+        }
+      },
+      "bossbane": {
+        "mark-crack1": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [26, 24],
+          "anchor": [13, 22],
+          "place": "over",
+          "rotate": "none",
+          "layer": "head",
+          "lod": "info",
+          "flash": false,
+          "window": "stack"
+        },
+        "mark-crack2": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [26, 24],
+          "anchor": [13, 22],
+          "place": "over",
+          "rotate": "none",
+          "layer": "head",
+          "lod": "info",
+          "flash": false,
+          "window": "stack"
+        },
+        "mark-crack3": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [26, 24],
+          "anchor": [13, 22],
+          "place": "over",
+          "rotate": "none",
+          "layer": "head",
+          "lod": "info",
+          "flash": false,
+          "window": "stack"
+        },
+        "mark-crack4": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [26, 24],
+          "anchor": [13, 22],
+          "place": "over",
+          "rotate": "none",
+          "layer": "head",
+          "lod": "info",
+          "flash": false,
+          "window": "stack"
+        },
+        "mark-crack5": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [26, 24],
+          "anchor": [13, 22],
+          "place": "over",
+          "rotate": "none",
+          "layer": "head",
+          "lod": "info",
+          "flash": false,
+          "window": "stack"
+        },
+        "crackBurst": {
+          "frames": 3,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.3,
+          "still": null,
+          "box": [56, 48],
+          "anchor": [28, 30],
+          "place": "center",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "info",
           "flash": false,
           "window": "event"
         }
@@ -16924,6 +18458,21 @@ export const ATLAS_MANIFEST = {
           "lod": "deco",
           "flash": false,
           "window": "mark"
+        },
+        "bump": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.16,
+          "still": null,
+          "box": [32, 32],
+          "anchor": [16, 16],
+          "place": "event",
+          "rotate": "none",
+          "layer": "ally",
+          "lod": "deco",
+          "flash": false,
+          "window": "event"
         }
       },
       "frostRing": {
@@ -17528,6 +19077,21 @@ export const ATLAS_MANIFEST = {
           "lod": "deco",
           "flash": false,
           "window": "zone"
+        },
+        "haste": {
+          "frames": 4,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": 0,
+          "box": [52, 40],
+          "anchor": [26, 36],
+          "place": "hero",
+          "rotate": "face",
+          "layer": "front",
+          "lod": "info",
+          "flash": false,
+          "window": "status"
         }
       },
       "sparkThread": {
@@ -17674,6 +19238,21 @@ export const ATLAS_MANIFEST = {
           "lod": "info",
           "flash": false,
           "window": "beam"
+        },
+        "fork": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.2,
+          "still": null,
+          "box": [28, 28],
+          "anchor": [14, 14],
+          "place": "point",
+          "rotate": "beam",
+          "layer": "ally",
+          "lod": "deco",
+          "flash": false,
+          "window": "event"
         }
       },
       "wideBrush": {
@@ -17832,6 +19411,51 @@ export const ATLAS_MANIFEST = {
           "lod": "deco",
           "flash": false,
           "window": "mark"
+        },
+        "deflect-start": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.06,
+          "still": null,
+          "box": [40, 18],
+          "anchor": [27, 9],
+          "place": "air",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "vel"
+        },
+        "deflect-travel": {
+          "frames": 2,
+          "drive": "loop",
+          "fps": 12,
+          "seconds": null,
+          "still": 0,
+          "box": [40, 18],
+          "anchor": [27, 9],
+          "place": "air",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "vel"
+        },
+        "deflect-end": {
+          "frames": 2,
+          "drive": "prog",
+          "fps": 0,
+          "seconds": 0.1,
+          "still": null,
+          "box": [40, 18],
+          "anchor": [27, 9],
+          "place": "air",
+          "rotate": "vel",
+          "layer": "ally",
+          "lod": "info",
+          "flash": false,
+          "window": "vel"
         }
       },
       "wardRing": {
@@ -17864,6 +19488,21 @@ export const ATLAS_MANIFEST = {
           "lod": "info",
           "flash": false,
           "window": "variant"
+        },
+        "mark-weak": {
+          "frames": 1,
+          "drive": "idx",
+          "fps": 0,
+          "seconds": null,
+          "still": null,
+          "box": [22, 22],
+          "anchor": [11, 20],
+          "place": "over",
+          "rotate": "none",
+          "layer": "head",
+          "lod": "info",
+          "flash": false,
+          "window": "status"
         }
       },
       "eclipseHalo": {
@@ -21678,6 +23317,633 @@ export const ATLAS_MANIFEST = {
               [-95.58, -31.83],
               [5.98, -48.37],
               [76.33, -46.57]
+            ],
+            "gaps": [
+              [32.51, 42.01],
+              [350.56, 357.92]
+            ]
+          }
+        ],
+        [
+          "inkDarts",
+          "stain",
+          {
+            "seed": 7
+          },
+          [],
+          {
+            "gaps": [
+              [8.78, 25.06],
+              [186.99, 198.45],
+              [276.21, 291.87]
+            ],
+            "core": [
+              [65.16, 162.84]
+            ]
+          }
+        ],
+        [
+          "brushQuills",
+          "dab",
+          {
+            "seed": 7
+          },
+          [],
+          {
+            "gaps": [
+              [8.68, 25.16],
+              [186.62, 198.82],
+              [276.08, 292]
+            ],
+            "knots": [
+              [0, 3.93],
+              [36, 2.54],
+              [72, 3.75],
+              [108, 3.13],
+              [144, 4.34],
+              [180, 2.95],
+              [216, 4.92],
+              [252, 3.53],
+              [288, 2.91],
+              [324, 4.12]
+            ],
+            "core": [
+              [71.76, 140.02]
+            ]
+          }
+        ],
+        [
+          "headsmanDarts",
+          "fear",
+          {
+            "seed": 7
+          },
+          [],
+          {
+            "gaps": [
+              [21.26, 29.5],
+              [286.03, 292.13]
+            ],
+            "torn": [
+              [43.77, -152.34],
+              [37.53, -151.94],
+              [32.2, -155.2],
+              [26.09, -154.82],
+              [20.44, -157.18],
+              [14.42, -156.84],
+              [8.56, -158.27],
+              [2.61, -158.48],
+              [-3.36, -158.46],
+              [-9.32, -158.23],
+              [-15.26, -157.76],
+              [-21.19, -157.08]
+            ]
+          }
+        ],
+        [
+          "inkBloom",
+          "pollen",
+          {
+            "seed": 7
+          },
+          [],
+          {
+            "gaps": [
+              [12.53, 38.23],
+              [279.44, 298.72]
+            ]
+          }
+        ],
+        [
+          "bossbane",
+          "crack",
+          {
+            "seed": 7
+          },
+          [],
+          {
+            "gaps": [
+              [18.14, 32.62],
+              [283.98, 294.18]
+            ],
+            "core": [
+              [65.16, 172.84]
+            ],
+            "cracks": [
+              [-5.34, -20.93],
+              [-5.97, -33.58],
+              [-5.32, -43.85],
+              [-5.96, -53.33],
+              [-10.09, -59.14],
+              [5.17, -20.97],
+              [5.24, -38.33],
+              [11, -51.2],
+              [10.33, -64.2],
+              [14.16, -73.17],
+              [21.43, -2.7],
+              [32.08, -8.16],
+              [41.23, -11.42],
+              [50.01, -9.59],
+              [56.22, -12.2]
+            ],
+            "fork": [
+              [-5.32, -43.85],
+              [-16.43, -55.24]
+            ],
+            "coreLines": [
+              [0, 8],
+              [4, 8]
+            ]
+          }
+        ],
+        [
+          "thunderclap",
+          "echo",
+          {
+            "radius": 136,
+            "seed": 5
+          },
+          [],
+          {
+            "gaps": [
+              [29.64, 44.88],
+              [348.22, 360.26]
+            ],
+            "core": [
+              [195.48, 275.72]
+            ],
+            "jag": [
+              [188.19, -0.35],
+              [193.56, 23.03],
+              [179.43, 52.91],
+              [180.04, 77.62],
+              [156, 101.18],
+              [147.2, 117.93],
+              [136.12, 138.95],
+              [106.9, 154.02],
+              [94.94, 171.06],
+              [58.75, 178.41],
+              [39.81, 179.67],
+              [18.95, 193.17]
+            ]
+          }
+        ],
+        [
+          "thunderNeedles",
+          "leap",
+          {
+            "points": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 180,
+                "y": -60
+              }
+            ],
+            "seed": 3
+          },
+          [],
+          {
+            "kink": [
+              [0, -14],
+              [23.03, -17.91],
+              [39.85, -33.5],
+              [70.93, -32.69],
+              [83.7, -49.31],
+              [118.37, -48.86],
+              [132.47, -61.49],
+              [162.94, -62.53],
+              [180, -74]
+            ]
+          }
+        ],
+        [
+          "sparkThread",
+          "rewind",
+          {
+            "points": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 220,
+                "y": -70
+              },
+              {
+                "x": 420,
+                "y": 20
+              },
+              {
+                "x": 640,
+                "y": -40
+              },
+              {
+                "x": 860,
+                "y": 30
+              }
+            ],
+            "seed": 1
+          },
+          [],
+          {
+            "controls": [
+              [98.8, -70.2],
+              [305.6, 7],
+              [520.4, -45.2],
+              [738.8, 30.2]
+            ],
+            "end": [
+              [21.67, -14.37]
+            ]
+          }
+        ],
+        [
+          "stormThread",
+          "amplify",
+          {
+            "points": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 220,
+                "y": -70
+              },
+              {
+                "x": 420,
+                "y": 20
+              },
+              {
+                "x": 640,
+                "y": -40
+              },
+              {
+                "x": 860,
+                "y": 30
+              }
+            ],
+            "seed": 1
+          },
+          [],
+          {
+            "scale": [
+              [1, 1],
+              [1.15, 1.1],
+              [1.3, 1.2],
+              [1.45, 1.3]
+            ],
+            "strandA": [
+              [220, -70],
+              [225.27, -67.28],
+              [230.54, -64.54],
+              [234.32, -58.5],
+              [242.13, -61.39],
+              [247.69, -59.32],
+              [251.89, -54.2],
+              [257.01, -51.13],
+              [262.21, -48.24],
+              [269.17, -49.26],
+              [275.13, -48.07],
+              [280.81, -46.23]
+            ]
+          }
+        ],
+        [
+          "frostChainlet",
+          "link",
+          {
+            "points": [
+              {
+                "x": 220,
+                "y": -70
+              },
+              {
+                "x": 420,
+                "y": 20
+              },
+              {
+                "x": 640,
+                "y": -40
+              },
+              {
+                "x": 860,
+                "y": 30
+              }
+            ],
+            "seed": 1
+          },
+          [],
+          {
+            "links": [
+              [237.93, -61.93],
+              [256.17, -53.73],
+              [274.4, -45.52],
+              [292.64, -37.31],
+              [310.88, -29.1],
+              [329.12, -20.9],
+              [347.36, -12.69],
+              [365.6, -4.48],
+              [383.83, 3.73],
+              [402.07, 11.93],
+              [433.52, 16.31],
+              [452.82, 11.05]
+            ]
+          }
+        ],
+        [
+          "inkLance",
+          "branch",
+          {
+            "length": 640,
+            "width": 12,
+            "seed": 1
+          },
+          [],
+          {
+            "tips": [
+              [849.7, -146.84],
+              [849.7, 146.84]
+            ]
+          }
+        ],
+        [
+          "wideBrush",
+          "resweep",
+          {
+            "length": 410,
+            "width": 34,
+            "seed": 1,
+            "p": 0.5
+          },
+          [],
+          {
+            "top": [
+              [26, -36.16],
+              [35.85, -32.91],
+              [45.69, -34.61],
+              [55.54, -32.46],
+              [65.38, -32.93],
+              [75.23, -36],
+              [85.08, -33.07],
+              [94.92, -36.45],
+              [104.77, -32.62],
+              [114.62, -31.69],
+              [124.46, -35.83],
+              [134.31, -33.24]
+            ],
+            "head": [
+              [26, 0]
+            ]
+          }
+        ],
+        [
+          "clusterPots",
+          "split",
+          {
+            "radius": 64,
+            "seed": 3
+          },
+          [],
+          {
+            "land": [
+              [-60, 0],
+              [60, 0]
+            ],
+            "mini": [
+              [15, -21],
+              [30, -28],
+              [45, -21]
+            ]
+          }
+        ],
+        [
+          "inkDarts",
+          "stain",
+          {
+            "seed": 12
+          },
+          [],
+          {
+            "gaps": [
+              [55.13, 67.27],
+              [121.53, 137.85],
+              [254.46, 268.62],
+              [298.71, 308.07]
+            ],
+            "core": [
+              [67.27, 85],
+              [365.76, 415.13]
+            ]
+          }
+        ],
+        [
+          "brushQuills",
+          "dab",
+          {
+            "seed": 4
+          },
+          [],
+          {
+            "gaps": [
+              [55.69, 72.95],
+              [112.44, 127.8],
+              [290.38, 301.46]
+            ],
+            "knots": [
+              [0, 4.19],
+              [36, 2.8],
+              [72, 4.78],
+              [108, 3.39],
+              [144, 2.76],
+              [180, 3.97],
+              [216, 2.58],
+              [252, 4.56],
+              [288, 3.17],
+              [324, 4.38]
+            ],
+            "core": [
+              [188.47, 229.71]
+            ]
+          }
+        ],
+        [
+          "headsmanDarts",
+          "fear",
+          {
+            "seed": 9
+          },
+          [],
+          {
+            "gaps": [
+              [10.11, 16.89],
+              [274.28, 280.12]
+            ],
+            "torn": [
+              [11.84, -158.06],
+              [5.92, -158.39],
+              [-0.02, -157.3],
+              [-5.95, -158.39],
+              [-11.77, -156.71],
+              [-17.78, -157.5],
+              [-23.53, -155.88],
+              [-29.51, -155.73],
+              [-35.32, -154.51],
+              [-41.08, -153.08],
+              [-46.17, -149.47],
+              [-52.41, -149.58]
+            ]
+          }
+        ],
+        [
+          "inkBloom",
+          "pollen",
+          {
+            "seed": 2
+          },
+          [],
+          {
+            "gaps": [
+              [94.52, 122.2],
+              [179.65, 204.47]
+            ]
+          }
+        ],
+        [
+          "bossbane",
+          "crack",
+          {
+            "seed": 3
+          },
+          [],
+          {
+            "gaps": [
+              [60.52, 76.04],
+              [117.27, 130.89],
+              [295.21, 304.55]
+            ],
+            "core": [
+              [219.24, 292.2]
+            ],
+            "cracks": [
+              [6.97, -20.44],
+              [8.32, -34.38],
+              [13.79, -44.35],
+              [14.23, -54.84],
+              [17.9, -61.81],
+              [21.37, 3.14],
+              [32.74, 0.88],
+              [42.13, 0.26],
+              [50.44, 2.82],
+              [56.91, 2.03],
+              [15.04, 15.51],
+              [21.22, 30.56],
+              [32.96, 36.66],
+              [42.97, 43.65],
+              [51.31, 47.41]
+            ],
+            "fork": [
+              [-33.84, 22.86],
+              [-38.28, 36.62]
+            ],
+            "coreLines": [
+              [2, 6],
+              [5, 6]
+            ]
+          }
+        ],
+        [
+          "thunderclap",
+          "echo",
+          {
+            "radius": 150,
+            "seed": 2
+          },
+          [],
+          {
+            "gaps": [
+              [100.44, 116.28],
+              [184.85, 199.27]
+            ],
+            "core": [
+              [231.12, 314.33]
+            ],
+            "jag": [
+              [207.79, -0.35],
+              [213.31, 22.87],
+              [199.79, 52.86],
+              [201.29, 77.41],
+              [178.47, 101.94],
+              [170.75, 119.14],
+              [161.3, 140.81],
+              [133.6, 158.22],
+              [123.48, 176.3],
+              [88.53, 187.59],
+              [69.95, 191.23],
+              [51.26, 207.46]
+            ]
+          }
+        ],
+        [
+          "thunderNeedles",
+          "leap",
+          {
+            "points": [
+              {
+                "x": 20,
+                "y": 10
+              },
+              {
+                "x": -120,
+                "y": 90
+              }
+            ],
+            "seed": 8
+          },
+          [],
+          {
+            "kink": [
+              [20, -4],
+              [-1.68, 0.82],
+              [-20.4, 25.28],
+              [-44.5, 23.99],
+              [-52.1, 44.69],
+              [-81.88, 49.81],
+              [-94.54, 68.54],
+              [-120, 76]
+            ]
+          }
+        ],
+        [
+          "wideBrush",
+          "resweep",
+          {
+            "length": 480,
+            "width": 40.8,
+            "seed": 5,
+            "p": 0.1
+          },
+          [],
+          {
+            "top": [
+              [26, -39.49],
+              [35.87, -39.97],
+              [45.74, -42.56],
+              [55.61, -39.52],
+              [65.48, -43.01],
+              [75.35, -39.66],
+              [85.22, -41.46],
+              [95.09, -39.21],
+              [104.96, -40.28],
+              [114.83, -42.84],
+              [124.7, -39.83],
+              [134.57, -43.3]
+            ],
+            "head": [
+              [227.78, 0]
             ]
           }
         ]

@@ -1,11 +1,13 @@
 // Weapon field effects painter (K10, FX-08): the kit's weapon stamps (PN.arsenalFx, baked into the `arsenal-fx` pack)
 // and its shapes (SPEC, baked into the atlas manifest as data), drawn on the canvas (API-arsenal-fx §7-§9, §14): the
 // blasts of the strike, nova, and lob weapons, their decals, the chains, the beams, the halos, the lobs in flight, and
-// the P1 awakening gimmicks (delivery 3a: the gimmick zones, the enemy overlays, the triangle seal, the unrolling
-// scroll, the eighth seal, and the total eclipse). The layout, the shapes' points, and the lob path are ports of the
-// kit's (API §8, §14.6), tested against the kit's own vectors in the manifest, so every number stays data. The P2
-// gimmicks (delivery 3b) are not drawn here yet: their marks, lines, and blasts keep the renderer's own drawing.
-import type { ArsenalLob, ArsenalPending, AwakenedMarks, AwakeningZone, BeamEffect, ChainEffect, Entity, SkillId, SkillMark, SkillState } from '../engine/worldTypes.ts';
+// the awakening gimmicks: P1 (delivery 3a: the gimmick zones, the enemy overlays, the triangle seal, the unrolling
+// scroll, the eighth seal, and the total eclipse) and P2 (delivery 3b: the head marks and feet overlays, the event rings
+// and bursts, the gimmicks' own chains, beams, and shots, the small pots, the hero's haste). The layout, the shapes'
+// points, and the lob path are ports of the kit's (API §8, §14.6, §14.11), tested against the kit's own vectors in the
+// manifest, so every number stays data.
+import AWAKENINGS from '../../content/data/awakenings.ts';
+import type { ArsenalLob, ArsenalPending, AwakenedMarks, AwakeningZone, BeamEffect, ChainEffect, Entity, Projectile, SkillId, SkillMark, SkillState } from '../engine/worldTypes.ts';
 import type { ArsenalFxManifest, ArsenalFxPart, SpriteAtlas } from './assets/spriteAtlas.ts';
 import { ARSENAL_FX_PACK, slotEnabled } from './assets/slots.ts';
 import { jit, tokenColor, type Token } from './skillVfx.ts';
@@ -21,10 +23,10 @@ type Gaps = Readonly<{ n: N2; deg: N2 }>;
 type Grow = Readonly<{ from: number; seconds: number }>;
 type Fade = Readonly<{ at: number; dash?: N2 }>;
 type Punch = Readonly<{ scale: number; seconds: number; reducedMax: number }>;
-type Core = Readonly<{ layers: Ls; span: N2; at?: string; dab?: boolean; arc?: number }>;
+type Core = Readonly<{ layers: Ls; span: N2; at?: string; dab?: boolean; arc?: number; pad?: number }>;
 /** A blast ring (API §7.3). */
 export type RingSpec = Readonly<{
-  prim: 'stroke' | 'band' | 'ripple' | 'multi' | 'jag';
+  prim: 'stroke' | 'band' | 'ripple' | 'multi' | 'jag' | 'torn' | 'dashed';
   layers: Ls; gaps?: Gaps; punch?: Punch; grow?: Grow; fade?: Fade; core?: Core;
   wash?: Readonly<{ token: string; alpha: number; union?: boolean }>; inner?: Readonly<{ at: number; layers: Ls }>;
   token: string; alpha?: number; edge?: Ls; width: N2; knots: number; endTaper?: number;
@@ -79,9 +81,21 @@ type Gimmicks = Readonly<{
   trackingSeals: Readonly<{ stage: string; delay: number; life: number; pre: Stitch; strike: Readonly<{ layers: Ls; fill: Wash; fillSeconds: number; fade: Fade }> }>;
   fallingScroll: Readonly<{ stage: string; length: number; width: number; life: number; grow: number; fade: Fade; band: Readonly<{ fill: Wash; edge: Ls; ridge: Ridge; head: Ls }> }>;
   seventhSeal: Readonly<{ stage: string; r: number; delay: number; life: number; shadow: Readonly<{ token: string; rx: N2; alpha: N2 }>; stitch: Stitch; ring: Readonly<{ layers: Ls; gaps: Gaps; wash: Wash; grow: Grow; fade: Fade }> }>;
-  eclipseHalo: Readonly<{ stage: string; wash: Wash; band: Readonly<{ token: string; alpha: number; at: number }>; outer: Ls }>;
+  eclipseHalo: Readonly<{ stage: string; wash: Wash; band: Readonly<{ token: string; alpha: number; at: number }>; outer: Ls; layers: Readonly<Record<string, string>>; reducedFlash: number }>;
 }>;
-type Mark = Readonly<{ group: string; part: string }>;
+/** An event ring (API §14.11): SPEC.ring's prims plus torn (a paper band, its inner edge torn) and dashed. */
+export type EventRing = RingSpec & Readonly<{ dash: N2; pad?: number; tear: Readonly<{ pitch: number; depth: N2; skip: number; end: number; layers: Ls }> }>;
+/** The paper crack lines of a crack burst (API §14.11). */
+export type Cracks = Readonly<{ n: N2; from: number; to: N2; jitter: number; steps: readonly number[]; bend: N2; layers: Ls; core: Readonly<{ layers: Ls }>; fork: Readonly<{ at: number; deg: number; len: number }>; grow: Grow }>;
+/** A P2 gimmick's shapes and stamps (API §14.11, SPEC.gimmick[id]); each reads the keys its stage has. */
+export type P2Spec = Readonly<{
+  stage: string; life: number; delay: number; lift: number; alpha: number; seed: number; angle: number; head: number; width: number; amp: number;
+  burst: string; dab: string; puff: string; hit: string; event: string; fork: string; mini: string; part: string; start: string; travel: string; end: string;
+  ring: EventRing; cracks: Cracks; fade: Fade; big: Readonly<{ part: string; from: number }>; share: Readonly<{ seconds: number; alpha: number }>;
+  line: LineSpec & Readonly<{ seg: number; n: N2; shift: number; push: N2; alpha: number; clear: number }>; scale: Readonly<{ max: number }>;
+}>;
+type Mark = Readonly<{ group: string; part: string; stack?: N2 }>;
+type Sized = Mark & Readonly<{ r: readonly number[] }>;
 type Flight = Readonly<{ parts: readonly string[]; awakened?: readonly string[]; by?: string; turn?: number; frame?: string; landMirror?: Readonly<{ when: string; parts: readonly string[] }> }>;
 
 /** The parts of the kit's SPEC this painter reads (API-arsenal-fx §7). */
@@ -101,18 +115,20 @@ export type ArsenalFxSpec = Readonly<{
   lob: Readonly<Record<string, Readonly<{ H: readonly [number, number, number]; shadow: Readonly<{ rx: N2; alpha: N2 }> }>>>;
   lobMini: Readonly<{ h: number; shadow: Readonly<{ rx: N2 }> }>;
   flight: Readonly<Record<string, Flight>> & Readonly<{ phase: number; shadow: Readonly<{ token: string }> }>;
-  caps: Readonly<Record<'stamps' | 'decals' | 'flights' | 'links' | 'splash' | 'feet' | 'heads' | 'crows' | 'events' | 'zoneStamps' | 'pending', readonly number[]>>;
-  // delivery 3a (API §14)
+  caps: Readonly<Record<'stamps' | 'decals' | 'flights' | 'links' | 'splash' | 'feet' | 'heads' | 'crows' | 'events' | 'zoneStamps' | 'pending' | 'spores' | 'pollenRings', readonly number[]>>;
+  // delivery 3a (API §14), 3b (§14.10, §14.11)
   rim: Readonly<{ ally: Stitch; pad: Readonly<{ layers: Ls; inside: Ls }> }>;
   zone: Readonly<{ fadeIn: number; fadeOut: number }>;
   gimmick: Gimmicks;
   overlay: Readonly<{
     head: Readonly<{ dy: number; parts: Readonly<Record<string, Mark>> }>;
-    feet: Readonly<{ freeze: Readonly<{ group: string; back: string; front: string; r: readonly number[] }>; scorch: Mark & Readonly<{ r: readonly number[] }> }>;
+    feet: Readonly<{ freeze: Readonly<{ group: string; back: string; front: string; r: readonly number[] }> }> & Readonly<Record<string, Sized>>;
     crow: Mark & Readonly<{ peck: string; sit: N2; dive: Readonly<{ crow: N2; peck: N2 }> }>;
+    crack: Mark & Readonly<{ stack: N2; dy: number; beside: number }>;
+    pollen: Readonly<{ group: string; parts: readonly string[]; at: readonly N2[]; phase: readonly number[] }>;
   }>;
-  marks: Readonly<{ crow: Readonly<{ rx: number; ry: number; period: number; lift: number; dive: number }> }>;
-  priority: Readonly<{ heads: readonly string[] }>;
+  marks: Readonly<{ crow: Readonly<{ rx: number; ry: number; period: number; lift: number; dive: number }>; spores: Readonly<{ slots: number; rise: number; drift: number }> }>;
+  priority: Readonly<{ heads: readonly string[]; feet: readonly string[] }>;
 }>;
 
 const TAU = Math.PI * 2;
@@ -417,16 +433,19 @@ export function streakList(S: ArsenalFxSpec, ls: LineSpec, x1: number, w: number
     return { x0, x1: x0 + len, y: (2 * jit(seed, 310 + j) - 1) * 0.7 * w };
   });
 }
-/** The ink lance: its tip thrusts out, then draws back fading; the leaf head's eleven points. */
-export function bladeGeo(S: ArsenalFxSpec, ls: LineSpec, L: number, age: number, life: number, aw: boolean) {
-  const u = clamp(age / life, 0, 1), hs = aw ? ls.awakened!.headScale : 1;
-  let tip = u < ls.thrust ? lerp(S.footClear + 8, L, easeOut(u / ls.thrust)) : L, a = 1;
+/**
+ * The ink lance: its tip thrusts out from `from`, then draws back fading; the leaf head's eleven points. A branch lance
+ * (API §14.11) thrusts from 4 with its head × hk, never longer than 0.8 of the reach.
+ */
+export function bladeGeo(S: ArsenalFxSpec, ls: LineSpec, L: number, age: number, life: number, aw: boolean, from = S.footClear + 8, hk = 0) {
+  const u = clamp(age / life, 0, 1), hs = (aw ? ls.awakened!.headScale : 1) * (hk || 1);
+  let tip = u < ls.thrust ? lerp(from, L, easeOut(u / ls.thrust)) : L, a = 1;
   if (u > ls.retract.at) {
     const v = (u - ls.retract.at) / (1 - ls.retract.at);
     tip = lerp(L, ls.retract.to * L, v);
     a = 1 - v;
   }
-  const hl = ls.head.len * hs, hh = ls.head.half * hs, xb = tip - hl, side: P2[] = [[xb, 1.6], [xb + hl * 0.18, hh * 0.85], [xb + hl * 0.35, hh], [xb + hl * 0.62, hh * 0.62], [xb + hl * 0.86, hh * 0.22]];
+  const hl = hk ? Math.min(ls.head.len * hs, tip * 0.8) : ls.head.len * hs, hh = ls.head.half * hs, xb = tip - hl, side: P2[] = [[xb, 1.6], [xb + hl * 0.18, hh * 0.85], [xb + hl * 0.35, hh], [xb + hl * 0.62, hh * 0.62], [xb + hl * 0.86, hh * 0.22]];
   return { tip, xb, a, head: side.map(([x, y]): P2 => [x, -y]).concat([[tip, 0]], side.reverse()) };
 }
 
@@ -439,6 +458,52 @@ export function lobPath(S: ArsenalFxSpec, id: string, x0: number, y0: number, x1
   const H = small ? S.lobMini.h : clamp(L.H[0] * Math.hypot(dx, dy), L.H[1], L.H[2]), [r0, r1] = small ? S.lobMini.shadow.rx : L.shadow.rx, rx = lerp(r0, r1, u);
   return { x: x0 + dx * u, y: y0 + dy * u, h: 4 * H * u * (1 - u), angle: Math.atan2(dy - 4 * H * (1 - 2 * u), dx), rx, ry: 0.42 * rx, alpha: lerp(L.shadow.alpha[0], L.shadow.alpha[1], u) };
 }
+
+// ---- delivery 3b2: the P2 follow-up effects' shapes (API §14.11) ----
+
+/**
+ * The torn paper band per arc a between gaps: n = max(6, round((a1 − a0)·R0 / pitch)) steps; the outer edge on R + w/2,
+ * the inner on R − w/2, every even inner vertex but the ends pushed in by lerp(depth, J(2150 + 97a + k)) unless J(2100 +
+ * 97a + k) < skip; each end torn across, the band's middle jutting `end` past it. `rest`: the inner edge and both ends.
+ */
+export function tornRing(R: number, rs: EventRing, seed: number, R0: number) {
+  const w = rs.width as unknown as number, tr = rs.tear;
+  return arcsBetween(gapList(rs.gaps, seed)).map(([a0, a1], ai) => {
+    const n = Math.max(6, Math.round(((a1 - a0) * R0) / tr.pitch)), outer: P2[] = [], inner: P2[] = [];
+    for (let k = 0; k <= n; k += 1) {
+      const th = lerp(a0, a1, k / n), j = 97 * ai + k, d = k % 2 || !k || k === n || jit(seed, 2100 + j) < tr.skip ? 0 : lerp(tr.depth[0], tr.depth[1], jit(seed, 2150 + j));
+      outer.push(polar(R + w / 2, th));
+      inner.push(polar(R - w / 2 - d, th));
+    }
+    const e0 = polar(R, a0 - tr.end / R), e1 = polar(R, a1 + tr.end / R), back = inner.reverse();
+    return { outer, fill: outer.concat([e1], back, [e0]), rest: [outer[n], e1].concat(back, [e0, outer[0]]) };
+  });
+}
+/**
+ * A crack burst's paper crack lines: n by J(1900); line k at 2π·J(1901) + (k + 0.5 + (J(1910 + k) − 0.5)·2·jitter)·2π/n
+ * from from·R, L = lerp(to, J(1930 + k))·R long in steps, each turned ± lerp(bend, J(1980 + 4k + j))° (− when J(1950 + 4k
+ * + j) < 0.5); line ⌊J(1902)·n⌋ forks at a vertex, lines ⌊J(1903)·n⌋ and the one half a turn on take the core layers.
+ */
+export function crackLines(R: number, cs: Cracks, seed: number) {
+  const J = (i: number) => jit(seed, i), n = cs.n[0] + Math.floor(J(1900) * (cs.n[1] - cs.n[0] + 1)), a0 = TAU * J(1901), fk = Math.floor(J(1902) * n), c1 = Math.floor(J(1903) * n), c2 = (c1 + Math.floor(n / 2)) % n;
+  return Array.from({ length: n }, (_, k) => {
+    const th = a0 + ((k + 0.5 + (J(1910 + k) - 0.5) * 2 * cs.jitter) * TAU) / n, r0 = cs.from * R, L = lerp(cs.to[0], cs.to[1], J(1930 + k)) * R, pts = [polar(r0, th)];
+    cs.steps.forEach((st, j) => pts.push(polar((L - r0) * st, th + (J(1950 + 4 * k + j) < 0.5 ? -1 : 1) * lerp(cs.bend[0], cs.bend[1], J(1980 + 4 * k + j)) * RAD, ...pts[j])));
+    const p = pts[cs.fork.at];
+    return { k, pts, fork: k === fk ? [p, polar(cs.fork.len * L, th + (J(1904) < 0.5 ? -1 : 1) * cs.fork.deg * RAD, ...p)] : null, core: k === c1 || k === c2 };
+  });
+}
+/** The leap's kinked bolt from A to B: n = clamp(round(|AB| / seg), n) steps, inner vertex i at (i + (J(2000 + i) − 0.5)·shift)/n, pushed lerp(push, J(2020 + i)) across, sides by turns. */
+export function kinkPts(A: P2, B: P2, sp: P2Spec['line'], js: number) {
+  const dx = B[0] - A[0], dy = B[1] - A[1], L = Math.hypot(dx, dy) || 1, n = clamp(Math.round(L / sp.seg), sp.n[0], sp.n[1]), out: P2[] = [A];
+  for (let i = 1; i < n; i += 1) {
+    const t = (i + (jit(js, 2000 + i) - 0.5) * sp.shift) / n, push = lerp(sp.push[0], sp.push[1], jit(js, 2020 + i)) * (i % 2 ? 1 : -1);
+    out.push([A[0] + dx * t - (dy / L) * push, A[1] + dy * t + (dx / L) * push]);
+  }
+  return out.concat([B]);
+}
+/** A jag ring's vertices whose angle is on the arc [a0, a1], in angle order (an open line between two gaps). */
+export const jagRun = (V: readonly P2[], [a0, a1]: P2) => V.map((p) => [a0 + ((((Math.atan2(p[1], p[0]) - a0) % TAU) + TAU) % TAU), p] as const).filter((q) => q[0] <= a1).sort((a, b) => a[0] - b[0]).map((q) => q[1]);
 
 /** A part's frame `age` into its event (kit frameFor): prog by its own seconds or the data's window (`life`); loop by the
  *  clock, half rate at reduced detail (li 1), held on its phase frame under reduced motion and at minimal detail (li 2). */
@@ -590,10 +655,11 @@ export const ridgePts = (L: number, w: number, rg: Ridge) => Array.from({ length
 });
 /** The nearest size class to an enemy radius. */
 export const sizeClass = (r: number, list: readonly number[]) => list.reduce((m, q) => (Math.abs(q - r) < Math.abs(m - r) ? q : m), list[0]);
-/** The head mark an enemy wears (API §14.5): the first of priority.heads it has (`lost` is the smoke's wander). */
-export function headMark(S: ArsenalFxSpec, m: Readonly<AwakenedMarks> | undefined, t: number) {
+/** The head mark an enemy wears (API §14.5, §14.10): the first of priority.heads it has but `skip` (`lost` is the smoke's wander). */
+export function headMark(S: ArsenalFxSpec, m: Readonly<AwakenedMarks> | undefined, t: number, skip?: string) {
   if (!m) return undefined;
   for (const key of S.priority.heads) {
+    if (key === skip) continue;
     if (key === 'stain' ? (m.stainUntil ?? 0) > t && (m.stain ?? 0) > 0 : ((m[(key === 'lost' ? 'wander' : key) as keyof AwakenedMarks] as number | undefined) ?? 0) > t) return key;
   }
   return undefined;
@@ -618,10 +684,21 @@ type Event = { m: Readonly<SkillMark>; id: string; st: string; age: number; life
 type ZonePlan = { z: Readonly<AwakeningZone>; Z: ZoneSpec; age: number; life: number; A: number; seed: number; items: readonly Item[]; d: number; keep: Item[] };
 /** A zone's standing piece (a grave, a pillar), sorted in among the bodies by its foot y; the box it covers. */
 export type Stand = Readonly<{ p: ZonePlan; it: Item; x: number; y: number; left: number; top: number; right: number; bottom: number }>;
-/** What the kit draws on an enemy this frame (API §14.5): its feet overlay, head mark, crow, and peck, and its overlay clock. */
-export type Over = { feet: string | null; head: string | null; crow: boolean; peck: number; t: number };
-/** What an enemy overlay needs of a body: where it stands, its sprite's top, and its entity. */
-export type OverlayBody = Readonly<{ x: number; y: number; top: number; enemy: Readonly<Entity> | null }>;
+/**
+ * What the kit draws on an enemy this frame (API §14.5, §14.10): its feet overlay (a priority.feet key), head mark, crow
+ * and peck, a boss's crack plate (its stack), the pollen spores, and its overlay clock.
+ */
+export type Over = { feet: string | null; head: string | null; crow: boolean; peck: number; crack: number; spores: boolean; t: number };
+/** What an enemy overlay needs of a body: where it stands, its sprite's top and facing, and its entity. */
+export type OverlayBody = Readonly<{ x: number; y: number; top: number; enemy: Readonly<Entity> | null; sprite?: Readonly<{ facing: number }> | null }>;
+/** The P2 stages a ring mark (an echo blast, or a gimmick's ring) draws as (API §14.11), beside the eighth seal. */
+const EVENT_STAGES: ReadonlySet<string> = new Set(['eighth', 'stain', 'dab', 'crack', 'echo', 'split', 'fear', 'pollen', 'rear']);
+/** The P2 stages of the gimmicks' own lines: echo beams, echo chains. */
+const LINE_STAGES: ReadonlySet<string> = new Set(['unroll', 'branch', 'resweep', 'leap', 'rewind', 'link']);
+/** A P2 gimmick's shapes (SPEC.gimmick[id]). */
+const p2 = (S: ArsenalFxSpec, id: string) => (S.gimmick as unknown as Readonly<Record<string, P2Spec>>)[id];
+/** A layer list `k` times as wide. */
+const thick = (layers: Ls, k: number) => layers.map(([t, w, a]): Layer => [t, w * k, a]);
 /** The ice under a frost chain's feet stays a moment longer than the chain (SPEC life decal). */
 type Rime = { x: number; y: number; part: string; at: number };
 
@@ -651,11 +728,21 @@ export class ArsenalFxPainter {
   private readonly zoneCache = new WeakMap<object, ZonePlan>();
   private readonly standCache = new WeakMap<Item, Stand>();
   private readonly over = new Map<object, Over>();
-  /** Over records reused frame to frame, and the enemies whose head mark is the kit's (drawn or dropped by the cap). */
+  /** Over records reused frame to frame. */
   private readonly overPool: Over[] = [];
-  private readonly firsts = new Set<object>();
   /** The nearest overlays of each kind this frame (distances and bodies), and the fires burning: reused frame to frame. */
-  private readonly near = { fd: [] as number[], fb: [] as OverlayBody[], hd: [] as number[], hb: [] as OverlayBody[], cd: [] as number[], cb: [] as OverlayBody[], fires: [] as Readonly<AwakeningZone>[] };
+  private readonly near = { fd: [] as number[], fb: [] as OverlayBody[], hd: [] as number[], hb: [] as OverlayBody[], cd: [] as number[], cb: [] as OverlayBody[], sd: [] as number[], sb: [] as OverlayBody[], fires: [] as Readonly<AwakeningZone>[] };
+  /** The awakened marks whose kit art is in (their vector signs give way), as of the last spec read. */
+  readonly kitMarks = new Set<string>();
+  private kitFor: ArsenalFxSpec | null = null;
+  /** Event stamps left this frame (SPEC caps.events: pecks and the deco moments), the deco seen (reduced keeps every other), pollen rings left. */
+  private evs = 0;
+  private deco = 0;
+  private pollen = 0;
+  /** The last weapon lance drawn this frame, whose tip the branches fork from (and whether its fork is drawn). */
+  private lance: Readonly<BeamEffect> | null = null;
+  private forked: object | null = null;
+  private readonly links2 = new Set<object>();
 
   /** Picks up the frame's settings; false while the weapon art or its data is missing (callers keep their fallback). */
   begin(atlas: SpriteAtlas | null, time: number, reduced: boolean, flashStrength: number, detail: VisualDetail, skills: Readonly<Partial<Record<SkillId, Readonly<SkillState>>>>) {
@@ -671,9 +758,22 @@ export class ArsenalFxPainter {
     this.flash = flashStrength;
     this.lod = Math.max(0, LODS.indexOf(detail));
     this.skills = skills;
-    this.left = this.spec?.caps.stamps[this.lod] ?? 0;
-    this.links = this.spec?.caps.links[this.lod] ?? 0;
-    return this.spec !== null;
+    const S = this.spec;
+    if (!S) return false;
+    this.left = S.caps.stamps[this.lod];
+    this.links = S.caps.links[this.lod];
+    this.evs = S.caps.events[this.lod];
+    this.pollen = S.caps.pollenRings[this.lod];
+    this.deco = 0;
+    this.lance = this.forked = null;
+    if (this.kitFor !== S) {
+      // The marks the kit draws: each overlay key whose weapon's gimmick is done (the smoke's `lost` is its wander).
+      const O = S.overlay, keys: [string, string][] = [...Object.entries(O.head.parts).map(([k, q]): [string, string] => [k === 'lost' ? 'wander' : k, q.group]), ['crow', O.crow.group], ['crack', O.crack.group], ['pollen', O.pollen.group], ['thorn', O.feet.thorn.group]];
+      this.kitMarks.clear();
+      for (const [key, group] of keys) if (this.done(group)) this.kitMarks.add(key);
+      this.kitFor = S;
+    }
+    return true;
   }
 
   /**
@@ -681,8 +781,13 @@ export class ArsenalFxPainter {
    * its print, the total eclipse), when the kit draws it; else undefined.
    */
   markSeconds(id: SkillId, echo = false, heavy = false) {
-    const S = this.spec, st = this.markStage(id, echo, heavy), life = S && st ? S.life[id] : undefined;
-    return life && Math.max(st === 'eighth' ? S!.gimmick.seventhSeal.life : life.mark, life.decal ?? 0);
+    const st = this.markStage(id, echo, heavy);
+    return st ? Math.max(this.stageLife(id, st), (st === this.data!.meta[id].main || st === 'eighth' ? this.spec!.life[id].decal : 0) ?? 0) : undefined;
+  }
+
+  /** How long a ring mark's stage plays: a weapon's own (and the eclipse's, and a split's plain cluster pot ring) its mark's life, a gimmick's its own. */
+  private stageLife(id: string, st: string) {
+    return st === this.data!.meta[id].main || st === 'total' || st === 'split' ? this.spec!.life[id].mark : p2(this.spec!, id).life;
   }
 
   private drawn(id: string) {
@@ -700,26 +805,32 @@ export class ArsenalFxPainter {
     return this.done(id) ? gimmickOf(this.spec!, id)?.stage ?? zoneOf(this.spec!, id)?.stage : undefined;
   }
 
-  /** The stage a ring mark draws as: the weapon's own blast or sweep, a seventh seal's echo (eighth), an eclipse's heavy sweep (total). */
+  /**
+   * The stage a ring mark draws as: the weapon's own blast or sweep, an eclipse's heavy sweep (total), or a gimmick's
+   * echo blast or ring (the eighth seal, a stain's or a crack's burst, a late dab, the clap's echo, a cluster pot's
+   * split, the fear, the pollen, the rear hit).
+   */
   private markStage(id: string, echo: boolean, heavy: boolean) {
     if (!this.spec) return undefined;
     if (!echo && !heavy) return this.drawn(id) ? this.data!.meta[id].main ?? undefined : undefined;
     const st = this.gimmick(id);
-    return (echo && st === 'eighth') || (heavy && st === 'total') ? st : undefined;
+    return (echo && EVENT_STAGES.has(st!)) || (heavy && st === 'total') ? st : undefined;
   }
 
-  /** Whether the kit draws this ring mark (a weapon's own blast or sweep, the eighth seal, the total eclipse; other echoes keep theirs). */
+  /** Whether the kit draws this ring mark (a weapon's own blast or sweep, the total eclipse, a drawn gimmick's echo or ring). */
   handles(mark: Readonly<SkillMark>) {
     return mark.kind === 'ring' && !!this.markStage(mark.skillId, !!mark.echo, mark.heavy);
   }
 
-  /** Whether the kit draws this beam or chain: a weapon's own, the tracking seals' triangle, and the unrolling scroll (other gimmicks' lines keep theirs). */
+  /**
+   * Whether the kit draws this beam or chain: a weapon's own, the tracking seals' triangle, and a drawn gimmick's own
+   * line (the unrolling scroll, a lance's branches, the brush's sweep back, a leap, a rewound thread, a link's flash).
+   */
   handlesLine(line: Readonly<BeamEffect | ChainEffect>) {
     const S = this.spec, id = line.skillId;
     if (!S || !id) return false;
-    if ('points' in line || !this.gimmick(id)) return !line.echo && !!this.data!.meta[id]?.done.fx && !!S.line[id];
     const st = this.gimmick(id);
-    return line.echo ? st === 'unroll' : st === 'triangle' || (!!this.data!.meta[id]?.done.fx && !!S.line[id]);
+    return line.echo ? LINE_STAGES.has(st!) : st === 'triangle' || (!!this.data!.meta[id]?.done.fx && !!S.line[id]);
   }
 
   private seedOf(thing: object) {
@@ -783,7 +894,7 @@ export class ArsenalFxPainter {
   }
 
   /** Strokes the current path once per layer, bottom up, `m` times as wide; dashed layers have butt ends, the ink one padded. */
-  private stroke(ctx: CanvasRenderingContext2D, layers: Ls, alpha: number, m = 1, dash?: N2, pad = 0, join: CanvasLineJoin = 'round') {
+  private stroke(ctx: CanvasRenderingContext2D, layers: Ls, alpha: number, m = 1, dash?: N2, pad = 0, join: CanvasLineJoin = 'round', off = 0) {
     const base = ctx.globalAlpha;
     ctx.lineJoin = join;
     ctx.lineCap = dash ? 'butt' : 'round';
@@ -794,7 +905,7 @@ export class ArsenalFxPainter {
       if (dash) {
         const p = i === 0 ? pad : 0;
         ctx.setLineDash([dash[0] + 2 * p, Math.max(0.05, dash[1] - 2 * p)]);
-        ctx.lineDashOffset = p;
+        ctx.lineDashOffset = p + off;
       }
       ctx.stroke();
     });
@@ -842,8 +953,9 @@ export class ArsenalFxPainter {
     for (const m of marks) {
       const st = m.kind === 'ring' ? this.markStage(m.skillId, !!m.echo, m.heavy) : undefined;
       if (!st || !circleVisible(view, m.x, m.y, m.radius + 70)) continue;
-      const id = m.skillId, age = m.maxLife - m.life, life = st === 'eighth' ? S.gimmick.seventhSeal.life : S.life[id].mark, aw = this.skills[id]?.awakened === true;
-      if (age < (decals ? (st === 'total' ? life : S.life[id].decal ?? 0) : life)) out.push({ m, id, st, age, life, aw, items: layout(S, id, st, { R: m.radius, L: 0, w: 0, aw, seed: m.seed ?? 1, age, life, reduced: this.reduced }) });
+      // A gimmick's ring is plain (no awakened line); only a weapon's own blast and the eighth seal leave a decal.
+      const id = m.skillId, age = m.maxLife - m.life, life = this.stageLife(id, st), main = st === this.data!.meta[id].main, aw = main && this.skills[id]?.awakened === true;
+      if (age < (decals ? (st === 'total' ? life : (main || st === 'eighth' ? S.life[id].decal : 0) ?? 0) : life)) out.push({ m, id, st, age, life, aw, items: layout(S, id, st, { R: m.radius, L: 0, w: 0, aw, seed: m.seed ?? 1, age, life, reduced: this.reduced }) });
     }
     return out;
   }
@@ -864,15 +976,7 @@ export class ArsenalFxPainter {
     let left = S.caps.decals[this.lod];
     const events = this.collect(marks, view, true);
     ctx.save();
-    for (const e of events) {
-      if (e.st !== 'total' || e.age >= e.life) continue;
-      const g = S.gimmick.eclipseHalo, { x, y, radius: R } = e.m, A = fadeA(S.halo[e.id].fade, e.age, e.life) * this.flash;
-      this.circle(ctx, x, y, R);
-      this.fill(ctx, g.wash.token, g.wash.alpha * A);
-      this.circle(ctx, x, y, R);
-      this.circle(ctx, x, y, R * g.band.at, -Math.PI / 2, 1.5 * Math.PI, false);
-      this.fill(ctx, g.band.token, g.band.alpha * A, 'evenodd');
-    }
+    for (const e of events) if (e.st === 'total' && e.age < e.life) this.total(ctx, e, 'ground');
     for (let i = events.length - 1; i >= 0 && left > 0; i -= 1) {
       const e = events[i];
       if (!e.items.some((it) => it.z === 'ground')) continue;
@@ -892,11 +996,12 @@ export class ArsenalFxPainter {
     if (!events.length) return;
     ctx.save();
     let splashes = S.caps.splash[this.lod];
-    const main = (e: Event) => e.st !== 'eighth' && e.st !== 'total';
+    const main = (e: Event) => e.st === this.data!.meta[e.id].main;
     for (const e of events) if (main(e) && S.splash[e.id] && splashes > 0 && this.splash(ctx, e)) splashes -= 1;
     events.forEach((e, i) => {
       if (e.st === 'eighth') return this.eighth(ctx, e);
       if (e.st === 'total') return this.total(ctx, e);
+      if (!main(e)) return this.event(ctx, e);
       const rs = S.ring[e.id];
       if (rs?.wash?.union && events.findIndex((q) => main(q) && q.id === e.id && q.m.life === e.m.life) === i) {
         // One cast's washes are one path filled once (nonzero), so overlapping seals do not stack their paper.
@@ -924,13 +1029,72 @@ export class ArsenalFxPainter {
     }
   }
 
-  /** The total eclipse over the bodies (API §14.4, review 5 ②): the heavy outer rim and the awakened line; its disc and band lie on the ground. */
-  private total(ctx: CanvasRenderingContext2D, e: Event) {
-    const S = this.spec!, { x, y, radius: R } = e.m, A = fadeA(S.halo[e.id].fade, e.age, e.life);
-    this.circle(ctx, x, y, R);
-    this.stroke(ctx, S.gimmick.eclipseHalo.outer, A);
-    this.circle(ctx, x, y, R - S.awakened.inset);
-    this.stroke(ctx, S.awakened.layers, A);
+  /**
+   * The total eclipse (API §14.4, §14.10 decision ②), its parts on the layer SPEC eclipseHalo.layers puts them: the disc
+   * and the band (on the ground, × reducedFlash under reduced flash), the heavy outer rim and the awakened line (over the bodies).
+   */
+  private total(ctx: CanvasRenderingContext2D, e: Event, layer = 'ally') {
+    const S = this.spec!, g = S.gimmick.eclipseHalo, on = g.layers, { x, y, radius: R } = e.m, A = fadeA(S.halo[e.id].fade, e.age, e.life), D = A * (this.flash < 1 ? g.reducedFlash : 1);
+    if (on.wash === layer) {
+      this.circle(ctx, x, y, R);
+      this.fill(ctx, g.wash.token, g.wash.alpha * D);
+    }
+    if (on.band === layer) {
+      this.circle(ctx, x, y, R);
+      this.circle(ctx, x, y, R * g.band.at, -Math.PI / 2, 1.5 * Math.PI, false);
+      this.fill(ctx, g.band.token, g.band.alpha * D, 'evenodd');
+    }
+    if (on.outer === layer) {
+      this.circle(ctx, x, y, R);
+      this.stroke(ctx, g.outer, A);
+    }
+    if (on.inset === layer) {
+      this.circle(ctx, x, y, R - S.awakened.inset);
+      this.stroke(ctx, S.awakened.layers, A);
+    }
+  }
+
+  /**
+   * A P2 gimmick's echo blast or ring (API §14.11), on R = the event's radius: a stain's or a crack's burst (the crack's
+   * paper lines first), a late dab's burst, the fear's torn band, the pollen's dashes and puff (pollenRings a screen), the
+   * clap's echo; a cluster pot's split bursts as a plain cluster pot ring at its own radius; the rear hit is a stamp.
+   */
+  private event(ctx: CanvasRenderingContext2D, e: Event) {
+    const S = this.spec!, g = p2(S, e.id), { x, y } = e.m, { age, st } = e;
+    if (st === 'rear') return this.stamp(ctx, e.id, g.hit, -1, age, x, y - g.lift);
+    if (st === 'pollen' && this.pollen-- <= 0) return;
+    if (st === 'crack') this.cracks(ctx, g, e);
+    this.ring(ctx, e, st === 'split' ? S.ring[e.id] : g.ring);
+    const burst = st === 'pollen' ? g.puff : g.burst;
+    if (burst) this.stamp(ctx, e.id, burst, -1, age, x, y);
+  }
+
+  /** The crack burst's paper lines growing out (grow; whole under reduced motion), the fork once three quarters out, at the ring's alpha. */
+  private cracks(ctx: CanvasRenderingContext2D, g: P2Spec, e: Event) {
+    const cs = g.cracks, rs = g.ring, A = fadeA(rs.fade, e.age, e.life, rs.grow, this.reduced), k = this.reduced ? 1 : lerp(cs.grow.from, 1, easeOut(clamp(e.age / cs.grow.seconds, 0, 1)));
+    if (A <= 0.01) return;
+    ctx.miterLimit = 4;
+    for (const q of crackLines(e.m.radius, cs, e.m.seed ?? 1)) {
+      this.poly(ctx, k < 1 ? cutAlong(q.pts, k) : q.pts, false, e.m.x, e.m.y);
+      this.stroke(ctx, q.core ? cs.core.layers : cs.layers, A, 1, undefined, 0, 'miter');
+      if (q.fork && k >= 0.75) {
+        this.poly(ctx, q.fork, false, e.m.x, e.m.y);
+        this.stroke(ctx, cs.layers, A, 1, undefined, 0, 'miter');
+      }
+    }
+  }
+
+  /**
+   * An event stamp at (x, y), `age` into its event: a prog part by its own seconds (gone after them) unless `frame` is
+   * given (≥ 0). Decoration (deco parts) is dropped at minimal detail, every other one at reduced, and past SPEC
+   * caps.events a screen (a chain's stamps: past the frame's stamps); the bursts are the events' centre objects and
+   * always drawn.
+   */
+  private stamp(ctx: CanvasRenderingContext2D, group: string, part: string, frame: number, age: number, x: number, y: number, angle = 0, flip = false, chain = false) {
+    const P = this.part(group, part);
+    if (!P || (frame < 0 && P.seconds && age >= P.seconds)) return;
+    if (P.lod === 'deco' && (this.lod === 2 || (this.lod === 1 && this.deco++ % 2) || (chain ? this.left <= 0 : this.evs-- <= 0))) return;
+    this.put(ctx, group, part, frame >= 0 ? frame : clamp(Math.floor((age / P.seconds!) * P.frames), 0, P.frames - 1), x, y, angle, flip);
   }
 
   /** A blast's ink spikes growing with R (API §7.3a): one path, filled once; drops once grown, at full detail only. */
@@ -955,25 +1119,51 @@ export class ArsenalFxPainter {
     return true;
   }
 
-  /** A strike's, nova's, or lob's ring at its event (kit drawRing): stroke, band, ripple, multi, or jag, then the awakened line. */
-  private ring(ctx: CanvasRenderingContext2D, e: Event, rs: RingSpec) {
-    const S = this.spec!, { x, y, radius: R0 } = e.m, seed = e.m.seed ?? 1, { age, life, aw } = e, red = this.reduced;
-    const R = grownR(R0, rs.grow, age, red), A = fadeA(rs.fade, age, life, rs.grow, red), pm = punchM(rs.punch, age, red);
+  /**
+   * A strike's, nova's, or lob's ring at its event (kit drawRing): stroke, band, ripple, multi, or jag, then the awakened
+   * line; or a gimmick's event ring (kit eventRing, API §14.11: gaps, cyan only on the core, × its alpha): stroke, band,
+   * torn, dashed, or jag (the vertices on each arc between gaps, an open line each).
+   */
+  private ring(ctx: CanvasRenderingContext2D, e: Event, ring: RingSpec | EventRing) {
+    const S = this.spec!, rs = ring as EventRing, { x, y, radius: R0 } = e.m, seed = e.m.seed ?? 1, { age, life, aw } = e, red = this.reduced;
+    const R = grownR(R0, rs.grow, age, red), A = fadeA(rs.fade, age, life, rs.grow, red), pm = punchM(rs.punch, age, red), Ae = A * (rs.alpha ?? 1);
     if (A <= 0.01) return;
     const thick = (layers: Ls) => layers.map(([t, w, a]): Layer => [t, w * pm, a]);
     const arc = (r: number, [a0, a1]: P2, layers: Ls, alpha = A) => {
       this.circle(ctx, x, y, r, a0, a1);
       this.stroke(ctx, layers, alpha);
     };
+    const arcs = arcsBetween(gapList(rs.gaps, seed)), core = rs.core ? clipToArcs(coreArc(S, rs.core, seed, aw), arcs) : [];
     if (rs.prim === 'stroke') {
       if (rs.wash && !rs.wash.union) {
         this.circle(ctx, x, y, R);
         this.fill(ctx, rs.wash.token, rs.wash.alpha * A);
       }
       if (rs.inner) arc(R * rs.inner.at, [0, TAU], thick(rs.inner.layers));
-      const arcs = arcsBetween(gapList(rs.gaps, seed));
       for (const a of arcs) arc(R, a, thick(rs.layers));
-      if (rs.core) for (const a of clipToArcs(coreArc(S, rs.core, seed, aw), arcs)) arc(R, a, thick(rs.core.layers));
+      for (const a of core) arc(R, a, thick(rs.core!.layers));
+    } else if (rs.prim === 'torn') {
+      for (const q of tornRing(R, rs, seed, R0)) {
+        this.poly(ctx, q.fill, true, x, y);
+        this.fill(ctx, rs.token, Ae);
+        this.poly(ctx, q.outer, false, x, y);
+        this.stroke(ctx, rs.edge!, Ae);
+        this.poly(ctx, q.rest, false, x, y);
+        this.stroke(ctx, rs.tear.layers, Ae);
+      }
+    } else if (rs.prim === 'dashed') {
+      // Each arc between gaps starts its dashes afresh; the layers are one same-phase sandwich, the ink dash `pad` longer
+      // at both ends; an older data's core lays its cyan dashes over the ink ones on the core alone.
+      const per = rs.dash[0] + rs.dash[1], p = rs.core?.pad ?? 0;
+      for (const [a0, a1] of arcs) {
+        this.circle(ctx, x, y, R, a0, a1);
+        this.stroke(ctx, rs.layers, Ae, 1, rs.dash, rs.pad);
+        for (const [c0, c1] of core) {
+          if (c0 < a0 - 1e-6 || c1 > a1 + 1e-6) continue;
+          this.circle(ctx, x, y, R, c0, c1);
+          this.stroke(ctx, rs.core!.layers.slice(1), Ae, 1, [rs.dash[0] - 2 * p, rs.dash[1] + 2 * p], 0, 'round', (((((c0 - a0) * R - p) % per) + per) % per));
+        }
+      }
     } else if (rs.prim === 'band') {
       const B = bandGeo(rs, R, seed, R0, (aw && rs.awakened?.widthScale) || 1, (aw && rs.awakened?.fringeSides) || undefined);
       if (aw && rs.awakened?.inner) arc(R * rs.awakened.inner.at, [0, TAU], rs.awakened.inner.layers);
@@ -1005,6 +1195,17 @@ export class ArsenalFxPainter {
       // Built once at the full radius and scaled while it grows; it flickers between two seeds (the first under reduced motion).
       const g = jagGeo(rs, R0, rs.flicker.seeds[red ? 0 : Math.floor(this.time * rs.flicker.fps) % 2]), k = R / R0, at = (p: readonly P2[], close = false) => this.poly(ctx, p.map(([px, py]): P2 => [x + px * k, y + py * k]), close);
       ctx.miterLimit = 6;
+      if (rs.gaps) {
+        for (const [ivs, layers] of [[arcs, rs.layers], [core, rs.core?.layers]] as const) {
+          for (const iv of ivs) {
+            const run = jagRun(g.V, iv);
+            if (run.length < 2) continue;
+            at(run);
+            this.stroke(ctx, layers!, Ae, 1, undefined, 0, 'miter');
+          }
+        }
+        return;
+      }
       at(g.V, true);
       if (rs.fade?.dash && age / life > rs.fade.at) this.stroke(ctx, [['ink', rs.layers[0][1] * 0.6]], A, 1, rs.fade.dash, 0, 'miter');
       else {
@@ -1094,9 +1295,8 @@ export class ArsenalFxPainter {
     }
   }
 
-  /** The hit capsule from footClear to L, round at its far end (API §8.3 capsule). */
-  private capsule(ctx: CanvasRenderingContext2D, c: LineSpec['capsule'], L: number, w: number, a: number) {
-    const x0 = this.spec!.footClear;
+  /** The hit capsule from x0 (footClear) to L, round at its far end (API §8.3 capsule). */
+  private capsule(ctx: CanvasRenderingContext2D, c: LineSpec['capsule'], L: number, w: number, a: number, x0 = this.spec!.footClear) {
     if (L <= x0 + 2) return;
     ctx.beginPath();
     ctx.moveTo(x0, -w);
@@ -1113,34 +1313,21 @@ export class ArsenalFxPainter {
    * seals' edges are drawn as their triangle (drawSeals); an echo beam is the falling scroll unrolling.
    */
   drawBeam(ctx: CanvasRenderingContext2D, beam: Readonly<BeamEffect>) {
-    if (beam.echo) return this.unroll(ctx, beam);
-    if (!this.spec!.line[beam.skillId!]) return;
-    const S = this.spec!, id = beam.skillId!, ls = S.line[id], seed = this.seedOf(beam), aw = this.skills[id]?.awakened === true, x0 = S.footClear;
+    const S = this.spec!, id = beam.skillId!, ls = S.line[id];
+    if (beam.echo) {
+      const st = this.gimmick(id);
+      return st === 'unroll' ? this.unroll(ctx, beam) : st === 'branch' ? this.branch(ctx, beam) : this.resweep(ctx, beam);
+    }
+    if (!ls) return;
+    const seed = this.seedOf(beam), aw = this.skills[id]?.awakened === true, x0 = S.footClear;
     const L = Math.hypot(beam.x2 - beam.x1, beam.y2 - beam.y1), w = beam.width, life = beam.maxLife, age = life - beam.life, A = fadeA(ls.fade, age, life);
     ctx.save();
     ctx.translate(beam.x1, beam.y1);
     ctx.rotate(Math.atan2(beam.y2 - beam.y1, beam.x2 - beam.x1));
-    const line = (x1: number, y1: number, x2: number, y2: number, layers: Ls, a = A, q?: number) => {
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      if (q === undefined) ctx.lineTo(x2, y2);
-      else ctx.quadraticCurveTo((x1 + x2) / 2, q, x2, y2);
-      this.stroke(ctx, layers, a);
-    };
+    const line = (x1: number, y1: number, x2: number, y2: number, layers: Ls, a = A, q?: number) => this.segment(ctx, x1, y1, x2, y2, layers, a, q);
     if (ls.prim === 'blade') {
-      const g = bladeGeo(S, ls, L, age, life, aw);
-      this.capsule(ctx, ls.capsule, L, w, g.a);
-      if (g.xb > x0 + 1) {
-        if (aw) line(x0, ls.awakened!.shadow.offset, g.xb, ls.awakened!.shadow.offset, ls.awakened!.shadow.layers, g.a);
-        const [w0, w1] = ls.shaft.width;
-        this.poly(ctx, [[x0, -w0 / 2], [g.xb + 1, -w1 / 2], [g.xb + 1, w1 / 2], [x0, w0 / 2]], true);
-        this.fill(ctx, ls.shaft.token, g.a);
-        line(x0 + 2, -0.9, g.xb - 2, -0.7, [ls.shaft.grain], g.a);
-      }
-      this.smooth(ctx, g.head, true);
-      this.fill(ctx, ls.head.fill, g.a);
-      this.stroke(ctx, [ls.head.edge], g.a);
-      line(g.xb + 3, -0.3, g.tip - 5, -0.2, [['ink300', 0.8]], g.a);
+      this.lance = beam;
+      this.blade(ctx, ls, bladeGeo(S, ls, L, age, life, aw), L, w, x0, aw);
     } else if (ls.prim === 'brushBand') {
       if (ls.capsule) this.capsule(ctx, ls.capsule, L, w, A);
       const x1 = bandHead(S, ls, L, age, life), hw = (x: number) => (ls.taper ? w * taperRatio(ls.taper, (x - x0) / (L - x0)) : w);
@@ -1170,6 +1357,83 @@ export class ArsenalFxPainter {
       line(x0, 0, L, 0, ls.layers.map(([t, wd]): Layer => [t, wd * (aw ? ls.awakened!.widthScale : 1) * punchM(ls.punch, age, this.reduced)]));
     }
     this.place(ctx, id, layout(S, id, 'stroke', { R: 0, L, w, aw, seed, age, life, reduced: this.reduced }), 'ally', 0, 0, age, life, seed);
+    ctx.restore();
+  }
+
+  /** A straight (with q: bowed) stroke in the current frame. */
+  private segment(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, layers: Ls, a: number, q?: number) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    if (q === undefined) ctx.lineTo(x2, y2);
+    else ctx.quadraticCurveTo((x1 + x2) / 2, q, x2, y2);
+    this.stroke(ctx, layers, a);
+  }
+
+  /** A lance in its beam's frame from x0 (API §8.3 blade): its hit capsule, its shaft (and its awakened shadow), and its leaf head. */
+  private blade(ctx: CanvasRenderingContext2D, ls: LineSpec, g: ReturnType<typeof bladeGeo>, L: number, w: number, x0: number, shadow: boolean) {
+    this.capsule(ctx, ls.capsule, L, w, g.a, x0);
+    if (g.xb > x0 + 1) {
+      if (shadow) this.segment(ctx, x0, ls.awakened!.shadow.offset, g.xb, ls.awakened!.shadow.offset, ls.awakened!.shadow.layers, g.a);
+      const [w0, w1] = ls.shaft.width;
+      this.poly(ctx, [[x0, -w0 / 2], [g.xb + 1, -w1 / 2], [g.xb + 1, w1 / 2], [x0, w0 / 2]], true);
+      this.fill(ctx, ls.shaft.token, g.a);
+      this.segment(ctx, x0 + 2, -0.9, g.xb - 2, -0.7, [ls.shaft.grain], g.a);
+    }
+    this.smooth(ctx, g.head, true);
+    this.fill(ctx, ls.head.fill, g.a);
+    this.stroke(ctx, [ls.head.edge], g.a);
+    this.segment(ctx, g.xb + 3, -0.3, g.tip - 5, -0.2, [['ink300', 0.8]], g.a);
+  }
+
+  /**
+   * A lance's branch (API §14.11) in its beam's frame from the lance's tip: once the lance has thrust (thrust of its
+   * life), the lance's blade without its tassel thrusts and draws back over what is left of the beam's life, its head ×
+   * head, its capsule from 0; the fork at the lance's tip (deco) once for the pair, turned with the lance.
+   */
+  private branch(ctx: CanvasRenderingContext2D, beam: Readonly<BeamEffect>) {
+    const S = this.spec!, id = beam.skillId!, g = p2(S, id), ls = S.line[id], life = beam.maxLife, delay = ls.thrust * life, v = life - beam.life - delay, lance = this.lance;
+    if (v < 0) return;
+    ctx.save();
+    ctx.translate(beam.x1, beam.y1);
+    ctx.rotate(Math.atan2(beam.y2 - beam.y1, beam.x2 - beam.x1));
+    const L = Math.hypot(beam.x2 - beam.x1, beam.y2 - beam.y1), b = bladeGeo(S, ls, L, v, life - delay, this.skills[id]?.awakened === true, 4, g.head);
+    if (b.a > 0.01) this.blade(ctx, ls, b, L, beam.width, 0, false);
+    ctx.restore();
+    if (lance && this.forked !== lance && Math.hypot(lance.x2 - beam.x1, lance.y2 - beam.y1) < 1) {
+      this.forked = lance;
+      this.stamp(ctx, id, g.fork, -1, v, beam.x1, beam.y1, Math.atan2(lance.y2 - lance.y1, lance.x2 - lance.x1));
+    }
+  }
+
+  /**
+   * The brush sweeping back (API §14.11): the same ragged band at alpha × alpha, its head running back from the far end
+   * to the hero's clear over grow (edges and streaks by the beam's seed + seed), the brush mirrored on its head.
+   */
+  private resweep(ctx: CanvasRenderingContext2D, beam: Readonly<BeamEffect>) {
+    const S = this.spec!, id = beam.skillId!, g = p2(S, id), ls = S.line[id], st = ls.streaks!, L = Math.hypot(beam.x2 - beam.x1, beam.y2 - beam.y1), w = beam.width, life = beam.maxLife, age = life - beam.life;
+    const seed = this.seedOf(beam) + g.seed, A = fadeA(ls.fade, age, life) * g.alpha, x1 = L - (L - S.footClear) * easeOut(clamp(age / (ls.grow.frac * life), 0, 1)), span = L - x1;
+    ctx.save();
+    ctx.translate(beam.x1, beam.y1);
+    ctx.rotate(Math.atan2(beam.y2 - beam.y1, beam.x2 - beam.x1));
+    if (span > 2 && A > 0.01) {
+      const top = raggedEdge(x1, L, () => w, ls.edge.ragged, seed, 100, -1), bottom = raggedEdge(x1, L, () => w, ls.edge.ragged, seed, 200, 1), n = st.n[0] + Math.floor(jit(seed, 300) * (st.n[1] - st.n[0] + 1));
+      this.poly(ctx, top.concat(bottom.slice().reverse()), true);
+      this.fill(ctx, ls.fill[0], ls.fill[1] * A);
+      for (const edge of [top, bottom]) {
+        this.poly(ctx, edge);
+        this.stroke(ctx, ls.edge.layers, A);
+      }
+      for (let j = 0; j < n; j += 1) {
+        const len = lerp(st.len[0], st.len[1], jit(seed, 320 + j)) * span, xa = L - len - jit(seed, 330 + j) * (span - len), y = (2 * jit(seed, 310 + j) - 1) * 0.7 * w;
+        this.segment(ctx, xa, y, xa + len, y + 0.6, st.layers, A);
+      }
+      ctx.beginPath();
+      ctx.moveTo(x1 + 4, -w);
+      ctx.quadraticCurveTo(x1 - 3, 0, x1 + 4, w);
+      this.stroke(ctx, ls.front!.layers, A);
+    }
+    const tip = S.layout[id]?.stroke?.[0], part = tip && ((this.skills[id]?.awakened && tip.awakened) || tip.parts)[0], P = part && this.part(id, part);
+    if (P) this.put(ctx, id, part, clamp(Math.floor((age / life) * P.frames), 0, P.frames - 1), x1, 0, 0, true, A);
     ctx.restore();
   }
 
@@ -1244,29 +1508,47 @@ export class ArsenalFxPainter {
   }
 
   /**
-   * The eighth seal waiting to strike (API §14.4, RenderWorld pending; SPEC caps.pending): on the ground its shadow grows
-   * at the centre; over the bodies the stitches run in from the seven seals (decoration: every other one at reduced
-   * detail, none at minimal).
+   * The gimmicks waiting to go off, and their moments (API §14.4, §14.11; RenderWorld pending; SPEC caps.pending), by
+   * layer: 0, first in the hazards, a late dab swelling where its quill struck; 1, on the ground, the eighth seal's
+   * shadow growing at the centre and the small pots' shadows; 2, over the bodies, the stitches running in from the seven
+   * seals (decoration: every other one at reduced detail, none at minimal), the small pots on their way (lobMini, SPEC
+   * caps.flights), and a topple, a bump, or a caltrop's snap (deco, caps.events).
    */
-  drawPending(ctx: CanvasRenderingContext2D, pending: readonly Readonly<ArsenalPending>[], view: Viewport, ground: boolean) {
-    const g = this.spec!.gimmick.seventhSeal;
-    let left = this.spec!.caps.pending[this.lod];
+  drawPending(ctx: CanvasRenderingContext2D, pending: readonly Readonly<ArsenalPending>[], view: Viewport, layer: 0 | 1 | 2) {
+    const S = this.spec!, g8 = S.gimmick.seventhSeal;
+    let left = S.caps.pending[this.lod], flights = S.caps.flights[this.lod];
     ctx.save();
     for (const p of pending) {
-      if (this.gimmick(p.id) !== 'eighth' || !circleVisible(view, p.x, p.y, 220) || left-- <= 0) continue;
-      const u = clamp((this.time - p.born) / p.delay, 0, 1);
-      if (ground) {
-        const rx = lerp(g.shadow.rx[0], g.shadow.rx[1], u);
-        ctx.beginPath();
-        ctx.ellipse(p.x, p.y, rx, 0.42 * rx, 0, 0, TAU);
-        this.fill(ctx, g.shadow.token, lerp(g.shadow.alpha[0], g.shadow.alpha[1], u));
-        continue;
-      }
-      p.points.forEach((q, k) => {
-        if (this.lod === 2 || (this.lod === 1 && k % 2)) return;
-        this.poly(ctx, [[q.x, q.y], [p.x + (q.x - p.x) * (1 - u), p.y + (q.y - p.y) * (1 - u)]]);
-        this.stroke(ctx, g.stitch.layers, 1, 1, g.stitch.dash, g.stitch.pad);
-      });
+      const st = this.gimmick(p.id), age = this.time - p.born, u = clamp(age / p.delay, 0, 1), g = p2(S, p.id);
+      if (!st || !circleVisible(view, p.x, p.y, 220) || ((st === 'eighth' || st === 'dab') && left-- <= 0)) continue;
+      if (st === 'dab') {
+        const P = layer === 0 && this.part(p.id, g.dab);
+        if (P) this.put(ctx, p.id, g.dab, clamp(Math.floor(u * P.frames), 0, P.frames - 1), p.x, p.y);
+      } else if (st === 'split') {
+        const P = this.part(p.id, g.mini), seed = this.seedOf(p);
+        p.points.forEach((q, k) => {
+          const L = layer && P && u < 1 && flights-- > 0 && lobPath(S, p.id, p.x, p.y, q.x, q.y, u, true);
+          if (!L) return;
+          if (layer === 1) {
+            ctx.beginPath();
+            ctx.ellipse(L.x, L.y, L.rx, L.ry, 0, 0, TAU);
+            this.fill(ctx, S.flight.shadow.token, L.alpha);
+          } else this.put(ctx, p.id, g.mini, flightFrame(P!, false, u, age, jit(seed, S.flight.phase + k), this.reduced, this.lod), L.x, L.y - L.h);
+        });
+      } else if (st === 'eighth') {
+        if (layer === 1) {
+          const rx = lerp(g8.shadow.rx[0], g8.shadow.rx[1], u);
+          ctx.beginPath();
+          ctx.ellipse(p.x, p.y, rx, 0.42 * rx, 0, 0, TAU);
+          this.fill(ctx, g8.shadow.token, lerp(g8.shadow.alpha[0], g8.shadow.alpha[1], u));
+        } else if (layer === 2) {
+          p.points.forEach((q, k) => {
+            if (this.lod === 2 || (this.lod === 1 && k % 2)) return;
+            this.poly(ctx, [[q.x, q.y], [p.x + (q.x - p.x) * (1 - u), p.y + (q.y - p.y) * (1 - u)]]);
+            this.stroke(ctx, g8.stitch.layers, 1, 1, g8.stitch.dash, g8.stitch.pad);
+          });
+        }
+      } else if (layer === 2 && g.event) this.stamp(ctx, p.id, g.event, -1, age, p.x, p.y);
     }
     ctx.restore();
   }
@@ -1404,20 +1686,34 @@ export class ArsenalFxPainter {
   }
 
   /**
-   * Plans the enemy overlays (API §14.5, review 5 §6-6/7): one feet overlay an enemy (a freeze always; burning ink on
-   * those standing in an ink pots fire, SPEC caps.feet less the freezes), one head mark an enemy (the first of
-   * priority.heads it wears, when the kit draws it; caps.heads), and a crow (caps.crows) with its peck (caps.events, none
-   * at minimal detail); nearest the hero first. Each enemy's overlays run on a clock offset by its cosmetic serial, so a
-   * crowd's crows and tags do not move in step. Whether any enemy wears one.
+   * Plans the enemy overlays (API §14.5, §14.10), nearest the hero first: one feet overlay an enemy, the first of
+   * priority.feet it has whose art is in (a freeze always, past the caps; a grave's bind, burning ink in an ink pots fire,
+   * frost counted within its window, thorns: caps.feet), one head mark, the first of priority.heads it wears (the wander's
+   * curl is decoration, so at minimal detail the next one shows: caps.heads), the pollen's spores (caps.spores, two an
+   * enemy), a crow (caps.crows) with its peck (caps.events, none at minimal detail), and a boss's crack plate (never
+   * dropped). Each enemy's overlays run on a clock offset by its cosmetic serial, so a crowd does not move in step.
+   * Whether any enemy wears one.
    */
   planOverlays(bodies: readonly OverlayBody[], zones: readonly Readonly<AwakeningZone>[], hx: number, hy: number) {
-    const S = this.spec!, t = this.time, over = this.over, O = S.overlay, li = this.lod, pool = this.overPool, n = this.near, fires = n.fires;
+    const S = this.spec!, t = this.time, over = this.over, O = S.overlay, F = O.feet, li = this.lod, pool = this.overPool, n = this.near, fires = n.fires;
     for (const o of over.values()) pool.push(o);
     over.clear();
-    this.firsts.clear();
-    for (const list of [n.fd, n.fb, n.hd, n.hb, n.cd, n.cb, fires]) list.length = 0;
-    const freeze = this.done(O.feet.freeze.group), crows = this.done(O.crow.group), frozen: OverlayBody[] = [];
-    if (this.zoneSpec(O.feet.scorch.group)) for (const z of zones) if (z.weapon === O.feet.scorch.group && z.life > 0) fires.push(z);
+    for (const list of [n.fd, n.fb, n.hd, n.hb, n.cd, n.cb, n.sd, n.sb, fires]) list.length = 0;
+    const crows = this.done(O.crow.group), pollen = this.done(O.pollen.group), crack = this.done(O.crack.group), frozen: OverlayBody[] = [], bosses: OverlayBody[] = [], window = AWAKENINGS.frostNeedles.window;
+    const heads = new Set(Object.keys(O.head.parts).filter((k) => this.done(O.head.parts[k].group)));
+    const skip = li === 2 ? Object.keys(O.head.parts).find((k) => this.part(O.head.parts[k].group, O.head.parts[k].part)?.lod === 'deco') : undefined;
+    if (this.zoneSpec(F.scorch.group)) for (const z of zones) if (z.weapon === F.scorch.group && z.life > 0) fires.push(z);
+    // The feet keys whose art is in, by priority: [key, 1 burning ink / 2 frost (its count) / 0 a status until a time, count].
+    const feetKeys = S.priority.feet.flatMap((key): [string, number, number][] => {
+      const frost = key.startsWith('frost'), q = frost ? F.frost : F[key];
+      return q && this.done(q.group) ? [[key, key === 'scorch' ? 1 : frost ? 2 : 0, frost ? +key.slice(5) : 0]] : [];
+    });
+    const feetOf = (e: Readonly<Entity>, m: Readonly<AwakenedMarks> | undefined) => {
+      for (const [key, kind, count] of feetKeys) {
+        if (kind === 1 ? fires.length > 0 && fires.some((z) => Math.hypot(e.x - z.x, e.y - z.y) <= z.radius + e.radius) : !!m && (kind === 2 ? (m.frost ?? 0) >= count && t - (m.frostAt ?? -1e9) <= window : ((m[key as 'bound'] as number | undefined) ?? 0) > t)) return key;
+      }
+      return null;
+    };
     // The nearest `cap` of each kind (in order, ties first come), kept by insertion as the bodies go by: caps are small and crowds are not.
     const keep = (ds: number[], bs: OverlayBody[], cap: number, d: number, b: OverlayBody) => {
       let i = ds.length;
@@ -1435,48 +1731,43 @@ export class ArsenalFxPainter {
       ds[i] = d;
       bs[i] = b;
     };
-    const capHeads = S.caps.heads[li], capFeet = S.caps.feet[li], capCrows = S.caps.crows[li];
+    const capFeet = S.caps.feet[li];
     for (const b of bodies) {
       const e = b.enemy, m = e?.awk;
       if (!e || (!m && !fires.length)) continue;
-      const d = (b.x - hx) ** 2 + (b.y - hy) ** 2;
-      if (freeze && (m?.freeze ?? 0) > t) frozen.push(b);
-      else if (fires.length && fires.some((z) => Math.hypot(e.x - z.x, e.y - z.y) <= z.radius + e.radius)) keep(n.fd, n.fb, capFeet, d, b);
+      const d = (b.x - hx) ** 2 + (b.y - hy) ** 2, feet = feetOf(e, m);
+      if (feet === 'freeze') frozen.push(b);
+      else if (feet) keep(n.fd, n.fb, capFeet, d, b);
       if (!m) continue;
-      const key = headMark(S, m, t);
-      if (key && O.head.parts[key] && this.done(O.head.parts[key].group)) {
-        // A head mark over the cap is dropped, and the enemy's lower marks with it (one head mark an enemy).
-        this.firsts.add(e);
-        keep(n.hd, n.hb, capHeads, d, b);
-      }
-      if (crows && (m.crow ?? 0) > t) keep(n.cd, n.cb, capCrows, d, b);
+      const key = headMark(S, m, t, skip);
+      if (key && heads.has(key)) keep(n.hd, n.hb, S.caps.heads[li], d, b);
+      if (crows && (m.crow ?? 0) > t) keep(n.cd, n.cb, S.caps.crows[li], d, b);
+      if (pollen && (m.pollen ?? 0) > t) keep(n.sd, n.sb, Math.floor(S.caps.spores[li] / S.marks.spores.slots), d, b);
+      if (crack && e.isBoss && (m.crack ?? 0) > 0) bosses.push(b);
     }
     const get = (e: object) => {
       let o = over.get(e);
       if (o) return o;
-      o = pool.pop() ?? { feet: null, head: null, crow: false, peck: -1, t: Number.NaN };
+      o = pool.pop() ?? { feet: null, head: null, crow: false, peck: -1, crack: 0, spores: false, t: Number.NaN };
       o.feet = o.head = null;
-      o.crow = false;
+      o.crow = o.spores = false;
       o.peck = -1;
+      o.crack = 0;
       o.t = Number.NaN;
       over.set(e, o);
       return o;
     };
     for (const b of frozen) get(b.enemy!).feet = 'freeze';
-    n.fb.slice(0, Math.max(0, capFeet - frozen.length)).forEach((b) => (get(b.enemy!).feet = 'scorch'));
-    for (const b of n.hb) get(b.enemy!).head = headMark(S, b.enemy!.awk, t)!;
-    let events = S.caps.events[li];
+    n.fb.slice(0, Math.max(0, capFeet - frozen.length)).forEach((b) => (get(b.enemy!).feet = feetOf(b.enemy!, b.enemy!.awk)));
+    for (const b of n.hb) get(b.enemy!).head = headMark(S, b.enemy!.awk, t, skip)!;
+    for (const b of n.sb) get(b.enemy!).spores = true;
+    for (const b of bosses) get(b.enemy!).crack = b.enemy!.awk!.crack!;
     for (const b of n.cb) {
       const o = get(b.enemy!), peck = t - (b.enemy!.awk?.peckAt ?? -1e9);
       o.crow = true;
-      if (li < 2 && peck >= 0 && peck < S.marks.crow.dive && events-- > 0) o.peck = peck;
+      if (li < 2 && peck >= 0 && peck < S.marks.crow.dive && this.evs-- > 0) o.peck = peck;
     }
-    return over.size > 0 || this.firsts.size > 0;
-  }
-
-  /** Whether an enemy's head mark is the kit's this frame (drawn, or dropped by the cap): its lower marks give way. */
-  firstMark(enemy: object) {
-    return this.firsts.has(enemy);
+    return over.size > 0;
   }
 
   /** An enemy's overlay clock: the frame's, offset by a share of the crow's period from the enemy's cosmetic serial. */
@@ -1496,38 +1787,67 @@ export class ArsenalFxPainter {
     if (o?.feet === 'freeze') this.put(ctx, F.group, F.back + sizeClass(b.enemy!.radius, F.r), 0, b.x, b.y);
   }
 
-  /** An enemy's feet overlay right after its body: the freeze's front crystals, or burning ink (8 fps, still under reduced motion). */
+  /**
+   * An enemy's feet overlay right after its body (API §14.10: in front, where the feet do not hide it), by the nearest
+   * size class: the freeze's front crystals, a grave's bind, burning ink (8 fps, still under reduced motion), frost 1 or
+   * 2, or thorns.
+   */
   drawFront(ctx: CanvasRenderingContext2D, b: OverlayBody, o = this.over.get(b.enemy!)) {
-    if (!o?.feet) return;
-    const { freeze: F, scorch: B } = this.spec!.overlay.feet;
-    if (o.feet === 'freeze') this.put(ctx, F.group, F.front + sizeClass(b.enemy!.radius, F.r), 0, b.x, b.y);
-    if (o.feet !== 'scorch') return;
-    const part = B.part + sizeClass(b.enemy!.radius, B.r), P = this.part(B.group, part);
-    if (P) this.put(ctx, B.group, part, partFrame(P, 0, 1, 0, this.clock(o, b.enemy!), this.reduced, this.lod === 2 ? 2 : 0), b.x, b.y);
+    const f = o?.feet;
+    if (!f) return;
+    const F = this.spec!.overlay.feet, r = b.enemy!.radius, frost = f.startsWith('frost'), q = frost ? F.frost : F[f];
+    const part = f === 'freeze' ? F.freeze.front + sizeClass(r, F.freeze.r) : q.part + (frost ? `${f.slice(5)}-` : '') + sizeClass(r, q.r), P = this.part(q.group, part);
+    if (P) this.put(ctx, q.group, part, partFrame(P, 0, 1, 0, this.clock(o!, b.enemy!), this.reduced, this.lod === 2 ? 2 : 0), b.x, b.y);
   }
 
   /**
-   * An enemy's head mark and crow (overheads), `y` where its head mark sits (the sprite's top − 12, past its bar, elite
-   * mark, and stun): the silence bell or the prey tag (4 fps, still under reduced motion), and the crow circling over
-   * the head with its peck.
+   * An enemy's overheads, `y` where its head mark sits (the sprite's top − 12, past its bar, elite mark, and stun): its
+   * head mark (a stain by its count, the fear's drop mirrored with the enemy, the prey tag and the wander's curl on the
+   * clock), a boss's crack plate (beside a head mark), the pollen's two spores rising, and the crow circling with its peck.
    */
   drawHead(ctx: CanvasRenderingContext2D, b: OverlayBody, y: number, o = this.over.get(b.enemy!)) {
-    const S = this.spec!, O = S.overlay;
+    const S = this.spec!, O = S.overlay, e = b.enemy!;
     if (!o) return;
+    const t = this.clock(o, e), top = y - O.head.dy;
     if (o.head) {
-      const q = O.head.parts[o.head], P = this.part(q.group, q.part);
-      if (P) this.put(ctx, q.group, q.part, partFrame(P, 0, 1, 0, this.clock(o, b.enemy!), this.reduced, this.lod === 2 ? 2 : 0), b.x, y);
+      const q = O.head.parts[o.head], part = q.part + (q.stack ? clamp(e.awk?.[o.head as 'stain'] ?? 1, q.stack[0], q.stack[1]) : ''), P = this.part(q.group, part);
+      if (P) this.put(ctx, q.group, part, partFrame(P, 0, 1, 0, t, this.reduced, this.lod === 2 ? 2 : 0), b.x, y, 0, P.rotate === 'face' && (b.sprite?.facing ?? (e.vx < 0 ? -1 : 1)) < 0);
+    }
+    if (o.crack) {
+      const q = O.crack;
+      this.put(ctx, q.group, q.part + clamp(o.crack, q.stack[0], q.stack[1]), 0, b.x + (o.head ? q.beside : 0), top + q.dy);
+    }
+    if (o.spores) {
+      const q = O.pollen, sp = S.marks.spores;
+      q.parts.forEach((part, i) => {
+        const P = this.part(q.group, part), [ax, ay] = q.at[i];
+        if (!P) return;
+        const u = this.reduced ? q.phase[i] : (((t / P.seconds! + q.phase[i]) % 1) + 1) % 1;
+        this.put(ctx, q.group, part, Math.min(P.frames - 1, Math.floor(u * P.frames)), b.x + ax + (ax < 0 ? -1 : 1) * sp.drift * u, top + ay - sp.rise * u);
+      });
     }
     if (!o.crow) return;
-    const t = this.clock(o, b.enemy!), top = y - O.head.dy, c = crowAt(S, t, top, o.peck, this.reduced), P = this.part(O.crow.group, O.crow.part);
+    const c = crowAt(S, t, top, o.peck, this.reduced), P = this.part(O.crow.group, O.crow.part);
     if (P) this.put(ctx, O.crow.group, O.crow.part, this.reduced ? P.still ?? 0 : Math.floor(t * P.fps) % P.frames, b.x + c.x, c.y, 0, c.flip);
     const K = this.part(O.crow.group, O.crow.peck);
     if (K && o.peck >= 0) this.put(ctx, O.crow.group, O.crow.peck, partFrame(K, o.peck, 1, 0, 0, false, 0), b.x + O.crow.dive.peck[0], top + O.crow.dive.peck[1]);
   }
 
-  /** A weapon's chain (API §8.3): its line drawn out along the jumps, the stamps at the points it has reached. */
+  /**
+   * A weapon's chain (API §8.3): its line drawn out along the jumps, the stamps at the points it has reached; or a
+   * gimmick's (§14.11): a leap, a rewound thread, an amplifying storm thread (a link's flash is the links' own, drawLinks).
+   */
   drawChain(ctx: CanvasRenderingContext2D, chain: Readonly<ChainEffect>) {
-    const S = this.spec!, id = chain.skillId, ls = S.line[id], life = chain.maxLife, age = life - chain.life, u = clamp(age / life, 0, 1), seed = this.seedOf(chain);
+    const S = this.spec!, id = chain.skillId, ls = S.line[id], life = chain.maxLife, age = life - chain.life, u = clamp(age / life, 0, 1), seed = this.seedOf(chain), st = this.gimmick(id);
+    if (chain.echo || (chain.gimmick && st === 'amplify')) {
+      if (st === 'link') return;
+      ctx.save();
+      if (st === 'leap') this.leap(ctx, chain, p2(S, id), age, life, u, seed);
+      else if (st === 'rewind') this.rewind(ctx, chain, p2(S, id), age, life, u);
+      else this.amplify(ctx, chain, p2(S, id), age, life, u, seed);
+      ctx.restore();
+      return;
+    }
     const P = chain.points.map((p): P2 => [p.x, p.y]), A = fadeA(ls.fade, age, life), g = clamp(u / ls.grow.frac, 0, 1), red = this.reduced;
     const cut = (pts: P2[]) => {
       const q = clearStart(pts, S.footClear);
@@ -1545,43 +1865,148 @@ export class ArsenalFxPainter {
       ctx.miterLimit = 5;
       this.poly(ctx, cut(t.A));
       this.stroke(ctx, ls.strands[0], A, 1, undefined, 0, 'miter');
-    } else {
-      const items = linksGeo(P, ls, S.footClear);
-      if (this.links < items.length) {
-        ctx.miterLimit = 5;
-        this.poly(ctx, clearStart(P, S.footClear));
-        this.stroke(ctx, ls.minimal.layers, A, 1, undefined, 0, 'miter');
-      } else {
-        this.links -= items.length;
-        const { ellipse: el, bar, nubs } = ls;
-        for (const it of items.slice(0, Math.ceil(items.length * g))) {
-          ctx.save();
-          ctx.translate(it.x, it.y);
-          ctx.rotate(it.angle);
-          ctx.beginPath();
-          if (it.ring) {
-            ctx.ellipse(0, 0, el.rx, el.ry, 0, 0, TAU);
-            this.stroke(ctx, it.core ? ls.core.layers : el.layers, A);
-          } else {
-            ctx.rect(-bar.len / 2, -bar.h / 2, bar.len, bar.h);
-            this.fill(ctx, bar.fill, A);
-            this.stroke(ctx, [bar.edge], A);
-          }
-          if (it.nub) {
-            this.circle(ctx, 0, it.nub * (el.ry + nubs.r), nubs.r, 0);
-            this.fill(ctx, nubs.fill, A);
-            this.stroke(ctx, [nubs.edge], A);
-          }
-          ctx.restore();
-        }
-      }
-    }
+    } else this.linked(ctx, P, ls, S.footClear, A, g);
     // A point's stamp shows once the growing line has reached it.
     const items = layout(S, id, 'jump', { R: 0, L: 0, w: 0, aw: this.skills[id]?.awakened === true, seed, age, life, reduced: red, points: chain.points });
     let reach = 0;
     const cum = P.map((p, i) => (reach += i ? Math.hypot(p[0] - P[i - 1][0], p[1] - P[i - 1][1]) : 0));
     this.place(ctx, id, items.filter((it) => (it.index ?? 0) && cum[it.index!] <= g * reach + 0.5), 'ally', 0, 0, age, life, seed);
     ctx.restore();
+  }
+
+  /**
+   * A chain's links (API §8.3 links) from `clear` on, the share g of them grown, rings and bars by turns, a cyan ring
+   * mid-jump, a nub now and then; past the frame's links (SPEC caps.links, none at minimal detail) one bent line.
+   */
+  private linked(ctx: CanvasRenderingContext2D, P: P2[], ls: LineSpec, clear: number, A: number, g = 1) {
+    const items = linksGeo(P, ls, clear), { ellipse: el, bar, nubs } = ls;
+    ctx.miterLimit = 5;
+    if (this.links < items.length) {
+      this.poly(ctx, clearStart(P, clear));
+      this.stroke(ctx, ls.minimal.layers, A, 1, undefined, 0, 'miter');
+      return;
+    }
+    this.links -= items.length;
+    for (const it of items.slice(0, Math.ceil(items.length * g))) {
+      ctx.save();
+      ctx.translate(it.x, it.y);
+      ctx.rotate(it.angle);
+      ctx.beginPath();
+      if (it.ring) {
+        ctx.ellipse(0, 0, el.rx, el.ry, 0, 0, TAU);
+        this.stroke(ctx, it.core ? ls.core.layers : el.layers, A);
+      } else {
+        ctx.rect(-bar.len / 2, -bar.h / 2, bar.len, bar.h);
+        this.fill(ctx, bar.fill, A);
+        this.stroke(ctx, [bar.edge], A);
+      }
+      if (it.nub) {
+        this.circle(ctx, 0, it.nub * (el.ry + nubs.r), nubs.r, 0);
+        this.fill(ctx, nubs.fill, A);
+        this.stroke(ctx, [nubs.edge], A);
+      }
+      ctx.restore();
+    }
+  }
+
+  /** The leap (API §14.11): a kinked bolt between the two bodies (lift over their feet) drawn out over grow, flickering, and the strike where it lands (deco). */
+  private leap(ctx: CanvasRenderingContext2D, chain: Readonly<ChainEffect>, g: P2Spec, age: number, life: number, u: number, seed: number) {
+    const ls = g.line, [a, b] = chain.points, B: P2 = [b.x, b.y - g.lift], gr = clamp(u / ls.grow.frac, 0, 1);
+    const pts = kinkPts([a.x, a.y - g.lift], B, ls, seed * 13 + ls.flicker.seeds[this.reduced ? 0 : Math.floor(this.time * ls.flicker.fps) % 2]);
+    ctx.miterLimit = 5;
+    this.poly(ctx, gr < 1 ? cutAlong(pts, gr) : pts);
+    this.stroke(ctx, ls.layers, fadeA(ls.fade, age, life), 1, undefined, 0, 'miter');
+    if (gr >= 1) this.stamp(ctx, chain.skillId, g.hit, u < 0.6 ? 0 : 1, age, B[0], B[1]);
+  }
+
+  /**
+   * The thread rewound (API §14.11): the whole thread (hero first) bowed the other way, run from the last enemy back to
+   * the hero's clear, dashing as it fades; a spark on each enemy it has reached by the straight share from the tail.
+   */
+  private rewind(ctx: CanvasRenderingContext2D, chain: Readonly<ChainEffect>, g: P2Spec, age: number, life: number, u: number) {
+    const ls = g.line, P = (chain.thread ?? chain.points).map((p): P2 => [p.x, p.y]), gr = clamp(u / ls.grow.frac, 0, 1), pts = clearStart(sagCurves(P, ls.sag, ls.step).pts, this.spec!.footClear).reverse();
+    this.poly(ctx, gr < 1 ? cutAlong(pts, gr) : pts);
+    if (u > ls.fade!.at) this.stroke(ctx, [['ink', ls.layers[0][1] * 0.7]], fadeA(ls.fade, age, life), 1, ls.fade!.dash);
+    else this.stroke(ctx, ls.layers, 1);
+    const reach = gr * P.reduce((sum, p, i) => sum + (i ? Math.hypot(p[0] - P[i - 1][0], p[1] - P[i - 1][1]) : 0), 0);
+    for (let i = P.length - 1, cum = 0; i > 0 && cum <= reach + 0.5; cum += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]), i -= 1) this.stamp(ctx, chain.skillId, g.hit, u < 0.5 ? 0 : 1, age, P[i][0], P[i][1], 0, false, true);
+  }
+
+  /**
+   * The storm thread amplifying (API §14.11): jump i's strands (1 + width·i) wide, its twist (1 + amp·i) deep, drawn out
+   * jump by jump; the gust at each point reached, the big one from big.from on.
+   */
+  private amplify(ctx: CanvasRenderingContext2D, chain: Readonly<ChainEffect>, g: P2Spec, age: number, life: number, u: number, seed: number) {
+    const S = this.spec!, id = chain.skillId, ls = S.line[id], P = chain.points.map((p): P2 => [p.x, p.y]), A = fadeA(ls.fade, age, life), fs = ls.flicker.seeds[this.reduced ? 0 : Math.floor(this.time * ls.flicker.fps) % 2], cum = [0];
+    for (let i = 1; i < P.length; i += 1) cum.push(cum[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]));
+    const reach = clamp(u / ls.grow.frac, 0, 1) * cum[cum.length - 1];
+    ctx.miterLimit = 5;
+    for (let i = 0; i + 1 < P.length && reach > cum[i]; i += 1) {
+      const tw = twistGeo([P[i], P[i + 1]], { ...ls, amp: ls.amp * (1 + g.amp * i) }, fs + 31 * i), k = 1 + g.width * i, gr = clamp((reach - cum[i]) / (cum[i + 1] - cum[i]), 0, 1);
+      const cut = (q: P2[]) => {
+        const r = i ? q : clearStart(q, S.footClear);
+        return gr < 1 ? cutAlong(r, gr) : r;
+      };
+      this.poly(ctx, cut(tw.B));
+      this.stroke(ctx, thick(ls.strands[1], k), A);
+      this.poly(ctx, cut(tw.A));
+      this.stroke(ctx, thick(ls.strands[0], k), A, 1, undefined, 0, 'miter');
+    }
+    P.forEach((p, j) => {
+      if (j && cum[j] <= reach + 0.5) this.stamp(ctx, id, j > g.big.from ? g.big.part : 'gust-a', u < 0.5 ? 0 : 1, age, p[0], p[1], 0, jit(seed, 649 + j) < 0.5, true);
+    });
+  }
+
+  /**
+   * The links of the frost chainlet's linked enemies (API §14.11, awk.link): between the living members in order, light
+   * for the link's seconds (fading at its end), whole for share.seconds after they shared a hit; one bent line past the
+   * frame's links (none at minimal detail).
+   */
+  drawLinks(ctx: CanvasRenderingContext2D, enemies: readonly Readonly<Entity>[]) {
+    const S = this.spec!, id = 'frostChainlet', g = p2(S, id), seen = this.links2, t = this.time;
+    if (this.gimmick(id) !== 'link') return;
+    seen.clear();
+    ctx.save();
+    for (const e of enemies) {
+      const k = e.awk?.link;
+      if (!k || k.until <= t || seen.has(k)) continue;
+      seen.add(k);
+      const P = k.members.filter((m) => m.hp > 0).map((m): P2 => [m.x, m.y]), A = (t - (k.sharedAt ?? -1e9) < g.share.seconds ? g.share.alpha : g.line.alpha) * fadeA(g.fade, t - k.until + g.life, g.life);
+      if (P.length > 1 && A > 0.01) this.linked(ctx, P, { ...S.line[id], pitch: g.line.pitch }, g.line.clear, A);
+    }
+    ctx.restore();
+  }
+
+  /**
+   * The hero's haste (API §14.11) right after its body, standing at its feet (12 fps, half at reduced detail, still under
+   * reduced motion and at minimal detail), mirrored with it, while it stands in a gimmick's haste ground (the meteor's mark).
+   */
+  drawHaste(ctx: CanvasRenderingContext2D, x: number, y: number, facing: number) {
+    const p = this.zonePlans.find((q) => this.gimmick(q.z.weapon) === 'haste' && q.d <= q.z.radius), id = p?.z.weapon, part = id && p2(this.spec!, id).part, P = part && this.part(id, part);
+    if (P) this.put(ctx, id, part, partFrame(P, 0, 1, 0, this.time, this.reduced, this.lod), x, y, 0, facing < 0);
+  }
+
+  /**
+   * A shot the kit draws (API §14.11): an enemy shot an ink orbit turned back, a paper comet along its velocity
+   * (deflect-start over its first moment, deflect-end over its last, deflect-travel looping between). Whether it drew it.
+   */
+  drawShot(ctx: CanvasRenderingContext2D, shot: Readonly<Projectile>, x: number, y: number) {
+    const id = shot.skillId, g = this.spec && shot.echo && this.gimmick(id) === 'deflect' ? p2(this.spec, id) : undefined;
+    if (!g) return false;
+    const age = shot.maxLife - shot.life, end = this.part(id, g.end), start = this.part(id, g.start), angle = Math.atan2(shot.vy, shot.vx);
+    if (end && shot.life < end.seconds!) this.put(ctx, id, g.end, clamp(Math.floor((1 - shot.life / end.seconds!) * end.frames), 0, end.frames - 1), x, y, angle);
+    else if (start && age < start.seconds!) this.put(ctx, id, g.start, clamp(Math.floor((age / start.seconds!) * start.frames), 0, start.frames - 1), x, y, angle);
+    else {
+      const P = this.part(id, g.travel);
+      if (P) this.put(ctx, id, g.travel, partFrame(P, age, shot.maxLife, jit(this.seedOf(shot), 1), this.time, this.reduced, this.lod), x, y, angle);
+    }
+    return true;
+  }
+
+  /** How much bigger a shot's stamp is drawn (API §14.11, the sun needles): its radius over its weapon's size, 1 to max; 1 for every other. */
+  shotScale(id: string, radius: number, size: number) {
+    const q = this.spec && p2(this.spec, id)?.scale;
+    return q ? clamp(radius / size, 1, q.max) : 1;
   }
 
   /**

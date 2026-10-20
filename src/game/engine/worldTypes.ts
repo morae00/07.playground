@@ -212,13 +212,14 @@ export type AwakenedMarks = {
   crow?: number;
   crowAt?: number;
   pecks?: number;
-  /** K10 looks only (the simulation reads neither): when frostNeedles' freeze ends, and when the crow last pecked. */
+  /** K10 looks only (the simulation reads none): when frostNeedles' freeze ends, when the crow last pecked, and when a grave's bind ends. */
   freeze?: number;
   peckAt?: number;
+  bound?: number;
   /** bossbane: cracks on a boss. */
   crack?: number;
-  /** frostChainlet: the enemies one chain linked, which share what each takes until `until`. */
-  link?: { until: number; members: Entity[]; flashAt: number };
+  /** frostChainlet: the enemies one chain linked, which share what each takes until `until` (K10 looks only: when they last shared). */
+  link?: { until: number; members: Entity[]; flashAt: number; sharedAt?: number };
 };
 
 /** SYS-16: ground an awakened weapon leaves: it acts on enemies (never on the player) and draws as the player's. */
@@ -459,6 +460,9 @@ export type ChainEffect = {
   skillId: SkillId;
   /** K10 looks only: an awakening gimmick's chain (a thread running back, a leap, a shared hit's flash). */
   echo?: true;
+  /** K10 looks only: a cast that ran its awakening gimmick (the storm thread amplifying), and the whole thread a rewind runs back along. */
+  gimmick?: true;
+  thread?: ChainEffect['points'];
 };
 
 /**
@@ -469,9 +473,11 @@ export type ChainEffect = {
 export type ArsenalLob = { at: number; x: number; y: number; radius: number; damage: number; id: ArsenalId; x0: number; y0: number; born: number; delay: number; k: number; awakened: boolean };
 
 /**
- * K10 looks only (the simulation reads none of it): an awakening gimmick waiting to go off, for its pending art: the
- * seventh seal's eighth, where it will strike (the centre of the cast's seals), when it was cast and how long it waits,
- * and the seals it gathers from.
+ * K10 looks only (the simulation reads none of it): an awakening gimmick waiting to go off, for its pending art, or a
+ * moment of one the simulation reports nowhere else: where (the seventh seal's eighth at the centre of the cast's
+ * seals, a quill's late dab where it first struck, a cluster pot that split where it landed; a seal arrow's topple and
+ * an ink pulse's bump where the bodies met, a caltrop that snapped), when it began and how long it waits or shows, and
+ * the points it gathers from or flies to (the seven seals, the two small pots).
  */
 export type ArsenalPending = { id: ArsenalId; x: number; y: number; born: number; delay: number; points: readonly Readonly<{ x: number; y: number }>[] };
 
