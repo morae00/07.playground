@@ -6,7 +6,7 @@ import { createHeadlessCanvas, installHeadlessPlatform, maxMeta, standardOptions
 // level its upgrades give, and its perk joins the stats; a suspended run keeps its character.
 installHeadlessPlatform();
 Object.defineProperty(globalThis, 'performance', { value: { now: () => 0 }, configurable: true });
-const { ProbedGameEngine, CHARACTERS, CHARACTER_IDS, characterStartLevel } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
+const { ProbedGameEngine, CHARACTERS, CHARACTER_IDS, SKILLS, characterStartLevel } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
 
 function engineAs(rules, character) {
   const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), maxMeta(), standardOptions(), { onSnapshot() {}, onDraft(draft) { engine.completeDraft(draft.cards[0], draft.id); }, onRoundClear() {}, onGameOver() {} });
@@ -63,5 +63,35 @@ test('CON-10: a suspended run keeps its character and replays to the same state'
     assert.deepEqual([replayed.player.x, replayed.player.y, replayed.player.kills, replayed.elapsed], [reference.player.x, reference.player.y, reference.player.kills, reference.elapsed]);
   } finally {
     second.dispose();
+  }
+});
+
+test('BUG-19: a character\'s weapon from a later chapter is offered in drafts below it, and levels to its awakening', () => {
+  for (const [id, chapter] of [['hwi', 1], ['wol', 1], ['wol', 3]]) {
+    const weapon = CHARACTERS[id].weapon;
+    assert.ok(SKILLS[weapon].chapterMin > chapter, `${weapon} belongs to a later chapter than ${chapter}`);
+    let offered = 0;
+    // Takes the weapon's card whenever one is offered, and the first card otherwise.
+    const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), maxMeta(), standardOptions(), {
+      onSnapshot() {},
+      onDraft(draft) {
+        const card = draft.cards.find((offer) => (offer.kind === 'skill' || offer.kind === 'awakening') && offer.skillId === weapon);
+        if (card) offered += 1;
+        engine.completeDraft(card ?? draft.cards[0], draft.id);
+      },
+      onRoundClear() {},
+      onGameOver() {},
+    });
+    engine.setRuleSet('remaster');
+    engine.setCharacter({ id, level: 0 });
+    try {
+      engine.startRun(chapter, 2, 4242);
+      engine.probe.haltSpawns();
+      for (let draft = 0; draft < 40; draft += 1) engine.probe.openDraft('level', 'resume');
+      assert.ok(offered >= 5, `${id} on chapter ${chapter}: ${weapon} offered in ${offered} of 40 drafts`);
+      assert.deepEqual(engine.probe.read().skills[weapon], { level: 5, awakened: true });
+    } finally {
+      engine.dispose();
+    }
   }
 });

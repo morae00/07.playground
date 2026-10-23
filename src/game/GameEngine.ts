@@ -6236,8 +6236,11 @@ export class GameEngine {
       ? clamp(this.elapsed / 1_800, 0, 1)
       : (stageIndex(this.chapter, this.stage) - 1) / (TOTAL_STAGE_COUNT - 1);
     const skillChapter = this.runMode === 'infinite' ? CHAPTER_COUNT : this.chapter;
-    // SYS-15: the arsenal joins the drafts only under its rule.
-    const availableSkills = filterSkillsForChapter(SKILL_IDS.filter((id) => this.rules.arsenal || !isArsenal(id)).map((id) => SKILLS[id]), skillChapter);
+    // SYS-15: the arsenal joins the drafts only under its rule. BUG-19: skills the build owns stay in the drafts below
+    // their chapter, so a character's starting weapon (CON-10) still levels there. Only a character starts a build
+    // with a skill above the stage's chapter, so this goes with the characters rule and classic drafts stay 0.1.0's.
+    const owned = this.rules.characters ? new Set<string>(SKILL_IDS.filter((id) => this.skills[id])) : undefined;
+    const availableSkills = filterSkillsForChapter(SKILL_IDS.filter((id) => this.rules.arsenal || !isArsenal(id)).map((id) => SKILLS[id]), skillChapter, owned);
     const entries = availableSkills.map(({ id }) => {
       const rarity = SKILLS[id].rarity;
       const luckBonus =
