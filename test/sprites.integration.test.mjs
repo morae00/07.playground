@@ -315,6 +315,26 @@ test('without an atlas nothing is blitted (vector fallback)', () => {
   }
 });
 
+test('a disposed engine stops listening to the app\'s atlas, so the finished run can be collected (BUG-21)', async () => {
+  class CountingAtlas extends SpriteAtlas {
+    listening = 0;
+    onChange(listener) {
+      const stop = super.onChange(listener);
+      this.listening += 1;
+      return () => { this.listening -= 1; return stop(); };
+    }
+  }
+  const atlas = new CountingAtlas({ loadManifest: async () => ATLAS_MANIFEST, loadImage: async (url) => ({ url, width: 2048, height: 512 }) });
+  assert.equal(await atlas.load('common'), true);
+  for (let run = 0; run < 3; run += 1) {
+    const { engine } = arena(1, 1, atlas);
+    engine.probe.render(1);
+    assert.equal(atlas.listening, 1, 'the run on screen listens for pack changes');
+    engine.dispose();
+    assert.equal(atlas.listening, 0, 'nothing is left listening after the run');
+  }
+});
+
 test('the hero faces its target and plays hurt and throw poses from game events', async () => {
   const atlas = await loadedAtlas();
   const { engine, images } = arena(1, 1, atlas);

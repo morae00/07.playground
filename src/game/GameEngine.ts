@@ -1116,7 +1116,8 @@ export class GameEngine {
     window.removeEventListener('resize', this.onResize);
     this.resizeObserver?.disconnect();
     this.resizeObserver = undefined;
-    this.worldRenderer.invalidateGrid();
+    // BUG-21: the renderer stops listening to the app's atlas, which otherwise kept this whole engine alive.
+    this.worldRenderer.dispose();
     this.releaseInput();
     this.presentation.dispose();
   }

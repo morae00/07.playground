@@ -406,6 +406,26 @@ export class WorldRenderer {
     this.outlines.clear();
   }
 
+  /**
+   * BUG-21: the run is over. The atlas outlives every run, so its listener kept this renderer reachable, and through the
+   * last world it drew (the presentation and its host) the whole engine. Stops listening and lets go of the cut-outs and
+   * of everything that points into the run; a later draw starts afresh, with vectors until setSprites.
+   */
+  dispose() {
+    this.setSprites(null);
+    this.invalidateGrid();
+    this.world = null!;
+    this.heroAnim = null;
+    this.hero = undefined;
+    this.playerBody = null;
+    this.bodyPool.length = 0;
+    this.sortedBodies.length = 0;
+    this.bodyCount = 0;
+    this.kitHazards.length = 0;
+    this.mobFlames.clear();
+    this.trail.length = 0;
+  }
+
   /** Forget cached patterns (the canvas was resized or its context reset). */
   invalidateGrid() {
     this.gridPattern = undefined;
