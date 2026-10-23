@@ -3682,6 +3682,15 @@ export class GameEngine {
     return paid;
   }
 
+  /** An ordinary enemy's XP and coins: breathers pay more for each kill (SYS-03), and the horde pays its share (SYS-13). */
+  protected mobRewards(tier: EnemyTier) {
+    const rewardScale = this.director ? this.director.rewardScale(this.duration - this.timeLeft) : 1;
+    return {
+      xp: this.hordeReward(Math.round(TIER_STATS.xp[mobTier(tier)] * rewardScale), 'xp'),
+      coin: this.hordeReward(Math.round(TIER_STATS.coin[mobTier(tier)] * rewardScale), 'coin'),
+    };
+  }
+
   protected spawnEnemy(difficulty: number, forcedTier?: EnemyTier, forcedEdge?: SpawnEdge) {
     const director = this.director;
     const stageTime = this.duration - this.timeLeft;
@@ -3743,8 +3752,6 @@ export class GameEngine {
     let health = hpBase * effectiveDifficulty * (this.rules.horde ? HORDE.hp : 1) * (bomberSpec?.hp ?? 1) * bomberHp;
     // SYS-14: an infinite bomber outlasts a moment of the player's focused fire (the boss pace, SYS-12).
     if (bomber && infiniteDifficulty) health = Math.max(health, this.bossDps * BOMBERS.infinite.paceSeconds);
-    // Breathers pay more for each kill (SYS-03).
-    const rewardScale = director ? director.rewardScale(stageTime) : 1;
     const baseDamage = TIER_STATS.damage[mobTier(tier)]
       * (0.8 + (infiniteDifficulty ? INFINITE_BASELINE.mobDifficulty : difficulty) * 0.14)
       // SYS-07: later chapters hit harder, so a maxed build still feels Ch5.
@@ -3763,8 +3770,7 @@ export class GameEngine {
       speed: speed * (bomberSpec?.speed ?? 1),
       damage: baseDamage * (infiniteDifficulty?.enemyDamageScale ?? 1),
       ...(bomber && bomberSpec ? { bomber, blastDamage: baseDamage * (infiniteDifficulty?.enemyDamageScale ?? 1) * bomberSpec.damage } : {}),
-      xp: this.hordeReward(Math.round(TIER_STATS.xp[mobTier(tier)] * rewardScale), 'xp'),
-      coin: this.hordeReward(Math.round(TIER_STATS.coin[mobTier(tier)] * rewardScale), 'coin'),
+      ...this.mobRewards(tier),
       tier,
       variant: Math.floor(this.gameplayRandom() * 5),
       isBoss: false,
@@ -3815,27 +3821,43 @@ export class GameEngine {
     for (let index = 0; index < ELITES.split.children; index += 1) {
       const side = index % 2 === 0 ? -1 : 1;
       const x = enemy.x + side * enemy.radius;
+      // BUG-18: a child is a new enemy, built like a spawn. It takes the parent's place, look, and scaled stats but
+      // none of its state: no dash, shield angle, fuse, bomber kind, statuses, or marks. Its rewards come through
+      // the spawn's path (SYS-03 breathers, SYS-13 horde).
       this.enemies.push({
-        ...enemy,
         id: this.nextId(),
         x,
+        y: enemy.y,
         prevX: x,
         prevY: enemy.y,
         vx: 0,
         vy: 0,
-        tier,
         radius: ENEMY_RADIUS[tier],
         hp: maxHp,
         maxHp,
         speed: enemy.speed * ratio(TIER_STATS.speed),
         damage: enemy.damage * ratio(TIER_STATS.damage),
-        xp: TIER_STATS.xp[tier],
-        coin: TIER_STATS.coin[tier],
+        ...this.mobRewards(tier),
+        tier,
+        variant: enemy.variant,
+        isBoss: false,
         attackStyle: 'contact',
-        elite: undefined,
-        eliteShield: undefined,
-        awk: undefined,
+        rangedCooldown: 0,
+        rangedTelegraph: 0,
+        // The parent's contact cooldown carries over, so a split on top of the player does not strike again at once.
+        contactTimer: enemy.contactTimer,
+        hitFlash: 0,
+        stun: 0,
+        root: 0,
+        slowMultiplier: 1,
+        slowTimer: 0,
+        patternTimer: 0,
+        patternPhase: 'idle',
+        patternX: 0,
+        patternY: 0,
         damageCooldowns: {},
+        bossPhase: 1,
+        bossPhaseFlash: 0,
       });
     }
   }

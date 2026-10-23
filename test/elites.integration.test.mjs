@@ -7,7 +7,7 @@ import { createHeadlessCanvas, installHeadlessPlatform, localeTable, maxMeta, st
 // Elite beats (SYS-03) promote some of their spawns; the elite hunt objective (CON-03) asks for elite kills.
 installHeadlessPlatform();
 Object.defineProperty(globalThis, 'performance', { value: { now: () => 0 }, configurable: true });
-const { ProbedGameEngine, installStrings, tx } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
+const { ProbedGameEngine, HORDE, installStrings, tx } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
 installStrings(localeTable('ko'));
 
 function run(chapter, stage, { rules = 'remaster', seed = 909 } = {}) {
@@ -145,5 +145,114 @@ test('SYS-10: the elite hunt brings elites in every beat and asks for ten elite 
     assert.equal(r.probe.hud().bonus.progress, 3, 'only the elites count');
   } finally {
     r.engine.dispose();
+  }
+});
+
+/** BUG-18: an empty arena on a remaster stage (the horde on), the player still and untouchable, nothing equipped. */
+function splitArena() {
+  const events = [];
+  const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), maxMeta(), standardOptions(), {
+    onSnapshot() {},
+    onDraft(draft) { engine.completeDraft(draft.cards[0], draft.id); },
+    onRoundClear() {},
+    onGameOver() {},
+  });
+  engine.setRuleSet('remaster');
+  engine.subscribe((event) => events.push(event));
+  engine.startRun(2, 3, 777);
+  const { probe } = engine;
+  probe.setGodMode();
+  probe.haltSpawns();
+  probe.clear('enemies', 'obstacles', 'hazards', 'projectiles');
+  probe.setSkills({});
+  probe.setPlayer({ x: 2100, y: 1500, nextXp: 1e12 });
+  /** Fells `id` as a split elite and returns its two children. */
+  const split = (id) => {
+    const before = new Set(probe.read().enemies.map((enemy) => enemy.id));
+    probe.patchEnemy(id, { elite: 'split', eliteShield: undefined, hp: 0 });
+    probe.step(1);
+    const children = probe.read().enemies.filter((enemy) => !before.has(enemy.id));
+    assert.equal(children.length, 2);
+    return children;
+  };
+  return { engine, probe, events, split };
+}
+
+test('BUG-18: split children of a charger felled mid-dash walk instead of dashing for good', () => {
+  const { engine, probe, split } = splitArena();
+  try {
+    const id = probe.spawnEnemy({ tier: 'medium', x: 2300, y: 1500, hp: 1e6 });
+    probe.patchEnemy(id, { dashCooldown: 0 });
+    const phase = () => probe.read().enemies.find((enemy) => enemy.id === id)?.patternPhase;
+    for (let tick = 0; tick < 120 && phase() !== 'dash'; tick += 1) probe.step(1);
+    assert.equal(phase(), 'dash', 'the parent is felled mid-dash');
+    const children = split(id);
+    assert.deepEqual(children.map((child) => [child.tier, child.patternPhase, child.patternTimer]), [['small', 'idle', 0], ['small', 'idle', 0]]);
+    probe.setPlayer({ x: 3800, y: 2800 });
+    probe.step(30);
+    for (const child of children) {
+      const now = probe.read().enemies.find((enemy) => enemy.id === child.id);
+      const travel = Math.hypot(now.x - child.x, now.y - child.y);
+      assert.equal(now.patternPhase, 'idle');
+      assert.ok(travel < child.speed * 0.5 * 1.2, `travelled ${travel.toFixed(0)} in 0.5 s at speed ${child.speed.toFixed(0)}`);
+    }
+  } finally {
+    engine.dispose();
+  }
+});
+
+test('BUG-18: split children of a warden carry no frozen shield', () => {
+  const { engine, probe, events, split } = splitArena();
+  try {
+    const id = probe.spawnEnemy({ tier: 'large', x: 2400, y: 1500, hp: 1000 });
+    probe.step(5);
+    assert.ok(probe.read().enemies.find((enemy) => enemy.id === id).shieldAngle !== undefined, 'the warden raised its shield');
+    const children = split(id);
+    assert.ok(children.every((child) => child.tier === 'medium' && child.shieldAngle === undefined));
+    // Struck from the side the parent's shield faced: nothing is blocked.
+    for (const child of children) probe.patchEnemy(child.id, { hp: 1e6, maxHp: 1e6 });
+    probe.setPlayer({ x: children[0].x - 80, y: children[0].y });
+    probe.setSkills({ chainSpark: { level: 5 } });
+    probe.cast('chainSpark');
+    probe.step(1);
+    assert.ok(probe.read().enemies.some((enemy) => children.some((child) => child.id === enemy.id) && enemy.hp < 1e6), 'the chain struck a child');
+    assert.equal(events.filter((event) => event.type === 'enemy/blocked').length, 0);
+  } finally {
+    engine.dispose();
+  }
+});
+
+test('BUG-18: felling a planted fuse bomber that is a split elite defuses it; its children never go off', () => {
+  const { engine, probe, events, split } = splitArena();
+  try {
+    const id = probe.spawnEnemy({ tier: 'small', x: 2120, y: 1500, hp: 1e6, bomber: 'fuse' });
+    probe.step(2);
+    assert.ok(probe.read().enemies.find((enemy) => enemy.id === id).fuseAt !== undefined, 'planted on touch');
+    const children = split(id);
+    assert.ok(children.every((child) => child.bomber === undefined && child.fuseAt === undefined && child.blastDamage === undefined));
+    assert.deepEqual(events.filter((event) => event.type === 'enemy/defused').map((event) => event.id), [id]);
+    // Well past the parent's fuse, with the children beside the player.
+    probe.step(90);
+    assert.equal(events.filter((event) => event.type === 'enemy/armed').length, 1, 'only the parent was armed');
+    assert.equal(events.filter((event) => event.type === 'enemy/blast').length, 0, 'nothing went off');
+  } finally {
+    engine.dispose();
+  }
+});
+
+test('BUG-18: split children are paid like spawns, through the horde\'s share', () => {
+  const { engine, probe, split } = splitArena();
+  try {
+    const scale = probe.director()?.rewardScale ?? 1;
+    const id = probe.spawnEnemy({ tier: 'large', x: 2400, y: 1500, hp: 1000 });
+    // A medium enemy's XP and coins (TIER_STATS) at this beat's reward scale, times the horde's share.
+    const xp = Math.round(10 * scale) * HORDE.xp;
+    const coin = Math.round(3 * scale) * HORDE.coin;
+    for (const child of split(id)) {
+      assert.ok(child.xp >= Math.floor(xp) && child.xp <= Math.ceil(xp), `XP ${child.xp}, the horde pays ${xp}`);
+      assert.ok(child.coin >= Math.floor(coin) && child.coin <= Math.ceil(coin), `coins ${child.coin}, the horde pays ${coin}`);
+    }
+  } finally {
+    engine.dispose();
   }
 });
