@@ -54,6 +54,26 @@ test('hit rings are capped at 32 but boss telegraph rings are never dropped', ()
   assert.equal(presentation.impactRings.at(-1)?.owner, 'hostile');
 });
 
+test('a flood of heavy hits never pushes a warning out of the rings (BUG-20)', () => {
+  const { presentation } = setup();
+  presentation.handle({ type: 'telegraph/ring', x: 300, y: 300, radius: 80, life: 1.2 });
+  presentation.handle({ type: 'enemy/blast', id: 9, x: 200, y: 200, radius: 100, kind: 'fuse', hit: false });
+  for (let index = 0; index < 40; index += 1) {
+    presentation.handle({ type: 'enemy/hit', id: 100 + index, x: index, y: 0, radius: 10, damage: 5, crit: false, tier: 'heavy', dx: 1, dy: 0 });
+  }
+  const hostile = presentation.impactRings.filter((ring) => ring.owner === 'hostile');
+  const player = presentation.impactRings.filter((ring) => ring.owner === 'player');
+  assert.deepEqual(hostile.map((ring) => [ring.x, ring.radius]), [[300, 80], [200, 100]], 'the warning and the blast flash both stay');
+  assert.equal(player.length, 32, 'the player rings keep their own cap');
+  assert.equal(player[0].x, 8, 'the oldest player rings go first');
+  assert.equal(presentation.impactRings[0].owner, 'hostile', 'the warnings keep their place in the drawing order');
+  presentation.step(0.31);
+  assert.equal(presentation.impactRings.filter((ring) => ring.owner === 'hostile').length, 1, 'the warning ages out only by its own life');
+  assert.equal(presentation.impactRings.filter((ring) => ring.owner === 'player').length, 0);
+  presentation.step(1);
+  assert.equal(presentation.impactRings.length, 0);
+});
+
 test('events map to their effects: enemy hits respect the damage-number option and tiers', () => {
   const quiet = setup({ damageNumbers: false });
   quiet.presentation.handle({ type: 'enemy/hit', id: 1, x: 10, y: 20, radius: 12, damage: 30, crit: true, tier: 'critical', dx: 1, dy: 0 });

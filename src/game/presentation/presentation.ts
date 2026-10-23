@@ -40,6 +40,7 @@ const PARTICLE_CAP_REDUCED = 260;
 const DAMAGE_NUMBER_CAP = 160;
 /** Hits on one enemy within this long add into its number instead of stacking new ones (FX-07). */
 export const NUMBER_MERGE_SECONDS = 0.3;
+/** The player's hit rings shown at once. Hostile rings (warnings, blast flashes) never count against it (BUG-20). */
 const IMPACT_RING_CAP = 32;
 /** FX-06: how long each skill mark shows (the kit's thread ring and collapse, the slash ring, a shard), and how many. */
 export const SKILL_MARK_SECONDS = Object.freeze({ ring: 0.3, slash: 0.2, shard: 0.12, pulse: 0.55, glint: 0.12, mark: 0.3 });
@@ -524,8 +525,19 @@ export class Presentation {
     this.corpses.push(corpse);
   }
 
+  /**
+   * A player hit ring; the oldest player ring goes when the cap is reached. Warnings share the array but are never
+   * dropped for a hit ring (V3, BUG-20): they live longest, so evicting the oldest entry used to take them first.
+   */
   addImpactRing(x: number, y: number, radius: number, tier: 'heavy' | 'critical') {
-    if (this.impactRings.length >= IMPACT_RING_CAP) this.impactRings.shift();
+    let oldest = -1;
+    let count = 0;
+    for (let index = 0; index < this.impactRings.length; index += 1) {
+      if (this.impactRings[index].owner !== 'player') continue;
+      if (oldest < 0) oldest = index;
+      count += 1;
+    }
+    if (count >= IMPACT_RING_CAP) this.impactRings.splice(oldest, 1);
     this.impactRings.push({ x, y, radius, life: 0.24, maxLife: 0.24, tier, owner: 'player' });
   }
 
