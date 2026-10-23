@@ -6,26 +6,26 @@
   "expectedFixedSteps": 1200,
   "wallEquivalentSeconds": 10,
   "simulationSeconds": 20,
-  "executionMs": 445.5,
+  "executionMs": 689.4,
   "frameMs": {
-    "p50": 0.7,
-    "p95": 1.064,
-    "p99": 1.245
+    "p50": 1.059,
+    "p95": 1.724,
+    "p99": 2.296
   },
   "highWater": {
-    "enemies": 22,
-    "projectiles": 89,
-    "bossProjectiles": 16,
-    "pickups": 44,
-    "particles": 515,
-    "damageNumbers": 46
+    "enemies": 26,
+    "projectiles": 91,
+    "bossProjectiles": 45,
+    "pickups": 55,
+    "particles": 518,
+    "damageNumbers": 29
   },
   "heap": {
-    "startMiB": 5.74,
-    "endMiB": 6.42,
-    "deltaMiB": 0.68
+    "startMiB": 8.14,
+    "endMiB": 9.71,
+    "deltaMiB": 1.57
   },
-  "drawCommands": 4143676,
+  "drawCommands": 4696596,
   "gates": {
     "p95": true,
     "p99": true,

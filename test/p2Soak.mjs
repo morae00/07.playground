@@ -32,7 +32,11 @@ class FakeAudioContext {
 }
 
 const noop = () => {};
-const tileContext = new Proxy({}, { get: () => noop, set: (target, property, value) => { target[property] = value; return true; } });
+// Offscreen canvases (pattern tiles, FX-07's damage-number glyph sheets) need a measureText that returns a width.
+const tileContext = new Proxy({ measureText: () => ({ width: 0 }) }, {
+  get: (target, property) => (property in target ? target[property] : noop),
+  set: (target, property, value) => { target[property] = value; return true; },
+});
 globalThis.window = { devicePixelRatio: 1, addEventListener() {}, removeEventListener() {} };
 globalThis.document = {
   addEventListener() {},
