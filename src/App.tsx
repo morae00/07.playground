@@ -36,6 +36,7 @@ import { PauseHub, type PauseTab } from './ui/screens/PauseHub';
 import { HintLayer, type HintId } from './ui/screens/HintLayer';
 import { StoryPanels } from './ui/screens/StoryPanels';
 import { appendDevRunLog, devRunEntry } from './platform/devRunLog';
+import { clearSaveMoveNotice, readSaveMoveNotice, type SaveMoveNotice } from './platform/saveMove';
 import { moveKeyMap, setMoveKeysInUse } from './platform/moveKeys';
 import { beatsAfterClear, beatsBeforeRun, type StoryBeatId } from './ui/story';
 import { CHARACTERS, CHARACTER_COSTS, CHARACTER_IDS, CHARACTER_MAX_LEVEL } from './game/characters';
@@ -174,6 +175,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const [notice, setNotice] = useState<'art' | 'error' | null>(null);
   /** CON-04: what a suspended run the rules no longer replay was paid; shown once. */
   const [suspendPaid, setSuspendPaid] = useState<{ gold: number; xp: number } | null>(null);
+  /** BUG-22: what the player must know about the desktop save move (src/platform/saveMove.ts); shown until closed. */
+  const [saveMoveNotice, setSaveMoveNotice] = useState<SaveMoveNotice | null>(() => readSaveMoveNotice(window.localStorage));
   /** CON-07: achievements met since the menu last said so. */
   const [achievementNotice, setAchievementNotice] = useState<AchievementId[]>(initialAchievements);
   const [resuming, setResuming] = useState(false);
@@ -203,6 +206,9 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   }, [initialSave.writable, meta, options, profile]);
 
   useEffect(() => installUiSounds(document, appMixer), []);
+  useEffect(() => {
+    clearSaveMoveNotice(window.localStorage);
+  }, []);
 
   // AUD-03: the music follows the screens, the pause, the drafts, and the run's snapshots.
   const [musicReady, setMusicReady] = useState(false);
@@ -776,6 +782,16 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
       </div>
     </div>
   );
+  const saveMoveBanner = saveMoveNotice && (
+    <div className="noticeBanner inline" role="status" aria-live="polite">
+      <p>{t(`notice.saveMove.${saveMoveNotice.status}`)}</p>
+      <div className="noticeActions">
+        <button className="ghost" type="button" data-sound="cancel" onClick={() => setSaveMoveNotice(null)}>{t('common.close')}</button>
+      </div>
+      {saveMoveNotice.backup && <p className="noticePath">{t('notice.saveMove.backup', { path: saveMoveNotice.backup })}</p>}
+      {saveMoveNotice.rawCopy && <p className="noticePath">{t('notice.saveMove.rawCopy', { path: saveMoveNotice.rawCopy })}</p>}
+    </div>
+  );
   const noticeBanner = (placement: 'inline' | 'floating') => notice && (
     <div className={`noticeBanner ${placement}`} role="status" aria-live="polite">
       <p>{t(notice === 'art' ? 'notice.art' : 'notice.error')}</p>
@@ -936,7 +952,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
           onCharacter={characterAction}
           onWearCosmetic={wearCosmetic}
           onPlayStory={(beats) => setStory({ beats })}
-          inlineNotice={<>{achievementBanner}{suspendBanner}{noticeBanner('inline')}</>}
+          inlineNotice={<>{saveMoveBanner}{achievementBanner}{suspendBanner}{noticeBanner('inline')}</>}
           suspended={asSuspendedRun(profile.runSuspend?.state)}
           onResumeSuspended={resumeSuspended}
           onDiscardSuspended={discardSuspended}

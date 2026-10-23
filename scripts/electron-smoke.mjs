@@ -1,8 +1,8 @@
 // Desktop smoke check (TEC-01, TEC-03, TEC-09, TEC-14, TEC-15, CON-04): launches the built app in Electron with a throwaway
 // data folder, so the player's own save is never touched. It checks the window's content size, the app:// origin, the
-// first-launch move of file:// saves (seeded into that folder first), sprite loading, a short run, the local error
-// log, recovery after a renderer crash, a second launch that keeps the moved saves, and a run that survives a crash, a
-// quit, and a force-quit.
+// first-launch move of file:// saves (seeded into that folder first) with its backup and raw copy (BUG-22), sprite
+// loading, a short run, the local error log, recovery after a renderer crash, a second launch that keeps the moved
+// saves, and a run that survives a crash, a quit, and a force-quit.
 // Usage: npm run build && npm run test:electron-smoke
 import { mkdir, mkdtemp, readFile, readdir, realpath, rm } from 'node:fs/promises';
 import os from 'node:os';
@@ -145,12 +145,21 @@ try {
     && !('another-app-key' in moved) && wallet === '4321';
   record('TEC-15 the first launch moves every file:// save entry to app:// (G17)', intact, `gold ${meta.gold}, wallet ${wallet}, board ${moved[BOARD_KEY] === fileOriginStorage[BOARD_KEY]}`);
   const dataFiles = await readdir(userDataDir);
-  const backupFile = dataFiles.find((name) => name.startsWith('save-backup-file-origin-'));
+  const backupFile = dataFiles.find((name) => name.startsWith('save-backup-file-origin-') && name.endsWith('.json'));
   const backup = backupFile ? JSON.parse(await readFile(path.join(userDataDir, backupFile), 'utf8')).entries ?? {} : {};
   record(
     'TEC-15 the move leaves a backup file (a save export) and a marker',
     dataFiles.includes('storage-migrated.json') && backup[SAVE_KEY] === fileOriginStorage[SAVE_KEY] && Object.keys(backup).length === 3,
     backupFile ?? 'no backup file',
+  );
+  // BUG-22: the old localStorage folder is copied as it was before it is read, and a move that worked tells the page nothing.
+  const rawCopy = dataFiles.find((name) => /^save-raw-copy-file-origin-\d+$/.test(name));
+  const rawFiles = rawCopy ? await readdir(path.join(userDataDir, rawCopy)) : [];
+  const notices = await page.evaluate(() => ({ key: localStorage.getItem('blackline-desktop-save-move'), shown: document.querySelectorAll('.noticePath').length }));
+  record(
+    'BUG-22 the move keeps a raw copy of the old localStorage folder, and a move that worked shows no notice',
+    rawFiles.includes('CURRENT') && !dataFiles.includes('storage-migration-pending.json') && notices.key === null && notices.shown === 0,
+    `${rawCopy ?? 'no raw copy'}: ${rawFiles.length} files; notice ${notices.key ?? 'none'}`,
   );
 
   const paths = await app.evaluate(({ app: electronApp, crashReporter }) => ({

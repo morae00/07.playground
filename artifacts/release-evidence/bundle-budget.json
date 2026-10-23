@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 151087,
-      "kib": 147.55,
+      "bytes": 151382,
+      "kib": 147.83,
       "baselineBytes": 128399,
-      "growthRatio": 0.17669919547660018,
+      "growthRatio": 0.17899672115826437,
       "warningBytes": 147658,
       "failBytes": 160498,
       "status": "warning",
@@ -27,24 +27,24 @@
       "passed": true
     },
     "css": {
-      "bytes": 17893,
-      "kib": 17.47,
+      "bytes": 17920,
+      "kib": 17.5,
       "warningBytes": 32768,
       "failBytes": 49152,
       "status": "passed",
       "passed": true
     },
     "initialAssets": {
-      "bytes": 2216149,
-      "kib": 2164.21,
+      "bytes": 2217841,
+      "kib": 2165.86,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 34475012,
-      "kib": 33667,
+      "bytes": 34476704,
+      "kib": 33668.66,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-CqySo3LQ.js",
+      "file": "assets/App-BU-S6Of5.js",
       "category": "appJs",
-      "sourceBytes": 462758,
-      "gzipBytes": 147534
+      "sourceBytes": 463797,
+      "gzipBytes": 147829
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -105,14 +105,14 @@
     {
       "file": "assets/content/strings/en.json",
       "category": "data",
-      "sourceBytes": 48469,
-      "gzipBytes": 14700
+      "sourceBytes": 49249,
+      "gzipBytes": 14960
     },
     {
       "file": "assets/content/strings/ko.json",
       "category": "data",
-      "sourceBytes": 52899,
-      "gzipBytes": 16741
+      "sourceBytes": 53811,
+      "gzipBytes": 17040
     },
     {
       "file": "assets/content/tables.json",
@@ -133,13 +133,13 @@
       "gzipBytes": 113032
     },
     {
-      "file": "assets/index-CELqW5wV.css",
+      "file": "assets/index-B8Q8nJgf.css",
       "category": "css",
-      "sourceBytes": 95975,
-      "gzipBytes": 17893
+      "sourceBytes": 96076,
+      "gzipBytes": 17920
     },
     {
-      "file": "assets/index-lQyvrC3O.js",
+      "file": "assets/index-BpOy_v17.js",
       "category": "appJs",
       "sourceBytes": 7500,
       "gzipBytes": 3553

@@ -3573,6 +3573,14 @@ h2 {
   margin: 0;
 }
 
+/* BUG-22: where the copies of the old saves are, selectable so the player can paste it into Finder's Go to Folder. */
+.noticeBanner .noticePath {
+  grid-column: 1 / -1;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
 .noticeActions {
   display: flex;
   gap: 8px;
