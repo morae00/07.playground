@@ -22,6 +22,8 @@ export const FUSE_TICKS: readonly number[] = Object.freeze([0, 0.45, 0.75, 0.95,
 export const FUSE_TICK_PITCHES: readonly number[] = Object.freeze(FUSE_TICKS.map((_, index) => (2500 + index * 200) / 2900));
 /** Summed step lengths drift by rounding; a tick due within this is due now. */
 const FUSE_TICK_SLACK = 1e-9;
+/** AUD-06: a charger's windup plays the ranged aim's warning this much lower, so the two read apart. */
+export const CHARGER_WARN_PITCH = 0.9;
 
 /**
  * A planted fuse (S4, AUD-02): where it sounds, its sizzle's voice until that stops, the simulation seconds since it
@@ -354,6 +356,13 @@ export class Presentation {
         this.burst(event.x, event.y, Math.round((event.kind === 'fuse' ? 30 : 18) * effects), '#050505', event.kind === 'fuse' ? 300 : 220);
         this.addShake(event.hit ? 14 : 6);
         this.play('bomber.blast', event.x);
+        return;
+      case 'enemy/windup':
+        // AUD-06: an aim or a charger's windup clacks as it starts; the charger's a little lower.
+        this.play('warn.ranged', event.x, event.role === 'charger' ? CHARGER_WARN_PITCH : 1);
+        return;
+      case 'boss/windup':
+        this.play('warn.boss', event.x);
         return;
       case 'trap/sprung':
         this.burst(event.x, event.y, 12, '#111111', 120);

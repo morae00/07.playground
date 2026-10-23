@@ -145,6 +145,11 @@ const SOUND_CUES = {
   // AUD-02 (P0-3): one amber clack per fuse tick, which the presentation plays on simulation time with a rising pitch;
   // no pitch jitter, so the rise reads. The ticks that sound keep their voices.
   'bomber.tick': cue('sfx', 4, 4, 0.03, [2900, 0.03, 'triangle', 1.6], { keep: 'oldest', jitter: 0 }),
+  // AUD-06 warnings (V3, the amber family): clacks as a threat starts its windup, at least 3 LU over the flow of hits
+  // and kills (art/audio/p1-mix.md). A ranged aim or a charger's windup (pitched lower), and a boss's armed pattern or
+  // dash. The warnings that sound keep their voices; no spacing group, so no other cue can hold one back.
+  'warn.ranged': cue('sfx', 5, 2, 0.12, [3000, 0.03, 'triangle', 2.1], { keep: 'oldest' }),
+  'warn.boss': cue('sfx', 5, 1, 0.25, [2900, 0.05, 'triangle', 1.65], { keep: 'oldest' }),
 } satisfies Record<string, CueSpec>;
 
 export default deepFreeze(SOUND_CUES);

@@ -166,4 +166,7 @@ export const RECIPES = Object.freeze({
   'cast.eclipseHalo': { variants: 1, layers: [{ tone: 'sine', hz: 130, to: 190, attack: 0.03, decay: 0.22, gain: 0.3 }, { noise: 'white', filter: 'bandpass', hz: 400, to: 900, q: 2, attack: 0.03, decay: 0.2, gain: 0.7 }, { noise: 'white', filter: 'highpass', hz: 6000, attack: 0.02, decay: 0.1, gain: 0.15, at: 0.05 }] },
   // S4 follow-up: one amber clack per fuse tick, played on simulation time (pitch from presentation), so pauses and the slow game keep it true.
   'bomber.tick': { variants: 2, layers: [...clack(0, 2900, 1)] },
+  // Warnings (V3): the amber family, played as a threat is telegraphed. Appended at the end, so earlier files stay byte-identical.
+  'warn.ranged': { variants: 2, layers: [...clack(0, 3000, 0.9), ...clack(0.07, 3300, 0.7)] },
+  'warn.boss': { variants: 2, layers: [...clack(0, 2700), ...clack(0.09, 2900), ...clack(0.18, 3200), { noise: 'white', filter: 'lowpass', hz: 400, to: 900, attack: 0.15, decay: 0.15, gain: 0.5 }] },
 });

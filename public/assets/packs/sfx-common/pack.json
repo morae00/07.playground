@@ -399,6 +399,14 @@
   "bomber.tick": [
    "bomber.tick-0.wav",
    "bomber.tick-1.wav"
+  ],
+  "warn.ranged": [
+   "warn.ranged-0.wav",
+   "warn.ranged-1.wav"
+  ],
+  "warn.boss": [
+   "warn.boss-0.wav",
+   "warn.boss-1.wav"
   ]
  }
 }

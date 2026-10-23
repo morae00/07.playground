@@ -46,6 +46,17 @@ export type GameEvent =
   | { type: 'enemy/defused'; id: number }
   | { type: 'trap/sprung'; x: number; y: number }
   | { type: 'shot/blocked'; x: number; y: number }
+  /**
+   * AUD-06 (looks and sound only): a ranged enemy began to aim, or a charger began its windup; lead is the seconds of
+   * simulation until the shot or the dash. Remaster rules only (isolatedCosmeticIds), so classic event streams stay.
+   */
+  | { type: 'enemy/windup'; x: number; y: number; role: 'ranged' | 'charger'; lead: number }
+  /**
+   * AUD-06 (looks and sound only): a boss armed a telegraphed pattern, or began a dash windup that shows its lane; once
+   * per warning, not per ring. The shock and the eclipse wall sound at their telegraph already and send none.
+   * Remaster rules only (isolatedCosmeticIds).
+   */
+  | { type: 'boss/windup'; x: number; y: number; pattern: BossPattern; lead: number }
   /** SYS-02: a warden's shield took a hit, and a charger ran into a wall. */
   | { type: 'enemy/blocked'; x: number; y: number }
   /** source: the awakened weapon whose gimmick stunned it (SYS-16), none for walls and chargers. */

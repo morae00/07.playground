@@ -4184,6 +4184,7 @@ export class GameEngine {
           enemy.patternX = aim.x;
           enemy.patternY = aim.y;
           enemy.rangedTelegraph = RANGED_ENEMY.telegraphSeconds;
+          this.windup({ type: 'enemy/windup', x: enemy.x, y: enemy.y, role: 'ranged', lead: RANGED_ENEMY.telegraphSeconds });
           const cadenceScale = this.runMode === 'infinite'
             ? Math.min(1.55, 1 + infiniteDifficultyAt(this.elapsed, this.infiniteBossKills).minute * 0.012)
             : 1;
@@ -4259,6 +4260,7 @@ export class GameEngine {
             enemy.patternTimer = CHARGER.windupSeconds;
             enemy.patternX = dir.x * dashSpeed;
             enemy.patternY = dir.y * dashSpeed;
+            this.windup({ type: 'enemy/windup', x: enemy.x, y: enemy.y, role: 'charger', lead: CHARGER.windupSeconds });
             this.laneTelegraphs.push({
               id: this.nextId(),
               x1: enemy.x,
@@ -4477,6 +4479,7 @@ export class GameEngine {
           life: windup,
           maxLife: windup,
         });
+        this.windup({ type: 'boss/windup', x: enemy.x, y: enemy.y, pattern: 'dash', lead: enemy.patternTimer / cadenceMultiplier });
       }
     } else if (boss.pattern === 'dash') {
       if (enemy.patternPhase === 'warn' && enemy.patternTimer <= 0) {
@@ -4851,6 +4854,7 @@ export class GameEngine {
         break;
     }
     enemy.armedPattern = armed;
+    this.windup({ type: 'boss/windup', x: enemy.x, y: enemy.y, pattern, lead: warnSeconds });
   }
 
   /** Fires an armed pattern; returns false when a volley has no room under the shot cap. */
@@ -5138,6 +5142,8 @@ export class GameEngine {
       life: step.windupSeconds,
       maxLife: step.windupSeconds,
     });
+    // A windup that shows a new lane warns; the crossing triple's later legs run lanes already on screen.
+    this.windup({ type: 'boss/windup', x: enemy.x, y: enemy.y, pattern: 'dash', lead: step.windupSeconds });
   }
 
   protected activeBossPhaseMove(enemy: Entity): BossPhaseMove | undefined {
@@ -6578,6 +6584,14 @@ export class GameEngine {
     if (this.replaying) return;
     this.presentation.handle(event);
     for (const listener of this.eventListeners) listener(event);
+  }
+
+  /**
+   * AUD-06: a warning's windup, for its sound. Looks only; remaster rules only, like the cosmetic ids, so classic event
+   * streams stay 0.1.0's (the ranged aim is one of its paths).
+   */
+  protected windup(event: Extract<GameEvent, { type: 'enemy/windup' | 'boss/windup' }>) {
+    if (this.rules.isolatedCosmeticIds) this.emit(event);
   }
 
   /**

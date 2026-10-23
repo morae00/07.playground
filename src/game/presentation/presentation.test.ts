@@ -3,7 +3,7 @@ import test from 'node:test';
 import { CUES, type CueId, type SoundOutput } from '../audioPolicy.ts';
 import BOMBERS from '../../content/data/bombers.ts';
 import { createDefaultOptions } from '../../platform/save.ts';
-import { CORPSE_SECONDS, DEATH_MOMENT_SECONDS, FUSE_TICK_PITCHES, FUSE_TICKS, HEARTBEAT_SECONDS, HIT_STAMP_SECONDS, HURT_VIGNETTE_SECONDS, NUMBER_MERGE_SECONDS, PICKUP_COMBO_MAX, PICKUP_COMBO_SECONDS, PICKUP_COMBO_STEP, Presentation, RECOIL_SECONDS, RECOIL_SIZE, SKILL_MARK_SECONDS } from './presentation.ts';
+import { CHARGER_WARN_PITCH, CORPSE_SECONDS, DEATH_MOMENT_SECONDS, FUSE_TICK_PITCHES, FUSE_TICKS, HEARTBEAT_SECONDS, HIT_STAMP_SECONDS, HURT_VIGNETTE_SECONDS, NUMBER_MERGE_SECONDS, PICKUP_COMBO_MAX, PICKUP_COMBO_SECONDS, PICKUP_COMBO_STEP, Presentation, RECOIL_SECONDS, RECOIL_SIZE, SKILL_MARK_SECONDS } from './presentation.ts';
 
 function setup(overrides: Partial<ReturnType<typeof createDefaultOptions>> = {}, chapter = 1) {
   let id = 0;
@@ -361,6 +361,29 @@ test('hits on one enemy within 0.3 s add into its number and pop it again; class
   classic.handle(hit(7, 10));
   classic.handle(hit(7, 15));
   assert.equal(classic.damageNumbers.length, 2);
+});
+
+test('AUD-06: windups sound their warnings: a ranged aim, a charger a little lower, and a boss pattern or dash', () => {
+  const { presentation, ids } = setup();
+  const { sound, played } = recorder();
+  presentation.setSound(sound);
+  presentation.handle({ type: 'enemy/windup', x: 750, y: 0, role: 'ranged', lead: 0.44 });
+  presentation.handle({ type: 'enemy/windup', x: 250, y: 0, role: 'charger', lead: 0.62 });
+  presentation.handle({ type: 'boss/windup', x: 500, y: 0, pattern: 'tide', lead: 0.5 });
+  presentation.handle({ type: 'boss/windup', x: 500, y: 0, pattern: 'dash', lead: 0.62 });
+  assert.deepEqual(played, [
+    { cue: 'warn.ranged', pan: 0.5 },
+    { cue: 'warn.ranged', pan: -0.5, pitch: CHARGER_WARN_PITCH },
+    { cue: 'warn.boss', pan: 0 },
+    { cue: 'warn.boss', pan: 0 },
+  ]);
+  assert.equal(ids(), 0, 'no particles or numbers');
+  assert.equal(presentation.random(), setup().presentation.random(), 'and no cosmetic random numbers');
+  for (const cue of ['warn.ranged', 'warn.boss'] as const) {
+    assert.equal(CUES[cue].priority, 5, cue);
+    assert.equal(CUES[cue].keep, 'oldest', cue);
+    assert.equal(CUES[cue].group, undefined, cue);
+  }
 });
 
 test('sound never draws from the cosmetic stream that places particles', () => {

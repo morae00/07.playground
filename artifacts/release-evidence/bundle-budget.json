@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 151682,
-      "kib": 148.13,
+      "bytes": 151798,
+      "kib": 148.24,
       "baselineBytes": 128399,
-      "growthRatio": 0.1813331879531772,
+      "growthRatio": 0.18223662178054356,
       "warningBytes": 147658,
       "failBytes": 160498,
       "status": "warning",
@@ -35,16 +35,16 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 2218067,
-      "kib": 2166.08,
+      "bytes": 2218416,
+      "kib": 2166.42,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 34470225,
-      "kib": 33662.33,
+      "bytes": 34509586,
+      "kib": 33700.77,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-Buo2aeOq.js",
+      "file": "assets/App-CFkoNSVe.js",
       "category": "appJs",
-      "sourceBytes": 464518,
-      "gzipBytes": 148130
+      "sourceBytes": 465076,
+      "gzipBytes": 148246
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -117,8 +117,8 @@
     {
       "file": "assets/content/tables.json",
       "category": "data",
-      "sourceBytes": 59158,
-      "gzipBytes": 11075
+      "sourceBytes": 59507,
+      "gzipBytes": 11121
     },
     {
       "file": "assets/enemy-icons-BEkQ6ASU.webp",
@@ -139,7 +139,7 @@
       "gzipBytes": 17920
     },
     {
-      "file": "assets/index-aPgtwai9.js",
+      "file": "assets/index-BDHqGQ_V.js",
       "category": "appJs",
       "sourceBytes": 7500,
       "gzipBytes": 3552
@@ -1383,8 +1383,8 @@
     {
       "file": "assets/packs/sfx-common/pack.json",
       "category": "data",
-      "sourceBytes": 7797,
-      "gzipBytes": 1480
+      "sourceBytes": 7933,
+      "gzipBytes": 1506
     },
     {
       "file": "assets/packs/sfx-common/pickup.coin-0.wav",
@@ -1511,6 +1511,30 @@
       "category": "audio",
       "sourceBytes": 3662,
       "gzipBytes": 2004
+    },
+    {
+      "file": "assets/packs/sfx-common/warn.boss-0.wav",
+      "category": "audio",
+      "sourceBytes": 14262,
+      "gzipBytes": 9962
+    },
+    {
+      "file": "assets/packs/sfx-common/warn.boss-1.wav",
+      "category": "audio",
+      "sourceBytes": 13884,
+      "gzipBytes": 10087
+    },
+    {
+      "file": "assets/packs/sfx-common/warn.ranged-0.wav",
+      "category": "audio",
+      "sourceBytes": 5412,
+      "gzipBytes": 2421
+    },
+    {
+      "file": "assets/packs/sfx-common/warn.ranged-1.wav",
+      "category": "audio",
+      "sourceBytes": 5318,
+      "gzipBytes": 2276
     },
     {
       "file": "assets/packs/skills/atlas-0.png",
