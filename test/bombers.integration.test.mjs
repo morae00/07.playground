@@ -129,3 +129,48 @@ test('SYS-14: a burst bomber goes off the moment it touches', () => {
     r.engine.dispose();
   }
 });
+
+test('AUD-02: a fuse ticks on the simulation clock, through a pause and at the slow game, the last tick just before the blast', () => {
+  const FUSE_TICKS = [0, 0.45, 0.75, 0.95, 1.07];
+  const spans = {};
+  for (const slow of [false, true]) {
+    const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), maxMeta(), { ...standardOptions(), assistSlowGame: slow }, { onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver() {} });
+    engine.setRuleSet('remaster');
+    const sounds = [];
+    let frame = 0;
+    // A recorder in place of the mixer, noting the wall frame and the simulation clock of every cue.
+    engine.setSound({ unlock() {}, play(cue, _pan, pitch = 1) { sounds.push({ cue, frame, pitch, elapsed: engine.probe.read().elapsed }); return sounds.length; }, stop() {} });
+    engine.startRun(3, 2, 2424);
+    const { probe } = engine;
+    try {
+      probe.haltSpawns();
+      probe.clear('enemies');
+      probe.setSkills({});
+      probe.setPlayer({ hp: 500, invuln: 0, nextXp: 1e12 });
+      bomberBeside(probe, 'fuse', 20);
+      for (; frame < 260; frame += 1) {
+        // One second in the pause hub (or a draft) while the fuse burns.
+        if (frame === 20) engine.pause();
+        if (frame === 80) engine.resume();
+        engine.advanceFrame(1 / 60, false);
+      }
+      const armed = sounds.find((sound) => sound.cue === 'bomber.fuse');
+      const ticks = sounds.filter((sound) => sound.cue === 'bomber.tick');
+      const blast = sounds.find((sound) => sound.cue === 'bomber.blast');
+      assert.ok(armed && blast, `${slow ? 'slow' : 'normal'}: armed, then went off`);
+      assert.equal(ticks.length, 5);
+      ticks.forEach((tick, index) => {
+        assert.ok(Math.abs(tick.elapsed - armed.elapsed - FUSE_TICKS[index]) <= 1 / 60 + 1e-9, `tick ${index} at ${(tick.elapsed - armed.elapsed).toFixed(3)} s of simulation`);
+        assert.ok(tick.frame < 20 || tick.frame >= 80, 'no tick while paused');
+      });
+      assert.deepEqual(ticks.map((tick) => Math.round(tick.pitch * 2900)), [2500, 2700, 2900, 3100, 3300]);
+      assert.ok(ticks[4].frame <= blast.frame && blast.elapsed - ticks[4].elapsed < 0.1, 'the last tick comes just before the blast');
+      spans[slow] = ticks[4].frame - ticks[0].frame;
+    } finally {
+      engine.dispose();
+    }
+  }
+  // In wall time the slow game stretches the fuse by 1 / 0.8; the pause adds its 60 frames to both.
+  assert.ok(Math.abs(spans.false - (1.07 * 60 + 60)) <= 2, `normal: ${spans.false} frames from the first tick to the last`);
+  assert.ok(Math.abs(spans.true - ((1.07 / 0.8) * 60 + 60)) <= 2, `slow game: ${spans.true} frames`);
+});

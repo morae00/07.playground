@@ -93,3 +93,40 @@ test('a voice stopped early frees its slot (S4)', () => {
   assert.equal(ledger.voices.length, 0);
   assert.equal(ledger.release(fuse.voice.id), null, 'a voice is released once');
 });
+
+test('AUD-02: a cue that keeps its oldest voices refuses a new one at its limit instead of cutting the first', () => {
+  const ledger = new VoiceLedger();
+  assert.equal(CUES['bomber.fuse'].keep, 'oldest');
+  const fuses = [0, 0.1, 0.2].map((now) => ledger.request('bomber.fuse', now, 1.15));
+  assert.ok(fuses.every(Boolean));
+  assert.equal(ledger.request('bomber.fuse', 0.3, 1.15), null, 'the fourth fuse stays silent');
+  assert.deepEqual(ledger.voices.map((voice) => voice.id), fuses.map((fuse) => fuse!.voice.id), 'the first fuse, due first, keeps sounding');
+  assert.deepEqual([ledger.counts.dropped, ledger.counts.stolen], [1, 0]);
+  assert.ok(ledger.request('bomber.fuse', 1.16, 1.15), 'once the first has ended a new one sounds');
+  // A refused request sets no spacing: the next one waits only for a free voice.
+  const ticks = new VoiceLedger();
+  for (const now of [0, 0.04, 0.08, 0.12]) assert.ok(ticks.request('bomber.tick', now, 0.5), `tick at ${now}`);
+  assert.equal(ticks.request('bomber.tick', 0.16, 0.5), null);
+  assert.equal(ticks.counts.spaced, 0);
+});
+
+test('AUD-02: a higher-priority cue passes a group spacing a lower one set; equal or lower ones wait (P1-5)', () => {
+  assert.ok(CUES['hit.light'].priority < CUES['hit.heavy'].priority);
+  assert.equal(CUES['hit.heavy'].priority, CUES['hit.critical'].priority);
+  const ledger = new VoiceLedger();
+  assert.ok(ledger.request('hit.light', 0, 0.03));
+  assert.ok(ledger.request('hit.heavy', 0.01, 0.05), 'a heavy hit is not held back by a light one');
+  assert.equal(ledger.request('hit.light', 0.03, 0.03), null, 'a light hit waits out the heavy hit\'s spacing');
+  assert.equal(ledger.request('hit.critical', 0.03, 0.06), null, 'and so does a critical one, at the same priority');
+  assert.ok(ledger.request('hit.critical', 0.055, 0.06), 'until it is over');
+  assert.equal(ledger.request('shield.block', 0.06, 0.03), null);
+  assert.equal(ledger.counts.spaced, 3);
+  // In a crowd: a light hit every 1/28 s never blocks the criticals between them.
+  const crowd = new VoiceLedger();
+  let criticals = 0;
+  for (let index = 0; index < 56; index += 1) {
+    crowd.request('hit.light', index / 28, 0.03);
+    if (index % 7 === 3 && crowd.request('hit.critical', index / 28 + 0.001, 0.06)) criticals += 1;
+  }
+  assert.equal(criticals, 8);
+});

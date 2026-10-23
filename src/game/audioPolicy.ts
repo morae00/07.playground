@@ -17,13 +17,26 @@ export type SynthTone = {
 
 export type CueSpec = {
   bus: SoundBus;
-  /** Higher priorities take voices from lower ones when every voice is busy. */
+  /**
+   * Higher priorities take voices from lower ones when every voice is busy, and pass a group spacing that a lower
+   * priority cue set (AUD-02: a light hit never holds back a heavy or critical one).
+   */
   priority: number;
-  /** Most voices of this cue sounding at once; one more replaces the oldest. */
+  /** Most voices of this cue sounding at once; one more replaces the oldest, unless keep is 'oldest'. */
   maxVoices: number;
-  /** Seconds before the cue, or any cue in its group, can start again. */
+  /** Seconds before the cue, or any cue in its group at the same or a lower priority, can start again. */
   spacing: number;
   group?: string;
+  /**
+   * 'oldest': at the voice limit the new request stays silent and the sounding voices keep playing (AUD-02: the fuse
+   * that goes off first keeps its warning).
+   */
+  keep?: 'oldest';
+  /**
+   * How far a sample's pitch varies each play, as a share (the mixer's 4% when absent). 0 keeps the pitch the
+   * presentation asks for exactly: the bomber's rising ticks.
+   */
+  jitter?: number;
   synth: SynthTone;
 };
 
@@ -97,14 +110,15 @@ export type VoiceSlot = { id: number; cue: CueId; priority: number; endsAt: numb
 export type VoiceCounts = { started: number; spaced: number; dropped: number; stolen: number; peak: number };
 
 /**
- * Voice bookkeeping on the audio clock. A cue waits out its group's spacing; a cue at its own voice limit replaces
- * its oldest voice; when all voices are busy it takes the oldest voice of the lowest priority, or stays silent if
- * every voice outranks it.
+ * Voice bookkeeping on the audio clock. A cue waits out its group's spacing unless it outranks the cue that set it;
+ * a cue at its own voice limit replaces its oldest voice, or stays silent if it keeps its oldest; when all voices are
+ * busy it takes the oldest voice of the lowest priority, or stays silent if every voice outranks it.
  */
 export class VoiceLedger {
   readonly voices: VoiceSlot[] = [];
   readonly counts: VoiceCounts = { started: 0, spaced: 0, dropped: 0, stolen: 0, peak: 0 };
-  private readonly readyAt = new Map<string, number>();
+  /** Per group (or cue): when it may start again, and the priority of the cue that set that. */
+  private readonly readyAt = new Map<string, { at: number; priority: number }>();
   private readonly limit: number;
   private lastId = 0;
 
@@ -117,7 +131,8 @@ export class VoiceLedger {
     this.expire(now);
     const spec: CueSpec = CUES[cueId];
     const key = spec.group ?? cueId;
-    if (now < (this.readyAt.get(key) ?? Number.NEGATIVE_INFINITY)) {
+    const ready = this.readyAt.get(key);
+    if (ready && now < ready.at && spec.priority <= ready.priority) {
       this.counts.spaced += 1;
       return null;
     }
@@ -133,6 +148,10 @@ export class VoiceLedger {
     }
     let cut: VoiceSlot | null = null;
     if (same >= spec.maxVoices) {
+      if (spec.keep === 'oldest') {
+        this.counts.dropped += 1;
+        return null;
+      }
       cut = oldestSame;
     } else if (this.voices.length >= this.limit) {
       if (!lowest || lowest.priority > spec.priority) {
@@ -148,7 +167,12 @@ export class VoiceLedger {
     this.lastId += 1;
     const voice = { id: this.lastId, cue: cueId, priority: spec.priority, endsAt: now + duration };
     this.voices.push(voice);
-    this.readyAt.set(key, now + spec.spacing);
+    if (ready) {
+      ready.at = now + spec.spacing;
+      ready.priority = spec.priority;
+    } else {
+      this.readyAt.set(key, { at: now + spec.spacing, priority: spec.priority });
+    }
     this.counts.started += 1;
     this.counts.peak = Math.max(this.counts.peak, this.voices.length);
     return { voice, cut };

@@ -13,6 +13,21 @@ import { isArsenal, lookOf } from '../arsenal.ts';
 const BLAST_SECONDS = 0.15;
 /** K11: how long a shock's burst and the mark it leaves show (API-hazards §4.2: burst 0.25 s, decal 1.2 s). */
 const SHOCK_SECONDS = 1.45;
+/**
+ * AUD-02 (P0-3): a planted fuse ticks at these simulation times after it is armed, the last just before its 1.15 s
+ * blast (BOMBERS.fuse.seconds), so pauses, drafts, the slow game, and hit-stop hold the ticks back with the fuse.
+ */
+export const FUSE_TICKS: readonly number[] = Object.freeze([0, 0.45, 0.75, 0.95, 1.07]);
+/** Each tick a step higher: 2500 Hz rising by 200 Hz, against the bomber.tick clack's 2900 Hz. */
+export const FUSE_TICK_PITCHES: readonly number[] = Object.freeze(FUSE_TICKS.map((_, index) => (2500 + index * 200) / 2900));
+/** Summed step lengths drift by rounding; a tick due within this is due now. */
+const FUSE_TICK_SLACK = 1e-9;
+
+/**
+ * A planted fuse (S4, AUD-02): where it sounds, its sizzle's voice until that stops, the simulation seconds since it
+ * was armed, and the next tick. fresh: armed during the current step, which has no simulated time behind it yet.
+ */
+type Fuse = { x: number; voice: number | undefined; age: number; next: number; fresh: boolean };
 
 export type PresentationHost = {
   /**
@@ -108,8 +123,8 @@ export class Presentation {
   readonly blasts: BlastFlash[] = [];
   /** K11: shocks that went off, for their burst and mark. */
   readonly shocks: ShockBurst[] = [];
-  /** S4: each planted bomber's fuse voice (enemy id to voice id), stopped if the bomber is felled first. */
-  private readonly fuses = new Map<number, number>();
+  /** S4, AUD-02: each planted bomber's fuse by enemy id; its ticks and sizzle stop if the bomber is felled first. */
+  private readonly fuses = new Map<number, Fuse>();
   readonly skillMarks: SkillMark[] = [];
   /** K10: the marks' cosmetic serial, the seed of their jitter; its own counter, so it never moves a game id (BUG-08). */
   private markSerial = 0;
@@ -179,11 +194,12 @@ export class Presentation {
     this.legacyHitWait = 0;
     this.pickupCombo = 0;
     this.pickupComboWait = 0;
-    this.fuses.clear();
+    this.hushFuses(true);
   }
 
-  /** A new round: drop particles and damage numbers (rings clear with the round's other effects). */
+  /** A new round: drop particles and damage numbers (rings clear with the round's other effects), and the fuses. */
   clearRound() {
+    this.hushFuses(true);
     for (const particle of this.particles) this.particlePool.release(particle);
     for (const number of this.damageNumbers) this.damageNumberPool.release(number);
     for (const corpse of this.corpses) this.corpsePool.release(corpse);
@@ -318,13 +334,14 @@ export class Presentation {
         this.addShake(11);
         return;
       case 'enemy/armed': {
-        const voice = this.play('bomber.fuse', event.x);
-        if (voice !== undefined) this.fuses.set(event.id, voice);
+        // AUD-02: the sizzle runs on its own; the first tick sounds now and the rest on simulation time (step).
+        this.fuses.set(event.id, { x: event.x, voice: this.play('bomber.fuse', event.x), age: 0, next: 1, fresh: true });
+        this.play('bomber.tick', event.x, FUSE_TICK_PITCHES[0]);
         return;
       }
       case 'enemy/defused': {
         // S4: a felled bomber's fuse stops ticking, so it does not warn of a blast that will not come.
-        const voice = this.fuses.get(event.id);
+        const voice = this.fuses.get(event.id)?.voice;
         this.fuses.delete(event.id);
         if (voice !== undefined) this.sound?.stop?.(voice);
         return;
@@ -391,11 +408,17 @@ export class Presentation {
     }
   }
 
-  /** Start of an animation frame: shake decays in wall time unless paused; the death moment runs regardless. */
+  /**
+   * Start of an animation frame: shake decays in wall time unless paused; the death moment runs regardless. A paused
+   * run silences its fuses' sizzles, which play in wall time; their ticks wait for the simulation.
+   */
   beginFrame(frameDt: number, paused: boolean) {
     this.legacyHitWait = Math.max(0, this.legacyHitWait - frameDt);
     this.deathMoment = Math.max(0, this.deathMoment - frameDt);
-    if (paused) return;
+    if (paused) {
+      this.hushFuses(false);
+      return;
+    }
     this.pickupComboWait = Math.max(0, this.pickupComboWait - frameDt);
     this.shake = Math.max(0, this.shake - frameDt * 12);
   }
@@ -411,8 +434,9 @@ export class Presentation {
     else if (this.deathMoment > 0) this.updateParticles(frameDt * DEATH_SLOWMO_RATE);
   }
 
-  /** Per fixed simulation step: rings, damage numbers, corpses, and the hero's poses age with simulated time. */
+  /** Per fixed simulation step: rings, damage numbers, corpses, the hero's poses, and fuse ticks go by simulated time. */
   step(dt: number) {
+    if (this.fuses.size > 0) this.tickFuses(dt);
     this.hurtVignette = Math.max(0, this.hurtVignette - dt);
     if (this.lowHealth) {
       this.heartbeatIn -= dt;
@@ -566,10 +590,35 @@ export class Presentation {
     if (!this.disposed) this.sound?.unlock();
   }
 
-  /** The mixer outlives every run (AUD-01): a disposed presentation only stops sending it cues. */
+  /** The mixer outlives every run (AUD-01): a disposed presentation stops its fuses and sends it no more cues. */
   dispose() {
+    this.hushFuses(true);
     this.disposed = true;
     this.sound = null;
+  }
+
+  /** AUD-02: each fuse's ticks fall due by the simulation time since it was armed. */
+  private tickFuses(dt: number) {
+    for (const fuse of this.fuses.values()) {
+      if (fuse.fresh) {
+        fuse.fresh = false;
+        continue;
+      }
+      fuse.age += dt;
+      while (fuse.next < FUSE_TICKS.length && fuse.age + FUSE_TICK_SLACK >= FUSE_TICKS[fuse.next]) {
+        this.play('bomber.tick', fuse.x, FUSE_TICK_PITCHES[fuse.next]);
+        fuse.next += 1;
+      }
+    }
+  }
+
+  /** Stops every fuse's sizzle (render audit 4), and with forget drops the fuses and their ticks too. */
+  private hushFuses(forget: boolean) {
+    for (const fuse of this.fuses.values()) {
+      if (fuse.voice !== undefined) this.sound?.stop?.(fuse.voice);
+      fuse.voice = undefined;
+    }
+    if (forget) this.fuses.clear();
   }
 
   private particleCap() {

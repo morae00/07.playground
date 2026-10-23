@@ -25,7 +25,7 @@ const SILENT = 0.001;
 const LEVEL_GLIDE = 0.015;
 /** A voice cut for a newer one fades out this fast instead of clicking off. */
 const CUT_FADE = 0.012;
-/** Samples vary their pitch by up to 4% each play so repeats do not sound mechanical. */
+/** Samples vary their pitch by up to 4% each play so repeats do not sound mechanical, unless their cue says (CueSpec.jitter). */
 const SAMPLE_PITCH_JITTER = 0.04;
 /** AUD-04 ambience beds: how long one fades into the next (their levels are AMBIENCE_LEVELS). */
 const AMBIENCE_FADE = 1.2;
@@ -89,7 +89,8 @@ export class AudioMixer implements SoundOutput {
     const now = context.currentTime;
     const variants = this.samples.get(cueId);
     const buffer = variants?.[Math.floor(this.random() * variants.length)];
-    const rate = (buffer ? 1 + (this.random() * 2 - 1) * SAMPLE_PITCH_JITTER : 1) * pitch;
+    const jitter = spec.jitter ?? SAMPLE_PITCH_JITTER;
+    const rate = (buffer && jitter > 0 ? 1 + (this.random() * 2 - 1) * jitter : 1) * pitch;
     const duration = buffer ? buffer.duration / rate : spec.synth.duration + 0.01;
     const admitted = this.ledger.request(cueId, now, duration);
     if (!admitted) return;

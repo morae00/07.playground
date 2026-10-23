@@ -395,6 +395,10 @@
   ],
   "cast.eclipseHalo": [
    "cast.eclipseHalo-0.wav"
+  ],
+  "bomber.tick": [
+   "bomber.tick-0.wav",
+   "bomber.tick-1.wav"
   ]
  }
 }

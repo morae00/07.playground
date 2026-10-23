@@ -103,7 +103,7 @@ class FakeContext {
 
 type Gain = FakeNode & { gain: FakeParam };
 
-function setup(levels = { volume: 0.5, musicVolume: 0.8, sfxVolume: 1 }) {
+function setup(levels = { volume: 0.5, musicVolume: 0.8, sfxVolume: 1 }, random = () => 0.5) {
   const contexts: FakeContext[] = [];
   const mixer = new AudioMixer({
     createContext: () => {
@@ -112,7 +112,7 @@ function setup(levels = { volume: 0.5, musicVolume: 0.8, sfxVolume: 1 }) {
       return context as unknown as AudioContext;
     },
     fetchFile: async (url) => new TextEncoder().encode(url).buffer as ArrayBuffer,
-    random: () => 0.5,
+    random,
   });
   mixer.setLevels(levels);
   const open = async () => {
@@ -235,6 +235,19 @@ test('sound pack samples replace the synth tone once decoded, and a broken file 
   assert.ok(Math.abs(kill.stops[0] - 0.2) < 1e-9, 'the voice lasts as long as its sample');
   assert.equal(hurt.kind, 'oscillator', 'no sample, so the synth plays');
   assert.equal(mixer.stats().samples, 1);
+});
+
+test('AUD-02: samples vary their pitch a little each play, except a cue that turns it off (the fuse ticks)', async () => {
+  const { mixer, open } = setup(undefined, () => 0.9);
+  const loaded = mixer.loadPack({ id: 'test', base: 'assets/sfx/', cues: { 'enemy.kill': ['kill-0.wav'], 'bomber.tick': ['tick-0.wav'] } });
+  const context = await open();
+  await loaded;
+  mixer.play('enemy.kill', 0, 1.1);
+  mixer.play('bomber.tick', 0, 2700 / 2900);
+  const [kill, tick] = sources(context);
+  assert.ok(Math.abs(kill.playbackRate.value - (1 + 0.8 * 0.04) * 1.1) < 1e-12, 'up to 4% around the asked pitch');
+  assert.equal(tick.playbackRate.value, 2700 / 2900, 'exactly the asked pitch');
+  assert.ok(Math.abs(tick.stops[0] - 0.2 / (2700 / 2900)) < 1e-12, 'and the voice lasts as long as the sample at that pitch');
 });
 
 test('without Web Audio the mixer stays silent and stops trying', () => {

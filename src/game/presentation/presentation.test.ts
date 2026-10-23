@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { CueId, SoundOutput } from '../audioPolicy.ts';
+import { CUES, type CueId, type SoundOutput } from '../audioPolicy.ts';
+import BOMBERS from '../../content/data/bombers.ts';
 import { createDefaultOptions } from '../../platform/save.ts';
-import { CORPSE_SECONDS, DEATH_MOMENT_SECONDS, HEARTBEAT_SECONDS, HIT_STAMP_SECONDS, HURT_VIGNETTE_SECONDS, NUMBER_MERGE_SECONDS, PICKUP_COMBO_MAX, PICKUP_COMBO_SECONDS, PICKUP_COMBO_STEP, Presentation, RECOIL_SECONDS, RECOIL_SIZE, SKILL_MARK_SECONDS } from './presentation.ts';
+import { CORPSE_SECONDS, DEATH_MOMENT_SECONDS, FUSE_TICK_PITCHES, FUSE_TICKS, HEARTBEAT_SECONDS, HIT_STAMP_SECONDS, HURT_VIGNETTE_SECONDS, NUMBER_MERGE_SECONDS, PICKUP_COMBO_MAX, PICKUP_COMBO_SECONDS, PICKUP_COMBO_STEP, Presentation, RECOIL_SECONDS, RECOIL_SIZE, SKILL_MARK_SECONDS } from './presentation.ts';
 
 function setup(overrides: Partial<ReturnType<typeof createDefaultOptions>> = {}, chapter = 1) {
   let id = 0;
@@ -157,8 +158,72 @@ test('a felled bomber stops its fuse; one that went off is forgotten (S4)', () =
   presentation.handle({ type: 'enemy/defused', id: 8 });
   presentation.handle({ type: 'enemy/defused', id: 7 });
   presentation.handle({ type: 'enemy/defused', id: 7 });
-  assert.deepEqual(played.map((entry) => entry.cue), ['bomber.fuse', 'bomber.fuse', 'bomber.blast']);
+  assert.deepEqual(played.map((entry) => entry.cue), ['bomber.fuse', 'bomber.tick', 'bomber.fuse', 'bomber.tick', 'bomber.blast']);
   assert.deepEqual(stopped, [1], 'only the first fuse (voice 1) stops, once');
+  for (let step = 0; step < 90; step += 1) presentation.step(1 / 60);
+  assert.equal(played.length, 5, 'neither fuse ticks again');
+});
+
+/** Arms fuse 7 at x 500, then runs simulation steps of dt; the tick cues played, with the step each came on. */
+function fuseTicks(steps: number, dt = 1 / 60, between?: (step: number, presentation: Presentation) => void) {
+  const { presentation } = setup();
+  const { sound, played, stopped } = recorder();
+  presentation.setSound(sound);
+  const ticks: { step: number; pitch: number }[] = [];
+  const collect = (step: number) => {
+    for (const entry of played.splice(0)) if (entry.cue === 'bomber.tick') ticks.push({ step, pitch: entry.pitch ?? 1 });
+  };
+  presentation.handle({ type: 'enemy/armed', id: 7, x: 500, y: 0, radius: 100, seconds: BOMBERS.fuse.seconds });
+  collect(0);
+  // The engine reports the arming during a step, then ends that step with presentation.step: step 1 is that one.
+  for (let step = 1; step <= steps; step += 1) {
+    between?.(step, presentation);
+    presentation.step(dt);
+    collect(step);
+  }
+  return { ticks, stopped, presentation };
+}
+
+test('AUD-02: a planted fuse ticks five times on simulation time, each tick higher, the last before the blast', () => {
+  assert.ok(FUSE_TICKS.at(-1)! < BOMBERS.fuse.seconds, 'the last tick comes before the blast');
+  const { ticks } = fuseTicks(90);
+  // Step k + 1 ends k/60 s of simulation after the arming: 0.45 s is step 28, 0.75 s step 46, 0.95 s step 58, 1.07 s step 66.
+  assert.deepEqual(ticks.map((tick) => tick.step), [0, 28, 46, 58, 66]);
+  assert.deepEqual(ticks.map((tick) => tick.pitch), FUSE_TICK_PITCHES);
+  assert.deepEqual(FUSE_TICK_PITCHES.map((pitch) => Math.round(pitch * 2900)), [2500, 2700, 2900, 3100, 3300]);
+  assert.equal(CUES['bomber.tick'].jitter, 0, 'the mixer plays the pitch as asked');
+  assert.equal(CUES['bomber.tick'].keep, 'oldest');
+  assert.equal(CUES['bomber.fuse'].keep, 'oldest');
+});
+
+test('AUD-02: fuse ticks follow the simulation through pauses, drafts, and hit-stop; a pause stops the sizzle', () => {
+  // A draft or the pause hub: frames go by without simulation steps, so nothing ticks, and the wall-time sizzle stops.
+  const paused = fuseTicks(90, 1 / 60, (step, presentation) => {
+    if (step === 10) for (let frame = 0; frame < 300; frame += 1) presentation.beginFrame(1 / 60, true);
+  });
+  assert.deepEqual(paused.ticks.map((tick) => tick.step), [0, 28, 46, 58, 66], 'five seconds paused move no tick');
+  assert.deepEqual(paused.stopped, [1], 'the sizzle (voice 1) stops once when the run pauses');
+  // Hit-stop runs steps of 0.18 x 1/60 s: the ticks wait for that much more simulation.
+  const slowed = fuseTicks(400, 0.18 / 60);
+  assert.deepEqual(slowed.ticks.map((tick) => tick.step), [0, 151, 251, 318, 358]);
+});
+
+test('AUD-02: a fuse stops ticking when it is felled or goes off, and at the round\'s end and on dispose', () => {
+  const ends: Record<string, (presentation: Presentation) => void> = {
+    defused: (presentation) => presentation.handle({ type: 'enemy/defused', id: 7 }),
+    blast: (presentation) => presentation.handle({ type: 'enemy/blast', id: 7, x: 500, y: 0, radius: 100, kind: 'fuse', hit: false }),
+    clearRound: (presentation) => presentation.clearRound(),
+    dispose: (presentation) => presentation.dispose(),
+    newRun: (presentation) => presentation.reseed(99),
+  };
+  for (const [label, end] of Object.entries(ends)) {
+    const { ticks, stopped } = fuseTicks(90, 1 / 60, (step, presentation) => {
+      if (step === 40) end(presentation);
+    });
+    assert.deepEqual(ticks.map((tick) => tick.step), [0, 28], label);
+    // A bomber that went off lets its sizzle end on its own; every other end stops it.
+    assert.deepEqual(stopped, label === 'blast' ? [] : [1], label);
+  }
 });
 
 test('classic rules keep 0.1.0 drawing a hit pitch from the cosmetic stream, once per hit spacing', () => {
