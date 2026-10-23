@@ -1,6 +1,6 @@
 # Blackline Survivor Developer App
 
-`Blackline Survivor Dev.app` is a standalone local macOS build with developer controls compiled in. It loads `dist-developer/index.html` directly and does not require a Vite server, localhost URL, or browser.
+`Blackline Survivor Dev.app` is a standalone local macOS build with developer controls compiled in. It serves `dist-developer` from the `app://game/` origin, as the shipped app serves `dist` (TEC-15), and does not require a Vite server, localhost URL, or browser.
 
 ## Build and open
 
@@ -46,6 +46,8 @@ The regular `npm run build` pipeline still audits `dist` for forbidden developer
 - Developer mode starts enabled in the packaged developer app.
 - Chapter 1-5 stages are selectable immediately.
 - Menu and in-run cheat inputs are available. In a run, the HUD's ⚙ button (developer mode on) opens the developer panel with the cheat input; the run keeps going while it is open.
+- Menu codes: `GOLD999` (or `GOLD`) adds 9,999 gold; `METAUP` (or `LEVEL`) adds one account level's worth of XP and a passive point; `DEV` turns developer mode on or off; `UIFAULT` makes the next render throw, to see the render recovery screen (TEC-14).
+- Run codes, through the developer panel: `GOD` toggles invulnerability and refills health; `COIN` adds 999 coins, counted as earned; `MAGNET` adds five levels of the run's magnet upgrade; `NUKE` fells every enemy on the field, bosses included; `DRAFT` opens a level-up draft; `CLEAR` ends a normal stage's clock as a clear, or fells a boss stage's bosses; `KO` ends the run as a defeat on the next step (GOD and shields off), to see the death moment (FX-03); `VFX` puts every skill and weapon at level 5, awakened, past the slot limits, to see all the skill art at once (FX-06, FX-07); `FAULT` makes the next frame throw, to see the frame fault dialog (TEC-14). A run where any of these was used cannot be suspended (CON-04), and every code entered in a run takes an endless run off the board.
 - Every settled run is kept in a run log (decision D-07): mode, stage, outcome, time, kills, level, coins earned and left, damage taken, max health, the bonus goal, and skills held. The menu's Cheat Code section shows how many runs it holds and their median coin balance share, copies them as JSON (`런 기록 복사`), and clears them. It lives in localStorage (`blackline-survivor-dev-runlog`, the newest 500 runs) and shipped builds have none of it.
 - `TURN` makes an endless run's chapter turn due and fells its round boss, so the next chapter (CON-08) comes as soon as its boss draft is picked. It takes the run off the board like the other cheats.
 - `FIRE` lays a burning floor under the player and another beside it, to see fire and a body burning in it. It takes the run off the board like the other cheats.

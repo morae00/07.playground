@@ -45,7 +45,7 @@ Each frame the engine builds a read-only `RenderWorld` (`src/game/render/worldRe
 - Bus levels come from the save v3 options: music and ambience follow `musicVolume`, sfx and ui follow `sfxVolume`, and the master gain carries `volume`.
 - The master gain divides out the limiter's automatic makeup gain, so one voice plays at its 0.1.0 level and only pile-ups are caught.
 
-`src/game/audioPolicy.ts` lists every cue with its bus, priority, voice limit, spacing, and synth tone: hits by impact tier, kills, casts, draft results, stingers, and UI. The presentation turns game events into cue names and stereo positions; `PresentationHost.pan` says where the event sits across the screen. The mixer applies the voice rules on the audio clock:
+`src/content/data/soundCues.ts` (a content table, re-exported as `CUES` by `src/game/audioPolicy.ts`) lists every cue with its bus, priority, voice limit, spacing, and synth tone: hits by impact tier, kills, casts, draft results, stingers, and UI. The presentation turns game events into cue names and stereo positions; `PresentationHost.pan` says where the event sits across the screen. The mixer applies the voice rules on the audio clock:
 
 - Spacing per cue group; hits share one group.
 - A voice limit per cue; one more voice replaces the oldest.
@@ -53,7 +53,7 @@ Each frame the engine builds a read-only `RenderWorld` (`src/game/render/worldRe
 
 Pitch variation comes from the mixer, not the cosmetic stream, so sounds never move particles. Classic rules keep 0.1.0's per-hit draw on the cosmetic stream, because classic particle ids feed gameplay ids. `src/ui/uiSounds.ts` plays button clicks on the ui bus; a button can choose `data-sound="cancel"`, or `"none"` when its action already makes a game sound. A sound pack (`AudioMixer.loadPack`, audio files per cue with variants) replaces a cue's synth tone once it is decoded.
 
-The v0 pack (AUD-02) covers the first 33 cues, with three to four variants for hits and pickups:
+The v0 pack (AUD-02) covers every cue, 99 in 196 files: the first 33, with three to four variants for hits and pickups, then the chapters' 20 (AUD-04, below), the 44 weapon casts, and the two bomber sounds:
 - It is placeholder sound design in the paper-and-ink tone. `art/sfx-spec.mjs` holds a recipe per cue, and `npm run build:sfx` renders them in plain JavaScript into 16-bit mono WAV under `public/assets/packs/sfx-common`, so a rebake is byte-identical.
 - Files are normalized to `SAMPLE_PEAK`, and the mixer plays them back at the level the synth tone had.
 - Recorded sounds from the SFX library order replace files by name, with no code change.
@@ -63,7 +63,7 @@ AUD-04 adds the chapters' sounds to the same pack (v0 too; music waits for a com
 - Ch2-5 enemies die in their chapter's material: iron, water, clockwork, and eclipse glass (`KILL_CUES`); Ch1 keeps the paper tear. `PresentationHost.chapter` tells the presentation which one.
 - Each of the 11 boss patterns has its own sound, played on the new `boss/attack` event when a telegraphed pattern, a dash, a shock, or an eclipse wall fires. Classic rules keep 0.1.0's silence there, since their old pattern paths do not emit it.
 - Each chapter has an 8 s ambience bed. The baker renders it a second longer and folds that tail over its head, so it loops without a seam. `AudioMixer.ambience(cue)` loops the chapter's bed on the ambience bus from the run's start and fades it over 1.2 s into the next; the menu fades it out. A bed asked for before it decodes starts once it does.
-- The pack is 3.0 MiB of install assets (the beds are 1.7 MiB of it). Adding the new recipes after the old ones keeps every earlier file byte-identical.
+- The pack is 3.6 MiB of install assets (the beds are 1.7 MiB of it). Adding the new recipes after the old ones keeps every earlier file byte-identical.
 
 Each arsenal weapon (SYS-15) plays its own cast, `cast.<weaponId>` (K10 Q7, notes in `art/audio/arsenal-casts.md`), so weapons that share a look still sound apart; a weapon without one falls back to its look's `cast.<look>`, and shake and the burst pose stay the look's. A weapon cast is held to its look's cast level within 1 LU by the cue gain (`npm run measure:loudness`).
 
@@ -71,7 +71,7 @@ A planted fuse bomber's fuse ticks toward its blast; if the bomber is felled fir
 
 AUD-03 is the music's playback, ready for the composer's tracks. It follows the cue sheet (`art/audio/cue-sheet.md`, a draft the team has yet to confirm) in three parts under `src/game/audio/`:
 - `musicDirector.ts` decides, as a pure state machine with the cue sheet's numbers in `MUSIC_RULES`. The app gives it the scene (menu, run, story, settlement) and the overlays (pause, draft); the engine its events and snapshots. It answers with commands: play a track (fade or crossfade, resuming where the track stopped), stop it (keeping its place, or the defeat's tape stop), set a stem, duck, low-pass, sting, and decode ahead. A boss stage plays its boss track as the boss stands; field bosses and the infinite run's round bosses raise the chapter track's dense stem instead, as does a crowd over 55% of `HudSnapshot.enemyCap` for 2 s (off below 35% for 6 s).
-- `musicPlayer.ts` plays them with Web Audio on the music bus, at `MUSIC_LEVEL` (0.12, a start until the mix is measured). A deck is a track's base and its stems, started together; the next deck crossfades in on equal-power steps and at most one deck fades at a time. Stems change at the next bar line (from the pack's tempo and meter, 7/8 bars included) over one bar. Ducks (the deepest wins) and the pause low-pass sit after the decks; the enrage sting goes past them and ducks the decks itself. A resumed track picks up at its 4-bar group, or from the top within 8 bars of its end. Only the tracks playing, fading, or asked for ahead stay decoded; one that fails to decode stays silent.
+- `musicPlayer.ts` plays them with Web Audio on the music bus, at `MUSIC_LEVEL` (0.32, AUD-05 plan B: a −16 LUFS stereo master plays about 4 LU under the effects' flow at the default options; to be measured again with the real tracks, `npm run measure:mix`). A deck is a track's base and its stems, started together; the next deck crossfades in on equal-power steps and at most one deck fades at a time. Stems change at the next bar line (from the pack's tempo and meter, 7/8 bars included) over one bar. Ducks (the deepest wins) and the pause low-pass sit after the decks; the enrage sting goes past them and ducks the decks itself. A resumed track picks up at its 4-bar group, or from the top within 8 bars of its end. Only the tracks playing, fading, or asked for ahead stay decoded; one that fails to decode stays silent.
 - `musicBridge.ts` maps the app state onto scenes and holds a run's first events until the app shows the run (a boss stage's boss stands from its first frame). A resumed run replays without events, so a boss stage also finds its standing boss, phase, and enrage in the snapshot.
 
 The music code ships only in a build with `public/assets/packs/music/pack.json` (`__MUSIC_PACK__` in `vite.config.ts`, a dynamic import in the app): a build without the pack requests nothing and carries none of it, so the music bus stays silent. The pack lists each track's file, `bpm`, `meter`, `loop`, the sting's `cutAt`, and its stems (cue sheet §5.6); fields the player does not read are ignored.
@@ -152,7 +152,7 @@ Player feedback (FX-03):
 
 ## UI screens and art (UI-01, UI-03, ART-09)
 
-Each screen is a component in `src/ui/screens`, and `src/App.tsx` owns the state they share. Screens show kit art through the baked stylesheet `src/ui/art/uiArt.generated.css`: an element with class `artTile`, `artSlot`, `artPortrait`, or `artPickup` and a `data-art` key shows that cell, at any size (docs/art/pipeline.md). Draft cards read everything they print from the offer and the skill tables:
+Each screen is a component in `src/ui/screens`, and `src/App.tsx` owns the state they share. Screens show kit art through the baked stylesheet `src/ui/art/uiArt.generated.css`: an element with class `artTile`, `artSlot`, `artPortrait`, `artPickup`, `artKeyart`, `artChapter`, `artEnemy`, or `artTerrain` and a `data-art` key shows that cell, at any size (docs/art/pipeline.md). The arsenal's tiles and slots and the seven other characters' portraits use the `artTile`, `artSlot`, and `artPortrait` classes too, from keyed sheets of their own (`arsenal-tiles`, `arsenal-slots`, `character-portraits`) that load only where one of their cells shows. Draft cards read everything they print from the offer and the skill tables:
 - the offer's `level` (the level before the pick) sets the level pips;
 - `SKILL_LEVEL_STATS` gives the change rows, before and after the pick;
 - the skill's `tags` give the chips.
@@ -176,7 +176,7 @@ Onboarding hints (UI-09, `HintLayer.tsx`) never stop play. Each shows once per s
 
 At the first boss fight, a hint says to read the orange telegraph and step out.
 
-The menu (UI-06, concept C) has the title, a vertical nav, and the hero's key art on the left. The nav holds 출정 (campaign), 무한 경쟁 (endless), 수련 (growth), 설정 (settings), and 도감 (the codex, not yet available). The wallet and the account level sit on the right, above the view the nav picks. The campaign view reads top to bottom:
+The menu (UI-06, concept C) has the title, a vertical nav, and the hero's key art on the left. The nav holds 출정 (campaign), 무한 경쟁 (endless), 캐릭터 (characters, CON-10), 수련 (growth), 설정 (settings), and 도감 (the codex, CON-07). The wallet and the account level sit on the right, above the view the nav picks. The campaign view reads top to bottom:
 - the chapter, with a landmark thumbnail and its progress per chapter, and chapter 6 to come;
 - a path map of its ten stages: cleared stages carry the ink seal, the one to play next glows teal, and the boss stops show the boss's portrait;
 - the selected stage: its goal and time, the chapter's four enemy roles, the least a clear pays, the best record, and the start button (Enter also starts it);
@@ -220,12 +220,12 @@ Every player-facing string lives in a locale file: `public/assets/content/string
 ## Content tables (TEC-05)
 
 Content that is data, not code, lives in `src/content/data/`: one module per table, each with a single default export of plain JSON data, deep-frozen so no system can change it for the next run.
-- The tables: `catalog` (base stats, skills, permanent and run upgrades, passives, the bosses), `skillNumbers`, `bossPhaseMoves`, `encounterGrammars`, and `soundCues`. The modules that used to hold them (`GameEngine.ts`, `skillNumbers.ts`, `bossPhases.ts`, `encounters.ts`, `audioPolicy.ts`) re-export them under their old names.
+- The tables, 17 in all (`src/content/data/index.ts`). The first five moved out of code in R3: `catalog` (base stats, skills, permanent and run upgrades, passives, the bosses), `skillNumbers`, `bossPhaseMoves`, `encounterGrammars`, and `soundCues`; the modules that used to hold them (`GameEngine.ts`, `skillNumbers.ts`, `bossPhases.ts`, `encounters.ts`, `audioPolicy.ts`) re-export them under their old names. The rest were written as data from the start: `objectives`, `elites`, `buildDepth`, `codex`, `achievements`, `cosmetics`, `bossToughness`, `horde`, `bombers`, `arsenal`, `awakenings`, and `characters`.
 - Tests, tools, the headless engine bundles, and the dev server import the modules as they are.
 - A Vite build (`vite.config.ts`, `contentTables`) evaluates `src/content/data/index.ts` the same way and emits it as `assets/content/tables.json`. It then swaps each data module for a read of that file (`src/content/tableRuntime.ts`). The runtime fetches the file once with a top-level await, so every game module sees its tables when it first runs. A failed fetch fails the app module, and the boot recovery screen shows (TEC-14).
 - The bundle budget counts the file as data, not app JS.
 - `src/game/contentTables.test.ts` checks that the index lists every module, and that every table survives JSON unchanged and is frozen. It also checks that the runtime read returns the same tables.
-- New content tables (objectives, affixes, achievements, codex entries) go in this folder too.
+- New content tables go in this folder too.
 
 ## Hit-stop in two layers (FX-02)
 
@@ -265,14 +265,14 @@ Classic rules keep 0.1.0's behaviour: every hostile shot passes through obstacle
 A campaign boss enters phase 2 at 66% health and phase 3 at 33%. Under the `bossMoves` rule each phase runs its move from `src/content/bossPhases.ts`. A move has an attack grammar, a movement mode, a cadence, and a telegraph. The telegraph's preview and imminent times are the warning, kept in real time whatever the cadence (V3). A move runs only once its grammar is built (`IMPLEMENTED_GRAMMARS`). Until then the boss keeps its base pattern and chases, and the HUD names only the moves that run.
 
 - Ch1 (SYS-04). 잉크 도살자 has a tracked dash pair and a crossing dash triple. 종탑 간수 has an alternating ring gap and contracting ring walls.
-- Ch2-5 final bosses (SYS-05), the ones with kit art:
+- Ch2-5 final bosses (SYS-05):
   - 용광의 입. Furnace aisles: three fire lanes across the player light 0.3 s apart, and the aisles between them stay open. Ash vault collapse: a ring of fire with one gap falls around the player, the boss lands across from the gap, and the centre caves in 0.9 s later.
   - 걸쇠 여제. Chain lattice: a 3×3 lattice of bindings in two checkerboard waves. Execution cell: a square of bindings, then a smaller one 0.9 s later, both open on the same side. This is the Empress's own variant of the trap pattern she shares with 덫 설계자.
   - 톱니 전령. Gear orbit: two rings of saws orbit the boss in opposite directions while it circles the player. Guillotine gear: saws drop down the view in four of five lanes.
   - 공백 천칭. Balance of silence: two silence zones mirrored across the player. Blank collapse: a wall of shots closes on a blank void near the player and stops at its edge, while the boss waits outside. This is the Balance's own variant of the null pattern she shares with 무음 심판관.
 - Movement: anchor holds near where the phase began, but only while the player is within 720, about the view's reach. A player farther away is followed, and the boss plants again where it stops. Once the stage clock runs out, enrage ends the hold, so an anchored boss can never be outwaited. Orbit and sweep circle the player at 300 and 380. Lattice walks one axis at a time. Warp moves land the boss where its warning ring stood.
 - Every move leaves a way out (an aisle, a gap, a gate, an open lane, or the void itself) and warns for its whole preview. Scheduled terrain goes through `pendingHazards`, as delayed shots go through `pendingHostileShots`. Orbiting saws follow their boss and fall away when it dies.
-- Still waiting for their kit art: the Ch2-5 mid bosses (유리 주교, 무채 조수왕, 시계 폭군, 일식 원장), whose moves are authored in data but not built, and the field bosses' light phase-2 moves.
+- Not built yet: the moves of the Ch2-5 mid bosses (유리 주교, 무채 조수왕, 시계 폭군, 일식 원장), authored in data (`bossPhaseMoves`), and the field bosses' light phase-2 moves. Their kit art landed on 2026-10-03 (K1, K2, with attack poses), so they now wait on engine work; until then the atlas bakes every phase of the mid bosses with their base move's poses (`art/atlas-spec.mjs`).
 - Enrage: when a boss stage's clock runs out, enrage climbs a step every 30 s (`steppedEnrage`: speed ×1.2, pattern density ×1.3, damage ×1.5, then ×2.0). Under `enrageOvertime` (decision D-02, remaster on) it goes on after the fourth step: every 30 s the bosses deal 25% more damage and move 8% faster, so a fight that neither side ends still ends. The HUD shows the overtime count (`hud.enrage.overtime`).
 
 ## Stage objectives (CON-03)
