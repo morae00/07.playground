@@ -10,6 +10,8 @@ This checklist separates locally verifiable gates from Apple account and certifi
 - [ ] `com.blackline.survivor` is owned by the release account and does not collide with an existing product.
 - [ ] Release notes include gameplay, save migration, known issues, and minimum macOS 12. Start from `docs/release-notes/1.0-draft.md`, which lists every rule change against 0.1.0 (R4 exit criterion 5); check it against `src/game/rules.ts` so a flag added since is not missing.
 - [ ] `game-manual.html` matches the build: controls, modes, settings, and cheats, with screenshots from the release art.
+- [ ] The provenance table `docs/art/provenance.md` is complete for every shipped art asset (style bible §15, amended 2026-10-23): every image file the build ships has a row with its generator and version, the accepted delivery or review record, its bake commit, and its tools and licence notes, and no row for this build still carries a [확인]. A rebake from the release commit (`npm run build:atlas`, `npm run build:ui-art`) leaves no diff in the art files. Open items in `docs/art/cleanup.md` do not block the release.
+- [ ] The style bible §14 black-and-white 0.3 s readability test (n ≥ 8, decision D-18) has a passing record for this build's art; §15 keeps it a release gate.
 - [ ] `npm ci` completes on a clean Node 22.6+ environment.
 
 ## 2. Automated gates

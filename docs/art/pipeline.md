@@ -6,7 +6,7 @@
 
 | 단계 | 위치 | 내용 |
 |---|---|---|
-| 원본 | `art/concept-kit/` | 컨셉 키트 SVG 생성기(`PN.heroKit`, `PN.enemies` 등). 잠정 아트다(AI 보조 컨셉, 스타일 바이블 §15). |
+| 원본 | `art/concept-kit/` | 컨셉 키트 SVG 생성기(`PN.heroKit`, `PN.enemies` 등). AI 보조 산출물이고, 스타일 바이블 §15(2026-10-23 개정)에 따라 납품 기록에서 받아들인 판을 출시 그림으로 굽는다. 묶음별 출처는 [출처 기록](provenance.md), 사람 클린업은 [클린업 목록](cleanup.md)에 있다. |
 | 사양 | `art/atlas-spec.mjs` | 어떤 그림을 어느 팩에 굽는지, 앵커, 크기 맞춤(`fit`), 키트 색 → 구현 토큰 대응표 |
 | 굽기 | `npm run build:atlas` | Chromium에서 @2x(월드 1단위 = 2px)로 렌더 → 투명 여백 트림 → 페이지(최대 2048²) 배치 |
 | 산출물 | `public/assets/atlas/common-*.png`, `public/assets/packs/<팩>/atlas-*.png`(챕터 팩 `chapter-NN` 5개, `skills`, `hazards`, `arsenal-fx`, 캐릭터 팩 `hero-<id>` 7개), `public/assets/atlas/manifest.json`, `src/game/render/assets/atlasManifest.generated.ts` | 공통 팩은 초기 에셋, `assets/packs/` 아래 팩은 설치 에셋 예산(TEC-05)으로 잡힌다. 게임은 매니페스트를 실행 중에 JSON으로 읽으므로 앱 번들에 들어가지 않는다. 생성 TS는 테스트용이다. |
@@ -141,15 +141,11 @@ DOM 화면(드래프트 카드, HUD 스킬 슬롯, 초상, 칩 아이콘)이 쓰
 - 20장을 `node scripts/build-ui-art.mjs story`로 `public/assets/packs/story/`에 한 장씩 WebP(1200×675)로 굽는다. 아틀라스에는 들어가지 않는다.
 - 14장은 키트 조합(랜드마크 비네트, 주인공 포즈, 장의 적, 쓰러진 지배자, 공백·꿰맴)이다.
 - 6장(prologue-1~4, ending-2, ending-4)은 D-15 (b)의 손그림 자리이고 지금은 킷 모듈 `k-story.js`(`PN.story`, K6)가 그린다. `STORY_PANELS`에서 `kit: 'story'`로 표시하고, `grain: true`면 종이결(α 0.055, 배경만)을 넣는다. 결을 켠 6장은 38~81 KiB다.
-- **출처 기록**(바이블 §15):
-
-  | 슬롯 | 제작 | AI 사용 단계 | 사람 클린업 |
-  |---|---|---|---|
-  | `story/prologue-1`~`prologue-4`, `story/ending-2`, `story/ending-4` | kit-artist(에이전트), 지시서 `docs/art/briefs/story-panels.md`, 납품·검수 `docs/art/deliveries/K6-story.md` | 러프(잠정 아트) | 없음. 할 일은 지시서 §10과 검수 2차 §9 |
+- **출처 기록**(바이블 §15): [출처 기록](provenance.md) §2.3의 두 줄이다. P-25는 손그림 자리 6장(K6), P-26은 합성 14장이다. 이 절에 있던 6장 표(R5 B4 Q10이 정한 임시 자리)는 2026-10-23에 그곳으로 옮겼다. 사람이 손볼 곳은 [클린업 목록](cleanup.md) C13이다.
 
 ## 최종 원화로 교체하기
 
-손으로 정리한 원화가 오면 같은 키(`hero/run/3`, `enemy/1/warden/walk/2` …)로 굽도록 사양만 바꾼다. 앵커·크기 규칙과 매니페스트 형식이 같으면 코드는 바꾸지 않는다. 교체 후 `npm run test:unit`의 매니페스트 검사와 `npm run test:visual`로 확인한다.
+손으로 정리한 원화가 오면 같은 키(`hero/run/3`, `enemy/1/warden/walk/2` …)로 굽도록 사양만 바꾼다. 앵커·크기 규칙과 매니페스트 형식이 같으면 코드는 바꾸지 않는다. 교체 후 `npm run test:unit`의 매니페스트 검사와 `npm run test:visual`로 확인한다. 같은 커밋에서 [출처 기록](provenance.md)의 해당 줄('사람이 한 작업', 굽기 커밋)과 [클린업 목록](cleanup.md)의 상태를 고친다.
 
 ## 리뷰 렌더와 서브에이전트
 
