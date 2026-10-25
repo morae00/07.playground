@@ -8,13 +8,19 @@ import { createHeadlessCanvas, installHeadlessPlatform, maxMeta, standardOptions
 // land on the same state.
 installHeadlessPlatform();
 Object.defineProperty(globalThis, 'performance', { value: { now: () => 0 }, configurable: true });
+// The animation loop runs only when a test calls the frame it asked for (the fault path, TEC-14).
+let nextFrame = () => {};
+globalThis.requestAnimationFrame = (callback) => {
+  nextFrame = callback;
+  return 1;
+};
 const { ProbedGameEngine, suspendedRunReward } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
 
 const OPTIONS = { ...standardOptions(), assistDamage: 1, assistEnemySpeed: 1, assistSlowGame: false };
 
-function newEngine() {
+function newEngine(meta = maxMeta()) {
   const drafts = [];
-  const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), maxMeta(), OPTIONS, {
+  const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), meta, OPTIONS, {
     onSnapshot() {},
     onDraft(draft) { drafts.push(draft); },
     onRoundClear() {},
@@ -98,6 +104,115 @@ test('CON-04: a suspended run, saved as JSON and replayed in a new engine, lands
   play(resumed.engine, resumed.drafts, 600, 99);
   assert.equal(state(resumed.engine), state(original.engine), 'and stay the same after');
   assert.deepEqual(resumed.engine.suspendState().log, original.engine.suspendState().log);
+  original.engine.dispose();
+  resumed.engine.dispose();
+});
+
+test('BUG-23: meta the app hands over mid-run waits for the next run, so the run and its resume stay the same', async () => {
+  const startMeta = { ...maxMeta(), upgrades: { ...maxMeta().upgrades, attack: 0, maxHp: 0 }, passives: { ...maxMeta().passives, rareLuck: 0 } };
+  // The menu bought upgrades while the run was suspended; the app hands every meta change to the engine at once.
+  const boughtMeta = { ...startMeta, level: 16, upgrades: { ...startMeta.upgrades, attack: 30, maxHp: 30 }, passives: { ...startMeta.passives, rareLuck: 5 } };
+  const original = newEngine(startMeta);
+  original.engine.startRun(1, 3, 4711);
+  play(original.engine, original.drafts, 600, 11);
+  const stats = { ...original.engine.probe.read().player.stats };
+  original.engine.setMeta(boughtMeta);
+  assert.deepEqual(original.engine.probe.read().player.stats, stats, 'the run keeps the meta it started with');
+  play(original.engine, original.drafts, 900, 12);
+  const saved = JSON.parse(JSON.stringify(original.engine.suspendState()));
+  assert.deepEqual(saved.meta, startMeta);
+
+  // The app builds the new engine with the account's meta as it is now; the run's own replaces it.
+  const resumed = newEngine(boughtMeta);
+  await resumed.engine.resumeRun(saved, 400);
+  assert.equal(state(resumed.engine), state(original.engine), 'same state at the saved tick');
+  resumed.engine.setMeta(boughtMeta);
+  for (const { engine } of [original, resumed]) {
+    engine.setTimeScale(1);
+    engine.pause();
+    engine.resume();
+  }
+  play(original.engine, original.drafts, 300, 13);
+  play(resumed.engine, resumed.drafts, 300, 13);
+  assert.equal(state(resumed.engine), state(original.engine), 'and stay the same after');
+
+  // The next run starts with it.
+  original.engine.startRun(1, 3, 4711);
+  assert.ok(original.engine.probe.read().player.stats.attack > stats.attack, 'the next run takes the new meta');
+  original.engine.dispose();
+  resumed.engine.dispose();
+});
+
+test('BUG-23: input, pauses, purchases, options, and saves while a run replays change nothing; the options apply after', async () => {
+  const original = newEngine();
+  original.engine.startRun(2, 4, 31337);
+  play(original.engine, original.drafts, 1500, 21);
+  const saved = JSON.parse(JSON.stringify(original.engine.suspendState()));
+
+  const resumed = newEngine();
+  const replay = resumed.engine.resumeRun(saved, 50);
+  let done = false;
+  void replay.finally(() => {
+    done = true;
+  });
+  // Meanwhile the app goes on: the input adapter sends keys, the stick, the pointer, and focus loss; focus loss pauses;
+  // the pause hub buys; the settings effect sets options; and the 10 s autosave asks for the run.
+  let calls = 0;
+  const autosaves = [];
+  const meanwhile = () => {
+    if (done) return;
+    const { engine } = resumed;
+    engine.dispatch({ type: 'input/action', action: 'moveDown', pressed: calls % 2 === 0 });
+    engine.dispatch({ type: 'input/analog', x: 0.5, y: -0.25 });
+    engine.dispatch({ type: 'input/pointer', active: true, worldX: 1800, worldY: 1200 + calls });
+    engine.dispatch({ type: 'input/release' });
+    engine.pause();
+    engine.resume();
+    engine.buyRunUpgrade('magnet');
+    engine.setOptions({ ...OPTIONS, assistDamage: 0.7 });
+    autosaves.push(engine.suspendState());
+    calls += 1;
+    setTimeout(meanwhile, 0);
+  };
+  setTimeout(meanwhile, 0);
+  await replay;
+  assert.ok(calls >= 3, `calls arrived while the run replayed (${calls})`);
+  assert.ok(autosaves.every((run) => run === null), 'an autosave meanwhile keeps nothing');
+  assert.equal(state(resumed.engine), state(original.engine), 'same state at the saved tick');
+  assert.equal(resumed.engine.probe.read().paused, true, 'and it comes back paused');
+  const log = resumed.engine.suspendState().log;
+  assert.deepEqual(log.slice(0, saved.log.length), saved.log, 'the replay logged the saved commands only');
+  assert.deepEqual(log.slice(saved.log.length), [[saved.ticks, 'x', 0.7, 1]], 'the options set meanwhile take effect at the saved tick');
+  original.engine.dispose();
+  resumed.engine.dispose();
+});
+
+test('BUG-23: a fault lets go of the input through the log, so the resumed run lets go at the same tick', async () => {
+  const original = newEngine();
+  original.engine.startRun(1, 3, 31337);
+  original.engine.dispatch({ type: 'input/action', action: 'moveRight', pressed: true });
+  for (let frame = 0; frame < 60; frame += 1) original.engine.advanceFrame(1 / 60, false);
+  // A step of the animation loop throws (TEC-14): the run pauses and lets go of every held input.
+  let armed = true;
+  const stop = original.engine.probe.onStep(() => {
+    if (!armed) return;
+    armed = false;
+    throw new Error('probe fault');
+  });
+  nextFrame(50);
+  stop();
+  assert.equal(original.engine.isFaulted, true);
+  original.engine.recoverFromFault();
+  original.engine.resume();
+  // The key comes up while the error shows; the engine had let go of it already, so nothing more is logged.
+  original.engine.dispatch({ type: 'input/action', action: 'moveRight', pressed: false });
+  for (let frame = 0; frame < 120; frame += 1) original.engine.advanceFrame(1 / 60, false);
+  const saved = JSON.parse(JSON.stringify(original.engine.suspendState()));
+  assert.ok(saved.log.some(([, code]) => code === 'r'), 'the fault logged the release');
+
+  const resumed = newEngine();
+  await resumed.engine.resumeRun(saved);
+  assert.equal(state(resumed.engine), state(original.engine), 'same state at the saved tick');
   original.engine.dispose();
   resumed.engine.dispose();
 });

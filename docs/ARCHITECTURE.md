@@ -346,6 +346,8 @@ A run in play is kept in the save as a suspended run (`profile.runSuspend`), so 
 - A suspended run from another rules version is not replayed. It is settled for what it reached, as a defeat (`suspendedRunReward`), and dropped (G14).
 - Giving up in the pause hub settles the run as a defeat (`forfeit`), never better than dying would have been. It used to pay nothing (BUG-17).
 - Time scale is a view setting, so a resumed run starts at 1x. A run where a developer cheat was used cannot be suspended.
+- A run plays with the meta it started with. The app hands the engine every meta change, so one made mid-run (upgrades bought while the run was suspended) applies from the next run (BUG-23).
+- While `resumeRun` replays, only the logged commands change the run (BUG-23). Input, pauses, purchases, and draft calls from the app are dropped, options set meanwhile apply at the saved tick, and `suspendState` returns null, so the 10 s autosave cannot keep a partial run. A loop fault (TEC-14) lets go of the input through the log, as focus loss does.
 - The desktop app flushes localStorage to disk every second, so a force-quit keeps the run saved at the last pause (docs/ELECTRON_HARDENING.md).
 - `test/suspend.integration.test.mjs` plays 2,400 uneven frames with keys, the stick, the pointer, drafts, a paused purchase, and an assist change. It saves the run as JSON and replays it in a new engine. The state is identical at the saved tick and stays identical as both play on. The UI probe reloads the page mid-run and resumes to the same state. The Electron smoke resumes a run after a renderer crash, after a quit, and after a force-quit.
 

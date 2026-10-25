@@ -969,6 +969,10 @@ export class GameEngine {
   /** CON-10: the character the next run starts as (set from the menu; null plays 0.1.0's start). */
   protected character: CharacterLoadout | null = null;
   protected replaying = false;
+  /** BUG-23: resumeRun is applying a logged command, the only call that may change the run while it replays. */
+  protected applyingLogged = false;
+  /** BUG-23: the latest options the app set while a run replayed; they apply once the replay ends. */
+  protected optionsAfterReplay: GameOptions | null = null;
   protected cheatsUsed = false;
   protected activeDraftReason: DraftReason = 'level';
   protected draftQueue: Array<{ reason: DraftReason; after: DraftState['after'] }> = [];
@@ -1145,6 +1149,11 @@ export class GameEngine {
   }
 
   setOptions(options: GameOptions) {
+    // BUG-23: options set while a suspended run replays wait for its end, so an assist change is not logged at a replayed tick.
+    if (this.outsideReplay) {
+      this.optionsAfterReplay = options;
+      return;
+    }
     const before = this.assist();
     this.options = options;
     if (options.reducedMotion) this.presentation.shake = 0;
@@ -1170,9 +1179,23 @@ export class GameEngine {
     this.invalidateInfiniteScore();
   }
 
+  /**
+   * The account's meta for the next run. A run keeps the meta it started with, which its suspended record holds: the
+   * app hands the engine every change at once, purchases made while a run was suspended included (BUG-23).
+   */
   setMeta(meta: MetaState) {
     this.meta = meta;
-    this.recalculateStats(false);
+    if (!this.runStart) this.recalculateStats(false);
+  }
+
+  /** BUG-23: the meta the run in play started with (the account's before any run). */
+  protected get runMeta() {
+    return this.runStart?.meta ?? this.meta;
+  }
+
+  /** BUG-23: a call from outside while resumeRun replays a suspended run: it would land at a replayed tick, so it is dropped. */
+  protected get outsideReplay() {
+    return this.replaying && !this.applyingLogged;
   }
 
   /** CON-10: the character the next run starts as, and its upgrade level. */
@@ -1225,6 +1248,8 @@ export class GameEngine {
     this.hitStopBudget = createHitStopBudget();
     this.chapter = chapter;
     this.stage = stageNo;
+    // CON-04: what the run starts from, before anything reads the run's meta (BUG-23).
+    this.runStart = { meta: this.meta, options: this.options, character: this.character };
     // CON-10: the character's weapon at its starting level; 0.1.0 always started with the needle storm at Lv1.
     const character = this.rules.characters && this.character ? CHARACTERS[this.character.id] : undefined;
     this.skills = character
@@ -1235,7 +1260,7 @@ export class GameEngine {
     this.pendingAwakenings = [];
     this.fusions = {};
     this.banished = new Set();
-    this.draftTokens = this.rules.buildDepth ? BUILD_DEPTH.tokenLevels.filter((level) => this.meta.level >= level).length : 0;
+    this.draftTokens = this.rules.buildDepth ? BUILD_DEPTH.tokenLevels.filter((level) => this.runMeta.level >= level).length : 0;
     this.draftChain = { index: 0, total: 0 };
     this.draftQueue = [];
     this.activeDraftId = null;
@@ -1293,7 +1318,6 @@ export class GameEngine {
     this.assistedRun = false;
     this.ticks = 0;
     this.runLog = [];
-    this.runStart = { meta: this.meta, options: this.options, character: this.character };
     this.cheatsUsed = false;
     this.beginRound();
     this.running = true;
@@ -1307,7 +1331,7 @@ export class GameEngine {
   }
 
   resume() {
-    if (this.faulted) return;
+    if (this.faulted || this.outsideReplay) return;
     this.paused = false;
     this.rewardLock = false;
     this.accumulator = 0;
@@ -1329,6 +1353,8 @@ export class GameEngine {
   }
 
   pause() {
+    // BUG-23: a pause from outside (focus loss) would end a replay short of its saved tick; the run comes back paused.
+    if (this.outsideReplay) return;
     this.paused = true;
     this.accumulator = 0;
   }
@@ -1338,6 +1364,7 @@ export class GameEngine {
    * PAUSED_HEAL_SECONDS once the run resumes, so pausing cannot be an instant heal in a tight spot (UI-04, G6).
    */
   buyRunUpgrade(id: RunUpgradeId) {
+    if (this.outsideReplay) return false;
     const level = this.runUpgrades[id];
     const cost = runUpgradeCost(id, level);
     if (this.player.coins < cost) return false;
@@ -1804,7 +1831,7 @@ export class GameEngine {
   }
 
   completeDraft(offer: SkillOffer, draftId: number) {
-    if (!this.rewardLock || this.activeDraftAfter === null || this.activeDraftId !== draftId) return 'ignored' as const;
+    if (this.outsideReplay || !this.rewardLock || this.activeDraftAfter === null || this.activeDraftId !== draftId) return 'ignored' as const;
     const offerId = (offer as Partial<DraftCard>).offerId;
     if (offerId) this.logCommand({ type: 'draft/select', offerId });
     const activeAfter = this.activeDraftAfter;
@@ -1911,9 +1938,12 @@ export class GameEngine {
     this.worldRenderer.invalidateGrid();
   }
 
-  /** CON-04: the run so far, to save and replay; null when there is no live run to suspend. */
+  /**
+   * CON-04: the run so far, to save and replay; null when there is no live run to suspend. A run that is still
+   * replaying is only part of itself, so the app's autosave must not keep it (BUG-23).
+   */
   suspendState(): SuspendedRun | null {
-    if (!this.running || this.stageFinished || this.player.hp <= 0 || !this.runStart || this.cheatsUsed || this.runLog.length > MAX_RUN_LOG) return null;
+    if (!this.running || this.replaying || this.stageFinished || this.player.hp <= 0 || !this.runStart || this.cheatsUsed || this.runLog.length > MAX_RUN_LOG) return null;
     return {
       version: 1,
       rulesVersion: this.rules.version,
@@ -1965,6 +1995,10 @@ export class GameEngine {
     }
     this.paused = true;
     this.accumulator = 0;
+    // BUG-23: options the app set meanwhile take effect now, at the saved tick, as they would have in play.
+    const options = this.optionsAfterReplay;
+    this.optionsAfterReplay = null;
+    if (options) this.setOptions(options);
     this.emitSnapshot(true);
     if (this.activeDraftId !== null && this.activeDraftAfter !== null) this.callbacks.onDraft(this.draftState());
   }
@@ -1990,15 +2024,20 @@ export class GameEngine {
   protected replayCommand([, code, ...values]: RunLogEntry) {
     const [type, ...fields] = LOG_CODES[code];
     const command = Object.fromEntries([['type', type], ...fields.map((field, index) => [field, values[index]])]) as RunCommand;
-    if (command.type === 'run/buy') {
-      const paused = this.paused;
-      this.paused = command.paused;
-      this.buyRunUpgrade(command.id);
-      this.paused = paused;
-    } else if (command.type === 'run/assists') {
-      this.setOptions({ ...this.options, assistDamage: command.damage, assistEnemySpeed: command.enemySpeed });
-    } else {
-      this.dispatch(command);
+    this.applyingLogged = true;
+    try {
+      if (command.type === 'run/buy') {
+        const paused = this.paused;
+        this.paused = command.paused;
+        this.buyRunUpgrade(command.id);
+        this.paused = paused;
+      } else if (command.type === 'run/assists') {
+        this.setOptions({ ...this.options, assistDamage: command.damage, assistEnemySpeed: command.enemySpeed });
+      } else {
+        this.dispatch(command);
+      }
+    } finally {
+      this.applyingLogged = false;
     }
   }
 
@@ -2014,8 +2053,13 @@ export class GameEngine {
     else this.runLog.push(entry);
   }
 
-  /** Applies one engine command (TEC-07). Commands are the only way input reaches the simulation. */
+  /**
+   * Applies one engine command (TEC-07). Commands are the only way input reaches the simulation. While a suspended
+   * run replays, only its logged commands do: the app's input adapter keeps sending keys, the stick, and focus loss,
+   * which would land and be logged at a replayed tick (BUG-23).
+   */
   dispatch(command: EngineCommand) {
+    if (this.outsideReplay) return;
     switch (command.type) {
       case 'input/action':
         if (command.pressed === this.heldActions.has(command.action)) return;
@@ -2110,7 +2154,8 @@ export class GameEngine {
     this.faulted = true;
     this.paused = true;
     this.accumulator = 0;
-    this.releaseInput();
+    // Lets go of all input as focus loss does, through the log, so a resumed run lets go at the same tick (BUG-23).
+    this.dispatch({ type: 'input/release' });
     try {
       this.callbacks.onFault?.(error);
     } catch {
@@ -6189,7 +6234,7 @@ export class GameEngine {
 
   /** SYS-08: spends a token to draw the open draft again; the awakening card keeps the first place. */
   rerollDraft() {
-    if (!this.rules.buildDepth || this.draftTokens <= 0 || this.activeDraftId === null || this.activeDraftAfter === null) return false;
+    if (this.outsideReplay || !this.rules.buildDepth || this.draftTokens <= 0 || this.activeDraftId === null || this.activeDraftAfter === null) return false;
     this.draftTokens -= 1;
     this.logCommand({ type: 'draft/reroll' });
     this.presentDraft(this.activeDraftReason, this.activeDraftAfter);
@@ -6200,7 +6245,7 @@ export class GameEngine {
   banishOffer(offerId: string) {
     const index = this.activeDraftCards.findIndex((card) => card.offerId === offerId);
     const card = this.activeDraftCards[index];
-    if (!this.rules.buildDepth || this.draftTokens <= 0 || this.activeDraftAfter === null || card?.kind !== 'skill') return false;
+    if (this.outsideReplay || !this.rules.buildDepth || this.draftTokens <= 0 || this.activeDraftAfter === null || card?.kind !== 'skill') return false;
     this.banished.add(card.skillId);
     const offers: SkillOffer[] = [...this.activeDraftCards];
     const replacement = this.drawSkillOffers(1, offers)[0]
@@ -6286,7 +6331,7 @@ export class GameEngine {
   }
 
   protected weightedSkillPick(eligible?: (id: SkillId) => boolean) {
-    const luck = Math.min(this.meta.passives.rareLuck, META_PASSIVES.rareLuck.tier);
+    const luck = Math.min(this.runMeta.passives.rareLuck, META_PASSIVES.rareLuck.tier);
     const difficultyBias = this.runMode === 'infinite'
       ? clamp(this.elapsed / 1_800, 0, 1)
       : (stageIndex(this.chapter, this.stage) - 1) / (TOTAL_STAGE_COUNT - 1);
@@ -6466,7 +6511,7 @@ export class GameEngine {
 
   protected recalculateStats(fullHeal: boolean) {
     const previousMax = this.player.stats.maxHp;
-    this.player.stats = buildStats(this.meta, this.runUpgrades, this.skills, this.rules.characters ? this.character : null);
+    this.player.stats = buildStats(this.runMeta, this.runUpgrades, this.skills, this.rules.characters ? this.character : null);
     if (fullHeal) {
       this.player.hp = this.player.stats.maxHp;
     } else if (previousMax > 0) {
