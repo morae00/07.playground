@@ -601,7 +601,9 @@ window.PN = window.PN || {};
   };
   // registry + public entry: PN.env.prop(ch, kind, o) → <g> in local box centred on the footprint (pivot 0,0)
   E.props = { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} };
-  E.resolveKind = function (ch, kind) { const lib = E.props[ch] || {}; return lib[kind] ? kind : (lib._alias && lib._alias[kind]) || Object.keys(lib).find((k) => k[0] !== '_'); };
+  // A kind resolves only to a drawing function (kit audit P3-2, 2026-10-26): '_alias' — the alias table in the same
+  // registry — is not a kind, so prop(ch, '_alias') falls back like any unknown kind instead of throwing.
+  E.resolveKind = function (ch, kind) { const lib = E.props[ch] || {}; return typeof lib[kind] === 'function' ? kind : (lib._alias && lib._alias[kind]) || Object.keys(lib).find((k) => k[0] !== '_'); };
   E.prop = function (ch, kind, o = {}) {
     const k = E.resolveKind(ch, kind), X = E.ctx(ch, o.seed || 1);
     const body = E.props[ch][k](X, o);

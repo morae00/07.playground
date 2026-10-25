@@ -12,6 +12,7 @@ Sheet: `concept/out/chapters-env.png` (1600×1000, plus `@2x`). Source: `concept
 - **`X.meta`** now always records `tier` and `front` for the five solid kinds (see "meta" below).
 - Outputs that must not move are pinned by the C8 hashes (below): every other kind, the base gate / embank, boundaries 2–5, landmarks 2/3/5, grounds 1/2/3/5 and all hazards are byte-identical to rev 2 after id normalisation.
 - **rev 3.1 (K5 review 1, 2026-10-03)** — mid / large only: the Ch5 slab splits lean and bend (no cabinet-door read), its facets fan from a fracture origin, the small concentric arcs are gone, the erased plate is wide with a chamfered corner, chips sit only at split ends (F1); Ch2 large fills its left-middle (R1); Ch3 reed beds are 1.4× denser with staggered heights (R2); the Ch4 broken plate corner has a lit brass lip (R3). Base tiers and every C8-pinned output are unchanged. Post-K5 reference for the base outputs K5 changed: `k5-base-changed=1vxhszz` (1장 wall 120×70 · 70×132, 4장 clock 120×70, 5장 stele 120×70 · 76×28, 1장 pole) and `k5-lm14-b1=el1tx2` (landmarks 1·4, boundary 1), hashed like C8 but with only the `ev…_` prefix normalised.
+- **rev 3.2 (kit audit P3-2, 2026-10-26)** — `E.resolveKind` only: `PN.env.prop(ch, '_alias')` no longer throws (see `PN.env.prop` below). No drawing changed.
 
 ### Tiers — `E.tier(w, d)`
 | tier | rule | bake sizes that land here |
@@ -117,6 +118,7 @@ Screen rule for every tier: nothing is painted above `y = −d/2 − 28` (outlin
 - **Engine mapping:** for `Obstacle {x, y, w, h, kind}`, draw at `translate(x + w/2, y + h/2)` and pass `{w, d: h}`.
   - `kind: 'solid'` and `kind: 'pillar'` are per-chapter aliases.
   - An unknown kind falls back to the chapter's first kind (`E.resolveKind`).
+  - rev 3.2 (2026-10-26, kit audit P3-2): `E.resolveKind` takes a kind only when the registry entry is a drawing function (`typeof … === 'function'`). `'_alias'` (the alias table kept in the same registry) used to resolve to itself and throw `E.props[ch][k] is not a function`; it now falls back like any unknown kind (`prop(1, '_alias')` draws the chapter's first kind). Every other output is byte-identical: K5 pins `k5-base=h2fdeo k5-big=1csj4l7 k5-enemy=mz083l`, C8 `env-unchanged=1ynqlwt enemy-unchanged=jqtira ch4-cleanup=q7pyz9`, and all registry kinds and aliases of chapters 1–5 (default and seed 3, plus `E.lastMeta`) hash the same before and after (`1le8yaf len=754652`).
 - **Options:** `w`, `d`, `H` (clamped to ≤ 28), `seed`. Block kinds honour w/d/H; clustered kinds scale uniformly by `w / default`.
 - **`PN.env.propMeta(ch, kind, o)`** returns `{ch, kind, name, H, ratio}` plus `front` and `tier` for the solid kinds, where `ratio = H / 64`. The sheet tags print this value as `0.41×결`.
 
