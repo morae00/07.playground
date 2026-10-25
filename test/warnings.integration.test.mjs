@@ -25,6 +25,7 @@ function arena(chapter, stage, { rules = 'remaster', keepBoss = false } = {}) {
   engine.setRuleSet(rules);
   engine.startRun(chapter, stage, 6262);
   const { probe } = engine;
+  probe.bringBoss();
   probe.haltSpawns();
   probe.setSkills({});
   probe.setGodMode();

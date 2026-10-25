@@ -20,6 +20,8 @@ function bossArena(chapter, stage, rules = 'remaster') {
   const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), meta(), standardOptions(), { onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver() {} });
   engine.setRuleSet(rules);
   engine.startRun(chapter, stage, 8080);
+  // The boss from the start, as before the boss warm-up (CON-02).
+  engine.probe.bringBoss();
   const { probe } = engine;
   probe.haltSpawns();
   probe.setSkills({});

@@ -21,6 +21,8 @@ function enragedBoss(rules, patch = null) {
   engine.setRuleSet(rules);
   if (patch) engine.probe.patchRules(patch);
   engine.startRun(1, 5, 6060);
+  // The boss from the start, as before the boss warm-up (CON-02).
+  engine.probe.bringBoss();
   const { probe } = engine;
   probe.setSkills({});
   probe.setGodMode();

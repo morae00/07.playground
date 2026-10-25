@@ -44,6 +44,7 @@ import {
 import { text, type StringKey, type Text } from '../i18n/text';
 import { REMASTER_RULES, ruleSetFor, type RuleSet, type RuleSetId } from './rules';
 import { EncounterDirector, type SpawnEdge } from './encounterDirector';
+import { bossWarmupRate, bossWarmupSeconds } from './bossWarmup';
 import { StageObjective, bonusGold, type BonusState, type ObjectiveId, type ObjectiveMark } from './stageObjective';
 import { CHECK_CONTENT_AT_LOAD } from '../content/checks';
 import CATALOG from '../content/data/catalog';
@@ -371,6 +372,8 @@ export type HudSnapshot = {
   landmark: string | null;
   timeLeft: number;
   duration: number;
+  /** CON-02: during a boss stage's crowd-only warm-up, the seconds until its boss enters (the stage clock waits). */
+  bossArrival?: number;
   timeScale: number;
   hp: number;
   maxHp: number;
@@ -908,6 +911,9 @@ export class GameEngine {
   protected enrageSeconds = 0;
   /** SYS-04: a silence zone waiting behind its warning during enrage. */
   protected pendingEnrageZone: { x: number; y: number; at: number } | null = null;
+  /** CON-02: a boss stage's crowd-only warm-up: its length, and the seconds left before the boss enters (0 once it has). */
+  protected bossWarmupTotal = 0;
+  protected bossWarmupLeft = 0;
   protected stageKills = 0;
   protected stageCoinsEarned = 0;
   /** UI-05 settlement tallies, per stage; presentation only, the simulation never reads them. */
@@ -1365,7 +1371,7 @@ export class GameEngine {
       this.faultInjection = true;
       return 'LOOP FAULT ARMED';
     }
-    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO', 'TURN', 'PHASE', 'VFX', 'BOMB', 'FIRE', 'TERRAIN', 'BIND', 'SHOCK', 'AFX1', 'AFX2', 'AFX3', 'AFX4', 'AFX5', 'AFX6', 'AFX7', 'AFX8', 'AFX9', 'AFX10', 'AFX11', 'AFX12', 'AFX13', 'AFX14', 'AFX15', 'AFX16'].includes(code)) {
+    if (['GOD', 'COIN', 'MAGNET', 'NUKE', 'DRAFT', 'CLEAR', 'KO', 'TURN', 'PHASE', 'BOSS', 'VFX', 'BOMB', 'FIRE', 'TERRAIN', 'BIND', 'SHOCK', 'AFX1', 'AFX2', 'AFX3', 'AFX4', 'AFX5', 'AFX6', 'AFX7', 'AFX8', 'AFX9', 'AFX10', 'AFX11', 'AFX12', 'AFX13', 'AFX14', 'AFX15', 'AFX16'].includes(code)) {
       this.invalidateInfiniteScore();
     }
     if (code === 'GOD') {
@@ -1746,8 +1752,17 @@ export class GameEngine {
       return code;
     }
 
-    // CON-06: takes the stage's boss to just past its next phase, to see its phase move and line.
+    // CON-02: ends a boss stage's warm-up, so its boss enters now.
+    if (code === 'BOSS') {
+      if (this.bossWarmupLeft <= 0) return 'NO WARMUP';
+      this.bringBoss();
+      return 'BOSS ENTERS';
+    }
+
+    // CON-06: takes the stage's boss to just past its next phase, to see its phase move and line. A boss stage still
+    // in its warm-up (CON-02) brings the boss in first.
     if (code === 'PHASE') {
+      if (this.bossWarmupLeft > 0) this.bringBoss();
       const boss = this.enemies.find((enemy) => enemy.isBoss && !enemy.legacyBoss && enemy.boss?.role !== 'field' && enemy.hp > 0);
       if (!boss || (boss.bossPhase ?? 1) >= 3) return 'NO BOSS PHASE';
       boss.hp = Math.min(boss.hp, boss.maxHp * ((boss.bossPhase ?? 1) === 1 ? 0.6 : 0.3));
@@ -1774,6 +1789,8 @@ export class GameEngine {
         this.timeLeft = 0;
         this.requestRoundClear();
       } else {
+        // A boss stage still in its warm-up (CON-02) brings its boss in to fell it.
+        if (this.bossWarmupLeft > 0) this.bringBoss();
         for (const enemy of this.enemies) {
           if (enemy.isBoss && !enemy.legacyBoss) enemy.hp = 0;
         }
@@ -2192,6 +2209,9 @@ export class GameEngine {
         this.rules.eliteAffixes,
       )
       : null;
+    // CON-02: a campaign boss stage sends its crowd alone first; the boss enters as the warm-up ends.
+    this.bossWarmupTotal = this.bossWarmupLength();
+    this.bossWarmupLeft = this.bossWarmupTotal;
     this.playerHeading = { x: 1, y: 0 };
     this.stageFinished = false;
     this.rewardLock = false;
@@ -2247,7 +2267,30 @@ export class GameEngine {
     this.aimTargetId = null;
     this.generateMap();
     if (this.runMode === 'infinite') this.spawnInfiniteBoss();
-    else if (this.kind !== 'normal') this.spawnBoss(this.kind, false);
+    else if (this.kind !== 'normal' && this.bossWarmupLeft <= 0) this.spawnBoss(this.kind, false);
+    this.emitSnapshot(true);
+  }
+
+  /** CON-02: this round's boss warm-up in seconds; none off the campaign, on normal stages, or at the showcase pace. */
+  protected bossWarmupLength() {
+    if (!this.rules.bossWarmup || this.runMode !== 'campaign') return 0;
+    // The showcase pace is a developer tool for a quick look, so its short boss stages keep the boss from the start.
+    if (this.options.paceMode === 'showcase' && DEVELOPER_UI_AVAILABLE) return 0;
+    return bossWarmupSeconds(this.kind, this.chapter);
+  }
+
+  /** CON-02: counts the warm-up down by the stage clock's step; the boss enters as it runs out. */
+  protected advanceBossWarmup(clockDelta: number) {
+    this.bossWarmupLeft = Math.max(0, this.bossWarmupLeft - clockDelta);
+    // Within a nanosecond is out, so a whole number of seconds lasts a whole number of steps.
+    if (this.bossWarmupLeft <= 1e-9) this.bringBoss();
+  }
+
+  /** CON-02: ends the warm-up now: the stage's boss enters and the stage clock, its enrage timer, starts. */
+  protected bringBoss() {
+    this.bossWarmupLeft = 0;
+    this.spawnBoss(this.kind, false);
+    // The boss bar and its title card come with the boss, not at the next snapshot.
     this.emitSnapshot(true);
   }
 
@@ -2376,7 +2419,11 @@ export class GameEngine {
     if (this.rules.hitStopBudget) this.hitStopBudget = tickHitStopBudget(this.hitStopBudget);
     // Budgeted rules count the stage clock in real steps so hit-stop never stretches a stage (BUG-07).
     const clockDelta = this.rules.hitStopBudget ? Math.max(dt, FIXED_TIMESTEP) : dt;
-    if (this.runMode === 'campaign') this.timeLeft = Math.max(0, this.timeLeft - clockDelta);
+    if (this.runMode === 'campaign') {
+      // CON-02: a boss stage's clock, its enrage timer, waits through the warm-up for the boss.
+      if (this.bossWarmupLeft > 0) this.advanceBossWarmup(clockDelta);
+      else this.timeLeft = Math.max(0, this.timeLeft - clockDelta);
+    }
     if (this.bossEnraged && this.rules.steppedEnrage) this.advanceEnrage(clockDelta);
 
     if (this.player.hp <= 0) {
@@ -3622,7 +3669,9 @@ export class GameEngine {
         }
       }
     } else if (this.enemies.length < cap) {
-      const rate = (this.kind === 'normal' ? 1.8 : 2.25) * difficulty * (this.rules.horde ? HORDE.rate : 1);
+      // CON-02: a boss stage's warm-up crowd comes at a share of the rate that climbs to all of it as the boss enters.
+      const warmup = this.bossWarmupLeft > 0 ? bossWarmupRate(this.bossWarmupLeft, this.bossWarmupTotal) : 1;
+      const rate = (this.kind === 'normal' ? 1.8 : 2.25) * difficulty * (this.rules.horde ? HORDE.rate : 1) * warmup;
       this.spawnBudget += dt * rate;
       while (this.spawnBudget >= 1) {
         this.spawnBudget -= 1;
@@ -6472,7 +6521,7 @@ export class GameEngine {
         ? this.infiniteBossKills
         : this.kind === 'normal'
           ? Math.min(this.duration - this.timeLeft, this.objectiveTarget)
-          : this.enemies.some((enemy) => enemy.isBoss && !enemy.legacyBoss)
+          : this.bossWarmupLeft > 0 || this.enemies.some((enemy) => enemy.isBoss && !enemy.legacyBoss)
             ? 0
             : 1,
       objectiveTarget: this.objectiveTarget,
@@ -6480,6 +6529,7 @@ export class GameEngine {
       landmark: this.stageObjective ? this.landmarkId() : null,
       timeLeft: this.timeLeft,
       duration: this.duration,
+      ...(this.bossWarmupLeft > 0 ? { bossArrival: this.bossWarmupLeft } : {}),
       timeScale: this.timeScale,
       hp: this.player.hp,
       maxHp: this.player.stats.maxHp,

@@ -31,6 +31,8 @@ function withEngine(body) {
 test('UI-02: the boss bar gets the boss id for its portrait, its phase, and its enrage steps', () => {
   withEngine((engine) => {
     engine.startRun(1, 5, 5150);
+    // The boss from the start, as before the boss warm-up (CON-02).
+    engine.probe.bringBoss();
     engine.probe.setGodMode();
     engine.probe.step(30);
     const hud = engine.probe.hud();

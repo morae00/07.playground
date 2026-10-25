@@ -3,6 +3,8 @@
 export { GameEngine, SKILLS, SKILL_IDS, suspendedRunReward } from '../game/GameEngine';
 export { default as BUILD_DEPTH } from '../content/data/buildDepth';
 export { default as BOSS_TOUGHNESS } from '../content/data/bossToughness';
+export { default as BOSS_WARMUP } from '../content/data/bossWarmup';
+export { bossWarmupRate, bossWarmupSeconds } from '../game/bossWarmup';
 export { default as HORDE } from '../content/data/horde';
 export { default as BOMBERS } from '../content/data/bombers';
 export { ARSENAL, ARSENAL_IDS, arsenalStats } from '../game/arsenal';

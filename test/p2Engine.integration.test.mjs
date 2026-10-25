@@ -152,6 +152,8 @@ function createEngine({ options = defaultOptions(), stage = 1, seed = 2001 } = {
     onGameOver() {},
   });
   engine.startRun(1, stage, seed);
+  // A boss stage's boss from the start, as before the boss warm-up (CON-02).
+  engine.probe.bringBoss();
   return { engine, probe: engine.probe, ...canvasFixture };
 }
 

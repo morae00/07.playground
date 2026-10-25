@@ -219,6 +219,8 @@ test('every chapter has its required Stage 5 mid boss and Stage 10 final boss', 
       const { engine, getSnapshot } = createEngine();
       try {
         engine.startRun(chapter, stage, chapter * 10_000 + stage);
+        // The boss from the start, as before the boss warm-up (CON-02).
+        engine.probe.bringBoss();
         engine.probe.step(1);
 
         const world = engine.probe.read();

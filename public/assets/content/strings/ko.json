@@ -375,6 +375,7 @@
  "hud.clock": "시간과 목표",
  "hud.elapsed": "경과 시간",
  "hud.untilEnrage": "광폭화까지",
+ "hud.untilBoss": "보스 등장까지",
  "hud.timeLeft": "남은 시간",
  "hud.scoreLine": "점수 {score} · 보스 {bosses}",
  "hud.bossGoal": "목표 · {boss} 처치 {progress} / {target}",

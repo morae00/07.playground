@@ -37,6 +37,8 @@ test('SYS-12: a boss stage boss takes its chapter\'s campaign factors under the 
     try {
       if (patch) engine.probe.patchRules(patch);
       engine.startRun(chapter, 10, 77);
+      // The boss from the start, as before the boss warm-up (CON-02).
+      engine.probe.bringBoss();
       const found = stageBoss(engine);
       return { hp: found.maxHp, damage: found.damage };
     } finally {

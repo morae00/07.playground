@@ -184,13 +184,16 @@ export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen,
         ? 'focus'
         : SKILL_IDS.some((id) => snapshot.skills[id]?.awakened) ? 'awakened' : 'calm';
   const bossStage = snapshot.stageKind !== 'normal';
+  // CON-02: through a boss stage's warm-up the clock counts down to the boss; the enrage timer starts as it enters.
+  const warmup = !infinite && snapshot.bossArrival !== undefined;
+  const clock = infinite ? snapshot.elapsed : snapshot.bossArrival ?? snapshot.timeLeft;
   return (
     <>
       {playing && (
         <p className="srOnly" id="game-state-summary">
           {infinite
             ? t('hud.summary.infinite', { chapter: lookChapter, time: formatClock(snapshot.elapsed), score: snapshot.score, bosses: snapshot.bossKills })
-            : t('hud.summary.campaign', { chapter: snapshot.chapter, stage: snapshot.stage, time: formatClock(snapshot.timeLeft) })}
+            : t('hud.summary.campaign', { chapter: snapshot.chapter, stage: snapshot.stage, time: formatClock(clock) })}
           {' '}{t('hud.summary.health', { hp: Math.ceil(snapshot.hp), max: Math.ceil(snapshot.maxHp), keys: moveKeysInUse() })}
           {' '}{t('hud.summary.pause')} {runPaused ? t('hud.summary.paused') : ''}
         </p>
@@ -217,8 +220,8 @@ export function HudLayer({ snapshot, playing, runPaused, devTools, devPanelOpen,
           </div>
         </section>
         <section className="hudClock" aria-label={t('hud.clock')}>
-          <div className="timer">{formatClock(infinite ? snapshot.elapsed : snapshot.timeLeft)}</div>
-          <div className="timerSub">{t(infinite ? 'hud.elapsed' : bossStage ? 'hud.untilEnrage' : 'hud.timeLeft')}</div>
+          <div className="timer">{formatClock(clock)}</div>
+          <div className="timerSub">{t(infinite ? 'hud.elapsed' : warmup ? 'hud.untilBoss' : bossStage ? 'hud.untilEnrage' : 'hud.timeLeft')}</div>
           <div className="objectiveChip">
             {infinite
               ? t('hud.scoreLine', { score: formatCount(snapshot.score), bosses: snapshot.bossKills })

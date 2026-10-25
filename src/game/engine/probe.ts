@@ -72,6 +72,8 @@ export type ProbeWorld = {
   overtimeStep: number;
   timeLeft: number;
   duration: number;
+  /** CON-02: seconds left of a boss stage's crowd-only warm-up before its boss enters; 0 when none runs. */
+  bossWarmupLeft: number;
   elapsed: number;
   spawnBudget: number;
   stageKills: number;
@@ -176,6 +178,11 @@ export interface EngineProbe {
   counts(): { enemies: number; projectiles: number; hostileShots: number; particles: number; damageNumbers: number };
   addObstacle(spec: Omit<Obstacle, 'id'> & { id?: number }): number;
   setClock(patch: { timeLeft?: number; elapsed?: number }): void;
+  /**
+   * CON-02: ends a boss stage's warm-up now, so its boss enters and the stage clock starts. Right after startRun this
+   * gives the stage as it began before the warm-up: the same boss, place, and draws.
+   */
+  bringBoss(): void;
   setStageKills(count: number): void;
   /** Runs the round-state check now (timer expiry, enrage, clear, defeat). */
   resolveRound(): void;
@@ -261,6 +268,7 @@ export class ProbedGameEngine extends GameEngine {
         overtimeStep: this.overtimeStep,
         timeLeft: this.timeLeft,
         duration: this.duration,
+        bossWarmupLeft: this.bossWarmupLeft,
         elapsed: this.elapsed,
         spawnBudget: this.spawnBudget,
         stageKills: this.stageKills,
@@ -453,6 +461,9 @@ export class ProbedGameEngine extends GameEngine {
       setClock: ({ timeLeft, elapsed }) => {
         if (timeLeft !== undefined) this.timeLeft = timeLeft;
         if (elapsed !== undefined) this.elapsed = elapsed;
+      },
+      bringBoss: () => {
+        if (this.bossWarmupLeft > 0) this.bringBoss();
       },
       setStageKills: (count) => {
         this.stageKills = count;

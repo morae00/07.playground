@@ -106,6 +106,8 @@ test('G8/G10: main bosses use radius 54, field bosses radius 38 and appear at th
   const engine = createEngine();
   try {
     engine.startRun(1, 5, 11);
+    // The boss from the start, as before the boss warm-up (CON-02).
+    engine.probe.bringBoss();
     assert.equal(engine.probe.read().enemies.find((enemy) => enemy.isBoss).radius, 54);
 
     engine.startRun(1, 2, 12);
@@ -270,6 +272,7 @@ test('BUG-10: the Ink Butcher winds up in place behind a lane telegraph, then da
   const engine = createEngine();
   try {
     engine.startRun(1, 5, 505);
+    engine.probe.bringBoss();
     const bossId = engine.probe.read().enemies.find((enemy) => enemy.isBoss).id;
     isolate(engine, 'enemies');
     engine.probe.removeEnemies(engine.probe.read().enemies.filter((enemy) => enemy.id !== bossId).map((enemy) => enemy.id));
@@ -307,6 +310,7 @@ test('BUG-11: the eclipse wall enters from the view edge, reaches the player any
   const engine = createEngine();
   try {
     engine.startRun(5, 5, 707);
+    engine.probe.bringBoss();
     const boss = engine.probe.read().enemies.find((enemy) => enemy.isBoss);
     assert.equal(boss.boss.pattern, 'eclipse');
     isolate(engine, 'enemies');

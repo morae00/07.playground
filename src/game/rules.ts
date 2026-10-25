@@ -195,6 +195,13 @@ export type RuleSet = Readonly<{
    * src/content/data/awakenings.ts.
    */
   awakeningGimmicks: boolean;
+  /**
+   * CON-02 (user decision 2026-10-23): a campaign boss stage opens with a crowd-only warm-up. For its chapter's
+   * seconds the crowd alone comes, its spawn rate climbing from a fraction of the boss stage's; then the boss enters
+   * and the stage clock, the enrage timer, starts. A stage starts at level 1, so the player meets the boss with the
+   * drafts of a normal stage's opening instead of at once. Numbers in src/content/data/bossWarmup.ts.
+   */
+  bossWarmup: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -239,6 +246,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   characters: false,
   lightBonusHeal: false,
   awakeningGimmicks: false,
+  bossWarmup: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -283,6 +291,7 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   characters: true,
   lightBonusHeal: true,
   awakeningGimmicks: true,
+  bossWarmup: true,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

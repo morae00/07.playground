@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 151798,
-      "kib": 148.24,
+      "bytes": 152119,
+      "kib": 148.55,
       "baselineBytes": 128399,
-      "growthRatio": 0.18223662178054356,
+      "growthRatio": 0.1847366412511,
       "warningBytes": 147658,
       "failBytes": 160498,
       "status": "warning",
@@ -35,16 +35,16 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 2218416,
-      "kib": 2166.42,
+      "bytes": 2218595,
+      "kib": 2166.6,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 34509586,
-      "kib": 33700.77,
+      "bytes": 34509765,
+      "kib": 33700.94,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-CFkoNSVe.js",
+      "file": "assets/App-b7iOLTjs.js",
       "category": "appJs",
-      "sourceBytes": 465076,
-      "gzipBytes": 148246
+      "sourceBytes": 466123,
+      "gzipBytes": 148567
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -105,20 +105,20 @@
     {
       "file": "assets/content/strings/en.json",
       "category": "data",
-      "sourceBytes": 49249,
-      "gzipBytes": 14960
+      "sourceBytes": 49285,
+      "gzipBytes": 14967
     },
     {
       "file": "assets/content/strings/ko.json",
       "category": "data",
-      "sourceBytes": 53811,
-      "gzipBytes": 17040
+      "sourceBytes": 53852,
+      "gzipBytes": 17051
     },
     {
       "file": "assets/content/tables.json",
       "category": "data",
-      "sourceBytes": 59507,
-      "gzipBytes": 11121
+      "sourceBytes": 59609,
+      "gzipBytes": 11165
     },
     {
       "file": "assets/enemy-icons-BEkQ6ASU.webp",
@@ -139,7 +139,7 @@
       "gzipBytes": 17920
     },
     {
-      "file": "assets/index-BDHqGQ_V.js",
+      "file": "assets/index-CboxS7ql.js",
       "category": "appJs",
       "sourceBytes": 7500,
       "gzipBytes": 3552

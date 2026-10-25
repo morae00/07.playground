@@ -503,6 +503,11 @@ async function runScenario(page, viewport, dpr, motion) {
   await settle(page, 30);
   await (await unique(page.getByRole('button', { name: 'Ch.1 / St.5 출정' }), 'Stage 5 start')).click();
   await settle(page, 180);
+  // A Ch1 boss stage opens with its crowd-only warm-up (CON-02); BOSS brings the boss in for its bar and title card.
+  await openCheatPanel(page);
+  await enterCheat(page, 'BOSS');
+  await page.keyboard.press('Escape');
+  await settle(page, 180);
   await captureEvidence(page, viewport, dpr, motion, 'boss');
 
   // K11: chapter 3's terrain (its wet-net trap, its own enemies on the slow pool, review 3), the hero bound by vines.

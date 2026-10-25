@@ -144,6 +144,25 @@ The infinite run on 216de64 (`npm run test:balance:infinite`, six seeds, at most
 
 CON-02 Ch1 tuning: by the novice proxy, 1-1 already clears within the R1 target band (40-70%), and 3-minute survival (70%) is near its 80% target. A longer opening ramp does not help (1-1, novice, 20 seeds): a 90 s ramp kept 50% clear but dropped 3-minute survival to 50%, and 120 s gave 45% and 65%. Fewer early enemies mean less XP and fewer drafts (median 14 drafts at 45 s, 5 at 90 s), so the player is weaker when the pressure arrives. The 45 s ramp stays. The R1 playtest (6 or more new players) decides the final Ch1 numbers.
 
+CON-02 boss warm-up (user decision 2026-10-23; `bossWarmup` rule, numbers in `src/content/data/bossWarmup.ts`). The R5 baseline put the Ch1 final boss stage at 0 of 30 team runs. Boss stages had no opening ramp: the boss and a boss stage's crowd came at once, while every stage starts at level 1, and a 45 s ramp with the boss already there cleared 2 of 30. Now a Ch1 boss stage sends the crowd alone first, at a spawn rate climbing from 0.4 to 1.0 times the boss stage's. The boss enters after 60 s in 1-5 and 75 s in 1-10, and the enrage timer starts then. Measured on cb7a54e with the rule, the ten baseline seeds, team personas and `novice`:
+
+| warm-up (St5 / St10), crowd rate | 1-5 team | 1-5 novice | 1-10 team | 1-10 novice |
+|---|---:|---:|---:|---:|
+| none (cb7a54e) | 9/30 | 7/10 | 0/30 | 1/10 |
+| 75 / 75 s, 0.4 to 1.0 | 15/30 | 4/10 | 5/30 | 3/10 |
+| 60 / 60 s | 14/30 | 6/10 | 3/30 | 3/10 |
+| **60 / 75 s (chosen)** | 14/30 | 6/10 | 5/30 | 3/10 |
+| 60 / 90 s | 14/30 | 6/10 | 3/30 | |
+| 60 / 90 s, 0.4 to 1.0 in the first 45 s | 15/30 | 4/10 | 4/30 | 0/10 |
+| 75 / 75 s, 0.3 to 0.7 | 18/30 | 6/10 | 1/30 | 1/10 |
+| 75 / 75 s, 0.32 to 0.8 in the first 45 s (a normal stage's opening and base rate) | 16/30 | 4/10 | 2/30 | 3/10 |
+
+- At 1-10 the striker, survivor, collector, and novice meet the boss at level 6, 4, 5, and 2, after 5, 3, 4, and 1 drafts (medians). That is short of the decision's 5-8 drafts. A longer warm-up only adds time at the full crowd rate: more striker and collector runs die in it (12 of 30 at 75 s, 16 at 90 s), as they die before 75 s in 1-6 to 1-9 too. A gentler crowd pays less XP, and the survivor then cannot fell the boss before enrage.
+- 1-10 at 5 of 30 sits with Ch1's hurdle stages (1-6 17%, 1-7 7%, 1-8 20% at 216de64). The survivor clears it 5 times in 10.
+- The novice clears 1-10 3 times in 10 (1 before). In 1-5 it clears 6 in 10 (7 before): it levels by kills, so the warm-up brings it no drafts (level 2-3 at the boss either way), and its boss arrives in a full field where the auto-aim rarely picks the boss. 60 s keeps that cost smallest; 75 s took it to 4 in 10.
+- Every boss stage with the same 75 s warm-up (team personas, the first five baseline seeds, 15 runs a stage): 2-5 7 to 11, 2-10 3 to 4, 3-5 3 to 5, 3-10 2 to 6, 4-5 7 to 5, 4-10 6 to 6, 5-5 11 to 12, 5-10 6 to 8. Boss stages by chapter: Ch2 33 to 50%, Ch3 17 to 37%, Ch4 43 to 37%, Ch5 57 to 67%. Later chapters' personas meet the boss after 5-9 drafts and rarely die in the warm-up, so there it only eases stages that are not walls, against the R5 request for tougher bosses. The table therefore sets it for Ch1 alone. `maxed` on 5-5 and 5-10 (five seeds) cleared 10 of 10 either way, lowest health median 0.68 and 0.69.
+- Unchanged: normal stages and the classic rules. The novice in 1-1 × seeds 1-20 (13 of 20 clear) and a classic run of 40 scenarios keep their fingerprints, and so do the pilot's 16 rows off the Ch1 boss stages. The pilot (seed 17) clears 7 of 24 as before; its Ch1 boss-stage runs die later (1-10 striker 28 to 69 s, survivor 30 to 78 s). Team hits at the minimum: 2.8% (2.6% before; gate 20%). Only the `c1s5-boss` draw fingerprint changes.
+
 FX-02 (two-layer hit-stop, `rareHitStop` rule) changes seeded outcomes, so it was piloted against its parent (FX-04) on 8 stages × 10 seeds × 4 personas:
 
 | | before (FX-04) | after (FX-02) |

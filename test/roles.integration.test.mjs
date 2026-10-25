@@ -20,6 +20,8 @@ function arena(rules = 'remaster') {
   const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), meta(), standardOptions(), { onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver() {} });
   engine.setRuleSet(rules);
   engine.startRun(1, 5, 5151);
+  // As the stage began before the boss warm-up (CON-02), so the seeded draws stay the same.
+  engine.probe.bringBoss();
   engine.subscribe((event) => events.push(event));
   const { probe } = engine;
   probe.haltSpawns();

@@ -28,6 +28,8 @@ export const PRODUCTION_BANNED_MARKERS = Object.freeze([
   'CHAPTER TURN',
   // The CON-06 boss phase skip for phase move and line checks.
   'BOSS PHASE',
+  // The CON-02 boss warm-up skip.
+  'BOSS ENTERS',
   // The FX-06/FX-07 all-skills cheat for skill art checks.
   'ALL SKILLS AWAKENED',
   // Fault injection for the error-resilience probes (TEC-14).

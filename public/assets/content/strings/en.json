@@ -375,6 +375,7 @@
  "hud.clock": "Time and objective",
  "hud.elapsed": "Elapsed",
  "hud.untilEnrage": "Until enrage",
+ "hud.untilBoss": "Until the boss",
  "hud.timeLeft": "Time left",
  "hud.scoreLine": "Score {score} · bosses {bosses}",
  "hud.bossGoal": "Goal · defeat {boss} {progress} / {target}",

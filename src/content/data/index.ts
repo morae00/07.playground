@@ -8,6 +8,7 @@ import awakenings from './awakenings.ts';
 import bombers from './bombers.ts';
 import bossPhaseMoves from './bossPhaseMoves.ts';
 import bossToughness from './bossToughness.ts';
+import bossWarmup from './bossWarmup.ts';
 import buildDepth from './buildDepth.ts';
 import catalog from './catalog.ts';
 import characters from './characters.ts';
@@ -20,7 +21,7 @@ import objectives from './objectives.ts';
 import skillNumbers from './skillNumbers.ts';
 import soundCues from './soundCues.ts';
 
-const CONTENT_TABLES = { achievements, arsenal, awakenings, bombers, bossPhaseMoves, bossToughness, buildDepth, catalog, characters, codex, cosmetics, elites, encounterGrammars, horde, objectives, skillNumbers, soundCues };
+const CONTENT_TABLES = { achievements, arsenal, awakenings, bombers, bossPhaseMoves, bossToughness, bossWarmup, buildDepth, catalog, characters, codex, cosmetics, elites, encounterGrammars, horde, objectives, skillNumbers, soundCues };
 
 export type ContentTables = typeof CONTENT_TABLES;
 export default CONTENT_TABLES;
