@@ -74,7 +74,10 @@ export const PICKUP_ART = Object.freeze(['xp', 'coin', 'magnet', 'heal']);
 /** Menu art (UI-06): chapter thumbnails from each chapter's landmark vignette, and each chapter's four enemy roles. */
 export const MENU_CHAPTERS = Object.freeze([1, 2, 3, 4, 5]);
 export const ENEMY_ROLES = Object.freeze(['stalker', 'charger', 'shooter', 'warden']);
-/** Codex art (CON-07): the nine terrain kinds as the kit draws them in play (API-env hazard), at rest. */
+/**
+ * Codex art (CON-07): the nine terrain kinds. Seven are the kit's codex icons (API-hazards §16: the hit circle and the
+ * pieces the game draws, in one representative state); warning and vortex are still the kit hazard circle (API-env).
+ */
 export const TERRAIN_KINDS = Object.freeze(['water', 'trap', 'fire', 'slow', 'root', 'null', 'shock', 'warning', 'vortex']);
 
 function skillTiles() {
@@ -122,7 +125,8 @@ function portraits() {
  * - keyart: the hero's full-body three-quarter view (API-hero §1, 400×640) at 0.9 for the menu (UI-06).
  * - chapters: the kit landmark vignette (API-env, 280×150, full bleed with its own floor) at 0.6, for chapter cards.
  * - enemies: each chapter's four roles in the game LOD, fitted to the cell by their drawn bounds, 3 px inside.
- * - terrain: the kit hazard circle (API-env hazard) at a 22 radius for the codex (shock 16, for its spikes).
+ * - terrain: the kit codex terrain icon (API-hazards §16, hit circle r 25 in the 64 cell); warning and vortex keep the
+ *   kit hazard circle (API-env hazard) at a 22 radius.
  * `bleed` sheets fill their cells edge to edge, so the bake skips its edge check for them.
  */
 export const UI_SHEETS = Object.freeze({
@@ -151,7 +155,7 @@ export const UI_SHEETS = Object.freeze({
     origin: [0, 0],
     items: MENU_CHAPTERS.flatMap((ch) => ENEMY_ROLES.map((role) => ({ key: `${ch}-${role}`, recipe: 'enemyIcon', args: [ch, role] }))),
   },
-  terrain: { file: 'terrain-icons', className: 'artTerrain', columns: 9, cell: [64, 64], origin: [-32, -32], items: TERRAIN_KINDS.map((kind) => ({ key: kind, recipe: 'hazard', args: [kind] })) },
+  terrain: { file: 'terrain-icons', className: 'artTerrain', columns: 9, cell: [64, 64], origin: [-32, -32], items: TERRAIN_KINDS.map((kind) => ({ key: kind, recipe: kind === 'warning' || kind === 'vortex' ? 'hazard' : 'terrainIcon', args: [kind] })) },
 });
 
 /**

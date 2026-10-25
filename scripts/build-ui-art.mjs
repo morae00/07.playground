@@ -14,7 +14,7 @@ const kitDir = path.join(root, 'art/concept-kit');
 const outDir = path.join(root, 'src/ui/art');
 const storyDir = path.join(root, 'public/assets/packs/story');
 const only = process.argv[2];
-const KIT_FILES = ['lib.js', 'k-hero.js', 'k-characters.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses3.js', 'k-bosses4.js', 'k-icons.js', 'k-icons2.js', 'k-enemies.js', 'k-env.js', 'k-story.js'];
+const KIT_FILES = ['lib.js', 'k-hero.js', 'k-characters.js', 'k-bosses1.js', 'k-bosses2.js', 'k-bosses3.js', 'k-bosses4.js', 'k-icons.js', 'k-icons2.js', 'k-enemies.js', 'k-env.js', 'k-hazards.js', 'k-story.js'];
 
 const browser = await chromium.launch();
 try {
@@ -155,6 +155,7 @@ async function renderSheet({ sheet, density, quality, colorMap }) {
     // Enemies draw in role boxes whose horns and tails reach past the box, so they are fitted by their drawn bounds.
     // Shock's burst spikes reach past its circle, so it draws smaller.
     hazard: (kind) => PN.env.hazard(kind, 'static', { r: kind === 'shock' ? 16 : 22 }),
+    terrainIcon: (kind) => PN.hazards.icon(kind),
     enemyIcon: (ch, role) => {
       const markup = PN.enemies.draw(ch, role, { lod: 'game', halo: false, shadow: false });
       const box = bounds(markup);

@@ -26,7 +26,10 @@
 // puddles, ripples, vines, trap machines, crumbs, stones) are fixed-size stamps baked at @2x and placed by layout().
 // Stamps are never stretched. Units are world units (1440x900 at zoom 1.0, 1x px).
 // Deterministic: no Math.random/Date. layout() uses SPEC.jit only (the renderer ports it to TypeScript); stamps are
-// fixed geometry (their few jagged edges use a fixed-seed mulberry32). Reads only PN.env.CH (trap machine materials).
+// fixed geometry (their few jagged edges use a fixed-seed mulberry32). Reads only PN.env.CH (trap machine materials, and
+// the floor tone of the codex icons).
+// Codex icons (2026-10-26, art/kit audit P2-2): icon(kind, {ch}) — additive; every stamp, layout, path, draw, overlay and
+// SPEC value is unchanged (the version string stays '1.0-d2r2', so the atlas manifest does not move).
 // Every call returns one <g class="hzd …"> with its own <defs>; ids, when a drawing needs any, are 'hzd<N>_' per call.
 window.PN = window.PN || {};
 (function (PN) {
@@ -1896,6 +1899,101 @@ window.PN = window.PN || {};
     return warn(`unknown overlay group ${group}`);
   }
 
+  // ==== 7b. codex icons (art audit P2-2 · kit audit P2-2, 2026-10-26) ====
+  /**
+   * icon(kind, {ch}) — a still icon per kind for the codex terrain sheet (64 CSS px cells): the game's own picture at icon
+   * size, so the codex and the field show the same thing. The hit circle (radius ICON.r) is filled with the chapter floor
+   * (PN.env.CH[ch].base, read only), then drawn in the kind's draw() order (§9): base, the kind's ground, the same atlas
+   * stamps (each scaled uniformly by its own factor — never stretched, no new drawing) and the kind's SPEC rim rows with
+   * widths, offsets and dashes × ICON.rim[kind]. No centre glyph. Representative states: fire burn, shock imminent
+   * (cracks + telegraph rim, no fill), slow and root static, water static, trap armed (the chapter machine), null static.
+   * Local box −32…32 × −32…32, origin = the circle centre; paint stays inside ±30 (the sheet refuses paint on a cell edge).
+   */
+  const fz = (rows) => Object.freeze(rows.map((q) => Object.freeze(q)));
+  const ICON = Object.freeze({
+    box: Object.freeze([64, 64]), r: 25, ch: 1, hatch: 0.6,
+    rim: Object.freeze({ fire: 0.6, shock: 0.45, slow: 0.55, water: 0.75, root: 0.55, trap: 0.6, null: 0.55 }),
+    // the crack set of paths('shock', r, seed) shrunk to the icon: from r 120 its arms start 2.1 off the centre (an open
+    // impact point, not a converging '✳'); line weights per arm / branch segment, first → last
+    shock: Object.freeze({ r: 120, seed: 11, arm: Object.freeze([1.9, 0.9]), branch: Object.freeze([1.1, 0.7]) }),
+    trap: Object.freeze({ hub: 16 }),
+    // two of the four ghost lines of paths('null', 120, 164): they neither cross nor meet inside the disc and keep
+    // ≥ 0.38 r off the centre. All four always make a '+' somewhere inside (their angles are 44° apart), and other
+    // pairs meet as a 'V', 'Λ' or 'X' at icon size.
+    null: Object.freeze({ r: 120, seed: 164, lines: Object.freeze([0, 3]), line: 0.8 }),
+    // [group, part, frame, x, y, scale, flip]: `ground` is drawn before the rim, `top` after it (fire), or both before
+    // it (the other kinds, as their draw order has the rim last). Trap 'armed-ch' takes the chapter (5 → 1).
+    pieces: Object.freeze({
+      fire: Object.freeze({ ground: fz([['fire', 'char-a', 0, -3, 10, 0.6, 0]]), top: fz([['fire', 'cluster-s-b', 0, -2, -12, 0.55, 0], ['fire', 'cluster-s-b', 0, 15, -1, 0.72, 1], ['fire', 'cluster-s-a', 0, -15, 1, 0.72, 0], ['fire', 'cluster-l-a', 0, 0, 15, 0.72, 0]]) }),
+      shock: Object.freeze({ ground: fz([]), top: fz([]) }),
+      slow: Object.freeze({ ground: fz([['slow', 'mire-m-a', 0, -3, 5, 0.6, 0], ['slow', 'mire-s-b', 0, 9, -10, 0.6, 0]]), top: fz([['slow', 'bubble-a', 2, -7, 6, 0.8, 0]]) }),
+      water: Object.freeze({ ground: fz([['water', 'wave-a', 0, 3, -10, 0.55, 0], ['water', 'wave-b', 0, 2, 3, 0.55, 0], ['water', 'ripple-a', 3, -6, 14, 0.7, 0], ['water', 'glint', 0, -12, -16, 1, 0]]), top: fz([]) }),
+      root: Object.freeze({ ground: fz([]), top: fz([['root', 'vine-a', 0, 10, -6, 0.85, 1], ['root', 'vine-b', 0, -10, -2, 0.85, 0], ['root', 'vine-c', 0, 2, 13, 0.85, 0]]) }),
+      trap: Object.freeze({ ground: fz([['trap', 'armed-ch', 0, 0, 1, 0.55, 0]]), top: fz([]) }),
+      null: Object.freeze({ ground: fz([['null', 'crumb-a', 0, -12, -13, 1.3, 0], ['null', 'crumb-b', 0, 13, 11, 1.3, 1]]), top: fz([]) })
+    })
+  });
+  /** SPEC rim rows [token, width, offset, α, dash] at icon weight: width, offset and dash × k. */
+  const iconRows = (rows, k) => rows.map((l) => [l[0], l[1] * k, l[2] * k, l[3], l[4] ? l[4].map((v) => f(v * k)) : undefined]);
+  function iconPieces(list, ch) {
+    return list.map((q) => {
+      const part = q[1] === 'armed-ch' ? q[1] + trapCh(ch) : q[1];
+      return `<g transform="translate(${f(q[3])} ${f(q[4])}) scale(${f(q[5])})">${place(q[0], part, q[2], 0, 0, !!q[6])}</g>`;
+    }).join('');
+  }
+  function icon(kind, opts) {
+    const o = Object.assign({ ch: ICON.ch }, opts || {});
+    if (ALL_KINDS.indexOf(kind) < 0) return warn(`unknown icon kind ${kind}`);
+    if (!(o.ch >= 1 && o.ch <= 5 && Math.floor(o.ch) === o.ch)) return warn(`chapter must be 1-5 (${o.ch})`);
+    const c = Ctx(`hzd-icon hzd-icon-${kind}`), R = ICON.r, k = ICON.rim[kind], P = ICON.pieces[kind], top = -Math.PI / 2;
+    const env = PN.env && PN.env.CH && PN.env.CH[o.ch];
+    let s = `<circle r="${R}" fill="${env ? env.base : K.ink500}"/>`;
+    if (kind === 'fire') {
+      const S = SPEC.fire;
+      s += disc(R, S.base.token, S.base.alpha) + iconPieces(P.ground, o.ch) + rimLayers(R, iconRows(S.rim, k)) + iconPieces(P.top, o.ch);
+    } else if (kind === 'shock') {
+      // the imminent telegraph: full-grown cracks of the C9 crack set (radius ICON.shock.r) shrunk to R with icon line
+      // weights (ink, then the imminent core rows), the ink rim, the amber dashed inner rim and the eight ticks
+      const S = SPEC.shock, IS = ICON.shock, cr = shockCracks(IS.r, IS.seed), sc = R / IS.r, segs = [];
+      [[cr.arms, IS.arm], [cr.branches, IS.branch]].forEach((g) => g[0].forEach((pts) => {
+        const n = pts.length - 1;
+        for (let i = 1; i <= n; i++) segs.push([pts[i - 1], pts[i], lerp(g[1][0], g[1][1], (i - 1) / Math.max(1, n - 1))]);
+      }));
+      s += [['ink', 1]].concat(S.coreLayers.imminent).map((l) => segs.map((q) => `<path d="M${P2([q[0][0] * sc, q[0][1] * sc])} L${P2([q[1][0] * sc, q[1][1] * sc])}" stroke="${colour(l[0])}" stroke-width="${f(q[2] * l[1])}" stroke-linecap="round"/>`).join('')).join('');
+      const I = S.rim.imminent, T = I.ticks;
+      s += ring(R, I.layers[0][0], I.layers[0][1] * k);
+      s += strokeD(arcD(R + I.inner.layers[0][2] * k, top, top + TAU), I.inner.layers[0][0], I.inner.layers[0][1] * k, null, I.inner.dash.map((v) => f(v * k)));
+      for (let i = 0; i < T.count; i++) {
+        const a = TAU * i / T.count, r0 = R + T.from * k, r1 = R + T.to * k;
+        s += strokeD(`M${f(Math.cos(a) * r0)},${f(Math.sin(a) * r0)} L${f(Math.cos(a) * r1)},${f(Math.sin(a) * r1)}`, T.layers[0][0], T.layers[0][1] * k);
+      }
+    } else if (kind === 'slow' || kind === 'root') {
+      // the renderer's zone ground (fill + hatch tile) at ICON.hatch, puddles / vines, then the rim
+      s += `<g transform="scale(${ICON.hatch})">${zoneGround(R / ICON.hatch, c)}</g>` + iconPieces(P.ground, o.ch) + iconPieces(P.top, o.ch) + rimRows(R, iconRows(SPEC[kind].rim, k));
+    } else if (kind === 'water') {
+      s += disc(R, SPEC.water.base.token, SPEC.water.base.alpha) + iconPieces(P.ground, o.ch) + rimRows(R, iconRows(SPEC.water.rim, k));
+    } else if (kind === 'trap') {
+      const S = SPEC.trap, hub = ICON.trap.hub;
+      s += disc(R, S.plate.token, S.plate.alpha) + rimRows(R, iconRows(S.groove, k));
+      for (let i = 0; i < S.spokes.count; i++) {
+        const a = TAU * i / S.spokes.count + Math.PI / S.spokes.count, r1 = R + S.spokes.from * k;
+        s += S.spokes.layers.map((l) => strokeD(`M${f(Math.cos(a) * hub)},${f(Math.sin(a) * hub)} L${f(Math.cos(a) * r1)},${f(Math.sin(a) * r1)}`, l[0], l[1] * k, l[3])).join('');
+      }
+      const hs = S.rivets.size * k / 2, rr = R + S.rivets.at * k;
+      for (let i = 0; i < S.rivets.min; i++) {
+        const a = TAU * (i + 0.5) / S.rivets.min;
+        s += `<rect x="${f(Math.cos(a) * rr - hs)}" y="${f(Math.sin(a) * rr - hs)}" width="${f(2 * hs)}" height="${f(2 * hs)}" fill="${colour(S.rivets.token)}"/>`;
+      }
+      s += iconPieces(P.ground, o.ch) + rimRows(R, iconRows(S.rim, k));
+    } else if (kind === 'null') {
+      const S = SPEC.null, IN = ICON.null, g = PATHS.null(IN.r, IN.seed), sc = R / IN.r, G = S.ghost;
+      s += disc(R, S.base.token, S.base.alpha);
+      IN.lines.map((i) => g.ghost[i]).forEach((ln) => { s += strokeD(`M${P2([ln[0][0] * sc, ln[0][1] * sc])} L${P2([ln[1][0] * sc, ln[1][1] * sc])}`, G.layers[0][0], IN.line, G.layers[0][3], G.dash.map((v) => f(v * IN.line))); });
+      s += iconPieces(P.ground, o.ch) + rimRows(R, iconRows(S.rim, k));
+    }
+    return c.out(s);
+  }
+
   // ==== 8. self-checks (review only; not baked) ====
   /**
    * Area rules (§13-3·4·9, §14-4). Painted fractions are counted on a grid with isPointInFill in the review page;
@@ -2176,6 +2274,9 @@ window.PN = window.PN || {};
     paths,
     draw,
     overlay,
+    // codex terrain icons (art/kit audit P2-2, 2026-10-26): additive; no stamp, layout, draw or SPEC value changed
+    icon,
+    ICON,
     _: {
       check, measure, areaOf, rimDist, scatter, rimPlace, capCut, kron, AREA_RULES, clusterTongues, heroEmberSlots,
       emberSlots: (r, seed, t, lod) => emberSlots(layoutFire(r, seed, lod || 'full').filter((q) => q.prio === SPEC.fire.layout.prio.cluster), r, seed, t, lod || 'full', null)

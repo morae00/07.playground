@@ -27,7 +27,7 @@
       "passed": true
     },
     "css": {
-      "bytes": 17920,
+      "bytes": 17922,
       "kib": 17.5,
       "warningBytes": 32768,
       "failBytes": 49152,
@@ -35,16 +35,16 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 2218595,
-      "kib": 2166.6,
+      "bytes": 2209029,
+      "kib": 2157.25,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 34509765,
-      "kib": 33700.94,
+      "bytes": 34500199,
+      "kib": 33691.6,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-C-pls3cx.js",
+      "file": "assets/App-DNqbWlvP.js",
       "category": "appJs",
       "sourceBytes": 466971,
-      "gzipBytes": 148836
+      "gzipBytes": 148835
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -133,16 +133,16 @@
       "gzipBytes": 113032
     },
     {
-      "file": "assets/index-B8Q8nJgf.css",
-      "category": "css",
-      "sourceBytes": 96076,
-      "gzipBytes": 17920
-    },
-    {
-      "file": "assets/index-UWroMq5E.js",
+      "file": "assets/index-3dH3vPr5.js",
       "category": "appJs",
       "sourceBytes": 7500,
-      "gzipBytes": 3552
+      "gzipBytes": 3553
+    },
+    {
+      "file": "assets/index-D_wEwcTR.css",
+      "category": "css",
+      "sourceBytes": 96076,
+      "gzipBytes": 17922
     },
     {
       "file": "assets/keyart-DFQzyQdB.webp",
@@ -1693,10 +1693,10 @@
       "gzipBytes": 845370
     },
     {
-      "file": "assets/terrain-icons-C4rBDrr0.webp",
+      "file": "assets/terrain-icons-HSHY1IJq.webp",
       "category": "image",
-      "sourceBytes": 53232,
-      "gzipBytes": 53090
+      "sourceBytes": 43666,
+      "gzipBytes": 43550
     },
     {
       "file": "assets/vendor-sXpfDjey.js",

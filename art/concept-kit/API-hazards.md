@@ -9,6 +9,8 @@
 스타일 기준: 바이블 v1 §3·§4·§5.3·§6·§7.2·§12·§13·§15, v1.0 부록 §10.3(용광의 입: 검은 불꽃 + 산호 판정 코어, 꺼진 뒤 무해한 그을음).
 킷 출력은 잠정 아트다(바이블 §15). 붓 실루엣과 비백은 사람이 다시 긋는다(§14).
 
+**도감 아이콘 추가(2026-10-26, 전체 점검 art P2-2·kit P2-2)**: `PN.hazards.icon(kind, {ch})`와 그 자료 `PN.hazards.ICON`을 더했다(§16). 더하기만 했다. 조각·layout·paths·draw·overlay·SPEC은 한 글자도 바뀌지 않았고(§16.5 해시), 매니페스트가 움직이지 않도록 `version`은 `'1.0-d2r2'` 그대로다.
+
 **이 판은 납품 2의 검수 3차 수정판(v1.0-d2r1)에 검수 4차 N1을 더한 판(v1.0-d2r2)이다.** 납품 2(v1.0, 285장)에서 W1·B1·R1·R2를 바꿨고, d2r2는 null 유령 선의 중심 거리(N1)만 바꿨다(`paths('null')`·`draw('null')`만 달라진다. 조각 297장은 d2r1과 같다).
 - 들어 있는 것: 공용 틀, 7종 전부(fire·shock·slow·water·root·trap·null)의 모든 상태, 주인공 오버레이 back·front·embers·bind-back·bind-front, 적 발밑 불길 mob/front-12·19·28.
 - `kinds`·`groups`·`states`는 7종·9그룹 전체이고 `planned`와 같다.
@@ -24,7 +26,8 @@
 ```
 
 - 굽기에서는 `scripts/build-atlas.mjs:11`의 `KIT_FILES`에서 `k-env.js` 바로 뒤에 둔다. 리뷰 시트는 파일 이름순으로 자동으로 읽는다.
-- 다른 킷 모듈은 부르지 않는다. 덫 기계 조각만 `PN.env.CH[ch]`의 light·base·deep·spot을 읽는다(읽기 전용). `E.uid`·`E.mix`·`PN.env.hazard`는 부르지 않는다.
+  - 도감 아이콘(§16)을 굽는 UI 굽기(`scripts/build-ui-art.mjs:17`의 `KIT_FILES`)에도 `k-env.js` 바로 뒤에 `'k-hazards.js'`를 넣어야 한다.
+- 다른 킷 모듈은 부르지 않는다. 덫 기계 조각만 `PN.env.CH[ch]`의 light·base·deep·spot을 읽고, 도감 아이콘이 바닥 색으로 `PN.env.CH[ch].base`를 읽는다(읽기 전용, `PN.env`가 없으면 ink500). `E.uid`·`E.mix`·`PN.env.hazard`는 부르지 않는다.
 - 반환은 늘 `<g class="hzd …">` 하나이고 자기 `<defs>`를 가진다.
   - id를 쓰는 그림은 `draw('slow'|'root')`의 해칭 패턴 하나다. 호출마다 `hzd<N>_h<k>`이고 되감지 않는다(`Ctx().uid`).
   - 조각(stamp)과 오버레이는 id를 쓰지 않는다(필터·패턴·클립 없음).
@@ -65,6 +68,8 @@ PN.hazards = {
   paths(kind, r, seed),                                   // shock → {cracks}, null → {ghost, jag}. 값은 모두 선 목록 [[x,y],…][]. 나머지 {}
   draw(kind, state, { r, ch, t, p, seed, lod, reduced, flash, end }),  // 참고 합성(리뷰·골든). 원점 = 지형 중심
   overlay(group, layer, { t, p, r, facing, reduced, lod }),           // 'hero': back|front|embers|bind-back|bind-front, 'mob': front. 원점 = 발
+  icon(kind, { ch }),                                                  // 도감 아이콘(§16). 원점 = 판정 원 중심, 로컬 박스 −32…32
+  ICON,         // 도감 아이콘 자료(얼려 있음, §16.2). SPEC 밖이라 매니페스트에 들어가지 않는다
   _,            // 검사용(굽기·렌더러는 쓰지 않는다). §12.2
 };
 ```
@@ -829,3 +834,50 @@ full만: n = clamp(round(r/16), 5, 9), kr = kron(seed, 6000). i = 0..n−1: a = 
 - **shock 균열 마디의 jit 상관**: 마디 (길이, 꺾임)가 jit 연속값이라 두 갈래 관계에 묶인다. 균열 모양은 합격했고, 규칙 범위 밖으로 수용됐다(39, 검수 4차 (2)).
 - **null 유령 선의 방향**: θ = π·kr(0, i)라서 4줄은 서로 약 44°씩, 6줄이면 두 쌍이 3.5° 차이로 거의 나란하다. 가운데 엇갈림은 N1로 없앴고, 가장자리 쪽 교차는 지운 줄눈으로 읽힌다(`k11-n1-null-x1`, `-x2`).
 - **정지 렌더로 판단하지 못한 것**: 2Hz 물듦과 루프·cycle 움직임, 다이얼 바늘 쓸기, 성능.
+
+## 16. 도감 아이콘 `icon(kind, {ch})` (2026-10-26, 전체 점검 art P2-2·kit P2-2)
+
+### 16.1 계약
+- 도감 terrain 시트(64 CSS px 칸, @2x로 굽는다)에 쓰는 정지 아이콘이다. 게임 화면의 그림과 같은 물건을 아이콘 크기로 그린다: **판정 원(그 종류의 테 문법) + 대표 조각**이고, **가운데 기호가 없다.**
+- 대표 조각은 굽는 조각과 같은 함수(`stamp`)가 그린 같은 그림이다. 조각마다 배율 하나(가로세로 같은 비)로 줄이기만 하고 늘이지 않는다. 아이콘용 새 그림은 없다.
+- **로컬 박스** −32…32 × −32…32(칸 64×64), **원점 = 판정 원 중심(피벗)**, 원 반지름 `ICON.r` = 25.
+  - 칠한 범위: fire·slow·water·root·trap·null ±26.8 이내, shock(눈금) ±28.4 이내. 칸 가장자리에서 3.5 이상 떨어져 있어 시트 굽기의 가장자리 검사를 통과한다.
+  - 판정 원 밖은 그리지 않는다(도감 칸 배경이 보인다). 원 안은 먼저 장 바닥색(`PN.env.CH[ch].base`)으로 채운다. 게임처럼 반투명 원판(불 ink α0.30, 물 α0.24, 덫 판 α0.5)이 바닥 위에 놓여야 같은 명도로 읽히기 때문이다.
+- **옵션** `ch` 1~5(기본 1): 바닥색과 덫 기계(5장 → 1장 기계)를 고른다. 모르는 kind, 1~5 정수가 아닌 `ch` → `console.warn('PN.hazards: …')` + 정확히 `'<g/>'`.
+- **반환** `<g class="hzd hzd-icon hzd-icon-<kind>"><defs>…</defs>…</g>`. id는 slow·root의 해칭 패턴 하나(`hzd<N>_h<k>`, 호출마다 다름)뿐이다. 글자(`<text>`)·필터·그라데이션이 없다.
+- **색**: SPEC 토큰 + 장 바닥색 + 덫 장 재질색. 소속은 §7.1 그대로다(불 산호·중립, shock·slow·root·null 호박·중립, 물·덫 중립). null 산호 링은 꺼진 채다.
+- **대표 상태**: fire burn, shock telegraph imminent(균열 + 예고 테, 채움 없음), slow·root·water·null static, trap armed.
+
+### 16.2 그리는 것 (§9의 draw 순서 그대로, 좌표는 아이콘 단위)
+
+| kind | 순서와 조각 [조각, 장, (x, y), 배율, 반전] | 테 배율 |
+|---|---|---|
+| fire | 바닥 → 원판 ink α0.30 → `char-a` 0 (−3,10) ×0.6 → `fire.rim` 4줄 → 무더기 `cluster-s-b` 0 (−2,−12) ×0.55, `cluster-s-b` 0 (15,−1) ×0.72 반전, `cluster-s-a` 0 (−15,1) ×0.72, `cluster-l-a` 0 (0,15) ×0.72 | 0.6 |
+| shock | 바닥 → 균열: `paths('shock', 120, 11)`의 팔 7 + 가지 7을 25/120로 줄이고, 먹 굵기 팔 1.9→0.9·가지 1.1→0.7 위에 imminent 심(warn 0.5w, warnGlow 0.17w) → 먹 테 3.15 → 호박 점선 1.58(오프셋 −1.58, dash 4.5/2.25) → 눈금 8개 먹 1.35(r − 5.4 → r + 2.7) | 0.45 |
+| slow | 바닥 → 현행 바닥 채움 p100 α0.92 + 해칭 타일(§7.5)을 ×0.6(간격 7.2) → `mire-m-a` (−3,5) ×0.6, `mire-s-b` (9,−10) ×0.6 → `bubble-a` 2번 장 (−7,6) ×0.8 → `slow.rim` 3줄 | 0.55 |
+| water | 바닥 → 원판 ink α0.24 → `wave-a` 0 (3,−10) ×0.55, `wave-b` 0 (2,3) ×0.55, `ripple-a` 3번 장(감소 모션 정지 장) (−6,14) ×0.7, `glint` 0 (−12,−16) ×1 → `water.rim` | 0.75 |
+| root | 바닥 → 바닥 채움 + 해칭 ×0.6 → `vine-a` 0 (10,−6) ×0.85 반전, `vine-b` 0 (−10,−2) ×0.85, `vine-c` 0 (2,13) ×0.85(반전 = x > 0, 말림이 가운데를 본다) → `root.rim` | 0.55 |
+| trap | 바닥 → 판 ink700 α0.5 → `trap.groove` → 바퀴살 6(반지름 16 → r − 3.6, 먹 0.84 α0.5) → 리벳 8(r − 6.6, 1.2 네모 p300) → `armed-ch<c>` (0,1) ×0.55 → `trap.rim` | 0.6 |
+| null | 바닥 → void 원판 α1 → 유령 선 2줄(`paths('null', 120, 164)`의 0·3번 줄을 25/120로 줄임, ink300 0.8 α0.6, dash 3.2/2.4) → `crumb-a` (−12,−13) ×1.3, `crumb-b` (13,11) ×1.3 반전 → `null.rim` 점선 2줄 | 0.55 |
+
+- 테 배율은 그 종류 SPEC 테 행의 굵기·오프셋·dash에 곱한다. 행의 순서·색·α는 그대로다(`ICON.rim`).
+- **shock 균열을 r 120에서 가져온 까닭**: r 190 균열을 줄이면 팔 일곱이 한 점에 모여 '✳' 기호처럼 읽힌다. r 120 균열은 같은 식(§8.6)이고, 팔이 중심에서 2.1 떨어져 시작해 열린 충격점이 된다.
+- **null 유령 선을 두 줄만 그린 까닭**: 네 줄은 각이 44°씩이라 늘 원 안 어딘가에서 '+'로 엇갈린다. 다른 두 줄 짝은 아이콘 크기에서 'V'·'Λ'·'X'로 만난다. 0·3번 짝(seed 164)은 원 안에서 만나지 않고 중심에서 0.38r 이상 떨어져 있다.
+- **crumb-c를 뺀 까닭**: 1x 크기에서 '▲'로 보였다.
+- `ICON`(얼려 있음): `{box [64,64], r 25, ch 1, hatch 0.6, rim {…}, shock {r 120, seed 11, arm [1.9,0.9], branch [1.1,0.7]}, trap {hub 16}, null {r 120, seed 164, lines [0,3], line 0.8}, pieces {kind: {ground, top}}}`. SPEC 밖이므로 매니페스트에 들어가지 않는다.
+
+### 16.3 도감 시트 굽기 (메인 세션)
+- `scripts/build-ui-art.mjs:17` `KIT_FILES`: `'k-env.js'` 바로 뒤에 `'k-hazards.js'`를 넣는다.
+- recipe를 하나 더한다: `terrainIcon: (kind) => PN.hazards.icon(kind)`.
+- `art/ui-art-spec.mjs:154` terrain 시트의 items: fire·shock·slow·water·root·trap·null은 `recipe: 'terrainIcon'`, warning·vortex는 지금 `recipe: 'hazard'` 그대로. 칸 [64, 64], origin [−32, −32], columns 9, 키 순서는 그대로다.
+- 장 바닥을 종류별로 바꾸려면 `args: [kind]`에 `{ch}`를 더한다(예: 물 3장, null 5장). 기본은 1장 바닥과 1장 덫 기계다.
+
+### 16.4 확인
+- `--check`: `p2kit-hzicons-x4`, `-v2-x4`, `-ch1-5`(7종 × 1~5장), K11 C1 식에 아이콘 35개를 더한 `p2kit-k11-c1-all-icons` 모두 ok.
+- 흑백 64·48 px(`p2kit-terrain-gray-64`): T1 쌍(fire↔slow, slow↔root, water↔slow, water↔null, trap↔fire)이 무늬로 갈린다. 가운데 기호가 없고 글자로 읽히는 것이 없다.
+- 굽기 모사(`p2kit-terrain-sheet-before-after`, @2x): 위가 새 시트 9칸, 가운데가 지금 시트, 아래가 같은 종류의 `draw()`를 장 바닥 위에서 줄인 그림이다.
+
+### 16.5 바뀌지 않았음을 보인 해시 (같은 식, 고치기 전 → 뒤)
+- K11 불 해시 `fire-stamps=6wx6hi len=593187`, `fire-draws=1ydln4g len=2730763` → 같음. 식(3차 납품서 §5-1의 설명을 그대로 옮긴 것, 원문 값이 나온다): fire·mob 조각 전부, 그다음 hero back·front 12장을 `hzd\d+_ → hzd_`로 정규화해 이은 것, 그리고 `draw('fire', st, {r, seed, ch: 1, t: 0.3, p: 0.5})`를 st(burn·ignite·gutter·soot) → r(50·74·98·150) → seed(1·7) 순으로 이은 뒤 `overlay('hero', back·front·embers, {t: 0.3})`를 붙인 것. djb2-xor 36진수.
+- C8(독립 실행) `env-hazard=1t61rxb len=1541876 skillVfx=7bdpsi len=679982 enemy-all=kubxcy len=5226045` → 같음.
+- hazards 전체(모든 조각과 서술자 / 7종 × 상태 × 1~5장 × p 0.2·0.7 × r 50·74·150(shock 190) draw / hero·mob overlay 23 / layout 3 LOD·paths 7종 × r 6 × seed 3 / version·kinds·groups·states·META·SPEC·planned JSON): `stamps=rt2n2/950187 draws=17ki52j/13592100 overlays=cx8avp/113926 data=15hhok4/357064` → 같음.
