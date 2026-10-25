@@ -256,3 +256,33 @@ test('BUG-18: split children are paid like spawns, through the horde\'s share', 
     engine.dispose();
   }
 });
+
+test('BUG-25: under the horde every elite drops a chest, and no kill drops a coin worth nothing', () => {
+  const { engine, probe } = splitArena();
+  try {
+    const coins = [];
+    probe.onDrop((drop) => {
+      if (drop.kind === 'coin') coins.push(drop.value);
+    });
+    /** Spawns twenty small enemies, fells them one by one (as elites if asked), and returns the coins they carried. */
+    const fell = (elite) => {
+      const ids = Array.from({ length: 20 }, (_, index) => probe.spawnEnemy({ tier: 'small', x: 2700 + index * 30, y: 1200, speed: 0, damage: 0, attackStyle: 'contact' }));
+      const carried = probe.read().enemies.filter((enemy) => ids.includes(enemy.id)).map((enemy) => enemy.coin);
+      for (const id of ids) {
+        probe.patchEnemy(id, elite ? { elite: 'haste', hp: 0 } : { hp: 0 });
+        probe.step(1);
+      }
+      return carried;
+    };
+    const carried = fell(false);
+    assert.ok(carried.filter((coin) => coin === 0).length >= 10, `most small enemies carry no coin of their own (${carried.join('')})`);
+    assert.ok(coins.length > 0 && coins.every((value) => value > 0), `coin drops ${coins.join(',')}`);
+    coins.length = 0;
+    fell(true);
+    // A chest is worth 12 times the elite's coins (ELITES.chest), and at least 12.
+    assert.equal(coins.filter((value) => value >= 12).length, 20, `twenty elites, twenty chests: ${coins.join(',')}`);
+    assert.ok(coins.every((value) => value > 0));
+  } finally {
+    engine.dispose();
+  }
+});

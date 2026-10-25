@@ -207,7 +207,8 @@ test('CON-02: a run suspended after the boss entered replays exactly, warm-up an
     return { engine: newEngine('remaster', { meta: maxMeta(), options, drafts }), drafts };
   };
   const original = make();
-  original.engine.startRun(1, 5, 90211);
+  // A seed whose boss is still up when the run is saved (a strong build fells it within the 15 s after it enters).
+  original.engine.startRun(1, 5, 90215);
   let roll = 11;
   const random = () => {
     roll = (Math.imul(roll, 1_664_525) + 1_013_904_223) >>> 0;

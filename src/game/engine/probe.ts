@@ -204,6 +204,11 @@ export interface EngineProbe {
    * frame rate. Commands dispatched inside apply from the next step. Returns an unsubscribe function.
    */
   onStep(watcher: (tick: number) => void): () => void;
+  /**
+   * Calls `watcher` for every pickup the simulation drops, with its kind and value, before merges, caps, and the
+   * recycling of empty pickups at the end of the step (BUG-25). Returns an unsubscribe function.
+   */
+  onDrop(watcher: (drop: { kind: Pickup['kind']; value: number }) => void): () => void;
 }
 
 const copy = <T>(value: T): T => structuredClone(value);
@@ -212,6 +217,7 @@ export class ProbedGameEngine extends GameEngine {
   readonly probe: EngineProbe = this.createProbe();
   private stepCount = 0;
   private readonly stepWatchers = new Set<(tick: number) => void>();
+  private readonly dropWatchers = new Set<(drop: { kind: Pickup['kind']; value: number }) => void>();
 
   override startRun(chapter: number, stageNo: number, seed?: number) {
     this.stepCount = 0;
@@ -227,6 +233,11 @@ export class ProbedGameEngine extends GameEngine {
     super.update(dt);
     this.stepCount += 1;
     for (const watcher of this.stepWatchers) watcher(this.stepCount);
+  }
+
+  protected override spawnPickup(kind: Pickup['kind'], x: number, y: number, vx: number, vy: number, radius: number, value: number) {
+    for (const watcher of this.dropWatchers) watcher({ kind, value });
+    super.spawnPickup(kind, x, y, vx, vy, radius, value);
   }
 
   private createProbe(): EngineProbe {
@@ -507,6 +518,10 @@ export class ProbedGameEngine extends GameEngine {
       onStep: (watcher) => {
         this.stepWatchers.add(watcher);
         return () => this.stepWatchers.delete(watcher);
+      },
+      onDrop: (watcher) => {
+        this.dropWatchers.add(watcher);
+        return () => this.dropWatchers.delete(watcher);
       },
     };
   }

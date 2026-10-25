@@ -3907,7 +3907,10 @@ export class GameEngine {
 
   /** SYS-10: a fallen elite drops a coin chest, and a split one breaks into smaller enemies of the next tier down. */
   protected eliteFalls(enemy: Entity) {
-    this.spawnPickup('coin', enemy.x, enemy.y, 0, 0, 9, Math.ceil(enemy.coin * ELITES.chest));
+    // BUG-25: under the horde most small enemies carry no coin of their own (the share goes to the carry), so the chest
+    // counts at least one: it never comes to nothing.
+    const coin = this.rules.horde ? Math.max(1, enemy.coin) : enemy.coin;
+    this.spawnPickup('coin', enemy.x, enemy.y, 0, 0, 9, Math.ceil(coin * ELITES.chest));
     if (enemy.elite !== 'split') return;
     const tier: MobTier = enemy.tier === 'large' ? 'medium' : 'small';
     const ratio = (stat: Readonly<Record<MobTier, number>>) => stat[tier] / stat[mobTier(enemy.tier)];
@@ -6118,7 +6121,8 @@ export class GameEngine {
         Math.ceil(enemy.xp / xpCount),
       );
     }
-    const coinCount = enemy.isBoss ? 9 : enemy.tier === 'large' ? 3 : this.gameplayRandom() < 0.42 ? 1 : 0;
+    // BUG-25: a kill whose coins went to the horde's carry drops none, rather than a coin worth nothing.
+    const coinCount = this.rules.horde && enemy.coin <= 0 ? 0 : enemy.isBoss ? 9 : enemy.tier === 'large' ? 3 : this.gameplayRandom() < 0.42 ? 1 : 0;
     for (let i = 0; i < coinCount; i += 1) {
       this.spawnPickup(
         'coin',
