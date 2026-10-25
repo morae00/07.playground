@@ -6357,6 +6357,9 @@ export class GameEngine {
         -difficultyBias;
       return { id, weight: Math.max(1, RARITY[rarity].weight + luckBonus + difficultyBonus) * (eligible && this.skills[id] ? BUILD_DEPTH.ownedWeight : 1) };
     }).filter(({ id }) => !eligible || eligible(id));
+    // BUG-24: with nothing to pick, nothing is drawn, so a banish that finds no other card (and is not logged) leaves
+    // the gameplay stream as it was. Only SYS-08's drafts pass a filter that can leave nothing; classic never does.
+    if (entries.length === 0) return undefined;
     const total = entries.reduce((sum, entry) => sum + entry.weight, 0);
     let roll = this.gameplayRandom() * total;
     for (const entry of entries) {

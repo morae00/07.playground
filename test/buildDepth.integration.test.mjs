@@ -275,6 +275,30 @@ test('SYS-08: account levels 8 and 16 unlock a token each; a reroll redraws in p
   }
 });
 
+test('BUG-24: a banish that finds no other card fails without drawing from the gameplay stream', () => {
+  // A full build with one skill left to level and no fusion due: a boss draft shows that skill and the three bonuses.
+  const build = { ...awakened('needleStorm', 'fanKnives', 'chainSpark', 'orbitScythes', 'railSpear', 'ironFrame', 'magnetSigil', 'recoveryThread', 'coinFever'), boneMortar: { level: 4 } };
+  const nextDrafts = (banish) => {
+    const r = run();
+    try {
+      r.probe.setSkills(build);
+      r.probe.openDraft('boss', 'resume');
+      const draft = r.drafts.at(-1);
+      assert.deepEqual(draft.cards.map((card) => card.skillId ?? card.bonus), ['boneMortar', 'overdrive', 'coins', 'heal']);
+      if (banish) {
+        assert.equal(r.engine.banishOffer(draft.cards[0].offerId), false, 'nothing can take its place');
+        assert.equal(r.probe.hud().draftTokens, 2, 'so no token is spent');
+      }
+      r.engine.completeDraft(draft.cards[1], draft.id);
+      // The drafts after it show what the stream draws next: a failed banish is not logged, so it must not draw.
+      return Array.from({ length: 5 }, () => sample(r, loadout(['needleStorm'])).cards.map((card) => card.skillId ?? card.bonus));
+    } finally {
+      r.engine.dispose();
+    }
+  };
+  assert.deepEqual(nextDrafts(true), nextDrafts(false));
+});
+
 test('SYS-08: drafts opened together count through one screen, which opens once', () => {
   const r = run();
   try {
