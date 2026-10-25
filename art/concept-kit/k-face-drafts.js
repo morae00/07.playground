@@ -1,9 +1,12 @@
-// k-face-drafts.js — B8 face & character redesign drafts → window.PN.faceDrafts (v0.3)
+// k-face-drafts.js — B8 face & character redesign drafts → window.PN.faceDrafts (v0.4)
 // Brief: docs/art/briefs/face-redesign.md (art-director, 2026-10-22; §6 main-session decision 2026-10-23: direction A).
 // API: art/concept-kit/API-face-drafts.md. v0.2: direction A draws rev 2 (refined brush, planes, eyes, hair bundles,
 // costume, expressions; 노을 · 령 drafts); { rev: 1 } and B · C keep the round-1 drawing.
 // v0.3 (B8 review 2, docs/art/deliveries/B8-faces.md F1–F5): three different women, 결's open eye and clean near
 // locks, 독's cheek and jaw, nose marks that touch, 령's fringe shadow with both eyes lit; faceBoard(); more measures.
+// v0.4 (round 3, 2026-10-26, game-portrait finish): lips as planes, noses with volume, irregular hair with twists and
+// flyaways, a clearer line hierarchy, more form in the shading, 결's sharper eye and visible brow, 령 prettier, 독's beard
+// edge on the jaw. Every rev 2 call takes { v: 3 } to draw the round-2.5 (v0.3) look for comparison (compareBoard).
 // Three directions (A 3/4 30° · B front · C profile) × three people (결 · 독 · 월). Every feature is a point of ONE 3D
 // head model projected with ONE turn angle (brief §3.2, appendix A); nothing is moved in 2D after projection.
 // Load time builds only the PN.faceDrafts object. Other kit modules (PN._hk.hat34 · hatFront · scarfWrap · Ctx,
@@ -26,6 +29,10 @@ window.PN = window.PN || {};
   const fp = (d, fill, extra) => `<path d="${d}" fill="${fill}"${extra ? ' ' + extra : ''}/>`;
   const OLs = (w) => `stroke="${K.ink}" stroke-width="${f(w)}" stroke-linejoin="round" paint-order="stroke"`;
   let UID = 0;
+  // drawing generation of the rev 2 path: V4 = the v0.4 finish (default); { v: 3 } draws the round-2.5 (v0.3) look.
+  // Set for one synchronous call only (withV restores it)
+  let V4 = true;
+  const withV = (v, fn) => { const p = V4; V4 = v !== 3; try { return fn(); } finally { V4 = p; } };
 
   // per-call context: unique ids, clip paths; defs are written after the drawing is finished (appendix A note)
   function Ctx() {
@@ -382,6 +389,54 @@ window.PN = window.PN || {};
     }
     return s;
   }
+  const rng = (seed) => { let r = seed; return () => { r = (r * 16807) % 2147483647; return r / 2147483647; }; };
+  // v0.4 hair texture (round 3): each flow line breaks into 1–3 pieces of different width with a small sideways wander,
+  // and some lines are left out so solid ink spots stay between the paper gaps — no two lines run parallel at one
+  // spacing. [φ, λ] paths on the shell; o: { w (mean width), drop (share of lines left out) }
+  function irregular(list, seed, o) {
+    o = o || {};
+    const R = rng(seed), out = [];
+    list.forEach((p) => {
+      if (o.drop && R() < o.drop) return;
+      const D = spl(p, 4), n = D.length - 1;
+      let i = Math.floor(R() * n * 0.2);
+      while (i < n - 3) {
+        const j = Math.min(n, i + Math.max(4, Math.floor(n * (0.3 + R() * 0.55)))), wv = (R() - 0.5) * 3, m = j - i;
+        out.push({ p: D.slice(i, j + 1).map(([a, b], k) => [a, b + wv * Math.sin(Math.PI * k / m)]), w: (o.w || 0.55) * (0.5 + R() * 0.95) });
+        i = j + 2 + Math.floor(R() * n * 0.3);
+      }
+    });
+    return out;
+  }
+  // v0.4 sheen (round 3): ONE broken band of light across the lit crown — short strokes along the band's path, each of
+  // its own length and width, bowed alternately above and below the path with small gaps between them (one zig-zag
+  // highlight instead of parallel stripes). o: { w, amp (λ offset) }
+  function sheenBand(path, seed, o) {
+    o = o || {};
+    const R = rng(seed), D = spl(path, 12), n = D.length - 1, out = [];
+    let i = 0, k = 0;
+    while (i < n - 6) {
+      const len = Math.max(10, Math.floor(n * (0.32 + R() * 0.22))), j = Math.min(n, i + len), off = (k % 2 ? 1 : -1) * (o.amp || 2.5) * (0.35 + R() * 0.65);
+      out.push({ p: D.slice(i, j + 1).map(([a, b], m) => [a, b + off * Math.sin(Math.PI * (0.15 + 0.7 * m / (j - i)))]), w: (o.w || 2) * (0.55 + R() * 0.65) });
+      i = j - Math.floor(len * (0.1 + R() * 0.2)); k++;   // the next piece overlaps a little on the other side of the path
+    }
+    return out;
+  }
+  // v0.4: strand gaps inside the near curtain — three of different length, width and spacing that wander a little,
+  // instead of two lines running parallel to the hairline
+  function curtainSlits(C, hl, ws) {
+    return [[0.8, 2, 6, 0.5], [1.75, 3, 8, 0.72], [2.8, 2, 5, 0.4]].map(([i, a0, a1, w]) => inkC(C, hl.slice(a0, Math.min(a1, hl.length)).map(([a, b, c], k) => [-a * ws * (1 + 0.045 * i), b - 1.3 * i + 0.6 * Math.sin(k * 1.7 + i * 2), c - 2.4 * i]), { w, a: 0.25, b: 0.3, fill: K.p50 })).join('');
+  }
+  // v0.4 flyaways: thin strands leaving the hair silhouette — each starts 1.2 u inside the edge at a silhouette angle
+  // (deg: 0 screen right, 90 down) and curls out: [angle, length, curl (sideways)]
+  function flyaways(HU, E, list) {
+    return list.map(([deg, len, curl, w]) => {
+      const a = deg * Rd, p = HU.pt(a), q = HU.pt(a + 0.02), t = dirTo(p, q), c = [E.x, E.y];
+      let nr = [t[1], -t[0]]; if ((p[0] - c[0]) * nr[0] + (p[1] - c[1]) * nr[1] < 0) nr = [-nr[0], -nr[1]];
+      const P0 = [p[0] - nr[0] * 1.2, p[1] - nr[1] * 1.2];
+      return ink(spl([P0, [p[0] + nr[0] * len * 0.35 + t[0] * curl * 0.2, p[1] + nr[1] * len * 0.35 + t[1] * curl * 0.2], [p[0] + nr[0] * len * 0.7 + t[0] * curl * 0.75, p[1] + nr[1] * len * 0.7 + t[1] * curl * 0.75], [p[0] + nr[0] * len + t[0] * curl * 0.6, p[1] + nr[1] * len + t[1] * curl * 0.6]], 5), { w: w || 0.45, a: 0.1, b: 0.7 });
+    }).join('');
+  }
   // hair silhouette: the projected shell ellipse, grown radially where the forehead of the face volume (projected
   // points above the brow) stands outside it, so the hair always covers the top of the face (B8: the shorter shell)
   function hull(E, pts) {
@@ -639,7 +694,21 @@ window.PN = window.PN || {};
     // 령 F1: a slightly angular jaw (a shallow hollow under the cheekbone, the jaw angle held out) — sharpest turn 152…158°
     ryeong: { cheek: [[12.5, 4.5, -0.04], [21, 3.5, 0.022]] }
   };
-  const ch2 = (who) => { const b = CH[who], o = REV2[who] || {}; return Object.assign({}, b, o, { eye: Object.assign({}, b.eye, o.eye || {}) }); };
+  // v0.4 (round 3) overrides on top of REV2 (V4 only): 결 a sharper calm eye (the lash line covers a little more of a
+  // slightly smaller iris, the lower lid stroke drops below the lid line; near iris ≥ 75 % between the inks) and the hat
+  // lifted off the brow; 령 two lash clumps, a quiet liner, a softer jaw inside 152…158°
+  const REV3 = {
+    gyeol: { eye: { ri: 2.7, hl: 2.1, lidOff: 0.35, loOff: 0.9 }, hatLift: -3 },
+    noeul: { mouth: { bow: 1.25, upperLine: 0 } },
+    ryeong: { eye: { lash: 2, lid: 2.3 }, cheek: [[12.5, 4.5, -0.034], [21, 3.5, 0.02]] }
+  };
+  // the overrides of the drawing generation: REV2, and REV3 on top when V4 (eye · brow · mouth merged key by key)
+  function rvo(who) {
+    const a = REV2[who] || {}, b = V4 ? REV3[who] || {} : {}, o = Object.assign({}, a, b);
+    ['eye', 'brow', 'mouth'].forEach((k) => { if (a[k] || b[k]) o[k] = Object.assign({}, a[k] || {}, b[k] || {}); });
+    return o;
+  }
+  const ch2 = (who) => { const b = CH[who], o = rvo(who); return Object.assign({}, b, o, { eye: Object.assign({}, b.eye, o.eye || {}), brow: Object.assign({}, b.brow, o.brow || {}), mouth: Object.assign({}, b.mouth, o.mouth || {}) }); };
   const LD = [0.656, 0.755];   // unit vector pointing away from the key light (down-right)
   const sstep = (x) => { const t = cl(x, 0, 1); return t * t * (3 - 2 * t); };
   const atX = (L, x) => {      // y of a polyline at x (first segment that spans x), null outside
@@ -690,10 +759,13 @@ window.PN = window.PN || {};
   const loop3 = (C3, L3, fill) => fp(smooth(L3.map(C3.p), true, 0.16), fill);   // closed plane from 3D points
   // face contour: one stroke entering dry at the temple, heavy on the shadow side (far cheek, under the chin), thinning
   // up the lit near jaw; pressure where it turns at the chin
-  function contour2(C, OL, M, k) {
+  // v0.4 (line hierarchy: outer contour > features > inner texture): 2.7 instead of 2.25, a firmer press at the chin
+  // and the jaw angle
+  // noDry: the stroke enters inside a cast shadow (결's brim, 령's fringe) — no paper slits there (they would float)
+  function contour2(C, OL, M, k, noDry) {
     const F = OL.F.filter((p) => p[1] >= -15), Nn = OL.N.filter((p) => p[1] >= M.Y(13)).reverse();
     const P = F.concat(Nn), c0 = [lerp(OL.atN(8), OL.at(8), 0.5), 6];
-    return ink(P, { w: 2.25 * (k || 1), a: 0.07, b: 0.32, light: 1, center: c0, curve: 0.45, dry0: 0.09 });
+    return ink(P, { w: (V4 ? 2.7 : 2.25) * (k || 1), a: 0.07, b: 0.32, light: 1, center: c0, curve: V4 ? 0.6 : 0.45, dry0: noDry ? 0 : 0.09 });
   }
   // form planes inside the face (clipped by it). Shade (paper shadow): the far plane up to a reflected-light band along
   // the far contour, the eye sockets, the nose's cast shadow over the lip, the cheek-apple folds (독). Light (paper
@@ -701,9 +773,31 @@ window.PN = window.PN || {};
   function planes2(C, ch, M, OL, who, X) {
     const P = C.p, Y = M.Y, ws = ch.ws;
     const T = TERM.A.map(([s, y, d]) => P([s * ws, Y(y), d])), yT = T[0][1], yB = T[T.length - 1][1];
-    const rb = (y) => (y < -2 ? 0 : y < 8 ? lerp(0, 1.5, (y + 2) / 10) : y < 24 ? 1.5 : lerp(1.5, 0.5, (y - 24) / 8));
+    // the reflected-light band along the far contour (v0.4: quieter — narrower, only from the cheekbone down)
+    const rb = V4 ? (y) => (y < 2 ? 0 : y < 8 ? lerp(0, 0.85, (y - 2) / 6) : y < 22 ? 0.85 : lerp(0.85, 0.3, (y - 22) / 10))
+      : (y) => (y < -2 ? 0 : y < 8 ? lerp(0, 1.5, (y + 2) / 10) : y < 24 ? 1.5 : lerp(1.5, 0.5, (y - 24) / 8));
     const edge = OL.F.filter((p) => p[1] >= yT && p[1] <= yB).map((p) => [p[0] - rb(p[1]) - 0.15, p[1]]).reverse();
     let s = fp(smooth(spl(T, 3).concat(edge), true, 0.06), K.p300);
+    if (V4) {
+      // v0.4 form: the jaw's underside turns away from the light — a paper-shadow band inside the lower contour, a hair
+      // at the near jaw angle, widest under the chin, merging with the far shadow
+      const J = OL.N.filter((p) => p[1] >= Y(15)).concat(OL.F.filter((p) => p[1] >= Y(27)).reverse()), nJ = J.length - 1, iB = OL.N.filter((p) => p[1] >= Y(15)).length - 1;
+      if (nJ > 4) {
+        const wJ = (i) => (i <= iB ? lerp(0.2, 1.5, Math.pow(i / iB, 1.4)) : lerp(1.5, 0.9, (i - iB) / Math.max(1, nJ - iB)));
+        const inn = J.map((p, i) => { const d = dirTo(J[Math.max(0, i - 1)], J[Math.min(nJ, i + 1)]); return [p[0] + d[1] * wJ(i), p[1] - d[0] * wJ(i)]; });
+        s += fp(smooth(J.map((p, i) => { const d = dirTo(J[Math.max(0, i - 1)], J[Math.min(nJ, i + 1)]); return [p[0] - d[1] * 0.6, p[1] + d[0] * 0.6]; }).concat(inn.slice().reverse()), true, 0.08), K.p300);
+      }
+      // the hair sits ON the head: a soft paper-shadow band along the near hairline at the temple, under the curtain's
+      // edge, swelling to 1.1 u and thinning out at both ends (not in faceBoard's bare face: no hair, no hair shadow)
+      if (HAIRLINE[who] && !(X && X.bare)) {
+        const D = spl(HAIRLINE[who].filter(([, y]) => y >= -22 && y <= 8).map(([s0, y, d]) => P([-s0 * ws, y, d])), 5), nD = D.length - 1;
+        if (nD > 3) {
+          const nrm = (i) => dirTo(D[Math.max(0, i - 1)], D[Math.min(nD, i + 1)]), wH = (i) => 1.1 * Math.sin(Math.PI * i / nD);
+          const inn = D.map((p, i) => { const d = nrm(i); return [p[0] + d[1] * wH(i), p[1] - d[0] * wH(i)]; }), out = D.map((p, i) => { const d = nrm(i); return [p[0] - d[1] * 0.8, p[1] + d[0] * 0.8]; });
+          s += fp(smooth(out.concat(inn.slice().reverse()), true, 0.1), K.p300);
+        }
+      }
+    }
     // v0.3: the nose's far side and the far cheek are ONE shadow — a patch from inside the nose's side plane to past the
     // terminator (y +5 … the wing), so no paper sliver runs down between them (F2: no isolated vertical lines)
     s += loop3(C, [[1.1 * ws, Y(5.7), 33.1], [1.9 * ws, Y(7.5), 33], [2.6 * ws, Y(10), 33], [2.6 * ws, Y(11.2), 33.4], [4.2 * ws, Y(12.8), 30.2], [6.3 * ws, Y(12.5), 29.6], [4.9 * ws, Y(6), 31], [4.4 * ws, Y(2.5), 31]], K.p300);
@@ -728,7 +822,13 @@ window.PN = window.PN || {};
     // men: the hollow under the cheekbone as a short paper-shadow curve, concave upward, ≤ 9 u, tapered (v0.3 F3: never a
     // diagonal running down to the jaw, which read as a scar)
     if (!fem) s += inkC(C, [[-17.4, 9.6, 22.4], [-14.4, 11.2, 25.2], [-11.6, 10.4, 27.2]].map(([a, b, c]) => [a * ws, b, c]), { w: who === 'dok' ? 2.3 : 2, a: 0.4, b: 0.45, fill: K.p300 });
-    s += inkC(C, [[-1.3, Y(2.6), 33.2], [-1.5, Y(5.6), 33.6 + 2 * (n - 1)], [-1.4, Y(9.4 + 2 * (n - 1)), 33.4 + 4 * n]], { w: who === 'gyeol' ? 1.15 : 0.9, a: 0.35, b: 0.4, fill: K.p50 });
+    if (V4) {
+      // v0.4: the bridge's highlight runs down the ridge right against the far side plane (nose2 lays that plane over its
+      // right edge), so the ridge reads as one edge between light and shadow — from the root to just above the tip
+      const tl = ch.tipLift || 0, pT = P([0.9, Y(fem ? 5.5 : 4.6), 33.2]), tq = P(M.N.tip), r0 = P([0, Y(2.6), 33.1]);
+      const at = (t, dx) => [lerp(pT[0], tq[0] + 0.1, t) + dx, lerp(pT[1], tq[1] - 1.5 - tl * 0.3, t)];
+      s += ink(spl([r0, at(0.22, -0.42), at(0.6, -0.38), at(0.97, -0.4)], 5), { w: who === 'gyeol' ? 1.1 : fem ? 0.8 : 0.95, a: 0.3, b: 0.3, fill: K.p50 });
+    } else s += inkC(C, [[-1.3, Y(2.6), 33.2], [-1.5, Y(5.6), 33.6 + 2 * (n - 1)], [-1.4, Y(9.4 + 2 * (n - 1)), 33.4 + 4 * n]], { w: who === 'gyeol' ? 1.15 : 0.9, a: 0.35, b: 0.4, fill: K.p50 });
     return s;
   }
   const dirTo = (a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1; return [dx / l, dy / l]; };
@@ -811,13 +911,15 @@ window.PN = window.PN || {};
       // corner still flicks up; the far wing is foreshortened round the temple), lash clumps (령 none), the crease (령 none)
       const o = UL[nL], sx = Math.sign(o[0] - UL[0][0]) || -1, [wl, wh] = E.wing || [3.2, 1.9], hx = Math.sqrt(Math.max(0.25, wl * wl - wh * wh)) * (far ? 0.55 : 1), hy = wh * (far ? 0.9 : 1);
       s += ink(spl([o, [o[0] + sx * hx * 0.55, o[1] - hy * 0.3], [o[0] + sx * hx, o[1] - hy]], 4), { w: 1.65, a: 0.02, b: 0.9 });
-      if (E.lash !== 0) s += lashes(UL, [0.6, 0.73, 0.85], [1.15, 1.5, 1.85], [0.8, 0.75, 0.7], true);
+      // lash clumps: 3 (월 · 노을, with 2 below), 2 (령 v0.4: two short clumps at the outer third, none below), 0 none
+      if (E.lash === 2) s += lashes(UL, [0.74, 0.88], [1.75, 2.1], [0.72, 0.64], true);
+      else if (E.lash !== 0) s += lashes(UL, [0.6, 0.73, 0.85], [1.15, 1.5, 1.85], [0.8, 0.75, 0.7], true);
       if (E.crease) s += ink(spl(U2.slice(Math.floor(nU * 0.3), Math.floor(nU * 0.92)).map((p) => [p[0], p[1] - 1.8]), 3), { w: 0.55, a: 0.3, b: 0.3 });
     }
     const lo0 = Math.floor(nU * (fem ? 0.45 : 0.3)), loW = fem ? 0.95 : 0.8;
     const LoS = spl(Lo.slice(lo0), 3), nLo = LoS.length - 1;
     s += ink(E.loOff ? LoS.map((p, i) => [p[0], p[1] + E.loOff * loW * 0.5 * sstep((1 - i / nLo) / 0.25)]) : LoS, { w: loW, a: 0.3, b: 0.1 });
-    if (fem && E.lash !== 0) s += lashes(Lo.slice(lo0), [0.55, 0.85], [0.75, 0.95], [0.5, 0.45], false);
+    if (fem && E.lash !== 0 && E.lash !== 2) s += lashes(Lo.slice(lo0), [0.55, 0.85], [0.75, 0.95], [0.5, 0.45], false);
     if (droop) s += ink(spl(Lo.slice(Math.floor(nU * 0.25)).map((p) => [p[0], p[1] + 1.1]), 3), { w: 0.55, a: 0.3, b: 0.3 });
     return s;
   }
@@ -828,7 +930,8 @@ window.PN = window.PN || {};
     const B = ch.brow, ws = ch.ws, by = B.y || 0, fem = !!ch.eye.liner, bushy = !!ch.eye.smile, w = B.w * (side > 0 && C.th > 15 ? 0.85 : 1) * (X.w || 1);
     const P = spl((B.pts || BROW0).map(([s, y, d], i) => C.p([side * (s - (i === 0 ? X.knit || 0 : 0)) * ws, y + by + (X.dy ? X.dy[i] : 0), d])), 8);
     const soft = fem && !B.straight;   // 월 · 노을 feathered arches; 령 a straight, crisp brow
-    let s = ink(P, { w, a: soft ? 0.14 : 0.06, b: soft ? 0.78 : B.straight ? 0.42 : bushy ? 0.5 : 0.62, curve: 0.2, dry0: soft ? 0.2 : 0, dry: bushy ? 0 : 0.22, wf: soft ? (t) => 1 - 0.15 * t : null });
+    // X.noDry: a brow inside a cast shadow (결's far brow under the brim) keeps no paper slits — they would float there
+    let s = ink(P, { w, a: soft ? 0.14 : 0.06, b: soft ? 0.78 : B.straight ? 0.42 : bushy ? 0.5 : 0.62, curve: 0.2, dry0: soft && !X.noDry ? 0.2 : 0, dry: bushy || X.noDry ? 0 : 0.22, wf: soft ? (t) => 1 - 0.15 * t : null });
     if (bushy) [0.12, 0.3, 0.5, 0.68].forEach((t, j) => {
       const i = Math.round(t * (P.length - 1)), p = P[i], d = dirTo(P[Math.max(0, i - 2)], P[Math.min(P.length - 1, i + 2)]);
       const up = j % 2 ? -1 : 1, q0 = [p[0] - d[1] * w * 0.35 * up, p[1] + d[0] * w * 0.35 * up];
@@ -847,6 +950,13 @@ window.PN = window.PN || {};
     // left a paper notch at its waist); planes2's bridge patch joins it to the cheek's shadow
     const top = P([0.9, Y(fem ? 5.5 : 4.6), 33.2]);
     let s = fp(smooth([top, [tp[0] + 0.1, tp[1] - 1.5], [tp[0] + 0.55, tp[1] + 0.15], [tp[0] + 0.9, tp[1] + 0.2], P([3.2 * ws, Y(8.5), 31.8]), P([2.6 * ws, Y(6.2), 32.4])], true, 0.16), K.p300);
+    if (V4) {
+      // v0.4 volume (round 3): the nose's underside (tip → nostrils → column) and the groove behind the near wing are
+      // paper-shadow planes, so the wing reads as a rounded lobe and the tip stands forward; women smaller and neater
+      const k = fem ? 0.62 : big ? 1.2 : 1;
+      s += fp(smooth([[na[0] + 0.8 * k, na[1] + 0.15], [tb[0] - 1.2 * k, tb[1] + 0.3], [tb[0] + 0.35, tb[1] + 0.45], [col[0] + 0.6, col[1] + 0.35], [col[0] - 0.3, col[1] + 0.9], [na[0] + 1.3 * k, na[1] + 1.15]], true, 0.2), K.p300);
+      s += fp(smooth([[na[0] - 0.1 * k, na[1] - 2.3 * k], [na[0] - 1.2 * k, na[1] - 0.8 * k], [na[0] - 1 * k, na[1] + 0.9 * k], [na[0] - 0.05, na[1] + 1.35 * k], [na[0] - 0.4 * k, na[1] - 0.3 * k]], true, 0.22), K.p300);
+    }
     if (fem) {   // women (AD check 2, v0.3 F4): ONE stroke — the short wing curve, the nostril comma, the small under-tip
       // wedge — so no mark stands alone; the far nostril is left out at 30°
       return s + ink(spl([[na[0] + 0.7, na[1] - 0.4], [na[0] + 0.2, na[1] + 0.5], [na[0] + 0.95, na[1] + 1.05], [tb[0] - 1.3, tb[1] + 0.9], [tb[0] + 0.1, tb[1] + 1.15], [col[0] + 0.7, col[1] + 0.5]], 4),
@@ -876,6 +986,7 @@ window.PN = window.PN || {};
       if (kind !== 'small') s += ink(spl([[-cw * 0.6, my + 0.2, 30.2], [0, my - 0.1, 32.2 + lf], [cw * 0.6, my + 0.2, 30.2]].map(P), 4), { w: 1.05, a: 0.2, b: 0.2, fill: K.p50 });
       return s + ink(spl([[-3 * ws, Y(23.4) + (kind === 'small' ? -1.2 : 0.6), 30.8], [0, Y(24) + (kind === 'small' ? -1.2 : 0.6), 31.8], [3 * ws, Y(23.4) + (kind === 'small' ? -1.2 : 0.6), 30.8]].map(P), 4), { w: 1.3, a: 0.3, b: 0.3, fill: K.p300 });
     }
+    if (V4 && fem) return lips4(C, ch, Mo, pts, my, cw, lf);
     // upper lip (vermilion) as a paper-shadow bow
     const uh = fem ? 1 : 0.55;
     const up = [[-cw * 0.78, my - 0.45, 29.8], [-1.6 * ws, my - 0.7 - 1.6 * uh, 32.6 + lf], [0, my - 0.2 - 1.15 * uh, 32.9 + lf], [1.6 * ws, my - 0.7 - 1.6 * uh, 32.6 + lf], [cw * 0.78, my - 0.45, 29.8]].map(P);
@@ -895,6 +1006,20 @@ window.PN = window.PN || {};
     if ((fem && !Mo.thin) || kind === 'smile') [pts[0], pts[4]].forEach((c, j) => { const d = dirTo(pts[j ? 3 : 1], c); s += ink(spl([c, [c[0] + d[0] * 0.5, c[1] - 0.35], [c[0] + d[0] * 0.8, c[1] - 0.9]], 3), { w: 0.6, a: 0.1, b: 0.6 }); });
     if (nearUp) { const c = pts[0]; s += ink(spl([c, [c[0] - 0.5, c[1] - 0.7], [c[0] - 0.6, c[1] - 1.6]], 3), { w: 0.9, a: 0.1, b: 0.6 }); }
     return s;
+  }
+  // v0.4 lips (round 3; women): volume from paper-shadow planes, no outlines. The upper lip is a shaded Cupid's bow
+  // (Mo.bow > 1: 노을's crisper, taller bow, with a paper-white roll along its edge; thin: 령's slim bow), the lower lip a
+  // paper-white light band over its own shadow (Mo.lowerW: 월 fuller), the mouth line darkest in the middle and gone
+  // before the corners. At 84 px the mouth reads as one small soft shape
+  function lips4(C, ch, Mo, pts, my, cw, lf) {
+    const P = C.p, ws = ch.ws, thin = !!Mo.thin, bow = Mo.bow || 1, uh = thin ? 0.5 : 0.95 * bow, pk = (thin ? 1.25 : 1.4) * ws, lo = thin ? 0.62 : Mo.lowerW ? 1.15 : 1;
+    const up = [pts[0], P([-cw * 0.55, my - 0.45 - 1.05 * uh, 31.4 + lf]), P([-pk, my - 0.65 - 1.6 * uh, 32.6 + lf]), P([0, my - 0.25 - 1.0 * uh, 32.9 + lf]), P([pk, my - 0.65 - 1.6 * uh, 32.6 + lf]), P([cw * 0.55, my - 0.45 - 1.05 * uh, 31.4 + lf]), pts[4]];
+    let s = fp(smooth(up.concat([pts[3], pts[2], pts[1]]), true, 0.16), K.p300);
+    if (bow > 1) s += ink(spl(up.slice(1, 6).map((p) => [p[0], p[1] - 0.42]), 5), { w: 0.55, a: 0.25, b: 0.25, fill: K.p50 });
+    const L = (x, dy, d) => P([x, my + dy * lo, d]);
+    s += fp(smooth([L(-cw * 0.58, 1.7, 30.6), L(-cw * 0.28, 2.45, 31.8), L(0, 2.6, 32.2), L(cw * 0.28, 2.45, 31.8), L(cw * 0.58, 1.7, 30.6), L(cw * 0.3, 3.3, 31.2), L(0, 3.7, 31.6), L(-cw * 0.3, 3.3, 31.2)], true, 0.16), K.p300);
+    s += ink(spl([L(-cw * 0.42, 1, 31.3), L(0, 1.3, 32.7 + lf), L(cw * 0.42, 1, 31.3)], 4), { w: thin ? 0.7 : 1.05, a: 0.3, b: 0.3, fill: K.p50 });
+    return s + ink(spl(pts, 6), { w: Mo.lip * (thin ? 1.35 : 1.5), a: 0.28, b: 0.28, wf: (t) => 0.55 + 0.45 * Math.sin(Math.PI * t) });
   }
   // ear (rev 2): paper, concha in paper shadow, the rim brushed heavy at the back and lobe (shadow) and thin at the top
   // front (light); antihelix and tragus strokes
@@ -932,8 +1057,16 @@ window.PN = window.PN || {};
         const arc = (r0, a0, a1, cx) => { const P = []; for (let i = 0; i <= 16; i++) { const t = (a0 + (a1 - a0) * i / 16) * Rd; P.push([b[0] + r0 * Math.cos(t) + (cx || 0), b[1] + r0 * Math.sin(t)]); } return P; };
         const out = []; for (let i = 0; i < 36; i++) { const t = i / 36 * 2 * Math.PI; out.push([b[0] + r * (1 + 0.035 * Math.sin(5 * t + 0.6)) * Math.cos(t), b[1] + r * (1 + 0.035 * Math.sin(5 * t + 0.6)) * Math.sin(t)]); }
         let s = fp(smooth(out, true, 0.16), K.ink);
-        s += ink(arc(r * 0.72, 150, 330), { w: 0.6, a: 0.3, b: 0.3, fill: K.p50 }) + ink(arc(r * 0.42, 330, 560), { w: 0.55, a: 0.3, b: 0.3, fill: K.p50 });
-        s += ink(arc(r * 0.6, 196, 258), { w: 2, a: 0.3, b: 0.35, fill: K.p50 });
+        if (V4) {
+          // v0.4 twist: the bun is a coil — one paper gap spiralling in (1.6 turns, broken in three, thinning inward) and
+          // a broken sheen on its lit top-left
+          const sp = (t0, t1, w) => { const Q = []; for (let i = 0; i <= 20; i++) { const t = lerp(t0, t1, i / 20), ang = (150 + t * 576) * Rd, rr = r * lerp(0.86, 0.2, t); Q.push([b[0] + rr * Math.cos(ang), b[1] + rr * Math.sin(ang)]); } return ink(Q, { w, a: 0.3, b: 0.3, fill: K.p50 }); };
+          s += sp(0, 0.3, 0.75) + sp(0.35, 0.64, 0.55) + sp(0.7, 0.94, 0.38);
+          s += ink(arc(r * 0.64, 198, 230), { w: 1.8, a: 0.3, b: 0.35, fill: K.p50 }) + ink(arc(r * 0.5, 242, 264), { w: 1.1, a: 0.3, b: 0.35, fill: K.p50 });
+        } else {
+          s += ink(arc(r * 0.72, 150, 330), { w: 0.6, a: 0.3, b: 0.3, fill: K.p50 }) + ink(arc(r * 0.42, 330, 560), { w: 0.55, a: 0.3, b: 0.3, fill: K.p50 });
+          s += ink(arc(r * 0.6, 196, 258), { w: 2, a: 0.3, b: 0.35, fill: K.p50 });
+        }
         const ux = e[0] - a[0], uy = e[1] - a[1], l = Math.hypot(ux, uy) || 1, nx = -uy / l, ny = ux / l;
         s += fp(`M ${P2([a[0] + nx * 0.9, a[1] + ny * 0.9])} L ${P2([e[0] + nx * 0.55, e[1] + ny * 0.55])} L ${P2([e[0] + ux / l * 0.8, e[1] + uy / l * 0.8])} L ${P2([e[0] - nx * 0.55, e[1] - ny * 0.55])} L ${P2([a[0] - nx * 0.9, a[1] - ny * 0.9])} Z`, K.p50, OLs(1.2));
         const h = [a[0] - ux / l * 2.3, a[1] - uy / l * 2.3];
@@ -945,9 +1078,11 @@ window.PN = window.PN || {};
         const g = [[[-6, 64], [-38, 58], [-80, 52], [-125, 47], [-160, 45]], [[-14, 54], [-48, 50], [-78, 46]], [[-96, 44], [-128, 42], [-150, 42]], [[-26, 44], [-60, 38], [-100, 36], [-145, 39]],
           [[-38, 32], [-70, 27], [-92, 26]], [[-112, 27], [-140, 31], [-158, 36]], [[-55, 20], [-84, 15], [-118, 18], [-155, 30]], [[-72, 10], [-98, 6], [-130, 12], [-160, 26]], [[6, 62], [30, 57], [55, 50]], [[14, 48], [40, 42]]];
         const ws0 = [0.6, 0.7, 0.55, 0.5, 0.65, 0.5, 0.5, 0.45, 0.5, 0.45];
+        if (V4) return strands(C, H, irregular(g, 41, { w: 0.62, drop: 0.2 }), 0.5, K.p50, 0.35);
         return strands(C, H, g.map((p, i) => ({ p, w: ws0[i] })), 0.5, K.p50, 0.35);
       },
       sheen(C, H) {
+        if (V4) return strands(C, H, sheenBand([[-20, 47], [-48, 44], [-76, 40], [-104, 36], [-130, 33]], 43, { w: 2.8, amp: 2.2 }), 2, K.p50, 0.5);
         return strands(C, H, [{ p: [[-18, 61], [-40, 58], [-62, 54]], w: 2.2 }, { p: [[-56, 52], [-78, 48], [-96, 45]], w: 1.9 }, { p: [[-32, 50], [-50, 47], [-68, 44]], w: 1.8 }, { p: [[-86, 41], [-102, 39], [-116, 38]], w: 1.6 }], 2, K.p50, 0.5);
       },
       // in front: slits inside the near curtain along the hairline, the sideburn lock (a main lock and two strands, S-curved,
@@ -955,7 +1090,8 @@ window.PN = window.PN || {};
       front(C, ch, M, cu) {
         const ws = ch.ws, Y = M.Y, hl = HAIRLINE.wol;
         let s = '';
-        [1, 2].forEach((i) => { s += inkC(C, hl.slice(2, 8).map(([a, b, c]) => [-a * ws * (1 + 0.045 * i), b - 1.3 * i, c - 2.4 * i]), { w: 0.55, a: 0.25, b: 0.3, fill: K.p50 }); });
+        if (V4) s += curtainSlits(C, hl, ws);
+        else [1, 2].forEach((i) => { s += inkC(C, hl.slice(2, 8).map(([a, b, c]) => [-a * ws * (1 + 0.045 * i), b - 1.3 * i, c - 2.4 * i]), { w: 0.55, a: 0.25, b: 0.3, fill: K.p50 }); });
         s = `<g ${cu}>${s}</g>`;
         const lk = (L3, w, a, b) => inkC(C, L3.map(([a0, b0, c0]) => [a0 * ws, Y(b0), c0]), { w, a, b, curve: 0.3 });
         s += lk([[-21.4, -5, 21.4], [-22.8, 3.5, 16.6], [-21.2, 10.5, 14.8], [-22.2, 15.5, 12.8], [-24.6, 19.5, 10.2]], 2, 0.3, 0.45);
@@ -981,8 +1117,15 @@ window.PN = window.PN || {};
         s += fp(brush([[t0[0] - 6, t0[1] - 1.2], [t0[0] + 6, t0[1] + 1.2]], () => 2.6), K.p50, OLs(1.1));
         return s;
       },
-      gaps(C, H) { return strands(C, H, [{ p: [[-30, 30], [-70, 22], [-120, 16]], w: 0.5 }, { p: [[-50, 14], [-90, 8], [-130, 6]], w: 0.45 }], 0.5, K.p50, 0.3); },
-      sheen(C, H) { return strands(C, H, [{ p: [[-26, 40], [-60, 33], [-92, 27]], w: 2 }, { p: [[-76, 24], [-104, 18], [-128, 15]], w: 1.7 }], 2, K.p50, 0.4); },
+      gaps(C, H) {
+        const g = [[[-30, 30], [-70, 22], [-120, 16]], [[-50, 14], [-90, 8], [-130, 6]], [[-40, 22], [-82, 14], [-118, 10]]];
+        if (V4) return strands(C, H, irregular(g, 51, { w: 0.55, drop: 0.15 }), 0.5, K.p50, 0.3);
+        return strands(C, H, [{ p: g[0], w: 0.5 }, { p: g[1], w: 0.45 }], 0.5, K.p50, 0.3);
+      },
+      sheen(C, H) {
+        if (V4) return strands(C, H, sheenBand([[-22, 38], [-56, 31], [-90, 25], [-124, 17]], 53, { w: 1.9, amp: 2.4 }), 2, K.p50, 0.4);
+        return strands(C, H, [{ p: [[-26, 40], [-60, 33], [-92, 27]], w: 2 }, { p: [[-76, 24], [-104, 18], [-128, 15]], w: 1.7 }], 2, K.p50, 0.4);
+      },
       // near locks (v0.3 F2): the three pointed lock ends hang beside the jaw, outside the face; the paper gaps and the
       // broken sheen stay inside the hair, ≥ 2 u from the face's skin
       front(C, ch, M, cu) {
@@ -1000,8 +1143,18 @@ window.PN = window.PN || {};
     },
     dok: {
       bumps: () => clumps(195, 345, 20, 0.022, 5, 11).concat(clumps(120, 190, 7, 0.03, 6, 13)),
-      gaps(C, H) { return strands(C, H, [{ p: [[-40, 48], [-56, 64]], w: 0.5 }, { p: [[-78, 44], [-92, 62]], w: 0.45 }, { p: [[-112, 40], [-122, 56]], w: 0.45 }], 0.5, K.p50, 0.3); },
-      sheen(C, H) { return strands(C, H, [{ p: [[-26, 50], [-44, 62], [-66, 74]], w: 2 }, { p: [[-70, 46], [-88, 58], [-108, 70]], w: 1.8 }], 1.9, K.p50, 0.3); },
+      gaps(C, H) {
+        if (V4) {   // v0.4: short cropped tufts brushed up and back, each its own length and width
+          const R = rng(61), L = [];
+          for (let i = 0; i < 9; i++) { const f0 = -28 - i * 11 + (R() - 0.5) * 6, l0 = 44 + R() * 6; L.push({ p: [[f0, l0], [f0 - 6 - R() * 5, l0 + 8 + R() * 6]], w: 0.35 + R() * 0.4 }); }
+          return strands(C, H, L, 0.5, K.p50, 0.3);
+        }
+        return strands(C, H, [{ p: [[-40, 48], [-56, 64]], w: 0.5 }, { p: [[-78, 44], [-92, 62]], w: 0.45 }, { p: [[-112, 40], [-122, 56]], w: 0.45 }], 0.5, K.p50, 0.3);
+      },
+      sheen(C, H) {
+        if (V4) return strands(C, H, [{ p: [[-30, 52], [-44, 63], [-60, 72]], w: 2 }, { p: [[-66, 50], [-80, 60], [-96, 69]], w: 1.4 }, { p: [[-104, 46], [-114, 56]], w: 1.1 }], 1.9, K.p50, 0.3);
+        return strands(C, H, [{ p: [[-26, 50], [-44, 62], [-66, 74]], w: 2 }, { p: [[-70, 46], [-88, 58], [-108, 70]], w: 1.8 }], 1.9, K.p50, 0.3);
+      },
       // sideburn: a clump in front of the ear with three pointed ends below the towel
       front(C, ch) {
         // v0.3 F3: wide enough to cover the upper third of the near contour
@@ -1043,9 +1196,22 @@ window.PN = window.PN || {};
     const Lf = side(1), Rt = side(-1), e = P[n], d = dirTo(P[n - 2], e);
     const tips = [[Lf[n][0] + d[0] * 3.4, Lf[n][1] + d[1] * 3.4], [e[0] + d[0] * 1.2, e[1] + d[1] * 1.2], [e[0] + d[0] * 5.6, e[1] + d[1] * 5.6], [Rt[n][0] + d[0] * 4.2, Rt[n][1] + d[1] * 4.2]];
     let s = fp(smooth(Lf.concat(tips, Rt.slice().reverse()), true, 0.08), K.ink);
-    if (o.braid) for (let i = 3; i < n - 4; i += 4) { const dd = dirTo(P[i - 1], P[i + 1]), k = (i / 4) % 2 ? 1 : -1, a = [P[i][0] - dd[1] * W[i] * 0.42 * k, P[i][1] + dd[0] * W[i] * 0.42 * k], b = [P[i + 2][0] + dd[1] * W[i] * 0.3 * k, P[i + 2][1] - dd[0] * W[i] * 0.3 * k]; s += ink(spl([a, [lerp(a[0], b[0], 0.5), lerp(a[1], b[1], 0.5) - 0.3], b], 3), { w: 0.6, a: 0.3, b: 0.3, fill: K.p50 }); }
-    else [-0.22, 0.2].forEach((k) => { s += ink(P.slice(3, n - 1).map((p, i) => { const j = i + 3, dd = dirTo(P[j - 1], P[j + 1]); return [p[0] - dd[1] * W[j] * k, p[1] + dd[0] * W[j] * k]; }), { w: 0.5, a: 0.25, b: 0.25, fill: K.p50 }); });
-    s += ink(P.slice(4, n - 3).map((p) => [p[0] - W[4] * 0.2, p[1]]), { w: 1.4, a: 0.3, b: 0.3, fill: K.p50 });
+    // a point across the tail at index ii (rounded), off = share of the width from the centre (+ = the left side)
+    const at = (ii, off) => { const q = Math.min(n, Math.max(0, Math.round(ii))), dd = dirTo(P[Math.max(0, q - 1)], P[Math.min(n, q + 1)]); return [P[q][0] - dd[1] * W[q] * off, P[q][1] + dd[0] * W[q] * off]; };
+    if (o.braid && V4) {
+      // v0.4 twist: the braid as interlocked lobes — each lobe's edge sweeps from one side toward the middle and down,
+      // alternating sides; the lit lobes carry a short shine
+      for (let i = 2, j = 0; i < n - 4; i += 3, j++) {
+        const k = j % 2 ? 1 : -1;
+        s += ink(spl([at(i, 0.5 * k), at(i + 1.1, 0.22 * k), at(i + 2.3, -0.06 * k)], 3), { w: 0.65, a: 0.12, b: 0.6, fill: K.p50 });
+        if (k > 0) s += ink(spl([at(i + 0.9, 0.3), at(i + 1.7, 0.18)], 2), { w: 0.85, a: 0.3, b: 0.3, fill: K.p50 });
+      }
+    } else if (o.braid) for (let i = 3; i < n - 4; i += 4) { const dd = dirTo(P[i - 1], P[i + 1]), k = (i / 4) % 2 ? 1 : -1, a = [P[i][0] - dd[1] * W[i] * 0.42 * k, P[i][1] + dd[0] * W[i] * 0.42 * k], b = [P[i + 2][0] + dd[1] * W[i] * 0.3 * k, P[i + 2][1] - dd[0] * W[i] * 0.3 * k]; s += ink(spl([a, [lerp(a[0], b[0], 0.5), lerp(a[1], b[1], 0.5) - 0.3], b], 3), { w: 0.6, a: 0.3, b: 0.3, fill: K.p50 }); }
+    else if (V4) {
+      // v0.4 twist: three strand gaps wind across the tail (phase-shifted waves), crossing as a twisted tail does
+      [[0, 0.5], [2.1, 0.42], [4.2, 0.34]].forEach(([ph, w]) => { s += ink(spl(P.slice(3, n - 1).map((_, i) => at(i + 3, 0.32 * Math.sin((i + 3) * 0.5 + ph))), 2), { w, a: 0.25, b: 0.25, fill: K.p50 }); });
+    } else [-0.22, 0.2].forEach((k) => { s += ink(P.slice(3, n - 1).map((p, i) => { const j = i + 3, dd = dirTo(P[j - 1], P[j + 1]); return [p[0] - dd[1] * W[j] * k, p[1] + dd[0] * W[j] * k]; }), { w: 0.5, a: 0.25, b: 0.25, fill: K.p50 }); });
+    if (!(o.braid && V4)) s += ink(P.slice(4, n - 3).map((p) => [p[0] - W[4] * 0.2, p[1]]), { w: 1.4, a: 0.3, b: 0.3, fill: K.p50 });
     if (o.tie != null) { const i = Math.round(o.tie * n), dd = dirTo(P[Math.max(0, i - 1)], P[Math.min(n, i + 1)]), p = P[i], hw = W[i] * 0.7; s += fp(brush([[p[0] - dd[1] * hw, p[1] + dd[0] * hw], [p[0] + dd[1] * hw, p[1] - dd[0] * hw]], () => 2.4), K.p50, OLs(1)); }
     return s;
   }
@@ -1064,12 +1230,16 @@ window.PN = window.PN || {};
       behind(C) { return tail3(C, [[0, 6, -24], [-1, 20, -26.5], [-2, 36, -25.5], [-3, 54, -22]], 7, 4.6, { braid: true, tie: 0.86 }); },
       gaps(C, H) {
         const g = [[[-6, 64], [-40, 56], [-85, 44], [-130, 28], [-165, 10]], [[-16, 52], [-52, 44], [-95, 32]], [[-110, 24], [-145, 12]], [[-30, 38], [-66, 28], [-108, 18], [-150, 6]], [[-50, 22], [-86, 12], [-122, 6]], [[-70, 8], [-100, 2], [-140, -2]], [[6, 62], [32, 56], [58, 48]]];
+        if (V4) return strands(C, H, irregular(g, 71, { w: 0.6, drop: 0.2 }), 0.5, K.p50, 0.35);
         return strands(C, H, g.map((p, i) => ({ p, w: [0.6, 0.65, 0.5, 0.5, 0.55, 0.45, 0.5][i] })), 0.5, K.p50, 0.35);
       },
-      sheen(C, H) { return strands(C, H, [{ p: [[-16, 58], [-40, 54], [-62, 48]], w: 2.1 }, { p: [[-54, 46], [-76, 40], [-94, 34]], w: 1.8 }, { p: [[-30, 46], [-48, 42], [-66, 37]], w: 1.7 }], 2, K.p50, 0.5); },
+      sheen(C, H) {
+        if (V4) return strands(C, H, sheenBand([[-20, 44], [-46, 40], [-72, 35], [-98, 30], [-122, 26]], 73, { w: 2.6, amp: 2.2 }), 2, K.p50, 0.5);
+        return strands(C, H, [{ p: [[-16, 58], [-40, 54], [-62, 48]], w: 2.1 }, { p: [[-54, 46], [-76, 40], [-94, 34]], w: 1.8 }, { p: [[-30, 46], [-48, 42], [-66, 37]], w: 1.7 }], 2, K.p50, 0.5);
+      },
       front(C, ch, M, cu) {
         const ws = ch.ws, Y = M.Y, hl = HAIRLINE.noeul;
-        let s = `<g ${cu}>` + [1, 2].map((i) => inkC(C, hl.slice(2, 8).map(([a, b, c]) => [-a * ws * (1 + 0.045 * i), b - 1.3 * i, c - 2.4 * i]), { w: 0.55, a: 0.25, b: 0.3, fill: K.p50 })).join('') + '</g>';
+        let s = `<g ${cu}>` + (V4 ? curtainSlits(C, hl, ws) : [1, 2].map((i) => inkC(C, hl.slice(2, 8).map(([a, b, c]) => [-a * ws * (1 + 0.045 * i), b - 1.3 * i, c - 2.4 * i]), { w: 0.55, a: 0.25, b: 0.3, fill: K.p50 })).join('')) + '</g>';
         const lk = (L3, w) => inkC(C, L3.map(([a0, b0, c0]) => [a0 * ws, Y(b0), c0]), { w, a: 0.3, b: 0.45, curve: 0.3 });
         s += lk([[-21.2, -4, 21.2], [-22.4, 4, 16.6], [-21.2, 11, 14.8], [-22.6, 17, 12.6], [-24.4, 21, 10.4]], 1.6) + lk([[-21.8, -3, 20.6], [-23.4, 5, 15.4], [-22.8, 11, 13.6], [-24.2, 15.6, 11.2]], 0.6);
         s += lk([[-11.6, -22.2, 29.6], [-13.6, -20, 29.6], [-15, -17.6, 28.8]], 0.45) + lk([[-17.4, -15.6, 26.4], [-19.4, -12.6, 25.2], [-19, -10.2, 24.6]], 0.45);
@@ -1101,17 +1271,26 @@ window.PN = window.PN || {};
       },
       back(C) { const t = C.p([0, -31.4, -21.6]); return fp(brush([[t[0] - 4.6, t[1] - 3.2], [t[0] + 3.8, t[1] + 3.4]], () => 2.6), K.p50, OLs(1.1)); },
       gaps(C, H) {
-        const g = [[[-6, 64], [-46, 58], [-100, 52], [-160, 50]], [[-18, 50], [-60, 44], [-112, 42], [-160, 46]], [[-34, 34], [-74, 30], [-124, 32]], [[-56, 18], [-96, 16], [-140, 26]], [[8, 60], [40, 54], [70, 48]]];
-        return strands(C, H, g.map((p, i) => ({ p, w: [0.6, 0.6, 0.5, 0.5, 0.5][i] })), 0.5, K.p50, 0.35);
+        const g = [[[-6, 64], [-46, 58], [-100, 52], [-160, 50]], [[-18, 50], [-60, 44], [-112, 42], [-160, 46]], [[-34, 34], [-74, 30], [-124, 32]], [[-56, 18], [-96, 16], [-140, 26]], [[8, 60], [40, 54], [70, 48]], [[-26, 42], [-66, 37], [-118, 36]]];
+        if (V4) return strands(C, H, irregular(g, 81, { w: 0.6, drop: 0.2 }), 0.5, K.p50, 0.35);
+        return strands(C, H, g.slice(0, 5).map((p, i) => ({ p, w: [0.6, 0.6, 0.5, 0.5, 0.5][i] })), 0.5, K.p50, 0.35);
       },
-      sheen(C, H) { return strands(C, H, [{ p: [[-20, 60], [-46, 56], [-72, 52]], w: 2.1 }, { p: [[-60, 50], [-84, 47], [-104, 45]], w: 1.8 }, { p: [[-36, 46], [-56, 43], [-76, 41]], w: 1.6 }], 2, K.p50, 0.5); },
+      sheen(C, H) {
+        if (V4) return strands(C, H, sheenBand([[-20, 47], [-48, 43], [-76, 39], [-104, 35], [-130, 32]], 83, { w: 2.6, amp: 2.2 }), 2, K.p50, 0.5);
+        return strands(C, H, [{ p: [[-20, 60], [-46, 56], [-72, 52]], w: 2.1 }, { p: [[-60, 50], [-84, 47], [-104, 45]], w: 1.8 }, { p: [[-36, 46], [-56, 43], [-76, 41]], w: 1.6 }], 2, K.p50, 0.5);
+      },
       // fringe: pointed locks over the forehead ending above y −6 (their cast shadow is drawn in the face); one loose lock
       front(C, ch, M) {
         const ws = ch.ws;
         let s = '';
-        // four bundles whose ends are the shadow's tips (one ink mass with their cast shadow)
+        // four bundles whose ends are the shadow's tips (one ink mass with their cast shadow). v0.4 tidy: one gentle S for
+        // all four, narrowing toward the far side, each tip exactly on its shadow tip, a strand gap in two of them
         [[-12, -10.4], [-3.4, -8.6], [5.2, -7.4], [13.2, -5.6]].forEach(([s1, tip], i) => {
-          s += inkC(C, [[(s1 - 1.8) * ws, -26, 30.8], [(s1 - 0.9) * ws, -17, 33], [(s1 + 1.8) * ws, tip, 32.6]], { w: 4.6 - (i % 2) * 0.6, a: 0.05, b: 0.75 });
+          if (V4) {
+            const ty = [-10.4, -8.6, -6.8, -5.6][i], Q = [[(s1 - 2.1) * ws, -26, 30.6], [(s1 - 1.3) * ws, -19, 32.8], [(s1 + 0.2) * ws, lerp(-19, ty, 0.6), 33.1], [(s1 + 1.8) * ws, ty, 32.6]];
+            s += inkC(C, Q, { w: [4.4, 4.1, 3.8, 3.4][i], a: 0.05, b: 0.72 });
+            if (i % 2 === 0) s += inkC(C, [[(s1 - 2.3) * ws, -24.5, 31.2], [(s1 - 1.4) * ws, -18, 33.2], [(s1 - 0.3) * ws, lerp(-18, ty, 0.5), 33.4]], { w: 0.42, a: 0.25, b: 0.4, fill: K.p50 });
+          } else s += inkC(C, [[(s1 - 1.8) * ws, -26, 30.8], [(s1 - 0.9) * ws, -17, 33], [(s1 + 1.8) * ws, tip, 32.6]], { w: 4.6 - (i % 2) * 0.6, a: 0.05, b: 0.75 });
         });
         s += inkC(C, [[-14.4 * ws, -22, 29], [-15.6 * ws, -15, 29.4], [-15.4 * ws, -9, 28.6]], { w: 0.5, a: 0.2, b: 0.4 });
         return s;
@@ -1132,7 +1311,9 @@ window.PN = window.PN || {};
     } else s += ink(jaw, { w: 6.5, a: 0.02, b: 0.05, wf: (t) => lerp(0.22, 1, Math.pow(t, 0.7)) });
     if (!fem) s += fp(smooth([[xl(15) + 1, 15], [lerp(xl(30), xr(30), 0.32), 30], [lerp(xl(46), xr(46), 0.5), 46], [lerp(xl(46), xr(46), 0.4), 46], [lerp(xl(30), xr(30), 0.2), 30], [xl(15) + 0.4, 15]], true, 0.2), K.p300);
     s += '</g>';
-    return s + ink(G.L.filter((p) => p[1] >= 12), { w: fem ? 1 : 1.3, a: 0.3, b: 0.15 }) + ink(G.R.filter((p) => p[1] >= 18), { w: fem ? 1.8 : 2.3, a: 0.25, b: 0.15 });
+    // the neck's sides are outer contour (v0.4: heavier than the features' lines)
+    const kN = V4 ? 1.3 : 1;
+    return s + ink(G.L.filter((p) => p[1] >= 12), { w: (fem ? 1 : 1.3) * kN, a: 0.3, b: 0.15 }) + ink(G.R.filter((p) => p[1] >= 18), { w: (fem ? 1.8 : 2.3) * (V4 ? 1.15 : 1), a: 0.25, b: 0.15 });
   }
   // costume (rev 2): shoulders with a brushed outline, the far shoulder in paper shadow, two or three cloth folds, the
   // back collar behind the neck, the inner collar, the outer collar laid over it (its cast shadow on the inner one),
@@ -1141,8 +1322,10 @@ window.PN = window.PN || {};
     const o = BODY[who], G = bustGeo(Cb, ch, o), n = ch.neck, P = (q) => Cb.p(q), xL = Math.min(...G.L.map((p) => p[0])), xR = Math.max(...G.R.map((p) => p[0]));
     const on = (L, lift) => L.map(([sx, y]) => { const q = G.front(sx, y); return P([q[0], q[1], q[2] + (lift || 0)]); });
     let body = fp(G.d, K.paper) + `<g ${ctx.clip(G.d)}>` + fp(`M ${P2([lerp(xL, xR, 0.7), 30])} C ${P2([lerp(xL, xR, 0.8), 46])} ${P2([lerp(xL, xR, 0.74), 74])} ${P2([lerp(xL, xR, 0.69), 120])} L ${P2([xR + 10, 120])} L ${P2([xR + 10, 30])} Z`, K.p300);
-    body += ink(on([[-n * 2.1, 40], [-n * 1.7, 50], [-n * 1.2, 62]]), { w: 1.7, a: 0.2, b: 0.5 }) + ink(on([[n * 2.5, 43], [n * 2.3, 53], [n * 1.9, 64]]), { w: 1.4, a: 0.25, b: 0.5 }) + ink(on([[-n * 0.1, 51], [n * 0.5, 58], [n * 0.6, 66]]), { w: 1.1, a: 0.3, b: 0.5 });
-    body += '</g>' + ink(G.L.slice(0, 22), { w: 1.6, a: 0.2, b: 0.2 }) + ink(G.R.slice(0, 22), { w: 2.6, a: 0.2, b: 0.2 });
+    // cloth folds are inner texture (v0.4: thinner), the shoulder lines outer contour (v0.4: heavier)
+    const kF = V4 ? 0.72 : 1, kS = V4 ? 1.25 : 1;
+    body += ink(on([[-n * 2.1, 40], [-n * 1.7, 50], [-n * 1.2, 62]]), { w: 1.7 * kF, a: 0.2, b: 0.5 }) + ink(on([[n * 2.5, 43], [n * 2.3, 53], [n * 1.9, 64]]), { w: 1.4 * kF, a: 0.25, b: 0.5 }) + ink(on([[-n * 0.1, 51], [n * 0.5, 58], [n * 0.6, 66]]), { w: 1.1 * kF, a: 0.3, b: 0.5 });
+    body += '</g>' + ink(G.L.slice(0, 22), { w: 1.6 * kS, a: 0.2, b: 0.2 }) + ink(G.R.slice(0, 22), { w: 2.6 * kS, a: 0.2, b: 0.2 });
     // the back collar runs from the near shoulder line round behind the neck (no loose end beside the neck)
     const back = [[-n * 1.7, 39.4], [-n * 1.2, 36.4], [-n * 0.6, 33.6], [0, 33], [n * 0.6, 33.6], [n * 1.15, 36.6]].map(([sx, y]) => P([sx, y, -2 - n * 1.25 * Math.sqrt(Math.max(0, 1 - Math.min(1, (sx / (n * 1.25)) ** 2)))]));
     const inner = on([[-n * 1.0, 35], [-n * 0.35, 40.5], [n * 0.45, 47], [n * 1.3, 55], [n * 2.2, 66]], 0.3);
@@ -1208,23 +1391,49 @@ window.PN = window.PN || {};
   const fringePts = (C, ch, M) => FRINGE.map(([s, y, d]) => C.p([s * ch.ws, M.Y(y), d]));
   function fringeShadow(C, ch, M) {
     const Q = fringePts(C, ch, M), a = Q[0], b = Q[Q.length - 1];
-    return fp('M ' + Q.map(P2).join(' L ') + ` L ${P2([b[0] + 40, b[1]])} L ${P2([b[0] + 40, -70])} L ${P2([a[0] - 40, -70])} L ${P2([a[0] - 40, a[1]])} Z`, K.ink);
+    let d = 'M ' + Q.map(P2).join(' L ');
+    if (V4) {
+      // v0.4 tidy: the tips (2, 4, 6, 8) stay sharp, the valleys between them round — each a quadratic through its
+      // valley point (control = 2·valley − the tips' midpoint)
+      const qc = (p, v, q) => [2 * v[0] - (p[0] + q[0]) / 2, 2 * v[1] - (p[1] + q[1]) / 2];
+      d = `M ${P2(Q[0])} Q ${P2(qc(Q[0], Q[1], Q[2]))} ${P2(Q[2])}`;
+      for (let i = 2; i < 8; i += 2) d += ` Q ${P2(qc(Q[i], Q[i + 1], Q[i + 2]))} ${P2(Q[i + 2])}`;
+      d += ' L ' + Q.slice(9).map(P2).join(' L ');
+    }
+    return fp(d + ` L ${P2([b[0] + 40, b[1]])} L ${P2([b[0] + 40, -70])} L ${P2([a[0] - 40, -70])} L ${P2([a[0] - 40, a[1]])} Z`, K.ink);
   }
+  // v0.4 flyaways per person: [silhouette angle deg (0 right, 90 down), length, curl, width]
+  const FLY = {
+    wol: [[208, 5, 2.4, 0.42], [236, 4.2, -2, 0.4], [258, 3.6, 1.6, 0.36]],
+    noeul: [[198, 4.6, 2.2, 0.42], [222, 4, -1.8, 0.38]],
+    ryeong: [[226, 4.6, 2.4, 0.42], [252, 4, -2, 0.38], [276, 3.4, 1.6, 0.36]],
+    gyeol: [[168, 4, 2, 0.42], [184, 3.4, -1.6, 0.38]],
+    dok: [[246, 2.8, 1.2, 0.5], [270, 2.6, -1, 0.46], [292, 2.4, 1, 0.44]]
+  };
   const dropP = (x, y, h) => fp(`M ${f(x)},${f(y)} C ${f(x - 0.34 * h)},${f(y + 0.57 * h)} ${f(x - 0.31 * h)},${f(y + 0.94 * h)} ${f(x)},${f(y + h)} C ${f(x + 0.31 * h)},${f(y + 0.94 * h)} ${f(x + 0.34 * h)},${f(y + 0.57 * h)} ${f(x)},${f(y)} Z`, K.p50, `stroke="${K.ink}" stroke-width="1"`);
   // head layers for direction A (rev 2), head units. X = expression spec
   function layers2(ctx, who, X) {
-    const C = cam(30), M = model(who, REV2[who]), ch = ch2(who), OL = outline(C, M), H = shell(ch), E = skullE(C, H), H2 = HAIR2[who], Y = M.Y, gy = who === 'gyeol', vic = !!X.lift;
+    const C = cam(30), M = model(who, rvo(who)), ch = ch2(who), OL = outline(C, M), H = shell(ch), E = skullE(C, H), H2 = HAIR2[who], Y = M.Y, gy = who === 'gyeol', vic = !!X.lift;
     // 결's brim and 령's fringe cast one shadow over the forehead and the far eye; X.bare (faceBoard) = the face alone
     const bare = !!X.bare, shadowed = !bare && (gy || who === 'ryeong');
     const L = { behind: H2.behind ? H2.behind(C) : '', back: H2.back ? H2.back(C) : '', neckC: { C, ch, M, OL } };
     const HU = clumped(E, hull(E, OL.F.concat(OL.N).filter((p) => p[1] <= -13)), H2.bumps());
     L.mass = fp(HU.d, K.ink) + H2.gaps(C, H) + H2.sheen(C, H) + (who === 'wol' ? bunSep(C, HU) : '');
+    if (V4 && !bare && FLY[who]) L.mass += flyaways(HU, E, FLY[who]);
     L.ears = ear2(C, ch, M, -1);
     // face: planes, 독's beard planes, lowhp's worn plane, 결's brim shadow; the brush contour
     let inner = planes2(C, ch, M, OL, who, X);
     if (who === 'dok') {
-      const chinQ = [[-12.5, 15, 24], [-9, 22, 27.5], [-5, 26.5, 30], [0, 27.6, 31.4], [5, 26.5, 30], [9, 22, 27.5], [12.5, 15, 24]].map(([s, y, d]) => C.p([s, Y(y), d]));
-      inner += fp(smooth(chinQ, false, 0.14) + ` L ${P2([chinQ[6][0] + 10, 60])} L ${P2([chinQ[0][0] - 10, 60])} Z`, K.p300);
+      if (V4) {
+        // v0.4: the beard zone's edge follows the face — from the jaw below the ear it curves along the cheek on the face
+        // surface, passes 4 u under the mouth corner and rounds under the lower lip (no straight diagonal across the cheek)
+        const half = [[27, 12, 2], [23.4, 14.6, 16], [19.2, 17, 22], [14.4, 19.6, 26.2], [10.4, 22, 28.6], [6.6, 24.2, 30.2], [3, 25.4, 31.5]];
+        const Bq = half.map(([s, y, d]) => [-s, y, d]).concat([[0, 25.5, 32]], half.slice().reverse()).map(([s, y, d]) => C.p([s * ch.ws, Y(y), d])), a = Bq[0], b = Bq[Bq.length - 1];
+        inner += fp(smooth(Bq, false, 0.14) + ` L ${P2([b[0] + 16, b[1]])} L ${P2([b[0] + 16, 60])} L ${P2([a[0] - 16, 60])} L ${P2([a[0] - 16, a[1]])} Z`, K.p300);
+      } else {
+        const chinQ = [[-12.5, 15, 24], [-9, 22, 27.5], [-5, 26.5, 30], [0, 27.6, 31.4], [5, 26.5, 30], [9, 22, 27.5], [12.5, 15, 24]].map(([s, y, d]) => C.p([s, Y(y), d]));
+        inner += fp(smooth(chinQ, false, 0.14) + ` L ${P2([chinQ[6][0] + 10, 60])} L ${P2([chinQ[0][0] - 10, 60])} Z`, K.p300);
+      }
       inner += fp(smooth([[-6.6, 16.6, 29.6], [0, 15.8, 32.8], [6.6, 16.6, 29.6], [6.4, 18.4, 28.4], [0, 17.8, 32.6], [-6.4, 18.4, 28.4]].map(([s, y, d]) => C.p([s, Y(y), d + 1])), true, 0.16), K.p300);
       const G = eyeGeo(C, ch, -1), oc = G.L2[G.L2.length - 1];
       inner += fp(smooth([[oc[0] - 0.4, oc[1] - 0.6], [oc[0] - 3.4, oc[1] - 0.2], [oc[0] - 4.4, oc[1] + 1.8], [oc[0] - 1.6, oc[1] + 1.2]], true, 0.2), K.p300);
@@ -1232,11 +1441,11 @@ window.PN = window.PN || {};
     if (X.worn) { const G = eyeGeo(C, ch, -1), Lw = G.L2.slice(4); inner += fp(smooth(Lw.map((p) => [p[0], p[1] + 0.7]).concat(Lw.map((p, i) => [p[0], p[1] + 0.9 + 1.6 * Math.sin(Math.PI * i / (Lw.length - 1))]).reverse()), true, 0.12), K.p300); }
     if (shadowed) inner += gy ? brimShadow(C, ch, M, 'A_light', X.sDy || 0) : fringeShadow(C, ch, M);
     // bare: the near cheek above the jaw (normally under the hair and the ear) gets a thin lit-side contour
-    L.face = fp(OL.face, K.paper) + `<g ${ctx.clip(OL.face)}>${inner}</g>` + contour2(C, OL, M) +
+    L.face = fp(OL.face, K.paper) + `<g ${ctx.clip(OL.face)}>${inner}</g>` + contour2(C, OL, M, 1, V4 && shadowed) +
       (bare ? ink(OL.N.filter((p) => p[1] >= -15 && p[1] <= M.Y(14)).reverse(), { w: 1.3, a: 0.3, b: 0.25 }) : '');
     // features (령's far eye is lit: her fringe shadow stops above it)
     const kind = X.eye || 'open', farShadow = gy && !vic && !bare;
-    let ft = brow2(C, ch, -1, X.brow) + brow2(C, ch, 1, X.brow);
+    let ft = brow2(C, ch, -1, X.brow) + brow2(C, ch, 1, V4 && (farShadow || (shadowed && !gy)) ? Object.assign({}, X.brow || {}, { noDry: true }) : X.brow);
     ft += eye2(ctx, C, ch, -1, 'lit', kind, X);
     ft += farShadow ? eye2(ctx, C, ch, 1, 'shadow', kind === 'shut' ? 'shut' : 'open', { wake: X.wake, low: X.low, glint: kind === 'narrow' ? 0.75 : 1 }) : eye2(ctx, C, ch, 1, 'lit', kind === 'smile' ? 'open' : kind, X);
     ft += nose2(C, ch, M, who) + mouth2(C, ch, M, who, X.mouth || null);
@@ -1265,7 +1474,8 @@ window.PN = window.PN || {};
     else if (H2.over) L.over = H2.over(C);
     else if (gy) {
       if (!PN._hk || !PN._hk.hat34) throw new Error('faceDrafts: load k-hero.js (PN._hk.hat34) before drawing 결');
-      L.over = `<g transform="translate(${f(-C.s)} ${f(3.5 + (X.hatDy || 0))})">${PN._hk.hat34(PN._hk.Ctx({ pitch: 6 }), X.tilt == null ? 4 : X.tilt, 2)}</g>`;
+      // v0.4: the hat sits 3 u higher off the brow (not in victory, whose raised brim meets the glove)
+      L.over = `<g transform="translate(${f(-C.s)} ${f(3.5 + (X.hatDy || 0) + (X.lift ? 0 : ch.hatLift || 0))})">${PN._hk.hat34(PN._hk.Ctx({ pitch: 6 }), X.tilt == null ? 4 : X.tilt, 2)}</g>`;
     } else L.over = '';
     L.rot = X.rot || 0; L.pivot = [3 * C.s, 22]; L.info = { C, M, OL, H, E, ch };
     return L;
@@ -1411,7 +1621,7 @@ window.PN = window.PN || {};
     camFor(dir); person(who);
     if (opts.rev != null && opts.rev !== 1 && opts.rev !== 2) throw new Error('faceDrafts: unknown rev ' + opts.rev);
     // direction A draws rev 2 unless rev 1 or the bible shadow (a rev 1 comparison) is asked for
-    if (dir === 'A' && opts.rev !== 1 && opts.shadow !== 'bible') return portrait2(who, opts);
+    if (dir === 'A' && opts.rev !== 1 && opts.shadow !== 'bible') return withV(opts.v, () => portrait2(who, opts));
     if (!WHO.includes(who)) throw new Error('faceDrafts: ' + who + ' is drawn in direction A rev 2 only');
     const ctx = Ctx(), L = layers(ctx, dir, who, opts), Fm = framing(dir, who), S = Fm.S;
     const C = L.info.C, Cb = cam(dir === 'C' ? 90 : 30);
@@ -1462,9 +1672,11 @@ window.PN = window.PN || {};
   }
   function construct(dir, who) { return portrait(dir, who, { construct: true, bg: false }); }
 
-  // measure(dir, who) → plain numbers for the brief's §3.8 checks and §2.2 (data only, no drawing)
-  function measure(dir, who, mo) {
-    const r2v = !!(mo && mo.rev === 2), C = camFor(dir), M = model(who, r2v ? REV2[who] : null), ch = r2v ? ch2(who) : M.ch, OL = outline(C, M), Y = M.Y, P = C.p, E = ch.eye;
+  // measure(dir, who, { rev: 2, v }) → plain numbers for the brief's §3.8 checks and §2.2 (data only, no drawing).
+  // v: 3 measures the round-2.5 (v0.3) parameters, otherwise v0.4
+  function measure(dir, who, mo) { return withV(mo && mo.v, () => measure0(dir, who, mo)); }
+  function measure0(dir, who, mo) {
+    const r2v = !!(mo && mo.rev === 2), C = camFor(dir), M = model(who, r2v ? rvo(who) : null), ch = r2v ? ch2(who) : M.ch, OL = outline(C, M), Y = M.Y, P = C.p, E = ch.eye;
     const r1 = (v) => Math.round(v * 10) / 10, r2 = (v) => Math.round(v * 100) / 100;
     const eyeM = (side) => {
       const G = eyeGeo(C, ch, side), all = G.U2.concat(G.L2), xs = all.map((p) => p[0]);
@@ -1692,7 +1904,7 @@ window.PN = window.PN || {};
     opts = opts || {};
     if (!(dir in DIRS)) throw new Error('faceDrafts: unknown direction ' + dir);
     const ctx = Ctx(), o = Object.assign({}, opts, opts.small ? { ground: false } : {});
-    const fig = dir === 'A' ? fullA(ctx, o) : dir === 'B' ? fullB(ctx, o) : fullC(ctx, o);
+    const fig = dir === 'A' ? withV(o.v, () => fullA(ctx, o)) : dir === 'B' ? fullB(ctx, o) : fullC(ctx, o);
     if (!opts.small) return ctx.wrap(fig);
     // small (64 px check, --scale ≈ 0.115): one baked outer outline of 2.5 px at that scale (dilate 10.9 box units)
     ctx.defs.push(`<filter id="${ctx.id}sm" x="-20%" y="-12%" width="140%" height="124%"><feMorphology in="SourceAlpha" operator="dilate" radius="10.9" result="d"/><feFlood flood-color="${K.ink}"/><feComposite in2="d" operator="in" result="o"/><feMerge><feMergeNode in="o"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`);
@@ -1721,33 +1933,39 @@ window.PN = window.PN || {};
   function refineBoard(opts) {
     opts = opts || {};
     const cell = (c, r, m) => `<g transform="translate(${c * 160} ${r * 160})">${m}</g>`;
-    return `<g>${WHO.map((who, c) => cell(c, 0, portrait('A', who, { rev: 1, bg: opts.bg })) + cell(c, 1, portrait('A', who, { bg: opts.bg }))).join('')}</g>`;
+    return `<g>${WHO.map((who, c) => cell(c, 0, portrait('A', who, { rev: 1, bg: opts.bg })) + cell(c, 1, portrait('A', who, { bg: opts.bg, v: opts.v }))).join('')}</g>`;
   }
   // exprBoard(who) → one row of 160 cells: 결 calm · focus · hurt · lowhp · awakened · victory; 독 · 월 calm · victory
   function exprBoard(who, opts) {
     opts = opts || {};
     person(who);
-    return `<g>${EXPRS2[who].map((e, i) => `<g transform="translate(${i * 160} 0)">${portrait('A', who, { expr: e, bg: opts.bg })}</g>`).join('')}</g>`;
+    return `<g>${EXPRS2[who].map((e, i) => `<g transform="translate(${i * 160} 0)">${portrait('A', who, { expr: e, bg: opts.bg, v: opts.v })}</g>`).join('')}</g>`;
+  }
+  // compareBoard(opts) → 800 × 320: top row = round 2.5 (v0.3), bottom row = round 3 (v0.4); A rev 2 calm, columns
+  // 결 · 독 · 월 · 노을 · 령 (no lettering). opts: { bg }
+  function compareBoard(opts) {
+    opts = opts || {};
+    return `<g>${castBoard({ bg: opts.bg, v: 3 })}<g transform="translate(0 160)">${castBoard({ bg: opts.bg })}</g></g>`;
   }
   // faceBoard(list, opts) → one row of 140 × 124 cells (default 월 · 노을 · 령): each face ALONE at one common scale
   // (2.5 px per head unit), direction A rev 2 — no hair, hat, ears, neck, bust or hair shadow (the review's crop with
   // the hair and hats covered, F1), clipped by an ellipse from above the brows to under the chin; head unrotated.
-  // opts: { expr } (calm by default)
+  // opts: { expr } (calm by default), { v: 3 } the round-2.5 look
   function faceBoard(list, opts) {
     opts = opts || {};
     const L0 = list || ['wol', 'noeul', 'ryeong'], S = 2.5, W = 140, Hh = 124, cx0 = 4.5, cy0 = 7, rx = 25.5, ry = 22;
     const e = `M ${f(cx0 - rx)},${cy0} A ${rx} ${ry} 0 1 0 ${f(cx0 + rx)},${cy0} A ${rx} ${ry} 0 1 0 ${f(cx0 - rx)},${cy0} Z`;
-    return `<g>${L0.map((who, i) => {
+    return withV(opts.v, () => `<g>${L0.map((who, i) => {
       person(who);
       const ctx = Ctx(), L = layers2(ctx, who, Object.assign({}, exprSpec(who, opts.expr || 'calm'), { bare: true }));
       const head = `<g transform="translate(${f(W / 2 - cx0 * S)} ${f(Hh / 2 - cy0 * S)}) scale(${S})"><g ${ctx.clip(e)}>${L.face + L.features}</g><path d="${e}" fill="none" stroke="${K.ink}" stroke-width="${f(1.2 / S)}"/></g>`;
       return `<g transform="translate(${i * W} 0)">${ctx.wrap(`<rect width="${W}" height="${Hh}" fill="${K.paper}"/>` + head)}</g>`;
-    }).join('')}</g>`;
+    }).join('')}</g>`);
   }
-  // castBoard() → 800 × 160: direction A rev 2, calm, 결 · 독 · 월 · 노을 · 령
+  // castBoard() → 800 × 160: direction A rev 2, calm, 결 · 독 · 월 · 노을 · 령. opts: { bg, v }
   function castBoard(opts) {
     opts = opts || {};
-    return `<g>${WHO2.map((who, i) => `<g transform="translate(${i * 160} 0)">${portrait('A', who, { bg: opts.bg })}</g>`).join('')}</g>`;
+    return `<g>${WHO2.map((who, i) => `<g transform="translate(${i * 160} 0)">${portrait('A', who, { bg: opts.bg, v: opts.v })}</g>`).join('')}</g>`;
   }
-  PN.faceDrafts = { version: '0.3', DIRS, WHO, WHO2, EXPRS: EXPRS2, model, portrait, full, fullSheet, construct, measure, board, refineBoard, exprBoard, castBoard, faceBoard };
+  PN.faceDrafts = { version: '0.4', DIRS, WHO, WHO2, EXPRS: EXPRS2, model, portrait, full, fullSheet, construct, measure, board, refineBoard, exprBoard, castBoard, faceBoard, compareBoard };
 })(window.PN);
