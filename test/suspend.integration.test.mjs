@@ -14,7 +14,7 @@ globalThis.requestAnimationFrame = (callback) => {
   nextFrame = callback;
   return 1;
 };
-const { ProbedGameEngine, suspendedRunReward } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
+const { ProbedGameEngine, HORDE, suspendedRunReward } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
 
 const OPTIONS = { ...standardOptions(), assistDamage: 1, assistEnemySpeed: 1, assistSlowGame: false };
 
@@ -273,6 +273,11 @@ test('BUG-26: a log past the limit stops growing, one entry over, and the run st
 });
 
 test('CON-04: a run the next build cannot replay is paid like a defeat', () => {
-  const reward = suspendedRunReward({ mode: 'campaign', chapter: 2, stage: 4, kills: 300, coinsEarned: 200 });
-  assert.deepEqual(reward, { gold: Math.floor(16 + 300 * 0.9 + 200 * 0.28 + 2 * 18 + 4 * 8), xp: Math.floor(70 + 300 * 1.1 + 2 * 24) });
+  const run = { mode: 'campaign', chapter: 2, stage: 4, kills: 300, coinsEarned: 200 };
+  // SYS-13: under the horde (the app's rules) its kills pay the horde's coin and XP shares, as a settlement's do.
+  assert.deepEqual(suspendedRunReward(run), { gold: Math.floor(16 + 300 * 0.9 * HORDE.coin + 200 * 0.28 + 2 * 18 + 4 * 8), xp: Math.floor(70 + 300 * 1.1 * HORDE.xp + 2 * 24) });
+  const { engine } = newEngine();
+  engine.setRuleSet('classic');
+  assert.deepEqual(suspendedRunReward(run, engine.ruleSet), { gold: Math.floor(16 + 300 * 0.9 + 200 * 0.28 + 2 * 18 + 4 * 8), xp: Math.floor(70 + 300 * 1.1 + 2 * 24) });
+  engine.dispose();
 });

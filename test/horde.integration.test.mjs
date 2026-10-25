@@ -108,3 +108,34 @@ test('SYS-13: in the infinite run a kill on a thin field brings another, and not
     engine.dispose();
   }
 });
+
+test('SYS-13: a settlement pays its kills the horde\'s shares in gold and account XP, the infinite run its own; without the horde as before', () => {
+  const settle = ({ rules = 'remaster', horde, infinite = false }) => {
+    let settlement = null;
+    const engine = new ProbedGameEngine(createHeadlessCanvas(1440, 900), maxMeta(), standardOptions(), { onSnapshot() {}, onDraft() {}, onRoundClear() {}, onGameOver(result) { settlement = result; } });
+    try {
+      engine.setRuleSet(rules);
+      if (horde !== undefined) engine.probe.patchRules({ horde });
+      if (infinite) engine.startInfiniteRun(6161);
+      else engine.startRun(2, 3, 6161);
+      engine.probe.setStageKills(1000);
+      engine.forfeit();
+      return settlement;
+    } finally {
+      engine.dispose();
+    }
+  };
+  // A defeat on 2-3 a moment in, with 1,000 kills: gold 16 + kills + 2 x 18 + 3 x 8, XP 70 + kills + 2 x 24.
+  for (const [label, settlement, share] of [
+    ['horde', settle({}), { gold: HORDE.coin, xp: HORDE.xp }],
+    ['no horde', settle({ horde: false }), { gold: 1, xp: 1 }],
+    ['classic', settle({ rules: 'classic' }), { gold: 1, xp: 1 }],
+  ]) {
+    assert.equal(settlement.goldParts.kills, 1000 * 0.9 * share.gold, `${label}: kill gold`);
+    assert.equal(settlement.gold, Math.floor(16 + 1000 * 0.9 * share.gold + 2 * 18 + 3 * 8), `${label}: gold`);
+    assert.equal(settlement.xp, Math.floor(70 + 1000 * 1.1 * share.xp + 2 * 24), `${label}: account XP`);
+  }
+  const infinite = settle({ infinite: true });
+  assert.equal(infinite.goldParts.kills, 1000 * 0.9 * HORDE.infinite.coin);
+  assert.equal(infinite.xp, Math.floor(70 + 1000 * 1.1 * HORDE.infinite.xp + infinite.chapter * 24));
+});

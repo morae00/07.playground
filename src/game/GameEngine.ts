@@ -313,13 +313,27 @@ export function asSuspendedRun(value: unknown): SuspendedRun | null {
   return run as SuspendedRun;
 }
 
-/** CON-04: gold and XP for a suspended run that cannot be replayed, paid like a defeat (makeSettlement's terms). */
-export function suspendedRunReward(run: Pick<SuspendedRun, 'mode' | 'chapter' | 'stage' | 'kills' | 'coinsEarned'>) {
+/**
+ * SYS-13: the shares of a settlement's kill terms (gold and account XP). Under the horde rule a stage's crowd dies
+ * about three times as fast, so its kills pay the meta the horde's coin and XP shares, as they do in play, and the
+ * meta grows at its pre-horde pace instead of about twice as fast.
+ */
+function killShares(horde: boolean, mode: RunMode) {
+  const shares = mode === 'infinite' ? HORDE.infinite : HORDE;
+  return horde ? { gold: shares.coin, xp: shares.xp } : { gold: 1, xp: 1 };
+}
+
+/**
+ * CON-04: gold and XP for a suspended run that cannot be replayed, paid like a defeat (makeSettlement's terms) under the
+ * rules the app plays.
+ */
+export function suspendedRunReward(run: Pick<SuspendedRun, 'mode' | 'chapter' | 'stage' | 'kills' | 'coinsEarned'>, rules: RuleSet = REMASTER_RULES) {
   const stage = run.mode === 'infinite' ? 5 : run.stage;
   const chapter = run.mode === 'infinite' ? 1 : run.chapter;
+  const share = killShares(rules.horde, run.mode);
   return {
-    gold: Math.floor(16 + run.kills * 0.9 + run.coinsEarned * 0.28 + chapter * 18 + stage * 8),
-    xp: Math.floor(70 + run.kills * 1.1 + chapter * 24),
+    gold: Math.floor(16 + run.kills * 0.9 * share.gold + run.coinsEarned * 0.28 + chapter * 18 + stage * 8),
+    xp: Math.floor(70 + run.kills * 1.1 * share.xp + chapter * 24),
   };
 }
 
@@ -6430,16 +6444,19 @@ export class GameEngine {
     const bonusState = this.stageObjective?.state() ?? null;
     const bonusMet = this.stageObjective?.met(cleared) ?? false;
     const bonusPay = bonusMet ? bonusGold(this.chapter, this.stage) : 0;
-    const gold = Math.floor((base + bossBonus + this.stageKills * 0.9 + this.stageCoinsEarned * 0.28 + this.chapter * 18 + this.stage * 8 + bonusPay) * rewardScale);
+    // SYS-13: kills pay the horde's shares here as in play (killShares).
+    const share = killShares(this.rules.horde, this.runMode);
+    const killGold = this.stageKills * 0.9 * share.gold;
+    const gold = Math.floor((base + bossBonus + killGold + this.stageCoinsEarned * 0.28 + this.chapter * 18 + this.stage * 8 + bonusPay) * rewardScale);
     const goldParts = {
       base: base * rewardScale,
       boss: bossBonus * rewardScale,
-      kills: this.stageKills * 0.9 * rewardScale,
+      kills: killGold * rewardScale,
       coins: this.stageCoinsEarned * 0.28 * rewardScale,
       stage: (this.chapter * 18 + this.stage * 8) * rewardScale,
       bonus: bonusPay * rewardScale,
     };
-    const xp = Math.floor((70 + this.stageKills * 1.1 + this.chapter * 24 + (infinite ? this.infiniteBossKills * 18 : this.kind === 'normal' ? 0 : 80)) * rewardScale);
+    const xp = Math.floor((70 + this.stageKills * 1.1 * share.xp + this.chapter * 24 + (infinite ? this.infiniteBossKills * 18 : this.kind === 'normal' ? 0 : 80)) * rewardScale);
     const gameComplete = !infinite && this.chapter === FINAL_CHAPTER && this.stage === FINAL_STAGE && cleared;
     return {
       runMode: this.runMode,
