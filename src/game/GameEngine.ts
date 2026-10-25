@@ -2043,7 +2043,8 @@ export class GameEngine {
 
   /** CON-04: notes a command that changed the simulation, at the tick it takes effect. */
   protected logCommand(command: RunCommand) {
-    if (!this.running) return;
+    // BUG-26: a log past MAX_RUN_LOG is never saved (suspendState), so it stops there, one entry over, and stays small.
+    if (!this.running || this.runLog.length > MAX_RUN_LOG) return;
     const code = LOG_CODE[command.type];
     const [, ...fields] = LOG_CODES[code];
     const entry: RunLogEntry = [this.ticks, code, ...fields.map((field) => (command as Record<string, string | number | boolean>)[field])];
@@ -2209,6 +2210,7 @@ export class GameEngine {
       projectiles: this.projectiles.length,
       bossProjectiles: this.bossProjectiles.length,
       pickups: this.pickups.length,
+      runLogEntries: this.runLog.length,
       particles: this.presentation.particles.length,
       damageNumbers: this.presentation.damageNumbers.length,
       gridCacheBuilds: this.worldRenderer.gridCacheBuilds,

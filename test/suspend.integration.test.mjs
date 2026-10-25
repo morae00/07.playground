@@ -254,6 +254,24 @@ test('CON-04: a step keeps only the last pointer and stick position, and a run p
   engine.dispose();
 });
 
+test('BUG-26: a log past the limit stops growing, one entry over, and the run stays unsaved', () => {
+  const { engine } = newEngine();
+  engine.startRun(1, 2, 5);
+  const press = (count) => {
+    for (let index = 0; index < count; index += 1) engine.dispatch({ type: 'input/action', action: 'moveUp', pressed: index % 2 === 0 });
+  };
+  press(36_000);
+  assert.equal(engine.getDiagnostics().runLogEntries, 36_000);
+  assert.notEqual(engine.suspendState(), null, 'a log at the limit is kept');
+  press(10_000);
+  assert.equal(engine.getDiagnostics().runLogEntries, 36_001);
+  assert.equal(engine.suspendState(), null);
+  engine.probe.step(60);
+  press(10);
+  assert.equal(engine.getDiagnostics().runLogEntries, 36_001, 'and it stays there');
+  engine.dispose();
+});
+
 test('CON-04: a run the next build cannot replay is paid like a defeat', () => {
   const reward = suspendedRunReward({ mode: 'campaign', chapter: 2, stage: 4, kills: 300, coinsEarned: 200 });
   assert.deepEqual(reward, { gold: Math.floor(16 + 300 * 0.9 + 200 * 0.28 + 2 * 18 + 4 * 8), xp: Math.floor(70 + 300 * 1.1 + 2 * 24) });
