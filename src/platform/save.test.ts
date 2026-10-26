@@ -12,6 +12,7 @@ import {
   createDefaultOptions,
   createDefaultProfile,
   loadGameSave,
+  loadNotice,
   recordCareer,
   recordCodex,
   recordStageResult,
@@ -95,6 +96,23 @@ test('storage failures are contained', () => {
   };
   assert.equal(loadGameSave(failing).status, 'defaulted');
   assert.equal(saveGameSave(failing, { meta: createDefaultMeta(), options: createDefaultOptions(), profile: createDefaultProfile() }).ok, false);
+});
+
+test('a load the player must hear about says which: newer build, restored, or started over; a first launch says nothing (UI-18)', () => {
+  const current = JSON.stringify({ version: SAVE_VERSION, savedAt: 1, meta: createDefaultMeta(), options: createDefaultOptions(), profile: createDefaultProfile() });
+  const v2 = JSON.stringify({ version: 2, savedAt: 1, meta: createDefaultMeta(), options: createDefaultOptions() });
+  const notice = (entries: Record<string, string>) => loadNotice(loadGameSave(createStorage(entries)));
+  assert.equal(notice({}), null, 'a first launch');
+  assert.equal(notice({ [SAVE_KEY]: current }), null);
+  assert.equal(notice({ [SAVE_KEY]: v2 }), null, 'a 0.1.0 save moving up');
+  assert.equal(notice({ [SAVE_KEY]: JSON.stringify({ version: 999 }) }), 'future');
+  assert.equal(notice({ [SAVE_KEY]: '{broken', [SAVE_BACKUP_KEY]: current }), 'recovered');
+  assert.equal(notice({ [SAVE_BACKUP_KEY]: current }), 'recovered', 'the save itself is gone');
+  assert.equal(notice({ [SAVE_KEY]: '{broken', [LEGACY_META_KEY]: JSON.stringify(createDefaultMeta()) }), 'recovered', 'from the oldest copy');
+  assert.equal(notice({ [SAVE_KEY]: '{broken' }), 'reset');
+  assert.equal(notice({ [SAVE_KEY]: '[]', [SAVE_BACKUP_KEY]: '{broken' }), 'reset');
+  const unreadable = { getItem() { throw new Error('denied'); }, setItem() {} };
+  assert.equal(loadNotice(loadGameSave(unreadable)), 'reset');
 });
 
 test('options saved before auto-pause existed load with auto-pause on', () => {

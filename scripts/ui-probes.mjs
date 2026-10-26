@@ -162,6 +162,57 @@ try {
     await page.close();
   });
 
+  await probe('UI-18', async () => {
+    // Save problems are said: a save from a newer build (left untouched), one restored from its backup, one that could
+    // not be read, and a write that fails (until a later write succeeds).
+    const current = { version: 3, savedAt: 1, meta: { gold: 777, xp: 0, level: 2, passivePoints: 0, progress: { chapter: 1, stage: 2 } }, options: {}, profile: {} };
+    const openWith = async (entries) => {
+      const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+      await context.addInitScript((seed) => {
+        if (sessionStorage.getItem('probe-seeded')) return;
+        sessionStorage.setItem('probe-seeded', '1');
+        for (const [key, value] of Object.entries(seed)) localStorage.setItem(key, value);
+      }, entries);
+      const page = await context.newPage();
+      await page.goto('http://127.0.0.1:5177/');
+      await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+      await page.waitForTimeout(200);
+      return { context, page };
+    };
+    const shown = (page, words) => page.getByRole('status').filter({ hasText: words }).count();
+    const future = await openWith({ 'blackline-survivor-save-v2': JSON.stringify({ ...current, version: 99 }) });
+    const kept = await future.page.evaluate(() => JSON.parse(localStorage.getItem('blackline-survivor-save-v2')).version);
+    record('UI-18 a save from a newer build is named, and left as it was', (await shown(future.page, '더 새 버전')) === 1 && kept === 99, `version ${kept}`);
+    await future.context.close();
+    const restored = await openWith({ 'blackline-survivor-save-v2': '{broken', 'blackline-survivor-save-v2.backup': JSON.stringify(current) });
+    const gold = await restored.page.locator('.wallet strong').first().innerText();
+    record('UI-18 a save restored from its backup says so', (await shown(restored.page, '백업에서 되살렸습니다')) === 1 && gold === '777', `gold ${gold}`);
+    await restored.context.close();
+    const unreadable = await openWith({ 'blackline-survivor-save-v2': '{broken' });
+    record('UI-18 a save that could not be read says the game started over', (await shown(unreadable.page, '읽지 못해')) === 1);
+    await unreadable.context.close();
+
+    const { context, page } = await openWith({});
+    record('UI-18 a first launch says nothing about the save', (await page.locator('.noticeBanner').count()) === 0);
+    await page.evaluate(() => {
+      const write = Storage.prototype.setItem;
+      Storage.prototype.setItem = function setItem(key, value) {
+        if (window.__probeFailWrites && key.startsWith('blackline-survivor-save')) throw new DOMException('quota', 'QuotaExceededError');
+        return write.call(this, key, value);
+      };
+      window.__probeFailWrites = true;
+    });
+    await page.getByRole('tab', { name: '설정' }).click();
+    const flash = page.getByRole('checkbox', { name: '섬광 감소' });
+    await flash.click();
+    const failed = await page.getByRole('status').filter({ hasText: '저장하지 못했습니다' }).waitFor({ timeout: 2000 }).then(() => true, () => false);
+    await page.evaluate(() => { window.__probeFailWrites = false; });
+    await flash.click();
+    await page.waitForTimeout(200);
+    record('UI-18 a failed write is said, and the notice goes once a write succeeds', failed && (await shown(page, '저장하지 못했습니다')) === 0);
+    await context.close();
+  });
+
   await probe('CON-02', async () => {
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     await openStage(page);

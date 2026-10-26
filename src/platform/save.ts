@@ -499,6 +499,17 @@ export type LoadSaveResult = {
   writable: boolean;
 };
 
+/**
+ * UI-18: what the player must be told about a load: a save from a newer build (this one never writes over it, so
+ * nothing is saved), a save put back from an older copy, or one that could not be read and started over. A first
+ * launch, with nothing to read, needs no word.
+ */
+export function loadNotice(result: LoadSaveResult): 'future' | 'recovered' | 'reset' | null {
+  if (result.warnings.includes('primary:future-version')) return 'future';
+  if (result.warnings.length === 0 && result.status !== 'recovered') return null;
+  return result.status === 'defaulted' ? 'reset' : 'recovered';
+}
+
 export function loadGameSave(storage: StorageLike): LoadSaveResult {
   const warnings: string[] = [];
   const read = (key: string) => {

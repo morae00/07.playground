@@ -12,6 +12,7 @@ import {
   createDefaultMeta,
   createDefaultProfile,
   loadGameSave,
+  loadNotice,
   recordCareer,
   recordCodex,
   recordStageResult,
@@ -181,6 +182,9 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const [suspendPaid, setSuspendPaid] = useState<{ gold: number; xp: number; broken?: boolean } | null>(null);
   /** BUG-22: what the player must know about the desktop save move (src/platform/saveMove.ts); shown until closed. */
   const [saveMoveNotice, setSaveMoveNotice] = useState<SaveMoveNotice | null>(() => readSaveMoveNotice(window.localStorage));
+  /** UI-18: a save problem the player must know about: from the load, or a write that failed (until one succeeds). */
+  const [saveNotice, setSaveNotice] = useState<ReturnType<typeof loadNotice> | 'write'>(() => loadNotice(initialSave));
+  const writeFailedRef = useRef(false);
   /** CON-07: achievements met since the menu last said so. */
   const [achievementNotice, setAchievementNotice] = useState<AchievementId[]>(initialAchievements);
   const [resuming, setResuming] = useState(false);
@@ -203,7 +207,11 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   profileRef.current = profile;
 
   useEffect(() => {
-    if (initialSave.writable) saveGameSave(window.localStorage, { meta, options, profile });
+    const failed = initialSave.writable && !saveGameSave(window.localStorage, { meta, options, profile }).ok;
+    if (failed !== writeFailedRef.current) {
+      writeFailedRef.current = failed;
+      setSaveNotice((current) => (failed ? 'write' : current === 'write' ? null : current));
+    }
     engineRef.current?.setMeta(meta);
     engineRef.current?.setOptions(options);
     appMixer.setLevels(options);
@@ -835,6 +843,14 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
       {saveMoveNotice.rawCopy && <p className="noticePath">{t('notice.saveMove.rawCopy', { path: saveMoveNotice.rawCopy })}</p>}
     </div>
   );
+  const saveBanner = (placement: 'inline' | 'floating') => saveNotice && (
+    <div className={`noticeBanner ${placement}`} role="status" aria-live="polite">
+      <p>{t(`notice.save.${saveNotice}`)}</p>
+      <div className="noticeActions">
+        <button className="ghost" type="button" data-sound="cancel" onClick={() => setSaveNotice(null)}>{t('common.close')}</button>
+      </div>
+    </div>
+  );
   const noticeBanner = (placement: 'inline' | 'floating') => notice && (
     <div className={`noticeBanner ${placement}`} role="status" aria-live="polite">
       <p>{t(notice === 'art' ? 'notice.art' : 'notice.error')}</p>
@@ -997,7 +1013,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
           onCharacter={characterAction}
           onWearCosmetic={wearCosmetic}
           onPlayStory={(beats) => setStory({ beats })}
-          inlineNotice={<>{saveMoveBanner}{achievementBanner}{suspendBanner}{noticeBanner('inline')}</>}
+          inlineNotice={<>{saveMoveBanner}{saveBanner('inline')}{achievementBanner}{suspendBanner}{noticeBanner('inline')}</>}
           suspended={suspended}
           onResumeSuspended={resumeSuspended}
           onDiscardSuspended={discardSuspended}
@@ -1100,7 +1116,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         />
       )}
 
-      {phase !== 'menu' && !loopFault && noticeBanner('floating')}
+      {phase !== 'menu' && !loopFault && (noticeBanner('floating') || (saveNotice === 'write' && saveBanner('floating')))}
 
       {DEVELOPER_UI_AVAILABLE && uiFault && <InjectedRenderFault />}
 
