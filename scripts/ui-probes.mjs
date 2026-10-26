@@ -1251,6 +1251,51 @@ try {
     await page.close();
   });
 
+  await probe('UI-19', async () => {
+    // An unranked endless run says why: a resumed run is practice, and assists change the simulation. Developer mode,
+    // on at first in the developer build, is turned off, so it is not the reason.
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    const toMenu = async (load) => {
+      await load();
+      await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+      const devToggle = page.getByRole('checkbox', { name: '개발자 모드: 모든 Stage 접근' });
+      if (await devToggle.isChecked()) await devToggle.uncheck();
+    };
+    await toMenu(() => page.goto('http://127.0.0.1:5177/'));
+    const startEndless = async () => {
+      await page.getByRole('tab', { name: '무한 경쟁' }).click();
+      await page.getByRole('button', { name: '무한 모드 시작' }).click();
+      await page.locator('.heroLine').waitFor();
+      await page.waitForTimeout(600);
+      await page.keyboard.press('p');
+    };
+    const giveUp = async () => {
+      const hub = page.getByRole('dialog', { name: '일시정지' });
+      await hub.waitFor({ timeout: 20000 });
+      await hub.getByRole('button', { name: 'Stage 메뉴' }).click();
+      await page.getByRole('button', { name: '포기하고 정산' }).click();
+      const status = page.getByRole('dialog').locator('.recordRejected');
+      await status.waitFor({ timeout: 5000 });
+      return status.innerText();
+    };
+    await startEndless();
+    await page.getByRole('dialog', { name: '일시정지' }).waitFor();
+    await page.waitForTimeout(200);
+    await toMenu(() => page.reload());
+    await page.getByRole('region', { name: '중단한 런' }).getByRole('button', { name: '이어하기' }).click();
+    const resumed = await giveUp();
+    record('UI-19 a resumed endless run says it is unranked because it was resumed', resumed.includes('이어 한 런'), resumed);
+    // Past the settlement's input guard.
+    await page.waitForTimeout(1000);
+    await toMenu(() => page.getByRole('dialog').getByRole('button', { name: '메뉴로' }).click());
+    await page.getByRole('tab', { name: '설정' }).click();
+    await page.getByRole('checkbox', { name: '게임 속도 80%' }).check();
+    await startEndless();
+    const assisted = await giveUp();
+    record('UI-19 an assisted endless run says it is unranked because of the assists', assisted.includes('어시스트'), assisted);
+    await page.close();
+  });
+
   await probe('UI-03', async () => {
     for (const [width, height] of [[1440, 900], [1024, 720]]) {
       const page = await browser.newPage({ viewport: { width, height } });

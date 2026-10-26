@@ -32,6 +32,14 @@ function finiteInteger(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
 }
 
+/**
+ * UI-19: why an endless run is not ranked. A resumed run starts as practice (CON-04); assists change the simulation
+ * (SYS-07, G15); otherwise cheats or developer mode were used.
+ */
+export function unrankedReason(result: { assisted: boolean }, resumed: boolean): 'resumed' | 'assists' | 'cheats' {
+  return resumed ? 'resumed' : result.assisted ? 'assists' : 'cheats';
+}
+
 export function normalizeInfinitePlayerName(value: unknown) {
   if (typeof value !== 'string') return 'PLAYER';
   const normalized = value.replace(/\s+/g, ' ').trim().slice(0, 16);

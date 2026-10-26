@@ -6,6 +6,7 @@ import {
   loadInfiniteLeaderboard,
   normalizeInfinitePlayerName,
   saveInfinitePlayerName,
+  unrankedReason,
   type InfiniteScoreEntry,
 } from './platform/infiniteLeaderboard';
 import {
@@ -130,6 +131,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const pauseIntentRef = useRef<() => void>(() => undefined);
   const devToggleRef = useRef<HTMLButtonElement | null>(null);
   const runPausedRef = useRef(false);
+  /** UI-19: the run in play was resumed (CON-04), which is why an endless one is not ranked. */
+  const resumedRef = useRef(false);
   // While the death moment plays, the run is over but the settlement is not up yet: nothing can pause it.
   const deathMomentRef = useRef<number | null>(null);
   const endDeathMoment = () => {
@@ -476,7 +479,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const recordInfiniteSettlement = useCallback((result: Settlement) => {
     if (result.runMode !== 'infinite') return;
     if (!result.scoreEligible) {
-      setLeaderboardStatus(t('board.status.excluded'));
+      setLeaderboardStatus(t(`board.status.excluded.${unrankedReason(result, resumedRef.current)}`));
       return;
     }
     const saved = addInfiniteScore(
@@ -610,6 +613,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     setCheatMessage('');
     setLoopFault(null);
     setPhase('playing');
+    resumedRef.current = false;
     launch(engine);
   }, [callbacks, developerAccess, meta, options, spriteAtlas]);
 
@@ -654,6 +658,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     }
     setResuming(true);
     beginRun(run.mode === 'infinite' ? INFINITE_BASELINE.chapter : run.chapter, (engine) => {
+      resumedRef.current = true;
       void engine.resumeRun(run).then(() => {
         if (engineRef.current !== engine) return;
         setResuming(false);

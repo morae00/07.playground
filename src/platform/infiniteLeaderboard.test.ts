@@ -7,6 +7,7 @@ import {
   loadInfiniteLeaderboard,
   normalizeInfinitePlayerName,
   rankInfiniteEntries,
+  unrankedReason,
   type InfiniteScoreEntry,
 } from './infiniteLeaderboard.ts';
 import { RULES_VERSION } from '../game/rules.ts';
@@ -78,4 +79,11 @@ test('records from the classic rules stay in a read-only legacy board', () => {
   });
   assert.equal(saved.entries.length, 1, 'legacy entries passed in by mistake are filtered out');
   assert.equal(storage.values.get(LEGACY_INFINITE_LEADERBOARD_KEY), legacyBoard, 'the legacy board is never rewritten');
+});
+
+test('UI-19: an unranked run says why: resumed, assisted, or cheats and developer mode', () => {
+  assert.equal(unrankedReason({ assisted: false }, true), 'resumed', 'a resumed run starts as practice, whatever else');
+  assert.equal(unrankedReason({ assisted: true }, true), 'resumed');
+  assert.equal(unrankedReason({ assisted: true }, false), 'assists');
+  assert.equal(unrankedReason({ assisted: false }, false), 'cheats');
 });
