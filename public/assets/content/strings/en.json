@@ -525,7 +525,7 @@
  "fault.retry": "Try again",
  "reset.kicker": "LOCAL SAVE RESET",
  "reset.title": "Reset your progress?",
- "reset.body": "Gold, account level, permanent upgrades, and unlocked stages go back to the start.",
+ "reset.body": "Gold, account level and account XP, permanent upgrades, account level passives, stage unlocks with their records and stars, character unlocks and upgrades, cosmetics, achievements, the codex, career totals, the story beats and hints already seen, and the suspended run all go back to the start. Settings and the endless leaderboard stay. This cannot be undone: to keep your progress, export it first under Settings > Save.",
  "reset.confirm": "Reset",
  "hint.move.keyboard": "Move with {keys} or the arrow keys. Attacks fire on their own.",
  "hint.move.pad": "Move with the {move}. Attacks fire on their own.",

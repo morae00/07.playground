@@ -35,16 +35,16 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 2210625,
-      "kib": 2158.81,
+      "bytes": 2211291,
+      "kib": 2159.46,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 34501795,
-      "kib": 33693.16,
+      "bytes": 34502461,
+      "kib": 33693.81,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -105,14 +105,14 @@
     {
       "file": "assets/content/strings/en.json",
       "category": "data",
-      "sourceBytes": 50055,
-      "gzipBytes": 15127
+      "sourceBytes": 50395,
+      "gzipBytes": 15240
     },
     {
       "file": "assets/content/strings/ko.json",
       "category": "data",
-      "sourceBytes": 54678,
-      "gzipBytes": 17222
+      "sourceBytes": 55004,
+      "gzipBytes": 17325
     },
     {
       "file": "assets/content/tables.json",
