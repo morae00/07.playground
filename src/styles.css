@@ -3505,6 +3505,22 @@ h2 {
   animation-iteration-count: 1 !important;
 }
 
+/* UI-12: the boss, landmark, and chapter cards and the phase line fade out as their animation ends, so cutting it to
+   nothing would hide them at once. Under reduced motion they show still, and HudLayer's timers take them away. */
+@media (prefers-reduced-motion: reduce) {
+  .bossIntro,
+  .bossNarration {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+.appShell[data-reduced-motion="on"] .bossIntro,
+.appShell[data-reduced-motion="on"] .bossNarration {
+  animation: none;
+  opacity: 1;
+}
+
 /* Error resilience (TEC-14): loop fault dialog, recovery screen, and the non-blocking notice. */
 .faultBox {
   width: min(520px, 100%);

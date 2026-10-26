@@ -945,6 +945,43 @@ try {
     await page.close();
   });
 
+  await probe('UI-12', async () => {
+    // Under reduced motion, from the settings or from the system, the boss card and the phase line show still (their
+    // fade would end invisible at once), and their timers still take them away.
+    for (const [label, system] of [['the setting', 'no-preference'], ['the system', 'reduce']]) {
+      const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: system });
+      const page = await context.newPage();
+      await page.goto('http://127.0.0.1:5177/');
+      await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+      if (system === 'no-preference') {
+        await page.getByRole('tab', { name: '설정' }).click();
+        await page.getByRole('checkbox', { name: /^모션 감소/ }).check();
+        await page.getByRole('tab', { name: '출정' }).click();
+      }
+      const devToggle = page.getByRole('checkbox', { name: '개발자 모드: 모든 Stage 접근' });
+      if (!(await devToggle.isChecked())) await devToggle.check();
+      await page.locator('.stageNode').nth(9).click();
+      await page.getByRole('button', { name: 'Ch.1 / St.10 출정' }).click();
+      await skipStory(page);
+      await page.locator('.heroLine').waitFor({ timeout: 5000 });
+      // PHASE brings the boss in (its card) and on to its second phase (its line).
+      await cheat(page, 'GOD');
+      await cheat(page, 'PHASE');
+      await page.locator('.bossNarration').waitFor({ timeout: 3000 }).catch(() => undefined);
+      await page.waitForTimeout(250);
+      const opacity = (selector) => page.evaluate((query) => {
+        const node = document.querySelector(query);
+        return node ? getComputedStyle(node).opacity : 'absent';
+      }, selector);
+      const shown = [await opacity('.bossIntro'), await opacity('.bossNarration')];
+      record(`UI-12 reduced motion from ${label} shows the boss card and the phase line`, shown.every((value) => value === '1'), `card ${shown[0]}, line ${shown[1]}`);
+      await page.waitForTimeout(3800);
+      const left = await page.locator('.bossIntro, .bossNarration').count();
+      record(`UI-12 reduced motion from ${label} still takes them away on time`, left === 0, `${left} left after 4 s`);
+      await context.close();
+    }
+  });
+
   await probe('D-07', async () => {
     // Developer builds keep each settled run for playtest export: the menu counts them and copies them as JSON.
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] });
