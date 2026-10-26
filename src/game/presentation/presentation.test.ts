@@ -286,6 +286,15 @@ test('a hit on the player sets a coral vignette toward its source that fades in 
   assert.equal(presentation.hurtVignette, 0);
 });
 
+test('a charger hitting a wall thuds; a gimmick\'s stun is silent', () => {
+  const { presentation } = setup();
+  const { sound, played } = recorder();
+  presentation.setSound(sound);
+  presentation.handle({ type: 'enemy/stunned', x: 500, y: 0 });
+  presentation.handle({ type: 'enemy/stunned', x: 500, y: 0, source: 'frostLine' });
+  assert.deepEqual(played.map(({ cue }) => cue), ['enemy.stunned']);
+});
+
 test('low health beats a heartbeat until health recovers', () => {
   const { presentation } = setup();
   const { sound, played } = recorder();

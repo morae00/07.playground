@@ -377,7 +377,9 @@ export class Presentation {
         return;
       case 'enemy/stunned':
         this.burst(event.x, event.y, 12, '#111111', 150);
-        this.play('enemy.stunned', event.x);
+        // The thud is a charger hitting a wall. A gimmick's stun (it names its weapon) is silent: freezes, lightning
+        // pillars and ink waves stunned often enough to bury the hits under it and blur its meaning (AUD-02, P2-2).
+        if (!event.source) this.play('enemy.stunned', event.x);
         return;
       case 'magnet/pulse':
         this.burst(event.x, event.y, 16, '#111111', 130);

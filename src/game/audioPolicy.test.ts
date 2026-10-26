@@ -44,6 +44,15 @@ test('a cue waits out its group spacing: hits share one', () => {
   assert.equal(ledger.counts.spaced, 1);
 });
 
+test('a boss warning passes the pattern spacing another boss set, but not its own', () => {
+  const ledger = new VoiceLedger();
+  assert.ok(ledger.request('boss.rings', 0, 0.5));
+  assert.ok(ledger.request('boss.shock', 0.05, 0.3), 'the shock sounds over the other boss\'s rings');
+  assert.equal(ledger.request('boss.flame', 0.1, 0.5), null, 'an ordinary pattern still waits');
+  assert.equal(ledger.request('boss.eclipse', 0.1, 0.5), null, 'two warnings keep the spacing between them');
+  assert.ok(ledger.request('boss.eclipse', 0.26, 0.5));
+});
+
 test('thirty kills in one frame start one kill voice', () => {
   const ledger = new VoiceLedger();
   const admitted = Array.from({ length: 30 }, () => ledger.request('enemy.kill', 1, 0.045)).filter(Boolean);

@@ -73,16 +73,19 @@ const SOUND_CUES = {
   'enemy.kill.eclipse': cue('sfx', 2, 3, 0.03, [1760, 0.04, 'sine', 0.56]),
   // Boss patterns (AUD-04): one gesture per pattern, when it fires; they share a spacing group. The loud ones are held
   // near the family's level, and the shock, which sounds as it is telegraphed, is raised toward it (AUD-02, P1-4).
+  // The shock and the eclipse sound as they are telegraphed, so they outrank the rest and pass the group's spacing: a
+  // second boss's pattern (a field boss beside its blurred copy, or a round boss) can no longer hold back the warning
+  // (AUD-02, P2-6).
   'boss.dash': cue('sfx', 4, 1, 0.2, [90, 0.1, 'sawtooth'], 'bossAttack'),
   'boss.rings': cue('sfx', 4, 1, 0.2, [392, 0.12, 'sine'], 'bossAttack'),
-  'boss.shock': cue('sfx', 4, 1, 0.2, [70, 0.1, 'square', 1.4], 'bossAttack'),
+  'boss.shock': cue('sfx', 5, 1, 0.2, [70, 0.1, 'square', 1.4], 'bossAttack'),
   'boss.clones': cue('sfx', 4, 1, 0.2, [1175, 0.08, 'triangle', 0.7], 'bossAttack'),
   'boss.flame': cue('sfx', 4, 1, 0.2, [140, 0.12, 'sawtooth'], 'bossAttack'),
   'boss.tide': cue('sfx', 4, 1, 0.2, [110, 0.14, 'sine', 0.6], 'bossAttack'),
   'boss.traps': cue('sfx', 4, 1, 0.2, [740, 0.05, 'square'], 'bossAttack'),
   'boss.clock': cue('sfx', 4, 1, 0.2, [1760, 0.04, 'square'], 'bossAttack'),
   'boss.saw': cue('sfx', 4, 1, 0.2, [180, 0.1, 'sawtooth'], 'bossAttack'),
-  'boss.eclipse': cue('sfx', 4, 1, 0.2, [55, 0.16, 'sine'], 'bossAttack'),
+  'boss.eclipse': cue('sfx', 5, 1, 0.2, [55, 0.16, 'sine'], 'bossAttack'),
   'boss.null': cue('sfx', 4, 1, 0.2, [880, 0.1, 'sine', 0.55], 'bossAttack'),
   // Ambience beds (AUD-04): loops on the ambience bus (AudioMixer.ambience); no synth stand-in, silent until loaded.
   'ambience.ch1': cue('ambience', 1, 1, 0, [0, 0, 'sine', 0]),
