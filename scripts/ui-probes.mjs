@@ -716,6 +716,62 @@ try {
     await page.close();
   });
 
+  await probe('UI-13', async () => {
+    // A suspended run is never dropped silently: a new run (Enter included) and Discard ask first, and confirming
+    // settles it for what it reached.
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await page.goto('http://127.0.0.1:5177/');
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    const suspendRun = async () => {
+      await launchFirstStage(page);
+      await page.waitForTimeout(600);
+      await page.keyboard.press('p');
+      await page.getByRole('dialog', { name: '일시정지' }).waitFor();
+      await page.waitForTimeout(200);
+      await page.reload();
+      await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    };
+    const strip = page.getByRole('region', { name: '중단한 런' });
+    const savedGold = () => page.evaluate(() => JSON.parse(localStorage.getItem('blackline-survivor-save-v2')).meta.gold);
+    await suspendRun();
+    await page.keyboard.press('Enter');
+    const replace = page.getByRole('dialog', { name: '중단한 런을 끝내고 새로 시작할까요?' });
+    const asked = await replace.waitFor({ timeout: 2000 }).then(() => true, () => false);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+    record('UI-13 Enter on the play tab asks before replacing a suspended run, and cancelling keeps it', asked && (await strip.count()) === 1 && (await page.locator('.heroLine').count()) === 0);
+    await strip.getByRole('button', { name: '버리기' }).click();
+    const discard = page.getByRole('dialog', { name: '중단한 런을 버릴까요?' });
+    const askedDiscard = await discard.waitFor({ timeout: 2000 }).then(() => true, () => false);
+    await page.waitForTimeout(400);
+    await discard.getByRole('button', { name: '취소' }).click();
+    record('UI-13 Discard asks once too', askedDiscard && (await strip.count()) === 1);
+
+    const before = await savedGold();
+    await page.getByRole('button', { name: 'Ch.1 / St.1 출정' }).click();
+    // Past the dialog's input guard.
+    await page.waitForTimeout(400);
+    await replace.getByRole('button', { name: '정산하고 새로 시작' }).click();
+    await page.locator('.heroLine').waitFor({ timeout: 5000 });
+    await page.waitForTimeout(200);
+    const after = await savedGold();
+    record('UI-13 confirming settles the suspended run, then the new run starts', after > before, `gold ${before} -> ${after}`);
+
+    await page.waitForTimeout(400);
+    await page.keyboard.press('p');
+    await page.getByRole('dialog', { name: '일시정지' }).waitFor();
+    await page.waitForTimeout(200);
+    await page.reload();
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    await strip.getByRole('button', { name: '버리기' }).click();
+    await page.waitForTimeout(400);
+    await discard.getByRole('button', { name: '정산하고 버리기' }).click();
+    await page.waitForTimeout(200);
+    const discarded = await savedGold();
+    record('UI-13 confirming Discard settles the run and drops it', (await strip.count()) === 0 && discarded > after, `gold ${after} -> ${discarded}`);
+    await page.close();
+  });
+
   await probe('CON-04', async () => {
     // A run saved as it pauses survives a reload: the menu offers it, and resuming lands on the very same state.
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });

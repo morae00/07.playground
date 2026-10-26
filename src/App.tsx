@@ -29,7 +29,7 @@ import { newlyMet, unlockAchievements } from './ui/achievements';
 import type { AchievementId } from './content/data/achievements';
 import COSMETICS, { type CosmeticId } from './content/data/cosmetics';
 import { t } from './i18n/strings';
-import { FaultDialog, ResetDialog } from './ui/screens/RunDialogs';
+import { FaultDialog, ResetDialog, SuspendDialog } from './ui/screens/RunDialogs';
 import { HudLayer } from './ui/screens/HudLayer';
 import { DevPanel } from './ui/screens/DevPanel';
 import { PauseHub, type PauseTab } from './ui/screens/PauseHub';
@@ -164,6 +164,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   /** New records and level-ups of the settlement on screen, worked out before it is applied (UI-05). */
   const [notes, setNotes] = useState<SettlementNotes | null>(null);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  /** UI-13: a new run (what it starts) or Discard (null) waits on this confirmation while a run is suspended. */
+  const [suspendConfirm, setSuspendConfirm] = useState<{ then: (() => void) | null } | null>(null);
   const [abandonConfirmOpen, setAbandonConfirmOpen] = useState(false);
   const [runPaused, setRunPaused] = useState(false);
   const [seedCopyStatus, setSeedCopyStatus] = useState('');
@@ -614,11 +616,23 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     story.then?.();
   }, [story]);
 
+  /** UI-13: goes on at once, unless a run is suspended: then the player confirms that it ends (settled) first. */
+  const replaceSuspended = useCallback((then: (() => void) | null) => {
+    if (asSuspendedRun(profileRef.current.runSuspend?.state)) setSuspendConfirm({ then });
+    else then?.();
+  }, []);
+  const confirmSuspended = () => {
+    const run = asSuspendedRun(profileRef.current.runSuspend?.state);
+    setSuspendConfirm(null);
+    if (run) settleSuspended(run);
+    suspendConfirm?.then?.();
+  };
+
   const startRun = useCallback(() => {
     if (selectedStageLocked) return;
     const [chapter, stage] = [selectedChapter.id, selectedStage.id];
-    afterStory(beatsBeforeRun(profileRef.current.storySeen, chapter), () => beginRun(chapter, (engine) => engine.startRun(chapter, stage)));
-  }, [afterStory, beginRun, selectedChapter.id, selectedStage.id, selectedStageLocked]);
+    replaceSuspended(() => afterStory(beatsBeforeRun(profileRef.current.storySeen, chapter), () => beginRun(chapter, (engine) => engine.startRun(chapter, stage))));
+  }, [afterStory, beginRun, replaceSuspended, selectedChapter.id, selectedStage.id, selectedStageLocked]);
 
   /** CON-04: replays the suspended run in a new engine, then opens the pause hub (or the draft it was saved in). */
   const resumeSuspended = useCallback(() => {
@@ -640,7 +654,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
       });
     });
   }, [beginRun, errorLog, setManualPause, settleSuspended]);
-  const discardSuspended = useCallback(() => setProfile((previous) => ({ ...previous, runSuspend: null })), []);
+  const discardSuspended = useCallback(() => replaceSuspended(null), [replaceSuspended]);
 
   /** Settlement's primary action: go straight on to the next stage (CON-02). */
   const startStage = useCallback((address: { chapter: number; stage: number }) => {
@@ -658,8 +672,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     const seed = Number.isSafeInteger(parsedSeed) && parsedSeed >= 0 && parsedSeed <= 0xffff_ffff
       ? parsedSeed >>> 0
       : undefined;
-    beginRun(INFINITE_BASELINE.chapter, (engine) => engine.startInfiniteRun(seed, !developerAccess));
-  }, [beginRun, developerAccess, infinitePlayerName, infiniteSeed]);
+    replaceSuspended(() => beginRun(INFINITE_BASELINE.chapter, (engine) => engine.startInfiniteRun(seed, !developerAccess)));
+  }, [beginRun, developerAccess, infinitePlayerName, infiniteSeed, replaceSuspended]);
 
   const buyMetaUpgrade = (id: MetaUpgradeId) => {
     setMeta((prev) => {
@@ -924,6 +938,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     setCheatMessage(message);
   };
 
+  const suspended = asSuspendedRun(profile.runSuspend?.state);
+
   return (
     <div
       className="appShell"
@@ -976,7 +992,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
           onWearCosmetic={wearCosmetic}
           onPlayStory={(beats) => setStory({ beats })}
           inlineNotice={<>{saveMoveBanner}{achievementBanner}{suspendBanner}{noticeBanner('inline')}</>}
-          suspended={asSuspendedRun(profile.runSuspend?.state)}
+          suspended={suspended}
           onResumeSuspended={resumeSuspended}
           onDiscardSuspended={discardSuspended}
           menuView={menuView}
@@ -1083,6 +1099,9 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
       {DEVELOPER_UI_AVAILABLE && uiFault && <InjectedRenderFault />}
 
       {phase === 'menu' && resetConfirmOpen && <ResetDialog onConfirm={confirmResetMeta} onCancel={() => setResetConfirmOpen(false)} />}
+      {phase === 'menu' && suspendConfirm && suspended && (
+        <SuspendDialog discard={!suspendConfirm.then} {...suspendedRunReward(suspended)} onConfirm={confirmSuspended} onCancel={() => setSuspendConfirm(null)} />
+      )}
     </div>
   );
 }
