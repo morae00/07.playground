@@ -15,6 +15,7 @@ import { loadBossTitles, loadLandmarkTitles, type BossTitle, type LandmarkTitle 
 import { loadStory } from '../story';
 import { ProgressBar } from '../ProgressBar';
 import { effectAnnouncement } from '../effectAnnouncement';
+import { bossRageLine } from '../bossBar';
 import { moveKeysInUse } from '../../platform/moveKeys';
 
 export type HudLayerProps = {
@@ -80,7 +81,7 @@ function EffectAnnouncer({ names }: { names: string[] }) {
 function BossBar({ snapshot, name, line }: { snapshot: HudSnapshot; name: string; line: string | null }) {
   const phase = snapshot.bossPhase ?? 1;
   const enrage = snapshot.bossEnrage ?? 0;
-  const steps = snapshot.bossEnrageSteps ?? 1;
+  const rage = bossRageLine(snapshot, formatClock(snapshot.timeLeft));
   return (
     <section className={enrage > 0 ? 'bossBar enraged' : 'bossBar'} aria-label={t('hud.boss')}>
       {line && <p className="bossNarration" role="status">{line}</p>}
@@ -93,11 +94,7 @@ function BossBar({ snapshot, name, line }: { snapshot: HudSnapshot; name: string
         <ProgressBar label={t('hud.bossHealth', { boss: name })} value={snapshot.bossHp ?? 0} max={snapshot.bossMaxHp ?? 1} className="bossHp" />
         <div className="bossLine">
           <span>{snapshot.bossMoveName ? t('hud.move', { move: t(snapshot.bossMoveName) }) : ''}</span>
-          <span className={enrage > 0 ? 'bossRage on' : 'bossRage'}>
-            {enrage > 0
-              ? (snapshot.bossOvertime ? t('hud.enrage.overtime', { n: snapshot.bossOvertime }) : steps > 1 ? t('hud.enrage.step', { step: enrage, steps }) : t('hud.enrage'))
-              : snapshot.runMode === 'campaign' ? t('hud.enrageIn', { time: formatClock(snapshot.timeLeft) }) : ''}
-          </span>
+          <span className={enrage > 0 ? 'bossRage on' : 'bossRage'}>{rage ? tx(rage) : ''}</span>
         </div>
       </div>
     </section>
