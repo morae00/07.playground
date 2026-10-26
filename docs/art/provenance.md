@@ -61,7 +61,7 @@
 | P-21 | `src/ui/art/keyart.webp`(`artKeyart`): 결 전신 3/4, 0.9배 | `k-hero.js` · `PN.heroKit.full('threeQuarter')` · 2.1 | `UI_SHEETS.keyart` | `K0-hero-faces.md` 검수 2차 합격(2026-10-02) | ed17906, b32c620 | T1 · L1 | A1, K-1 |
 | P-22 | `src/ui/art/chapter-thumbs.webp`(`artChapter`): 장 5개의 랜드마크 비네트 | `k-env.js` · `PN.env.landmark` · API rev 3.1 | `UI_SHEETS.chapters`, `MENU_CHAPTERS` | `K5-env-enemies.md` 검수 2차 합격(그림 속 글자 정리). 그 밖은 R0 킷 [확인] | ed17906, d1072ce | T1 · L1 | B11 |
 | P-23 | `src/ui/art/enemy-icons.webp`(`artEnemy`): 5장 × 4역할, game LOD | `k-enemies.js` · `PN.enemies.draw` · API v2.1 | `UI_SHEETS.enemies` | P-3과 같다 | ed17906, 0fbbfc1 | T1 · L1 | A3 |
-| P-24 | `src/ui/art/terrain-icons.webp`(`artTerrain`): 도감 위험지형 9종 | `k-env.js` · `PN.env.hazard(kind, 'static')`(R0 킷의 원판 + 가운데 기호) | `UI_SHEETS.terrain`, `TERRAIN_KINDS` | R0 킷 rev 2 [확인]. 구운 뒤 `k-env.js`가 d1072ce(K5)에서 바뀌었으므로, 지금 판으로 다시 구워 같은지 본다 [확인] | 538deca | T1 · L1 | K-2 |
+| P-24 | `src/ui/art/terrain-icons.webp`(`artTerrain`): 도감 위험지형 9종 | 7종은 `k-hazards.js` · `PN.hazards.icon(kind)` · 1.0-d2r2(API-hazards §16: 판정 원과 게임이 굽는 조각). warning·vortex는 `k-env.js` · `PN.env.hazard(kind, 'static')`(R0 원판) | `UI_SHEETS.terrain`(recipe `terrainIcon`·`hazard`), `TERRAIN_KINDS` | `P2-kit-fixes.md` 검수 합격(2026-10-26). warning·vortex는 R0 킷 rev 2 [확인] | ae0a27d | T1 · L1 | K-2(warning·vortex) |
 
 ### 2.3 이야기 패널 (`node scripts/build-ui-art.mjs story`, 사양 `art/ui-art-spec.mjs` `STORY_PANELS`)
 
@@ -91,7 +91,7 @@
 | # | 무엇 | 걸린 줄 | 닫는 법 |
 |---|---|---|---|
 | 1 | AI 서비스(Claude Code) 출력의 상용 이용 조건 | 킷 그림 전부(L1) | 약관을 확인하고 L1 칸에 결과와 날짜를 적는다 |
-| 2 | 각성 낙관 '覺'의 시스템 글꼴 글리프 61칸 | P-15, P-17(L2) | 글꼴 라이선스를 확인하거나 낙관을 고정 경로로 바꿔 다시 굽는다(K-6) |
+| 2 | 각성 낙관 '覺'의 시스템 글꼴 글리프 61칸 | P-15, P-17(L2) | 사용자 결정(2026-10-26): 킷이 글꼴을 보지 않고 붓획으로 새로 쓴다(`P2-kit-fixes.md`). 그 낙관으로 61칸을 다시 구우면 닫는다(K-6) |
 | 3 | 앱 아이콘 코드의 작성 도구('Codex')와 약관, 낙관 획이 글자로 읽히는지 | P-27, P-28(L3) | 작성 경위를 확인한다. 글자로 읽히면 획을 바꾼다 |
 | 4 | R0 킷 판에는 납품·검수 파일이 없다. 판정은 API 문서(`API-icons.md` 'Bible delta', 각 API의 rev 기록)에만 있다 | P-2, P-4, P-15, P-16, P-20, P-24, 그리고 P-1·P-3·P-9·P-22의 R0 부분 | API 문서의 판정을 받아들인 기록으로 볼지 팀이 정하거나, art-director가 지금 판을 한 번 검수하고 그 판정을 납품 기록으로 남긴다 |
 | 5 | 빠진 납품 기록: K8의 1·2차 납품서·검수 1·2차·최종 판정, K9의 1차 납품서·검수 1·2차(`API-icons2.md:9`가 가리키는 '## 검수 1차'), K6의 1차 납품서 | P-11, P-14, P-17, P-19, P-25 | git 이력이나 서브에이전트 기록에서 되살린다(킷 점검 P2-3) |
