@@ -1,9 +1,9 @@
 // Achievements (CON-07): how far a save is toward each goal, and which goals it has just met. Worked out from the save
-// alone (stage records, career totals, codex, account level), so a save from before achievements earns what it
-// already did (G17). Infinite survival reads the longest run on the local board too.
+// alone (stage records, career totals, codex, account level, progress), so a save from before achievements earns
+// what it already did (G17). Infinite survival reads the longest run on the local board too.
 import ACHIEVEMENTS, { type AchievementDef, type AchievementId } from '../content/data/achievements.ts';
 import CODEX from '../content/data/codex.ts';
-import { stageStars, type MetaState, type ProfileData } from '../platform/save.ts';
+import { chapterFinished, stageStars, type MetaState, type ProfileData } from '../platform/save.ts';
 
 export const ACHIEVEMENT_IDS = Object.keys(ACHIEVEMENTS.achievements) as AchievementId[];
 
@@ -15,7 +15,7 @@ export function achievementProgress(def: AchievementDef, profile: ProfileData, m
   const count = (value: number, goal = def.n) => ({ value: Math.min(value, goal), goal });
   switch (def.kind) {
     case 'clears': return count(records.filter((record) => record.clears > 0).length);
-    case 'chapter': return count((profile.stageRecords[`${def.n}-10`]?.clears ?? 0) > 0 ? 1 : 0, 1);
+    case 'chapter': return count(chapterFinished(profile, meta, def.n) ? 1 : 0, 1);
     case 'level': return count(meta.level);
     case 'stars': return count(records.reduce((sum, record) => sum + stageStars(record).filter(Boolean).length, 0));
     case 'perfect': return count(records.filter((record) => stageStars(record).every(Boolean)).length);

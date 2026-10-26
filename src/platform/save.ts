@@ -78,6 +78,14 @@ export function stageStars(record: StageRecord | undefined): readonly [boolean, 
   return record ? [record.clears > 0, record.bonus || record.swift, record.lowDamage] : [false, false, false];
 }
 
+/**
+ * CON-07, CON-10: a chapter's final stage is cleared: its stage record says so, or the unlocked frontier is past it. A
+ * 0.1.0 save migrates with no stage records but keeps its progress (UI-15).
+ */
+export function chapterFinished(profile: ProfileData, meta: MetaState, chapter: number) {
+  return (profile.stageRecords[`${chapter}-${STAGES_PER_CHAPTER}`]?.clears ?? 0) > 0 || meta.progress.chapter > chapter;
+}
+
 /** CON-07: totals over every run, campaign and infinite. Saves from before CON-07 start from their stage records. */
 export type CareerStats = { runs: number; clears: number; kills: number; bossKills: number; playSeconds: number };
 

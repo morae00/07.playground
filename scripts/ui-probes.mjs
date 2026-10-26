@@ -195,6 +195,30 @@ try {
     await context.close();
   });
 
+  await probe('UI-15', async () => {
+    // A 0.1.0 save past 1-10 migrates with no stage records; its progress still opens chapter 1's character and goal.
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await context.addInitScript(() => {
+      if (sessionStorage.getItem('probe-seeded')) return;
+      sessionStorage.setItem('probe-seeded', '1');
+      const meta = { gold: 50, xp: 0, level: 3, passivePoints: 0, progress: { chapter: 2, stage: 3 }, upgrades: { attack: 0, defense: 0, maxHp: 0, moveSpeed: 0, crit: 0, regen: 0, magnet: 0 }, passives: { rareLuck: 0, bossHunter: 0, coinMagnet: 0 } };
+      localStorage.setItem('blackline-survivor-save-v2', JSON.stringify({ version: 2, savedAt: 1, meta, options: { healthBars: 'elite', volume: 0.3, effects: 0.9, damageNumbers: true, screenShake: true, reducedFlash: false, paceMode: 'standard' } }));
+    });
+    const page = await context.newPage();
+    await page.goto('http://127.0.0.1:5177/');
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    // The developer build starts in developer mode, which opens every character.
+    const devToggle = page.getByRole('checkbox', { name: '개발자 모드: 모든 Stage 접근' });
+    if (await devToggle.isChecked()) await devToggle.uncheck();
+    const notice = await page.getByRole('status').filter({ hasText: '업적 달성' }).innerText().catch(() => '');
+    await page.getByRole('tab', { name: /캐릭터/ }).click();
+    const noeul = await page.locator('[data-character="noeul"]').innerText();
+    const dok = await page.locator('[data-character="dok"]').innerText();
+    const state = (text) => (text.includes('선택') ? 'open' : 'locked');
+    record('UI-15 a 0.1.0 save past 1-10 opens its character and its chapter goal, and no further', noeul.includes('선택') && dok.includes('2장 10스테이지를 깨면 해금') && notice.includes('먹선 골목을 지나') && !notice.includes('철문을 열고'), `${notice.split('\n')[0] || 'no notice'} | noeul ${state(noeul)}, dok ${state(dok)}`);
+    await context.close();
+  });
+
   await probe('TEC-15', async () => {
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] });
     const page = await context.newPage();

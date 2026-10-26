@@ -5,14 +5,14 @@ import { t } from '../../i18n/strings';
 import { formatPercent } from '../../game/skillNumbers';
 import { CHARACTERS, CHARACTER_COSTS, CHARACTER_IDS, CHARACTER_MAX_LEVEL, characterPerk, characterStartLevel } from '../../game/characters';
 import { portraitArt } from '../../game/render/assets/slots';
-import type { MetaState, ProfileData } from '../../platform/save';
+import { chapterFinished, type MetaState, type ProfileData } from '../../platform/save';
 
 export type CharacterAction = 'select' | 'unlock' | 'upgrade';
 
-/** Whether a character can be played: bought, its chapter cleared, or developer access. */
-export function characterOpen(id: string, profile: ProfileData, developerAccess: boolean) {
+/** Whether a character can be played: bought, its chapter cleared (a 0.1.0 save's progress counts, UI-15), or developer access. */
+export function characterOpen(id: string, profile: ProfileData, meta: MetaState, developerAccess: boolean) {
   const clear = CHARACTERS[id]?.unlock?.clear;
-  return developerAccess || profile.characters.unlocked.includes(id) || (clear !== undefined && (profile.stageRecords[`${clear}-10`]?.clears ?? 0) > 0);
+  return developerAccess || profile.characters.unlocked.includes(id) || (clear !== undefined && chapterFinished(profile, meta, clear));
 }
 
 function perkText(id: string, level: number) {
@@ -30,7 +30,7 @@ export function CharactersView({ profile, meta, developerAccess, onCharacter }: 
         {CHARACTER_IDS.map((id) => {
           const def = CHARACTERS[id];
           const level = profile.characters.levels[id] ?? 0;
-          const open = characterOpen(id, profile, developerAccess);
+          const open = characterOpen(id, profile, meta, developerAccess);
           const selected = profile.characters.selected === id;
           const cost = level < CHARACTER_MAX_LEVEL ? CHARACTER_COSTS[level] : null;
           return (

@@ -7,6 +7,7 @@ import {
   SAVE_BACKUP_KEY,
   SAVE_KEY,
   SAVE_VERSION,
+  chapterFinished,
   createDefaultMeta,
   createDefaultOptions,
   createDefaultProfile,
@@ -165,6 +166,18 @@ test('a v2 save migrates to v3 with its progress and an empty profile, and is wr
   assert.equal(JSON.parse(storage.values.get(SAVE_KEY) ?? '{}').version, 3);
   assert.equal(JSON.parse(storage.values.get(SAVE_BACKUP_KEY) ?? '{}').version, 2, 'the v2 original stays as the backup');
   assert.equal(SAVE_VERSION, 3);
+});
+
+test('a chapter is finished by its tenth stage\'s record, or by progress past it, as a migrated 0.1.0 save has (UI-15)', () => {
+  const migrated = { ...createDefaultMeta(), progress: { chapter: 3, stage: 4 } };
+  const profile = createDefaultProfile();
+  assert.deepEqual([1, 2, 3, 4].map((chapter) => chapterFinished(profile, migrated, chapter)), [true, true, false, false]);
+  const fresh = createDefaultMeta();
+  const cleared = recordStageResult(profile, { chapter: 1, stage: 10, cleared: true, kills: 10, clearSeconds: 300, practice: false });
+  assert.equal(chapterFinished(profile, fresh, 1), false);
+  assert.equal(chapterFinished(cleared, fresh, 1), true, 'a record alone counts too');
+  const lost = recordStageResult(profile, { chapter: 1, stage: 10, cleared: false, kills: 10, clearSeconds: 300, practice: false });
+  assert.equal(chapterFinished(lost, { ...fresh, progress: { chapter: 1, stage: 10 } }, 1), false, 'reaching the tenth stage is not clearing it');
 });
 
 test('the v3 profile round-trips and rejects impossible records', () => {

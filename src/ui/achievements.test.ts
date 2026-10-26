@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import ACHIEVEMENTS from '../content/data/achievements.ts';
 import CODEX from '../content/data/codex.ts';
 import COSMETICS from '../content/data/cosmetics.ts';
-import { createDefaultMeta, createDefaultProfile, sanitizeProfile, type ProfileData } from '../platform/save.ts';
+import { createDefaultMeta, createDefaultProfile, loadGameSave, sanitizeProfile, type ProfileData } from '../platform/save.ts';
 import { ACHIEVEMENT_IDS, achievementProgress, newlyMet, unlockAchievements } from './achievements.ts';
 
 // Achievements (CON-07): worked out from the save alone, so an older save earns what it already did (G17).
@@ -50,6 +51,20 @@ test('progress counts clears, chapters, stars, career totals, the codex, and the
   assert.deepEqual(unlocked.achievements['no-hit'], { unlockedAt: 1_790_000_000_000 });
   assert.ok(unlocked.cosmetics.owned.includes('title-flawless') && unlocked.cosmetics.owned.length === met.length);
   assert.deepEqual(newlyMet(unlocked, meta, 0), [], 'met once');
+});
+
+test('UI-15: a 0.1.0 save earns the chapter goals its progress passed, though it migrates with no stage records', () => {
+  const { samples } = JSON.parse(readFileSync(new URL('../platform/fixtures/saves-0.1.0.json', import.meta.url), 'utf8')) as { samples: { name: string; entries: Record<string, string> }[] };
+  const storage = (entries: Record<string, string>) => ({ getItem: (key: string) => entries[key] ?? null, setItem() {} });
+  let earned = 0;
+  for (const sample of samples) {
+    const { data } = loadGameSave(storage(sample.entries));
+    const met = newlyMet(data.profile, data.meta, 0).filter((id) => id.startsWith('chapter-'));
+    const passed = [1, 2, 3, 4, 5].filter((chapter) => data.meta.progress.chapter > chapter).map((chapter) => `chapter-${chapter}`);
+    assert.deepEqual(met, passed, sample.name);
+    earned += met.length;
+  }
+  assert.ok(earned >= 4, `the fixtures include chapters already finished (${earned})`);
 });
 
 test('only an owned cosmetic can be worn, whatever a save says', () => {

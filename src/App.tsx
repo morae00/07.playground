@@ -328,14 +328,14 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     const { characters } = profileRef.current;
     if (!def) return;
     if (action === 'select') {
-      if (!characterOpen(id, profileRef.current, developerAccess)) return;
+      if (!characterOpen(id, profileRef.current, metaRef.current, developerAccess)) return;
       setProfile((previous) => ({ ...previous, characters: { ...previous.characters, selected: id, unlocked: previous.characters.unlocked.includes(id) ? previous.characters.unlocked : [...previous.characters.unlocked, id] } }));
       return;
     }
     const level = characters.levels[id] ?? 0;
     const price = action === 'unlock'
       ? (characters.unlocked.includes(id) ? Infinity : def.unlock?.gold ?? Infinity)
-      : (characterOpen(id, profileRef.current, developerAccess) && level < CHARACTER_MAX_LEVEL ? CHARACTER_COSTS[level] : Infinity);
+      : (characterOpen(id, profileRef.current, metaRef.current, developerAccess) && level < CHARACTER_MAX_LEVEL ? CHARACTER_COSTS[level] : Infinity);
     if (!(metaRef.current.gold >= price)) return;
     setMeta((previous) => ({ ...previous, gold: previous.gold - price }));
     setProfile((previous) => ({
@@ -577,7 +577,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     engine.setSound(appMixer);
     // CON-10: the run starts as the selected character, if it is playable here.
     const { characters } = profileRef.current;
-    engine.setCharacter(characterOpen(characters.selected, profileRef.current, developerAccess) ? { id: characters.selected, level: characters.levels[characters.selected] ?? 0 } : null);
+    engine.setCharacter(characterOpen(characters.selected, profileRef.current, metaRef.current, developerAccess) ? { id: characters.selected, level: characters.levels[characters.selected] ?? 0 } : null);
     if (MUSIC_PACK) engine.subscribe((event) => appMusic?.event(event));
     releaseReducedMotionRef.current = watchReducedMotion(
       typeof window.matchMedia === 'function' ? window.matchMedia.bind(window) : undefined,
