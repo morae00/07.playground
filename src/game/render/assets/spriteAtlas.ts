@@ -208,8 +208,7 @@ export class SpriteAtlas {
     this.statuses.set(pack, 'loading');
     const generation = this.generations.get(pack) ?? 0;
     try {
-      this.manifestLoad ??= this.options.loadManifest();
-      const manifest = await this.manifestLoad;
+      const manifest = await this.loadManifest();
       this.manifest = manifest;
       const entry = manifest.packs[pack];
       if (!entry) throw new Error(`unknown atlas pack ${pack}`);
@@ -232,6 +231,18 @@ export class SpriteAtlas {
     this.frames.clear();
     for (const listener of this.listeners) listener();
     return this.status(pack) === 'ready';
+  }
+
+  /** The manifest, fetched once for every pack; a failed fetch is forgotten, so a later load asks again (FX-09). */
+  private loadManifest() {
+    if (!this.manifestLoad) {
+      const load = this.options.loadManifest().catch((error: unknown) => {
+        if (this.manifestLoad === load) this.manifestLoad = null;
+        throw error;
+      });
+      this.manifestLoad = load;
+    }
+    return this.manifestLoad;
   }
 
   /**

@@ -426,6 +426,14 @@ export class WorldRenderer {
     this.trail.length = 0;
   }
 
+  /**
+   * CON-04: the run was rebuilt by replay, which draws nothing. What stands on the field at the next frame has been there
+   * all along, so it does not rise from a spawn bloom again nor a boss make its entrance (FX-09).
+   */
+  settle() {
+    this.anims.settle();
+  }
+
   /** Forget cached patterns (the canvas was resized or its context reset). */
   invalidateGrid() {
     this.gridPattern = undefined;
@@ -915,7 +923,8 @@ export class WorldRenderer {
   }
 
   private ensureGridPattern(ctx: CanvasRenderingContext2D) {
-    if (this.gridPattern || typeof document.createElement !== 'function') return;
+    // Headless runs have no DOM; the grid then draws as lines (FX-09).
+    if (this.gridPattern || typeof document === 'undefined' || typeof document.createElement !== 'function') return;
     const tile = document.createElement('canvas');
     tile.width = 120;
     tile.height = 120;
@@ -1892,15 +1901,15 @@ export class WorldRenderer {
 
   /**
    * A body standing in fire glows coral and sheds embers (user request 2026-10-15: "it should feel like taking damage").
-   * The coral overlay throbs, steady when flashes are reduced; embers rise from the body unless motion is reduced. It
-   * fades over the last moment after the fire let go.
+   * The coral overlay throbs, steady when flashes or motion are reduced (FX-09); embers rise from the body unless motion
+   * is reduced. It fades over the last moment after the fire let go.
    */
   private drawBurning(ctx: CanvasRenderingContext2D, frame: SpriteFrame, x: number, y: number, facing: 1 | -1, scale: number, burn: number, id: number) {
     if (burn <= 0) return;
     const policy = motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion);
     const fade = Math.min(1, burn / 0.3);
     const phase = phaseFor(id) * Math.PI * 2;
-    const throb = policy.flashStrength < 1 ? 0.5 : 0.5 + 0.18 * Math.sin(this.world.elapsed * 13 + phase);
+    const throb = policy.beat ? 0.5 + 0.18 * Math.sin(this.world.elapsed * 13 + phase) : 0.5;
     const overlay = this.silhouette(frame, SIGNAL.hostile, this.burnCutouts);
     if (overlay) {
       // A coral rim round the body, then the body itself washed coral.
@@ -2389,7 +2398,8 @@ export class WorldRenderer {
     for (const stamp of this.world.effects.hitStamps) {
       const pose = stamp.crit ? 'hit-crit' : 'hit';
       const spec = sprites.animation(FX_SLOT, pose);
-      if (!spec) return;
+      // One pose missing must not hide the other's stars (FX-09).
+      if (!spec) continue;
       const y = onBodies ? stamp.y - stamp.radius : stamp.y;
       if (!circleVisible(this.viewport, stamp.x, y, 48)) continue;
       const frame = sprites.frame(frameKey(FX_SLOT, pose, Math.min(spec.frames - 1, Math.floor((stamp.maxLife - stamp.life) * spec.fps))));

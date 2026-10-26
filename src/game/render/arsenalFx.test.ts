@@ -855,3 +855,36 @@ test('K10 3b2: shots and the hero — a turned shot is a paper comet along its v
     if (n) assert.ok(rec.ops.some((o) => o.op === 'scale'));
   }
 });
+
+test('FX-09: enemy overlay loops (burning ink, a head mark, the crow) run at half rate at reduced detail and hold still at minimal (API §9.4, §14.8)', () => {
+  const { ctx, atlas, drawn } = scene();
+  const fire = zoneAt('inkPots', 0, 0, 60, 0.5, 2);
+  const enemy = enemyAt(0, 0, 12, { prey: 99, crow: 99 });
+  const changes = (detail: 'full' | 'reduced' | 'minimal') => {
+    const painter = new ArsenalFxPainter();
+    const last: Record<string, string> = {}, count: Record<string, number> = { scorch12: 0, 'mark-prey': 0, crow: 0 };
+    // One second sampled at 120 Hz: a loop at f fps changes frame f times (two-frame loops on every change too).
+    for (let k = 0; k <= 120; k += 1) {
+      drawn.length = 0;
+      painter.begin(atlas, 1 + k / 120, false, 1, detail, {});
+      painter.planOverlays([bodyOf(enemy)], [fire], 0, 0);
+      painter.drawFront(ctx, bodyOf(enemy));
+      painter.drawHead(ctx, bodyOf(enemy), -52);
+      for (const key of drawn) {
+        const [, , part, frame] = key.split('/');
+        if (last[part] !== undefined && last[part] !== frame) count[part] += 1;
+        last[part] = frame;
+      }
+    }
+    assert.deepEqual(Object.keys(last).sort(), ['crow', 'mark-prey', 'scorch12'], `${detail}: all three drawn`);
+    return count;
+  };
+  const near = (got: Record<string, number>, want: Record<string, number>, what: string) => {
+    for (const [part, n] of Object.entries(want)) assert.ok(got[part] >= n - 1 && got[part] <= n, `${what} ${part}: ${got[part]} changes, want ${n}`);
+  };
+  const fps = (group: string, part: string) => data.parts[group][part].fps;
+  const full = { scorch12: fps('inkPots', 'scorch12'), 'mark-prey': fps('huntersMarks', 'mark-prey'), crow: fps('crowFeathers', 'crow') };
+  near(changes('full'), full, 'full');
+  near(changes('reduced'), Object.fromEntries(Object.entries(full).map(([part, n]) => [part, n / 2])), 'reduced');
+  assert.deepEqual(changes('minimal'), { scorch12: 0, 'mark-prey': 0, crow: 0 }, 'minimal: still');
+});

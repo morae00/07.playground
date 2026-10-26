@@ -191,3 +191,22 @@ test('the runtime JSON manifest holds the same content as the generated one', as
   assert.deepEqual(json, JSON.parse(JSON.stringify(ATLAS_MANIFEST)));
   assert.equal(ATLAS_MANIFEST_URL, 'assets/atlas/manifest.json');
 });
+
+test('FX-09: a manifest that failed to load is fetched again on the next load, not kept failing for the session', async () => {
+  let asks = 0;
+  const atlas = new SpriteAtlas({
+    loadManifest: async () => {
+      asks += 1;
+      if (asks === 1) throw new Error('offline');
+      return manifest;
+    },
+    loadImage: async () => fakeImage(2048, 512),
+  });
+  assert.equal(await atlas.load(COMMON_PACK), false);
+  assert.match(String(atlas.failure(COMMON_PACK)), /offline/);
+  atlas.release(COMMON_PACK);
+  assert.equal(await atlas.load(COMMON_PACK), true, 'a pack retried after its release loads');
+  assert.equal(asks, 2);
+  assert.equal(await atlas.load(CHAPTER_PACKS[1]), true);
+  assert.equal(asks, 2, 'a manifest that loaded is still fetched once');
+});

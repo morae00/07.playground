@@ -1797,7 +1797,7 @@ export class ArsenalFxPainter {
     if (!f) return;
     const F = this.spec!.overlay.feet, r = b.enemy!.radius, frost = f.startsWith('frost'), q = frost ? F.frost : F[f];
     const part = f === 'freeze' ? F.freeze.front + sizeClass(r, F.freeze.r) : q.part + (frost ? `${f.slice(5)}-` : '') + sizeClass(r, q.r), P = this.part(q.group, part);
-    if (P) this.put(ctx, q.group, part, partFrame(P, 0, 1, 0, this.clock(o!, b.enemy!), this.reduced, this.lod === 2 ? 2 : 0), b.x, b.y);
+    if (P) this.put(ctx, q.group, part, partFrame(P, 0, 1, 0, this.clock(o!, b.enemy!), this.reduced, this.lod), b.x, b.y);
   }
 
   /**
@@ -1811,7 +1811,7 @@ export class ArsenalFxPainter {
     const t = this.clock(o, e), top = y - O.head.dy;
     if (o.head) {
       const q = O.head.parts[o.head], part = q.part + (q.stack ? clamp(e.awk?.[o.head as 'stain'] ?? 1, q.stack[0], q.stack[1]) : ''), P = this.part(q.group, part);
-      if (P) this.put(ctx, q.group, part, partFrame(P, 0, 1, 0, t, this.reduced, this.lod === 2 ? 2 : 0), b.x, y, 0, P.rotate === 'face' && (b.sprite?.facing ?? (e.vx < 0 ? -1 : 1)) < 0);
+      if (P) this.put(ctx, q.group, part, partFrame(P, 0, 1, 0, t, this.reduced, this.lod), b.x, y, 0, P.rotate === 'face' && (b.sprite?.facing ?? (e.vx < 0 ? -1 : 1)) < 0);
     }
     if (o.crack) {
       const q = O.crack;
@@ -1828,7 +1828,8 @@ export class ArsenalFxPainter {
     }
     if (!o.crow) return;
     const c = crowAt(S, t, top, o.peck, this.reduced), P = this.part(O.crow.group, O.crow.part);
-    if (P) this.put(ctx, O.crow.group, O.crow.part, this.reduced ? P.still ?? 0 : Math.floor(t * P.fps) % P.frames, b.x + c.x, c.y, 0, c.flip);
+    // Its wing beat is a loop on the enemy's clock: half rate at reduced detail, the still frame at minimal (API §9.4, §14.8).
+    if (P) this.put(ctx, O.crow.group, O.crow.part, flightFrame(P, false, 0, t, 0, this.reduced, this.lod), b.x + c.x, c.y, 0, c.flip);
     const K = this.part(O.crow.group, O.crow.peck);
     if (K && o.peck >= 0) this.put(ctx, O.crow.group, O.crow.peck, partFrame(K, o.peck, 1, 0, 0, false, 0), b.x + O.crow.dive.peck[0], top + O.crow.dive.peck[1]);
   }

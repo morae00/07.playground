@@ -16,7 +16,7 @@ export type AnimState = {
   state: string;
   /** Simulation time the current state began. */
   startedAt: number;
-  /** Simulation time the character was first seen. */
+  /** Simulation time the character was first seen; -Infinity for one already standing when a resumed run is shown. */
   bornAt: number;
   /** 1 faces right, -1 left; sprites are drawn facing right and mirrored. */
   facing: 1 | -1;
@@ -183,6 +183,8 @@ export class AnimationBook {
   private readonly entries = new Map<number, AnimState>();
   private frame = 0;
   private lastTime = 0;
+  /** Whether characters first seen this frame were there all along (settle). */
+  private settling = false;
 
   beginFrame(now: number) {
     if (now < this.lastTime) this.entries.clear();
@@ -190,11 +192,19 @@ export class AnimationBook {
     this.frame += 1;
   }
 
+  /**
+   * The characters first seen in the next frame have been on the field all along: a resumed run is replayed without
+   * drawing (CON-04), so they skip their spawn rise and a boss its entrance (FX-09). Later arrivals spawn as usual.
+   */
+  settle() {
+    this.settling = true;
+  }
+
   /** The character's state, created on first sight with the given facing and heading. */
   touch(id: number, now: number, facing: 1 | -1, heading: number): AnimState {
     let entry = this.entries.get(id);
     if (!entry) {
-      entry = { state: '', startedAt: now, bornAt: now, facing, heading, phase: 0, enraged: false, seen: this.frame };
+      entry = { state: '', startedAt: now, bornAt: this.settling ? Number.NEGATIVE_INFINITY : now, facing, heading, phase: 0, enraged: false, seen: this.frame };
       this.entries.set(id, entry);
     }
     entry.seen = this.frame;
@@ -206,6 +216,7 @@ export class AnimationBook {
   }
 
   endFrame() {
+    this.settling = false;
     for (const [id, entry] of this.entries) {
       if (entry.seen !== this.frame) this.entries.delete(id);
     }

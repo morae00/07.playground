@@ -114,3 +114,19 @@ test('the book forgets characters not drawn in a frame and starts over when the 
   book.beginFrame(0.2);
   assert.equal(book.size, 0, 'a new run');
 });
+
+test('FX-09: after a resume, what stands on the field skips its spawn rise and a boss its entrance; later arrivals still spawn', () => {
+  const book = new AnimationBook();
+  book.settle();
+  book.beginFrame(300);
+  const enemy = book.touch(7, 300, 1, 0);
+  const boss = book.touch(8, 300, 1, 0);
+  book.endFrame();
+  assert.equal(stepEnemyAnim(enemy, still, 300), 'idle', 'no spawn bloom for an enemy that was already there');
+  assert.equal(stepBossAnim(boss, { ...still, bossPhase: 2 }, 300, false), 'idle', 'no entrance for a boss already fighting');
+  book.beginFrame(300 + 1 / 60);
+  assert.equal(book.touch(7, 300 + 1 / 60, 1, 0), enemy);
+  const late = book.touch(9, 300 + 1 / 60, 1, 0);
+  book.endFrame();
+  assert.equal(stepEnemyAnim(late, still, 300 + 1 / 60), 'spawn', 'one that arrives after that frame rises as usual');
+});

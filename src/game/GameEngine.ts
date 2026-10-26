@@ -2014,6 +2014,8 @@ export class GameEngine {
     } finally {
       this.replaying = false;
     }
+    // Nothing was drawn meanwhile; the field it shows next has stood there all along (FX-09).
+    this.worldRenderer.settle();
     this.paused = true;
     this.accumulator = 0;
     // BUG-23: options the app set meanwhile take effect now, at the saved tick, as they would have in play.
