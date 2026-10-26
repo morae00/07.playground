@@ -534,7 +534,6 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         setNotes(settlementNotes(result, profileRef.current.stageRecords[`${result.chapter}-${result.stage}`], metaRef.current, false));
         setSettlement(result);
         setProfile((prev) => ({ ...recordResult(prev, result), runSuspend: null }));
-        if (result.runMode === 'infinite') setInfiniteSeed(String(result.seed));
         grantSettlement(result, false);
         if (DEVELOPER_UI_AVAILABLE) appendDevRunLog(window.localStorage, devRunEntry(result, Date.now()));
         recordInfiniteSettlement(result);

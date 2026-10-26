@@ -1219,6 +1219,32 @@ try {
     await page.close();
   });
 
+  await probe('CON-10 seed', async () => {
+    // An endless run started with the seed field empty leaves it empty: the next run is random again, as it says.
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await page.goto('http://127.0.0.1:5177/');
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    await page.getByRole('tab', { name: '무한 경쟁' }).click();
+    await page.getByRole('button', { name: '무한 모드 시작' }).click();
+    await page.locator('.heroLine').waitFor();
+    await page.waitForTimeout(400);
+    await page.keyboard.press('p');
+    const hub = page.getByRole('dialog', { name: '일시정지' });
+    await hub.waitFor();
+    await hub.getByRole('button', { name: 'Stage 메뉴' }).click();
+    await page.getByRole('button', { name: '포기하고 정산' }).click();
+    const menu = page.getByRole('dialog').getByRole('button', { name: '메뉴로' });
+    await menu.waitFor();
+    // Past the settlement's input guard.
+    await page.waitForTimeout(1000);
+    await menu.click();
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    await page.getByRole('tab', { name: '무한 경쟁' }).click();
+    const seed = await page.getByRole('textbox', { name: '도전 시드' }).inputValue();
+    record('CON-10 an endless run leaves an empty seed field empty', seed === '', `field "${seed}"`);
+    await page.close();
+  });
+
   await probe('SYS-08', async () => {
     // Build depth is on in the remaster rules (D-09): an account at level 16 has two tokens a stage.
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
