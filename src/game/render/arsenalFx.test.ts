@@ -888,3 +888,33 @@ test('FX-09: enemy overlay loops (burning ink, a head mark, the crow) run at hal
   near(changes('reduced'), Object.fromEntries(Object.entries(full).map(([part, n]) => [part, n / 2])), 'reduced');
   assert.deepEqual(changes('minimal'), { scorch12: 0, 'mark-prey': 0, crow: 0 }, 'minimal: still');
 });
+
+test('TEC-04: a painter that keeps ring marks\' layouts, bands, spikes, and cracks from frame to frame draws every frame as a fresh one does', () => {
+  // Bands (a strike, a nova), a lob's splash, a crack burst, and the eclipse's sweeping and total halos (timed layouts).
+  const marks = [
+    mark('brushDownpour', 0, 1, { x: -300, seed: 5 }),
+    mark('inkPulse', 0, 1, { x: 300, seed: 6, radius: 120 }),
+    mark('inkPots', 0, 1, { y: 300, seed: 7, dir: -1 }),
+    mark('bossbane', 0, 1, { y: -300, seed: 8, echo: true }),
+    mark('eclipseHalo', 0, 1, { x: 600, seed: 9 }),
+    mark('eclipseHalo', 0, 1, { x: -600, seed: 10, heavy: true, radius: 276 }),
+  ];
+  for (const [detail, reduced] of [['full', false], ['reduced', false], ['minimal', true]] as const) {
+    const { atlas } = scene(), kept = recorder(detail, reduced).painter;
+    let drawn = 0;
+    for (let frame = 0; frame <= 90; frame += 3) {
+      const age = frame / 60;
+      for (const m of marks) m.life = m.maxLife - age;
+      // Each on a canvas of its own this frame: the kept painter, and a painter new this frame.
+      const fresh = recorder(detail, reduced, 1, 1 + age), canvas = recorder(detail, reduced, 1, 1 + age);
+      kept.begin(atlas, 1 + age, reduced, 1, detail, {});
+      for (const [painter, { ctx, view }] of [[kept, canvas], [fresh.painter, fresh]] as const) {
+        painter.drawDecals(ctx, marks, [], view);
+        painter.drawMarks(ctx, marks, view, false);
+      }
+      assert.deepEqual(canvas.ops, fresh.ops, `${detail} frame ${frame}`);
+      drawn += fresh.ops.length;
+    }
+    assert.ok(drawn > 0, `${detail}: the marks draw`);
+  }
+});

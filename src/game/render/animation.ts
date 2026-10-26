@@ -68,6 +68,10 @@ const ENEMY_POSES: Readonly<Record<EnemyAnim, readonly string[]>> = {
   death: ['death', 'hit'],
 };
 
+/** The chains of a body that spawns or attacks on the move, kept rather than built for every enemy each frame (TEC-04). */
+const SPAWN_WALKING: readonly string[] = Object.freeze(['spawn', 'walk']);
+const ATTACK_WALKING: readonly string[] = Object.freeze(['attack', 'walk']);
+
 export function heroPoses(state: PlayerAnim) {
   return HERO_POSES[state];
 }
@@ -79,7 +83,8 @@ export function heroPoses(state: PlayerAnim) {
  */
 export function enemyPoses(state: EnemyAnim, moving: boolean, frozen = false): readonly string[] {
   if (frozen) return ENEMY_POSES.idle;
-  if (moving && (state === 'spawn' || state === 'attack')) return [state, 'walk'];
+  if (moving && state === 'spawn') return SPAWN_WALKING;
+  if (moving && state === 'attack') return ATTACK_WALKING;
   return ENEMY_POSES[state];
 }
 

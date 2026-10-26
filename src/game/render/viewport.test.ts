@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   circleVisible,
+  interpolateInto,
   interpolatePosition,
   makeViewport,
   rectVisible,
@@ -88,6 +89,14 @@ test('interpolatePosition recovers from non-finite render inputs', () => {
     ),
     { x: 0, y: 0 },
   );
+});
+
+test('TEC-04: interpolateInto writes the same point into the object it is given', () => {
+  const out = { x: -1, y: -1 };
+  for (const [previous, current, alpha] of [[{ x: 10, y: -20 }, { x: 30, y: 40 }, 0.25], [{ x: Number.NaN, y: 4 }, { x: 12, y: Number.POSITIVE_INFINITY }, Number.NaN], [{ x: 3, y: 4 }, { x: 5, y: 6 }, 9]] as const) {
+    assert.equal(interpolateInto(previous.x, previous.y, current.x, current.y, alpha, out), out);
+    assert.deepEqual(out, interpolatePosition(previous, current, alpha));
+  }
 });
 
 test('visibleGridLineRange returns only world-aligned lines inside the viewport', () => {

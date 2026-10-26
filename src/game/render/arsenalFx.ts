@@ -680,6 +680,29 @@ export function crowAt(S: ArsenalFxSpec, t: number, top: number, peck: number, r
 
 /** A ring mark the painter draws this frame: its age and life, and its layout. */
 type Event = { m: Readonly<SkillMark>; id: string; st: string; age: number; life: number; aw: boolean; items: Item[] };
+/**
+ * TEC-04: what a ring mark's drawing keeps from frame to frame while its inputs hold: its stage's layout (for one frame
+ * only when the layout moves with age: a growing tip, a sweeping tail), its band at the radius it has grown to, its
+ * spikes at the level of detail, and its crack lines.
+ */
+type MarkGeo = {
+  S: ArsenalFxSpec;
+  st: string;
+  aw: boolean;
+  R: number;
+  seed: number;
+  /** Whether the layout reads the event's age, life, and reduced motion. */
+  timed: boolean;
+  age: number;
+  life: number;
+  reduced: boolean;
+  items: Item[];
+  band?: { rs: RingSpec; R: number; aw: boolean; B: ReturnType<typeof bandGeo> };
+  splash?: { sp: Splash; aw: boolean; li: number; spikes: Spike[] };
+  cracks?: { cs: Cracks; lines: ReturnType<typeof crackLines> };
+};
+/** Whether a stage's layout moves with its event's age (a tip, a tail); the rest stand still for the event's life. */
+const timedLayout = (S: ArsenalFxSpec, id: string, stage: string) => !!S.layout[id]?.[stage]?.some((q) => q.prim === 'tip' || q.prim === 'tail');
 /** An awakening gimmick's zone this frame: its spec, age, alpha, cosmetic seed, and the stamps kept under the caps. */
 type ZonePlan = { z: Readonly<AwakeningZone>; Z: ZoneSpec; age: number; life: number; A: number; seed: number; items: readonly Item[]; d: number; keep: Item[] };
 /** A zone's standing piece (a grave, a pillar), sorted in among the bodies by its foot y; the box it covers. */
@@ -722,6 +745,8 @@ export class ArsenalFxPainter {
   private readonly rimes: Rime[] = [];
   private readonly seen = new WeakSet<object>();
   private readonly events: Event[] = [];
+  /** TEC-04: each ring mark's kept geometry. */
+  private readonly markGeo = new WeakMap<object, MarkGeo>();
   private readonly zonePlans: ZonePlan[] = [];
   private readonly standList: Stand[] = [];
   /** Each zone's plan, kept from frame to frame (its stamps and standing pieces never move); refreshed by planZones. */
@@ -955,9 +980,51 @@ export class ArsenalFxPainter {
       if (!st || !circleVisible(view, m.x, m.y, m.radius + 70)) continue;
       // A gimmick's ring is plain (no awakened line); only a weapon's own blast and the eighth seal leave a decal.
       const id = m.skillId, age = m.maxLife - m.life, life = this.stageLife(id, st), main = st === this.data!.meta[id].main, aw = main && this.skills[id]?.awakened === true;
-      if (age < (decals ? (st === 'total' ? life : (main || st === 'eighth' ? S.life[id].decal : 0) ?? 0) : life)) out.push({ m, id, st, age, life, aw, items: layout(S, id, st, { R: m.radius, L: 0, w: 0, aw, seed: m.seed ?? 1, age, life, reduced: this.reduced }) });
+      if (age < (decals ? (st === 'total' ? life : (main || st === 'eighth' ? S.life[id].decal : 0) ?? 0) : life)) out.push({ m, id, st, age, life, aw, items: this.markLayout(m, id, st, age, life, aw) });
     }
     return out;
+  }
+
+  /**
+   * A ring mark's layout (API §8.2), kept while its stage and awakening (and for a timed stage its age) stay the same:
+   * decals and marks each ask for it every frame (TEC-04).
+   */
+  private markLayout(m: Readonly<SkillMark>, id: string, st: string, age: number, life: number, aw: boolean) {
+    const S = this.spec!, reduced = this.reduced, R = m.radius, seed = m.seed ?? 1;
+    const g = this.markGeo.get(m);
+    if (g && g.S === S && g.st === st && g.aw === aw && g.R === R && g.seed === seed && (!g.timed || (g.age === age && g.life === life && g.reduced === reduced))) return g.items;
+    const items = layout(S, id, st, { R, L: 0, w: 0, aw, seed, age, life, reduced });
+    // The band, spikes, and cracks stay with the mark unless its shape changed.
+    const keep = g && g.R === R && g.seed === seed ? g : undefined;
+    this.markGeo.set(m, { S, st, aw, R, seed, timed: timedLayout(S, id, st), age, life, reduced, items, band: keep?.band, splash: keep?.splash, cracks: keep?.cracks });
+    return items;
+  }
+
+  /** A mark's band at the radius it has grown to (API §7.3 band), rebuilt only while it grows (TEC-04). */
+  private bandOf(e: Event, rs: RingSpec, R: number) {
+    const g = this.markGeo.get(e.m), c = g?.band, aw = e.aw;
+    if (c && c.rs === rs && c.R === R && c.aw === aw) return c.B;
+    const B = bandGeo(rs, R, e.m.seed ?? 1, e.m.radius, (aw && rs.awakened?.widthScale) || 1, (aw && rs.awakened?.fringeSides) || undefined);
+    if (g) g.band = { rs, R, aw, B };
+    return B;
+  }
+
+  /** A blast's ink spikes kept at the level of detail (API §7.3a); they are drawn at full length and scaled (TEC-04). */
+  private spikesOf(e: Event, sp: Splash) {
+    const g = this.markGeo.get(e.m), c = g?.splash, li = this.lod;
+    if (c && c.sp === sp && c.aw === e.aw && c.li === li) return c.spikes;
+    const spikes = splashKeep(splashGeo(this.spec!, sp, e.m.radius, e.m.seed ?? 1, e.aw), sp, li);
+    if (g) g.splash = { sp, aw: e.aw, li, spikes };
+    return spikes;
+  }
+
+  /** A crack burst's paper crack lines (TEC-04: built once per mark; they grow by cutting). */
+  private cracksOf(e: Event, cs: Cracks) {
+    const g = this.markGeo.get(e.m), c = g?.cracks;
+    if (c && c.cs === cs) return c.lines;
+    const lines = crackLines(e.m.radius, cs, e.m.seed ?? 1);
+    if (g) g.cracks = { cs, lines };
+    return lines;
   }
 
   /** Mirrors a lob's landing object when it came from the right (SPEC flight landMirror); unknown ways keep it as baked. */
@@ -1074,7 +1141,7 @@ export class ArsenalFxPainter {
     const cs = g.cracks, rs = g.ring, A = fadeA(rs.fade, e.age, e.life, rs.grow, this.reduced), k = this.reduced ? 1 : lerp(cs.grow.from, 1, easeOut(clamp(e.age / cs.grow.seconds, 0, 1)));
     if (A <= 0.01) return;
     ctx.miterLimit = 4;
-    for (const q of crackLines(e.m.radius, cs, e.m.seed ?? 1)) {
+    for (const q of this.cracksOf(e, cs)) {
       this.poly(ctx, k < 1 ? cutAlong(q.pts, k) : q.pts, false, e.m.x, e.m.y);
       this.stroke(ctx, q.core ? cs.core.layers : cs.layers, A, 1, undefined, 0, 'miter');
       if (q.fork && k >= 0.75) {
@@ -1103,7 +1170,8 @@ export class ArsenalFxPainter {
     let A = u > sp.fade.at ? clamp((1 - u) / (1 - sp.fade.at), 0, 1) : 1, g = 1;
     if (this.reduced) A *= clamp(e.age / SH.reducedIn, 0, 1);
     else g = sp.grow.from + (1 - sp.grow.from) * easeOut(clamp(e.age / sp.grow.seconds, 0, 1));
-    const spikes = A > 0.01 ? splashKeep(splashGeo(S, sp, e.m.radius, e.m.seed ?? 1, e.aw), sp, this.lod) : [];
+    if (A <= 0.01) return false;
+    const spikes = this.spikesOf(e, sp);
     if (!spikes.length) return false;
     const { x, y } = e.m;
     ctx.beginPath();
@@ -1165,7 +1233,7 @@ export class ArsenalFxPainter {
         }
       }
     } else if (rs.prim === 'band') {
-      const B = bandGeo(rs, R, seed, R0, (aw && rs.awakened?.widthScale) || 1, (aw && rs.awakened?.fringeSides) || undefined);
+      const B = this.bandOf(e, rs, R);
       if (aw && rs.awakened?.inner) arc(R * rs.awakened.inner.at, [0, TAU], rs.awakened.inner.layers);
       for (const sg of B.segs) {
         const edge = (pts: P2[], layers: Ls) => {

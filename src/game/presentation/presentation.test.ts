@@ -501,6 +501,9 @@ test('FX-06: blasts and collapses ring at their size, a coin glints under coin f
   presentation.handle(crit);
   presentation.handle({ ...crit, id: 8 });
   assert.deepEqual(presentation.skillMarks.filter((mark) => mark.kind === 'mark').map((mark) => mark.target), [7, 8]);
+  for (let target = 100; target < 120; target += 1) presentation.handle({ ...crit, id: target });
+  presentation.handle(crit);
+  assert.deepEqual(presentation.skillMarks.filter((mark) => mark.kind === 'mark').map((mark) => mark.target), [7, 8, ...Array.from({ length: 10 }, (_, k) => 100 + k)], 'twelve at most');
 });
 
 test('K11: a shock that went off stays 1.45 s (burst, then its mark) by its own id and size, and goes with the round', () => {

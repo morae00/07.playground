@@ -585,8 +585,14 @@ export class Presentation {
   }
 
   private addExecutionMark(target: number, x: number, y: number) {
-    const marks = this.skillMarks.filter((mark) => mark.kind === 'mark');
-    if (marks.length >= EXECUTION_MARK_CAP || marks.some((mark) => mark.target === target)) return;
+    // Counted in place: crits come in crowds (TEC-04).
+    let marks = 0;
+    for (const mark of this.skillMarks) {
+      if (mark.kind !== 'mark') continue;
+      if (mark.target === target) return;
+      marks += 1;
+    }
+    if (marks >= EXECUTION_MARK_CAP) return;
     this.addSkillMark('mark', 'executionMark', x, y, 0, false, x, y, target);
   }
 

@@ -40,7 +40,7 @@ import BOMBERS from '../../content/data/bombers.ts';
 import { AnimationBook, SPAWN_SECONDS, enemyPoses, heroPoses, poseFrame, stepBossAnim, stepEnemyAnim, stepPlayerAnim, type AnimState, type EnemyAnim } from './animation.ts';
 import { phaseFor, type GroundTile, type SpriteAtlas, type SpriteFrame } from './assets/spriteAtlas.ts';
 import { CHAPTER_PACKS, COMMON_PACK, FX_SLOT, HERO_SLOT, PICKUP_SLOT, bomberSlot, characterPack, characterSlot, bossSlot, bossState, enemyDrawScale, enemySlot, frameKey, pickupState, slotEnabled, type BossPose, type BossSlot } from './assets/slots.ts';
-import { GameRenderer } from './GameRenderer.ts';
+import { GameRenderer, type HostileProjectileVisualInput } from './GameRenderer.ts';
 import { ArsenalFxPainter, type Over, type Stand } from './arsenalFx.ts';
 import { HazardPainter, type TerrainHost } from './hazardArt.ts';
 import { NumberGlyphs, type NumberStyle } from './numberGlyphs.ts';
@@ -51,6 +51,7 @@ import { SkillVfxPainter, blastDustSpots, wardPlateSpots } from './skillVfx.ts';
 import { CHAPTER_VISUALS, HAZARD_ART, enemyRoleFor, type HazardArtProfile, type VisualDetail } from './visualRegistry.ts';
 import {
   circleVisible,
+  interpolateInto,
   interpolatePosition,
   makeViewport,
   rectVisible,
@@ -118,6 +119,14 @@ const plantFrame = (frames: number, age: number) => Math.min(frames - 1, Math.ma
 /** Cut-outs kept per cache: far more than the frames a chapter and the hero have (TEC-09). */
 const CUTOUT_LIMIT = 1024;
 
+/** TEC-04: colours drawn for many bodies every frame, built once rather than per body per frame. */
+const FOOT_SHADOW = rgba(NEUTRAL.ink, 0.3);
+const SHOT_SHADOW = rgba(NEUTRAL.ink, 0.22);
+const WARDEN_ARC = Object.freeze([[rgba(NEUTRAL.paperBright, 0.9), 7], [rgba(NEUTRAL.ink, 0.78), 4]] as const);
+const HERO_RING = Object.freeze([[rgba(NEUTRAL.ink, 0.8), 5.2], [SIGNAL.allyDeep, 4.2], [SIGNAL.ally, 2.6], [SIGNAL.allyGlow, 0.7]] as const);
+/** Nearest first, for the burning bodies that get feet flames (their distance is worked out once per frame). */
+const byFlameDistance = (a: BodyDraw, b: BodyDraw) => a.flameDistance - b.flameDistance;
+
 /** The hit flash fades in three steps over its 0.08 s (FX-03): bright, half, faint. */
 function hitFlashAlpha(hitFlash: number) {
   if (hitFlash <= 0) return 0;
@@ -180,6 +189,10 @@ type BodyDraw = {
   anim: AnimState | null;
   obstacle: Readonly<Obstacle> | null;
   sprite: EnemySprite | null;
+  /** The body's own sprite record, refilled whenever it draws an enemy sprite (TEC-04: no object per enemy per frame). */
+  ownSprite: EnemySprite | null;
+  /** How far a burning enemy stands from the hero this frame (pickMobFlames). */
+  flameDistance: number;
   cloneSide: -1 | 1;
   /** K10: an awakening gimmick's standing piece (a grave, a pillar). */
   stand: Stand | null;
@@ -353,7 +366,21 @@ export class WorldRenderer {
     telegraph: (ctx, hazard) => this.visual.drawHazard(ctx, hazard, 1, SHOCK_TELEGRAPH),
   };
   private readonly mobFlames = new Set<number>();
+  private readonly flameBodies: BodyDraw[] = [];
   private readonly kitHazards: Readonly<Hazard>[] = [];
+  /**
+   * TEC-04: what the crowd's drawing reuses instead of allocating per body per frame: the frame's motion policy, the
+   * point one body is drawn at, the sprite being worked out, the boss shots' vector input, the recoils by body, and the
+   * atlas frames by slot, pose, and index (emptied with the cut-outs whenever the atlas changes).
+   */
+  private policy = motionPolicy(false, false);
+  private readonly at = { x: 0, y: 0 };
+  private readonly spriteOut: EnemySprite = { frame: null!, facing: 1, scale: 1 };
+  private readonly hostileShot: HostileProjectileVisualInput = { x: 0, y: 0, vx: 0, vy: 0, radius: 0, life: 0, kind: 'enemy', alpha: 1 };
+  private readonly recoilById = new Map<number, Readonly<Recoil>>();
+  private readonly frameBook = new Map<string, Map<string, (SpriteFrame | null)[]>>();
+  private readonly enemySlots = new Map<string, string>();
+  private enemySlotsChapter = -1;
   /** Each passive as last seen ("level" plus "a" once awakened), the pops showing, and the clock they were read at. */
   private readonly passives = new Map<SkillId, string>();
   private readonly pops: { skillId: SkillId; at: number; awakened: boolean }[] = [];
@@ -404,6 +431,7 @@ export class WorldRenderer {
     this.eliteCutouts.clear();
     this.burnCutouts.clear();
     this.outlines.clear();
+    this.frameBook.clear();
   }
 
   /**
@@ -423,6 +451,8 @@ export class WorldRenderer {
     this.bodyCount = 0;
     this.kitHazards.length = 0;
     this.mobFlames.clear();
+    this.flameBodies.length = 0;
+    this.recoilById.clear();
     this.trail.length = 0;
   }
 
@@ -447,6 +477,11 @@ export class WorldRenderer {
     );
   }
 
+  /** As interpolated, into the one shared point (TEC-04): for a body read at once, before the next is placed. */
+  private placed(item: { x: number; y: number; prevX?: number; prevY?: number }) {
+    return interpolateInto(item.prevX ?? item.x, item.prevY ?? item.y, item.x, item.y, this.world.alpha, this.at);
+  }
+
   /** Draws one frame. The world is read-only; the renderer keeps only its own caches between frames. */
   draw(ctx: CanvasRenderingContext2D, world: RenderWorld) {
     this.world = world;
@@ -454,7 +489,7 @@ export class WorldRenderer {
     const camera = this.interpolated(this.world.camera);
     const frame = this.world.view.frame;
     this.viewport = makeViewport(camera.x, camera.y, frame.width, frame.height, 160);
-    const policy = motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion);
+    const policy = (this.policy = motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion));
     const snapshot = createRenderFrameSnapshot({
       chapter: this.world.chapter,
       elapsed: this.world.elapsed,
@@ -499,6 +534,9 @@ export class WorldRenderer {
     ctx.save();
     ctx.setTransform(this.world.view.dpr * frame.zoom, 0, 0, this.world.view.dpr * frame.zoom, this.world.view.dpr * frame.offsetX, this.world.view.dpr * frame.offsetY);
     ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
+    // FX-02's recoils by body, looked up once per enemy drawn (a scan of every recoil per body grew with the crowd).
+    this.recoilById.clear();
+    for (const recoil of world.effects.recoils) if (!this.recoilById.has(recoil.id)) this.recoilById.set(recoil.id, recoil);
     this.collectBodies();
     // K10: what the kit draws on the enemies this frame, nearest the hero first (API §14.5).
     if (this.arsenalArt && this.playerBody && this.afx.planOverlays(this.sortedBodies, world.zones, this.playerBody.x, this.playerBody.y)) {
@@ -595,7 +633,7 @@ export class WorldRenderer {
   private acquireBody(): BodyDraw {
     let body = this.bodyPool[this.bodyCount];
     if (!body) {
-      body = { rank: 1, depth: 0, id: 0, x: 0, y: 0, left: 0, right: 0, top: 0, bottom: 0, enemy: null, anim: null, obstacle: null, sprite: null, cloneSide: 1, stand: null, kit: undefined };
+      body = { rank: 1, depth: 0, id: 0, x: 0, y: 0, left: 0, right: 0, top: 0, bottom: 0, enemy: null, anim: null, obstacle: null, sprite: null, ownSprite: null, flameDistance: 0, cloneSide: 1, stand: null, kit: undefined };
       this.bodyPool.push(body);
     }
     this.bodyCount += 1;
@@ -636,7 +674,7 @@ export class WorldRenderer {
       body.obstacle = obstacle;
     }
     for (const enemy of this.world.enemies) {
-      const point = this.interpolated(enemy);
+      const point = this.placed(enemy);
       // Off-screen characters step too, so one walking into view is not mistaken for a new spawn.
       const anim = this.animate(enemy);
       const sprite = this.enemySprite(enemy, anim);
@@ -657,7 +695,13 @@ export class WorldRenderer {
       body.bottom = sprite ? point.y + enemy.radius * 0.42 : point.y + enemy.radius;
       body.enemy = enemy;
       body.anim = anim;
-      body.sprite = sprite ?? null;
+      if (sprite) {
+        const own = (body.ownSprite ??= { frame: sprite.frame, facing: sprite.facing, scale: sprite.scale });
+        own.frame = sprite.frame;
+        own.facing = sprite.facing;
+        own.scale = sprite.scale;
+        body.sprite = own;
+      }
     }
     this.heroMoving = this.playerMoved();
     this.hero = this.heroFrame(this.heroMoving);
@@ -666,10 +710,9 @@ export class WorldRenderer {
     const clone = this.world.skills.mirrorClone;
     if (clone) {
       const sideAngle = this.world.aim.angle + Math.PI / 2;
-      const policy = motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion);
       // Both clones fire every volley, so both are drawn, at the offset the shots start from (BUG-16).
       for (const side of [-1, 1] as const) {
-        const drift = policy.reduced ? 0 : Math.sin(this.world.elapsed * 4.2 + side) * 3;
+        const drift = this.policy.reduced ? 0 : Math.sin(this.world.elapsed * 4.2 + side) * 3;
         const x = player.x + Math.cos(sideAngle) * SKILL_NUMBERS.mirrorClone.cloneOffset * side + Math.cos(this.world.aim.angle) * drift;
         const y = player.y + Math.sin(sideAngle) * SKILL_NUMBERS.mirrorClone.cloneOffset * side + Math.sin(this.world.aim.angle) * drift;
         const body = this.acquireBody();
@@ -982,9 +1025,15 @@ export class WorldRenderer {
     this.mobFlames.clear();
     if (!this.terrainArt) return;
     const { x, y } = this.world.player;
-    const burning = this.sortedBodies.filter((body) => body.sprite && (body.enemy?.burn ?? 0) > 0 && !body.enemy!.isBoss);
-    burning.sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y));
-    for (const body of burning.slice(0, this.terrain.mobCap())) this.mobFlames.add(body.id);
+    const burning = this.flameBodies;
+    burning.length = 0;
+    for (const body of this.sortedBodies) {
+      if (!body.sprite || !((body.enemy?.burn ?? 0) > 0) || body.enemy!.isBoss) continue;
+      body.flameDistance = Math.hypot(body.x - x, body.y - y);
+      burning.push(body);
+    }
+    burning.sort(byFlameDistance);
+    for (let index = 0, cap = Math.min(burning.length, this.terrain.mobCap()); index < cap; index += 1) this.mobFlames.add(burning[index].id);
   }
 
   /**
@@ -1136,7 +1185,7 @@ export class WorldRenderer {
       }
       if (body.sprite) {
         ctx.save();
-        ctx.fillStyle = rgba(NEUTRAL.ink, 0.3);
+        ctx.fillStyle = FOOT_SHADOW;
         ctx.beginPath();
         ctx.ellipse(body.x, body.y, enemy.radius, enemy.radius * 0.42, 0, 0, Math.PI * 2);
         ctx.fill();
@@ -1147,7 +1196,7 @@ export class WorldRenderer {
         // The warden's shield front (SYS-02): an ink arc on the floor, so a flank is readable at a glance.
         ctx.save();
         ctx.lineCap = 'round';
-        for (const [color, width] of [[rgba(NEUTRAL.paperBright, 0.9), 7], [rgba(NEUTRAL.ink, 0.78), 4]] as const) {
+        for (const [color, width] of WARDEN_ARC) {
           ctx.strokeStyle = color;
           ctx.lineWidth = width;
           ctx.beginPath();
@@ -1276,7 +1325,7 @@ export class WorldRenderer {
     const { x, y } = body;
     const radius = enemy.radius;
     const planted = enemy.fuseAt !== undefined;
-    const policy = motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion);
+    const policy = this.policy;
     const beat = policy.reduced ? 0.5 : 0.5 + 0.5 * Math.sin(this.world.elapsed * 9 + phaseFor(enemy.id) * Math.PI * 2);
     ctx.save();
     ctx.lineWidth = 2.5;
@@ -1339,7 +1388,7 @@ export class WorldRenderer {
 
   /** Three ink dots circling over a stunned enemy's head (SYS-02 wall stun, chain spark stun). */
   private drawStunMark(ctx: CanvasRenderingContext2D, x: number, y: number, id: number) {
-    const policy = motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion);
+    const policy = this.policy;
     const spin = policy.reduced ? 0 : this.world.elapsed * 5 + phaseFor(id) * Math.PI * 2;
     ctx.save();
     ctx.fillStyle = NEUTRAL.ink;
@@ -1356,9 +1405,9 @@ export class WorldRenderer {
   private drawPickups(ctx: CanvasRenderingContext2D) {
     const sprites = this.sprites;
     const baked = sprites?.status(COMMON_PACK) === 'ready' && slotEnabled(PICKUP_SLOT) ? sprites : undefined;
-    const still = motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion).reduced;
+    const still = this.policy.reduced;
     for (const pickup of this.world.pickups) {
-      const point = this.interpolated(pickup);
+      const point = this.placed(pickup);
       if (!circleVisible(this.viewport, point.x, point.y, pickup.radius + 10)) continue;
       const frame = baked?.frame(frameKey(PICKUP_SLOT, pickupState(pickup.kind, pickup.value), 0));
       if (!frame) {
@@ -1432,7 +1481,7 @@ export class WorldRenderer {
     const point = this.interpolated(target);
     const outerRadius = target.radius + (target.isBoss ? 22 : 14);
     if (!circleVisible(this.viewport, point.x, point.y, outerRadius + 12)) return;
-    const policy = motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion);
+    const policy = this.policy;
     const rotation = policy.rotateDanger ? this.world.elapsed * 0.9 : 0;
 
     ctx.save();
@@ -1613,14 +1662,14 @@ export class WorldRenderer {
 
   private drawFriendlyProjectiles(ctx: CanvasRenderingContext2D) {
     for (const projectile of this.world.projectiles) {
-      const point = this.interpolated(projectile);
-      if (!circleVisible(this.viewport, point.x, point.y, projectile.radius * 8)) continue;
+      const { x, y } = this.placed(projectile);
+      if (!circleVisible(this.viewport, x, y, projectile.radius * 8)) continue;
       // K10: an enemy shot an ink orbit turned back, a paper comet (API §14.11).
-      if (this.arsenalArt && this.afx.drawShot(ctx, projectile, point.x, point.y)) continue;
-      if (this.skillArt && (SKILL_SHOTS.has(projectile.look) || this.ownShot(projectile)) && this.drawSkillShot(ctx, projectile, point.x, point.y)) continue;
+      if (this.arsenalArt && this.afx.drawShot(ctx, projectile, x, y)) continue;
+      if (this.skillArt && (SKILL_SHOTS.has(projectile.look) || this.ownShot(projectile)) && this.drawSkillShot(ctx, projectile, x, y)) continue;
       this.visual.drawFriendlyProjectile(ctx, {
-        x: point.x,
-        y: point.y,
+        x,
+        y,
         vx: projectile.vx,
         vy: projectile.vy,
         radius: projectile.radius,
@@ -1676,10 +1725,10 @@ export class WorldRenderer {
    */
   private drawShotShadows(ctx: CanvasRenderingContext2D) {
     ctx.save();
-    ctx.fillStyle = rgba(NEUTRAL.ink, 0.22);
+    ctx.fillStyle = SHOT_SHADOW;
     for (const projectile of this.world.bossProjectiles) {
       if (projectile.kind === 'enemy' || projectile.fading) continue;
-      const point = this.interpolated(projectile);
+      const point = this.placed(projectile);
       if (!circleVisible(this.viewport, point.x, point.y + SHOT_SHADOW_DROP, projectile.radius * 2)) continue;
       ctx.beginPath();
       ctx.ellipse(point.x + SHOT_SHADOW_DROP * 0.4, point.y + SHOT_SHADOW_DROP, projectile.radius, projectile.radius * 0.45, 0, 0, Math.PI * 2);
@@ -1689,19 +1738,19 @@ export class WorldRenderer {
   }
 
   private drawHostileProjectiles(ctx: CanvasRenderingContext2D) {
+    const input = this.hostileShot;
     for (const projectile of this.world.bossProjectiles) {
-      const point = this.interpolated(projectile);
-      if (!circleVisible(this.viewport, point.x, point.y, projectile.radius * 2.2)) continue;
-      this.visual.drawHostileProjectile(ctx, {
-        x: point.x,
-        y: point.y,
-        vx: projectile.vx,
-        vy: projectile.vy,
-        radius: projectile.radius,
-        life: projectile.life,
-        kind: projectile.kind,
-        alpha: projectile.fading ? Math.max(0, Math.min(1, projectile.life / 0.3)) : 1,
-      });
+      const { x, y } = this.placed(projectile);
+      if (!circleVisible(this.viewport, x, y, projectile.radius * 2.2)) continue;
+      input.x = x;
+      input.y = y;
+      input.vx = projectile.vx;
+      input.vy = projectile.vy;
+      input.radius = projectile.radius;
+      input.life = projectile.life;
+      input.kind = projectile.kind;
+      input.alpha = projectile.fading ? Math.max(0, Math.min(1, projectile.life / 0.3)) : 1;
+      this.visual.drawHostileProjectile(ctx, input);
     }
   }
 
@@ -1709,7 +1758,7 @@ export class WorldRenderer {
     // A new enemy rises out of its ink bloom (FX-03); hit and contact rules do not change meanwhile.
     const rise = body.anim?.state === 'spawn' ? 0.35 + 0.65 * this.spawnProgress(body.anim) : 1;
     // FX-02: a struck body jolts along the blow and eases back; its simulated position never moves for it.
-    const recoil = this.world.effects.recoils.find((entry) => entry.id === enemy.id);
+    const recoil = this.recoilById.get(enemy.id);
     const push = recoil ? (recoil.life / recoil.maxLife) ** 2 * recoil.size : 0;
     const x = body.x + (recoil ? recoil.dx * push : 0);
     const y = body.y + (recoil ? recoil.dy * push : 0);
@@ -1719,7 +1768,7 @@ export class WorldRenderer {
       const outline = enemy.elite ? this.silhouette(frame, SIGNAL.elite, this.eliteCutouts) : null;
       if (outline) for (const [dx, dy] of ELITE_NUDGES) this.blit(ctx, outline, x + dx, y + dy, facing, scale, rise);
       this.blit(ctx, frame, x, y, facing, scale, rise);
-      const flash = hitFlashAlpha(enemy.hitFlash) * motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion).flashStrength;
+      const flash = hitFlashAlpha(enemy.hitFlash) * this.policy.flashStrength;
       const silhouette = flash > 0 ? this.silhouette(frame) : null;
       if (silhouette) this.blit(ctx, silhouette, x, y, facing, scale, flash * rise);
       // K11: feet flames only (no body tint, V2); FX-03's coral body stands in while the hazard art is missing.
@@ -1734,7 +1783,7 @@ export class WorldRenderer {
       ctx.save();
       ctx.globalAlpha *= rise;
     }
-    this.drawVectorEnemy(ctx, enemy, { ...body, x, y });
+    this.drawVectorEnemy(ctx, enemy, x, y, body.anim?.heading ?? 0);
     if (enemy.elite) {
       ctx.save();
       ctx.strokeStyle = SIGNAL.elite;
@@ -1778,11 +1827,11 @@ export class WorldRenderer {
     ctx.restore();
   }
 
-  private drawVectorEnemy(ctx: CanvasRenderingContext2D, enemy: Readonly<Entity>, body: BodyDraw) {
+  private drawVectorEnemy(ctx: CanvasRenderingContext2D, enemy: Readonly<Entity>, x: number, y: number, heading: number) {
     this.visual.drawEnemy(ctx, {
       id: enemy.id,
-      x: body.x,
-      y: body.y,
+      x,
+      y,
       vx: enemy.vx,
       vy: enemy.vy,
       radius: enemy.radius,
@@ -1796,7 +1845,7 @@ export class WorldRenderer {
       bossPhase: enemy.bossPhase,
       legacyBoss: enemy.legacyBoss === true,
       patternPhase: enemy.patternPhase,
-      heading: body.anim?.heading ?? 0,
+      heading,
     });
   }
 
@@ -1906,7 +1955,7 @@ export class WorldRenderer {
    */
   private drawBurning(ctx: CanvasRenderingContext2D, frame: SpriteFrame, x: number, y: number, facing: 1 | -1, scale: number, burn: number, id: number) {
     if (burn <= 0) return;
-    const policy = motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion);
+    const policy = this.policy;
     const fade = Math.min(1, burn / 0.3);
     const phase = phaseFor(id) * Math.PI * 2;
     const throb = policy.beat ? 0.5 + 0.18 * Math.sin(this.world.elapsed * 13 + phase) : 0.5;
@@ -1955,7 +2004,7 @@ export class WorldRenderer {
 
   /** The hero falls back over the death moment (FX-03) and lies still until the settlement; upright otherwise. */
   private heroTilt() {
-    if (this.heroAnim?.state !== 'death' || motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion).reduced) return 0;
+    if (this.heroAnim?.state !== 'death' || this.policy.reduced) return 0;
     const progress = 1 - this.world.effects.deathMoment / DEATH_MOMENT_SECONDS;
     return -(this.heroAnim.facing) * progress * progress * Math.PI * 0.44;
   }
@@ -2128,12 +2177,12 @@ export class WorldRenderer {
   private drawHeroGround(ctx: CanvasRenderingContext2D, x: number, y: number) {
     const r = HIT_RADIUS.playerContact;
     ctx.save();
-    ctx.fillStyle = rgba(NEUTRAL.ink, 0.3);
+    ctx.fillStyle = FOOT_SHADOW;
     ctx.beginPath();
     ctx.ellipse(x, y, r, r * 0.42, 0, 0, Math.PI * 2);
     ctx.fill();
     const aim = this.world.aim.angle;
-    for (const [color, width] of [[rgba(NEUTRAL.ink, 0.8), 5.2], [SIGNAL.allyDeep, 4.2], [SIGNAL.ally, 2.6], [SIGNAL.allyGlow, 0.7]] as const) {
+    for (const [color, width] of HERO_RING) {
       ctx.strokeStyle = color;
       ctx.lineWidth = width;
       for (let index = 0; index < 4; index += 1) {
@@ -2547,7 +2596,10 @@ export class WorldRenderer {
     return anim;
   }
 
-  /** An enemy's atlas frame, facing, and scale for its animation state, or undefined to draw it with vectors. */
+  /**
+   * An enemy's atlas frame, facing, and scale for its animation state, or undefined to draw it with vectors. The
+   * record is shared (spriteOut): the caller copies it before the next enemy's.
+   */
   private enemySprite(enemy: Readonly<Entity>, anim: AnimState) {
     const sprites = this.sprites;
     if (!sprites) return undefined;
@@ -2556,29 +2608,61 @@ export class WorldRenderer {
     if (!pack || sprites.status(pack) !== 'ready') return undefined;
     // SYS-14 (K7): a bomber wears its own drawing when the chapter pack has it, else its role's.
     const own = enemy.bomber ? bomberSlot(this.world.chapter, enemy.bomber) : undefined;
-    const slot = own && sprites.animation(own, 'idle') ? own : enemySlot(this.world.chapter, enemy.tier, enemy.attackStyle);
+    const slot = own && sprites.animation(own, 'idle') ? own : this.enemySlotOf(enemy);
     if (!slotEnabled(slot)) return undefined;
     // A planted fuse bomber shows its fuse burning down by the fuse's progress, not the clock, at every level of
     // detail: it is the countdown (V3, V5). It holds through hits, like any threat.
     if (slot === own && enemy.fuseAt !== undefined) {
       const spec = sprites.animation(slot, 'plant');
       const frame = spec && sprites.frame(frameKey(slot, 'plant', plantFrame(spec.frames, this.world.elapsed - enemy.fuseAt)));
-      if (frame) return { frame, facing: anim.facing, scale: 1 };
+      if (frame) return this.spriteOf(frame, anim.facing, 1);
     }
     const moving = Math.hypot(enemy.vx, enemy.vy) > 5;
     // Reduced flash keeps a struck body in its pose: the negative hit frame is the brightest flash (UI-08).
-    const flashPose = anim.state === 'hurt' && !motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion).invertFlash;
+    const flashPose = anim.state === 'hurt' && !this.policy.invertFlash;
     const state = flashPose ? (moving ? 'move' : 'idle') : anim.state as EnemyAnim;
     // K10: a frozen body holds its idle frame, still and dark under the freeze's white crystals (not the stun's hit frame).
     const frozen = (enemy.awk?.freeze ?? 0) > this.world.elapsed;
     for (const pose of enemyPoses(state, moving, frozen)) {
       const spec = sprites.animation(slot, pose);
       if (!spec) continue;
-      const frame = sprites.frame(frameKey(slot, pose, poseFrame(spec, pose, anim.startedAt, this.world.elapsed, phaseFor(enemy.id), frozen ? 'minimal' : this.stats.detail)));
+      const frame = this.atlasFrame(sprites, slot, pose, poseFrame(spec, pose, anim.startedAt, this.world.elapsed, phaseFor(enemy.id), frozen ? 'minimal' : this.stats.detail));
       if (!frame) return undefined;
-      return { frame, facing: anim.facing, scale: enemyDrawScale(enemyRoleFor(enemy.tier, enemy.attackStyle), enemy.tier) };
+      return this.spriteOf(frame, anim.facing, enemyDrawScale(enemyRoleFor(enemy.tier, enemy.attackStyle), enemy.tier));
     }
     return undefined;
+  }
+
+  private spriteOf(frame: SpriteFrame, facing: 1 | -1, scale: number) {
+    const out = this.spriteOut;
+    out.frame = frame;
+    out.facing = facing;
+    out.scale = scale;
+    return out;
+  }
+
+  /** An enemy's role slot in the chapter on screen, its name built once per role (TEC-04). */
+  private enemySlotOf(enemy: Readonly<Entity>) {
+    const { chapter } = this.world;
+    if (chapter !== this.enemySlotsChapter) {
+      this.enemySlots.clear();
+      this.enemySlotsChapter = chapter;
+    }
+    const role = enemyRoleFor(enemy.tier, enemy.attackStyle);
+    let slot = this.enemySlots.get(role);
+    if (slot === undefined) this.enemySlots.set(role, (slot = enemySlot(chapter, enemy.tier, enemy.attackStyle)));
+    return slot;
+  }
+
+  /** The atlas frame of a slot's pose, kept by index so a crowd's frames need no key string each (TEC-04). */
+  private atlasFrame(sprites: SpriteAtlas, slot: string, pose: string, index: number) {
+    let poses = this.frameBook.get(slot);
+    if (!poses) this.frameBook.set(slot, (poses = new Map()));
+    let frames = poses.get(pose);
+    if (!frames) poses.set(pose, (frames = []));
+    let frame = frames[index];
+    if (frame === undefined) frames[index] = frame = sprites.frame(frameKey(slot, pose, index)) ?? null;
+    return frame ?? undefined;
   }
 
   /**
@@ -2596,7 +2680,7 @@ export class WorldRenderer {
       ?? (pose === 'attack' ? sprites.frame(frameKey(entry.slot, bossState(phase, 'idle', enraged, entry.phases), 0)) : undefined);
     if (!frame) return undefined;
     this.bossesSeen.set(enemy.id, { slot: entry, x: enemy.x, y: enemy.y, facing: anim.facing, at: this.world.elapsed });
-    return { frame, facing: anim.facing, scale: 1 };
+    return this.spriteOf(frame, anim.facing, 1);
   }
 
   /** A field boss's shock about to go off under it: the zone it planted is still counting down (field-shock). */
@@ -2652,7 +2736,7 @@ export class WorldRenderer {
    */
   private drawDamageNumbers(ctx: CanvasRenderingContext2D) {
     if (!this.world.options.damageNumbers) return;
-    const reduced = motionPolicy(this.world.options.reducedFlash, this.world.reducedMotion).reduced;
+    const reduced = this.policy.reduced;
     for (const number of this.world.effects.damageNumbers) {
       const x = number.x + (phaseFor(number.id) - 0.5) * NUMBER_SPREAD;
       if (!circleVisible(this.viewport, x, number.y, 52)) continue;

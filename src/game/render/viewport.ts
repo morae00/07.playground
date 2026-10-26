@@ -119,16 +119,19 @@ export function segmentVisible(
 }
 
 export function interpolatePosition(previous: Point, current: Point, alpha: number): Point {
-  const previousX = Number.isFinite(previous.x) ? previous.x : finiteOr(current.x, 0);
-  const previousY = Number.isFinite(previous.y) ? previous.y : finiteOr(current.y, 0);
-  const currentX = Number.isFinite(current.x) ? current.x : previousX;
-  const currentY = Number.isFinite(current.y) ? current.y : previousY;
-  const safeAlpha = Number.isFinite(alpha) ? Math.max(0, Math.min(1, alpha)) : 1;
+  return interpolateInto(previous.x, previous.y, current.x, current.y, alpha, { x: 0, y: 0 });
+}
 
-  return {
-    x: previousX + (currentX - previousX) * safeAlpha,
-    y: previousY + (currentY - previousY) * safeAlpha,
-  };
+/** interpolatePosition written into `out`, for the renderer's per-body loops (TEC-04: no object per body per frame). */
+export function interpolateInto<T extends Point>(prevX: number, prevY: number, x: number, y: number, alpha: number, out: T): T {
+  const previousX = Number.isFinite(prevX) ? prevX : finiteOr(x, 0);
+  const previousY = Number.isFinite(prevY) ? prevY : finiteOr(y, 0);
+  const currentX = Number.isFinite(x) ? x : previousX;
+  const currentY = Number.isFinite(y) ? y : previousY;
+  const safeAlpha = Number.isFinite(alpha) ? Math.max(0, Math.min(1, alpha)) : 1;
+  out.x = previousX + (currentX - previousX) * safeAlpha;
+  out.y = previousY + (currentY - previousY) * safeAlpha;
+  return out;
 }
 
 export function visibleGridLineRange(
