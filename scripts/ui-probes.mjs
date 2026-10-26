@@ -896,6 +896,45 @@ try {
     await page.close();
   });
 
+  await probe('UI-14', async () => {
+    // The menu opens on the stage to play next; a resumed run's retry starts that run's stage, not the menu's.
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await page.goto('http://127.0.0.1:5177/');
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    await page.evaluate(() => {
+      const key = 'blackline-survivor-save-v2';
+      const save = JSON.parse(localStorage.getItem(key));
+      save.meta.progress = { chapter: 1, stage: 3 };
+      localStorage.setItem(key, JSON.stringify(save));
+    });
+    await page.reload();
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    record('UI-14 the menu opens on the stage to play next', (await page.getByRole('button', { name: 'Ch.1 / St.3 출정' }).count()) === 1);
+    await page.locator('.stageNode').nth(1).click();
+    await page.getByRole('button', { name: 'Ch.1 / St.2 출정' }).click();
+    await skipStory(page);
+    await page.waitForTimeout(500);
+    await page.keyboard.press('p');
+    await page.getByRole('dialog', { name: '일시정지' }).waitFor();
+    await page.waitForTimeout(200);
+    await page.reload();
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    await page.getByRole('region', { name: '중단한 런' }).getByRole('button', { name: '이어하기' }).click();
+    const hub = page.getByRole('dialog', { name: '일시정지' });
+    await hub.waitFor({ timeout: 20000 });
+    await hub.getByRole('button', { name: 'Stage 메뉴' }).click();
+    await page.getByRole('button', { name: '포기하고 정산' }).click();
+    const retry = page.getByRole('dialog').getByRole('button', { name: '다시 도전' });
+    await retry.waitFor();
+    // Past the settlement's input guard.
+    await page.waitForTimeout(1000);
+    await retry.click();
+    await page.locator('.heroLine').waitFor({ timeout: 5000 });
+    const badge = (await page.locator('.heroLine strong').textContent()) ?? '';
+    record('UI-14 retrying a resumed run starts its stage', badge.startsWith('Ch.1 / St.2 '), badge);
+    await page.close();
+  });
+
   await probe('CON-06', async () => {
     // A new save plays the prologue before its first run: four panels, each with its art and words, Enter going on.
     for (const [width, height] of [[1024, 720], [1440, 900]]) {

@@ -188,10 +188,13 @@ try {
   const sprites = await until(() => page.evaluate(() => document.documentElement.dataset.sprites));
   record('TEC-03 sprite packs load under app://', sprites === 'ready', String(sprites));
 
-  await page.getByRole('button', { name: 'Ch.1 / St.1 출정' }).click();
+  // UI-14: the menu opens on the stage the moved save plays next.
+  const launch = page.getByRole('button', { name: 'Ch.1 / St.3 출정' });
+  record('UI-14 the menu opens on the moved save\'s next stage', (await launch.count()) === 1);
+  await launch.click();
   const timer = page.locator('.hudClock .timer');
   await timer.waitFor({ timeout: 5_000 });
-  // CON-06: the moved save played 1-1 before the story existed, so it has passed the prologue (G17).
+  // CON-06: the moved save played chapter 1 before the story existed, so it has passed the prologue (G17).
   record('CON-06 a save from before the story starts its run without the prologue', (await page.locator('.storyPanels').count()) === 0);
   const startClock = await timer.innerText();
   await page.waitForTimeout(2_200);

@@ -147,8 +147,9 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const [phase, setPhase] = useState<'menu' | 'playing' | 'draft' | 'roundClear' | 'gameOver'>('menu');
   /** The chapter of the run on screen; the menu shows the selected chapter instead (atlas packs follow it). */
   const [runChapter, setRunChapter] = useState(1);
-  const [selectedChapterId, setSelectedChapterId] = useState(1);
-  const [selectedStageNo, setSelectedStageNo] = useState(1);
+  // UI-14: the menu opens on the stage to play next.
+  const [selectedChapterId, setSelectedChapterId] = useState(() => initialSave.data.meta.progress.chapter);
+  const [selectedStageNo, setSelectedStageNo] = useState(() => initialSave.data.meta.progress.stage);
   const [developerMode, setDeveloperMode] = useState(DEVELOPER_UI_DEFAULT_ENABLED);
   const [menuView, setMenuView] = useState<MenuView>('play');
   // Developer builds only: the cheat panel (UI-04). The pause hub keeps its last tab between pauses.
@@ -638,6 +639,11 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   const resumeSuspended = useCallback(() => {
     const run = asSuspendedRun(profileRef.current.runSuspend?.state);
     if (!run) return;
+    // UI-14: the settlement's retry starts the selected stage, which is the resumed run's.
+    if (run.mode === 'campaign') {
+      setSelectedChapterId(run.chapter);
+      setSelectedStageNo(run.stage);
+    }
     setResuming(true);
     beginRun(run.mode === 'infinite' ? INFINITE_BASELINE.chapter : run.chapter, (engine) => {
       void engine.resumeRun(run).then(() => {
