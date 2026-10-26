@@ -502,7 +502,7 @@ Copied reports replace the home folder in paths. Nothing is sent anywhere. In th
 
 ## Save versions and the campaign shape (TEC-08)
 
-`src/platform/save.ts` keeps one versioned envelope under one localStorage key, with the previous write as its backup:
+`src/platform/save.ts` keeps one versioned envelope under one localStorage key, with the previous write as its backup. A write backs up only an envelope this build reads, so the first write after a load that recovered from the backup does not copy the corrupt primary over it (BUG-28):
 - Version 3 adds the profile: stage records, and room for characters, codex, achievements, and a suspended run, so R3 systems need no further migration.
 - A version 2 save migrates on load with its meta and options; the profile starts empty. New options take their defaults (G17).
 - The key keeps its v2 name, so an older build reads version 3 as a future version, starts fresh, and never writes over it.

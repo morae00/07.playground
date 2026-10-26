@@ -574,6 +574,19 @@ export function loadGameSave(storage: StorageLike): LoadSaveResult {
   };
 }
 
+/**
+ * BUG-28: whether a stored envelope is one this build reads, so a write may keep it as the backup. After a load that
+ * recovered from the backup the primary is the corrupt copy, and backing it up would write it over the one good save.
+ */
+function readableEnvelope(raw: string) {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return isRecord(parsed) && (parsed.version === SAVE_VERSION || parsed.version === 2);
+  } catch {
+    return false;
+  }
+}
+
 export function saveGameSave(storage: StorageLike, data: SaveData) {
   const envelope = JSON.stringify({
     version: SAVE_VERSION,
@@ -585,7 +598,7 @@ export function saveGameSave(storage: StorageLike, data: SaveData) {
 
   try {
     const previous = storage.getItem(SAVE_KEY);
-    if (previous) storage.setItem(SAVE_BACKUP_KEY, previous);
+    if (previous && readableEnvelope(previous)) storage.setItem(SAVE_BACKUP_KEY, previous);
     storage.setItem(SAVE_KEY, envelope);
     return { ok: true as const };
   } catch (error) {

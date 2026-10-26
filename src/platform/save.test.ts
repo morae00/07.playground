@@ -79,6 +79,21 @@ test('corrupt primary recovers from backup', () => {
   assert.ok(loaded.warnings.includes('primary:corrupt'));
 });
 
+test('BUG-28: the first write after a recovery keeps the good backup instead of the corrupt primary', () => {
+  const data = { version: SAVE_VERSION, savedAt: 1, meta: createDefaultMeta(), options: createDefaultOptions(), profile: createDefaultProfile() };
+  data.meta.gold = 444;
+  const good = JSON.stringify(data);
+  const storage = createStorage({ [SAVE_KEY]: '{broken', [SAVE_BACKUP_KEY]: good });
+  const loaded = loadGameSave(storage);
+  assert.equal(loaded.status, 'recovered');
+  loaded.data.meta.gold = 500;
+  assert.equal(saveGameSave(storage, loaded.data).ok, true);
+  assert.equal(storage.values.get(SAVE_BACKUP_KEY), good, 'the corrupt primary is not copied over the backup');
+  assert.equal(loadGameSave(storage).data.meta.gold, 500);
+  saveGameSave(storage, loaded.data);
+  assert.equal(JSON.parse(storage.values.get(SAVE_BACKUP_KEY) ?? '{}').meta.gold, 500, 'the next write backs up the readable save');
+});
+
 test('future or malformed saves fall back without throwing', () => {
   const future = createStorage({ [SAVE_KEY]: JSON.stringify({ version: 999 }) });
   const futureResult = loadGameSave(future);
