@@ -27,8 +27,8 @@
       "passed": true
     },
     "css": {
-      "bytes": 17948,
-      "kib": 17.53,
+      "bytes": 17902,
+      "kib": 17.48,
       "warningBytes": 32768,
       "failBytes": 49152,
       "status": "passed",
@@ -55,7 +55,7 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-mZi_YP0j.js",
+      "file": "assets/App-GiHgLvXX.js",
       "category": "appJs",
       "sourceBytes": 471742,
       "gzipBytes": 150469
@@ -133,16 +133,16 @@
       "gzipBytes": 113032
     },
     {
-      "file": "assets/index-CnQZvgSG.js",
+      "file": "assets/index-D4r5IuFC.css",
+      "category": "css",
+      "sourceBytes": 96126,
+      "gzipBytes": 17902
+    },
+    {
+      "file": "assets/index-DKzMEpGJ.js",
       "category": "appJs",
       "sourceBytes": 7500,
       "gzipBytes": 3553
-    },
-    {
-      "file": "assets/index-Tgu_dVXL.css",
-      "category": "css",
-      "sourceBytes": 96285,
-      "gzipBytes": 17948
     },
     {
       "file": "assets/keyart-DFQzyQdB.webp",
