@@ -122,3 +122,29 @@ test('starting a new run clears a fault and keeps a single loop', () => {
     engine.dispose();
   }
 });
+
+test('UI-11: a run that faulted is not suspended again, even after a retry; the next run is', () => {
+  const { engine } = launch();
+  try {
+    runFrames(10);
+    assert.ok(engine.suspendState(), 'a live run can be suspended');
+    let armed = true;
+    engine.probe.onStep(() => {
+      if (!armed) return;
+      armed = false;
+      throw new Error('probe fault');
+    });
+    runFrames(3);
+    assert.equal(engine.isFaulted, true);
+    assert.equal(engine.suspendState(), null, 'not behind the fault dialog');
+    engine.recoverFromFault();
+    engine.resume();
+    runFrames(10);
+    assert.ok(engine.probe.read().elapsed > 0.2, 'the retried run plays on');
+    assert.equal(engine.suspendState(), null, 'nor after the retry: its log no longer replays to the screen');
+    engine.startRun(1, 2, 99);
+    assert.ok(engine.suspendState(), 'a new run can be suspended');
+  } finally {
+    engine.dispose();
+  }
+});

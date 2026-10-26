@@ -291,6 +291,10 @@ try {
     await faultDialog.getByRole('button', { name: '메뉴로' }).click();
     await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor({ timeout: 2000 });
     record('TEC-14 the fault dialog can leave for the menu', (await diagnostics(page)) === null);
+    // UI-11: leaving settles the run as giving up does (a new save starts with 120 gold), and nothing is left to resume.
+    const gold = Number((await page.locator('.wallet strong').first().innerText()).replace(/,/g, ''));
+    const strips = await page.getByRole('region', { name: '중단한 런' }).count();
+    record('UI-11 leaving from the fault dialog settles the run as a defeat', gold > 120 && strips === 0, `gold ${gold}, ${strips} resume strips`);
     await context.close();
   });
 
@@ -736,6 +740,42 @@ try {
     const after = await diagnostics(page);
     const same = before && after && before.elapsed === after.elapsed && before.player.x === after.player.x && before.player.y === after.player.y && before.player.hp === after.player.hp && before.enemies === after.enemies;
     record('CON-04 resuming lands on the same state, paused', Boolean(same) && after.paused, `elapsed ${before?.elapsed} -> ${after?.elapsed}, player ${before?.player.x.toFixed(1)},${before?.player.y.toFixed(1)} -> ${after?.player.x.toFixed(1)},${after?.player.y.toFixed(1)}, enemies ${before?.enemies} -> ${after?.enemies}`);
+    await page.close();
+  });
+
+  await probe('UI-11', async () => {
+    // A suspended run whose replay throws (here it names a chapter this build lacks) is settled and dropped with a
+    // notice; it never leaves the menu behind the "putting the run back together" overlay.
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await page.goto('http://127.0.0.1:5177/');
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    await launchFirstStage(page);
+    await page.waitForTimeout(600);
+    await page.keyboard.press('p');
+    await page.getByRole('dialog', { name: '일시정지' }).waitFor();
+    await page.waitForTimeout(200);
+    await page.reload();
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    await page.evaluate(() => {
+      const key = 'blackline-survivor-save-v2';
+      const save = JSON.parse(localStorage.getItem(key));
+      save.profile.runSuspend.state.chapter = 6;
+      localStorage.setItem(key, JSON.stringify(save));
+    });
+    await page.reload();
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    const wallet = async () => Number((await page.locator('.wallet strong').first().innerText()).replace(/,/g, ''));
+    const goldBefore = await wallet();
+    await page.getByRole('region', { name: '중단한 런' }).getByRole('button', { name: '이어하기' }).click();
+    const notice = page.getByRole('status').filter({ hasText: '이어 붙이지 못해' });
+    const noticed = await notice.waitFor({ timeout: 5000 }).then(() => true, () => false);
+    const overlays = await page.locator('.resumeOverlay').count();
+    const strips = await page.getByRole('region', { name: '중단한 런' }).count();
+    const goldAfter = await wallet();
+    record('UI-11 a suspended run that fails to replay is settled and dropped with a notice, not left loading', noticed && overlays === 0 && strips === 0 && goldAfter > goldBefore, `notice ${noticed}, ${overlays} overlays, ${strips} strips, gold ${goldBefore} -> ${goldAfter}`);
+    await page.reload();
+    await page.getByRole('heading', { name: '흑백 타격 생존전' }).waitFor();
+    record('UI-11 the broken run is not offered again', (await page.getByRole('region', { name: '중단한 런' }).count()) === 0);
     await page.close();
   });
 

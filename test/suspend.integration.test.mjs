@@ -187,11 +187,12 @@ test('BUG-23: input, pauses, purchases, options, and saves while a run replays c
   resumed.engine.dispose();
 });
 
-test('BUG-23: a fault lets go of the input through the log, so the resumed run lets go at the same tick', async () => {
+test('BUG-23, UI-11: a fault lets go of the input through the log, and the faulted run is not suspended again', () => {
   const original = newEngine();
   original.engine.startRun(1, 3, 31337);
   original.engine.dispatch({ type: 'input/action', action: 'moveRight', pressed: true });
   for (let frame = 0; frame < 60; frame += 1) original.engine.advanceFrame(1 / 60, false);
+  const logged = original.engine.getDiagnostics().runLogEntries;
   // A step of the animation loop throws (TEC-14): the run pauses and lets go of every held input.
   let armed = true;
   const stop = original.engine.probe.onStep(() => {
@@ -202,17 +203,25 @@ test('BUG-23: a fault lets go of the input through the log, so the resumed run l
   nextFrame(50);
   stop();
   assert.equal(original.engine.isFaulted, true);
+  assert.equal(original.engine.getDiagnostics().runLogEntries, logged + 1, 'the fault logged the release');
   original.engine.recoverFromFault();
   original.engine.resume();
   // The key comes up while the error shows; the engine had let go of it already, so nothing more is logged.
   original.engine.dispatch({ type: 'input/action', action: 'moveRight', pressed: false });
+  assert.equal(original.engine.getDiagnostics().runLogEntries, logged + 1);
   for (let frame = 0; frame < 120; frame += 1) original.engine.advanceFrame(1 / 60, false);
-  const saved = JSON.parse(JSON.stringify(original.engine.suspendState()));
-  assert.ok(saved.log.some(([, code]) => code === 'r'), 'the fault logged the release');
+  // The step that threw had counted its tick, so the log no longer replays to the screen: the run is not kept (UI-11).
+  assert.equal(original.engine.suspendState(), null);
+  original.engine.dispose();
+});
 
+test('UI-11: a suspended run that cannot be replayed rejects, so the app can settle it instead of waiting forever', async () => {
+  const original = newEngine();
+  original.engine.startRun(1, 1, 5);
+  const saved = original.engine.suspendState();
   const resumed = newEngine();
-  await resumed.engine.resumeRun(saved);
-  assert.equal(state(resumed.engine), state(original.engine), 'same state at the saved tick');
+  // A chapter this build lacks, as a run saved by a later build would name.
+  await assert.rejects(resumed.engine.resumeRun({ ...saved, chapter: 6 }), /chapter 6/);
   original.engine.dispose();
   resumed.engine.dispose();
 });

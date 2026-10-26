@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 152388,
-      "kib": 148.82,
+      "bytes": 152507,
+      "kib": 148.93,
       "baselineBytes": 128399,
-      "growthRatio": 0.18683167314387195,
+      "growthRatio": 0.18775847163918713,
       "warningBytes": 147658,
       "failBytes": 160498,
       "status": "warning",
@@ -35,16 +35,16 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 2209029,
-      "kib": 2157.25,
+      "bytes": 2209426,
+      "kib": 2157.64,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 34500199,
-      "kib": 33691.6,
+      "bytes": 34500596,
+      "kib": 33691.99,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-DNqbWlvP.js",
+      "file": "assets/App-CPdtbK_u.js",
       "category": "appJs",
-      "sourceBytes": 466971,
-      "gzipBytes": 148835
+      "sourceBytes": 467390,
+      "gzipBytes": 148955
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -105,14 +105,14 @@
     {
       "file": "assets/content/strings/en.json",
       "category": "data",
-      "sourceBytes": 49285,
-      "gzipBytes": 14967
+      "sourceBytes": 49478,
+      "gzipBytes": 14998
     },
     {
       "file": "assets/content/strings/ko.json",
       "category": "data",
-      "sourceBytes": 53852,
-      "gzipBytes": 17051
+      "sourceBytes": 54056,
+      "gzipBytes": 17086
     },
     {
       "file": "assets/content/tables.json",
@@ -133,16 +133,16 @@
       "gzipBytes": 113032
     },
     {
-      "file": "assets/index-3dH3vPr5.js",
-      "category": "appJs",
-      "sourceBytes": 7500,
-      "gzipBytes": 3553
-    },
-    {
       "file": "assets/index-D_wEwcTR.css",
       "category": "css",
       "sourceBytes": 96076,
       "gzipBytes": 17922
+    },
+    {
+      "file": "assets/index-wO3t2Kkl.js",
+      "category": "appJs",
+      "sourceBytes": 7500,
+      "gzipBytes": 3552
     },
     {
       "file": "assets/keyart-DFQzyQdB.webp",

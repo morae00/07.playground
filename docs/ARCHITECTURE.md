@@ -348,6 +348,7 @@ A run in play is kept in the save as a suspended run (`profile.runSuspend`), so 
 - Time scale is a view setting, so a resumed run starts at 1x. A run where a developer cheat was used cannot be suspended.
 - A run plays with the meta it started with. The app hands the engine every meta change, so one made mid-run (upgrades bought while the run was suspended) applies from the next run (BUG-23).
 - While `resumeRun` replays, only the logged commands change the run (BUG-23). Input, pauses, purchases, and draft calls from the app are dropped, options set meanwhile apply at the saved tick, and `suspendState` returns null, so the 10 s autosave cannot keep a partial run. A loop fault (TEC-14) lets go of the input through the log, as focus loss does.
+- A run whose frame threw (TEC-14) is not suspended from then on, even after a retry: the step that threw had already counted its tick, so its log no longer replays to what the player saw (UI-11). Leaving from the fault dialog settles it as giving up does. A suspended run that fails to replay is settled on the G14 terms with a notice, and the menu takes the overlay down.
 - The desktop app flushes localStorage to disk every second, so a force-quit keeps the run saved at the last pause (docs/ELECTRON_HARDENING.md).
 - `test/suspend.integration.test.mjs` plays 2,400 uneven frames with keys, the stick, the pointer, drafts, a paused purchase, and an assist change. It saves the run as JSON and replays it in a new engine. The state is identical at the saved tick and stays identical as both play on. The UI probe reloads the page mid-run and resumes to the same state. The Electron smoke resumes a run after a renderer crash, after a quit, and after a force-quit.
 
@@ -484,7 +485,7 @@ Tests, balance runners, and soak tools use `ProbedGameEngine` (`src/game/engine/
 `src/platform/errorReport.ts` keeps an in-memory `ErrorLog` of recent errors (source, message, stack, repeat count). `src/main.tsx` creates it and installs global `error` and `unhandledrejection` handlers before the game modules load. It then imports `App` dynamically, so a content check that throws while modules evaluate ends on a recovery screen instead of a blank window.
 
 - Render errors: `src/ui/ErrorBoundary.tsx` catches them and shows a recovery screen (return to the menu, copy the log, reload). Returning remounts the app from its save.
-- Frame errors: the engine's animation loop catches an exception in a frame, pauses the run, stops the loop, and reports through `EngineCallbacks.onFault`. The app shows a dialog. Retrying (`recoverFromFault`) restarts the loop paused, and the normal pause dialog resumes play. Leaving goes to the menu without the stage's rewards.
+- Frame errors: the engine's animation loop catches an exception in a frame, pauses the run, stops the loop, and reports through `EngineCallbacks.onFault`. The app shows a dialog. Retrying (`recoverFromFault`) restarts the loop paused, and the normal pause dialog resumes play; the run can no longer be suspended (UI-11). Leaving settles the run as giving up does (`forfeit`, a defeat).
 - Asset errors: a failed atlas pack falls back to silhouettes (TEC-03, TEC-10). The failure is logged, and a dismissible notice tells the player.
 
 ## Load-failure silhouettes (TEC-10)

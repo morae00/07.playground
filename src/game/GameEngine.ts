@@ -1015,6 +1015,11 @@ export class GameEngine {
   protected renderScale = 2;
   /** A frame threw and the loop stopped (TEC-14). */
   protected faulted = false;
+  /**
+   * UI-11: a frame of this run threw. The step that threw had already counted its tick, so the command log no longer
+   * replays to what is on screen, even after a retry: the run is not suspended again.
+   */
+  protected faultedThisRun = false;
   /** Developer cheat FAULT: the next frame throws, to exercise the fault path. */
   protected faultInjection = false;
   /** Set only by probes: stops the stage director from adding enemies so a test controls the whole world. */
@@ -1338,6 +1343,7 @@ export class GameEngine {
     this.noteAssists();
     this.paused = false;
     this.faulted = false;
+    this.faultedThisRun = false;
     this.accumulator = 0;
     this.lastTime = performance.now();
     cancelAnimationFrame(this.raf);
@@ -1954,10 +1960,11 @@ export class GameEngine {
 
   /**
    * CON-04: the run so far, to save and replay; null when there is no live run to suspend. A run that is still
-   * replaying is only part of itself, so the app's autosave must not keep it (BUG-23).
+   * replaying is only part of itself, so the app's autosave must not keep it (BUG-23), and a run that faulted is not
+   * kept either, since the step that threw had already counted its tick (UI-11).
    */
   suspendState(): SuspendedRun | null {
-    if (!this.running || this.replaying || this.stageFinished || this.player.hp <= 0 || !this.runStart || this.cheatsUsed || this.runLog.length > MAX_RUN_LOG) return null;
+    if (!this.running || this.replaying || this.stageFinished || this.player.hp <= 0 || !this.runStart || this.cheatsUsed || this.faultedThisRun || this.runLog.length > MAX_RUN_LOG) return null;
     return {
       version: 1,
       rulesVersion: this.rules.version,
@@ -2167,6 +2174,7 @@ export class GameEngine {
 
   protected fault(error: unknown) {
     this.faulted = true;
+    this.faultedThisRun = true;
     this.paused = true;
     this.accumulator = 0;
     // Lets go of all input as focus loss does, through the log, so a resumed run lets go at the same tick (BUG-23).

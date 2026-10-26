@@ -73,6 +73,7 @@ import {
   type RunUpgradeId,
   type Settlement,
   type SkillOffer,
+  type SuspendedRun,
 } from './game/GameEngine';
 
 export { GameEngine } from './game/GameEngine';
@@ -173,8 +174,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   // TEC-14: a frame that threw stops the loop, and the run waits paused behind this dialog.
   const [loopFault, setLoopFault] = useState<{ message: string; count: number } | null>(null);
   const [notice, setNotice] = useState<'art' | 'error' | null>(null);
-  /** CON-04: what a suspended run the rules no longer replay was paid; shown once. */
-  const [suspendPaid, setSuspendPaid] = useState<{ gold: number; xp: number } | null>(null);
+  /** CON-04: what a suspended run the rules no longer replay (or that failed to replay, UI-11) was paid; shown once. */
+  const [suspendPaid, setSuspendPaid] = useState<{ gold: number; xp: number; broken?: boolean } | null>(null);
   /** BUG-22: what the player must know about the desktop save move (src/platform/saveMove.ts); shown until closed. */
   const [saveMoveNotice, setSaveMoveNotice] = useState<SaveMoveNotice | null>(() => readSaveMoveNotice(window.localStorage));
   /** CON-07: achievements met since the menu last said so. */
@@ -360,17 +361,20 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   useEffect(() => {
     if (runPaused) suspendRun();
   }, [runPaused, suspendRun]);
-  // A run this build's rules cannot replay is settled as a defeat for what it reached, then dropped (G14).
+  /** A suspended run that will not be resumed is settled as a defeat for what it reached at its last save, then dropped (G14). */
+  const settleSuspended = useCallback((run: SuspendedRun) => {
+    const reward = suspendedRunReward(run);
+    grantSettlement({ ...reward, cleared: false, chapter: run.chapter, stage: run.stage }, false);
+    setProfile((previous) => ({ ...previous, runSuspend: null }));
+    return reward;
+  }, []);
+  // A run this build's rules cannot replay is settled at start.
   useEffect(() => {
     const suspended = profileRef.current.runSuspend;
     if (!suspended) return;
     const run = asSuspendedRun(suspended.state);
     if (run && suspended.rulesVersion === RULES_VERSION) return;
-    if (run) {
-      const reward = suspendedRunReward(run);
-      grantSettlement({ ...reward, cleared: false, chapter: run.chapter, stage: run.stage }, false);
-      setSuspendPaid(reward);
-    }
+    if (run) setSuspendPaid(settleSuspended(run));
     setProfile((previous) => ({ ...previous, runSuspend: null }));
     // On start only.
   }, []);
@@ -626,9 +630,16 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         if (engineRef.current !== engine) return;
         setResuming(false);
         if (!engine.awaitingDraft) setManualPause(true);
+      }, (error: unknown) => {
+        // UI-11: a run that throws as it replays would throw again next time, so it is settled and dropped.
+        if (engineRef.current !== engine) return;
+        errorLog.record('loop', error, 'resume');
+        toMenu();
+        setSuspendPaid({ ...settleSuspended(run), broken: true });
+        setNotice('error');
       });
     });
-  }, [beginRun, setManualPause]);
+  }, [beginRun, errorLog, setManualPause, settleSuspended]);
   const discardSuspended = useCallback(() => setProfile((previous) => ({ ...previous, runSuspend: null })), []);
 
   /** Settlement's primary action: go straight on to the next stage (CON-02). */
@@ -736,6 +747,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     engineRef.current?.dispose();
     engineRef.current = null;
     setLoopFault(null);
+    setResuming(false);
     setPhase('menu');
     setSnapshot(null);
     setDraft(null);
@@ -751,6 +763,17 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
     engineRef.current?.recoverFromFault();
     // The run comes back paused, so the player is ready before enemies move again.
     setManualPause(true);
+  };
+
+  /** UI-11: leaving from the fault dialog settles the run exactly as giving up does, so it is not offered again. */
+  const leaveFaultedRun = () => {
+    try {
+      engineRef.current?.forfeit();
+    } catch (error) {
+      errorLog.record('loop', error, 'forfeit');
+      setProfile((previous) => ({ ...previous, runSuspend: null }));
+    }
+    toMenu();
   };
 
   const copyErrorLog = async () => {
@@ -776,7 +799,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
   );
   const suspendBanner = suspendPaid && (
     <div className="noticeBanner inline" role="status" aria-live="polite">
-      <p>{t('notice.suspendPaid', suspendPaid)}</p>
+      <p>{t(suspendPaid.broken ? 'notice.suspendBroken' : 'notice.suspendPaid', { gold: suspendPaid.gold, xp: suspendPaid.xp })}</p>
       <div className="noticeActions">
         <button className="ghost" type="button" data-sound="cancel" onClick={() => setSuspendPaid(null)}>{t('common.close')}</button>
       </div>
@@ -998,7 +1021,7 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
           count={loopFault.count}
           copyStatus={errorCopyStatus}
           onRetry={retryAfterFault}
-          onMenu={toMenu}
+          onMenu={leaveFaultedRun}
           onCopyLog={() => void copyErrorLog()}
         />
       )}
