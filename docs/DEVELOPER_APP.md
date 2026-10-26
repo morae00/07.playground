@@ -37,7 +37,9 @@ The developer app intentionally uses:
 - renderer directory `dist-developer`
 - package output directory `release-developer`
 - package entry point `electron/main.developer.cjs`
-- separate Electron application data derived from `blackline-survivor-dev`
+- its own Electron data folder, `Blackline Survivor Dev` in the system's application data folder
+
+The unpackaged `npm run electron:developer` run uses that same developer data folder (`electron/developerData.cjs`), never the release app's, so cheats and the run log never reach a player's save. An explicit `--user-data-dir`, as the smoke tests pass, takes precedence.
 
 The regular `npm run build` pipeline still audits `dist` for forbidden developer and cheat markers. A developer build performs the inverse check and fails unless the expected developer controls are present.
 

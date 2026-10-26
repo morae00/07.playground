@@ -6,6 +6,7 @@ const { keepRawCopy, migrateStorage } = require('./saveMigration.cjs');
 const { readLocalStorage } = require('./levelDbReader.cjs');
 const { createCrashLog, createReloadGate, rendererErrorLine } = require('./crashLog.cjs');
 const { isGameFrame, readWindowState, writeWindowState } = require('./windowState.cjs');
+const { DEVELOPER_APP_NAME, developerDataFolder } = require('./developerData.cjs');
 const {
   CONTENT_SECURITY_POLICY,
   focusPrimaryWindow,
@@ -15,11 +16,18 @@ const {
 } = require('./security.cjs');
 
 const developerBuild = process.env.BLACKLINE_DEVELOPER_BUILD === '1';
+// TEC-15: a developer run never uses the release app's data folder (developerData.cjs). This comes before anything
+// reads that folder: the single-instance lock, the crash reporter, the save move, and the page's storage.
+if (developerBuild) {
+  app.setName(DEVELOPER_APP_NAME);
+  const folder = developerDataFolder({ developerBuild, appData: app.getPath('appData'), userDataSwitch: app.commandLine.hasSwitch('user-data-dir') });
+  if (folder) app.setPath('userData', folder);
+}
 const entryDirectory = developerBuild ? 'dist-developer' : 'dist';
 const buildRoot = path.join(__dirname, '..', entryDirectory);
 // TEC-15: the game loads from app://game/, a real secure origin; the scheme must be registered before ready.
 registerAppScheme(protocol);
-const windowTitle = developerBuild ? 'Blackline Survivor Dev' : 'Blackline Survivor';
+const windowTitle = developerBuild ? DEVELOPER_APP_NAME : 'Blackline Survivor';
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 // CON-04: the game keeps the run in play in localStorage, which Chromium writes to disk seconds later. Flushing every
 // second keeps a force-quit, or a crash of the whole app, from losing more than about a second of it.

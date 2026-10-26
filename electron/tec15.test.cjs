@@ -3,6 +3,7 @@ const path = require('node:path');
 const test = require('node:test');
 const { APP_ENTRY, appFilePath } = require('./appProtocol.cjs');
 const { MARKER_FILE, migrateStorage } = require('./saveMigration.cjs');
+const { DEVELOPER_APP_NAME, developerDataFolder } = require('./developerData.cjs');
 
 test('app:// serves files from the build folder only', () => {
   const root = path.resolve('/app/dist');
@@ -68,4 +69,20 @@ test('a copy that does not read back intact leaves no marker, so the next launch
   assert.deepEqual(result.lost, ['blackline-survivor-save-v2']);
   assert.equal(fs.files.has(path.join('/data', MARKER_FILE)), false);
   assert.ok(fs.files.has(path.join('/data', 'save-backup-file-origin-3.json')), 'the backup stays for a manual import');
+});
+
+test('a developer run keeps its own data folder, never the release app\'s, unless given a temporary one', () => {
+  const appData = path.resolve('/Users/someone/Library/Application Support');
+  assert.equal(developerDataFolder({ developerBuild: true, appData, userDataSwitch: false }), path.join(appData, 'Blackline Survivor Dev'));
+  assert.equal(developerDataFolder({ developerBuild: false, appData, userDataSwitch: false }), null, 'the release app keeps Electron\'s folder');
+  assert.equal(developerDataFolder({ developerBuild: true, appData, userDataSwitch: true }), null, 'an explicit --user-data-dir wins');
+  // The packaged developer app is named the same, so both developer runs share one folder, apart from the release app.
+  assert.equal(require('../electron-builder.developer.cjs').productName, DEVELOPER_APP_NAME);
+  assert.notEqual(require('../package.json').productName, DEVELOPER_APP_NAME);
+  // main.cjs moves the folder before anything reads it.
+  const main = require('node:fs').readFileSync(path.join(__dirname, 'main.cjs'), 'utf8');
+  const moved = main.indexOf("app.setPath('userData'");
+  for (const reader of ['requestSingleInstanceLock(', 'crashReporter.start(', "getPath('userData')", 'keepRawCopy(']) {
+    assert.ok(moved > 0 && moved < main.indexOf(reader), `the folder is set before ${reader}`);
+  }
 });
