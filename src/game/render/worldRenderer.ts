@@ -1962,7 +1962,8 @@ export class WorldRenderer {
   /**
    * Player feedback in screen space, over the world (FX-03): a coral glow on the side a hit came from, fading over
    * HURT_VIGNETTE_SECONDS, and a coral edge while health is low that beats with the heartbeat unless motion is
-   * reduced. Reduced flash halves both (UI-08).
+   * reduced. Reduced flash halves both (UI-08). The glows fill the shown frame only, inside any pillarbox or
+   * letterbox bars (BUG-27, D-28).
    */
   private drawPlayerFeedback(ctx: CanvasRenderingContext2D, pulse: boolean) {
     const { effects, view, options } = this.world;
@@ -1982,7 +1983,7 @@ export class WorldRenderer {
       gradient.addColorStop(0, rgba(SIGNAL.hostile, innerAlpha));
       gradient.addColorStop(1, rgba(SIGNAL.hostile, outerAlpha));
       ctx.fillStyle = gradient;
-      ctx.fillRect(left, 0, width, height);
+      ctx.fillRect(left, top, width, height);
     };
     ctx.save();
     if (effects.lowHealth) {
