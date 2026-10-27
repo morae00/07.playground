@@ -242,16 +242,16 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
 
   // Atlas packs (ART-07): the common pack and the pack of the chapter on screen stay resident, and the other chapters
   // are released, so textures keep to their budget. The menu loads the selected chapter ahead of its run.
-  const artChapter = phase === 'menu' ? selectedChapterId : runChapter;
-  // CON-08: an infinite run turns through the chapters; the next one's pack loads as its turn comes due.
+  // CON-08: an infinite run turns through the chapters; the next one's pack loads as its turn comes due. The art
+  // follows the turn in the same render (TEC-04), so the pack loaded ahead is kept and the one before is released.
   const lookChapter = phase === 'menu' ? null : snapshot?.lookChapter ?? null;
+  const artChapter = phase === 'menu' ? selectedChapterId : lookChapter ?? runChapter;
   const nextArtChapter = phase === 'menu' ? null : snapshot?.nextLookChapter ?? null;
   // CON-10 (K8): the character on screen: the run's (a resumed run keeps its own), else the one selected in the menu.
   const artCharacter = phase === 'menu' ? profile.characters.selected : snapshot?.character ?? profile.characters.selected;
   const reportedPacks = useRef(new Set<string>());
   useEffect(() => {
     if (lookChapter === null) return;
-    setRunChapter(lookChapter);
     appMixer.ambience(`ambience.ch${Math.min(5, Math.max(1, lookChapter)) as 1 | 2 | 3 | 4 | 5}`);
   }, [lookChapter]);
   useEffect(() => {
