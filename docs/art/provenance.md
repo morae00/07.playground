@@ -44,7 +44,7 @@
 | P-11 | skills 팩 · 무기 탄 264장: 같은 페이지의 `skill/<무기>/<part>/<frame>`(투사체 무기 22종 × 12) | `k-icons2.js` · `PN.arsenal.stamp` · 1.0 | `scripts/build-atlas.mjs`가 `PN.arsenal` META `done` 무기를 펼친다 | `K9-arsenal-icons.md` 검수 3차 합격(2026-10-15, 8종), 검수 5차 합격(2026-10-16, 14종). 그 뒤 탄은 바뀌지 않았다(검수 8차, `shots264=194b48x`). 앞부분 기록이 빠졌다(§3-5) | 19dbd1a, 01166a7 | T1 · L1 | — |
 | P-12 | hazards 팩 297장: `public/assets/packs/hazards/atlas-0.png`의 `hazard/<group>/<part>/<frame>`(9그룹) | `k-hazards.js` · `PN.hazards` · 1.0-d2r2 | `PACKS.hazards`, `HAZARD_VECTORS` | `K11-hazards.md` 검수 4차 합격과 N1 메인 세션 판정(2026-10-19) | f4635a7(불, 1.0 스냅숏), a90732a(나머지 6종, 1.0-d2r2) | T1 · L1 | B7 |
 | P-13 | arsenal-fx 팩 354장: `public/assets/packs/arsenal-fx/atlas-0.png`의 `afx/<group>/<part>/<frame>`(39그룹) | `k-arsenal-fx.js` · `PN.arsenalFx` · 1.0-d3b2-r1 | `PACKS['arsenal-fx']`, `ARSENAL_FX_VECTORS` | `K10-arsenal-fx.md` 검수 8차 수정 후 합격과 메인 세션 확인(2026-10-20) | bd15c86, 67414bf, d9b2feb | T1 · L1 | B9 |
-| P-14 | 캐릭터 팩 7개: `public/assets/packs/hero-<id>/atlas-0.png`(dan, noeul, seori, dok, hwi, ryeong, wol), 21장씩 | `k-characters.js` · `PN.characters.sprite` · 1.0 | `CHARACTER_ART`, `characterFrames()` | `K8-characters.md`에는 수정 2회차 납품서만 남았다. 합격은 굽기 커밋 12769a6의 메시지에만 있다("passed the art director's second review after its last fixes") [확인] | 12769a6 | T1 · L1 | A1, A2, A3, K-1, K-3, K-8 |
+| P-14 | 캐릭터 팩 7개: `public/assets/packs/hero-<id>/atlas-0.png`(dan, noeul, seori, dok, hwi, ryeong, wol), 21장씩 | `k-characters.js` · `PN.characters.sprite` · 1.0 | `CHARACTER_ART`, `characterFrames()` | `K8-characters.md` 검수 2차 조건부 합격(2026-10-15)과 수정 2회차 납품서. 검수 2차가 AD 재검수 없이 메인 세션의 확인 렌더로 닫으라고 했고, 메인 세션이 `mv-k8-b1`~`b4`를 확인한 뒤 구웠다. 따로 쓴 최종 판정은 없다 | 12769a6 | T1 · L1 | A1, A2, A3, K-1, K-3, K-8 |
 
 ### 2.2 UI 시트 (`npm run build:ui-art`, 사양 `art/ui-art-spec.mjs` `UI_SHEETS`)
 
@@ -54,9 +54,9 @@
 |---|---|---|---|---|---|---|---|
 | P-15 | `src/ui/art/skill-tiles.webp`(`artTile`): 스킬 17종 × 평상·각성, 보너스 카드 4장 | `k-icons.js` · `PN.icons.tile`·`frame`·`pickup`, `PN.vfx.hit` · API rev 2. 보너스 카드는 굽기 recipe `bonusTile`이 등급 틀 위에 킷 그림을 얹는다 | `UI_SHEETS.tiles`, `SKILL_ART`, `BONUS_ART` | R0 킷 rev 2(AD 재작업) [확인] | abd7a1d | T1 · L1, L2(각성 17칸) | K-4, K-6 |
 | P-16 | `src/ui/art/hud-slots.webp`(`artSlot`): 스킬 17종 × 평상·각성 | `k-icons.js` · `PN.icons.hudSlot` · API rev 2 | `UI_SHEETS.slots` | R0 킷 rev 2 [확인] | abd7a1d | T1 · L1 | K-4 |
-| P-17 | `src/ui/art/arsenal-tiles.webp`, `arsenal-slots.webp`(키 지정): 무기 44종 × 평상·각성 | `k-icons2.js` · `PN.arsenal.tile`·`hudSlot` · 1.0(각성 틀은 `k-icons.js`의 것을 빌린다) | `UI_SHEETS.arsenalTiles`·`arsenalSlots`, `ARSENAL_ART` | `K9-arsenal-icons.md` 검수 8차 합격(2026-10-19). 묶음별로 8종은 검수 3차, 14종은 검수 5차, 22종은 검수 7차에 받아들였다. 1차 납품서와 검수 1·2차는 기록에서 빠졌다 [확인] | 19dbd1a, 01166a7, 54a8bc1, 29c50f8 | T1 · L1, L2(각성 44칸) | B10, K-6 |
+| P-17 | `src/ui/art/arsenal-tiles.webp`, `arsenal-slots.webp`(키 지정): 무기 44종 × 평상·각성 | `k-icons2.js` · `PN.arsenal.tile`·`hudSlot` · 1.0(각성 틀은 `k-icons.js`의 것을 빌린다) | `UI_SHEETS.arsenalTiles`·`arsenalSlots`, `ARSENAL_ART` | `K9-arsenal-icons.md` 검수 8차 합격(2026-10-19). 묶음별로 8종은 검수 3차, 14종은 검수 5차, 22종은 검수 7차에 받아들였다. 1차 납품서와 검수 1·2차는 2026-10-27에 되살렸다 | 19dbd1a, 01166a7, 54a8bc1, 29c50f8 | T1 · L1, L2(각성 44칸) | B10, K-6 |
 | P-18 | `src/ui/art/portraits.webp`(`artPortrait`): 결 6표정, 보스 15종 × 평상·광폭화 | `k-hero.js` · `PN.heroKit.portrait` · 2.1. 보스는 `PN.bossesA`·`PN.bossesB`·`PN.bossesC`·`PN.fieldBosses`의 `draw`를 굽기 recipe `bossPortrait`가 원형 테·망점 비네트(`PN.halftone`)·광폭화 산호 점선 테로 자른다 | `HERO_EXPRESSIONS`, `BOSS_PORTRAITS` | 결 K0, 라운드 보스 K3, 중간 보스 K1, 필드 보스 K2(초상 `detail: 'art'`은 검수 권고안으로 구웠다) | abd7a1d, 48d3396, 47ed5ef, b32c620, 90388ba, a11f3db, f2f1a94 | T1 · L1 | A1, K-1, K-7 |
-| P-19 | `src/ui/art/character-portraits.webp`(키 지정): 7명 × 6표정 | `k-characters.js` · `PN.characters.portrait` · 1.0 | `CHARACTER_PORTRAITS` | P-14와 같다 [확인] | 12769a6 | T1 · L1 | A1, K-1 |
+| P-19 | `src/ui/art/character-portraits.webp`(키 지정): 7명 × 6표정 | `k-characters.js` · `PN.characters.portrait` · 1.0 | `CHARACTER_PORTRAITS` | P-14와 같다 | 12769a6 | T1 · L1 | A1, K-1 |
 | P-20 | `src/ui/art/pickups.webp`(`artPickup`): 경험치·엽전·자석·약첩 | `k-icons.js` · `PN.icons.pickup` · API rev 2 | `PICKUP_ART` | R0 킷 rev 2 [확인] | abd7a1d | T1 · L1 | — |
 | P-21 | `src/ui/art/keyart.webp`(`artKeyart`): 결 전신 3/4, 0.9배 | `k-hero.js` · `PN.heroKit.full('threeQuarter')` · 2.1 | `UI_SHEETS.keyart` | `K0-hero-faces.md` 검수 2차 합격(2026-10-02) | ed17906, b32c620 | T1 · L1 | A1, K-1 |
 | P-22 | `src/ui/art/chapter-thumbs.webp`(`artChapter`): 장 5개의 랜드마크 비네트 | `k-env.js` · `PN.env.landmark` · API rev 3.1 | `UI_SHEETS.chapters`, `MENU_CHAPTERS` | `K5-env-enemies.md` 검수 2차 합격(그림 속 글자 정리). 그 밖은 R0 킷 [확인] | ed17906, d1072ce | T1 · L1 | B11 |
@@ -69,7 +69,7 @@
 
 | # | 묶음 (파일) | 생성기 (모듈 · 이름공간 · 판) | 사양 항목 | 받아들인 기록 | 굽기 커밋 | 도구 · 권리 | 남은 클린업 |
 |---|---|---|---|---|---|---|---|
-| P-25 | 손그림 자리 6장(D-15 (b)): `prologue-1`~`prologue-4`, `ending-2`, `ending-4` | `k-story.js` · `PN.story.panel` · 1.0(3차 수정분), 종이결 `grain` | `STORY_PANELS`의 `kit: 'story'` | `K6-story.md` 검수 3차 합격(2026-10-16). 1차 납품서는 기록에서 빠졌다 [확인] | 109e69f | T1 · L1 | C13, K-1(P3·P4·E2·E4의 결 머리는 `head34`) |
+| P-25 | 손그림 자리 6장(D-15 (b)): `prologue-1`~`prologue-4`, `ending-2`, `ending-4` | `k-story.js` · `PN.story.panel` · 1.0(3차 수정분), 종이결 `grain` | `STORY_PANELS`의 `kit: 'story'` | `K6-story.md` 검수 3차 합격(2026-10-16). 1차 납품서는 2026-10-27에 되살렸다 | 109e69f | T1 · L1 | C13, K-1(P3·P4·E2·E4의 결 머리는 `head34`) |
 | P-26 | 합성 14장: `intro-2`~`intro-5`, `outro-1`~`outro-5`, `ending-1`, `ending-3`, `ending-5`, `ending-6`, `ending-7` | 킷 조합: `PN.env.landmark`(rev 3.1), `PN.heroKit.full`(2.1), `PN.enemies.draw` art LOD(v2.1), 지배자는 `PN.bossesA`·`PN.bossesB`의 쓰러짐 1번 장. 여기에 굽기 스크립트 `renderPanel`이 직접 그리는 공백(난류 필터로 찢은 종이), 여백 두 줄, 꿰맴, 먹 방울(메인 세션 코드)을 얹는다 | `STORY_PANELS`의 장면 | 부품은 K0·K3·K5에서 받아들인 판이다(지배자 쓰러짐 장은 K3-2 검수 1차 §7 권고). 구도에 대한 art-director 검수 기록은 없고, 2026-10-23 점검이 구도 문제를 지적했다(K-9) [확인] | 3171af0, b32c620, f2f1a94, d1072ce, 0fbbfc1, 603fb96 | T1 · L1 | K-9, C13, A1·K-1(`ending-3`·`ending-5`의 정면 머리) |
 
 ### 2.4 앱 표지
@@ -94,7 +94,7 @@
 | 2 | 각성 낙관 '覺'의 시스템 글꼴 글리프 61칸 | P-15, P-17(L2) | 글꼴 라이선스를 확인하거나 낙관을 고정 경로로 바꿔 다시 굽는다(K-6) |
 | 3 | 앱 아이콘 코드의 작성 도구('Codex')와 약관, 낙관 획이 글자로 읽히는지 | P-27, P-28(L3) | 작성 경위를 확인한다. 글자로 읽히면 획을 바꾼다 |
 | 4 | R0 킷 판에는 납품·검수 파일이 없다. 판정은 API 문서(`API-icons.md` 'Bible delta', 각 API의 rev 기록)에만 있다 | P-2, P-4, P-15, P-16, P-20, P-24, 그리고 P-1·P-3·P-9·P-22의 R0 부분 | API 문서의 판정을 받아들인 기록으로 볼지 팀이 정하거나, art-director가 지금 판을 한 번 검수하고 그 판정을 납품 기록으로 남긴다 |
-| 5 | 빠진 납품 기록: K8의 1·2차 납품서·검수 1·2차·최종 판정, K9의 1차 납품서·검수 1·2차(`API-icons2.md:9`가 가리키는 '## 검수 1차'), K6의 1차 납품서 | P-11, P-14, P-17, P-19, P-25 | git 이력이나 서브에이전트 기록에서 되살린다(킷 점검 P2-3) |
+| 5 | ~~빠진 납품 기록~~ 닫음(2026-10-27): K8 1·2차 납품서와 검수 1·2차, K9 1차 납품서·검수 1·2차·1차 수정 두 회차, K6 1차 납품서를 서브에이전트 보고 원문에서 되살렸다. 각 절에 출처가 있다. K8의 따로 쓴 최종 판정은 원래 없다(P-14) | P-11, P-14, P-17, P-19, P-25 | — |
 | 6 | 합성 이야기 패널 14장의 구도 검수 기록 없음 | P-26 | 구도를 고친 뒤(K-9) art-director 검수를 받는다 |
 | 7 | 에이전트 모델의 정확한 판, 굽기마다 쓴 Chromium 빌드 | 공통(제작자, T1) | 다음 굽기부터 굽기 커밋 메시지에 Playwright·Chromium 판을 적는다. 지난 굽기는 아는 만큼 적는다 |
 | 8 | 출시 커밋에서 다시 구운 결과가 커밋된 산출물과 같은지 | 전부, 특히 P-24 | 출시 커밋의 사본에서 `npm run build:atlas`, `npm run build:ui-art`를 돌리고 그림 파일의 diff가 비어 있는지 본다 |

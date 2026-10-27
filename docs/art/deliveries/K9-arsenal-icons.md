@@ -1,4 +1,1227 @@
+# K9 무기 아이콘·탄 — 납품·검수 기록
 
+지시서: `docs/art/briefs/arsenal-icons.md`(B3, 8a81f57; §10~§13 검수 정정). 킷: `art/concept-kit/k-icons2.js`, `API-icons2.md`.
+
+1차 납품서부터 1차 수정 2회차 납품서까지 다섯 절은 2026-10-15에 메인 세션이 절을 덧붙일 때마다 파일을 먼저 비운 실수로 지워졌고, 2026-10-27 킷 점검 P2-3에서 서브에이전트 기록으로 되살렸다. 되살린 절마다 출처를 적었다.
+
+## 1차 납품서 — 무기 아이콘·탄 (`PN.arsenal`, 뼈대 + volley 8종)
+
+(되살림: 서브에이전트 기록 `agent-a7c1c9697e5fa5666`(kit-artist, 'K9 arsenal icons kit, part 1')의 SubagentHandback 원문, 2026-10-14 16:04 KST. 메인 세션이 이 파일에 넣었던 글과 같은 추출이다(세션 기록 `75a03af2-….jsonl` 줄 41425, 추출 길이 일치). 머리말 단계만 이 파일에 맞췄다; §4.2의 4번 끝에는 메인 세션이 수정 1회차를 붙이며 단 R7 정정 주석(세션 기록 줄 42574)도 그대로 넣었다.)
+
+작성: kit-artist, 2026-10-14. 지시서는 `docs/art/briefs/arsenal-icons.md`이고, 팀 결정(R5-orders.md '결정' B3 Q1~Q7, 모두 권장안)을 따랐습니다.
+
+**요약**
+- 1차 범위는 다 했습니다. 뼈대(§1 전부: 틀 빌리기, META 44종, `parts`·`stamp`, 자리표시)와 volley 8종의 아이콘(평상·각성)·탄입니다.
+- 검사 결과
+  - `--check`를 붙인 명령은 모두 ok입니다: C1, C2 11 kind 전부, C6(1x·6x), C8(1x·0.8x·3x), 리뷰 도우미 둘.
+  - C4·C5는 기준값과 글자 하나 다르지 않습니다.
+  - C7은 meta·invalid calls ok, 탄 22줄 모두 ok입니다.
+  - 모든 실행에서 kit error는 0건입니다. 다른 작업자의 모듈이 함께 로드된 상태에서도 0건이었습니다.
+- 손댄 것은 맡은 두 파일뿐이고, 아무것도 내려받지 않았습니다.
+- 지시서와 다르게 한 곳이 9개 있습니다(§4.2). 가장 큰 것은 넷입니다.
+  - 흰 모티프 넷에 먹 바탕을 더했습니다.
+  - 붓깃과 혼령 일제사격의 벌어짐 각을 줄였습니다(volley 틀 ≤ 14°와 충돌).
+  - 혼령 화살 촉의 채움을 α 0.6 → 0.35로 낮췄습니다.
+  - 뇌침 번개와 망나니 칼 머리를 키웠습니다(20px 판독).
+
+### 1. 납품 목록
+
+| 파일 | 내용 |
+|---|---|
+| `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/k-icons2.js` (새 파일, 796줄) | `window.PN.arsenal` v1.0. 모든 선언이 IIFE 안에 있습니다. 결정적이고(`Math.random`·`Date` 0) 글자 0입니다 |
+| `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/API-icons2.md` (새 파일) | 1~10절: 로드·의존, 틀 빌리기, 공개 API·오류, META 44줄 표, 타일·슬롯 규격과 낙관 구역, volley 아이콘 요약, 탄 조각·박스·실측, C1~C8·T1~T3 명령, 다르게 한 것, 한계·사람 클린업 |
+
+공개 API(`k-icons2.js:781-795`)
+- 데이터: `version`, `K`(= `PN.icons.K`), `ids`(44개, arsenal.ts 순서), `kinds`(11개), `META`, `shots`(22개)
+- `skill(id, {size, awakened, pitchFor})`, `tile(id, {awakened, metal, size, rarity})`, `hudSlot(id, {size, level, cooldown, awakenReady, awakened})`
+- `parts(id)`, `stamp(id, part, {frame})`
+- 리뷰용(선택): `sheet({kind, awakened})`, `shotSheet({kind})`
+
+오류를 던지는 경우
+- 모르는 id
+- 투사체 없는 무기에 `parts`·`stamp`
+- 모르는 조각 이름
+- 핵심 아이콘 id와 겹침
+
+틀 빌리기(`k-icons2.js:543-563`)
+- 지시서 §1.3 방식 그대로입니다. 호출하는 동안에만 `PN._ki.ICON[id]`에 넣고 `finally`에서 지웁니다.
+- 각성 슬롯은 호출 동안만 `PN.icons.skill`을 바꿨다가 되돌립니다.
+- 호출 뒤 `list=17 ICON=17`입니다.
+
+**이번 차례 `done` 목록(8)**: inkDarts, brushQuills, sealArrows, frostNeedles, thunderNeedles, twinBlades, ghostVolley, headsmanDarts
+- 각 무기: 아이콘 평상·각성, 타일·슬롯, 탄 6조각 × 2장
+- 나머지 36종은 `done:false`입니다.
+  - 아이콘은 look의 핵심 그림입니다.
+  - 탄은 §4.2 규격을 지키는 종이 바늘 자리표시입니다.
+
+### 2. API 요약
+
+**아이콘·타일·슬롯**
+- 마스터 128 × 128, 빛은 왼쪽 위, 피벗 = 왼쪽 위(UI 요소)입니다.
+- 타일 160 박스: `tile(id, {awakened, metal:true, size:150})`. 칸 166 × 166 CSS, 원점 (−8, −8), 드래프트에서 아이콘 120px.
+- 슬롯 52 × 56: `hudSlot(id, {size:40, awakened})`. 칸 56 × 60, 원점 (−2, −2). 표시 크기는 40·32(24)·28.6·20px.
+- 낙관 피할 구역: 아이콘 좌표 (94~128, 0~34). 네 모서리 10 안에도 정보를 두지 않습니다.
+
+**탄**
+- 앵커 = 투사체 좌표 = 판정 원 중심, +x = 속도 방향입니다.
+- 공통 필드: `rotate:'vel'`, `layer:'ally'`, `lod:'info'`, `flash:false`, `scale:1`.
+- 박스·앵커(r별)
+  - r 3.5: 40×18 / (31, 9)
+  - r 4: 46×20 / (35, 10)
+  - r 4.5: 50×20 / (39, 10)
+  - r 5: 54×22 / (43, 11)
+  - r 5.5: 60×22 / (47, 11)
+  - r 6: 64×24 / (51, 12)
+- 판정은 그림 때문에 바뀌지 않습니다(V4).
+
+### 3. 검사 결과
+
+#### 3.1 명령과 결과
+명령은 모두 `node scripts/art-review-sheet.mjs expr …`이고, 지시서 §5.2 원문 그대로입니다.
+
+| 명령 | 결과 |
+|---|---|
+| 시작 전 C5 기준값 (`k9-c5-baseline`) | `icons-all=19vh262 len=2634966 list=17 ICON=17 \| skillvfx-all=1xq1i37 len=698432 groups=18` — 지시서와 같음 |
+| C1 `k9-c1-all` `--check` | ok |
+| C2 `k9-c2-{volley,burst,spray,rear,seeker,strike,nova,lob,chain,beam,halo}` `--check` | 11개 모두 ok. volley 밖은 자리표시 |
+| C6 `k9-c6-shots`(1x)·`k9-c6-shots-x6`(6x) `--check` | ok |
+| C8 `k9-c8-scene`(1x)·`-08`(0.8x)·`-x3`(3x) `--check` | ok |
+| C8 흑백 `k9-c8-scene-gray` | 확인함(아래) |
+| `PN.arsenal.sheet({kind:'volley'})`·`shotSheet({kind:'volley'})` `--check` | ok |
+
+**C4 출력 원문**
+```
+icons bad=0 text=0 hatch=0 nocyan=0
+stamps bad=0 text=0 filter=0 nocyan=0 colours={}
+```
+
+**C5 출력 원문**(새 모듈의 모든 호출 뒤)
+```
+icons-all=19vh262 len=2634966 list=17 ICON=17 | skillvfx-all=1xq1i37 len=698432 groups=18
+```
+
+**C7 출력 원문**
+```
+meta ok | invalid calls ok | core list=17
+inkDarts r=4 front=5.5 back=23.5 side=4.8 ok
+brushQuills r=5 front=6.2 back=19.5 side=5.9 ok
+sealArrows r=6 front=7.5 back=44.5 side=7.1 ok
+frostNeedles r=4.5 front=6.0 back=32.1 side=5.3 ok
+thunderNeedles r=4.5 front=6.0 back=16.0 side=5.3 ok
+twinBlades r=6 front=6.5 back=15.3 side=7.8 ok
+ghostVolley r=5 front=6.5 back=24.4 side=5.9 ok
+headsmanDarts r=4.5 front=6.0 back=27.0 side=5.3 ok
+paperStorm r=5 front=6.0 back=16.0 side=1.7 ok
+inkBloom r=4.5 front=5.5 back=14.8 side=1.7 ok
+thornHalo r=4 front=5.0 back=13.6 side=1.7 ok
+starShards r=5.5 front=6.5 back=17.2 side=1.7 ok
+sunNeedles r=5 front=6.0 back=16.0 side=1.7 ok
+inkDrizzle r=3.5 front=4.5 back=12.4 side=1.7 ok
+pinHail r=4.5 front=5.5 back=14.8 side=1.7 ok
+tailGuard r=5 front=6.0 back=16.0 side=1.7 ok
+smokeTail r=4.5 front=5.5 back=14.8 side=1.7 ok
+gravePins r=4.5 front=5.5 back=14.8 side=1.7 ok
+trackingSeals r=4.5 front=5.5 back=14.8 side=1.7 ok
+huntersMarks r=5 front=6.0 back=16.0 side=1.7 ok
+crowFeathers r=5 front=6.0 back=16.0 side=1.7 ok
+bossbane r=5.5 front=6.5 back=17.2 side=1.7 ok
+```
+
+#### 3.2 탄 실측표 (C7, 모든 조각·장 중 최대)
+
+각성 꼬리 1.25배와 반짝임을 포함한 값입니다.
+
+| 무기 | r | 앞(허용 r−0.5~r+2.5) | 뒤(≤ 8r) | 옆(≤ r+2.5) |
+|---|---|---|---|---|
+| inkDarts | 4 | 5.5 | 23.5 / 32 | 4.8 / 6.5 |
+| brushQuills | 5 | 6.2 | 19.5 / 40 | 5.9 / 7.5 |
+| sealArrows | 6 | 7.5 | 44.5 / 48 | 7.1 / 8.5 |
+| frostNeedles | 4.5 | 6.0 | 32.1 / 36 | 5.3 / 7 |
+| thunderNeedles | 4.5 | 6.0 | 16.0 / 36 | 5.3 / 7 |
+| twinBlades | 6 | 6.5 | 15.3 / 48 | 7.8 / 8.5 |
+| ghostVolley | 5 | 6.5 | 24.4 / 40 | 5.9 / 7.5 |
+| headsmanDarts | 4.5 | 6.0 | 27.0 / 36 | 5.3 / 7 |
+
+#### 3.3 직접 본 렌더
+모두 `/var/folders/p6/8x9_dsj97mbg_d6323ptytvc0000gn/T/blackline-art-review/`에 있습니다.
+
+**게임 크기(1x)**
+- `k9-t2-volley-both`: volley 행, 32px 색·32px 흑백·20px 흑백, 평상과 각성
+- `k9-t2-kinds`, `k9-t2-kinds-awakened`, `k9-t1-looks`, `k9-t3-blind20`(먼저 봄) → `k9-t3-key`
+- `k9-c6-shots`
+- `k9-c8-scene`, `k9-c8-scene-08`, `k9-c8-scene-gray`
+- `k9-c2-volley`
+
+**확대**
+- `k9-t6-normal`·`k9-t6-awakened`(1.5x): 타일과 낙관 구역 네모
+- `k9-wip-final8`(2.4x): 아이콘 평상·각성 8종
+- `k9-wip-f1`·`-f2`(3.6x)
+- `k9-c6-zoom-a`·`k9-c6-zoom-final`(5x)
+- `k9-helper-shotsheet-a`·`-b`(3x): 탄 6조각 × 2장 전부
+- `k9-c8-scene-x3`
+- 참고 `k9-ref-core3`(핵심 3종)
+
+**판정**
+- 1x 전투 장면(색·흑백)에서 무기 탄 22종이 모두 '밝은 몸 + 청록'으로 읽힙니다. 적 탄(먹 알 + 산호 테)과 갈립니다.
+- T6
+  - 평상 타일의 산호 점선 네모 안이 8종 모두 비어 있습니다. 뇌침의 기절 나선은 네모 바로 아래에 있습니다.
+  - 각성 타일의 覺 낙관은 바탕만 가립니다.
+
+### 4. 지시서 대비
+
+#### 4.1 무기별 디자인 (주 덩어리 / 청록 / 각성)
+좌표는 128 창 기준입니다. 상세는 `API-icons2.md` §6과 §7.4에 있습니다.
+
+| 무기 | 주 덩어리(지시서 문구 그대로) / 블랙 스팟 | 청록 | 각성 |
+|---|---|---|---|
+| 먹침 | 검은 쐐기 둘: 먹 쐐기 폭 16, 종이 몸 7 + 실감기 + 깃털 비행깃. 다트 뒤에 마른 붓 먹 꼬리 | 위 다트의 위 깃(먹 테) | 3발 |
+| 붓깃 | 흰 깃 셋, 벌어짐 14°. 가운데 깃이 과녁을 꿰뚫고 나옴(종이 구멍). 다발 밑에 좁은 먹 붓 획 | 펜촉 끝 점 r 3(먹 테) | 4개 |
+| 인장 화살 | 먹귀 셋(r 9·11·13)을 꿴 굵은 꼬치. 자루가 눈 아래로 지나감. 인장 몸 16 × 18(홈, 먹 앞면), 맨 앞 먹귀가 젖혀지고 끌림 획 둘 | 인장 앞면 테 | 2발, 먹귀 넷 |
+| 서리침 | 먹귀 아래 절반의 가지 친 서릿발 8 + 얼음판. 오른쪽 아래 언 땅(먹) | 침 끝 둘 | 3개 + 서릿발 몸 2/3까지 |
+| 뇌침 | 꺾쇠 번개(꺾임 5, 구간 33·12·47·15·22·13, 굵기 8→15.5) + 바늘. 기절 나선 | 번개 심 | 2발, 둘째 먹귀로 튐 |
+| 쌍날 | 흰 초승 날 둘(지름 36·40, 크기·높이·회전이 다름, V 대칭 없음) + 가늘어지는 회전 호. 밀침 표지 | 위 날의 안쪽 날선 | 3개 |
+| 혼령 일제사격 | 선 그림 화살 넷(잎맥 있는 버들잎 윤곽, 종이 선 자루) + 청록 불꽃 깃. 왼쪽 아래 부채꼴 먹 번짐. `halo:false` | 불꽃 깃 넷 | 5발, 불꽃 1.35배 |
+| 망나니 침 | 외날 칼 머리(곧은 등, 뾰족한 끝, 위 절반 먹 등) + 찢긴 먹귀(눈 아래로 7계단 찢김선, 위 조각이 −22° 벌어짐, 먹 4가닥) | 칼 날선 | 2발, 찢긴 먹귀 둘 |
+
+#### 4.2 지시서와 다르게 한 것 (이유)
+1. **먹 바탕 추가**: 붓깃 붓질 띠, 서리침 언 땅, 혼령 부채꼴 번짐, 먹침 마른 붓 꼬리를 더했습니다. 흰 모티프는 종이 위에서 20px에 사라집니다(§0.2 서리발 시안과 같은 이유). 놓는 자리는 무기마다 다르게 했습니다.
+2. **벌어짐 각**: 붓깃 ±8° → ±7°, 혼령 ±12° → 약 ±10°. volley 틀 '≤ 14°'와 무기 지시가 부딪쳤습니다.
+3. **혼령 화살 촉(아이콘)**: 채움 α 0.6 → 0.35 + 종이 안쪽 선. α 0.6에서는 버들잎이 숟가락처럼 메워졌습니다.
+4. **혼령 탄의 자루**: ink300 1.2 대신 ink300 테 2.2 안의 종이 선 0.9입니다. 몸의 종이가 40% 이상이 되도록 했습니다. *(정정, 검수 1차 R7: 측정은 종이 17~19%·담묵 46~52%다. 종이 선과 담묵 테로 밝게 했다.)*
+5. **뇌침 번개 굵기**: 먹 11 → 8~15.5. 비율 1 : 0.5 : 0.17은 그대로입니다.
+6. **망나니 칼 머리 크기**: 1.12배(≈ 44 × 23, 지시서 '날 26~32'). 자리는 (55~97, 50~84)이고 지시서 (70~96, 46~78)보다 조금 왼쪽 아래입니다. 낙관 구역 밖입니다. 주 덩어리 짧은 변 ≥ 14를 맞추려고 키웠습니다.
+7. **찢김선**: 종이 테를 뺐습니다. 이빨처럼 읽혔습니다.
+8. **쌍날의 긴 먹 꼬리 제거**: 두 꼬리가 '<'를 만들었습니다.
+9. **인장 꼭지(돔) 제거**: 컵처럼 읽혔습니다. 대신 홈 한 줄을 넣었습니다.
+
+#### 4.3 지키지 못했거나 판정이 남은 것
+- **블랙 스팟 15~55%**: 잴 도구가 없어 눈대중입니다. 밝은 쪽(인장 화살·뇌침·망나니 침·쌍날)은 하한 근처로 봅니다.
+- **T3**: 36종이 자리표시라서 이번 차례에는 판정할 수 없습니다.
+
+#### 4.4 T1~T3 자가 판정
+- **T1**: 그린 무기는 같은 줄의 핵심 아이콘과도 서로와도 32·20px에서 갈립니다.
+  - needleStorm 줄: 먹침·인장 화살·서리침·뇌침·망나니 침
+  - fanKnives 줄: 붓깃·쌍날
+  - mirrorClone 줄: 혼령
+- **T2 volley**
+  - 32px 흑백에서 8종이 모두 갈립니다.
+  - 20px 주 덩어리: 쐐기 둘 / 흰 잎 + 먹 줄 / 점 한 줄 + 흰 네모 / 오른쪽 아래 먹 / 지그재그 / 초승 둘 / 먹 부채 / 자루 + 칼 머리.
+  - 헷갈렸던 쌍과 고친 점
+    - 뇌침 ↔ 망나니 침: 둘 다 밝은 바탕에 대각선 + 오른쪽 덩어리였습니다. 번개를 굵히고 칼 머리를 키웠습니다.
+    - 붓깃 ↔ 혼령: 둘 다 왼쪽에 먹 덩어리였습니다. 붓깃 띠를 좁혀 다발 밑으로 옮겼습니다.
+  - 각성판은 20px에서 빌린 틀(먹 바탕 + 종이 원상)이 화면을 거의 채워 차이가 작습니다. 핵심 아이콘도 같습니다.
+- **T3**: 섞은 시트의 volley 자리는 4 ghostVolley, 9 headsmanDarts, 11 inkDarts, 13 thunderNeedles, 20 twinBlades, 22 frostNeedles, 35 brushQuills, 38 sealArrows입니다.
+- **작업 중에 고친 오독**
+  - 아이콘
+    - 다트가 미사일로 읽힘
+    - 번개 'WWW/ΛΛ'
+    - 칼 머리가 숟가락, 바탕이 달걀
+    - 쌍날 꼬리가 검은 원뿔
+    - 인장 화살 '<' 모양 찢김 표시
+    - 기절 나선 '@'
+  - 탄
+    - 쌍날 '( )'
+    - 혼령 불꽃 '<'
+    - 망나니 'D/P'
+    - 뇌침 '^^^'
+
+### 5. 메인 세션이 할 일 (등록값)
+
+#### 5.1 굽기 순서
+- `scripts/build-ui-art.mjs:17`과 `scripts/build-atlas.mjs:11`의 `KIT_FILES`에 `'k-icons2.js'`를 `'k-icons.js'` 바로 뒤에 넣습니다.
+
+#### 5.2 UI 시트 (`art/ui-art-spec.mjs`, 지시서 §7 권장대로 따로 둠)
+- 항목은 `done`인 무기만입니다. 1차 칸 순서: inkDarts, brushQuills, sealArrows, frostNeedles, thunderNeedles, twinBlades, ghostVolley, headsmanDarts × [평상 `<id>`, 각성 `<id>-awakened`] = 16칸.
+- `arsenal-tiles`
+  - 열 8, 칸 [166,166], 원점 [−8,−8]
+  - 레시피 `PN.arsenal.tile(id, {awakened, metal: true, size: 150})`
+  - 1차 크기 2행 = 2656 × 664 px(@2x)
+- `arsenal-slots`
+  - 열 9, 칸 [56,60], 원점 [−2,−2]
+  - 레시피 `PN.arsenal.hudSlot(id, {size: 40, awakened}).replace(/<rect x="46\.4"[^>]*\/>/g, '')`
+  - 1차 크기 2행 = 1008 × 240 px
+- CSS
+  - `build-arsenal-art.mjs`가 `done`인 키에서 배지(`::after`)와 `position: relative` 규칙을 뺍니다.
+  - `.artTile`·`.artSlot`의 `background-image`·`size`·`position`을 키마다 덮어씁니다.
+  - `src/ui/uiArt.test.ts:53-56`의 키 목록을 갱신합니다.
+
+#### 5.3 탄 (skills 팩, `art/atlas-spec.mjs:405`)
+- `build-atlas.mjs` `renderFrames`가 `PN.arsenal.shots` 중 `META[id].done`인 것의 `parts(id)`를 펼칩니다.
+  - 키 `skill/<id>/<part>/<frame>`
+  - 호출 `['PN.arsenal.stamp', id, part, {frame}]`
+  - `box`·`anchor`는 parts 값, `scale: 1`
+- 1차는 8종 × 12장 = 96장이고 박스 넓이 합은 112,416 단위²입니다.
+- 조각 이름(start·travel·end·*-awakened)이 `SKILL_VFX_TIMING`과 맞습니다.
+- `readSkillVfx`가 `PN.arsenal.parts`도 읽게 합니다. `window`만 한글이므로 지금처럼 빼고 옮기면 됩니다.
+
+#### 5.4 렌더러 (지시서 §7-2)
+- `worldRenderer.ts:85` `SKILL_SHOTS`에 done 8종을 넣습니다.
+- `:1337` 조건이 `projectile.skillId`도 보게 합니다.
+- `:1359` 무기 자신의 조각이 있으면 `shot.skillId`, 없으면 `shot.look`을 고릅니다(`prefix`는 look 그룹만).
+- 각성 조각이 없으면 평상 조각으로 떨어지게 하기를 권합니다.
+
+#### 5.5 참고
+- 망나니 침 아이콘은 같은 먹귀를 두 번 보이려고 `<use href="#…">`를 씁니다. `--check`의 참조 검사는 통과합니다.
+- 아이콘은 빌린 틀의 rough·grain 필터를 핵심 아이콘과 똑같이 씁니다. 탄에는 필터가 0입니다.
+- 확인은 지시서 §7-3대로 합니다(`build:ui-art`, `build-arsenal-art.mjs`, `build:atlas`, `test:unit`, `npm run build` 예산, `test:visual`).
+
+### 6. 알려진 한계 · 사람 클린업 (지시서 §8, 바이블 §15)
+- 사람이 다시 그을 것
+  - 8종의 최종 붓 외곽·블랙 스팟·비백(마른 붓 꼬리, 붓질 띠, 서릿발, 찢김선, 번개 꺾쇠)
+  - 20~32px 픽셀 다듬기. 슬롯 하나를 20~45px에 씁니다.
+  - 탄 96장(전체 264장)의 1x 픽셀 정리
+- 기절 나선은 '한 획 1.5바퀴' 지시를 지키면 작은 크기에서 '@'와 닮을 여지가 남습니다. 납작하게(0.38) 하고 꼬리를 열어 줄였습니다.
+- 문화 검토가 필요합니다: 인장·손·종·가시·별·바늘꽂이의 최종 꼴(로어 §1.4).
+- 정식 판독 시험(n ≥ 8)은 하지 않았습니다.
+- 2·3차에서 바뀔 수 있는 것: 지금 블랙 스팟 배치(왼쪽 붓질 띠·왼쪽 아래 부채·오른쪽 아래 언 땅)가 나머지 kind(rear·spray·strike 바닥 띠 등)와 20px에서 겹치면 다시 조정합니다.
+
+---
+
+## 검수 1차 — art-director, 2026-10-14
+
+(되살림: 서브에이전트 기록 `agent-a4c877d3024d1c717`(art-director, 'Review K9 first delivery')의 SubagentHandback 원문, 2026-10-14 16:36 KST. 메인 세션이 이 파일에 넣었던 글과 같은 추출이다(세션 기록 `75a03af2-….jsonl` 줄 41997, 추출 길이 일치). 머리말 단계만 이 파일에 맞췄다.)
+
+**판정: 수정 후 합격.**
+- 뼈대(§1)와 검사 C1~C8은 모두 통과했고, 납품서 §4.2의 '다르게 한 것' 9건도 모두 받아들인다.
+- 고칠 것은 넷이다(F1~F4). 모두 `k-icons2.js` 안에서 국소적으로 고치면 된다.
+  - F1 망나니 칼 머리가 '국자'로 읽힘
+  - F2 찢긴 먹귀의 먹 튐이 고양이 수염으로 읽힘
+  - F3 1배에서 몸이 어두운 탄 둘(먹침·망나니 침)
+  - F4 32px에서 청록이 사라지는 아이콘 셋(먹침·인장 화살·서리침)
+- 고친 뒤 §7 명령으로 재검수한다. R5 기준으로 수정 1회차다.
+- 자리표시 36종은 맞게 되어 있다(§2.5).
+
+---
+
+### 1. 직접 돌린 검사
+
+- 렌더는 모두 `/var/folders/p6/8x9_dsj97mbg_d6323ptytvc0000gn/T/blackline-art-review/k9r1-*.png`에 있다.
+- 다른 작업자 모듈(bombers·characters·bossesC·fieldBosses)이 함께 로드된 상태에서 돌렸고, 모든 실행에서 kit error는 0건이다.
+
+| 검사 | 렌더 | 결과 |
+|---|---|---|
+| C5 | `k9r1-c5-unchanged` | `icons-all=19vh262 len=2634966 list=17 ICON=17 \| skillvfx-all=1xq1i37 len=698432 groups=18`. 기준값과 같다 |
+| C4 | `k9r1-c4-scan` | `icons bad=0 text=0 hatch=0 nocyan=0`, `stamps bad=0 text=0 filter=0 nocyan=0 colours={}` |
+| C7 | `k9r1-c7-meta` | `meta ok \| invalid calls ok \| core list=17`. 탄 22줄 모두 ok이고, 실측값은 납품서 §3.2와 같다 |
+| C1 `--check` | `k9r1-c1-all` | ok |
+| C2 11 kind `--check` | `k9r1-c2-{volley,burst,spray,rear,seeker,strike,nova,lob,chain,beam,halo}` | 11개 모두 ok |
+| C6 `--check` | `k9r1-c6-shots`(1배), `-x6`(6배) | ok |
+| C8 `--check` | `k9r1-c8-scene`(1배), `-08`(0.8배), `-x3`(3배), 흑백 `-gray` | ok |
+| T1·T2·T3 | `k9r1-t1-*`, `k9r1-t2-*`, `k9r1-core-aw-20gray`, `k9r1-t3-blind20` → `k9r1-t3-key` | §2.1 |
+| 확대 | `k9r1-icon-<id>` 8종(3배, 평상+각성, 낙관 구역·모서리 표시, `--check` ok)<br>`k9r1-zoom-headsman`(8배), `-thunder-frost`(6배), `-seal-darts`(6배), `-twin-aw`(4배)<br>`k9r1-shotsheet-a/-b`(4배, 6조각 × 2장 전부, `--check` ok), `k9r1-c6-volley-x6a/b` | §2~§4 |
+| 이번에 더한 측정 | `k9r1-shot-paper`(C9 탄 색 비율), `k9r1-icon-ink`(C10 아이콘 먹 면적), `k9r1-cyan-32`(C11), `k9r1-volley-shots-scene`·`-gray`(C12)<br>`k9r1-placeholder-match`, `k9r1-parts-desc`, `k9r1-determinism` | 아래 |
+
+### 2. 지시서 대조
+
+#### 2.1 합격 기준
+
+| 기준 | 판정 | 근거 |
+|---|---|---|
+| C1·C2·C6·C8, kit error 0 | 통과 | |
+| C4·C5·C7 | 통과 | 호출 뒤 `list=17 ICON=17`이고 `PN.icons.skill`도 원래대로 돌아온다 |
+| T1 | 통과 | 그린 무기는 32px 색·흑백, 20px 흑백에서 같은 줄의 핵심 아이콘과도, 서로와도 갈린다.<br>needleStorm 줄: 먹침·인장 화살·서리침·뇌침·망나니 침. fanKnives 줄: 붓깃·쌍날. mirrorClone 줄: 혼령 |
+| T2 평상판 | 통과 | 20px 흑백 주 덩어리가 모두 다르다: 가로 검은 쐐기 둘 / 흰 잎 + 왼쪽 먹 / 점 한 줄 + 흰 네모 / 오른쪽 아래 먹 / 밝은 대각 지그재그 / 초승 둘 / 먹 부채 / 대각 자루 + 머리 |
+| T2 각성판 | 32px 통과, 20px 약함 | 20px에서는 빌린 틀(먹 바탕 + 원상)이 화면을 채워 8종이 비슷해진다. 핵심 아이콘 각성판도 같은 정도라 틀의 한계로 본다. 팀 결정 Q7(20px 전용판)을 정할 때 각성판도 함께 본다 |
+| T3 | 보류 | 36종이 자리표시라 판정하지 않는다. 섞은 시트에서 volley 자리(4·9·11·13·20·22·35·38)는 납품서와 같다 |
+| T4 | 8종 중 6종 통과 | 먹침·망나니 침 평상 탄이 1배에서 '어두운 몸'으로 읽힌다(F3). 적 탄과는 8종 모두 모양으로 갈린다 |
+| T5 | 조건부 통과 | §2.6 금지 모양은 없다. 다만 지시서 §3.3이 허락하지 않은 동물 얼굴이 하나 생겼다(F2).<br>기절 나선의 '@' 기미는 지시서 사양(1.5바퀴 한 획)에서 오는 것이라 받아들이고 사람 클린업으로 넘긴다 |
+| T6 | 통과 | 평상 타일 8종의 낙관 구역(94~128, 0~34)과 HUD 배지 자리(105~128, 0~21)가 비어 있다. 각성 覺 낙관은 바탕만 가리고, 뇌침 각성 나선은 그 아래(y 약 36~44)에 있다 |
+
+T4 보충
+- 납품서 §3.3의 C8 판정은 먹침 평상 탄을 보지 못했다. C8은 `i%3===0`인 칸을 각성판으로 그려서 먹침·서리침·혼령이 각성판으로만 나온다.
+- 그래서 volley 8종 평상·각성 탄만 놓은 C12 장면을 따로 만들어 봤다.
+
+#### 2.2 §1 뼈대 (모두 확인)
+- API는 §1.2와 같다(`scale:1`만 더함). 잘못된 호출 5종에 오류를 던진다.
+- 틀 빌리기는 §1.3 방식 그대로다(`k-icons2.js:551-563`).
+- META 44종의 이름이 `ko.json:770-857`과 모두 같다. count·awakenedCount는 §1.4·§2.4 규칙대로다.
+  - 수 8 이상은 2~4개를 더했다: 종이 폭풍 10, 가시 테 14, 해바늘 20.
+  - beam은 방향 수를 그대로 둔다.
+- 결정적이다: 아이콘·타일·슬롯·탄 528개 호출을 두 번씩 돌려 비교하니 id 말고는 같다.
+- `parts()` 서술자는 K4 `PN.skillVfx.parts`와 같은 꼴이다. 한글은 `window`에만 있고, 이 필드는 굽기 `readSkillVfx`가 옮기지 않는다.
+
+#### 2.3 §3.4 무기별 (volley 8)
+
+| 무기 | 주 덩어리·배치 | 효과 표지 | 청록 | 각성 수 | 메모 |
+|---|---|---|---|---|---|
+| 먹침 | 맞음 | 없음(지시대로) | 위 깃. 32px에서 안 보임 → F4 | 3발 | 미사일 기미 → R6 |
+| 붓깃 | 맞음(벌어짐 14°) | 관통 구멍 있음 | 펜촉 끝 점. 32px에서 흐림 | 4개 | |
+| 인장 화살 | 맞음 | 밀침(16°, 끌림 둘)과 관통 찢김 있음 | 인면 선(굵기 1.4). 32px에서 안 보임 → F4 | 2발, 먹귀 넷 | |
+| 서리침 | 맞음(먹 언 땅 위) | 서릿발 8개(지시는 5~7, 미신고 → R8), 얼음판 있음 | 침 끝. 32px에서 안 보임 → F4 | 3개, 몸 2/3까지 | |
+| 뇌침 | 맞음 | 기절 나선 있음 | 번개 심 | 2발, 둘째 먹귀로 튐 | |
+| 쌍날 | 맞음(V 대칭 없음) | 밀침 있음 | 날선. 32px에서 흐림 | 3개 | R2·R3 |
+| 혼령 | 맞음(벌어짐 20.5°) | 관통 있음 | 불꽃 깃 넷 | 5발, 불꽃 1.35배 | |
+| 망나니 침 | 자리·크기는 맞음, 판독이 틀림 → F1 | 찢김은 맞음, 먹 튐이 틀림 → F2 | 날선. 32px에서 흐림 | 2발, 먹귀 둘 | |
+
+#### 2.4 §4 탄
+- C7로 확인한 것: 조각 이름, drive·fps·still, 박스·앵커, 여백 3, 앞끝 r−0.5~r+2.5, 옆 r+2.5 이하, 뒤 8r 이하.
+- 12장을 모두 4배로 보며 확인한 것(`k9r1-shotsheet-a/b`):
+  - 장 규칙: start 꼬리 30%·70%, travel 위상 차이, end 처짐과 allyD, end 1번 장은 p300·ink300·α 0.6
+  - 각성: 겹 테, 앞끝 3 비움, travel-awakened 0번 장의 6갈래 반짝임, 꼬리 1.25배
+- 색은 K 토큰만 쓰고 필터는 0이다.
+- 둥근 먹알 + 종이 점(적 탄 문법)은 없다. 혼령 촉은 버들잎 꼴이다.
+- 결 바늘(가는 바늘 + 긴 청록 S실)과 닮지 않는다.
+- 남은 것은 몸의 명도 하나다(F3).
+
+#### 2.5 자리표시 36종 — 맞음
+- `done:false`가 36종, `done:true`는 volley 8종이다.
+- 아이콘: id와 종이결 시드를 정규화하면 look 핵심 그림과 평상·각성 72/72가 같다. 타일·슬롯의 매듭과 틀은 무기 자신의 등급이다.
+- 탄: §4.2 규격의 종이 바늘(앞끝 r+1, 뒤 −(2.4r+4), 반폭 1.7, 먹 1.5)에 청록 바늘귀가 있고, end 조각은 allyD로 흐려진다. 각성 조각은 평상과 같은데 자리표시라 괜찮다.
+- 메인 세션은 `done`인 8종만 등록한다.
+
+**얼굴.**
+- 이 발주에 사람 얼굴은 없다.
+- 과녁 먹귀는 모두 `PN._ki.inkDot` 그대로다.
+- 지시서 §3.3 밖의 얼굴은 망나니 침의 찢긴 먹귀 하나뿐이다(F2).
+
+### 3. 납품서 §4.2 '지시서와 다르게 한 것' 9건
+
+| # | 내용 | 판정 | 이유·조건 |
+|---|---|---|---|
+| 1 | 먹 바탕 4종 추가(붓깃 붓질 띠, 서리침 언 땅, 혼령 부채 번짐, 먹침 마른 붓 꼬리) | 수용 | §2.2가 블랙 스팟을 '주 덩어리 자체이거나 그 바탕'으로 허용하고, T2 20px도 통과한다.<br>조건: 2·3차에서 rear(왼쪽 부채), spray(왼쪽 아래 발원), lob(왼쪽 아래 출발)와 20px에서 겹치는지 T2·T3로 다시 본다 |
+| 2 | 벌어짐: 붓깃 14°, 혼령 약 20.5° | 수용 | 지시서 안에서 부딪쳤다(§3.1 '14° 이하' 대 §3.4 '±8°'·'±12°').<br>혼령은 요약 문구의 '부채꼴'이 앞선다. 방향(−24°~−3.5°)도 핵심 먹선 바늘(−65°~−25°)과 겹치지 않는다. 지시서를 고친다(§6) |
+| 3 | 혼령 촉(아이콘) 채움 α 0.35 + 종이 안선 | 수용 | '선만 있는 화살'이라는 의도에 더 맞다. 3배에서 잎맥 있는 버들잎으로 읽힌다 |
+| 4 | 혼령 탄 자루를 담묵 테 2.2 + 종이 선 0.9로 | 수용 | 1배에서 자루가 밝은 선으로 남는다.<br>다만 '몸의 종이 40% 이상'이라는 주장은 측정과 다르다(C9: 종이 17~19%, 담묵 46~52%). 문구만 고친다(R7) |
+| 5 | 뇌침 번개 굵기 8 → 15.5 | 수용 | 지시서의 '끝으로 갈수록 굵다'를 구현한 것이고, 평균은 11 안팎, 먹·청록·종이 비율도 그대로다. 20px에서 망나니 침과 갈린다 |
+| 6 | 망나니 칼 머리 1.12배, 자리 (55~97, 50~84) | 수용 | 20px 주 덩어리의 짧은 변 14 이상을 맞췄고 낙관 구역 밖이다. 칼 머리가 국자로 읽히는 것은 크기 탓이 아니라 F1에서 따로 고친다 |
+| 7 | 찢김선의 종이 테 제거 | 수용 | 이빨로 읽히는 것을 막는다. 먹 튐 배치는 F2에서 고친다 |
+| 8 | 쌍날의 긴 먹 꼬리 제거 | 수용 | '<'로 읽히는 것을 막는다. 남은 회전 호의 무게와 겹줄은 R2 |
+| 9 | 인장 꼭지(돔) 제거, 홈 한 줄 | 수용 | §3.4의 인장 화살 머리에는 꼭지 요구가 없다(꼭지는 추적 인장 사양이다). 컵으로 읽히던 것이 없어졌다 |
+
+### 4. 고칠 것 (필수, 수정 1회차)
+
+#### F1 — 망나니 칼 머리(아이콘)가 120px에서 '검은 국자·배'로 읽힌다
+- **본 렌더:** `k9r1-icon-headsmanDarts`(3배), `k9r1-zoom-headsman`(8배, crop 50,40,230,90).
+- **문제:** §3.4의 주 덩어리는 '큰 외날 칼 머리'다. 드래프트 카드(120px)에서 무기를 알아볼 수 있어야 한다.
+- **원인:** `headsmanDart()`(`/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/k-icons2.js:515-528`)
+  - 배 곡선(`belly`, `:518`)이 손잡이 쪽(x 5~15)에서 가장 깊다(s +10.5). 칼보다 국자·사발 단면에 가깝다.
+  - 먹 등(`back`, `:521`)이 날 높이의 55~67%를 덮는다. 손잡이 쪽에서는 s +1.4로 중심선 아래까지 내려온다.
+  - 끝(x 35~37)은 `S()`의 둥근 이음이라 뾰족하지 않다.
+- **처방**(블레이드 공간, 예시 좌표 ±2 안에서 다듬어도 된다)
+  1. 가장 넓은 곳을 끝 쪽으로 옮긴다(팔치온 꼴). 예: belly `[[37,-10.5],[34,-4],[28,5],[19,8.6],[9,7],[1,4.8],[-1,4.2]]`.
+  2. 먹 등은 위 가장자리 띠로 줄인다(두께 3~4). 예: back `[[-2,-6],[13,-8.4],[27,-9.4],[35,-10.2],[31,-7.4],[20,-5.6],[9,-4.6],[-2,-2.6]]`.
+     - 날 몸은 종이로 둔다.
+     - p300 그늘(`shade`)과 청록 날선(`eLine`)은 새 배 곡선을 따라 2~3 안쪽에 둔다.
+  3. 등선 끝에서 3~4 더 나가는 뾰족한 끝을 `stroke-linejoin="miter"` 경로로 덧그린다. 예: 종이 삼각 `[33,-11.6]→[40,-11]→[34,-7.4]` + 먹 테 2.6.
+  4. 날과 자루 사이에 칼 목(먹 띠, x −4~0, s −7~+5.5)을 둔다. 자루에 꽂은 날로 읽히게 하려는 것이다.
+  5. 먹 면적이 줄어드는 만큼은 찢긴 먹귀 아래 먹 튐을 키워 메운다(R1 참조).
+- **바꾸면 안 되는 것**
+  - 칼 머리 자리(55~97, 50~84)와 1.12배
+  - 낙관 구역 비움
+  - 20px 주 덩어리(대각 자루 + 오른쪽 머리)
+  - 청록은 날선 하나
+  - 각성판 구성(작은 칼 0.72배 + 둘째 먹귀)
+- **합격 기준**
+  - `k9-fix-headsman-x8`(§7)에서 곧은 등과 뾰족한 끝을 가진 '자루에 꽂힌 외날'로 읽힌다.
+  - T2 20px 흑백에서 뇌침과 계속 갈린다.
+
+#### F2 — 찢긴 먹귀의 먹 튐이 부리·고양이 수염으로 읽힌다(각성판 둘째 먹귀는 고양이 얼굴)
+- **본 렌더:** `k9r1-zoom-headsman`(8배, 평상·각성).
+- **문제:** 지시서 §3.3은 얼굴로 읽혀도 되는 곳을 먹귀 슬릿 눈으로 한정한다. 동물 얼굴은 허용 밖이다. §3.2 '처형' 표지는 먹이 찢긴 가장자리에서 튀어야 한다.
+- **원인:** `tornGhoul()`의 먹 튐(`k-icons2.js:214-217`)
+  - 네 가닥 모두 찢김선 오른쪽 끝(t 0.7~1.35 r)에서 시작한다.
+  - 방향도 찢김선 기준 −40°~+20°로 같은 쪽이다. 결국 한 점에서 오른쪽으로 부채꼴이 된다.
+- **처방**
+  - 시작점을 찢김선 전체에 흩는다: t ≈ −0.9, −0.2, +0.5, +1.1 r에 하나씩.
+  - 방향은 찢김선에 거의 수직으로 둔다. 위 조각 가장자리에서는 위로 60~110°, 아래 조각에서는 아래로.
+  - 길이는 5~12로 서로 다르게 하고, 한 가닥 끝에 먹 방울을 단다.
+  - 한 점에서 세 가닥 이상 갈라지지 않게 한다. 오른쪽 윤곽 밖으로 0.6r 넘게 나가지 않게 한다.
+- **바꾸면 안 되는 것:** 7계단 찢김선(종이 테 없음, §3 #7), 위 조각 벌어짐 `open`, `<use>` 구조, seed.
+- **합격 기준**
+  - `k9-fix-headsman-x8`의 평상·각성 두 먹귀 어디서도 수염·부리·얼굴이 읽히지 않는다.
+  - 32px에서 '찢어진 먹귀'로 읽힌다.
+
+#### F3 — 1배에서 먹침·망나니 침 탄의 몸이 어둡게 읽힌다(T4, 바이블 P1·§12.1)
+- **본 렌더:** `k9r1-volley-shots-scene`·`-gray`(C12, 1배), `k9r1-c8-scene`(망나니 칸), `k9r1-shot-paper`(C9).
+- **측정(C9, travel 0·1 기준, 종이/먹)**
+  - 먹침 14~15% / 75~77%, 망나니 침 18~19% / 68~71%
+  - 비교로, 밝게 읽히는 것: 서리침 33~34 / 63~65, 붓깃 32~33 / 51~53, K4 부채 단검 32 / 66
+- **원인**
+  - 먹침: `SHOT.inkDarts`(`k-icons2.js:632-633`)
+    - 먹 쐐기가 앞 45%(x −0.35~+5.5, 반폭 3.2)를 차지한다.
+    - 종이 몸은 반폭 1.8인데 외곽 1.5에 거의 덮인다.
+    - 이것은 지시서 §4.4 사양 그대로다. 지시서도 고친다(§6).
+  - 망나니 침: `SHOT.headsmanDarts`(`:741`)의 먹 등이 날 위 40%를 덮는다.
+- **처방**
+  - 먹침
+    - 쐐기를 앞 30%(x +1.6~+5.5)로 줄인다. 담금 경계는 들쭉날쭉한 채로 둔다.
+    - 종이 몸을 x −7.5~+1.6, 반폭 2.4로 넓힌다. 예: `M-7.5,-2 C-8.1,-1 -8.1,1 -7.5,2 L1.2,2.4 L1.6,3.2 … L1.6,-3.2 L1.2,-2.4 Z`.
+    - 깃과 속도 획은 그대로 둔다.
+  - 망나니 침
+    - 먹 등을 두께 1.2 정도의 등 띠로 줄인다. 예: `M-2,-4.6 L2.8,-5.2 L6,-3.4 L5.2,-2.9 L2.6,-3.9 L-2,-3.3 Z`.
+    - F1과 같은 문법이다. 아이콘과 탄은 같은 물건이어야 한다(§4.1).
+- **바꾸면 안 되는 것**
+  - 박스와 앵커: 먹침 46×20, (35,10) / 망나니 50×20, (39,10)
+  - 앞끝 5.5·6.0, 옆 r+2.5 이하, 뒤 8r 이하(C7)
+  - 청록 요소: 먹침 위 깃, 망나니 날선
+  - 외곽 먹 1.5(바이블 §3)
+- **합격 기준**
+  - C9에서 두 탄의 travel 0·1이 종이 25% 이상, 먹 60% 이하다.
+  - C12(1배 색·흑백)에서 두 탄 모두 몸의 가장 큰 덩어리가 종이로 읽힌다.
+  - C7은 22줄 모두 ok다.
+
+#### F4 — 32px HUD에서 청록 요소가 보이지 않는 셋(먹침·인장 화살·서리침)
+- **본 렌더:** `k9r1-cyan-32`(C11, 32px 색, 한지 바탕), `k9r1-volley-32-40-color`.
+  - 뇌침과 혼령은 뚜렷하다.
+  - 붓깃·쌍날·망나니 침은 흐리지만 보인다.
+  - 위 셋은 안 보인다. 핵심 부채 단검의 섬광도 흐리다.
+- **문제:** 지시서 §2.5의 32px 행은 청록 요소를 남기고 짧은 변을 8 단위 이상으로 하라고 한다. 바이블 §12.4는 액티브에 청록 한 점을 둔다.
+- **원인(코드상 굵기)**
+  - 인장 화살: `cyanLine(rimD, 1.4, false)`(`:301`)라 청록 선이 1.4다.
+  - 서리침: 침 끝 청록 구간(`:416-418`)의 밑변이 약 2.5다.
+  - 먹침: 청록 깃(`:258`) 폭이 약 5이고, 테 2.2를 넣어도 약 7이다.
+- **처방**
+  - 인장 화살: `sealArrow()`의 `face`·`rimD`. 앞면 띠를 8로 넓히고, 안쪽을 청록 4.8(양쪽 먹 1.6)로 해 '청록 인주가 묻은 인면'으로 만든다.
+  - 서리침: `frostNeedle()`. 침 폭 w를 7 → 9로 하고, 청록 구간을 앞 28% → 45%(t 0.55부터)로 늘린다. 청록 밑변이 먹 테를 넣어 8 정도가 된다.
+  - 먹침: `dart()` 청록 깃. 바깥 오프셋을 `b+6.6` → `b+8.5`로 하고, 테를 2.2 → 1.6으로 줄인다.
+- **바꾸면 안 되는 것:** 청록은 무기마다 한 가지(C4 nocyan 0), 늘 먹 위에(샌드위치), 낙관 구역 비움, 20px 주 덩어리.
+- **합격 기준:** C11에서 volley 8종 모두 32px 색으로 청록 한 점 이상이 보인다.
+
+### 5. 권장 (이번 수정에 함께 하면 좋고, 늦어도 2차 납품 때)
+
+- **R1 블랙 스팟 하한**
+  - 지시서 §2.2는 창 안 먹 면적 15~55%를 요구한다.
+  - C10(평상판, 창 안 먹 면적) 측정
+    - 인장 화살 13%, 뇌침 11%, 쌍날 15%
+    - 망나니 침은 측정상 8%다. 찢긴 먹귀가 `<use>`라 표본에서 빠졌고, 그만큼(약 5%)을 더하면 약 13%로 추정한다.
+    - 나머지: 먹침 18%, 붓깃 18%, 서리침 31%, 혼령 19%. 비교로 핵심 먹선 바늘 20%, 부채 단검 40%.
+  - 15% 아래인 것은 낙관 구역과 다른 kind 자리(왼쪽 아래)를 피해 바탕 먹을 더한다. 3차 T3 때 함께 판정한다.
+- **R2 쌍날 회전 호**
+  - `bladeSpin()`(`:459-463`)이 날마다 호 둘(먹 3~4 + 종이 심)을 그린다.
+  - 그래서 120px에서 동심 평행선 서너 줄로 보인다. §2.6의 '같은 간격 평행선' 경향이고, 지시서의 '종이 1.4 + 먹 0.8' 한 줄보다 무겁다.
+  - 날마다 호 하나로 줄이거나, 두 호의 길이와 간격을 크게 다르게 한다.
+- **R3 쌍날 각성판의 배치**
+  - 흰 원판 셋이 원상 안에서 삼각으로 놓여 문장(三つ巴·삼태극) 쪽으로 읽힐 여지가 있다(`k9r1-zoom-twin-aw`). 회전이 고르지 않아 바람개비는 아니다.
+  - 셋째(R 15) 날을 왼쪽 아래 뒤로 더 빼서 균형 잡힌 삼각을 깬다(`:467`).
+  - 문화 검토 목록에도 올린다.
+- **R4 인장 화살 탄**
+  - 머리 비율이 길이 6 × 높이 9(`:664`)라서, 1배에서 세로로 날면 망치·의사봉(§2.6 공백 표식)처럼 보인다.
+  - 머리를 x −1.5~+7.5, 반폭 3.8의 '도장 몸' 비율로 바꾼다.
+  - 자루(`:663`, 먹 2.4)는 먹 2.4 안에 종이 심 0.9를 넣는다. 지금 종이 20%, 먹 64~66%다.
+- **R5 각성 탄 겹 테**
+  - `shot()`(`:618`)이 앞 3 단위를 세로 직선으로 잘라, 쌍날·망나니·인장 머리에서 테 끝이 칼로 자른 듯 남는다.
+  - 몸 외곽을 x −3 옮긴 모양으로 자른다.
+- **R6 먹침 아이콘이 미사일·만년필 뚜껑처럼 보인다**
+  - 원인: 같은 간격의 실감기 셋(`:260`)과 쐐기의 담묵 빗면 줄(`:262`)이 공산품 느낌을 준다.
+  - 실감기는 한 뭉치로, 빗면은 끊긴 마른 붓 한 획으로 바꾸고, 깃을 더 크게 한다.
+- **R7 문서**
+  - `API-icons2.md:244-254` §9 목록이 납품서 §4.2와 번호·항목이 다르다. 혼령 탄 자루가 3번에 합쳐져 있고, '쌍날 탄 회전'이 들어가 있다. 둘을 맞춘다.
+  - `API-icons2.md:240`의 'C4~C8은 지시서 543~568줄 참조'는 지시서가 바뀌면 깨진다. 3차에서 명령 원문을 옮긴다.
+  - 납품서 §4.2-4와 API §9-3의 '혼령 탄 종이 40% 이상'은 측정과 다르다. '종이 선과 담묵 테로 밝게 했다'로 고친다.
+- **R8 서리침 서릿발 수**
+  - 8개로, 지시서 5~7과 다르다(`:428`).
+  - 그대로 두되 API에 '다르게 한 것'으로 적는다.
+
+### 6. 지시서 정정 (`docs/art/briefs/arsenal-icons.md`, 메인 세션이 반영)
+1. **§3.1 volley 벌어짐:** '14° 이하'로 두되 혼령 일제사격만 22° 이하로 예외를 둔다. §3.4 붓깃의 '±8°'는 '±7°'로 고친다.
+2. **§4.3 종이 비율**
+   - '칠한 넓이의 40% 이상을 종이'를 다음으로 바꾼다: '1배 흑백에서 몸의 가장 큰 덩어리가 종이로 읽힌다(C12). C9의 먹 비율이 65%를 넘으면 다시 본다.'
+   - 이유: 외곽 1.5를 넣어 재면 기존 K4 탄도 40%에 못 미친다(결 바늘 9%, 부채 단검 32%, 분신 탄 22%).
+3. **§4.4 먹침 탄:** '앞 45% 먹 쐐기'를 '앞 30% 먹 쐐기, 뒤 종이 몸 반폭 2.4'로 고친다. 아이콘은 45% 그대로 둔다.
+4. **§4.4 인장 화살 탄(권장, R4):** 머리를 '−1.5~+7.5, 반폭 3.8'로, 자루를 '먹 2.4 + 종이 심 0.9'로 고친다.
+5. **§2.5 32px 청록:** '짧은 변 8 단위 이상'에 '먹 테 포함, 청록 심 3.2 이상, C11로 확인'을 덧붙인다.
+6. **§5.2:** 아래 C9~C12를 더하고, §5.1 T4의 근거로 C12를 쓴다.
+
+### 7. 재검수 때 돌릴 명령
+- 기존 명령은 모두 그대로 다시 돌린다: C1, C2-volley, C4, C5(값이 같아야 한다), C6(1배·6배), C7(22줄 ok), C8(1배·0.8배·흑백), T1, T2(평상·각성).
+- 측정 명령(C9·C10)은 필터·clip·`<use>`·묶음 opacity를 무시하는 근사 측정이다.
+- 새로 더하는 명령:
+
+```
+node scripts/art-review-sheet.mjs expr --name k9-c9-paper --scale 1 --crop 0,0,1400,420 --expr '(function(){var X=PN.arsenal,S=PN.skillVfx,NS="http://www.w3.org/2000/svg",L=[];var C={"#faf6ec":"p","#f3eee2":"p","#d8d0c0":"p","#fffff8":"p","#121110":"k","#2b2926":"k","#46423d":"k","#101312":"k","#8c8579":"t","#bcb4a5":"t","#00a8c6":"c","#007c94":"c","#cff6ff":"c"};function hex(v){var m=v.match(/[\d.]+/g);if(!m)return v;return "#"+m.slice(0,3).map(function(x){return ("0"+Math.round(+x).toString(16)).slice(-2);}).join("");}function meas(mk,box){var s=document.createElementNS(NS,"svg");s.setAttribute("width",box[0]);s.setAttribute("height",box[1]);s.innerHTML=mk;document.body.appendChild(s);var els=[].slice.call(s.querySelectorAll("path,circle,ellipse,rect,polygon,polyline,line")).filter(function(e){return !e.closest("clipPath,defs,mask,pattern");});var info=els.map(function(e){var cs=getComputedStyle(e);return {e:e,inv:e.getCTM().inverse(),st:cs.stroke!=="none"&&parseFloat(cs.strokeWidth)>0?hex(cs.stroke):null,fi:cs.fill!=="none"?hex(cs.fill):null};}).reverse();var n={p:0,k:0,t:0,c:0,x:0},st=0.25,pt=s.createSVGPoint();for(var y=0;y<box[1];y+=st)for(var x=0;x<box[0];x+=st){pt.x=x;pt.y=y;for(var i=0;i<info.length;i++){var q=info[i],lp=pt.matrixTransform(q.inv),col=null;if(q.st&&q.e.isPointInStroke(lp))col=q.st;else if(q.fi&&q.e.isPointInFill(lp))col=q.fi;if(col){n[C[col]||"x"]++;break;}}}s.remove();var tot=n.p+n.k+n.t+n.c+n.x;return "paper "+Math.round(100*n.p/tot)+"% ink "+Math.round(100*n.k/tot)+"% ink300 "+Math.round(100*n.t/tot)+"% cyan "+Math.round(100*n.c/tot)+"% other "+Math.round(100*n.x/tot)+"% (area "+(tot*st*st).toFixed(0)+")";}X.ids.filter(function(id){return X.META[id].done;}).forEach(function(id){var P={};X.parts(id).forEach(function(p){P[p.part]=p;});[["travel",0],["travel",1],["start",1],["end",0]].forEach(function(q){L.push(id+" "+q[0]+q[1]+": "+meas(X.stamp(id,q[0],{frame:q[1]}),P[q[0]].box));});});[["needleStorm","travel"],["fanKnives","travel"],["mirrorClone","shot-travel"]].forEach(function(g){var p=S.parts(g[0]).filter(function(x){return x.part===g[1];})[0];L.push("K4 "+g[0]+" "+g[1]+"0: "+meas(S.stamp(g[0],g[1],{frame:0}),p.box));});return "<rect width=\"1400\" height=\"420\" fill=\"#fff\"/>"+L.map(function(t,i){return "<text x=\"4\" y=\""+(12+i*11.6)+"\" font-size=\"10\" font-family=\"monospace\">"+t+"</text>";}).join("");})()'
+
+node scripts/art-review-sheet.mjs expr --name k9-c10-ink --scale 1 --crop 0,0,1300,160 --expr '(function(){var X=PN.arsenal,I=PN.icons,NS="http://www.w3.org/2000/svg",L=[];var C={"#faf6ec":"p","#f3eee2":"p","#d8d0c0":"p","#fffff8":"p","#efe6d2":"p","#121110":"k","#2b2926":"k","#46423d":"k","#101312":"k","#000000":"k","#8c8579":"t","#bcb4a5":"t","#00a8c6":"c","#007c94":"c","#cff6ff":"c"};function hex(v){if(!v||v.indexOf("url")>=0)return "url";var m=v.match(/[\d.]+/g);if(!m)return v;return "#"+m.slice(0,3).map(function(x){return ("0"+Math.round(+x).toString(16)).slice(-2);}).join("");}function meas(mk){var s=document.createElementNS(NS,"svg");s.setAttribute("width",128);s.setAttribute("height",128);s.innerHTML=mk;document.body.appendChild(s);var info=[];[].slice.call(s.querySelectorAll("path,circle,ellipse,rect,polygon,polyline,line")).forEach(function(e){if(e.closest("clipPath,defs,mask,pattern"))return;if(e.tagName==="rect"&&e.getAttribute("filter"))return;var cs=getComputedStyle(e),m=e.getCTM(),b=e.getBBox(),sw=parseFloat(cs.strokeWidth)||0;var P=[[b.x,b.y],[b.x+b.width,b.y],[b.x,b.y+b.height],[b.x+b.width,b.y+b.height]].map(function(p){var q=s.createSVGPoint();q.x=p[0];q.y=p[1];return q.matrixTransform(m);});var xs=P.map(function(p){return p.x;}),ys=P.map(function(p){return p.y;}),pad=sw*2+1;info.push({e:e,inv:m.inverse(),x0:Math.min.apply(0,xs)-pad,x1:Math.max.apply(0,xs)+pad,y0:Math.min.apply(0,ys)-pad,y1:Math.max.apply(0,ys)+pad,st:cs.stroke!=="none"&&sw>0?hex(cs.stroke):null,fi:cs.fill!=="none"?hex(cs.fill):null});});info.reverse();var n={p:0,k:0,t:0,c:0,x:0},pt=s.createSVGPoint();for(var y=0.5;y<128;y+=1)for(var x=0.5;x<128;x+=1){pt.x=x;pt.y=y;for(var i=0;i<info.length;i++){var q=info[i];if(x<q.x0||x>q.x1||y<q.y0||y>q.y1)continue;var lp=pt.matrixTransform(q.inv),col=null;if(q.st&&q.e.isPointInStroke(lp))col=q.st;else if(q.fi&&q.e.isPointInFill(lp))col=q.fi;if(col){n[C[col]||"x"]++;break;}}}s.remove();var T=n.p+n.k+n.t+n.c+n.x;function pc(v){return Math.round(100*v/T)+"%";}return "ink "+pc(n.k)+" paper "+pc(n.p)+" ink300 "+pc(n.t)+" cyan "+pc(n.c)+" other "+pc(n.x);}X.ids.filter(function(id){return X.META[id].done;}).forEach(function(id){L.push(id+": "+meas(X.skill(id,{})));});["needleStorm","fanKnives","mirrorClone","railSpear"].forEach(function(id){L.push("core "+id+": "+meas(I.skill(id,{})));});return "<rect width=\"1300\" height=\"160\" fill=\"#fff\"/>"+L.map(function(t,i){return "<text x=\"4\" y=\""+(12+i*12)+"\" font-size=\"10\" font-family=\"monospace\">"+t+"</text>";}).join("");})()'
+
+node scripts/art-review-sheet.mjs expr --name k9-c11-cyan32 --scale 1 --crop 0,0,400,48 --expr '(function(){var X=PN.arsenal,I=PN.icons,s="<rect width=\"400\" height=\"48\" fill=\"#efe6d2\"/>",L=[["c","needleStorm"],["c","fanKnives"],["c","mirrorClone"],["a","inkDarts"],["a","brushQuills"],["a","sealArrows"],["a","frostNeedles"],["a","thunderNeedles"],["a","twinBlades"],["a","ghostVolley"],["a","headsmanDarts"]];L.forEach(function(it,i){var m=it[0]==="c"?I.hudSlot(it[1],{size:40}):X.hudSlot(it[1],{size:40});s+="<g transform=\"translate("+(4+i*36)+",3) scale(0.80357)\">"+m+"</g>";});return s;})()'
+
+node scripts/art-review-sheet.mjs expr --name k9-c12-volley-scene --scale 1 --check --crop 0,0,420,130 --expr '(function(){var X=PN.arsenal,S=PN.skillVfx,s=PN.env.ground(1,420,130,3,{center:null,canalY:false,rose:null,ringC:null});function es(x,y,r){return "<circle cx=\""+x+"\" cy=\""+y+"\" r=\""+(r+1.2)+"\" fill=\"#101312\"/><circle cx=\""+x+"\" cy=\""+y+"\" r=\""+r+"\" fill=\"#ef5b4f\"/><circle cx=\""+x+"\" cy=\""+y+"\" r=\""+(r-2.4)+"\" fill=\"#101312\"/><circle cx=\""+(x-1)+"\" cy=\""+(y-1)+"\" r=\"1.2\" fill=\"#fffff8\"/>";}var V=X.ids.filter(function(id){return X.META[id].kind==="volley";});[["travel",20],["travel-awakened",62]].forEach(function(row,ri){V.forEach(function(id,i){var P={};X.parts(id).forEach(function(p){P[p.part]=p;});var p=P[row[0]],a=[0,-30,200,150,30,-120,90,330][i],x=30+i*46,y=row[1]+(i%2)*8;s+="<g transform=\"translate("+x+","+y+") rotate("+a+") translate("+(-p.anchor[0])+","+(-p.anchor[1])+")\">"+X.stamp(id,row[0],{frame:0})+"</g>";});});var np=S.parts("needleStorm").filter(function(x){return x.part==="travel";})[0];s+="<g transform=\"translate(60,108) rotate(-20) translate("+(-np.anchor[0])+","+(-np.anchor[1])+")\">"+S.stamp("needleStorm","travel",{frame:0})+"</g>";var fp=S.parts("fanKnives").filter(function(x){return x.part==="travel";})[0];s+="<g transform=\"translate(130,108) rotate(15) translate("+(-fp.anchor[0])+","+(-fp.anchor[1])+")\">"+S.stamp("fanKnives","travel",{frame:0})+"</g>";s+=es(200,108,7)+es(240,104,7)+es(280,110,8)+PN.heroKit.placeSprite("run",2,360,118,1);return s;})()'
+
+node scripts/art-review-sheet.mjs expr --name k9-fix-headsman-x8 --scale 8 --crop 50,40,230,90 --expr '(function(){var X=PN.arsenal;return "<g>"+X.skill("headsmanDarts",{})+"</g><g transform=\"translate(148,0)\">"+X.skill("headsmanDarts",{awakened:true})+"</g>";})()'
+```
+
+- C12 흑백판: C8과 같은 방식으로 끝의 `return s;`를 `feColorMatrix saturate 0` 필터로 감싸고, 이름을 `-gray`로 바꿔 `--check` 없이 돌린다.
+
+### 8. 합격(재검수 통과) 뒤 메인 세션이 할 것과 확인할 것
+- 납품서 §5의 등록값은 검증했다.
+  - `scripts/build-ui-art.mjs:17`과 `scripts/build-atlas.mjs:11`의 `KIT_FILES`에 `'k-icons2.js'`를 `'k-icons.js'` 바로 뒤에 넣는다.
+  - 시트는 Q1대로 따로 둔다. 1차 크기: `arsenal-tiles` 2656×664, `arsenal-slots` 1008×240.
+  - 탄은 8종 × 12장 = 96장이고, 박스 넓이 합 112,416 단위²가 맞다.
+  - 렌더러 위치 `worldRenderer.ts:85`, `:1337`, `:1359-1362`가 실제 코드와 맞는다.
+  - `readSkillVfx`(`build-atlas.mjs:147-162`)는 `window`를 옮기지 않으므로 PN.arsenal 조각을 읽게 해도 한글 검사에 걸리지 않는다.
+- 각성 조각이 없을 때 평상 조각으로 떨어지게 하는 것을 권한다(지시서 §7-2).
+- 돌릴 것: `npm run build:ui-art`, `node scripts/build-arsenal-art.mjs`(done 키의 배지 제거, `src/ui/uiArt.test.ts:53-56`), `npm run build:atlas`, `npm run test:unit`, `npm run build`(초기 에셋 예산), `npm run bench:packs`.
+- `npm run test:visual`에서 볼 장면
+  - 드래프트: 망나니 침(전설)·혼령(영웅) 평상과 각성 카드 하나
+  - HUD 45px: 먹침·인장 화살·서리침 포함 6슬롯 + 각성 준비 배지. F4 청록을 실제 HUD 크기로 확인한다
+  - 일시정지 40px, 정산 28px, 좁은 창 34px
+  - 전투 1.0배·0.8배: volley 8종 평상·각성 탄
+    - Ch1 바닥과, 바닥이 가장 어두운 Ch5 바닥(Y 0.385) 둘 다
+    - 먹침이 많이 나는 고밀도 장면(적 200 + 적 탄 120 + 아군 탄 150)에서 F3 명도를 확인한다
+
+### 9. 사람 클린업 · 미확인
+- **사람 클린업:** 납품서 §6 목록에 동의한다. 더할 것:
+  - 망나니 칼 머리 실루엣, 찢긴 먹귀의 먹 튐
+  - 서릿발 꼴(흰 꽃잎·불꽃처럼 보일 기미)
+  - 기절 나선(작은 크기에서 '@')
+  - 쌍날 각성 배치의 문화 검토
+- **미확인**
+  - 실제 게임 화면의 무기 타일·슬롯·탄: 등록 전이라 `npm run test:visual`로 봐야 한다.
+  - 0.8·1.2배로 다시 굽거나 표시 크기를 바꿨을 때의 탄 픽셀
+  - T3 정식 판정(3차)과 정식 판독 시험(n ≥ 8)
+  - C9·C10 측정은 근사치다. 필터·clip·`<use>`·묶음 opacity를 무시하고, 망나니 아이콘은 먹귀가 빠진 값이다.
+- **열린 질문:** 새로 팀 결정이 필요한 것은 없다. Q7(20px 전용판)을 판단할 때 각성판 20px도 함께 본다.
+
+**관련 파일:**
+- `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/k-icons2.js`
+- `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/API-icons2.md`
+- `/Users/kyuukkang/CT_AX/07.playground/docs/art/briefs/arsenal-icons.md`
+- `/Users/kyuukkang/CT_AX/07.playground/docs/art/deliveries/K9-arsenal-icons.md`
+
+---
+
+## 1차 수정 1회차 납품서 — 무기 아이콘·탄 (`PN.arsenal`, volley 8종)
+
+(되살림: 서브에이전트 기록 `agent-a7c1c9697e5fa5666`(kit-artist, 'K9 arsenal icons kit, part 1')의 SubagentHandback 원문, 2026-10-15 07:45 KST. 메인 세션이 이 파일에 넣었던 글과 같은 추출이다(세션 기록 `75a03af2-….jsonl` 줄 42574, 추출 길이 일치). 머리말 단계만 이 파일에 맞췄다.)
+
+작성: kit-artist, 2026-10-15. 검수서 `docs/art/deliveries/K9-arsenal-icons.md` '## 검수 1차'를 반영했다. 연결이 끊긴 뒤 두 파일을 다시 확인했고, 빠져 있던 API 문서 갱신(R7·R8)과 아래 '이번에 마저 고친 것'까지 모두 들어가 있다.
+
+**요약**
+- 필수 F1~F4: 모두 고쳤다. 합격 기준 수치(C9·C11)는 기준 안이다.
+- 권장 R1~R8: 모두 반영했다. R1 쌍날만 측정 방식에 따라 하한 아래로 나온다(§4 R1).
+- 명령: 검수서 §7 명령을 모두 다시 돌렸다. 렌더 이름은 `k9-fix1-`로 시작한다.
+  - `--check`를 붙인 명령은 모두 `ok`다.
+  - C4·C5는 기준값과 글자 하나 다르지 않다.
+  - C7은 22줄 모두 ok다.
+  - kit error는 0건이다.
+- 처방과 다르게 한 곳이 다섯 군데 있다(§4.3).
+  - F2 먹 튐을 위 둘·아래 둘 대신 아래 셋으로 했다.
+  - 먹침 탄의 깃을 옮겼다.
+  - 망나니 칼 머리 자리가 처방만큼 늘었다.
+  - R5 테를 clip 대신 옮긴 사본에 둘렀다.
+  - 서릿발은 8개로 두었다(R8).
+- 손댄 파일은 맡은 두 개뿐이다. 아무것도 내려받지 않았다.
+
+### 1. 납품 목록
+
+| 파일 | 내용 |
+|---|---|
+| `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/k-icons2.js` | `window.PN.arsenal` v1.0. API·META·조각 규격은 1차와 같다. volley 8종 그림만 바꿨다 |
+| `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/API-icons2.md` | 바꾼 절: 납품 차례 표, §2 줄 번호, §6, §7.3, §7.4, §8, §9, §10 |
+
+API-icons2.md에서 바꾼 내용
+- §6: 아이콘 표. 바뀐 곳마다 '수정 1회차' 표시
+- §7.3: 각성 테 규칙
+- §7.4: 탄 표, C9 값, 쌍날 회전 메모(1차 §9에서 옮김)
+- §8: C9~C12와 망나니 8배를 표에 더했다. C4~C12 명령 원문을 모두 옮겼다(R7)
+- §9: 9.1 = 납품서 §4.2와 같은 번호 1~9. 9.2 = 이번에 더한 10~15. 서릿발 8개는 9-10(R8)
+- §10: C10 값, 사람 클린업 추가
+
+- `done` 목록은 그대로 8종이다(inkDarts, brushQuills, sealArrows, frostNeedles, thunderNeedles, twinBlades, ghostVolley, headsmanDarts).
+- 상태 수는 1차와 같다: 무기마다 아이콘 평상·각성, 타일·슬롯, 탄 6조각 × 2장.
+
+### 2. API 요약 (1차와 같음)
+
+- 아이콘 마스터는 128 × 128이다.
+- 타일: `tile(id,{awakened,metal:true,size:150})`, 칸 166 × 166, 원점 (−8, −8).
+- 슬롯: `hudSlot(id,{size:40,awakened})`, 칸 56 × 60, 원점 (−2, −2).
+- 낙관 피할 구역은 (94~128, 0~34)다.
+- 탄 앵커 = 판정 원 중심, +x = 속도 방향이다.
+- 박스·앵커는 r별로 같다(r 4: 46×20/(35,10) … r 6: 64×24/(51,12)).
+- 판정은 바뀌지 않았다(V4).
+- C7 실측에서 바뀐 값은 먹침 옆 4.8 → 5.8 하나다(허용 6.5).
+
+### 3. 검사 결과
+
+#### 3.1 명령과 결과
+- 명령은 검수서 §7과 지시서 §5.2 원문 그대로다. 이름만 `k9-fix1-…`로 바꿨다.
+- 모든 명령을 최종 코드로 다시 돌렸다. 탄만 쓰는 C6·C8·C9·C12는 마지막 탄 수정 뒤에 돌렸고, 그 뒤 탄 코드는 바뀌지 않았다.
+
+| 명령 | 결과 |
+|---|---|
+| C1 `k9-fix1-c1-all` (0.25, `--check`) | ok |
+| C2 `k9-fix1-c2-volley` (`--check`) | ok. 평상 타일 8종의 산호 점선 네모(낙관 구역)가 비어 있다 |
+| C4 `k9-fix1-c4-scan` | 아래 원문 |
+| C5 `k9-fix1-c5-unchanged` | 아래 원문. 기준값과 같다 |
+| C6 `k9-fix1-c6-shots` (1배), `-x6` (6배, volley 줄) | 둘 다 `--check` ok |
+| C7 `k9-fix1-c7-meta` | 아래 원문. 22줄 ok |
+| C8 `k9-fix1-c8-scene` (1배), `-08`, `-x3` | 셋 다 `--check` ok |
+| C8 흑백 `-gray` | 모든 탄이 밝은 몸이다. 적 탄은 검은 알 + 밝은 테로 갈린다 |
+| C9 `k9-fix1-c9-paper` | 아래 원문 |
+| C10 `k9-fix1-c10-ink` | 아래 원문 |
+| C11 `k9-fix1-c11-cyan32` | 글자 출력이 없는 렌더다. 판정은 §4 F4 |
+| C12 `k9-fix1-c12-volley-scene` | `--check` ok |
+| C12 흑백 `-gray` | 필터 id `k9g12` |
+| T1 `k9-fix1-t1-looks` | 본 결과는 §4 |
+| T2 `k9-fix1-t2-kinds`, `-awakened` | 본 결과는 §4 |
+| `k9-fix1-headsman-x8` | 검수서의 `k9-fix-headsman-x8` 명령. 본 결과는 F1·F2 |
+
+**C4 원문**
+```
+icons bad=0 text=0 hatch=0 nocyan=0
+stamps bad=0 text=0 filter=0 nocyan=0 colours={}
+```
+**C5 원문**
+```
+icons-all=19vh262 len=2634966 list=17 ICON=17 | skillvfx-all=1xq1i37 len=698432 groups=18
+```
+**C7 원문**
+```
+meta ok | invalid calls ok | core list=17
+inkDarts r=4 front=5.5 back=23.5 side=5.8 ok
+brushQuills r=5 front=6.2 back=19.5 side=5.9 ok
+sealArrows r=6 front=7.5 back=44.5 side=7.1 ok
+frostNeedles r=4.5 front=6.0 back=32.1 side=5.3 ok
+thunderNeedles r=4.5 front=6.0 back=16.0 side=5.3 ok
+twinBlades r=6 front=6.5 back=15.3 side=7.8 ok
+ghostVolley r=5 front=6.5 back=24.4 side=5.9 ok
+headsmanDarts r=4.5 front=6.0 back=27.0 side=5.3 ok
+paperStorm r=5 front=6.0 back=16.0 side=1.7 ok
+inkBloom r=4.5 front=5.5 back=14.8 side=1.7 ok
+thornHalo r=4 front=5.0 back=13.6 side=1.7 ok
+starShards r=5.5 front=6.5 back=17.2 side=1.7 ok
+sunNeedles r=5 front=6.0 back=16.0 side=1.7 ok
+inkDrizzle r=3.5 front=4.5 back=12.4 side=1.7 ok
+pinHail r=4.5 front=5.5 back=14.8 side=1.7 ok
+tailGuard r=5 front=6.0 back=16.0 side=1.7 ok
+smokeTail r=4.5 front=5.5 back=14.8 side=1.7 ok
+gravePins r=4.5 front=5.5 back=14.8 side=1.7 ok
+trackingSeals r=4.5 front=5.5 back=14.8 side=1.7 ok
+huntersMarks r=5 front=6.0 back=16.0 side=1.7 ok
+crowFeathers r=5 front=6.0 back=16.0 side=1.7 ok
+bossbane r=5.5 front=6.5 back=17.2 side=1.7 ok
+```
+**C9 원문**
+```
+inkDarts travel0: paper 34% ink 58% ink300 6% cyan 2% other 0% (area 102)
+inkDarts travel1: paper 34% ink 57% ink300 8% cyan 2% other 0% (area 104)
+inkDarts start1: paper 36% ink 59% ink300 5% cyan 0% other 0% (area 93)
+inkDarts end0: paper 35% ink 58% ink300 6% cyan 1% other 0% (area 102)
+brushQuills travel0: paper 33% ink 51% ink300 14% cyan 3% other 0% (area 112)
+brushQuills travel1: paper 33% ink 52% ink300 12% cyan 3% other 0% (area 110)
+brushQuills start1: paper 32% ink 53% ink300 12% cyan 3% other 0% (area 107)
+brushQuills end0: paper 33% ink 51% ink300 13% cyan 3% other 0% (area 112)
+sealArrows travel0: paper 34% ink 51% ink300 12% cyan 3% other 0% (area 178)
+sealArrows travel1: paper 34% ink 51% ink300 12% cyan 3% other 0% (area 178)
+sealArrows start1: paper 35% ink 53% ink300 8% cyan 3% other 0% (area 172)
+sealArrows end0: paper 34% ink 51% ink300 12% cyan 3% other 0% (area 178)
+frostNeedles travel0: paper 33% ink 65% ink300 0% cyan 2% other 0% (area 98)
+frostNeedles travel1: paper 34% ink 64% ink300 0% cyan 2% other 0% (area 97)
+frostNeedles start1: paper 34% ink 63% ink300 0% cyan 2% other 0% (area 90)
+frostNeedles end0: paper 34% ink 64% ink300 0% cyan 2% other 0% (area 98)
+thunderNeedles travel0: paper 26% ink 54% ink300 0% cyan 20% other 0% (area 101)
+thunderNeedles travel1: paper 26% ink 55% ink300 0% cyan 19% other 0% (area 99)
+thunderNeedles start1: paper 27% ink 57% ink300 0% cyan 16% other 0% (area 84)
+thunderNeedles end0: paper 24% ink 59% ink300 0% cyan 17% other 0% (area 92)
+twinBlades travel0: paper 27% ink 58% ink300 11% cyan 4% other 0% (area 120)
+twinBlades travel1: paper 27% ink 60% ink300 9% cyan 4% other 0% (area 117)
+twinBlades start1: paper 26% ink 64% ink300 5% cyan 4% other 0% (area 110)
+twinBlades end0: paper 27% ink 59% ink300 9% cyan 4% other 0% (area 118)
+ghostVolley travel0: paper 17% ink 21% ink300 46% cyan 15% other 0% (area 95)
+ghostVolley travel1: paper 18% ink 21% ink300 50% cyan 11% other 0% (area 88)
+ghostVolley start1: paper 19% ink 18% ink300 52% cyan 11% other 0% (area 85)
+ghostVolley end0: paper 17% ink 21% ink300 46% cyan 16% other 0% (area 95)
+headsmanDarts travel0: paper 34% ink 54% ink300 7% cyan 6% other 0% (area 94)
+headsmanDarts travel1: paper 33% ink 53% ink300 8% cyan 6% other 0% (area 96)
+headsmanDarts start1: paper 34% ink 55% ink300 5% cyan 6% other 0% (area 92)
+headsmanDarts end0: paper 33% ink 54% ink300 7% cyan 6% other 0% (area 94)
+K4 needleStorm travel0: paper 9% ink 59% ink300 0% cyan 31% other 0% (area 149)
+K4 fanKnives travel0: paper 32% ink 66% ink300 0% cyan 1% other 0% (area 141)
+K4 mirrorClone shot-travel0: paper 22% ink 17% ink300 47% cyan 14% other 0% (area 87)
+```
+**C10 원문**
+```
+inkDarts: ink 18% paper 81% ink300 0% cyan 0% other 0%
+brushQuills: ink 18% paper 82% ink300 1% cyan 0% other 0%
+sealArrows: ink 15% paper 84% ink300 0% cyan 0% other 0%
+frostNeedles: ink 32% paper 68% ink300 0% cyan 1% other 0%
+thunderNeedles: ink 15% paper 83% ink300 0% cyan 2% other 0%
+twinBlades: ink 15% paper 85% ink300 0% cyan 0% other 0%
+ghostVolley: ink 19% paper 76% ink300 3% cyan 2% other 0%
+headsmanDarts: ink 10% paper 90% ink300 0% cyan 1% other 0%
+core needleStorm: ink 20% paper 79% ink300 0% cyan 1% other 0%
+core fanKnives: ink 40% paper 54% ink300 0% cyan 0% other 5%
+core mirrorClone: ink 55% paper 43% ink300 0% cyan 2% other 0%
+core railSpear: ink 29% paper 64% ink300 5% cyan 1% other 0%
+```
+
+**C10 보조 측정** `k9-fix1-c10u-ink`
+- C10 식을 그대로 쓰되 두 가지를 더했다: `<use>`를 펼치고 clip을 반영한다. 소수 한 자리다.
+- 결과는 '먹 C10 / 보조' 순서다.
+  - 먹침 18.5 / 18.5, 붓깃 17.5 / 17.5
+  - 인장 화살 15.5 / 15.4, 서리침 31.6 / 31.6, 뇌침 15.4 / 15.3
+  - 쌍날 14.8 / 12.4, 혼령 19.5 / 19.4, 망나니 침 9.6 / 15.2
+- 망나니 침은 C10이 찢긴 먹귀(`<use>`)를 빼고 잰다.
+- 쌍날은 C10이 날 안쪽 먹 등의 clip을 무시해 크게 잡는다.
+
+#### 3.2 직접 본 렌더
+- 위치: `/var/folders/p6/8x9_dsj97mbg_d6323ptytvc0000gn/T/blackline-art-review/`
+- 모두 최종 코드로 렌더한 것이다.
+
+**게임 크기**
+- `k9-fix1-c2-volley`
+- `k9-fix1-c11-cyan32`
+- `k9-fix1-t1-looks`, `k9-fix1-t2-kinds`, `k9-fix1-t2-kinds-awakened`
+- `k9-fix1-c6-shots`
+- `k9-fix1-c8-scene`, `-08`, `-gray`
+- `k9-fix1-c12-volley-scene`, `-gray`
+
+**확대**
+- `k9-fix1-icons8` (2배, 8종 평상·각성, 낙관 구역 표시)
+- `k9-fix1-headsman-x8`
+- `k9-fix1-torn-x10`, `k9-fix1-torn-aw-x10` (먹귀 10배)
+- `k9-fix1-t2-kinds-zoom` (volley 줄 3배)
+- `k9-fix1-c6-shots-x6`, `k9-fix1-c8-scene-x3`, `k9-fix1-c12-volley-scene-x3`
+- `k9-fix1-darts-shot-x8` (먹침 탄 8장)
+- `k9-fix1-icon-twinBlades` (3배)
+- 글자 출력: `k9-fix1-c9-paper`(+ 읽기용 `-x2`), `k9-fix1-c1-all`
+
+**작업 중에 보고 대체된 렌더:** `k9-fix1-r1-icons-x3`, `k9-fix1-r1-thunder-x6`, `k9-fix1-icon-thunder-x4`, `k9-fix1-t1-looks-zoom`, `k9-fix1-c2-volley-zoom`, `k9-fix1-c11-cyan32-x3`, `k9-fix1-t2-kinds-awakened-zoom`.
+
+### 4. 지시서(검수서) 대비
+
+#### 4.1 필수
+
+**F1 망나니 칼 머리** (`k-icons2.js:553-573`)
+- 고친 것(처방 1~4 그대로)
+  - belly를 끝 쪽이 가장 넓은 팔치온 꼴로 바꿨다.
+  - 먹 등을 위 가장자리 띠(두께 3~4)로 줄이고, 날 몸은 종이로 두었다.
+  - p300 그늘과 청록 날선을 새 배 곡선 2~3 안쪽으로 옮겼다.
+  - 마이터 끝을 달았다: 종이 삼각 [33,−11.6]→[40,−11]→[34,−7.4] + 먹 테 2.6.
+  - 칼 목(먹 띠, x −4~0, s −7~+5.5)을 넣었다.
+  - 처방 5: 먹 면적은 먹귀 아래 땅의 먹 튐으로 메웠다(R1 참조).
+- 지킨 것: 1.12배, 낙관 구역 비움, 청록 하나(날선), 각성판 구성(0.72배 칼 + 둘째 먹귀).
+- 확인
+  - `headsman-x8`: 곧은 등, 등선 너머 뾰족한 끝, 칼 목에 꽂힌 외날로 읽힌다. 국자·사발 단면은 없어졌다.
+  - T2 20px 흑백: 뇌침(굵고 밝은 지그재그 + 오른쪽 먹 터짐)과 망나니(가는 대각 자루 + 칼 머리 고리 + 오른쪽 아래 먹귀)가 계속 갈린다.
+
+**F2 찢긴 먹귀의 먹 튐** (`k-icons2.js:199-231`)
+- 지킨 것: 7계단 찢김선(종이 테 없음), `open`, `<use>` 구조, seed.
+- 먹 튐 배치
+  - 시작점을 찢김선 t −0.75·0.15·0.9 r에 흩었다.
+  - 방향은 찢김선 기준 104°·88°·66°로 거의 수직이고, 아래로 떨어진다.
+  - 길이 9·5.5·11, 굵기 3·2.6·3.4로 서로 다르다. 가장 긴 가닥 끝에 떨어진 먹 방울을 달았다.
+  - 각 가닥은 찢김선에서 수직으로 그은 선이 윤곽을 나가는 자리에서 시작한다. 몸 안에서 시작하면 뿔이나 이마 점으로 보였다.
+  - 한 점에서 갈라지는 가닥이 없다. 오른쪽 윤곽 밖으로는 약 0.5r까지만 나간다.
+- 처방과 다른 점(§4.3-1): 위 조각에서 위로 던지는 가닥은 뺐다.
+- 확인
+  - `torn-x10`·`torn-aw-x10`·`headsman-x8`: 평상·각성 두 먹귀 어디에도 수염·부리·고양이 얼굴·더듬이가 없다.
+  - 32px(T1·T2): 비스듬히 들린 윗부분과 아래로 떨어지는 먹으로 '찢어진 먹귀'로 읽힌다.
+
+**F3 1배에서 몸이 어두운 탄**
+- 먹침 `SHOT.inkDarts` (`k-icons2.js:682-694`)
+  - 쐐기를 앞 30%(+1.6~+5.5)로 줄이고, 담금 경계는 들쭉날쭉하게 두었다.
+  - 종이 몸은 처방 예시 경로 그대로다(−7.5~+1.6, 반폭 2~2.4).
+- 망나니 침 `SHOT.headsmanDarts` (`k-icons2.js:793-802`)
+  - 먹 등을 처방 예시대로 두께 약 1.2의 띠로 줄였다.
+  - 자루에 종이 심 0.6을 넣었다(먹 1.7).
+- 합격 수치(C9 travel 0·1, 종이 / 먹)
+  - 먹침 34 / 58, 34 / 57
+  - 망나니 침 34 / 54, 33 / 53
+  - 기준은 종이 25% 이상, 먹 60% 이하다.
+- 1차 측정값은 먹침 14~15 / 75~77, 망나니 18~19 / 68~71이었다.
+- 박스·앵커·앞끝·외곽 1.5와 청록 요소는 그대로다. C7은 22줄 ok다.
+- C12(색·흑백, 3배 확인): 두 탄 모두 몸의 가장 큰 덩어리가 종이로 읽힌다.
+
+**F4 32px 청록**
+- 인장 화살 (`k-icons2.js:305-321`): 앞면 띠를 8로 넓혔다(먹 1.6 · 청록 인주 4.8 · 먹 1.6). glow 세로 획을 더했다.
+- 서리침 (`:447-454`): 폭 7 → 9, 청록을 t 0.55부터(앞 45%)로 늘렸다. 청록 밑변은 약 6, 먹 테 1.4를 넣으면 약 7.4다.
+- 먹침 (`:257-280`): 깃 바깥을 반폭 + 6.6 → + 8.5로, 테를 2.2 → 1.6으로 했다.
+- 함께 한 것
+  - 붓깃 끝 점: r 3 → 3.6(검수 §2.3 '흐림').
+  - 쌍날·망나니 날선: 청록 2.4(먹 테 포함 4.8).
+- C11(1배 색, 한지 바탕): volley 8종 모두 청록 한 점 이상이 보인다.
+  - 뚜렷함: 뇌침, 혼령, 인장 앞면, 서리침 끝
+  - 보임: 먹침 깃, 붓깃 점
+  - 흐리지만 보임: 쌍날·망나니 날선
+
+#### 4.2 권장
+
+**R1 블랙 스팟 하한**
+- 인장 화살 (`:322-342`): 먹 꼬리 폭 34, 맨 앞 먹귀의 끌림 획 2배(`knocked` 옵션 `dw`).
+- 뇌침 (`:378-405`)
+  - 과녁 뒤로 오른쪽에 치우친 납작하고 거친 탄 자국: (115, 72), r 30, 세로 0.82, 방울 셋.
+  - 번개 그림자 쪽 먹 사본: `boltAround` 옵션 `shadow`, `:362-365`.
+  - 먹귀 등 쪽 종이 끊김 호. 둥근 덩어리로 그리면 먹귀를 삼켜 검은 공으로 읽혀서 넣었다.
+- 망나니 침 (`:574-588`)
+  - 먹귀 오른쪽 아래 땅에 거친 먹 튐 + 방울 셋.
+  - 자루 5 → 6.
+- 결과(C10 / 보조 측정)
+  - 인장 화살 15 / 15.4
+  - 뇌침 15 / 15.3
+  - 망나니 침 10 / 15.2
+  - 1차 C10은 13 / 11 / 8(추정 13)이었다.
+- 쌍날: C10은 15이지만, clip을 반영하면 12.4로 하한 아래다. 검수서대로 3차 T3 때 판정한다.
+
+**R2 쌍날 회전 호** (`:493-499`)
+- 날마다 호 하나로 줄였다: 반지름 R+5, 110°, 먹 3 → 0.4 안에 종이 1.4 → 0.2.
+- 동심 평행선은 없어졌다.
+
+**R3 쌍날 각성 배치** (`:500-513`)
+- 셋째 날(R 15)을 왼쪽 아래 뒤 (22, 93)으로 빼서 원상 안의 고른 삼각을 깼다.
+- 문화 검토 목록에 올렸다.
+
+**R4 인장 화살 탄** (`:714-725`)
+- 머리를 −1.5~+7.5, 반폭 3.8로 바꿨다.
+- 자루는 먹 2.4 안에 종이 심 0.9를 넣었다.
+- C9: 종이 34 / 먹 51(1차 20 / 64~66).
+- C8 3배에서 세로로 날 때도 도장 몸으로 읽힌다.
+
+**R5 각성 탄 겹 테** (`:666-672`): 세로 clip을 없앴다. 몸 외곽선 사본을 x −3 옮겨 테를 두른다(§4.3-4). C7 앞끝 값은 그대로다.
+
+**R6 먹침 아이콘** (`:257-280`)
+- 같은 간격 실감기 셋 → 손으로 감은 한 뭉치
+- 담묵 빗면 줄 → 끊긴 마른 붓 두 획
+- 깃을 키웠다(F4와 같이).
+
+**R7 문서**
+- API §9를 납품서 §4.2 번호(1~9)에 맞췄다. 혼령 탄 자루는 4번으로 나눴고, '쌍날 탄 회전'은 §7.4 메모로 옮겼다.
+- '종이 40% 이상'을 '종이 선과 담묵 테로 밝게 했다'로 고치고 C9 값을 적었다.
+- §8에 C4~C12와 망나니 8배 명령 원문을 옮겼다.
+- 납품서 §4.2-4의 같은 문구는 메인 세션 파일이라 고치지 못했다.
+
+**R8 서리침 서릿발 8개**: 그대로 두었다. API §9-10에 '다르게 한 것'으로 적었다.
+
+#### 4.3 처방과 다르게 한 것 (이유)
+
+1. **F2 위 조각 먹 튐 빼기**
+   - 처방은 위 조각 위로 둘, 아래 조각 아래로 둘이었다.
+   - 위로 던진 가닥은 위 조각 몸 안을 지나 머리 꼭대기에서 나온다. 각성판 둘째 먹귀에서는 뿔·더듬이처럼 보여 벌레 얼굴이 됐다(`torn-aw-x10`으로 확인). 평상판에서는 칼 머리에 가려 보이지도 않았다.
+   - 그래서 아래 조각에서 세 가닥을 떨어뜨렸다. 위 조각은 벌어진 틈이 찢김을 보여 준다.
+   - 처방의 +1.1 r은 먹귀 윤곽 밖이라 0.9 r로 당겼다.
+2. **먹침 탄 깃**
+   - F3는 '깃은 그대로'였다. 하지만 처방대로 넓힌 종이 몸이 깃을 거의 다 가려 청록 깃이 C9 0%가 됐다(`darts-shot-x8`로 확인).
+   - 깃 밑동을 몸 가장자리(±2)로 옮기고, 몸 밖 끝을 3.6 → 4.6으로 늘렸다. 꼴·색·자리 문법은 같다.
+   - C7 옆이 4.8 → 5.8이 됐다(허용 6.5). C9 청록은 2%다.
+3. **망나니 칼 머리 자리**
+   - 처방 3(끝 3~4 더)·4(칼 목 x −4~0)만큼 늘었다: (55~97, 50~84) → 대략 (53~101, 48~84).
+   - 1.12배와 낙관 구역 비움은 그대로다.
+4. **R5 해석**
+   - '몸 외곽을 x −3 옮긴 모양으로 자른다'를 그대로 하면, 옮긴 외곽선 clip이 테(외곽선 둘레의 획)의 바깥 절반을 다 잘라 테가 사라진다.
+   - 그래서 테를 옮긴 외곽선 사본에 둘렀다. 테는 몸 꼴을 따라가고 앞끝보다 0.45 뒤에서 끝난다.
+5. **R1 요소 추가**: 뇌침의 탄 자국·번개 그림자·종이 끊김 호와 망나니 자루 6은 지시서 §3.4에 없는 요소다. 1차 §4.2-1과 같은 근거(§2.2)로 더했다.
+
+#### 4.4 T 판정 (자가)
+
+**T1**
+- 그린 8종은 32px 색·흑백, 20px 흑백에서 같은 줄 핵심 아이콘과도, 서로와도 갈린다.
+
+**T2 평상판 20px 흑백 주 덩어리** (모두 다르다)
+- 먹침: 검은 쐐기 둘 + 깃
+- 붓깃: 흰 잎 + 왼쪽 먹
+- 인장 화살: 점 한 줄 + 흰 네모, 왼쪽 먹 꼬리
+- 서리침: 오른쪽 아래 먹
+- 뇌침: 밝은 대각 지그재그 + 오른쪽 먹 터짐
+- 쌍날: 초승 둘
+- 혼령: 먹 부채
+- 망나니 침: 가는 대각 자루 + 칼 고리 + 오른쪽 아래 먹귀
+
+**T2 각성판**: 32px은 갈린다. 20px은 1차와 같이 틀이 화면을 채워 약하다.
+
+**T6**: 평상 타일 8종의 낙관 구역이 비어 있다(C2, `icons8`).
+
+### 5. 메인 세션이 할 일
+
+**등록값**: 1차 납품서 §5와 같다.
+- `KIT_FILES`: `'k-icons.js'` 바로 뒤에 넣는다.
+- `arsenal-tiles` 2656×664, `arsenal-slots` 1008×240
+- 탄 8종 × 12장 = 96장, 박스 넓이 합 112,416
+- 렌더러 3곳
+- 조각 이름·박스·앵커는 바뀌지 않았다. 그림만 바뀌어 굽기 결과는 1차 그림과 다르다(아직 굽기 전이다).
+
+**지시서 정정**: 검수서 §6(메인 세션 반영)에 하나를 더 권한다.
+- 쌍날·망나니 날선은 청록 2.4다. §2.5 정정안 '청록 심 3.2 이상'을 2·3차부터 적용할지 정해 달라.
+- 지금 두께에서 3.2로 올리면 날 몸보다 굵어진다.
+
+**재검수**: 검수자가 `k9-` 이름으로 다시 돌릴 때도 명령은 API §8 원문 그대로 쓰면 된다.
+
+**저장**: 이 납품서를 저장할 때 1차 §4.2-4의 '몸의 종이 40% 이상' 문구 옆에 정정(R7) 표시를 부탁한다.
+
+### 6. 알려진 한계
+
+- **쌍날 블랙 스팟**: clip을 반영하면 12.4%다. 3차 T3 때 44종을 함께 보며 정한다.
+- **각성판 20px**: 틀(먹 바탕 + 원상)이 화면을 채워 무기끼리 차이가 작다(팀 결정 Q7과 함께).
+- **C11 판정 방식**: 1배 렌더를 눈으로 봤다. 쌍날·망나니 날선은 32px에서 보이지만 흐리다.
+- **측정 도구**: C9·C10은 근사다(필터·clip·`<use>`·묶음 opacity 무시). 보조 측정은 `<use>`와 clip만 보정한다.
+- **사람 클린업**: 검수서 §9에 더해 아래를 넘긴다(API §10).
+  - 망나니 칼 머리 실루엣
+  - 먹귀의 먹 튐과 땅의 먹 튐(킷 다각형 튐은 꼭짓점이 곧다)
+  - 위 조각의 꺾인 끝(8배에서 뾰족해 보일 여지)
+  - 서릿발 꼴
+  - 뇌침 탄 자국과 종이 끊김 호
+  - 기절 나선 '@'
+  - 쌍날 각성 배치 문화 검토
+- **판독 시험**: 정식 판독 시험(n ≥ 8)과 실제 게임 화면(`test:visual`)은 등록 뒤에 본다.
+
+**관련 파일**
+- `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/k-icons2.js`
+- `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/API-icons2.md`
+
+---
+
+## 검수 2차 — art-director, 2026-10-15
+
+(되살림: 서브에이전트 기록 `agent-a4c877d3024d1c717`(art-director, 'Review K9 first delivery')의 SubagentHandback 원문, 2026-10-15 08:02 KST. 메인 세션이 이 파일에 넣었던 글과 같은 추출이다(세션 기록 `75a03af2-….jsonl` 줄 42688, 추출 길이 일치). 머리말 단계만 이 파일에 맞췄다.)
+
+**판정: 수정 후 합격 (남은 것 한 곳).**
+- F1·F3·F4는 통과했다.
+- F2는 평상판만 통과했다. 각성판에는 새 오독이 하나 생겼다(F2b): 찢긴 먹귀 둘이 '다리 달린 벌레'로 읽힌다.
+- R1~R8 반영을 확인했다.
+  - R1은 보정 측정으로 망나니 침 13.9%, 쌍날 12.3%다. 1차에 정한 대로 3차 T3 때 판정한다.
+  - R3은 부분 반영이다.
+- 납품서 §4.3의 '처방과 다르게 한 것' 5건은 모두 받아들인다.
+- §5 질문: '청록 심 3.2 이상'은 거두고, 선 요소는 '청록 심 2.4 이상'을 기준으로 지시서를 고친다. 2·3차부터 적용한다. 지금 쌍날·망나니 날선의 2.4는 합격이다.
+- 수정 2회차(마지막)는 F2b 하나뿐이다.
+  - 각성 망나니 침 아이콘 말고는 출력을 바꾸지 않는다. §6의 보존 해시로 확인한다.
+  - 수정 2회차 뒤에도 F2b가 남으면, 그 아이콘만 사람 클린업으로 넘기고 나머지는 합격으로 등록하기를 권한다.
+
+---
+
+### 1. 다시 돌린 검사
+
+- 렌더는 모두 `/var/folders/p6/8x9_dsj97mbg_d6323ptytvc0000gn/T/blackline-art-review/k9r2-*.png`에 있다.
+- 다른 작업자 모듈이 함께 로드된 상태에서 돌렸고, kit error는 0건이다.
+
+| 검사 | 렌더 | 결과 |
+|---|---|---|
+| C5 | `k9r2-c5-unchanged` | 기준값 `icons-all=19vh262 len=2634966 list=17 ICON=17 \| skillvfx-all=1xq1i37 len=698432 groups=18`과 같다 |
+| C4 | `k9r2-c4-scan` | `icons bad=0 text=0 hatch=0 nocyan=0`, `stamps bad=0 text=0 filter=0 nocyan=0 colours={}` |
+| C7 | `k9r2-c7-meta` | `meta ok \| invalid calls ok \| core list=17`, 22줄 모두 ok. 납품서 원문과 같다(먹침 옆 5.8, 허용 6.5) |
+| C1 `--check` | `k9r2-c1-all` | ok |
+| C2 volley `--check` | `k9r2-c2-volley`, 1배 크롭 `-a`~`-d` | ok. 평상 타일 8종 모두 낙관 구역이 비어 있다 |
+| C6 `--check` | `k9r2-c6-shots`(1배), `-x6`, 6배 크롭 `k9r2-c6-volley-x6a/b` | ok |
+| C8 `--check` | `k9r2-c8-scene`(1배), `-08`, `-x3`, 흑백 `-gray` | ok. 22종 모두 밝은 몸이고 적 탄과 갈린다 |
+| T1 | `k9r2-t1-looks`, `-rows012`, `-needle-x2` | 통과 |
+| T2 | `k9r2-t2-kinds`, `-awakened`, `-volley-both-x1`, `-volley-20gray` | 평상판 통과. 각성판은 32px 통과, 20px은 1차와 같은 틀의 한계 |
+| C9 | `k9r2-c9-paper` | 납품서 원문과 같다 |
+| C10 | `k9r2-c10-ink` | 납품서 원문과 같다 |
+| C10 보정 | `k9r2-c10u-ink`, `k9r2-c10-variants` | §3 R1 |
+| C11 | `k9r2-c11-cyan32` | 8종 모두 32px 색에서 청록이 보인다 |
+| C12 `--check` | `k9r2-c12-volley-scene`, `-gray` | ok |
+| 확대 | `k9r2-icon-<id>` 8종(3배, `--check` ok)<br>`k9r2-fix-headsman-x8`, `k9r2-torn-x12`, `k9r2-torn-aw-x12`<br>`k9r2-headsman-aw-tile-x1/-x2`, `k9r2-twin-aw-tile-x2`<br>`k9r2-shotsheet-a/-b`(12장 전부, `--check` ok) | §2~§4 |
+| 결정성·자리표시 | `k9r2-determinism` | 528개 호출이 두 번 모두 같다. 자리표시 72/72, `list 17 ICON 17` |
+| 보존 해시 | `k9r2-keep-hash`(-big) | `volley-keep=vko1lv len=992714 \| shots=8wzptx len=134704` |
+
+### 2. 필수 F1~F4
+
+| | 판정 | 근거 |
+|---|---|---|
+| F1 망나니 칼 머리 | **통과** | 8배에서 곧은 등(먹 띠), 끝 쪽이 넓은 배, 등선 너머 마이터 끝, 칼 목이 보여 '자루에 꽂힌 외날'로 읽힌다. 국자·배 판독은 없어졌다.<br>T2 20px 흑백에서 뇌침(굵고 밝은 지그재그)과 갈린다(가는 검은 자루 + 머리). 칼 머리는 y 48 이상이라 낙관 구역이 비어 있다 |
+| F2 먹 튐 | **평상판 통과, 각성판 미통과 → F2b** | 평상판: 아래 조각에서 떨어지는 세 가닥과 땅의 먹 튐으로 '찢겨 먹이 흐르는 먹귀'로 읽힌다. 수염·부리·고양이 얼굴은 없다.<br>각성판은 §6 |
+| F3 어두운 탄 | **통과** | C9(종이/먹): 먹침 34/58·34/57, 망나니 침 34/54·33/53.<br>C12·C8 1배 색·흑백에서 두 탄 모두 몸의 가장 큰 덩어리가 종이다. C7 22줄 ok |
+| F4 32px 청록 | **통과** | C11에서 8종 모두 청록이 보인다.<br>뚜렷함: 인장 인면, 서리침 끝. 보임: 먹침 깃, 붓깃 점. 흐리지만 보임: 쌍날·망나니 날선 |
+
+F4 보충 — 보정 측정(`k9r2-c10u-ink`)의 청록 면적을 32px로 환산한 값
+- 무기: 먹침 2.6 px², 붓깃 1.5, 인장 화살 4.2, 서리침 6.5, 뇌침 19.3, 쌍날 4.3, 혼령 22.6, 망나니 침 5.2
+- 비교로 핵심 아이콘: 먹선 바늘 11.4, 부채 단검 0.5. 핵심 부채 단검의 섬광도 32px에서 흐리다.
+
+### 3. 권장 R1~R8
+
+| | 판정 | 근거 |
+|---|---|---|
+| R1 블랙 스팟 | 부분 | 아래 보충 |
+| R2 쌍날 회전 호 | 반영 | 날마다 호가 하나다. 3배에서 종이 심 때문에 두 줄로 보이지만, 동심 평행선 서너 줄은 없어졌다 |
+| R3 쌍날 각성 배치 | 부분 | 셋째 날을 (22, 93)으로 빼서 창 가장자리에 걸쳐 균형 잡힌 삼각은 약해졌다. 그래도 2배 타일에서 '원상 안의 흰 원판 셋' 인상은 남는다. 문화 검토 목록에 둔다 |
+| R4 인장 화살 탄 | 반영 | C9 34/51. C8 3배에서 세로로 날 때도 도장 머리 화살로 읽힌다 |
+| R5 각성 겹 테 | 반영 | §4 #4 |
+| R6 먹침 아이콘 | 반영 | 실감기 한 뭉치, 끊긴 빗면 두 획, 큰 깃으로 3배에서 미사일 기미가 크게 줄었다 |
+| R7 문서 | 반영 | API §8에 C1~C12와 망나니 8배 명령 원문이 들어갔다. §9는 납품서 번호에 맞췄고, '40%' 문구도 고쳤다.<br>납품서 1차 §4.2-4의 정정 표시는 메인 세션이 한다(요청에 동의한다) |
+| R8 서릿발 8개 | 반영 | API §9-10에 적었다 |
+
+R1 보충 — `<use>`와 clip을 모두 반영한 보정 측정(`k9r2-c10u-ink`)
+- 결과: 먹침 18.5, 붓깃 17.4, 인장 화살 15.4, 서리침 31.6, 뇌침 15.4, 쌍날 12.3, 혼령 19.3, 망나니 침 13.9%
+- 납품서와 API §10의 '망나니 침 15.2'는 반쪽 clip이 덜 반영된 값이다.
+  - `<use>`만 펼치면 15.9, clip까지 반영하면 13.9다(`k9r2-c10-variants`).
+  - API 숫자를 13.9로 고친다.
+- 하한(15%)을 넘은 것: 인장 화살, 뇌침. 아래인 것: 망나니 침, 쌍날. 3차 T3 때 판정한다.
+
+### 4. 납품서 §4.3 '처방과 다르게 한 것' 5건
+
+| # | 판정 | 이유 |
+|---|---|---|
+| 1 위 조각 먹 튐을 빼고 아래로 셋 | 수용 | 평상판에서 처방의 목적(한 점 부채꼴과 수염을 없앰)을 이뤘다. 각성판의 남은 문제는 이 선택 때문이 아니라 종이 테·둥근 끝·먹귀 맞닿음 때문이다(F2b) |
+| 2 먹침 탄 깃을 옮기고 키움 | 수용 | 넓힌 몸이 청록 깃을 가렸다는 판단이 맞다. C9 청록 2%, C7 옆 5.8(허용 6.5)이다. 지시서 §4.4 숫자를 고친다(§7) |
+| 3 망나니 칼 머리 자리 (53~101, 48~84) | 수용 | 처방 3·4에서 자연히 생긴 결과다. 1.12배와 낙관 구역 비움을 지켰다 |
+| 4 R5를 옮긴 외곽선 사본에 테로 두름 | 수용 | clip으로 하면 테 바깥 절반이 잘린다는 지적이 맞다. 목적(몸 꼴을 따르고 앞끝이 늘지 않음)은 같고 C7 앞끝 값도 그대로다.<br>6배에서 테가 뒤로 치우친 잔상처럼 보이지만 판독에는 문제가 없다 |
+| 5 R1 요소 추가(뇌침 탄 자국·번개 그림자·끊김 호, 망나니 땅 먹 튐·자루 6) | 수용 | 근거는 §2.2다. 낙관 구역과 왼쪽 아래를 피했고 T2 20px도 유지된다.<br>조건: 3차 T3에서 '오른쪽 먹 덩어리'를 가진 무기들과 함께 다시 본다(서리침 언 땅, 뇌침 탄 자국, 망나니 땅 먹 튐, lob 착지 튐, 타르 웅덩이) |
+
+### 5. §5 질문 판정 — 청록 심 3.2
+- 2·3차에는 '청록 심 3.2 이상'을 적용하지 않는다. 날선처럼 몸보다 굵어지는 경우가 생기기 때문이다.
+- 지금 날선 2.4는 C11에서 보이므로 합격이다.
+- 지시서 §2.5는 §7-1처럼 고친다.
+
+### 6. 고칠 것 (수정 2회차): F2b — 각성 망나니 침의 먹귀 둘이 '다리 달린 벌레'로 읽힌다
+
+**본 렌더**
+- `k9r2-headsman-aw-tile-x2`(드래프트 타일 2배), `k9r2-torn-aw-x12`, `k9r2-fix-headsman-x8`의 오른쪽 절반
+- 1배 타일(`k9r2-headsman-aw-tile-x1`)에서도 기미가 보인다.
+
+**문제**
+- 지시서 §3.3은 얼굴·생물로 읽혀도 되는 곳을 먹귀 슬릿 눈으로 한정한다.
+- F2 합격 기준은 '평상·각성 두 먹귀 어디서도'였다. 전설 무기의 각성 카드라 드래프트에서 잘 보이는 자리다.
+
+**원인**(`/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/k-icons2.js`)
+1. 먹 튐이 윤곽에서 `+1.2k` 떨어져 시작한다(`:221`). 그래서 각성 종이 테(빌린 틀의 halo 2.2, `k-icons.js:451`)가 가닥마다 따로 둘러져, 흰 테 두른 막대가 된다.
+2. 가닥 끝의 둥근 점(`:224`의 circle)이 발처럼 보인다.
+3. 둘째 먹귀 (90, 106) r 11이 첫째 (100, 80) r 16에 맞닿는다. 중심 사이가 27.9로 반지름 합 27과 거의 같아서, 두 덩이가 머리·배 마디로 읽힌다(`:585-586`).
+4. 땅의 먹 튐은 평상판에만 있다(`:582`, `!A`). 그래서 각성판의 먹 튐이 공중에 뜬다.
+
+**처방**(각성판만. 평상판 출력은 바꾸지 않는다)
+1. 두 먹귀를 띄운다. 종이 테를 넣어 실루엣 사이가 4 이상이어야 하고, 중심 사이는 약 36 이상이다.
+   - 예: 둘째를 (70~78, 108~112) 근처로 옮기고, 작은 칼(0.72배)의 각도를 그쪽에 맞춘다.
+   - 낙관 구역과 모서리 10 안은 피한다.
+2. 각성 호출에서만 먹 튐을 바꾼다. 둘 중 하나를 고른다.
+   - (a) `tornGhoul()`에 옵션을 더한다: 윤곽 0.5 안쪽에서 시작해 종이 테가 몸과 한 덩어리로 두르게 하고, 끝은 둥근 공 대신 뾰족하게, 먹귀마다 2가닥 이하.
+   - (b) 각성판에서는 먹 튐을 빼고, 평상판과 같은 땅 먹 튐을 ink7로 깐다(§2.4 각성 규칙).
+
+**바꾸면 안 되는 것**
+- 평상판 아이콘·타일·슬롯과 탄 96장 전부 → 아래 보존 해시가 같아야 한다
+- 칼 머리(F1), 각성 수(2발·먹귀 둘), 낙관 구역, C4·C5·C7
+
+**합격 기준**
+- 아래 첫째·둘째 명령에서 다리·더듬이·마디 몸이 읽히지 않고 '찢긴 먹귀 둘'로 읽힌다. 둘째 명령의 crop은 먹귀를 옮긴 자리에 맞춘다.
+- 1배 C2 각성 타일에서도 같다.
+- T2 각성 32px에서 계속 갈린다. C1·C2 `--check`는 ok다.
+- 셋째 명령의 출력이 정확히 `volley-keep=vko1lv len=992714 | shots=8wzptx len=134704`다. 넷째 글자는 숫자 1, 다섯째는 소문자 l이다.
+
+```
+node scripts/art-review-sheet.mjs expr --name k9-fix2-headsman-tiles-x2 --scale 2 --crop 0,0,340,170 --expr '(function(){var X=PN.arsenal;return "<rect width=\"340\" height=\"170\" fill=\"#fbfaf5\"/><g transform=\"translate(8,8)\">"+X.tile("headsmanDarts",{awakened:false,metal:true,size:150})+"</g><g transform=\"translate(174,8)\">"+X.tile("headsmanDarts",{awakened:true,metal:true,size:150})+"</g>";})()'
+node scripts/art-review-sheet.mjs expr --name k9-fix2-torn-aw-x12 --scale 12 --crop 72,62,64,66 --expr 'PN.arsenal.skill("headsmanDarts",{awakened:true})'
+node scripts/art-review-sheet.mjs expr --name k9-fix2-keep-hash --scale 1 --crop 0,0,900,40 --expr '(function(){var X=PN.arsenal;function norm(m){return m.replace(/\bki\d+/g,"ki").replace(/\bkar\d+/g,"kar");}function h(s){var x=5381;for(var i=0;i<s.length;i++){x=((x*33)^s.charCodeAt(i))>>>0;}return x.toString(36);}var A="",B="";X.ids.filter(function(id){return X.META[id].done;}).forEach(function(id){[false,true].forEach(function(a){if(id==="headsmanDarts"&&a)return;A+=norm(X.skill(id,{awakened:a}))+norm(X.tile(id,{awakened:a,metal:true,size:150}))+norm(X.hudSlot(id,{size:40,awakened:a}));});X.parts(id).forEach(function(p){for(var f=0;f<p.frames;f++)B+=norm(X.stamp(id,p.part,{frame:f}));});});return "<rect width=\"900\" height=\"40\" fill=\"#fff\"/><text x=\"4\" y=\"26\" font-size=\"14\" font-family=\"monospace\">volley-keep="+h(A)+" len="+A.length+" | shots="+h(B)+" len="+B.length+"</text>";})()'
+```
+
+- 문서: API §6(망나니 각성 칸)과 §9에 F2b를 적고, §10의 '망나니 침 15.2'를 13.9로 고친다.
+
+### 7. 지시서 정정 (`docs/art/briefs/arsenal-icons.md`, 검수 1차 §6에 더한다)
+1. **§2.5 32px 청록**(검수 1차 §6-5를 바꾼다)
+   - 'C11에서 32px 색으로 보여야 한다'를 기준으로 한다. 기준값은 다음과 같다.
+     - 선 요소: 청록 심 2.4 이상 + 양쪽 먹 1.2 이상(합 4.8 이상), 길이 20 단위 이상
+     - 점·면 요소: 청록 지름 5 이상 + 먹 테
+   - '청록 심 3.2 이상'은 거둔다.
+2. **§3.3 먹귀**(새 조항)
+   - 한 그림 안의 먹귀끼리 실루엣이 닿게 위아래로 쌓지 않는다(종이 테까지 4 이상 띄운다). 각성 종이 테가 하나로 묶어 마디 있는 벌레 몸으로 읽힌다.
+   - 먹 튐은 몸 윤곽에서 붙여 시작하고, 끝을 둥근 공으로 맺지 않는다. 떨어진 가닥에 종이 테가 둘러지면 다리·더듬이가 된다.
+   - 2·3차의 seeker·chain·strike처럼 먹귀가 여럿인 그림에 해당한다.
+3. **§4.3 각성 겹 테:** '앞끝 3 단위는 비워서'를 '몸 외곽선을 x −3 옮긴 사본에 두른다(clip 없음). C7 앞끝은 늘지 않는다'로 고친다(R5 결과).
+4. **§4.4 먹침 탄:** 쐐기 앞 30%(검수 1차 §6-3)에 더해, 깃 숫자를 '(−4.4~−9.2, 바깥 4.6, 밑동은 몸 가장자리)'로 고친다.
+5. **§5.2 C10**
+   - 블랙 스팟 판정은 `<use>`와 clip을 반영하는 보정 측정으로 한다.
+   - 기존 C10은 망나니 침을 9.6%로 낮게, 쌍날을 14.8%로 높게 잰다(보정값 13.9, 12.3).
+   - 명령은 `k9r2-c10u-ink`와 같은 식이다. 기존 C10 식에 두 가지를 더했다: `<use>`를 원본 사본으로 바꾸고, 표본점마다 조상 `clip-path`의 도형 안에 있는지 `isPointInFill`로 확인한다. 이름은 `k9-c10u-ink`로 한다.
+6. **§3.4 망나니 침 문구**(기록용): 칼 머리를 받아들인 꼴로 고친다.
+   - 끝 쪽이 넓은 팔치온, 위 가장자리 먹 띠(두께 3~4), 등선 너머 마이터 끝, 칼 목
+   - 자리 (53~101, 48~84), 자루 6
+
+### 8. 메인 세션
+- 등록값(시트 2개, 탄 96장·넓이 합 112,416, `KIT_FILES`, 렌더러 3곳)은 바뀌지 않았다.
+  - 등록 코드는 지금 준비해도 된다.
+  - 굽기는 F2b를 확인한 뒤(검수 3차, 짧다)에 한다.
+- 검수 1차 §6과 이번 §7의 지시서 정정을 반영한다. 납품서 1차 §4.2-4 문구에는 R7 정정 표시를 단다.
+- `npm run test:visual`에서 볼 장면: 검수 1차 §8에 더해 다음 셋을 넣는다.
+  - 망나니 침 각성 드래프트 카드(F2b)
+  - 쌍날 각성 카드(R3 문화 검토용)
+  - 먹침 슬롯이 있는 HUD 32px(F4. 청록이 가장 작다)
+
+### 9. 사람 클린업 · 미확인
+- **사람 클린업:** 납품서 §6 목록에 동의한다. 다음 둘을 더한다.
+  - 쌍날 각성 배치('원판 셋', 문화 검토)
+  - 인장 화살의 굵은 먹 꼬리(왼쪽 검은 쐐기)의 붓 질감
+- 위 조각의 꺾인 끝이 8배에서 부리처럼 보일 여지는 사람 클린업으로 넘긴다. 1배와 32px에서는 보이지 않는다.
+- **미확인**
+  - 실제 게임 화면(등록 전)
+  - 정식 판독 시험(n ≥ 8)
+  - T3(3차)
+  - C9·C10 보정 측정도 필터와 묶음 opacity는 무시하는 근사치다.
+
+**관련 파일:**
+- `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/k-icons2.js`
+- `/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/API-icons2.md`
+- `/Users/kyuukkang/CT_AX/07.playground/docs/art/briefs/arsenal-icons.md`
+- `/Users/kyuukkang/CT_AX/07.playground/docs/art/deliveries/K9-arsenal-icons.md`
+
+---
+
+## 1차 수정 2회차 납품서: F2b (각성 망나니 침)
+
+(되살림: 서브에이전트 기록 `agent-a7c1c9697e5fa5666`(kit-artist, 'K9 arsenal icons kit, part 1')의 SubagentHandback 원문, 2026-10-15 08:12 KST. 메인 세션이 이 파일에 넣었던 글과 같은 추출이다(세션 기록 `75a03af2-….jsonl` 줄 42737, 추출 길이 일치). 머리말 단계만 이 파일에 맞췄다.)
+
+각성 망나니 침 아이콘만 고쳤다. 보존 해시가 기준값과 정확히 같아서, 평상판 아이콘·타일·슬롯과 탄 96장은 바뀌지 않았다. `--check`를 붙인 명령은 모두 `ok`다.
+
+### 바꾼 것
+
+**`/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/k-icons2.js`**
+- `tornGhoul`에 옵션 `flicks: false`를 더했다(`:227-231`). 이 옵션을 주면 먹 튐을 그리지 않는다. 옵션이 없으면 예전과 같다.
+- `DRAW.headsmanDarts`(`:576-594`)는 각성판만 바꿨다.
+  - **둘째 먹귀**: (90, 106) → (71, 110)으로 옮겼다(r 11, `open`은 그대로).
+    - 중심 사이: 27.9 → 41.7
+    - 위 조각을 벌린 뒤의 실루엣 사이: 약 9.5
+    - 각성 1.1배에 종이 테 2.2 × 2를 빼도 약 6이다(기준 4 이상).
+  - **작은 칼(0.72배)**: (−2, 111)·−10°·길이 48 → (−4, 111)·−6°·길이 38.6. 칼끝이 둘째 먹귀 윤곽에 닿는다.
+  - **먹 튐**: 처방 (b)를 따랐다.
+    - 두 먹귀 모두 `flicks: false`로 먹 튐을 뺐다.
+    - 평상판과 같은 땅 먹 튐을 깔고, 각성판은 ink7로 칠한다. 예전의 `!A` 조건을 없애고 색만 `col`로 갈랐다.
+    - (a)를 고르지 않은 이유: 32~45px 각성 슬롯에서는 짧은 가닥이 종이 테에 묻혀 다시 다리처럼 보일 수 있다. (b)는 평상판과 같은 문법이다.
+- 그대로 둔 것: 칼 머리(F1), 각성 수(2발·먹귀 둘), 낙관 구역.
+
+**`/Users/kyuukkang/CT_AX/07.playground/art/concept-kit/API-icons2.md`**
+- 납품 차례 표에 '1차 수정 2회차' 줄을 더했다.
+- §6 망나니 침 각성 칸을 새 배치로 고쳤다.
+- §9.3에 16번(F2b)을 새로 적었다.
+- §10 보정 측정값을 검수 2차 `k9r2-c10u-ink` 값으로 바꿨다. 망나니 침은 15.2 → 13.9다.
+- §10 32px 청록 줄을 검수 2차 결정(청록 심 2.4 이상)에 맞췄다.
+
+### 명령 결과 원문
+
+`k9-fix2-keep-hash`
+```
+volley-keep=vko1lv len=992714 | shots=8wzptx len=134704
+```
+- 글자 확인용 변형 `k9-fix2-keep-hash-codes`의 출력은 `match=true codes=118,107,111,49,108,118`이다.
+- 넷째 글자는 숫자 1(49), 다섯째는 소문자 l(108)이다.
+
+`k9-fix2-c1-all` (`--check`): `ok   k9-fix2-c1-all`
+
+`k9-fix2-c2-volley` (`--check`): `ok   k9-fix2-c2-volley`
+
+`k9-fix2-c4-scan` (추가로 돌림)
+```
+icons bad=0 text=0 hatch=0 nocyan=0
+stamps bad=0 text=0 filter=0 nocyan=0 colours={}
+```
+
+`k9-fix2-c5-unchanged` (추가로 돌림)
+```
+icons-all=19vh262 len=2634966 list=17 ICON=17 | skillvfx-all=1xq1i37 len=698432 groups=18
+```
+
+`k9-fix2-headsman-aw-x4` (`--check`, 추가로 돌림): ok
+
+`k9-fix2-headsman-tiles-x2`, `k9-fix2-torn-aw-x12`, `k9-fix2-t2-kinds-awakened`: 렌더만 했다. 검수서 명령에 `--check`가 없다. torn-aw의 crop은 먹귀를 옮긴 자리에 맞춰 `54,60,74,68`로 바꿨다.
+
+### 직접 본 렌더
+
+위치: `/var/folders/p6/8x9_dsj97mbg_d6323ptytvc0000gn/T/blackline-art-review/`
+
+- **`k9-fix2-headsman-tiles-x2`**
+  - 평상 타일은 그대로다.
+  - 각성 타일에서 두 먹귀가 종이 테까지 떨어져 따로 선다.
+  - 다리·더듬이·마디 몸은 읽히지 않는다.
+  - 큰 먹귀는 들린 위 조각의 틈으로, 작은 먹귀는 눈 아래 흰 찢김 틈으로 '찢긴 먹귀'로 읽힌다.
+- **`k9-fix2-torn-aw-x12`**
+  - 두 종이 테 사이에 먹 바탕이 보인다.
+  - 그 사이로 틀의 원상 꼬리(가는 마른 붓)가 지나가지만, 둘을 한 몸으로 묶지는 않는다.
+- **`k9-fix2-headsman-aw-x4`, `k9-fix2-c2-volley`, 1배 크롭 `k9-fix2-c2-volley-headsman`**
+  - 1배 각성 타일에서도 두 먹귀가 갈리고, 벌레로 읽히지 않는다.
+  - 평상 타일 8종의 낙관 구역은 비어 있다.
+- **`k9-fix2-t2-kinds-awakened`, 3배 `-zoom`**
+  - 32px 각성(색·흑백)에서 망나니 침은 긴 대각 자루 둘 + 칼 고리 + 떨어진 먹귀 둘로 보인다.
+  - 다른 7종과 갈린다.
+- **작업 중 버린 시도**: 첫 시도는 (74, 110)·길이 40.4였다. 12배에서 종이 테 사이가 4 안팎으로 빠듯해서 (71, 110)으로 더 띄웠다.
+
+### 남은 것
+
+- 각성 1.1배에서 작은 먹귀의 아래 끝과 종이 테가 창 아래 가장자리를 조금 넘는다. 창 밖 10 안이고, 타일 2배에서 틀 안쪽 선에 닿는 정도다.
+- 먹귀 몸의 먹 방울은 핵심 `inkDot` 문법이라 그대로 두었다.
+- 메인 세션의 등록값은 바뀌지 않았다. 검수 3차(F2b 확인) 뒤에 굽기를 하면 된다.
 
 ---
 
