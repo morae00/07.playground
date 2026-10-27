@@ -114,15 +114,25 @@ const common = packs.common;
 const skills = packs.skills ?? { decodedMiB: 0 };
 const hazards = packs.hazards ?? { decodedMiB: 0 };
 const arsenalFx = packs['arsenal-fx'] ?? { decodedMiB: 0 };
+// The app also keeps the playing character's pack (CON-10, K8) and, while an infinite run's chapter turn is due, the
+// next chapter's pack (CON-08). The campaign figure counts the largest character pack; the turn figure adds the next
+// chapter's pack on top, as the chapter is about to change.
+const heroIds = Object.keys(packs).filter((id) => id.startsWith('hero-'));
+const heroId = heroIds.reduce((largest, id) => (largest === null || packs[id].decodedMiB > packs[largest].decodedMiB ? id : largest), null);
+const hero = heroId ? packs[heroId] : { decodedMiB: 0 };
+const chapterIds = Object.keys(packs).filter((id) => id.startsWith('chapter-')).sort();
 const chapters = Object.keys(transitions).sort().map((chapter) => {
   const times = [...transitions[chapter]].sort((a, b) => a - b);
   const pack = packs[chapter] ?? { diskMiB: 0, decodedMiB: 0 };
-  const residentMiB = +(common.decodedMiB + skills.decodedMiB + hazards.decodedMiB + arsenalFx.decodedMiB + pack.decodedMiB + uiArtMiB).toFixed(2);
+  const residentMiB = +(common.decodedMiB + skills.decodedMiB + hazards.decodedMiB + arsenalFx.decodedMiB + hero.decodedMiB + pack.decodedMiB + uiArtMiB).toFixed(2);
+  const next = packs[chapterIds[(chapterIds.indexOf(chapter) + 1) % chapterIds.length]] ?? { decodedMiB: 0 };
+  const infiniteTurnMiB = +(residentMiB + next.decodedMiB).toFixed(2);
   return {
     chapter,
     transitionMs: { first: transitions[chapter][0], median: times[Math.floor((times.length - 1) / 2)], max: times.at(-1) },
     packDiskMiB: pack.diskMiB,
     residentMiB,
+    infiniteTurnMiB,
     passed: times.at(-1) <= LIMITS.transitionMs && residentMiB <= LIMITS.residentMiB && pack.diskMiB <= LIMITS.packMiB,
   };
 });
@@ -134,14 +144,15 @@ const report = {
   rounds,
   packs,
   uiArtMiB,
+  heroPack: heroId,
   chapters,
   passed: chapters.every((chapter) => chapter.passed),
 };
 await mkdir(path.dirname(reportPath), { recursive: true });
 await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
 for (const chapter of chapters) {
-  console.log(`${chapter.chapter}  load first ${chapter.transitionMs.first} ms, median ${chapter.transitionMs.median}, max ${chapter.transitionMs.max} | pack ${chapter.packDiskMiB} MiB on disk | resident ${chapter.residentMiB} MiB | ${chapter.passed ? 'PASS' : 'FAIL'}`);
+  console.log(`${chapter.chapter}  load first ${chapter.transitionMs.first} ms, median ${chapter.transitionMs.median}, max ${chapter.transitionMs.max} | pack ${chapter.packDiskMiB} MiB on disk | resident ${chapter.residentMiB} MiB, ${chapter.infiniteTurnMiB} MiB at an infinite chapter turn | ${chapter.passed ? 'PASS' : 'FAIL'}`);
 }
-console.log(`resident = common pack ${common.decodedMiB} MiB + skills pack ${skills.decodedMiB} MiB + hazards pack ${hazards.decodedMiB} MiB + arsenal-fx pack ${arsenalFx.decodedMiB} MiB + UI art ${uiArtMiB} MiB + the chapter's pack (decoded RGBA)`);
+console.log(`resident = common pack ${common.decodedMiB} MiB + skills pack ${skills.decodedMiB} MiB + hazards pack ${hazards.decodedMiB} MiB + arsenal-fx pack ${arsenalFx.decodedMiB} MiB + the largest character pack (${heroId} ${hero.decodedMiB} MiB) + UI art ${uiArtMiB} MiB + the chapter's pack (decoded RGBA); an infinite chapter turn adds the next chapter's pack`);
 console.log(`report: ${path.relative(root, reportPath)}`);
 if (!report.passed) process.exitCode = 1;
