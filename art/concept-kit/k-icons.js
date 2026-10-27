@@ -18,7 +18,6 @@ window.PN = window.PN || {};
   const T = (p, w, mode, fill, extra) => PN.taper(p, w, mode || 'mid', fill || K.ink, extra || '');
   const FONT = `'Apple SD Gothic Neo','AppleGothic','Helvetica Neue',sans-serif`;
   const NUMF = `'Avenir Next Condensed','DIN Condensed','Helvetica Neue',sans-serif`;
-  const SERIF = `'AppleMyungjo','Apple SD Gothic Neo',serif`;
   const cov = (p, c) => f(p * Math.sqrt(c / Math.PI));
   const rng = (s) => { let x = s; return () => ((x = (x * 16807) % 2147483647) / 2147483647); };
   const pt = (a) => a.map((q) => f(q[0]) + ',' + f(q[1])).join(' L');
@@ -151,7 +150,7 @@ window.PN = window.PN || {};
   PN.icons = PN.icons || {};
   PN.vfx = PN.vfx || {};
   PN.icons.K = K;
-  PN._ki = { K, ctx, S, P, L, T, f, rng, pt, poly, taperPoly, taperFn, bw, smooth, burst, ellipsePts, blob, drip, coin, coinD, cov, FONT, NUMF, SERIF };
+  PN._ki = { K, ctx, S, P, L, T, f, rng, pt, poly, taperPoly, taperFn, bw, smooth, burst, ellipsePts, blob, drip, coin, coinD, cov, FONT, NUMF };
 })(window.PN);
 // ---- skill icon drawings A (actives 1-6). 128 x 128 master, light = top-left ----
 (function (PN) {
@@ -298,7 +297,19 @@ window.PN = window.PN || {};
     const mass = `M0,0 L128,0 L128,${f(y(128) - 5)} L0,${f(y(0) - 5)} Z`;
     const R = rng(21); let dust = '', crumbs = '';
     for (let i = 0; i < 30; i++) { const x = 10 + R() * 80, yy = y(x) - 8 - R() * 30 * (x / 90); dust += `<circle cx="${f(x)}" cy="${f(yy)}" r="${f(0.7 + R() * 1.8)}" fill="${K.p50}"/>`; }
-    for (let i = 0; i < 6; i++) { const x = 30 + R() * 60, yy = y(x) + 8 + R() * 14; crumbs += `<path d="${blob(x, yy, 2.2 + R() * 1.8, 5, 0.6, 30 + i)}" fill="${K.p50}" stroke="${K.ink}" stroke-width="1.4"/>`; }
+    // rev 2.2 (P2 follow-up F2): angular chalk chips below the cut, not round crumbs (ink-ringed blobs read as 'o·0·8').
+    // [x on the cut, extra clearance, long, wide, deg, shape]: four-point wedges (long side ≥ 1.6 × short side), centred
+    // 1.5 + their radius + clearance off the cut's 12-wide ink stroke, outlines ≥ 8 apart (ink ≥ 7.2), clear of the star;
+    // ink edge 1.1 and a p300 shade facet. Fixed geometry: the dust above still draws R first, in the same order.
+    const CHIP = { qa: [[-0.5, -0.25], [0.3, -0.5], [0.5, 0.3], [-0.2, 0.5]], qb: [[-0.5, 0.1], [-0.1, -0.5], [0.5, -0.2], [0.25, 0.5]], wa: [[-0.5, -0.45], [0.5, -0.2], [0.42, 0.22], [-0.45, 0.5]] };
+    const FACET = { qa: [1, 2, 3], qb: [2, 3, 0], wa: [2, 3] };
+    [[30, 0.5, 7.4, 4, 25, 'qa'], [42, 4, 6.6, 3.8, -35, 'wa'], [54, 1, 8, 4.4, 70, 'qb'], [65, 5, 6.6, 3.8, 10, 'qa'], [76, 2.5, 7.2, 4, -60, 'wa']].forEach(([x0, e, lg, w, deg, sh]) => {
+      const r = deg * Math.PI / 180, co = Math.cos(r), si = Math.sin(r);
+      const pts = CHIP[sh].map(([u, v]) => [u * lg * co - v * w * si, u * lg * si + v * w * co]);
+      const d = 7.5 + Math.max(...pts.map((p) => Math.hypot(p[0], p[1]))) + e, cx = x0 + 0.655 * d, cy = y(x0) + 0.756 * d;
+      const Q = pts.map((p) => [cx + p[0], cy + p[1]]), F = FACET[sh].map((k) => Q[k]).concat([[cx, cy]]);
+      crumbs += P(poly(Q), K.p50) + P(poly(F), K.p300) + `<path d="${poly(Q)}" fill="none" stroke="${K.ink}" stroke-width="1.1" stroke-linejoin="miter"/>`;
+    });
     const bg = `<path d="${mass}" fill="${A ? K.ink7 : K.ink}"/>` +
       `<path d="M0,0 L60,0 C40,4 16,18 0,40 Z" fill="${K.ink5}" opacity="${A ? 0.5 : 1}"/><path d="M0,0 L46,0 C30,6 12,16 0,30 Z" fill="${A ? K.ink7 : K.ink}"/>` + L('M0,39 C16,18 38,4 60,0', K.ink3, 1.2) +
       `<path d="M12,58 Q22,51 31,57 Q22,61 12,58 Z M36,49 Q42,45 48,48 Q43,52 36,49 Z" fill="${K.p50}"/><circle cx="23" cy="57" r="1.7" fill="${K.ink}"/><circle cx="43" cy="48.5" r="1.3" fill="${K.ink}"/>` +
@@ -413,11 +424,102 @@ window.PN = window.PN || {};
 })(window.PN);
 // ---- PN.icons.skill / frame / tile ----
 (function (PN) {
-  const { K, ctx, S, P, L, T, f, rng, poly, taperPoly, ellipsePts, blob, drip, SERIF } = PN._ki;
+  const { K, ctx, S, P, L, T, f, rng, poly, taperPoly, ellipsePts, blob, drip } = PN._ki;
   const I = () => PN._ki.ICON;
   const RAR = ['common', 'rare', 'epic', 'legendary', 'mythic'];
   const RAR_KO = { common: '일반', rare: '희귀', epic: '영웅', legendary: '전설', mythic: '신화' };
   PN.icons.RARITY = RAR; PN.icons.RARITY_KO = RAR_KO;
+  // 覺 seal glyph (rev 2.3, 2026-10-27; the user's choice (다) in the kit P2 review §2.2). The kit wrote it with brush
+  // strokes from the structure of the character alone: 覺 = 𦥯 (the two 𦥑 halves around 爻, then 冖) over 見 (目 + 儿),
+  // 20 strokes in the standard order. No font was rendered or looked at, no other hand's calligraphy, and not the
+  // earlier outline. Each stroke is a taperFn brush ribbon over a smooth() spine, plus small ellipses for the pressed
+  // entries, the turns and the round ends. Every piece winds the same way, so the one nonzero-filled path is their
+  // union (even-odd would open holes where strokes cross). Card units, inside the seal's ensō ring. The stroke table
+  // (start, end, brush) is in API-icons.md, frame().
+  const KAKU_STROKES = (() => {
+    const { taperFn, smooth } = PN._ki;
+    const ease = (u) => 0.5 - 0.5 * Math.cos(Math.PI * Math.min(1, Math.max(0, u)));
+    // brush width along the stroke (t 0..1): presses in over a from s0·w, lifts out over b to s1·w, body eased to m·w
+    const prof = (w, a, s0, b, s1, m) => (t) => {
+      const u = (t - a) / (1 - a - b);
+      return w * (t < a ? s0 + (1 - s0) * ease(t / a) : t > 1 - b ? s1 + (1 - s1) * ease((1 - t) / b) : 1) *
+        (u > 0 && u < 1 ? 1 - (1 - m) * Math.sin(Math.PI * u) : 1);
+    };
+    // even spacing along the spine, about 3 samples per card unit
+    const resample = (pts) => {
+      const acc = [0];
+      for (let i = 1; i < pts.length; i++) acc.push(acc[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+      const len = acc[acc.length - 1], n = Math.max(10, Math.min(28, Math.round(len * 3))), out = [];
+      for (let k = 0, j = 0; k <= n; k++) {
+        const s = len * k / n;
+        while (j < acc.length - 2 && acc[j + 1] < s) j++;
+        const u = (s - acc[j]) / ((acc[j + 1] - acc[j]) || 1);
+        out.push([pts[j][0] + (pts[j + 1][0] - pts[j][0]) * u, pts[j][1] + (pts[j + 1][1] - pts[j][1]) * u]);
+      }
+      return out;
+    };
+    const unit = (a, b) => { const l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; return [(b[0] - a[0]) / l, (b[1] - a[1]) / l]; };
+    const at = (p, u, s, dy = 0) => [p[0] + u[0] * s, p[1] + u[1] * s + dy];
+    // ellipse wound like the ribbons (reversed ellipsePts), so nonzero fill unions it with them
+    const ell = (c, rx, ry, deg) => poly(ellipsePts(c[0], c[1], rx, ry, 12, 0, Math.PI * 2, deg * Math.PI / 180).slice(0, 12).reverse());
+    const rib = (pts, wfn) => { const m = taperFn(resample(smooth(pts, 8)), wfn), i = m.indexOf('d="') + 3; return m.slice(i, m.indexOf('"', i)); };
+    // piece kinds: [ribbon profile a, s0, b, s1, m], pressed head, end
+    const KIND = {
+      H: [[0.14, 0.8, 0.16, 0.72, 0.92], 1, 'press'],  // 橫: pressed entry, a slightly thinner body, pressed stop
+      Hc: [[0.14, 0.8, 0.06, 0.92, 0.92], 1, ''],       // 橫 running into a turn
+      S: [[0.12, 0.85, 0.14, 0.82, 0.9], 1, 'round'],   // 豎 with a round (垂露) end
+      Sc: [[0.05, 0.95, 0.14, 0.82, 0.9], 0, 'round'],  // 豎 out of a turn
+      P: [[0.12, 0.88, 0.6, 0.07, 1], 1, ''],           // 撇: pressed entry, lifts off to a point
+      T: [[0.12, 0.9, 0.7, 0.07, 1], 1, ''],            // 提
+      D: [[0.68, 0.3, 0.12, 0.82, 1], 0, 'round'],      // 點: lands thin, ends full
+      N: [[0.72, 0.24, 0.1, 0.78, 1], 0, 'round'],      // 爻's right-falling long dots
+      W: [[0.1, 0.88, 0.05, 0.96, 0.8], 1, ''],         // 豎彎 running into the hook
+      G: [[0.04, 1, 0.8, 0.06, 1], 0, '']               // 鉤
+    };
+    const piece = ([k, pts, w]) => {
+      if (k === 'Z') return ell([pts[0] + w * 0.1, pts[1] + w * 0.06], w * 0.6, w * 0.46, 45); // pressed turn (頓)
+      const [pr, hd, end] = KIND[k], p0 = pts[0], p1 = pts[pts.length - 1];
+      const u0 = unit(p0, pts[1]), u1 = unit(pts[pts.length - 2], p1);
+      let d = rib(pts, prof(w, ...pr));
+      if (hd) d += ' ' + ell(at(p0, u0, w * 0.26, w * 0.03), w * 0.55, w * 0.41, 45);
+      if (end === 'press') d += ' ' + ell(at(p1, u1, -w * 0.24, w * 0.07), w * 0.5, w * 0.39, 38);
+      if (end === 'round') d += ' ' + ell(at(p1, u1, -w * 0.1), w * 0.45, w * 0.41, Math.atan2(u1[1], u1[0]) * 180 / Math.PI);
+      return d;
+    };
+    // [stroke number, stroke, pieces [kind, spine (card units), width]] in writing order
+    const STROKES = [
+      // 𦥑, left half
+      [1, '㇒', [['P', [[131.35, 11.88], [130.42, 12.84], [129.5, 13.8]], 1.45]]],
+      [2, '㇑', [['S', [[129.4, 13.6], [129.52, 16.1], [129.68, 18.7]], 1.45]]],
+      [3, '㇐', [['H', [[129.9, 15.72], [131.0, 15.6], [132.2, 15.48]], 1.02]]],
+      [4, '㇀', [['T', [[129.8, 18.55], [131.2, 18.08], [132.7, 17.45]], 1.14]]],
+      // 爻
+      [5, '㇒', [['P', [[138.75, 12.0], [137.3, 13.22], [135.25, 14.6]], 1.38]]],
+      [6, '㇔', [['N', [[135.55, 12.55], [136.85, 13.5], [138.05, 14.35]], 1.45]]],
+      [7, '㇒', [['P', [[140.0, 15.55], [137.65, 17.2], [134.55, 18.85]], 1.45]]],
+      [8, '㇏', [['N', [[135.3, 15.95], [137.6, 17.25], [140.2, 18.5]], 1.55]]],
+      // 𦥑, right half
+      [9, '㇕', [['Hc', [[142.1, 12.85], [143.65, 12.75], [145.25, 12.62]], 1.12], ['Z', [145.4, 12.75], 1.3], ['Sc', [[145.4, 12.8], [145.3, 15.7], [145.1, 18.45]], 1.45]]],
+      [10, '㇐', [['H', [[142.35, 15.7], [143.65, 15.62], [145.0, 15.55]], 1.12]]],
+      [11, '㇐', [['H', [[142.15, 18.45], [143.65, 18.38], [145.2, 18.3]], 1.19]]],
+      // 冖
+      [12, '㇔', [['D', [[127.0, 20.15], [127.32, 20.95], [127.6, 21.8]], 1.75]]],
+      [13, '㇖', [['Hc', [[127.9, 20.9], [137.5, 20.68], [146.9, 20.55]], 1.5], ['Z', [146.9, 20.6], 1.45], ['G', [[146.95, 20.65], [146.4, 21.8], [145.6, 22.85]], 1.65]]],
+      // 目
+      [14, '㇑', [['S', [[133.0, 22.75], [133.08, 25.95], [133.2, 29.4]], 1.75]]],
+      [15, '㇕', [['Hc', [[133.3, 22.95], [137.2, 22.8], [141.1, 22.6]], 1.26], ['Z', [141.25, 22.75], 1.35], ['Sc', [[141.25, 22.8], [141.12, 26.0], [140.9, 29.25]], 1.85]]],
+      [16, '㇐', [['H', [[133.7, 25.05], [136.7, 24.93], [139.35, 24.81]], 1.19]]],
+      [17, '㇐', [['H', [[133.7, 27.12], [136.7, 27.0], [139.35, 26.89]], 1.19]]],
+      [18, '㇐', [['H', [[133.15, 29.25], [137.1, 29.1], [141.3, 28.92]], 1.3]]],
+      // 儿
+      [19, '㇒', [['P', [[134.55, 29.6], [134.4, 31.0], [133.0, 32.3], [129.5, 33.0]], 2.0]]],
+      [20, '㇟', [['W', [[138.65, 29.55], [138.7, 31.15], [139.4, 32.35], [141.5, 32.65], [145.3, 32.5]], 1.9], ['Z', [145.25, 32.4], 1.7], ['G', [[145.3, 32.55], [145.75, 31.7], [146.15, 30.75]], 1.8]]]
+    ];
+    return Object.freeze(STROKES.map(([n, stroke, pieces]) => Object.freeze({ n, stroke, pieces, d: pieces.map(piece).join(' ') })));
+  })();
+  const KAKU = KAKU_STROKES.map((s) => s.d).join(' ');
+  PN._ki.KAKU_STROKES = KAKU_STROKES;
+  PN._ki.KAKU = KAKU;
 
   // ensō brush circle: thick entry, dry-brush (비백) streaks, thin exit, open gap
   function enso(cx, cy, r, col, w, gapAt = -0.9, seed = 3, bgc) {
@@ -509,10 +611,12 @@ window.PN = window.PN || {};
       [[10, 40, 6, 1], [150, 110, 7, 2], [30, 150, 5, 3], [120, 8, 5, 4], [150, 60, 4, 5]].forEach(([x, y, r, s]) => {
         front += P(blob(x, y, r, 8, 0.5, s), bc) + P(drip(x + 1, y + r * 0.6, r * 1.2, r * 0.3), bc);
       });
-      // 覺 seal: paper disc + ink ensō ring, fully inside the card corner (glyph 24 units = 9.6 px at 0.4 display)
+      // 覺 seal: paper disc + ink ensō ring, fully inside the card corner (glyph ≈ 22 units ≈ 8.8 px at 0.4 display).
+      // The glyph is KAKU, the kit's 20 brush strokes as one path (no <text>, no font): the same shape on every machine.
+      // nonzero fill: the stroke pieces overlap and wind the same way, so they union (even-odd would hole the joints).
       seal = `<circle cx="137" cy="23" r="${inv ? 20 : 19}" fill="${inv ? K.p50 : K.ink}" opacity="${inv ? 1 : 0.9}" transform="translate(${inv ? 0 : 1.5},${inv ? 0 : 2})"/>` +
         `<circle cx="137" cy="23" r="18" fill="${K.p50}"/>` + enso(137, 23, 16.2, K.ink, 4.4, -1.2, 7) +
-        `<text x="137" y="31.2" text-anchor="middle" font-family="${SERIF}" font-size="24" font-weight="700" fill="${K.ink}">覺</text>`;
+        `<path class="ki-kaku" d="${KAKU}" fill="${K.ink}" fill-rule="nonzero"/>`;
     }
     return { c, back, front, seal };
   }
@@ -712,7 +816,9 @@ window.PN = window.PN || {};
     return { bg, fg };
   } };
 
-  // 13. 수거 자석 — a horseshoe talisman drags 엽전 coins in on ink field lines
+  // 13. 수거 자석 — a horseshoe talisman drags 엽전 coins in on ink field lines.
+  //     P2-4 (2026-10-26): the talisman carries no strokes (they read as 'エ·ㄴ·十'): a blank paper strip with torn
+  //     side edges and a torn foot, and one ink seal blot.
   I.magnetSigil = { rarity: 'common', kind: 'passive', name: '수거 자석', draw(c, A) {
     const ln = A ? K.p300 : K.ink;
     const field = ['M64,64 C80,72 88,84 94,96', 'M56,76 C62,94 70,102 78,110', 'M72,56 C90,58 104,62 110,72'].map((d) => L(d, ln, 1.8, 'stroke-dasharray="5 4"')).join('');
@@ -728,32 +834,53 @@ window.PN = window.PN || {};
         ${L('M-29,25 h18 M11,25 h18', K.ink, 1.2)}
       </g>
       <g transform="translate(20,20) rotate(-12)">
-        <path d="M-7,-2 L9,-4 L12,40 L9,36 L5,42 L2,37 L-3,42 L-4,38 Z" fill="${K.p50}" stroke="${K.ink}" stroke-width="2"/>
-        ${L('M-1,4 h6 M2,4 v12 M-2,12 l8,-2 M0,20 q3,4 6,0 M1,26 v8 M-2,30 h7', K.ink, 1.6)}
+        <path d="M-7,-2 L9,-4 L9.8,6 L9,8.4 L10.6,17 L10.1,24.6 L11.4,30 L12,40 L9,36 L5,42 L2,37 L-3,42 L-4,38 L-4.8,28.4 L-4,26.2 L-5.6,15.4 L-5.1,9.2 L-6.3,5.2 Z" fill="${K.p50}" stroke="${K.ink}" stroke-width="2"/>
+        <path d="${blob(2.4, 12.6, 3.2, 7, 0.3, 13)}" fill="${K.ink}"/>
       </g>
       ${L('M25,16 C30,20 34,24 38,28', K.ink, 1.6)}`;
     return { bg, fg };
   } };
 
-  // 14. 종이 갑주 — a lamellar cuirass of overlapping folded-paper scales; loose plates lift off
+  // 14. 종이 갑주 — a lamellar cuirass of overlapping folded-paper scales; loose plates lift off.
+  //     P2-4 (2026-10-26): no dots inside any scale. The dot halftone on each scale's right half and the two lacing holes
+  //     made 'B'/'R' counters (the three loose plates read as a Latin 'B'). Every scale is now folded paper: a lit face
+  //     and a flat shade face split by one oblique fold. The loose plates are cut, slanted paper scales with one fold
+  //     line, spread so no two stack.
   I.paperWard = { rarity: 'rare', kind: 'passive', name: '종이 갑주', draw(c, A) {
     const bg = `<circle cx="64" cy="66" r="56" fill="${A ? K.ink7 : K.ink}"/>`;
     const cu = 'M24,30 C40,24 52,27 64,29 C76,27 88,24 104,30 L99,58 C96,70 97,86 100,106 C84,112 44,112 28,106 C31,86 32,70 29,58 Z';
     const sc = 'M-6.5,-10 L6.5,-10 L6.5,5 C6.5,10 3.5,12.5 0,12.5 C-3.5,12.5 -6.5,10 -6.5,5 Z';
-    const h20 = c.dot('h2', 5, 0.2, K.ink), h40 = c.dot('h4', 5, 0.4, K.ink);
+    // the shade face right of the fold (2,-10) -> (0,12.5): a flat tone plane, never a dot pattern
+    const scShade = 'M2,-10 L6.5,-10 L6.5,5 C6.5,10 3.5,12.5 0,12.5 Z';
+    // rows are laid from the bottom up, so each scale's rounded foot overlaps the row below (scale armor, not bricks)
     let rows = '';
-    for (let r = 0; r < 6; r++) for (let k = -1; k < 7; k++) {
+    for (let r = 5; r >= 0; r--) for (let k = -1; k < 7; k++) {
       const x = 28 + k * 13 + (r % 2) * 6.5, y = 36 + r * 14.5, dark = x > 76;
-      rows += `<g transform="translate(${f(x)},${f(y)})"><path d="${sc}" fill="${dark ? K.paper : K.p50}" stroke="${K.ink}" stroke-width="1.7"/><path d="M0,-10 L6.5,-10 L6.5,5 C6.5,10 3.5,12.5 0,12.5 Z" fill="${dark ? h40 : h20}"/><circle cx="-2.5" cy="-6" r="1" fill="${K.ink}"/><circle cx="2.5" cy="-6" r="1" fill="${K.ink}"/></g>`;
+      rows += `<g transform="translate(${f(x)},${f(y)})"><path d="${sc}" fill="${dark ? K.paper : K.p50}"/><path d="${scShade}" fill="${dark ? K.ink1 : K.p300}"/><path d="${sc}" fill="none" stroke="${K.ink}" stroke-width="1.7"/></g>`;
     }
-    const loose = (x, y, a) => `<g transform="translate(${x},${y}) rotate(${a}) scale(1.05)">${S(sc, K.p50, 1.8, 1)}<path d="M0,-10 L6.5,-10 L6.5,5 C6.5,10 3.5,12.5 0,12.5 Z" fill="${h20}"/></g>`;
+    // loose plate: the same paper scale cut with a slanted top, one fold line from the top edge to the foot.
+    // rev 2.2 (P2 follow-up R1): the top edge is 3.5 lower (a shorter plate with its rounded foot showing).
+    const lp = 'M-6.4,-6.9 L6.6,-8.1 L6.6,4.6 C6.6,9.8 3.6,12.4 0.1,12.6 C-3.4,12.8 -6.4,10.2 -6.4,5 Z';
+    const lpShade = 'M2.1,-7.5 L6.6,-8.1 L6.6,4.6 C6.6,9.8 3.6,12.4 0.1,12.6 Z';
+    const loose = (x, y, a, k) => `<g transform="translate(${x},${y}) rotate(${a}) scale(${k})">${S(lp, K.p50, 1.8, 1)}<path d="${lpShade}" fill="${K.p300}"/>${L('M2.1,-7.5 L0.1,12.6', K.ink, 1.2)}<path d="${lp}" fill="none" stroke="${K.ink}" stroke-width="1.8" stroke-linejoin="round"/></g>`;
+    // rev 2.4 (F3): the two top plates fly off tilted, both leaning the same way (no mirrored '( )' pair, no upright 'U'
+    // or shield). Their top is a torn edge of four uneven teeth, inked heavier than the sides so it never reads as a thin
+    // lid, and the fold is a short diagonal crease (a bent corner) instead of a line from the top to the foot.
+    const tornTop = 'M-6.4,-6.6 L-4.6,-8.5 L-3.3,-7 L-1.3,-8.2 L0.1,-6.9 L2.6,-8.7 L4.4,-7.6 L5.5,-8.3 L6.6,-7.5';
+    const lpT = `${tornTop} L6.6,4.6 C6.6,9.8 3.6,12.4 0.1,12.6 C-3.4,12.8 -6.4,10.2 -6.4,5 Z`;
+    const lpTShade = 'M0.1,-6.9 L2.6,-8.7 L4.4,-7.6 L5.5,-8.3 L6.6,-7.5 L6.6,3 Z';
+    const flying = (x, y, a, k) => `<g transform="translate(${x},${y}) rotate(${a}) scale(${k})">${S(lpT, K.p50, 1.8, 0.6)}<path d="${lpTShade}" fill="${K.p300}"/>${L('M0.1,-6.9 L6.6,3', K.ink, 1.2)}<path d="${lpT}" fill="none" stroke="${K.ink}" stroke-width="1.8" stroke-linejoin="round"/>${L(tornTop, K.ink, 2)}</g>`;
+    // rev 2.4 F3 placement (ink to ink, probe rev24-plates-probe): right (84.5,11.6) −38° ×0.8 sits between collar and
+    // strap, 7.2 off the strap, 3.3 off the cuirass, 2.8 inside the window and 6.5 card units clear of the awakened seal
+    // (right of the strap is the seal, icon (116,12), r ≈ 18). Left (10,36) −50° ×0.74 sits below the left strap's foot,
+    // 5.9 off the strap, 4.2 off the cuirass, 2.3 inside the window. The third plate keeps the rev 2.2 cut and place.
     const fg = `<path d="${cu}" fill="${K.ink}" transform="translate(2,3)"/>
       <g clip-path="${c.clip('cu', cu)}"><rect width="128" height="128" fill="${K.ink7}"/>${rows}<path d="M96,20 L128,20 L128,120 L64,120 C84,112 98,90 100,60 Z" fill="${K.ink}" opacity="0.35"/></g>
       <path d="${cu}" fill="none" stroke="${K.ink}" stroke-width="3.4" stroke-linejoin="round"/>
       <path d="M50,28 L64,44 L78,28 C72,30 58,30 50,28 Z" fill="${K.ink}" stroke="${K.ink}" stroke-width="2"/>
       <path d="M30,84 C50,88 78,88 98,84 L98,93 C78,97 50,97 30,93 Z" fill="${K.ink}" stroke="${K.ink}" stroke-width="1.5"/><rect x="58" y="84" width="12" height="11" fill="${K.p50}" stroke="${K.ink}" stroke-width="2"/>
       ${L('M26,30 L22,12 M102,30 L106,12', K.ink, 7)}${L('M25,28 L21.5,13', K.ink5, 1.5)}
-      ${loose(110, 20, 28)}${loose(116, 42, 46)}${loose(16, 18, -32)}`;
+      ${flying(84.5, 11.6, -38, 0.8)}${loose(113, 52, 62, 0.92)}${flying(10, 36, -50, 0.74)}`;
     return { bg, fg };
   } };
 
@@ -770,7 +897,21 @@ window.PN = window.PN || {};
     const gb = gt.map(([x, y], i) => [x + (i % 2 ? 1.5 : -1), y + (i === 0 || i === gt.length - 1 ? 0 : 10.5 + (i % 3))]);
     const gash = poly(gt.concat(gb.slice().reverse()));
     const fib = gt.slice(1, -1).map(([x, y], i) => L(`M${x},${y} l${i % 2 ? -1.6 : 1.4},${-2.6 - (i % 3)}`, K.p50, 1.1)).join('');
-    const xs = [[60, 99], [74, 92], [88, 85], [99, 79]].map(([x, y], i) => { const d = `M${x - 5.6},${y - 6} L${x + 5.6},${y + 9} M${x + 5.6},${y - 6} L${x - 5.6},${y + 9}`; return i === 3 ? '' : L(d, K.p50, 6) + L(d, K.ink, 3); }).join('');
+    // rev 2.2 (P2 follow-up F1): one thread sews the wound, not a row of equal X's ('XXX' at 120 px). Two cross-stitches of
+    // different size and angle (0.8× −12°, 1× 0°), spaced more than a stitch apart, a needle hole (r 1.2) at every end,
+    // a short thread arcing from one stitch to the next (the tailT grammar: paper 5 + ink 2.2), and the last stitch by
+    // the needle a single pulled stroke (1.15× +10°) that starts where tailT ends.
+    const stitch = (cx, cy, k, deg, both) => {
+      const r = deg * Math.PI / 180, co = Math.cos(r), si = Math.sin(r), at = (x, y) => [cx + k * (x * co - y * si), cy + k * (x * si + y * co)];
+      return { ul: at(-5.6, -7.5), lr: at(5.6, 7.5), ur: at(5.6, -7.5), ll: at(-5.6, 7.5), both };
+    };
+    const inset = (p, q, d) => { const dx = q[0] - p[0], dy = q[1] - p[1], l = Math.hypot(dx, dy); return [[p[0] + dx / l * d, p[1] + dy / l * d], [q[0] - dx / l * d, q[1] - dy / l * d]]; };
+    const seg = (e) => `M${f(e[0][0])},${f(e[0][1])} L${f(e[1][0])},${f(e[1][1])}`;
+    const hop = (p, q) => { const e = inset(p, q, 2.4), dx = e[1][0] - e[0][0], dy = e[1][1] - e[0][1], l = Math.hypot(dx, dy); return `M${f(e[0][0])},${f(e[0][1])} Q${f((e[0][0] + e[1][0]) / 2 + dy / l * 3)},${f((e[0][1] + e[1][1]) / 2 - dx / l * 3)} ${f(e[1][0])},${f(e[1][1])}`; };
+    const sts = [stitch(52.5, 103, 0.8, -12, true), stitch(75, 95.5, 1, 0, true), stitch(97.35, 86.11, 1.15, 10, false)];
+    let xs = [hop(sts[0].ur, sts[1].ul), hop(sts[1].ur, sts[2].ul)].map((d) => L(d, K.p50, 5) + L(d, K.ink, 2.2)).join('');
+    sts.forEach((s) => { const d = seg(inset(s.ul, s.lr, 2.6)) + (s.both ? ' ' + seg(inset(s.ur, s.ll, 2.6)) : ''); xs += L(d, K.p50, 6) + L(d, K.ink, 3); });
+    sts.forEach((s) => (s.both ? [s.ul, s.lr, s.ur, s.ll] : [s.ul, s.lr]).forEach((p) => { xs += `<circle cx="${f(p[0])}" cy="${f(p[1])}" r="1.2" fill="${K.ink}"/>`; }));
     // thread: spool -> needle eye (long run) + eye -> last stitch (short tail)
     const thr = 'M44,34 C58,34 64,40 66,48', tailT = 'M69,52 C74,62 84,70 92,76';
     const nd = PN._ki.slimNeedle([64, 44], [100, 76], 5.6, 2);

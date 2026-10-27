@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 154264,
+      "bytes": 154267,
       "kib": 150.65,
       "baselineBytes": 128399,
-      "growthRatio": 0.20144237883472615,
+      "growthRatio": 0.2014657435026752,
       "warningBytes": 147658,
       "failBytes": 160498,
       "status": "warning",
@@ -27,7 +27,7 @@
       "passed": true
     },
     "css": {
-      "bytes": 17902,
+      "bytes": 17903,
       "kib": 17.48,
       "warningBytes": 32768,
       "failBytes": 49152,
@@ -35,16 +35,16 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 2224936,
-      "kib": 2172.79,
+      "bytes": 2250940,
+      "kib": 2198.18,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 38241195,
-      "kib": 37344.92,
+      "bytes": 38266945,
+      "kib": 37370.06,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-DPV5qipH.js",
+      "file": "assets/App-tuVZGXiu.js",
       "category": "appJs",
       "sourceBytes": 472508,
-      "gzipBytes": 150710
+      "gzipBytes": 150711
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -127,22 +127,22 @@
       "gzipBytes": 32587
     },
     {
-      "file": "assets/hud-slots-BGSzYNHK.webp",
+      "file": "assets/hud-slots-Du-34ibQ.webp",
       "category": "image",
-      "sourceBytes": 113542,
-      "gzipBytes": 113032
+      "sourceBytes": 113250,
+      "gzipBytes": 112708
     },
     {
-      "file": "assets/index-CtB9sj5D.js",
-      "category": "appJs",
-      "sourceBytes": 7500,
-      "gzipBytes": 3554
-    },
-    {
-      "file": "assets/index-D4r5IuFC.css",
+      "file": "assets/index-BQNgW1vB.css",
       "category": "css",
       "sourceBytes": 96126,
-      "gzipBytes": 17902
+      "gzipBytes": 17903
+    },
+    {
+      "file": "assets/index-Bw3Y24XW.js",
+      "category": "appJs",
+      "sourceBytes": 7500,
+      "gzipBytes": 3556
     },
     {
       "file": "assets/keyart-DFQzyQdB.webp",
@@ -1735,10 +1735,10 @@
       "gzipBytes": 268909
     },
     {
-      "file": "assets/packs/ui/arsenal-tiles-DKKqJbvt.webp",
+      "file": "assets/packs/ui/arsenal-tiles-W3haweQ1.webp",
       "category": "image",
-      "sourceBytes": 2039246,
-      "gzipBytes": 2033652
+      "sourceBytes": 2038992,
+      "gzipBytes": 2033901
     },
     {
       "file": "assets/packs/ui/character-portraits-ecH57XVd.webp",
@@ -1753,10 +1753,10 @@
       "gzipBytes": 282532
     },
     {
-      "file": "assets/skill-tiles-j80riEru.webp",
+      "file": "assets/skill-tiles-CQw_C3hN.webp",
       "category": "image",
-      "sourceBytes": 848016,
-      "gzipBytes": 845370
+      "sourceBytes": 874312,
+      "gzipBytes": 871684
     },
     {
       "file": "assets/terrain-icons-HSHY1IJq.webp",
