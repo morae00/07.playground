@@ -10,7 +10,7 @@
 | 사양 | `art/atlas-spec.mjs` | 어떤 그림을 어느 팩에 굽는지, 앵커, 크기 맞춤(`fit`), 키트 색 → 구현 토큰 대응표 |
 | 굽기 | `npm run build:atlas` | Chromium에서 @2x(월드 1단위 = 2px)로 렌더 → 투명 여백 트림 → 페이지(최대 2048²) 배치 |
 | 산출물 | `public/assets/atlas/common-*.png`, `public/assets/packs/<팩>/atlas-*.png`(챕터 팩 `chapter-NN` 5개, `skills`, `hazards`, `arsenal-fx`, 캐릭터 팩 `hero-<id>` 7개), `public/assets/atlas/manifest.json`, `src/game/render/assets/atlasManifest.generated.ts` | 공통 팩은 초기 에셋, `assets/packs/` 아래 팩은 설치 에셋 예산(TEC-05)으로 잡힌다. 게임은 매니페스트를 실행 중에 JSON으로 읽으므로 앱 번들에 들어가지 않는다. 생성 TS는 테스트용이다. |
-| 런타임 | `src/game/render/assets/spriteAtlas.ts`, `slots.ts` | `<img>` + `createImageBitmap`으로 페이지를 미리 디코딩한다(Electron `app://`에서도 동작). 팩이 없거나 실패하면 고대비 실루엣으로 그린다(TEC-10). 공통 팩과 `skills`·`hazards`·`arsenal-fx` 팩은 계속 상주하고, 챕터 팩과 캐릭터 팩은 화면에 보이는 것만 상주한다(ART-07, CON-10). 메뉴에서 챕터를 고르면 그 팩을 미리 읽고, 다른 챕터 팩은 놓는다(`SpriteAtlas.release`). |
+| 런타임 | `src/game/render/assets/spriteAtlas.ts`, `slots.ts` | `fetch` + `createImageBitmap`으로 페이지 파일을 비트맵에 바로 디코딩한다(Electron `app://`에서도 동작). `<img>`를 먼저 디코딩하면 Chromium 이미지 캐시에 같은 페이지가 한 벌 더 남았다(TEC-04). 팩이 없거나 실패하면 고대비 실루엣으로 그린다(TEC-10). 공통 팩과 `skills`·`hazards`·`arsenal-fx` 팩은 계속 상주하고, 챕터 팩과 캐릭터 팩은 화면에 보이는 것만 상주한다(ART-07, CON-10). 메뉴에서 챕터를 고르면 그 팩을 미리 읽고, 다른 챕터 팩은 놓는다(`SpriteAtlas.release`). |
 
 같은 킷·사양·Chromium이면 굽기 결과는 바이트 단위로 같다. 굽기 결과는 커밋한다.
 

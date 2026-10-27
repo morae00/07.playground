@@ -1,5 +1,5 @@
 // Sprite atlas runtime (TEC-03): loads baked atlas pages per pack and hands out frames by key.
-// Pages load through <img> + createImageBitmap (works under Electron's app:// as well as http). The manifest is
+// Pages load through fetch + createImageBitmap (works under Electron's app:// as well as http). The manifest is
 // data, fetched as JSON beside the pages, so it adds nothing to the app JS budget (TEC-05); the generated
 // TypeScript copy serves tests and types.
 
@@ -146,15 +146,21 @@ export type SpriteAtlasOptions = {
 };
 
 async function defaultLoadImage(url: string): Promise<SpriteImage> {
-  const image = new Image();
-  image.decoding = 'async';
-  image.src = url;
   try {
+    // TEC-04: the file decodes straight into the bitmap. An <img>.decode() first left a second decoded copy of every
+    // page in the compositor's image cache, which release could not free.
+    if (typeof createImageBitmap === 'function') {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`status ${response.status}`);
+      return await createImageBitmap(await response.blob());
+    }
+    const image = new Image();
+    image.src = url;
     await image.decode();
+    return image;
   } catch (error) {
     throw new Error(`atlas page ${url} did not load (${error instanceof Error ? error.message : String(error)})`);
   }
-  return typeof createImageBitmap === 'function' ? createImageBitmap(image) : image;
 }
 
 /** Written by scripts/build-atlas.mjs next to the pages. */
