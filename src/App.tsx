@@ -513,6 +513,8 @@ function App({ errorLog = standaloneErrorLog }: { errorLog?: ErrorLog }) {
         setPhase('draft');
       },
       onRoundClear: (result: Settlement) => {
+        // AUD-02 (P2-1): a stage clear had no sound of its own.
+        appMixer.play('run.clear');
         runPausedRef.current = false;
         setRunPaused(false);
         // Practice pace never unlocks stages (CON-02).

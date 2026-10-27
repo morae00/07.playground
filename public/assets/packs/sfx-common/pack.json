@@ -407,6 +407,30 @@
   "warn.boss": [
    "warn.boss-0.wav",
    "warn.boss-1.wav"
+  ],
+  "land.lob": [
+   "land.lob-0.wav",
+   "land.lob-1.wav",
+   "land.lob-2.wav"
+  ],
+  "gimmick.echo": [
+   "gimmick.echo-0.wav",
+   "gimmick.echo-1.wav",
+   "gimmick.echo-2.wav"
+  ],
+  "hazard.trap": [
+   "hazard.trap-0.wav",
+   "hazard.trap-1.wav"
+  ],
+  "boss.phase": [
+   "boss.phase-0.wav"
+  ],
+  "cast.eclipseStep": [
+   "cast.eclipseStep-0.wav",
+   "cast.eclipseStep-1.wav"
+  ],
+  "run.clear": [
+   "run.clear-0.wav"
   ]
  }
 }

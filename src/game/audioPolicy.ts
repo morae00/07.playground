@@ -64,10 +64,10 @@ export const SAMPLE_PEAK = 0.9;
  * because the beds' own loudness spans 6.7 LU (docs/decisions/AUD-05-loudness.md).
  */
 export const AMBIENCE_LEVELS: Readonly<Partial<Record<CueId, number>>> = Object.freeze({
-  'ambience.ch1': 0.122,
+  'ambience.ch1': 0.107,
   'ambience.ch2': 0.07,
   'ambience.ch3': 0.081,
-  'ambience.ch4': 0.152,
+  'ambience.ch4': 0.096,
   'ambience.ch5': 0.074,
 });
 /** How far a sound at the screen edge sits toward that speaker (1 would be hard left or right). */

@@ -7,7 +7,7 @@ import type { GameEvent } from '../engine/events.ts';
 import { ObjectPool, compactWhere, recycleWhere } from '../objectPool.ts';
 import { createSeededRandom } from '../p0Core.ts';
 import { CHAPTER_VISUALS } from '../render/visualRegistry.ts';
-import { isArsenal, lookOf } from '../arsenal.ts';
+import { ARSENAL, isArsenal, lookOf } from '../arsenal.ts';
 
 /** SYS-14 (K7): how long a bomber's blast drawing shows (API-bombers §3). */
 const BLAST_SECONDS = 0.15;
@@ -114,8 +114,11 @@ const CAST_EFFECTS: Partial<Record<SkillId, { shake?: number; sound?: CueId; bur
   mirrorClone: { sound: 'cast.mirrorClone' },
   voidMine: { sound: 'cast.voidMine' },
   blackSun: { shake: 5, sound: 'cast.blackSun', burst: true },
-  eclipseStep: { shake: 12, burst: true },
+  eclipseStep: { shake: 12, sound: 'cast.eclipseStep', burst: true },
 };
+
+/** AUD-02 (P2-1): the boss's growl rises a whole tone with each later enrage step (art/audio/p2-cues.md). */
+export const ENRAGE_STEP_PITCHES = [1, 1.12, 1.26, 1.41] as const;
 
 export class Presentation {
   readonly particles: Particle[] = [];
@@ -324,16 +327,22 @@ export class Presentation {
       case 'area/blast':
         this.addSkillMark('ring', event.source, event.x, event.y, event.radius, false, event.x, event.y, -1, event.echo, event.dir);
         if (lookOf(event.source) === 'boneMortar') this.addShake(8);
+        // AUD-02 (P2-1): a gimmick's echo taps softly; a lob or a mortar shell lands with a thud. They were silent.
+        if (event.echo) this.play('gimmick.echo', event.x);
+        else if (event.source === 'boneMortar' || (isArsenal(event.source) && ARSENAL[event.source].kind === 'lob')) this.play('land.lob', event.x);
         return;
       case 'vortex/collapse':
         // Only awakened vortices collapse; the ring flag marks the black sun's (FX-06: both collapse at R + 30).
         this.addSkillMark('ring', event.ring ? 'blackSun' : 'voidMine', event.x, event.y, event.radius + 30, false, event.x, event.y);
         this.addShake(12);
+        this.play(event.ring ? 'cast.blackSun' : 'cast.voidMine', event.x, 0.85);
         return;
       case 'shock/burst':
         this.shocks.push({ id: event.id, x: event.x, y: event.y, radius: event.radius, life: SHOCK_SECONDS, maxLife: SHOCK_SECONDS });
         this.burst(event.x, event.y, Math.round(28 * effects), '#050505', 280);
         this.addShake(11);
+        // The shock zone's damage moment; the warning sound already came with its telegraph (AUD-02, P2-1).
+        this.play('bomber.blast', event.x, 1.2);
         return;
       case 'enemy/armed': {
         // AUD-02: the sizzle runs on its own; the first tick sounds now and the rest on simulation time (step).
@@ -367,6 +376,9 @@ export class Presentation {
       case 'trap/sprung':
         this.burst(event.x, event.y, 12, '#111111', 120);
         return;
+      case 'player/bound':
+        this.play('hazard.trap', event.x);
+        return;
       case 'shot/blocked':
         this.burst(event.x, event.y, 4, '#111111', 90);
         return;
@@ -397,6 +409,7 @@ export class Presentation {
       case 'boss/phase':
         this.burst(event.x, event.y, 18 + event.phase * 6, CHAPTER_VISUALS[event.chapter].accent, 240);
         this.addShake(8 + event.phase * 2);
+        this.play('boss.phase', event.x);
         return;
       case 'boss/ringFired':
         this.addShake(4);
@@ -411,6 +424,9 @@ export class Presentation {
         this.addShake(22);
         this.burst(event.x, event.y, 60, '#000000', 320);
         this.play('boss.enraged', event.x);
+        return;
+      case 'boss/enrageStep':
+        this.play('boss.enraged', event.x, ENRAGE_STEP_PITCHES[Math.min(ENRAGE_STEP_PITCHES.length, event.step) - 1]);
         return;
       case 'telegraph/ring':
         // Warnings are never dropped by the ring cap.

@@ -2614,6 +2614,7 @@ export class GameEngine {
       }
       enemy.hitFlash = 0.4;
     }
+    if (this.enrageStep > 1) this.soundEvent({ type: 'boss/enrageStep', x: this.player.x, y: this.player.y, step: this.enrageStep });
   }
 
   /** D-02: one overtime step: every boss deals ENRAGE_OVERTIME.damage times the damage and moves faster. */
@@ -2690,6 +2691,7 @@ export class GameEngine {
         hazard.maxLife = Math.min(hazard.maxLife, 3.2);
         this.player.root = Math.max(this.player.root, 0.65);
         this.emit({ type: 'trap/sprung', x: hazard.x, y: hazard.y });
+        this.soundEvent({ type: 'player/bound', x: this.player.x, y: this.player.y });
       }
       if (hazard.kind === 'root') {
         if (!this.rules.fairTerrain) {
@@ -6722,6 +6724,11 @@ export class GameEngine {
    * streams stay 0.1.0's (the ranged aim is one of its paths).
    */
   protected windup(event: Extract<GameEvent, { type: 'enemy/windup' | 'boss/windup' }>) {
+    if (this.rules.isolatedCosmeticIds) this.emit(event);
+  }
+
+  /** AUD-02 (P2-1): an event only a sound needs, on the remaster rules only, as the windups are. */
+  protected soundEvent(event: Extract<GameEvent, { type: 'player/bound' | 'boss/enrageStep' }>) {
     if (this.rules.isolatedCosmeticIds) this.emit(event);
   }
 

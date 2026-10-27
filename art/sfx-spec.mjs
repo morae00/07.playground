@@ -1,4 +1,4 @@
-// SFX spec (AUD-02 v0): every cue in src/game/audioPolicy.ts as a small synthesis recipe. scripts/build-sfx.mjs
+// SFX spec (AUD-02 v0): every cue in src/content/data/soundCues.ts as a small synthesis recipe. scripts/build-sfx.mjs
 // renders the recipes offline in Chromium (OfflineAudioContext) into WAV variants of one sound pack. This is
 // placeholder sound design in the paper-and-ink tone of the style bible until the SFX library order arrives:
 // recorded files replace these by name, with no code change. Each variant nudges pitch and length a little, so
@@ -82,7 +82,10 @@ export const RECIPES = Object.freeze({
   'boss.dash': { variants: 2, layers: [{ noise: 'white', filter: 'bandpass', hz: 500, to: 2400, q: 1.2, attack: 0.04, decay: 0.3, gain: 0.8 }, thud(90, 60, 0.25, 0.6)] },
   'boss.rings': { variants: 2, layers: [{ tone: 'sine', hz: 392, attack: 0.002, decay: 0.9, gain: 0.6 }, { tone: 'sine', hz: 988, attack: 0.002, decay: 0.5, gain: 0.3 }, { tone: 'triangle', hz: 196, attack: 0.004, decay: 0.7, gain: 0.3 }] },
   // Played as the shock zone's telegraph starts: the rift officer's sabre strikes (the amber family), then the crack spreads.
-  'boss.shock': { variants: 2, layers: [...clack(0, 3000), { noise: 'crackle', filter: 'highpass', hz: 1800, attack: 0.001, decay: 0.25, gain: 1, at: 0.04 }, thud(70, 40, 0.3, 0.8, 0.04), { tone: 'triangle', hz: 140, to: 80, attack: 0.002, decay: 0.2, gain: 0.4, at: 0.04 }] },
+  // P2: the crack is held for 50 ms and carried mostly by steady noise (a falling 1.9-0.9 kHz band) over a smaller
+  // crackle, so the random grains no longer set one variant's peak and loudness apart from the other's; the clack is
+  // raised so the warning stays on top.
+  'boss.shock': { variants: 2, layers: [...clack(0, 3000, 1.3), { noise: 'white', filter: 'bandpass', hz: 1900, to: 900, q: 0.9, attack: 0.004, hold: 0.05, decay: 0.22, gain: 0.7, at: 0.04 }, { noise: 'crackle', filter: 'highpass', hz: 1800, attack: 0.001, hold: 0.05, decay: 0.25, gain: 0.45, at: 0.04 }, thud(70, 40, 0.3, 0.8, 0.04), { tone: 'triangle', hz: 140, to: 80, attack: 0.002, decay: 0.2, gain: 0.4, at: 0.04 }] },
   'boss.clones': { variants: 2, layers: [{ tone: 'triangle', hz: 1175, to: 1760, attack: 0.02, decay: 0.3, gain: 0.45 }, { tone: 'triangle', hz: 1568, to: 2349, attack: 0.02, decay: 0.3, gain: 0.35, at: 0.06 }, { noise: 'white', filter: 'highpass', hz: 6000, attack: 0.05, decay: 0.2, gain: 0.2 }] },
   'boss.flame': { variants: 2, layers: [{ noise: 'white', filter: 'lowpass', hz: 600, to: 1800, attack: 0.04, decay: 0.3, gain: 0.9 }, { noise: 'crackle', filter: 'bandpass', hz: 1000, q: 0.8, attack: 0.02, decay: 0.28, gain: 0.4 }] },
   'boss.tide': { variants: 2, layers: [{ noise: 'white', filter: 'lowpass', hz: 300, to: 1500, attack: 0.25, decay: 0.6, gain: 0.8 }, { tone: 'sine', hz: 110, to: 82, attack: 0.2, decay: 0.6, gain: 0.4 }] },
@@ -94,10 +97,14 @@ export const RECIPES = Object.freeze({
   'boss.eclipse': { variants: 2, layers: [...clack(0, 2900, 0.8), ...clack(0.1, 2900, 0.8), ...clack(0.2, 3200), { tone: 'sine', hz: 110, to: 82, attack: 0.1, decay: 0.7, gain: 0.7, at: 0.1 }, { tone: 'triangle', hz: 220, to: 165, attack: 0.1, decay: 0.6, gain: 0.3, at: 0.1 }, { noise: 'white', filter: 'lowpass', hz: 500, to: 120, attack: 0.1, decay: 0.7, gain: 0.4, at: 0.1 }] },
   'boss.null': { variants: 2, layers: [{ noise: 'white', filter: 'bandpass', hz: 3000, to: 300, q: 1.5, attack: 0.35, decay: 0.3, gain: 0.7 }, { tone: 'sine', hz: 880, to: 110, attack: 0.3, decay: 0.3, gain: 0.3 }] },
   // Ambience beds (AUD-04): one quiet loop per chapter, under the effects.
-  'ambience.ch1': { variants: 1, loop: 8, layers: [{ noise: 'white', filter: 'lowpass', hz: 420, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.8, lfo: { hz: 0.25, depth: 0.5 } }, ...[1.3, 3.9, 6.2].map((at) => ({ noise: 'crackle', filter: 'highpass', hz: 2600, attack: 0.02, decay: 0.25, gain: 0.25, at }))] },
+  // Ch1 (P2-4): the poster flutter is a 1.2 kHz band, out of the warning lane.
+  'ambience.ch1': { variants: 1, loop: 8, layers: [{ noise: 'white', filter: 'lowpass', hz: 420, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.8, lfo: { hz: 0.25, depth: 0.5 } }, ...[1.3, 3.9, 6.2].map((at) => ({ noise: 'crackle', filter: 'bandpass', hz: 1200, q: 0.8, attack: 0.02, decay: 0.25, gain: 0.35, at }))] },
   'ambience.ch2': { variants: 1, loop: 8, layers: [{ tone: 'sine', hz: 73, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.5, lfo: { hz: 0.125, depth: 0.4 } }, { tone: 'triangle', hz: 146, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.15, lfo: { hz: 0.25, depth: 0.6 } }, { tone: 'sine', hz: 523, attack: 0.002, decay: 2.4, gain: 0.2, at: 2 }] },
   'ambience.ch3': { variants: 1, loop: 8, layers: [{ noise: 'white', filter: 'bandpass', hz: 700, q: 0.6, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.8, lfo: { hz: 0.375, depth: 0.45 } }, { noise: 'white', filter: 'lowpass', hz: 220, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.6, lfo: { hz: 0.125, depth: 0.3 } }] },
-  'ambience.ch4': { variants: 1, loop: 8, layers: [{ noise: 'white', filter: 'lowpass', hz: 300, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.35 }, ...Array.from({ length: 16 }, (_, index) => ({ tone: 'square', hz: index % 2 ? 1320 : 1760, attack: 0.001, decay: 0.012, gain: 0.18, at: index * 0.5 }))] },
+  // Ch4 (P2-3): stopped clocks. Wind, a worn gear grinding in a narrow 420 Hz band, and ticks that try to run down and
+  // stop (three slowing, two, one weak), at D6 and G5 with a brass click: not the boss clock's A6/E6 squares, and no
+  // steady beat for the music to fight. A ratchet slips once at 3.3 s.
+  'ambience.ch4': { variants: 1, loop: 8, layers: [{ noise: 'white', filter: 'lowpass', hz: 300, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.35 }, { noise: 'white', filter: 'bandpass', hz: 420, q: 5, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.2, lfo: { hz: 0.25, depth: 0.8 } }, ...[[1.2, 1175, 0.16], [1.47, 784, 0.14], [1.78, 1175, 0.12], [4.6, 1175, 0.14], [4.95, 784, 0.11], [6.7, 784, 0.08]].flatMap(([at, hz, gain]) => [{ tone: 'triangle', hz, attack: 0.001, decay: 0.02, gain, at }, { noise: 'white', filter: 'bandpass', hz: 1400, q: 3, attack: 0.001, decay: 0.01, gain: gain * 1.5, at }]), ...[[3.3, 0.2], [3.32, 0.17], [3.341, 0.14], [3.363, 0.11]].map(([at, gain]) => ({ noise: 'white', filter: 'bandpass', hz: 1000, q: 4, attack: 0.001, decay: 0.008, gain, at }))] },
   'ambience.ch5': { variants: 1, loop: 8, layers: [{ tone: 'sine', hz: 55, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.5, lfo: { hz: 0.125, depth: 0.5 } }, { noise: 'white', filter: 'highpass', hz: 4800, attack: 0.001, hold: 9.2, decay: 0.1, gain: 0.08, lfo: { hz: 0.5, depth: 0.8 } }] },
   // SYS-14 bombers (appended, so every earlier file stays byte-identical). S4: the fuse burns, a paper sizzle that
   // brightens and swells toward the blast; it carries no timing (P0-3): the five amber clacks are bomber.tick, played
@@ -146,7 +153,7 @@ export const RECIPES = Object.freeze({
   'cast.frostRing': { variants: 2, layers: [{ noise: 'crackle', filter: 'highpass', hz: 5000, attack: 0.005, decay: 0.2, gain: 0.6 }, { tone: 'sine', hz: 4600, to: 4300, attack: 0.002, decay: 0.1, gain: 0.25, at: 0.02 }, { tone: 'sine', hz: 1050, to: 1400, attack: 0.01, decay: 0.12, gain: 0.3 }, { noise: 'white', filter: 'lowpass', hz: 250, attack: 0.01, decay: 0.15, gain: 0.4 }] },
   'cast.thunderclap': { variants: 1, layers: [{ noise: 'white', filter: 'bandpass', hz: 1100, q: 1.4, attack: 0.001, decay: 0.03, gain: 1 }, { noise: 'white', filter: 'bandpass', hz: 1900, q: 1.6, attack: 0.001, decay: 0.025, gain: 0.5 }, { noise: 'white', filter: 'lowpass', hz: 600, to: 150, attack: 0.02, decay: 0.25, gain: 0.6, at: 0.03 }, { noise: 'crackle', filter: 'highpass', hz: 4200, attack: 0.001, decay: 0.08, gain: 0.3, at: 0.02 }] },
   'cast.silenceBell': { variants: 1, layers: [{ noise: 'white', filter: 'bandpass', hz: 4800, q: 2, attack: 0.001, decay: 0.01, gain: 0.4 }, { tone: 'sine', hz: 880, attack: 0.002, decay: 0.4, gain: 0.5 }, { tone: 'sine', hz: 1760, attack: 0.002, decay: 0.25, gain: 0.25 }, { tone: 'sine', hz: 2210, attack: 0.002, decay: 0.15, gain: 0.15 }, { noise: 'white', filter: 'bandpass', hz: 4800, q: 2, attack: 0.001, decay: 0.01, gain: 0.25, at: 0.13 }, { tone: 'sine', hz: 880, attack: 0.002, decay: 0.25, gain: 0.25, at: 0.13 }, { noise: 'white', filter: 'highpass', hz: 5000, attack: 0.1, decay: 0.2, gain: 0.12, at: 0.05 }] },
-  // lob: the throw (the landing has no cue yet)
+  // lob: the throw (the landing is land.lob, at the end of the list)
   'cast.inkPots': { variants: 2, layers: [{ noise: 'white', filter: 'bandpass', hz: 700, to: 1400, q: 1, attack: 0.02, decay: 0.1, gain: 0.7 }, { tone: 'triangle', hz: 1720, attack: 0.001, decay: 0.05, gain: 0.35 }, { tone: 'sine', hz: 4300, attack: 0.001, decay: 0.03, gain: 0.15 }] },
   'cast.clusterPots': { variants: 2, layers: [{ noise: 'white', filter: 'bandpass', hz: 900, to: 1500, q: 1, attack: 0.015, decay: 0.09, gain: 0.5 }, ...[[0, 2050], [0.03, 1820], [0.055, 2150]].map(([at, hz]) => ({ tone: 'triangle', hz, attack: 0.001, decay: 0.025, gain: 0.35, at }))] },
   'cast.tarJar': { variants: 1, layers: [{ tone: 'sine', hz: 220, to: 140, attack: 0.004, decay: 0.08, gain: 0.5 }, { tone: 'sine', hz: 330, to: 180, attack: 0.004, decay: 0.07, gain: 0.4, at: 0.045 }, { noise: 'white', filter: 'lowpass', hz: 500, attack: 0.01, decay: 0.12, gain: 0.5 }] },
@@ -169,4 +176,24 @@ export const RECIPES = Object.freeze({
   // Warnings (V3): the amber family, played as a threat is telegraphed. Appended at the end, so earlier files stay byte-identical.
   'warn.ranged': { variants: 2, layers: [...clack(0, 3000, 0.9), ...clack(0.07, 3300, 0.7)] },
   'warn.boss': { variants: 2, layers: [...clack(0, 2700), ...clack(0.09, 2900), ...clack(0.18, 3200), { noise: 'white', filter: 'lowpass', hz: 400, to: 900, attack: 0.15, decay: 0.15, gain: 0.5 }] },
+  // P2-1: the moments that had no sound (appended, so every earlier file stays byte-identical). Nothing here uses the
+  // warning lane or the clack; none of them is a warning.
+  // A lob or bone-mortar shell lands: a dull thump in earth and torn paper, noise-led with a gritty tail and no falling
+  // tone, so it is not the player's hurt (whose 420-190 Hz groan is the tell) nor the mortar's throw.
+  'land.lob': { variants: 3, layers: [thud(115, 60, 0.11, 1), { noise: 'white', filter: 'bandpass', hz: 1300, q: 1.6, attack: 0.001, decay: 0.025, gain: 0.5 }, { noise: 'white', filter: 'lowpass', hz: 1200, to: 250, attack: 0.003, decay: 0.12, gain: 0.6 }, { noise: 'crackle', filter: 'bandpass', hz: 650, q: 0.7, attack: 0.004, hold: 0.03, decay: 0.12, gain: 0.5, at: 0.015 }] },
+  // An awakening's echo: a small, soft paper pat and its fainter repeat, slow attacks and nothing above 1 kHz, so a
+  // stream of them stays under every weapon's own cast.
+  'gimmick.echo': { variants: 3, layers: [{ noise: 'white', filter: 'bandpass', hz: 800, to: 550, q: 1.4, attack: 0.006, decay: 0.06, gain: 0.8 }, { tone: 'sine', hz: 392, to: 330, attack: 0.004, decay: 0.05, gain: 0.15 }, { noise: 'white', filter: 'bandpass', hz: 700, to: 500, q: 1.4, attack: 0.006, decay: 0.05, gain: 0.4, at: 0.055 }] },
+  // An iron trap shuts on the player: the spring lets go (철), the jaws meet with weight and a short D5/D6 ring (컥),
+  // then the chain rattles; all under 1.8 kHz.
+  'hazard.trap': { variants: 2, layers: [{ noise: 'white', filter: 'bandpass', hz: 1700, q: 3, attack: 0.001, decay: 0.015, gain: 0.8 }, { noise: 'white', filter: 'bandpass', hz: 1100, q: 2.5, attack: 0.001, decay: 0.02, gain: 0.9, at: 0.035 }, thud(150, 95, 0.08, 0.7, 0.035), { tone: 'triangle', hz: 587, attack: 0.001, decay: 0.12, gain: 0.3, at: 0.035 }, { tone: 'sine', hz: 1175, attack: 0.001, decay: 0.08, gain: 0.15, at: 0.035 }, { noise: 'crackle', filter: 'bandpass', hz: 1400, q: 2, attack: 0.002, decay: 0.1, gain: 0.35, at: 0.07 }] },
+  // A boss's phase break: the sheet turns over (a paper whoosh), the ink mass splits, and the floor rises a fifth
+  // (D3 to A3): the board changes. Low and wide, unlike the clacks; about as long as the 0.45 s stagger.
+  'boss.phase': { variants: 1, layers: [{ noise: 'white', filter: 'bandpass', hz: 600, to: 1500, q: 0.9, attack: 0.06, decay: 0.1, gain: 0.6 }, { noise: 'crackle', filter: 'bandpass', hz: 1100, q: 0.9, attack: 0.002, decay: 0.25, gain: 0.5, at: 0.06 }, thud(110, 55, 0.35, 1, 0.08), { tone: 'triangle', hz: 220, to: 110, attack: 0.002, decay: 0.3, gain: 0.35, at: 0.08 }, { tone: 'sine', hz: 147, to: 220, attack: 0.02, decay: 0.35, gain: 0.3, at: 0.1 }] },
+  // The eclipse step: 結 sinks into the shadow (a low swallow) and cuts one full turn (a whoosh that spins at 16 Hz),
+  // then cold air.
+  'cast.eclipseStep': { variants: 2, layers: [thud(90, 50, 0.12, 0.7), { noise: 'white', filter: 'lowpass', hz: 300, to: 1800, attack: 0.03, decay: 0.18, gain: 0.8 }, { noise: 'white', filter: 'bandpass', hz: 1400, to: 700, q: 1.2, attack: 0.02, decay: 0.16, gain: 0.6, at: 0.04, lfo: { hz: 16, depth: 0.7 } }, { noise: 'white', filter: 'highpass', hz: 5200, attack: 0.002, decay: 0.1, gain: 0.4, at: 0.1 }] },
+  // A stage is cleared: the seal is stamped (낙관), then an open fifth A4-E5 and a soft A5. Short, resolved, and keyless
+  // enough to sit with or without a chapter track.
+  'run.clear': { variants: 1, layers: [thud(180, 120, 0.08, 0.9), tap(900, 0.04, 0.8), { tone: 'triangle', hz: 440, attack: 0.004, decay: 0.6, gain: 0.35, at: 0.12 }, { tone: 'triangle', hz: 659, attack: 0.004, decay: 0.6, gain: 0.3, at: 0.12 }, { tone: 'sine', hz: 880, attack: 0.004, decay: 0.5, gain: 0.15, at: 0.2 }] },
 });

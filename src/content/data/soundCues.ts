@@ -153,6 +153,15 @@ const SOUND_CUES = {
   // dash. The warnings that sound keep their voices; no spacing group, so no other cue can hold one back.
   'warn.ranged': cue('sfx', 5, 2, 0.12, [3000, 0.03, 'triangle', 2.1], { keep: 'oldest' }),
   'warn.boss': cue('sfx', 5, 1, 0.25, [2900, 0.05, 'triangle', 1.65], { keep: 'oldest' }),
+  // AUD-02 (P2-1): events that were silent (art/audio/p2-cues.md). A lob or mortar shell landing, a gimmick's echo
+  // (soft, under the casts), a trap catching the player (at the hurt's level), a boss's phase turn, the eclipse step's
+  // cast, and a stage clear (no pitch jitter, so its fifth stays in tune with the music). No spacing groups.
+  'land.lob': cue('sfx', 1, 2, 0.05, [115, 0.08, 'sine', 1.2]),
+  'gimmick.echo': cue('sfx', 1, 2, 0.08, [600, 0.05, 'triangle', 0.7]),
+  'hazard.trap': cue('sfx', 4, 1, 0.1, [1100, 0.03, 'triangle', 1.5]),
+  'boss.phase': cue('sfx', 5, 1, 0, [110, 0.2, 'sawtooth', 1.3]),
+  'cast.eclipseStep': cue('sfx', 1, 1, 0.05, [90, 0.06, 'sine', 1.1]),
+  'run.clear': cue('sfx', 5, 1, 0, [440, 0.3, 'triangle', 1.25], { jitter: 0 }),
 } satisfies Record<string, CueSpec>;
 
 export default deepFreeze(SOUND_CUES);

@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 154027,
-      "kib": 150.42,
+      "bytes": 154239,
+      "kib": 150.62,
       "baselineBytes": 128399,
-      "growthRatio": 0.19959657006674503,
+      "growthRatio": 0.20124767326848336,
       "warningBytes": 147658,
       "failBytes": 160498,
       "status": "warning",
@@ -35,16 +35,16 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 2213245,
-      "kib": 2161.37,
+      "bytes": 2214188,
+      "kib": 2162.29,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 34504415,
-      "kib": 33695.72,
+      "bytes": 34642235,
+      "kib": 33830.31,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-DgwpSL6i.js",
+      "file": "assets/App-CXzYWeRY.js",
       "category": "appJs",
-      "sourceBytes": 471752,
-      "gzipBytes": 150475
+      "sourceBytes": 472430,
+      "gzipBytes": 150686
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -117,8 +117,8 @@
     {
       "file": "assets/content/tables.json",
       "category": "data",
-      "sourceBytes": 59609,
-      "gzipBytes": 11168
+      "sourceBytes": 60552,
+      "gzipBytes": 11265
     },
     {
       "file": "assets/enemy-icons-BEkQ6ASU.webp",
@@ -133,16 +133,16 @@
       "gzipBytes": 113032
     },
     {
+      "file": "assets/index-BjbZZGuc.js",
+      "category": "appJs",
+      "sourceBytes": 7500,
+      "gzipBytes": 3553
+    },
+    {
       "file": "assets/index-D4r5IuFC.css",
       "category": "css",
       "sourceBytes": 96126,
       "gzipBytes": 17902
-    },
-    {
-      "file": "assets/index-DND0WlU2.js",
-      "category": "appJs",
-      "sourceBytes": 7500,
-      "gzipBytes": 3552
     },
     {
       "file": "assets/keyart-DFQzyQdB.webp",
@@ -322,7 +322,7 @@
       "file": "assets/packs/sfx-common/ambience.ch1-0.wav",
       "category": "audio",
       "sourceBytes": 352844,
-      "gzipBytes": 337701
+      "gzipBytes": 339981
     },
     {
       "file": "assets/packs/sfx-common/ambience.ch2-0.wav",
@@ -340,7 +340,7 @@
       "file": "assets/packs/sfx-common/ambience.ch4-0.wav",
       "category": "audio",
       "sourceBytes": 352844,
-      "gzipBytes": 334453
+      "gzipBytes": 343100
     },
     {
       "file": "assets/packs/sfx-common/ambience.ch5-0.wav",
@@ -493,6 +493,12 @@
       "gzipBytes": 23835
     },
     {
+      "file": "assets/packs/sfx-common/boss.phase-0.wav",
+      "category": "audio",
+      "sourceBytes": 21654,
+      "gzipBytes": 14205
+    },
+    {
       "file": "assets/packs/sfx-common/boss.rings-0.wav",
       "category": "audio",
       "sourceBytes": 37766,
@@ -520,13 +526,13 @@
       "file": "assets/packs/sfx-common/boss.shock-0.wav",
       "category": "audio",
       "sourceBytes": 16172,
-      "gzipBytes": 9199
+      "gzipBytes": 10836
     },
     {
       "file": "assets/packs/sfx-common/boss.shock-1.wav",
       "category": "audio",
       "sourceBytes": 16860,
-      "gzipBytes": 9886
+      "gzipBytes": 11669
     },
     {
       "file": "assets/packs/sfx-common/boss.tide-0.wav",
@@ -659,6 +665,18 @@
       "category": "audio",
       "sourceBytes": 11952,
       "gzipBytes": 8612
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.eclipseStep-0.wav",
+      "category": "audio",
+      "sourceBytes": 10490,
+      "gzipBytes": 7826
+    },
+    {
+      "file": "assets/packs/sfx-common/cast.eclipseStep-1.wav",
+      "category": "audio",
+      "sourceBytes": 10882,
+      "gzipBytes": 8110
     },
     {
       "file": "assets/packs/sfx-common/cast.fallingScroll-0.wav",
@@ -1309,6 +1327,36 @@
       "gzipBytes": 5192
     },
     {
+      "file": "assets/packs/sfx-common/gimmick.echo-0.wav",
+      "category": "audio",
+      "sourceBytes": 5852,
+      "gzipBytes": 4005
+    },
+    {
+      "file": "assets/packs/sfx-common/gimmick.echo-1.wav",
+      "category": "audio",
+      "sourceBytes": 5916,
+      "gzipBytes": 4003
+    },
+    {
+      "file": "assets/packs/sfx-common/gimmick.echo-2.wav",
+      "category": "audio",
+      "sourceBytes": 5854,
+      "gzipBytes": 3893
+    },
+    {
+      "file": "assets/packs/sfx-common/hazard.trap-0.wav",
+      "category": "audio",
+      "sourceBytes": 8432,
+      "gzipBytes": 4840
+    },
+    {
+      "file": "assets/packs/sfx-common/hazard.trap-1.wav",
+      "category": "audio",
+      "sourceBytes": 8650,
+      "gzipBytes": 4994
+    },
+    {
       "file": "assets/packs/sfx-common/hit.critical-0.wav",
       "category": "audio",
       "sourceBytes": 8588,
@@ -1381,10 +1429,28 @@
       "gzipBytes": 968
     },
     {
+      "file": "assets/packs/sfx-common/land.lob-0.wav",
+      "category": "audio",
+      "sourceBytes": 8732,
+      "gzipBytes": 5129
+    },
+    {
+      "file": "assets/packs/sfx-common/land.lob-1.wav",
+      "category": "audio",
+      "sourceBytes": 8710,
+      "gzipBytes": 5237
+    },
+    {
+      "file": "assets/packs/sfx-common/land.lob-2.wav",
+      "category": "audio",
+      "sourceBytes": 8422,
+      "gzipBytes": 5017
+    },
+    {
       "file": "assets/packs/sfx-common/pack.json",
       "category": "data",
-      "sourceBytes": 7933,
-      "gzipBytes": 1506
+      "sourceBytes": 8360,
+      "gzipBytes": 1592
     },
     {
       "file": "assets/packs/sfx-common/pickup.coin-0.wav",
@@ -1451,6 +1517,12 @@
       "category": "audio",
       "sourceBytes": 5384,
       "gzipBytes": 3132
+    },
+    {
+      "file": "assets/packs/sfx-common/run.clear-0.wav",
+      "category": "audio",
+      "sourceBytes": 32856,
+      "gzipBytes": 22016
     },
     {
       "file": "assets/packs/sfx-common/run.levelUp-0.wav",

@@ -45,6 +45,8 @@ export type GameEvent =
   /** S4: a planted fuse bomber was felled before it went off; its fuse sound stops. */
   | { type: 'enemy/defused'; id: number }
   | { type: 'trap/sprung'; x: number; y: number }
+  /** AUD-02 (P2-1): a trap caught the player (remaster rules only, for its sound). */
+  | { type: 'player/bound'; x: number; y: number }
   | { type: 'shot/blocked'; x: number; y: number }
   /**
    * AUD-06 (looks and sound only): a ranged enemy began to aim, or a charger began its windup; lead is the seconds of
@@ -71,6 +73,8 @@ export type GameEvent =
   | { type: 'boss/attack'; x: number; y: number; pattern: BossPattern }
   | { type: 'boss/cloned'; x: number; y: number }
   | { type: 'boss/enraged'; x: number; y: number }
+  /** AUD-02 (P2-1): a later enrage step, 2 to 4 (remaster rules only, for its sound; the music stings only the first). */
+  | { type: 'boss/enrageStep'; x: number; y: number; step: number }
   /** A boss phase move shows a circle or ring warning around the boss before it starts. */
   | { type: 'telegraph/ring'; x: number; y: number; radius: number; life: number };
 

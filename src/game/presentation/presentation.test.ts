@@ -137,6 +137,7 @@ test('events play their cues on the mixer, panned by screen position', () => {
     { cue: 'enemy.kill', pan: -1 },
     { cue: 'boss.kill', pan: 0 },
     { cue: 'cast.railSpear', pan: 0 },
+    { cue: 'cast.eclipseStep', pan: 0 },
     { cue: 'cast.inkPots', pan: 0 },
     { cue: 'draft.coins', pan: 0 },
     { cue: 'run.upgrade', pan: 0 },
@@ -144,8 +145,34 @@ test('events play their cues on the mixer, panned by screen position', () => {
   presentation.dispose();
   presentation.handle({ type: 'enemy/killed', x: 0, y: 0, isBoss: false, radius: 14, tier: 'small', attackStyle: 'contact', dx: 1, dy: 0 });
   presentation.unlockSound();
-  assert.equal(played.length, 7, 'a disposed presentation sends nothing');
+  assert.equal(played.length, 8, 'a disposed presentation sends nothing');
   assert.equal(unlocks(), 1);
+});
+
+test('AUD-02 (P2-1): landings, echoes, the trap, phase turns, later enrage steps, collapses, and shocks sound', () => {
+  const { presentation } = setup();
+  const { sound, played } = recorder();
+  presentation.setSound(sound);
+  presentation.handle({ type: 'area/blast', x: 500, y: 0, radius: 80, source: 'inkPots' });
+  presentation.handle({ type: 'area/blast', x: 500, y: 0, radius: 80, source: 'boneMortar' });
+  presentation.handle({ type: 'area/blast', x: 500, y: 0, radius: 80, source: 'inkPots', echo: true });
+  presentation.handle({ type: 'area/blast', x: 500, y: 0, radius: 80, source: 'blackSun' });
+  presentation.handle({ type: 'trap/sprung', x: 500, y: 0 });
+  presentation.handle({ type: 'player/bound', x: 500, y: 0 });
+  presentation.handle({ type: 'boss/phase', x: 500, y: 0, phase: 2, chapter: 1 });
+  presentation.handle({ type: 'boss/enrageStep', x: 500, y: 0, step: 3 });
+  presentation.handle({ type: 'vortex/collapse', x: 500, y: 0, radius: 100, ring: true });
+  presentation.handle({ type: 'shock/burst', x: 500, y: 0, id: 1, radius: 90 });
+  assert.deepEqual(played, [
+    { cue: 'land.lob', pan: 0 },
+    { cue: 'land.lob', pan: 0 },
+    { cue: 'gimmick.echo', pan: 0 },
+    { cue: 'hazard.trap', pan: 0 },
+    { cue: 'boss.phase', pan: 0 },
+    { cue: 'boss.enraged', pan: 0, pitch: 1.26 },
+    { cue: 'cast.blackSun', pan: 0, pitch: 0.85 },
+    { cue: 'bomber.blast', pan: 0, pitch: 1.2 },
+  ], 'a blast that is no lob stays silent, and so does a trap an enemy sprang');
 });
 
 test('a felled bomber stops its fuse; one that went off is forgotten (S4)', () => {
