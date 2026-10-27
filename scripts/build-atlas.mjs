@@ -1,7 +1,7 @@
 // Atlas baker (TEC-03): renders the concept-kit drawings listed in art/atlas-spec.mjs in Chromium at @2x,
 // trims them, packs them into pages, and writes the PNG pages plus a generated TypeScript manifest.
 // Usage: node scripts/build-atlas.mjs   (output is deterministic for the same kit, spec, and Chromium)
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
 import { ARSENAL_FX_VECTORS, ATLAS_SCALE, BAKE_MARGIN, COLOR_MAP, ENEMY_ROLES, FRAME_PADDING, GROUND_TILE, HAZARD_RENDER, HAZARD_VECTORS, HERO_STATES, PACKS, PAGE_SIZE, SKILL_VFX_RENDER, SKILL_VFX_TIMING } from '../art/atlas-spec.mjs';
@@ -30,6 +30,8 @@ try {
       writeFileSync(file, Buffer.from(png.split(',')[1], 'base64'));
       pagePaths.push(relative);
     }
+    // Pages a pack no longer fills go, so the build does not ship them.
+    for (let index = pages.length; existsSync(path.join(root, 'public', `${pack.page}-${index}.png`)); index += 1) rmSync(path.join(root, 'public', `${pack.page}-${index}.png`));
     const table = {};
     pages.forEach((sheet, pageIndex) => {
       for (const item of sheet.placed) table[item.key] = [pageIndex, item.x, item.y, item.w, item.h, item.ax, item.ay];
@@ -74,35 +76,68 @@ export const ATLAS_MANIFEST = ${body} as const;
   await browser.close();
 }
 
-/** Deterministic shelf packing: tallest first, then by key. */
+/**
+ * Deterministic MaxRects packing (TEC-04): tallest first, then by key, each frame in the free space where it sits
+ * highest, then leftmost. A page takes frames until no more fit; the last page takes the width that gives it the
+ * smallest area.
+ */
 function packFrames(frames) {
-  const order = [...frames].sort((a, b) => b.h - a.h || a.key.localeCompare(b.key));
-  const pages = [];
-  let current = null;
-  for (const frame of order) {
+  const order = [...frames].sort((a, b) => b.h - a.h || a.key.localeCompare(b.key)).map((frame) => {
     const w = frame.w + FRAME_PADDING * 2;
     const h = frame.h + FRAME_PADDING * 2;
     if (w > PAGE_SIZE || h > PAGE_SIZE) throw new Error(`${frame.key} is larger than a page`);
-    if (!current || (current.cursorX + w > PAGE_SIZE && current.cursorY + current.shelf + h > PAGE_SIZE)) {
-      current = { placed: [], cursorX: 0, cursorY: 0, shelf: 0, width: 0, height: 0 };
-      pages.push(current);
+    return { frame, w, h };
+  });
+  const pages = [];
+  for (let remaining = order; remaining.length > 0;) {
+    let sheet = fillPage(remaining, PAGE_SIZE);
+    for (let width = PAGE_SIZE - 4; sheet.rest.length === 0 && width >= 4; width -= 4) {
+      const narrower = fillPage(remaining, width);
+      if (narrower.rest.length > 0) break;
+      if (narrower.width * narrower.height < sheet.width * sheet.height) sheet = narrower;
     }
-    if (current.cursorX + w > PAGE_SIZE) {
-      current.cursorX = 0;
-      current.cursorY += current.shelf;
-      current.shelf = 0;
-    }
-    current.placed.push({ ...frame, x: current.cursorX + FRAME_PADDING, y: current.cursorY + FRAME_PADDING });
-    current.cursorX += w;
-    current.shelf = Math.max(current.shelf, h);
-    current.width = Math.max(current.width, current.cursorX);
-    current.height = Math.max(current.height, current.cursorY + current.shelf);
-  }
-  for (const sheet of pages) {
-    sheet.width = Math.ceil(sheet.width / 4) * 4;
-    sheet.height = Math.ceil(sheet.height / 4) * 4;
+    pages.push(sheet);
+    remaining = sheet.rest;
   }
   return pages;
+}
+
+/** One page `width` wide and at most a page tall: the frames that fit, in order, and the rest. */
+function fillPage(items, width) {
+  let free = [{ x: 0, y: 0, w: width, h: PAGE_SIZE }];
+  const sheet = { placed: [], rest: [], width: 0, height: 0 };
+  for (const item of items) {
+    let spot = null;
+    for (const space of free) {
+      if (item.w > space.w || item.h > space.h) continue;
+      if (!spot || space.y < spot.y || (space.y === spot.y && space.x < spot.x)) spot = space;
+    }
+    if (!spot) {
+      sheet.rest.push(item);
+      continue;
+    }
+    const box = { x: spot.x, y: spot.y, w: item.w, h: item.h };
+    sheet.placed.push({ ...item.frame, x: box.x + FRAME_PADDING, y: box.y + FRAME_PADDING });
+    sheet.width = Math.max(sheet.width, box.x + box.w);
+    sheet.height = Math.max(sheet.height, box.y + box.h);
+    const split = [];
+    for (const space of free) {
+      if (box.x >= space.x + space.w || box.x + box.w <= space.x || box.y >= space.y + space.h || box.y + box.h <= space.y) {
+        split.push(space);
+        continue;
+      }
+      if (box.x > space.x) split.push({ x: space.x, y: space.y, w: box.x - space.x, h: space.h });
+      if (box.x + box.w < space.x + space.w) split.push({ x: box.x + box.w, y: space.y, w: space.x + space.w - box.x - box.w, h: space.h });
+      if (box.y > space.y) split.push({ x: space.x, y: space.y, w: space.w, h: box.y - space.y });
+      if (box.y + box.h < space.y + space.h) split.push({ x: space.x, y: box.y + box.h, w: space.w, h: space.y + space.h - box.y - box.h });
+    }
+    // Drop spaces inside another (the first of two equal ones stays).
+    free = split.filter((a, i) => !split.some((b, j) => j !== i && a.x >= b.x && a.y >= b.y && a.x + a.w <= b.x + b.w && a.y + a.h <= b.y + b.h
+      && (j < i || a.x !== b.x || a.y !== b.y || a.w !== b.w || a.h !== b.h)));
+  }
+  sheet.width = Math.ceil(sheet.width / 4) * 4;
+  sheet.height = Math.ceil(sheet.height / 4) * 4;
+  return sheet;
 }
 
 // ---- browser side ----

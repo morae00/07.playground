@@ -35,16 +35,16 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 2214188,
-      "kib": 2162.29,
+      "bytes": 2224936,
+      "kib": 2172.79,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 34642235,
-      "kib": 33830.31,
+      "bytes": 38241195,
+      "kib": 37344.92,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -63,14 +63,14 @@
     {
       "file": "assets/atlas/common-0.png",
       "category": "image",
-      "sourceBytes": 283931,
-      "gzipBytes": 280435
+      "sourceBytes": 294651,
+      "gzipBytes": 294522
     },
     {
       "file": "assets/atlas/manifest.json",
       "category": "data",
-      "sourceBytes": 305898,
-      "gzipBytes": 55155
+      "sourceBytes": 305926,
+      "gzipBytes": 56362
     },
     {
       "file": "assets/chapter-thumbs-D_lcRDUv.webp",
@@ -153,20 +153,20 @@
     {
       "file": "assets/packs/arsenal-fx/atlas-0.png",
       "category": "image",
-      "sourceBytes": 1046580,
-      "gzipBytes": 1038314
+      "sourceBytes": 1062130,
+      "gzipBytes": 1060201
     },
     {
       "file": "assets/packs/chapter-01/atlas-0.png",
       "category": "image",
-      "sourceBytes": 2341645,
-      "gzipBytes": 2330114
+      "sourceBytes": 2671184,
+      "gzipBytes": 2661191
     },
     {
       "file": "assets/packs/chapter-01/atlas-1.png",
       "category": "image",
-      "sourceBytes": 2094040,
-      "gzipBytes": 2082430
+      "sourceBytes": 2224003,
+      "gzipBytes": 2219230
     },
     {
       "file": "assets/packs/chapter-01/ground-0.webp",
@@ -177,20 +177,14 @@
     {
       "file": "assets/packs/chapter-02/atlas-0.png",
       "category": "image",
-      "sourceBytes": 1044446,
-      "gzipBytes": 1034970
+      "sourceBytes": 2160396,
+      "gzipBytes": 2145484
     },
     {
       "file": "assets/packs/chapter-02/atlas-1.png",
       "category": "image",
-      "sourceBytes": 1796193,
-      "gzipBytes": 1785293
-    },
-    {
-      "file": "assets/packs/chapter-02/atlas-2.png",
-      "category": "image",
-      "sourceBytes": 548920,
-      "gzipBytes": 546508
+      "sourceBytes": 1804793,
+      "gzipBytes": 1798539
     },
     {
       "file": "assets/packs/chapter-02/ground-0.webp",
@@ -201,20 +195,20 @@
     {
       "file": "assets/packs/chapter-03/atlas-0.png",
       "category": "image",
-      "sourceBytes": 1261568,
-      "gzipBytes": 1252008
+      "sourceBytes": 2262869,
+      "gzipBytes": 2251694
     },
     {
       "file": "assets/packs/chapter-03/atlas-1.png",
       "category": "image",
-      "sourceBytes": 1489505,
-      "gzipBytes": 1477488
+      "sourceBytes": 2092885,
+      "gzipBytes": 2084384
     },
     {
       "file": "assets/packs/chapter-03/atlas-2.png",
       "category": "image",
-      "sourceBytes": 1382330,
-      "gzipBytes": 1375047
+      "sourceBytes": 615179,
+      "gzipBytes": 613933
     },
     {
       "file": "assets/packs/chapter-03/ground-0.webp",
@@ -225,20 +219,20 @@
     {
       "file": "assets/packs/chapter-04/atlas-0.png",
       "category": "image",
-      "sourceBytes": 1215186,
-      "gzipBytes": 1208623
+      "sourceBytes": 2081325,
+      "gzipBytes": 2070806
     },
     {
       "file": "assets/packs/chapter-04/atlas-1.png",
       "category": "image",
-      "sourceBytes": 1579028,
-      "gzipBytes": 1567240
+      "sourceBytes": 2130816,
+      "gzipBytes": 2122873
     },
     {
       "file": "assets/packs/chapter-04/atlas-2.png",
       "category": "image",
-      "sourceBytes": 1340019,
-      "gzipBytes": 1333867
+      "sourceBytes": 617100,
+      "gzipBytes": 616150
     },
     {
       "file": "assets/packs/chapter-04/ground-0.webp",
@@ -249,20 +243,20 @@
     {
       "file": "assets/packs/chapter-05/atlas-0.png",
       "category": "image",
-      "sourceBytes": 1457566,
-      "gzipBytes": 1449750
+      "sourceBytes": 2255323,
+      "gzipBytes": 2238648
     },
     {
       "file": "assets/packs/chapter-05/atlas-1.png",
       "category": "image",
-      "sourceBytes": 1479485,
-      "gzipBytes": 1469659
+      "sourceBytes": 1938043,
+      "gzipBytes": 1929879
     },
     {
       "file": "assets/packs/chapter-05/atlas-2.png",
       "category": "image",
-      "sourceBytes": 1363502,
-      "gzipBytes": 1356763
+      "sourceBytes": 873934,
+      "gzipBytes": 872193
     },
     {
       "file": "assets/packs/chapter-05/ground-0.webp",
@@ -273,50 +267,50 @@
     {
       "file": "assets/packs/hazards/atlas-0.png",
       "category": "image",
-      "sourceBytes": 625330,
-      "gzipBytes": 621982
+      "sourceBytes": 639281,
+      "gzipBytes": 638472
     },
     {
       "file": "assets/packs/hero-dan/atlas-0.png",
       "category": "image",
-      "sourceBytes": 172170,
-      "gzipBytes": 168449
+      "sourceBytes": 204221,
+      "gzipBytes": 204259
     },
     {
       "file": "assets/packs/hero-dok/atlas-0.png",
       "category": "image",
-      "sourceBytes": 222467,
-      "gzipBytes": 218061
+      "sourceBytes": 251095,
+      "gzipBytes": 250967
     },
     {
       "file": "assets/packs/hero-hwi/atlas-0.png",
       "category": "image",
-      "sourceBytes": 199546,
-      "gzipBytes": 195879
+      "sourceBytes": 212528,
+      "gzipBytes": 212356
     },
     {
       "file": "assets/packs/hero-noeul/atlas-0.png",
       "category": "image",
-      "sourceBytes": 221748,
-      "gzipBytes": 217071
+      "sourceBytes": 212912,
+      "gzipBytes": 212848
     },
     {
       "file": "assets/packs/hero-ryeong/atlas-0.png",
       "category": "image",
-      "sourceBytes": 173598,
-      "gzipBytes": 169948
+      "sourceBytes": 205536,
+      "gzipBytes": 205215
     },
     {
       "file": "assets/packs/hero-seori/atlas-0.png",
       "category": "image",
-      "sourceBytes": 147152,
-      "gzipBytes": 146798
+      "sourceBytes": 157494,
+      "gzipBytes": 157357
     },
     {
       "file": "assets/packs/hero-wol/atlas-0.png",
       "category": "image",
-      "sourceBytes": 238705,
-      "gzipBytes": 235043
+      "sourceBytes": 231870,
+      "gzipBytes": 231662
     },
     {
       "file": "assets/packs/sfx-common/ambience.ch1-0.wav",
@@ -1611,8 +1605,8 @@
     {
       "file": "assets/packs/skills/atlas-0.png",
       "category": "image",
-      "sourceBytes": 1150364,
-      "gzipBytes": 1138323
+      "sourceBytes": 1274388,
+      "gzipBytes": 1270164
     },
     {
       "file": "assets/packs/story/ending-1.webp",
