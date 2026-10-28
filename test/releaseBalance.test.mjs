@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { SHARED_ENGINE_BUNDLE, resolveEngineBundle } from '../scripts/lib/engine-bundle.mjs';
+import { cappedMeta } from '../scripts/lib/headless-engine.mjs';
+import CATALOG from '../src/content/data/catalog.ts';
 import { BALANCE_PERSONAS, DEFAULT_FULL_SEEDS, EXTRA_PERSONAS, createFullBalanceReport, personasById, selectBalanceOffer } from '../scripts/lib/full-balance-runner.mjs';
 
 test('release balance matrix owns ten unique deterministic seeds', () => {
@@ -77,4 +79,10 @@ test('balance tools take either bundle variable and warn before running the shar
   assert.equal(resolveEngineBundle({}, warn), SHARED_ENGINE_BUNDLE);
   assert.equal(warnings.length, 1);
   assert.match(warnings[0], /WARNING.*SHARED bundle/s);
+});
+
+test('the capped account holds every permanent upgrade and every passive point (the maxed persona, infinite max)', () => {
+  const meta = cappedMeta();
+  assert.deepEqual(meta.upgrades, Object.fromEntries(Object.entries(CATALOG.metaUpgrades).map(([id, { max }]) => [id, max])));
+  assert.deepEqual(meta.passives, Object.fromEntries(Object.entries(CATALOG.metaPassives).map(([id, { max }]) => [id, max])));
 });

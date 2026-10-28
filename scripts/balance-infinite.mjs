@@ -2,9 +2,10 @@
 // Usage: npm run test:balance:infinite
 //   BALANCE_INFINITE_SEEDS   seeds, comma separated (six fixed seeds by default)
 //   BALANCE_INFINITE_MINUTES the longest run, in minutes of frames at 60 fps (30 by default)
-//   BALANCE_INFINITE_METAS   max (the max fixture), mid (half its upgrades and passives), or both (default)
+//   BALANCE_INFINITE_METAS   max (every upgrade and passive at its cap, the maxed persona's account), mid (half its
+//                            upgrades and passives), or both (default)
 //   BALANCE_RULE_PATCH       rule flags over the remaster rules, as JSON, e.g. {"infiniteRotation":false}
-import { createHeadlessCanvas, holdDirection, installHeadlessPlatform, maxMeta, standardOptions } from './lib/headless-engine.mjs';
+import { cappedMeta, createHeadlessCanvas, holdDirection, installHeadlessPlatform, standardOptions } from './lib/headless-engine.mjs';
 import { resolveEngineBundle } from './lib/engine-bundle.mjs';
 import { selectBalanceOffer } from './lib/full-balance-runner.mjs';
 
@@ -17,7 +18,7 @@ const patch = process.env.BALANCE_RULE_PATCH ? JSON.parse(process.env.BALANCE_RU
 const persona = { id: 'striker', skillPriority: ['blackSun', 'railSpear', 'boneMortar', 'chainSpark', 'needleStorm', 'fanKnives'], movePeriod: 150 };
 
 function metaFor(kind) {
-  const meta = maxMeta();
+  const meta = cappedMeta();
   if (kind === 'mid') {
     for (const id of Object.keys(meta.upgrades)) meta.upgrades[id] = Math.floor(meta.upgrades[id] / 2);
     for (const id of Object.keys(meta.passives)) meta.passives[id] = Math.floor(meta.passives[id] / 2);

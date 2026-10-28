@@ -107,6 +107,14 @@ export function maxMeta() {
   };
 }
 
+/**
+ * Every permanent upgrade and every point of the CON-07 passive tree (ten a branch) at its cap: the `maxed` persona's
+ * account and the infinite run's max build. maxMeta() above is the test fixture, which stops the passives at 5.
+ */
+export function cappedMeta() {
+  return { ...maxMeta(), passives: { rareLuck: 10, bossHunter: 10, coinMagnet: 10 } };
+}
+
 export function standardOptions() {
   return {
     healthBars: 'elite',

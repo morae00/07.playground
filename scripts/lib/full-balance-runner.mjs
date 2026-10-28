@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { createHeadlessCanvas, holdDirection, installHeadlessPlatform, standardOptions } from './headless-engine.mjs';
+import { cappedMeta, createHeadlessCanvas, holdDirection, installHeadlessPlatform, standardOptions } from './headless-engine.mjs';
 import { DEFAULT_SEEDS, DEFAULT_STAGE_ADDRESSES } from './balance-runner.mjs';
 
 export const DEFAULT_FULL_SEEDS = Object.freeze([
@@ -76,18 +76,8 @@ function progressionMeta(chapter, persona) {
 }
 
 function progressionBase(chapter, persona) {
-  if (persona.maxedMeta) {
-    return {
-      gold: 0,
-      xp: 0,
-      level: 1,
-      passivePoints: 0,
-      progress: { chapter: 5, stage: 10 },
-      upgrades: { attack: 30, defense: 25, maxHp: 30, moveSpeed: 20, crit: 20, regen: 20, magnet: 25 },
-      // Every point of the CON-07 passive tree (ten a branch).
-      passives: { rareLuck: 10, bossHunter: 10, coinMagnet: 10 },
-    };
-  }
+  // Every upgrade and every point of the CON-07 passive tree (ten a branch).
+  if (persona.maxedMeta) return cappedMeta();
   if (persona.freshMeta) {
     return {
       gold: 0,

@@ -144,6 +144,18 @@ The infinite run on 216de64 (`npm run test:balance:infinite`, six seeds, at most
 - A round boss is a fight now: with a maxed build the median kill takes about 20-45 s in each five minutes of the first 25 (2.8-3.7 s between minutes 5 and 20 before SYS-12; six seeds), so a run fells a quarter as many. Scores fall 29% (max) and 6% (mid).
 - The half-upgraded runs end between 10 and 25 minutes (10.4, 10.5, 10.8, 18.9, 22.3, 24.7); the maxed ones between 18 and 30 (one reaches the cap). In 25-minute runs of the same build that record the cause, bosses ended three of the maxed runs and a blast one, and the crowd ended most half-upgraded ones.
 
+Until the balance audit of 2026-10-23 the infinite run's `max` build was the test fixture `maxMeta()`, whose passives stop at 5 / 5 / 5, half the CON-07 tree. It is now `cappedMeta()` (`scripts/lib/headless-engine.mjs`), every upgrade and passive at its cap (10 / 10 / 10), the account the `maxed` persona plays; `mid` keeps half of it, so its passives rose from 2 to 5. Both on f57e3c0, the same six seeds:
+
+| | max, passives 5 | max, passives 10 | mid, passives 2 | mid, passives 5 |
+|---|---:|---:|---:|---:|
+| survival p50 (simulated s) | 1,618 | 1,584.5 | 1,124.5 | 1,108 |
+| runs that died before the cap | 5 of 6 | 6 of 6 | 6 of 6 | 6 of 6 |
+| round bosses defeated p50 | 47.5 | 53 | 23 | 31.5 |
+| score p50 | 4,224,160 | 4,763,868 | 1,905,832 | 2,283,860 |
+
+- The second passive nodes (crit damage, crit chance, coin gain) fell more round bosses, 12% more for max and 37% for mid, so scores rose 13% and 20%. Survival moved within the seeds' spread (max 1,312-1,763 s against 1,482-1,794 s).
+- The first column differs from 216de64's in the table above because of the changes to seeded outcomes since: SYS-16's awakening gimmicks, the lighter bonus heal, and the elite fixes (BUG-18, BUG-25). The infinite run has no formal gate.
+
 CON-02 Ch1 tuning: by the novice proxy, 1-1 already clears within the R1 target band (40-70%), and 3-minute survival (70%) is near its 80% target. A longer opening ramp does not help (1-1, novice, 20 seeds): a 90 s ramp kept 50% clear but dropped 3-minute survival to 50%, and 120 s gave 45% and 65%. Fewer early enemies mean less XP and fewer drafts (median 14 drafts at 45 s, 5 at 90 s), so the player is weaker when the pressure arrives. The 45 s ramp stays. The R1 playtest (6 or more new players) decides the final Ch1 numbers.
 
 CON-02 boss warm-up (user decision 2026-10-23; `bossWarmup` rule, numbers in `src/content/data/bossWarmup.ts`). The R5 baseline put the Ch1 final boss stage at 0 of 30 team runs. Boss stages had no opening ramp: the boss and a boss stage's crowd came at once, while every stage starts at level 1, and a 45 s ramp with the boss already there cleared 2 of 30. Now a Ch1 boss stage sends the crowd alone first, at a spawn rate climbing from 0.4 to 1.0 times the boss stage's. The boss enters after 60 s in 1-5 and 75 s in 1-10, and the enrage timer starts then. Measured on cb7a54e with the rule, the ten baseline seeds, team personas and `novice`:
