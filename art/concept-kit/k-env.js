@@ -1028,7 +1028,9 @@ window.PN = window.PN || {};
     const r1 = yb - Hb * 0.82, r2 = yb - Hb * 0.28, gx0 = -16, gx1 = 18;
     s += iron(x0 + 4, r1, x1 - 4, r1, 2.8);
     for (let x = x0 + 9, i = 0; x <= x1 - 7; x += pitch, i++) {
-      const gate = x > gx0 && x < gx1, top = yb - Hb - (gate ? 2 : 0) - (i % 2 ? 0 : 1.5);
+      // K5def (brief env-tops §2.2 Q6, deferred): the gate leaf stays raised, but no finial tip rises above z 28 (tip = top − 3,
+      // bars stand on the plane line y 0) — the even gate-leaf bars used to reach 29.5. Only those bars change.
+      const gate = x > gx0 && x < gx1, top = Math.max(yb - Hb - (gate ? 2 : 0) - (i % 2 ? 0 : 1.5), 3 - 28);
       s += iron(x, yb + 1, x + (rnd() - 0.5) * 0.8, top + 2.5, 3);
       s += `<path d="M ${f(x - 2.8)},${f(top + 3)} L ${f(x)},${f(top - 3)} L ${f(x + 2.8)},${f(top + 3)} L ${f(x)},${f(top + 1.6)} Z" fill="${K.ink9}"/>`;
     }
@@ -1153,8 +1155,15 @@ window.PN = window.PN || {};
     const it = [];
     const SH = lg ? [[-104, -62, 0.55, 0.4, 0], [-30, 54, 0.5, -0.5, 1], [108, -12, 0.45, 1.1, 0], [-82, 16, 0.4, 2.2, 1], [-117, -22, 0.42, -0.9, 1]] : [[-70, -36, 0.5, 0.4, 0], [-22, 44, 0.45, -0.6, 1]]; // K5 F1-R1: large adds a shard + wax cluster at the left-middle
     SH.forEach(([x, y, k, r, fl]) => it.push([y - 1e3, glassShard(X, x, y - Z, k, r, fl)])); // flat (H 3): always under the standing props
-    const WX = lg ? [[-96, 40, 2], [92, -46, 2], [-8, 12, 1], [-104, -20, 3]] : [[-62, 30, 2], [-8, 8, 2], [60, -40, 2]]; // [x, y, drops]: 8 / 6 drops (brief 4–8)
-    let wax = ''; WX.forEach(([x, y, nd]) => { for (let k = 0; k < nd; k++) { const r = 1 + rnd() * 2; wax += `<ellipse cx="${f(x + (rnd() - 0.5) * 18)}" cy="${f(y - Z + (rnd() - 0.5) * 10)}" rx="${f(r)}" ry="${f(r * 0.8)}" fill="${mix(c.base, c.deep, 0.38)}" stroke="${mix(c.base, c.deep, 0.5)}" stroke-width="0.8"/>`; } });
+    // [x, y, drops, lump]: 8 / 6 drops (brief 4–8). K5def (K5 review 2 P4): the large's left-middle cluster (K5 review R1) is ONE
+    // wax lump 7.6 × 4.8 instead of 3 drops of r 1–3 that vanished at 1x. It still draws the same rnd() values as the 3 drops
+    // (3 per drop), so the bell, pew and candlestick angles after it are unchanged.
+    const WX = lg ? [[-96, 40, 2], [92, -46, 2], [-8, 12, 1], [-104, -20, 3, true]] : [[-62, 30, 2], [-8, 8, 2], [60, -40, 2]];
+    const LUMP = [[-3.7, -0.4], [-2.6, -2.1], [-0.6, -2.5], [1.2, -1.7], [3, -2.2], [3.9, -0.3], [2.8, 1.7], [0.6, 2.3], [-1.8, 2], [-3.4, 1.2]];
+    let wax = ''; WX.forEach(([x, y, nd, lump]) => {
+      if (lump) { for (let k = 0; k < nd * 3; k++) rnd(); wax += `<path d="${E.crPath(LUMP.map(([u, v]) => [x + u, y - Z + v]), true, 4)}" fill="${mix(c.base, c.deep, 0.38)}" stroke="${mix(c.base, c.deep, 0.5)}" stroke-width="0.8"/>`; return; }
+      for (let k = 0; k < nd; k++) { const r = 1 + rnd() * 2; wax += `<ellipse cx="${f(x + (rnd() - 0.5) * 18)}" cy="${f(y - Z + (rnd() - 0.5) * 10)}" rx="${f(r)}" ry="${f(r * 0.8)}" fill="${mix(c.base, c.deep, 0.38)}" stroke="${mix(c.base, c.deep, 0.5)}" stroke-width="0.8"/>`; }
+    });
     it.push([-1e3, wax]);
     const A = lg ? [20, -20, 95, 53] : [14, -14, 68, 36];
     it.push([A[1] + A[3] / 2, altarStone(X, A[0], A[1], A[2], A[3], Z)]);
@@ -1639,8 +1648,9 @@ window.PN = window.PN || {};
   const P = E.P;
   // K5 (rev 3) erased inscription: a recessed blank plate on a slab plane mapped by q(u, v) (u along the length, v toward the back = up).
   // Fill mix(ob, ink3, .62); inner shade ink7 1.5 on the top + left; lip mix(ob, ink3, .75) 0.8 on the bottom + right. No strokes inside.
-  // K5 F1: optional `cut` (fraction of the plate width) chamfers the back-right corner at 45° on screen — a broken tablet, not a window.
-  // cut = 0 (default, base stele) keeps the plain four-corner plate byte-identical.
+  // K5 F1: optional `cut` (fraction of the plate width) breaks off the back-right corner — a broken tablet, not a window
+  // (K5def P2: a 3-segment jagged break, no longer a clean 45° chamfer). cut = 0 (default, base stele) keeps the plain
+  // four-corner plate byte-identical.
   E.erasedPlate = function (q, u0, v0, u1, v1, ob, cut = 0) {
     if (!cut) {
       const pl = [q(u0, v0), q(u1, v0), q(u1, v1), q(u0, v1)], sh = E.shrink(pl, 0.9), lp = E.shrink(pl, 0.55);
@@ -1650,9 +1660,15 @@ window.PN = window.PN || {};
     }
     const a = q(u0, v0), b = q(u1, v0), cc = q(u1, v1), dd = q(u0, v1), W = Math.hypot(b[0] - a[0], b[1] - a[1]), cl = cut * W;
     const tw = (p) => { const L = Math.hypot(p[0] - cc[0], p[1] - cc[1]) || 1; return [cc[0] + (p[0] - cc[0]) * cl / L, cc[1] + (p[1] - cc[1]) * cl / L]; }; // point on the corner's edge toward p, cl from the corner
-    const pl = [a, b, tw(b), tw(dd), dd], sh = E.shrink(pl, 0.9), lp = E.shrink(pl, 0.55);
+    // K5def (K5 review 2 P2): the corner is BROKEN, not chamfered — a clean 45° cut read at 2–3× as the folded corner of a
+    // document icon. Three uneven segments from the right edge (e0) to the back edge (e1), in corner units (x along the back
+    // edge, y down the right edge, cl = 1): (0,1) → (.40,.78) → (.66,.30) → (1,0), i.e. 29° / 62° / 41° off the back edge. No
+    // segment runs along or across a plate edge (that read as a stepped tab), and the break bites in, then out.
+    const e0 = tw(b), e1 = tw(dd), R = [(e0[0] - cc[0]) / cl, (e0[1] - cc[1]) / cl], T = [(e1[0] - cc[0]) / cl, (e1[1] - cc[1]) / cl];
+    const jt = (x, y) => [cc[0] + (x * T[0] + y * R[0]) * cl, cc[1] + (x * T[1] + y * R[1]) * cl];
+    const pl = [a, b, e0, jt(0.40, 0.78), jt(0.66, 0.30), e1, dd], sh = E.shrink(pl, 0.9), lp = E.shrink(pl, 0.55);
     return `<path d="${P(pl)}" fill="${mix(ob, K.ink3, 0.62)}"/>` +
-      `<path d="${P([sh[0], sh[4], sh[3], sh[2]], false)}" fill="none" stroke="${K.ink7}" stroke-width="1.5"/>` +
+      `<path d="${P([sh[0], sh[6], sh[5], sh[4], sh[3], sh[2]], false)}" fill="none" stroke="${K.ink7}" stroke-width="1.5"/>` +
       `<path d="${P([lp[0], lp[1], lp[2]], false)}" fill="none" stroke="${mix(ob, K.ink3, 0.75)}" stroke-width="0.8"/>`;
   };
   // 쓰러진 흑요 비석 — slab lying at a slant: left end sunk into the floor, right end propped on a rock (front face 20 px).
@@ -1701,7 +1717,9 @@ window.PN = window.PN || {};
   // non-parallel splits that bend once (K5 F1 — straight back-to-front splits read as cabinet doors). The splits show the blank paper
   // (void.paper) underneath — one wall shaded with ink wedges, the other a single line. Each piece tilts 1–2 differently. Tops: conchoidal
   // facets fanning out from a fracture origin on the split (tones .28/.38/.62/.75 over .55, never tall slivers), ONE moon glint, a WIDE
-  // erased plate with a chamfered corner on the widest piece, chips only near the split ends. Front: tone .35, black wedge on the right 20 %.
+  // erased plate with a broken corner on the widest piece, chips only near the split ends. Front: tone .35, black wedge on the right 20 %.
+  // K5def (K5 review 2 P1–P3): large split A grows a short spur at its bend; the plate's corner is a 3-segment break; facets centred
+  // under the plate are skipped.
   function steleBig(X, o, tier) {
     const c = X.c, rnd = X.rnd, w = o.w, d = o.d, ob = c.spot, lg = tier === 'large', hR = 18, hL = 8, t = Math.min(9, hR * 0.45), tn = (k) => mix(ob, K.ink3, k);
     const x0 = -w / 2, x1 = w / 2, yG = d / 2, yK = -d / 2;
@@ -1719,7 +1737,9 @@ window.PN = window.PN || {};
       const vs = []; for (let k = 0; k <= n; k++) vs.push(1 - k / n);
       if (!vs.some((v) => Math.abs(v - vb) < 0.03)) vs.push(vb);
       vs.sort((a, b) => b - a);
-      return vs.map((v, k) => [cu(v) + (k && k < vs.length - 1 && Math.abs(v - vb) > 0.01 ? (rnd() - 0.5) * 0.024 : 0), v, (3 + Math.sin(Math.PI * v) + rnd() * 0.5) / w]);
+      const C = vs.map((v, k) => [cu(v) + (k && k < vs.length - 1 && Math.abs(v - vb) > 0.01 ? (rnd() - 0.5) * 0.024 : 0), v, (3 + Math.sin(Math.PI * v) + rnd() * 0.5) / w]);
+      C.vb = vb; // K5def P1: the bend, where large split A grows its spur
+      return C;
     });
     const along = (C, v, j) => { for (let k = 0; k < C.length - 1; k++) { const a = C[k], b = C[k + 1]; if (v <= a[1] && v >= b[1]) return a[j] + (b[j] - a[j]) * (a[1] - v) / ((a[1] - b[1]) || 1); } return C[C.length - 1][j]; }; // centre u (j 0) / half-gap (j 2) at v
     const DZ = lg ? [0, 1.6, 0.8] : [0, 1.5], Qd = (i) => (u, v) => { const p = q(u, v); return [p[0], p[1] - DZ[i] * v]; }; // a piece tilts by lifting its back edge
@@ -1753,9 +1773,19 @@ window.PN = window.PN || {};
       // all change from one facet to the next. (F1 (c): the small concentric arcs are gone — they read as '(((' .)
       const C0 = p.crackR || p.crackL, sgn = p.crackR ? -1 : 1, vo = 0.38 + rnd() * 0.2, O = g(along(C0, vo, 0) + sgn * along(C0, vo, 2), vo);
       const Wp = (p.hi(vo) - p.lo(vo)) * w, th0 = p.crackR ? Math.PI : 0, AS = [0.85, 1.2, 0.7, 1.35, 1.0];
+      // F1 (d) plate box, fixed before the facets: K5def (K5 review 2 P3) a facet whose centre falls inside it is skipped — under the
+      // plate it only showed as a bright sliver past the plate's edge. The skip happens after the facet's rnd() draw, so X.rnd keeps its order.
+      let pb = null;
+      if (p === big) {
+        const L0 = Math.max(p.lo(0.42), p.lo(0.64)), H0 = Math.min(p.hi(0.42), p.hi(0.64)), Wa = H0 - L0, u0 = L0 + 0.2 * Wa, u1 = H0 - 0.2 * Wa;
+        const dv = Math.max(0.16, Math.min(0.26, (u1 - u0) * w / 1.8 / d)), v0 = 0.53 - dv / 2;
+        pb = { u0, v0, u1, v1: v0 + dv, Q: [g(u0, v0), g(u1, v0), g(u1, v0 + dv), g(u0, v0 + dv)] };
+      }
+      const inPb = ([x, y]) => { let o = false; for (let a = 0, b = 3; a < 4; b = a++) { const A = pb.Q[a], B = pb.Q[b]; if ((A[1] > y) !== (B[1] > y) && x < A[0] + (B[0] - A[0]) * (y - A[1]) / (B[1] - A[1])) o = !o; } return o; };
       for (let k = 0, n = 3 + Math.floor(rnd() * 3); k < n; k++) {
         const th = th0 + (-1.3 + 2.6 * (k + 0.5) / n) + (rnd() - 0.5) * 0.25, ux = Math.cos(th), uy = Math.sin(th), nx = -uy, ny = ux;
         const dk = (0.3 + 0.4 * ((k * 0.618 + 0.3) % 1)) * Math.min(Wp, d) * 0.9, C = [O[0] + ux * dk, O[1] + uy * dk];
+        if (pb && inPb(C)) continue;
         const tw = Wp * (0.28 + 0.17 * ((k * 0.618 + 0.2) % 1)), thh = d * (0.1 + 0.08 * ((k * 0.382 + 0.5) % 1)); // target box: (.28–.45)·piece width × (.10–.18)·depth
         let F = [[-0.55, 0], [0.1, 0.5 * AS[k]], [0.95, 0], [0.1, -0.5 * AS[k]]].map(([r, tt]) => [C[0] + ux * r + nx * tt, C[1] + uy * r + ny * tt]); // unit scallop: tip, side, bulge control, side
         const bx = [F[0][0], F[1][0], F[3][0], 0.25 * F[1][0] + 0.5 * F[2][0] + 0.25 * F[3][0]], by = [F[0][1], F[1][1], F[3][1], 0.25 * F[1][1] + 0.5 * F[2][1] + 0.25 * F[3][1]];
@@ -1765,10 +1795,18 @@ window.PN = window.PN || {};
         ti += `<path d="M ${f(F[0][0])},${f(F[0][1])} L ${f(F[1][0])},${f(F[1][1])} Q ${f(F[2][0])},${f(F[2][1])} ${f(F[3][0])},${f(F[3][1])} Z" fill="${tn([0.28, 0.38, 0.62, 0.75][(k + p.i) % 4])}"/>`;
       }
       if (p.i === 0) { const ue = Math.min(0.62, Math.min(p.hi(0.84), p.hi(0.99)) - 0.05); ti += `<path d="${E.P([g(0.03, 0.98), g(ue, 0.99), g(ue * 0.49, 0.86), g(0.06, 0.84)])}" fill="${K.ink3}"/><path d="${E.P([g(0.05, 0.97), g(ue * 0.57, 0.985), g(ue * 0.17, 0.9)])}" fill="${K.p300}"/>`; } // the ONE moon glint
-      if (p === big) { // F1 (d): a WIDE erased plate — 60 % of the piece's narrowest width in v .42–.64 (≥ 4 off the splits), screen w:h ≈ 1.8, one corner chamfered 12 %
-        const L0 = Math.max(p.lo(0.42), p.lo(0.64)), H0 = Math.min(p.hi(0.42), p.hi(0.64)), Wa = H0 - L0, u0 = L0 + 0.2 * Wa, u1 = H0 - 0.2 * Wa;
-        const dv = Math.max(0.16, Math.min(0.26, (u1 - u0) * w / 1.8 / d)), v0 = 0.53 - dv / 2;
-        ti += E.erasedPlate(g, u0, v0, u1, v0 + dv, ob, 0.12);
+      if (lg && p.i === 0) { // K5def (K5 review 2 P1): a short spur off split A's bend into the sunk-end piece, so the two large splits are
+        // no longer the same '<' twice at 1×. Angular like the splits (3 segments, 0.13·w from the split's centre line), down-left toward
+        // the sunk end; ink 4.4 tapering to a point, with a paper core (2.4 → 0) over its first 55 % that continues the split's paper — so at
+        // 1× split A reads as a forked crack and B as a plain bend. Drawn inside the piece (clipped), no rnd(), no ctx counter.
+        const C = p.crackR, kI = C.reduce((bi, nd, i) => (Math.abs(nd[1] - C.vb) < Math.abs(C[bi][1] - C.vb) ? i : bi), 0), Ls = 0.13 * w, a1 = Math.PI - 0.58 - (C.vb - 0.56) * 1.5;
+        let pt = g(C[kI][0], C[kI][1]); const sp = [pt];
+        [[a1, 0.38], [a1 - 0.38, 0.34], [a1 + 0.12, 0.28]].forEach(([a, l]) => { pt = [pt[0] + Math.cos(a) * l * Ls, pt[1] + Math.sin(a) * l * Ls]; sp.push(pt); });
+        const S = []; sp.slice(1).forEach((b, j) => { const a = sp[j]; for (let m = 0; m < 6; m++) S.push([a[0] + (b[0] - a[0]) * m / 6, a[1] + (b[1] - a[1]) * m / 6]); }); S.push(pt);
+        ti += E.ribbon(S, 4.4, { color: K.ink9, taper: 'start', wobble: 0.1, min: 0.1, seed: 5101 }) + E.ribbon(S.slice(0, 11), 2.4, { color: K.voidp, taper: 'start', wobble: 0, min: 0.05, seed: 5102 });
+      }
+      if (pb) { // F1 (d): a WIDE erased plate — 60 % of the piece's narrowest width in v .42–.64 (≥ 4 off the splits), screen w:h ≈ 1.8, one corner broken 12 %
+        ti += E.erasedPlate(g, pb.u0, pb.v0, pb.u1, pb.v1, ob, 0.12);
       }
       s += X.face(p.top, tn(0.55), ti, 0) + X.rim(p.front[0][0] + 1, p.front[0][1], p.front[1][0] - 1, p.front[1][1], 2.2);
       if (p.crackR) { const C = p.crackR; [0.22, 0.5, 0.78].forEach((t2) => { const k = Math.min(C.length - 2, Math.floor(t2 * (C.length - 1))), a = g(C[k][0] - C[k][2], C[k][1]), b = g(C[k + 1][0] - C[k + 1][2], C[k + 1][1]); s += `<path d="${E.P([a, b, [(a[0] + b[0]) / 2 + 2.6, (a[1] + b[1]) / 2 + 1]])}" fill="${K.ink9}"/>`; }); } // shade wedges on the split's dark wall

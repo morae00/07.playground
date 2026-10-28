@@ -43,8 +43,8 @@
       "passed": true
     },
     "installAssets": {
-      "bytes": 38259194,
-      "kib": 37362.49,
+      "bytes": 38257790,
+      "kib": 37361.12,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -177,14 +177,14 @@
     {
       "file": "assets/packs/chapter-02/atlas-0.png",
       "category": "image",
-      "sourceBytes": 2160480,
-      "gzipBytes": 2145197
+      "sourceBytes": 2160249,
+      "gzipBytes": 2145187
     },
     {
       "file": "assets/packs/chapter-02/atlas-1.png",
       "category": "image",
-      "sourceBytes": 1804803,
-      "gzipBytes": 1798920
+      "sourceBytes": 1804329,
+      "gzipBytes": 1798499
     },
     {
       "file": "assets/packs/chapter-02/ground-0.webp",
@@ -243,14 +243,14 @@
     {
       "file": "assets/packs/chapter-05/atlas-0.png",
       "category": "image",
-      "sourceBytes": 2255323,
-      "gzipBytes": 2238648
+      "sourceBytes": 2255690,
+      "gzipBytes": 2239955
     },
     {
       "file": "assets/packs/chapter-05/atlas-1.png",
       "category": "image",
-      "sourceBytes": 1938043,
-      "gzipBytes": 1929879
+      "sourceBytes": 1936977,
+      "gzipBytes": 1928748
     },
     {
       "file": "assets/packs/chapter-05/atlas-2.png",
