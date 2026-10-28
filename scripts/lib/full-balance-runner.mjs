@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { cappedMeta, createHeadlessCanvas, holdDirection, installHeadlessPlatform, standardOptions } from './headless-engine.mjs';
 import { DEFAULT_SEEDS, DEFAULT_STAGE_ADDRESSES } from './balance-runner.mjs';
+import ARSENAL_TABLE from '../../src/content/data/arsenal.ts';
 
 export const DEFAULT_FULL_SEEDS = Object.freeze([
   ...DEFAULT_SEEDS,
@@ -12,6 +13,13 @@ export const DEFAULT_FULL_SEEDS = Object.freeze([
   999_983,
   2_147_483_647,
 ]);
+
+const RARITY_RANK = Object.freeze({ mythic: 0, legendary: 1, epic: 2, rare: 3, common: 4 });
+/** SYS-15: the arsenal's 44 weapons, rarest first, then in the table's order. */
+export const ARSENAL_PRIORITY = Object.freeze(Object.entries(ARSENAL_TABLE.weapons)
+  .map(([id, weapon], index) => ({ id, rank: RARITY_RANK[weapon.rarity], index }))
+  .sort((left, right) => left.rank - right.rank || left.index - right.index)
+  .map(({ id }) => id));
 
 export const BALANCE_PERSONAS = Object.freeze([
   Object.freeze({ id: 'striker', skillPriority: ['blackSun', 'railSpear', 'boneMortar', 'chainSpark', 'needleStorm', 'fanKnives'], movePeriod: 150 }),
@@ -26,12 +34,32 @@ export const BALANCE_PERSONAS = Object.freeze([
  * BALANCE_FULL_PERSONAS (ids, comma separated).
  * - novice: a new player (fresh meta) who steers away from nearby threats instead of walking a fixed square. It is
  *   the proxy for the R1 new-player gate (CON-02); human playtests still decide it.
+ * - armory: a player who trusts the cards' rarity (SYS-15). The team personas take arsenal weapons only when nothing
+ *   they want is offered, so the arsenal barely reaches their numbers; this one takes any arsenal weapon first, rarest
+ *   first, then the striker's picks. It walks the striker's square on the team's chapter growth, without a bias.
  */
 export const EXTRA_PERSONAS = Object.freeze([
   Object.freeze({ id: 'novice', skillPriority: ['needleStorm', 'chainSpark', 'fanKnives', 'ironFrame', 'recoveryThread'], movePeriod: 180, freshMeta: true, evasive: true }),
   // SYS-07: every permanent upgrade and passive at its cap, the striker's picks; the R3 gate for a threatening Ch5.
   Object.freeze({ id: 'maxed', skillPriority: ['blackSun', 'railSpear', 'boneMortar', 'chainSpark', 'needleStorm', 'fanKnives'], movePeriod: 150, maxedMeta: true }),
+  Object.freeze({ id: 'armory', skillPriority: [...ARSENAL_PRIORITY, 'blackSun', 'railSpear', 'boneMortar', 'chainSpark', 'needleStorm', 'fanKnives'], movePeriod: 150 }),
 ]);
+
+/**
+ * Skills every persona takes first, in this order, before its own picks (BALANCE_FULL_PREFER, ids comma separated):
+ * puts chosen weapons into the default matrix's runs without changing who plays them, their seeds, or their walks.
+ */
+export function parsePrefer(value) {
+  if (!value) return null;
+  const ids = value.split(',').map((id) => id.trim()).filter(Boolean);
+  return ids.length > 0 ? ids : null;
+}
+
+/** A persona that takes `prefer` first. */
+export function preferring(persona, prefer) {
+  if (!prefer) return persona;
+  return Object.freeze({ ...persona, skillPriority: [...prefer, ...persona.skillPriority.filter((id) => !prefer.includes(id))] });
+}
 
 /**
  * CON-10: the character a run starts as, from `id` or `id:level` (BALANCE_FULL_CHARACTER), as the app passes it to
@@ -251,7 +279,7 @@ function summarizeGroup(scenarios) {
   };
 }
 
-export function createFullBalanceReport({ scenarios, seeds, stages, personas, maxFrames, ruleSet = 'remaster', character = null }) {
+export function createFullBalanceReport({ scenarios, seeds, stages, personas, maxFrames, ruleSet = 'remaster', character = null, prefer = null }) {
   const personaOrder = new Map(personas.map((persona, index) => [persona.id, index]));
   const seedOrder = new Map(seeds.map((seed, index) => [seed, index]));
   const orderedScenarios = [...scenarios].sort((left, right) => (
@@ -267,6 +295,7 @@ export function createFullBalanceReport({ scenarios, seeds, stages, personas, ma
     ruleSet,
     // Only when a run names one, so reports without a character keep their fingerprints.
     ...(character ? { character } : {}),
+    ...(prefer ? { prefer } : {}),
     scenarioCount: orderedScenarios.length,
     stageCount: stages.length,
     seedCount: seeds.length,
@@ -299,15 +328,17 @@ export async function runFullBalanceBatch({
   maxFrames = 72_000,
   ruleSet = process.env.BALANCE_RULES ?? 'remaster',
   character = parseCharacter(process.env.BALANCE_FULL_CHARACTER),
+  prefer = parsePrefer(process.env.BALANCE_FULL_PREFER),
 } = {}) {
   installHeadlessPlatform();
-  const { ProbedGameEngine, CHARACTERS } = await import(bundlePath);
+  const { ProbedGameEngine, CHARACTERS, SKILL_IDS } = await import(bundlePath);
   if (character && !CHARACTERS[character.id]) throw new TypeError(`Unknown character: ${character.id}`);
+  for (const id of prefer ?? []) if (!SKILL_IDS.includes(id)) throw new TypeError(`Unknown skill in BALANCE_FULL_PREFER: ${id}`);
   const scenarios = [];
 
   for (const address of stages) {
     for (let personaIndex = 0; personaIndex < personas.length; personaIndex += 1) {
-      const persona = personas[personaIndex];
+      const persona = preferring(personas[personaIndex], prefer);
       for (const baseSeed of seeds) {
         let engine;
         let outcome = 'timeout';
@@ -414,5 +445,5 @@ export async function runFullBalanceBatch({
     }
   }
 
-  return createFullBalanceReport({ scenarios, seeds, stages, personas, maxFrames, ruleSet, character });
+  return createFullBalanceReport({ scenarios, seeds, stages, personas, maxFrames, ruleSet, character, prefer });
 }

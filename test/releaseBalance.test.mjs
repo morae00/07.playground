@@ -3,7 +3,9 @@ import test from 'node:test';
 import { SHARED_ENGINE_BUNDLE, resolveEngineBundle } from '../scripts/lib/engine-bundle.mjs';
 import { cappedMeta } from '../scripts/lib/headless-engine.mjs';
 import CATALOG from '../src/content/data/catalog.ts';
-import { BALANCE_PERSONAS, DEFAULT_FULL_SEEDS, EXTRA_PERSONAS, createFullBalanceReport, parseCharacter, personasById, selectBalanceOffer } from '../scripts/lib/full-balance-runner.mjs';
+import {
+  ARSENAL_PRIORITY, BALANCE_PERSONAS, DEFAULT_FULL_SEEDS, EXTRA_PERSONAS, createFullBalanceReport, parseCharacter, parsePrefer, personasById, preferring, selectBalanceOffer,
+} from '../scripts/lib/full-balance-runner.mjs';
 
 test('release balance matrix owns ten unique deterministic seeds', () => {
   assert.equal(DEFAULT_FULL_SEEDS.length, 10);
@@ -96,4 +98,27 @@ test('balance runs start as a character only when one is named (CON-10)', () => 
   const report = (character) => createFullBalanceReport({ scenarios: [], seeds: [17], stages: [], personas: [], maxFrames: 1, character });
   assert.equal('character' in report(null).summary, false, 'a run without a character keeps the summary, and so its fingerprint');
   assert.deepEqual(report({ id: 'gyeol', level: 0 }).summary.character, { id: 'gyeol', level: 0 });
+});
+
+test('the armory persona and BALANCE_FULL_PREFER put arsenal weapons into balance runs (SYS-15)', () => {
+  assert.equal(ARSENAL_PRIORITY.length, 44);
+  assert.deepEqual(ARSENAL_PRIORITY.slice(0, 3), ['sunNeedles', 'seventhSeal', 'judgmentLine'], 'mythic weapons first');
+  const [armory] = personasById(['armory']);
+  assert.ok(!BALANCE_PERSONAS.includes(armory), 'opt-in only');
+  const cards = [{ kind: 'skill', skillId: 'needleStorm' }, { kind: 'skill', skillId: 'inkPots' }, { kind: 'skill', skillId: 'tarJar' }];
+  const owned = { skills: { a: {}, b: {}, c: {} } };
+  assert.equal(selectBalanceOffer(cards, armory, owned).skillId, 'tarJar', 'the rarer weapon over the common one and the core skill');
+  const [striker] = BALANCE_PERSONAS;
+  assert.equal(selectBalanceOffer(cards, striker, owned).skillId, 'needleStorm');
+  assert.deepEqual(parsePrefer(' inkPots, bossbane ,'), ['inkPots', 'bossbane']);
+  assert.equal(parsePrefer(''), null);
+  const preferred = preferring(striker, ['inkPots', 'needleStorm']);
+  assert.equal(preferred.id, 'striker');
+  assert.deepEqual(preferred.skillPriority.slice(0, 3), ['inkPots', 'needleStorm', 'blackSun']);
+  assert.equal(preferred.skillPriority.filter((id) => id === 'needleStorm').length, 1);
+  assert.equal(selectBalanceOffer(cards, preferred, owned).skillId, 'inkPots');
+  assert.equal(preferring(striker, null), striker);
+  const summary = (prefer) => createFullBalanceReport({ scenarios: [], seeds: [17], stages: [], personas: [], maxFrames: 1, prefer }).summary;
+  assert.equal('prefer' in summary(null), false);
+  assert.deepEqual(summary(['inkPots']).prefer, ['inkPots']);
 });
