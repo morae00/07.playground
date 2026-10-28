@@ -424,6 +424,20 @@ CON-08 (the endless rotation, `infiniteRotation` rule) was measured with `npm ru
 - Survival barely moves. Round bosses fall 11-21% more often, so scores rise 18-32%: each chapter's first minutes bring its own two bosses instead of any of the ten, and Ch1's fall fastest. The board keeps v2 records apart from v1, so the shift never mixes with old records.
 - Every field boss fell. They add a side target and a bounty, not a wall.
 
+`npm run test:balance:gauntlet` (SYS-15, a report with no gate) ranks the weapons' raw power, which the persona runs cannot see: they hold several skills and take arsenal weapons only as fallbacks. Each active skill fights alone at one level (5 awakened by default, `BALANCE_GAUNTLET_LEVEL` and `BALANCE_GAUNTLET_AWAKENED` to change it) with no permanent upgrades (attack 12), in god mode, under the remaster rules and `BALANCE_RULE_PATCH`: 60 s of stage 4-6's own spawns after a 20 s warm-up (kills), then 30 s against a lone final boss of 10,000,000 health (damage per second). It is seeded, so a rerun on the same build prints the same rows and fingerprint. It prints the rarity medians, whether they rise with the rarity, and the inversions: a weapon beaten on both measures by 10% or more by one of lower rarity from the same chapter or earlier. On f57e3c0 (fingerprint 24dd35021c3152ae, the balance audit of 2026-10-23 found the same picture):
+
+| Rarity (weapons) | kills p50 (min-max) | boss damage per second p50 (min-max) |
+|---|---:|---:|
+| common (9) | 332 (41-692) | 73 (6-210) |
+| rare (15) | 180 (29-690) | 30 (4-196) |
+| epic (12) | 400 (111-766) | 31 (9-88) |
+| legendary (5) | 714 (82-719) | 104 (21-200) |
+| mythic (3) | 584 (374-715) | 49 (38-53) |
+
+- The medians do not follow rarity: rare is the weakest tier on both measures, and mythic falls below common on boss damage. 22 weapons lose to a lower rarity, 11 of them to one two tiers or more below, the judgment line (mythic) to the brush quills, ink pots, cluster pots, falling scroll, and tar jar.
+- Ink pots, the tar jar, and the meteor brush land every blast of their count on one point, so their count multiplies one spot's damage. The bossbane, the boss weapon, aims only its first seeker at the boss and deals 142 a second, below the ink darts' 210.
+- At level 1 (fingerprint 54ff1c6c68e8d354) the commons and rares kill a median 3 enemies in the minute, the legendaries 375.
+
 ## Game rules and grammar
 
 Gameplay changes ship behind the rule set in `src/game/rules.ts`. `classic` reproduces 0.1.0 exactly and `remaster` is the default. The app never switches rule sets, so app builds fold GameEngine's `this.rules.<flag>` reads to the remaster values (`scripts/lib/fold-rules.mjs` in `vite.config.ts`, TEC-05) and the minifier drops the classic branches; tests, the balance harness, and benches build the engine unfolded and keep both. After changing how GameEngine reads its rules, `npm run test:folded-rules` must report that the folded engine plays exactly as the unfolded one (seeded balance runs and every remaster draw fingerprint; only the classic scenario may differ), and `test/releaseFoldRules.test.mjs` fails if a read escapes the folding. Infinite-mode records and replay fixtures are kept per rules version: the remaster rules (v2) may change freely until a build ships them, and after that the first change to seeded outcomes must raise `RULES_VERSION`. `test/grammarContracts.integration.test.mjs` pins the preserved game grammar (stage structure, draft sizes, radii, tier mix, deterministic replay) and one regression test per R0 gameplay fix.

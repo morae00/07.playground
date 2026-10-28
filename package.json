@@ -30,6 +30,7 @@
     "test:balance:full": "npm run build:test-bundles && node scripts/balance-full.mjs",
     "test:balance:pilot": "BALANCE_FULL_STAGES=1:1,1:5,1:10,5:1,5:5,5:10 BALANCE_FULL_SEEDS=17 BALANCE_FULL_MAX_FRAMES=72000 npm run test:balance:full",
     "test:balance:infinite": "npm run build:test-bundles && node scripts/balance-infinite.mjs",
+    "test:balance:gauntlet": "npm run build:test-bundles && node scripts/balance-gauntlet.mjs",
     "test:soak": "npm run build:test-bundles && node --expose-gc test/p2Soak.mjs",
     "test:soak:smoke": "P2_SOAK_FRAMES=600 npm run test:soak",
     "test:visual": "node scripts/visual-gate.mjs",
