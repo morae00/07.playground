@@ -2,6 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { Worker } from 'node:worker_threads';
 import { DEFAULT_STAGE_ADDRESSES } from './lib/balance-runner.mjs';
+import { resolveEngineBundle } from './lib/engine-bundle.mjs';
 import { BALANCE_PERSONAS, DEFAULT_FULL_SEEDS, createFullBalanceReport, personasById, runFullBalanceBatch } from './lib/full-balance-runner.mjs';
 
 function parseIntegerList(value) {
@@ -49,7 +50,7 @@ async function runSeedWorkers({ bundlePath, seeds, stages, maxFrames, concurrenc
   return results;
 }
 
-const bundlePath = process.env.BLACKLINE_ENGINE_BUNDLE;
+const bundlePath = resolveEngineBundle();
 const seeds = parseIntegerList(process.env.BALANCE_FULL_SEEDS) ?? DEFAULT_FULL_SEEDS;
 const stages = parseStages(process.env.BALANCE_FULL_STAGES);
 const maxFrames = Number.parseInt(process.env.BALANCE_FULL_MAX_FRAMES ?? '72000', 10);

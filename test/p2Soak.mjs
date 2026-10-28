@@ -1,6 +1,7 @@
 import { performance } from 'node:perf_hooks';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { resolveEngineBundle } from '../scripts/lib/engine-bundle.mjs';
 
 const DEFAULT_FRAME_COUNT = 54_000;
 const FRAME_COUNT = Number.parseInt(process.env.P2_SOAK_FRAMES ?? `${DEFAULT_FRAME_COUNT}`, 10);
@@ -78,7 +79,7 @@ const canvas = {
   hasPointerCapture: () => false,
 };
 
-const bundlePath = process.env.BLACKLINE_ENGINE_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs';
+const bundlePath = resolveEngineBundle();
 const { ProbedGameEngine } = await import(bundlePath);
 const meta = {
   gold: 0,

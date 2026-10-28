@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { runBalanceBatch } from './lib/balance-runner.mjs';
+import { resolveEngineBundle } from './lib/engine-bundle.mjs';
 
 function parseIntegerList(value) {
   if (!value) return undefined;
@@ -11,7 +12,7 @@ function parseIntegerList(value) {
 
 const frames = Number.parseInt(process.env.BALANCE_FRAMES ?? '1200', 10);
 const report = await runBalanceBatch({
-  bundlePath: process.env.BLACKLINE_ENGINE_BUNDLE,
+  bundlePath: resolveEngineBundle(),
   frames,
   seeds: parseIntegerList(process.env.BALANCE_SEEDS),
 });

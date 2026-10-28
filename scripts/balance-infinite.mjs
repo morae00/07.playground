@@ -5,10 +5,11 @@
 //   BALANCE_INFINITE_METAS   max (the max fixture), mid (half its upgrades and passives), or both (default)
 //   BALANCE_RULE_PATCH       rule flags over the remaster rules, as JSON, e.g. {"infiniteRotation":false}
 import { createHeadlessCanvas, holdDirection, installHeadlessPlatform, maxMeta, standardOptions } from './lib/headless-engine.mjs';
+import { resolveEngineBundle } from './lib/engine-bundle.mjs';
 import { selectBalanceOffer } from './lib/full-balance-runner.mjs';
 
 installHeadlessPlatform();
-const { ProbedGameEngine } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
+const { ProbedGameEngine } = await import(resolveEngineBundle());
 const seeds = (process.env.BALANCE_INFINITE_SEEDS ?? '101,997,4099,104729,524287,999983').split(',').map(Number);
 const maxFrames = 60 * 60 * Number(process.env.BALANCE_INFINITE_MINUTES ?? 30);
 const metas = (process.env.BALANCE_INFINITE_METAS ?? 'max,mid').split(',');

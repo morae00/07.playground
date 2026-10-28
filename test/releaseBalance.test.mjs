@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { SHARED_ENGINE_BUNDLE, resolveEngineBundle } from '../scripts/lib/engine-bundle.mjs';
 import { BALANCE_PERSONAS, DEFAULT_FULL_SEEDS, EXTRA_PERSONAS, createFullBalanceReport, personasById, selectBalanceOffer } from '../scripts/lib/full-balance-runner.mjs';
 
 test('release balance matrix owns ten unique deterministic seeds', () => {
@@ -63,4 +64,17 @@ test('full balance shards merge into canonical stage, persona, and seed order', 
   });
   assert.equal(report.outliers.length, 4);
   assert.equal(report.outliers[0].elapsed, 10);
+});
+
+test('balance tools take either bundle variable and warn before running the shared bundle', () => {
+  const warnings = [];
+  const warn = (message) => warnings.push(message);
+  assert.equal(resolveEngineBundle({ BLACKLINE_TEST_BUNDLE: '/a/testing.mjs' }, warn), '/a/testing.mjs');
+  assert.equal(resolveEngineBundle({ BLACKLINE_ENGINE_BUNDLE: '/b/testing.mjs' }, warn), '/b/testing.mjs');
+  assert.equal(resolveEngineBundle({ BLACKLINE_TEST_BUNDLE: '/a/testing.mjs', BLACKLINE_ENGINE_BUNDLE: '/a/testing.mjs' }, warn), '/a/testing.mjs');
+  assert.equal(warnings.length, 0);
+  assert.throws(() => resolveEngineBundle({ BLACKLINE_TEST_BUNDLE: '/a/testing.mjs', BLACKLINE_ENGINE_BUNDLE: '/b/testing.mjs' }, warn), /different bundles/);
+  assert.equal(resolveEngineBundle({}, warn), SHARED_ENGINE_BUNDLE);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /WARNING.*SHARED bundle/s);
 });
