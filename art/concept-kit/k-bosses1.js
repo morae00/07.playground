@@ -490,7 +490,10 @@ window.PN = window.PN || {};
         ${X.limb([290, 236], [328, 256], 24, 20, { bulge: 1.18, brk0: true })}
         <g transform="translate(340,262) rotate(-17)">${A.butcherCleaver(X)}${A.butcherFist(X)}</g>`;
     } else {
-      nearArm = `${X.limb([348, 208], [312, 266], 26, 23, { bulge: 1.08 })}${cuff(315, 257, -30)}
+      // windup. K5def (K3 review 1 §5, deferred): the upper arm's shoulder end drops from (348,208) to (364,226), so the arm,
+      // drawn in front of the whole upper body here, passes clear of the bag's eye hole. The head is not moved (face anchor
+      // [322.3,195] stays); elbow, cuff, fist and cleaver stay put (fist, muzzle and cleaver anchors unchanged).
+      nearArm = `${X.limb([364, 226], [312, 266], 26, 23, { bulge: 1.08 })}${cuff(315, 257, -30)}
         ${X.limb([312, 266], [250, 306], 24, 20, { bulge: 1.18, brk0: true })}
         <g transform="translate(236,314) rotate(62)">${A.butcherCleaver(X)}${A.butcherFist(X)}</g>`;
     }
@@ -502,8 +505,10 @@ window.PN = window.PN || {};
     const atFill = at ? `<path d="M 286,58 L 312,52 L 338,96 L 352,140 L 300,152 L 288,120 Z M 74,262 L 112,276 L 124,326 L 92,358 L 64,350 L 64,300 Z" fill="${K.ink}"/>` : '';
     // death f1: the body collapses to 70% (squash about the feet); the bag (face) is drawn outside the squash — faces are only
     // moved and rotated — drooping 18° forward from its idle tilt, and the cleaver lies flat on the floor in front
+    // K5def: in the windup the bag is drawn over the near shoulder cap (the head is thrust forward in the crouch), so the cap
+    // no longer cuts the eye hole; idle, attack and death keep the cap over the head
     const body = de === 1 ? `<g transform="${tfs(D.squash)}">${legs}${torso}${strap}<g ${farT}>${farArm}</g>${deltF}${apron}${deltN}${nearArm}</g>${head}<g transform="${tfs(D.cleaver)}">${A.butcherCleaver(X)}</g>`
-      : `${atFill}${legs}<g ${upT}>${torso}${strap}<g ${farT}>${farArm}</g>${deltF}${apron}${head}${deltN}${front ? '' : nearArm}</g>${front ? nearArm : ''}`;
+      : `${atFill}${legs}<g ${upT}>${torso}${strap}<g ${farT}>${farArm}</g>${deltF}${apron}${wu ? deltN + head : head + deltN}${front ? '' : nearArm}</g>${front ? nearArm : ''}`;
     let fx = '';
     // death f0: three ink shards of the torn bag fly up-left (sizes and turns differ: never a row of dots)
     if (de === 0) fx += `<path d="M 236,92 L 226,80 L 241,84 Z M 214,116 L 198,110 L 212,104 Z M 252,72 L 249,60 L 258,66 Z" fill="${K.ink}"/>`;
@@ -1017,7 +1022,7 @@ window.PN = window.PN || {};
   // 'dead'; every pose calls it and only moves/rotates it. 'out' = both paper eyes go to ink; 'dead' = paper ✕✕
   // (m = A._inv(relic ops)). opt.at = attack: eyes narrowed to ×0.7 height (pupils at cy − 0.3h, touching the +x lid),
   // lower grille row dropped 8 (mouth gapes), pre-heat and ember bed off, 3 low black flames rise from the floor (y 310,
-  // tops ≥ 280, paper.50 core ≤ 3). opt.broken = 2 of the lower teeth snapped (death); opt.noKeystone = keystone fallen.
+  // tops ≥ 280, paper.300 core ≤ 3, K5def). opt.broken = 2 of the lower teeth snapped (death); opt.noKeystone = keystone fallen.
   A.mawFace = function (X, state = 'open', m, opt = {}) {
     const { K, T, o } = X, ph = o.phase, wu = o.windup, SH = A.MSH, f = X.f, lit = state === 'open';
     // ---- pointed-arch firebox frame: lit inner bevel, keystone, rivets
@@ -1036,8 +1041,9 @@ window.PN = window.PN || {};
     const eyes = opt.at ? `${eye(186, 244, 13.5 * eyeR, 6 * eyeR, 1)}<circle cx="191.5" cy="242.2" r="4" fill="${K.ink}"/>${eye(227, 244, 10.4 * eyeR, 4.3 * eyeR, -1)}<circle cx="231.5" cy="242.7" r="3.2" fill="${K.ink}"/>`
       : `${eye(186, 244, 13.5 * eyeR, 8.6 * eyeR, 1)}<circle cx="191.5" cy="242.6" r="4" fill="${K.ink}"/>${eye(227, 244, 10.4 * eyeR, 6.2 * eyeR, -1)}<circle cx="231.5" cy="242.4" r="3.2" fill="${K.ink}"/>`;
     const tooth = (x, y0, tip, up) => `<path d="M ${x - 6},${y0} L ${x + 6},${y0} L ${x + 6},${tip + (up ? 12 : -12)} L ${x},${tip} L ${x - 6},${tip + (up ? 12 : -12)} Z" fill="${K.ink300}" stroke="${K.ink}" stroke-width="${2.2 * X.LW}" stroke-linejoin="round"/><path d="M ${x + 1},${y0} L ${x + 1},${tip + (up ? 10 : -10)} L ${x + 5},${tip + (up ? 12 : -12)} L ${x + 5},${y0} Z" fill="${K.ink500}"/>`;
-    // attack mouth flames: low black tongues with a thin paper.50 core (≤ 3), tops at y 282 (eyes at 244 stay clear)
-    const fire = (x, h, w, lean) => `<path d="M ${f(x - w / 2)},310 C ${f(x - w * 0.62)},${f(310 - h * 0.45)} ${f(x + lean - w * 0.28)},${f(310 - h * 0.62)} ${f(x + lean)},${f(310 - h)} C ${f(x + lean + w * 0.08)},${f(310 - h * 0.66)} ${f(x + w * 0.6)},${f(310 - h * 0.4)} ${f(x + w / 2)},310 Z" fill="${K.ink}"/>` + T([x, 308, x + lean * 0.4, 310 - h * 0.45, x + lean * 0.7, 310 - h * 0.72], 2.4 / X.TW, 'mid', K.paper50);
+    // attack mouth flames: low black tongues with a thin core (≤ 3), tops at y 282 (eyes at 244 stay clear). K5def (K3-2 review
+    // 1 §5): the core is paper.300, not paper.50 — it sits within 60 of the eyes (brief §1.6: paper.50 cores ≥ 60 from the face)
+    const fire = (x, h, w, lean) => `<path d="M ${f(x - w / 2)},310 C ${f(x - w * 0.62)},${f(310 - h * 0.45)} ${f(x + lean - w * 0.28)},${f(310 - h * 0.62)} ${f(x + lean)},${f(310 - h)} C ${f(x + lean + w * 0.08)},${f(310 - h * 0.66)} ${f(x + w * 0.6)},${f(310 - h * 0.4)} ${f(x + w / 2)},310 Z" fill="${K.ink}"/>` + T([x, 308, x + lean * 0.4, 310 - h * 0.45, x + lean * 0.7, 310 - h * 0.72], 2.4 / X.TW, 'mid', K.paper300);
     const lower = opt.broken ? `${[197, 235].map((x) => tooth(x, 312, 276, true)).join('')}${[178, 216].map((x) => tooth(x, 312, 300, true)).join('')}` : [178, 197, 216, 235].map((x) => tooth(x, 312, 276, true)).join('');
     const mouth = X.S(SH.mouth, K.ink, 5, `${heat}
       ${wu || opt.at ? '' : `<ellipse cx="206" cy="302" rx="50" ry="12" fill="${K.ink700}"/>${[[172, 302, 3.4], [188, 306, 2.6], [202, 298, 3.8], [218, 305, 3], [234, 300, 2.8], [196, 292, 2], [226, 294, 2.2]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${K.ink300}" stroke="${K.ink}" stroke-width="1.2"/>`).join('')}${X.ht('M 150,270 L 262,270 L 262,312 L 150,312 Z', 'r40', 0.5)}`}

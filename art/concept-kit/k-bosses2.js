@@ -319,14 +319,16 @@ window.PN = window.PN || {};
     return X.SS(d, fill, 2.4, plane + dry(X, [A(s, n1, 9)[0], A(s, n1, 9)[1], A(e, n1, 9)[0], A(e, n1, 9)[1], A(w, n2, 9)[0], A(w, n2, 9)[1]], lit ? 3.4 : 2, 3, lit ? K.ink300 : K.ink500, 5)) +
       X.P(cuff, K.ink700, 2) + X.art(X.T([cuffL[0], cuffL[1], tip(w, 8, 6)[0], tip(w, 8, 6)[1], tip(w, 14, -2)[0], tip(w, 14, -2)[1]], 1, 'mid', K.ink300));
   };
-  // origami crane (facing right, wings raised) — paper300 + 40% dots, 3u ink rim; caged behind the bars
+  // origami crane (facing right, wings raised) — paper300 + 40% dots, 3u ink rim; caged behind the bars.
+  // K5def (K3 review 2 §4, deferred): in game the near wing is paper.300 like the rest of the crane, not paper.100 — at 1x
+  // it was a white tick as bright as the face glass. Art keeps paper.100.
   E.crane = function (X, x, y, s, flip = false) {
     const O = `stroke="${K.ink}" stroke-width="${f((X.game ? 7.5 : 5.4) / s)}" stroke-linejoin="round" paint-order="stroke"`;
     const tail = 'M -4,1 L -27,-15 L -9,5 Z', body = 'M -13,4 L 0,-3 L 12,3 L 2,9 Z', neck = 'M 6,1 L 21,-20 L 12,4 Z', beak = 'M 20,-20 L 29,-16 L 19,-15 Z';
     const wf = 'M -4,-1 L -14,-23 L 2,-3 Z', wn = 'M -3,0 L 6,-31 L 10,1 Z';
     return `<g transform="translate(${f(x)},${f(y)}) scale(${flip ? -s : s},${s})">` +
       `<path d="${wf}" fill="${K.paper300}" ${O}/><path d="${tail}" fill="${K.paper300}" ${O}/><path d="${neck}" fill="${K.paper300}" ${O}/><path d="${beak}" fill="${K.paper300}" ${O}/>` +
-      `<path d="${body}" fill="${K.paper300}" ${O}/><path d="${wn}" fill="${K.paper}" ${O}/>` +
+      `<path d="${body}" fill="${K.paper300}" ${O}/><path d="${wn}" fill="${X.game ? K.paper300 : K.paper}" ${O}/>` +
       `<path d="${tail}" fill="${X.pat('d40')}"/><path d="${body}" fill="${X.pat('d40')}"/><path d="${wf}" fill="${X.pat('d20')}"/><path d="M 6,-31 L 10,1 L 5,0 Z" fill="${X.pat('d20')}"/>` +
       `<path d="M 6,-31 L 3,-1" stroke="${K.ink}" stroke-width="${f(1.2 / s * X.li)}"/></g>`;
   };
@@ -433,14 +435,17 @@ window.PN = window.PN || {};
 
   // ---- cage skirt: ONE big lit crescent (upper-left ink500) + 6 bars + 3 hoops; lower-right stays pure ink900 ----
   // K3-2: P = { sag, dead } (optional; omitted = the old drawing). sag = latch-chain sag (13; attack pulls them taut to 4).
-  // dead = death path: the P3 lock heart loses its paper.50 glow disc and its keyhole goes ink.300 (review 2 §5-3).
+  // dead = death path: the P3 lock heart's keyhole goes ink.300 (review 2 §5-3).
+  // K5def (K3 review 2 §4, deferred): the living P3 lock heart has no paper.50 glow disc and a paper.300 keyhole — at 1x the
+  // paper.50 keyhole and its α .2 disc were a second white point in the middle of the body (the face is the locket glass).
+  // The death path is byte-identical (it already drew no disc and an ink.300 keyhole).
   function skirt(X, ph, W, P = {}) {
     const g = X.game;
     let c = `<path d="M 178,196 C 160,226 120,256 100,288 C 90,304 78,318 78,330 L 100,341 C 104,327 112,315 124,307 L 117,295 C 130,281 142,273 154,269 L 147,255 C 158,243 170,235 182,229 L 177,216 L 190,204 Z" fill="${K.ink500}"/>`;
     c += `<path d="M 184,262 L 200,246 L 194,286 L 206,318 L 190,342 L 178,300 Z" fill="${K.ink700}"/>`;
     c += E.crane(X, 234, 297, g ? 1.34 : 1.28) + E.crane(X, 280, 332, g ? 1.0 : 0.95) + E.crane(X, 164, 284, g ? 1.1 : 1.04, true);
-    if (ph >= 3) c += (P.dead ? '' : `<circle cx="200" cy="272" r="20" fill="${K.paper50}" opacity="0.2"/>`) + `<path d="M 200,258 C 184,244 170,262 184,278 L 200,294 L 216,278 C 230,262 216,244 200,258 Z" fill="${K.ink500}" ${X.O(1.8)}/>` +
-      `<path d="M 200,264 a 4.4,4.4 0 1 1 -0.1,0 Z M 197.6,268 L 195.6,281 L 204.4,281 L 202.4,268 Z" fill="${P.dead ? K.ink300 : K.paper50}" stroke="${K.ink}" stroke-width="1.4"/>`;
+    if (ph >= 3) c += `<path d="M 200,258 C 184,244 170,262 184,278 L 200,294 L 216,278 C 230,262 216,244 200,258 Z" fill="${K.ink500}" ${X.O(1.8)}/>` +
+      `<path d="M 200,264 a 4.4,4.4 0 1 1 -0.1,0 Z M 197.6,268 L 195.6,281 L 204.4,281 L 202.4,268 Z" fill="${P.dead ? K.ink300 : K.paper300}" stroke="${K.ink}" stroke-width="1.4"/>`;
     const bend = ph >= 3 ? { '-14': -20, '14': 20 } : {};
     [-70, -42, -14, 14, 42, 70].forEach((th) => {
       const d = E.bars(0, th, bend[th]);
@@ -809,6 +814,17 @@ window.PN = window.PN || {};
     s += X.P('M 176,232 L 184,232 L 192,284 L 186,286 Z', K.ink, 1.8) + X.P('M 206,232 L 214,232 L 196,286 L 190,284 Z', K.ink700, 1.8);
     return s;
   }
+  // P3 chest plate. K5def (K3 review 2 §4, deferred): the erased plate's edge is TORN — an ink rim with an ink.500 (game) /
+  // ink.300 (art) line just inside it, the balance's torn-hole grammar (Q.rim) — instead of the paper.300 dashed cut, which
+  // read at 1x as a dotted "U". An irregular tear through the old key points (180,206) (212,204) (214,240) (196,248)
+  // (178,238); its top runs under the belt. Visible inner line: game 2.4 (1.2 px), art 1.
+  const PLATE = [[180, 206], [186.5, 203.8], [191, 206.6], [198.5, 203.6], [205, 206.2], [212, 204], [209.6, 210.4], [215.4, 216.2], [211.4, 223.6], [216.2, 230.4], [214, 240],
+    [207, 241.6], [203.4, 246.8], [196, 248], [191.2, 242.6], [184.6, 244.6], [178, 238], [181.8, 231.2], [176.2, 224.2], [181.2, 216.6], [177.4, 210.2]];
+  function tornPlate(X) {
+    const d = 'M ' + PLATE.map(pt).join(' L ') + ' Z', c = X.clip(d), rw = X.game ? 4 : 2.4, lip = X.game ? 2.4 : 1;
+    return `<path d="${d}" fill="${K.ink}"/><g clip-path="url(#${c})"><path d="${d}" fill="none" stroke="${X.game ? K.ink500 : K.ink300}" stroke-width="${f(rw + 2 * lip)}" stroke-linejoin="round"/></g>` +
+      `<path d="${d}" fill="none" stroke="${K.ink}" stroke-width="${f(rw)}" stroke-linejoin="round"/>`;
+  }
   // lower robe + torso + tabard (+ P3 core) + belt
   function robeS(X, ph, sp) {
     let s = X.S(H.SKIRT, K.ink, 2.4, `<path d="M 156,198 C 146,218 136,236 124,258 L 134,256 L 146,226 L 158,222 L 166,200 Z" fill="${K.ink500}"/>` + X.T([222, 204, 232, 224, 244, 248], 1.6, 'mid', K.ink500));
@@ -817,9 +833,9 @@ window.PN = window.PN || {};
     const TAB = 'M 172,150 L 218,150 L 216,250 L 206,244 L 196,258 L 186,244 L 174,250 Z';
     s += X.S(TAB, K.ink, 2, `<path d="M 170,146 L 195,146 L 195,262 L 170,262 Z" fill="${K.ink700}"/>` + X.L('M 195,150 L 195,256', 1.4, K.ink500) +
       `<path d="${gearPath(184, 180, 9, 7, 8, 0, 3.4)}" fill="${K.ink300}" fill-rule="evenodd"/>` + `<path d="M 200,168 L 212,168 L 206,178 L 212,190 L 200,190 L 206,178 Z" fill="none" stroke="${K.ink300}" stroke-width="${f(1.8 * X.li)}" stroke-linejoin="round"/>`);
-    // P3 core: erased plate (dotted paper.300 cut) + the exposed saw + a brass hub. K3-1f F2: no paper.50 glow disc and no
+    // P3 core: torn-out plate (tornPlate, K5def) + the exposed saw + a brass hub. K3-1f F2: no paper.50 glow disc and no
     // paper.50 hub — a white dot in a ring on the body was a second face (the face is the dial in the bell).
-    if (ph >= 3) s += `<path d="M 180,206 L 212,204 L 214,240 L 196,248 L 178,238 Z" fill="${K.ink}" stroke="${K.paper300}" stroke-width="${f(1.6 * X.li)}" stroke-dasharray="4 3"/>` + H.saw(X, 196, 224, 14, sp * 2) + `<circle cx="196" cy="224" r="5" fill="${K.ch4.deep}" stroke="${K.ink}" stroke-width="${f(1.6 * X.li)}"/>`;
+    if (ph >= 3) s += tornPlate(X) + H.saw(X, 196, 224, 14, sp * 2) + `<circle cx="196" cy="224" r="5" fill="${K.ch4.deep}" stroke="${K.ink}" stroke-width="${f(1.6 * X.li)}"/>`;
     s += X.P('M 156,198 C 178,206 212,206 234,198 L 234,210 C 212,218 178,218 156,210 Z', K.ink700, 1.8) + `<rect x="189" y="199" width="12" height="13" rx="2" fill="${K.ch4.deep}" ${X.O(1.4)}/>`;
     return s;
   }
