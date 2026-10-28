@@ -43,8 +43,8 @@
       "passed": true
     },
     "installAssets": {
-      "bytes": 38264380,
-      "kib": 37367.56,
+      "bytes": 38258945,
+      "kib": 37362.25,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -195,14 +195,14 @@
     {
       "file": "assets/packs/chapter-03/atlas-0.png",
       "category": "image",
-      "sourceBytes": 2261628,
-      "gzipBytes": 2250566
+      "sourceBytes": 2260070,
+      "gzipBytes": 2249340
     },
     {
       "file": "assets/packs/chapter-03/atlas-1.png",
       "category": "image",
-      "sourceBytes": 2092770,
-      "gzipBytes": 2083590
+      "sourceBytes": 2088893,
+      "gzipBytes": 2079941
     },
     {
       "file": "assets/packs/chapter-03/atlas-2.png",

@@ -979,11 +979,17 @@ window.PN = window.PN || {};
     inner += X.LW(line(mouth), mw * 0.6, K.ink);
     // nostrils (art): lon ±18°, lat 5°, one short tapered dash each (not round dots)
     if (!g) [-18, 18].forEach((l) => { const q = T.at(l, 5), w = 2.6 * Math.max(0.4, q.sx); inner += X.TW([q.x - w, q.y, q.x, q.y + 0.6, q.x + w, q.y], 1.6, 'mid', K.ink); });
-    // chin whiskers: lon −14°, +18° at lat −32°, length 24 (game: the near one)
-    (g ? [-14] : [-14, 18]).forEach((l, i) => { const q = T.at(l, -32), d = [q.x, q.y, q.x - 3, q.y + 12, q.x - 1 + i * 2, q.y + 24]; inner += X.TW(d, X.v(3.4, 5.4) + X.v(2, 3.6), 'start', K.ink300) + X.TW(d, X.v(3.4, 5.4), 'start', K.ink); });
+    // chin whiskers: lon −14°, +18° at lat −32°. game: the near one, length 24, inside the head clip (unchanged).
+    // K5def (K1 review 1 R10): in art the two read as short vertical ticks (the head outline clips them after ≈ 10), so art
+    // hangs two curved barbels from the same chin points OUTSIDE the clip, over the collar: the near one longer (≈ 36),
+    // bending down and to the left, the far one shorter (≈ 26, foreshortened), bending to the right — they diverge, never a
+    // parallel pair. Same widths as before (ink 3.4 on a 5.4 ink300 edge).
+    let barbels = '';
+    if (g) [-14].forEach((l, i) => { const q = T.at(l, -32), d = [q.x, q.y, q.x - 3, q.y + 12, q.x - 1 + i * 2, q.y + 24]; inner += X.TW(d, X.v(3.4, 5.4) + X.v(2, 3.6), 'start', K.ink300) + X.TW(d, X.v(3.4, 5.4), 'start', K.ink); });
+    else [[-14, [-1.4, 13.5, -7.4, 25.5, -16.4, 32.5]], [18, [2.5, 9.8, 8, 18.8, 16, 22.8]]].forEach(([l, c]) => { const q = T.at(l, -32), d = [q.x, q.y, q.x + c[0], q.y + c[1], q.x + c[2], q.y + c[3], q.x + c[4], q.y + c[5]]; barbels += X.TW(d, 5.4, 'start', K.ink300) + X.TW(d, 3.4, 'start', K.ink); });
     // bubble eyes (3장 지문) — the far eye is the same drawing squeezed by sx, tucked inside the right contour
     T.EYES.forEach(([lon, lat]) => { inner += T.eye(X, T.at(lon, lat), o); });
-    return X.S(hd, K.ink700, 2.6, inner);
+    return X.S(hd, K.ink700, 2.6, inner) + barbels;
   };
   T.eye = function (X, q, o) {
     const g = X.game, r = T.EYE_R, sx = q.sx, sy = q.sy, c = X.uid('e');
@@ -1168,13 +1174,16 @@ window.PN = window.PN || {};
     // woven reed belt: upright binding ticks (never slanted — slanted parallel strokes are the enemy-telegraph hatching)
     s += X.S(belt, K.ch3.deep, 2, X.art([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => { const x = 104 + i * 19.5, y = 228 + Math.sin(((x - 96) / 210) * Math.PI) * 18; return X.LW(`M ${f(x)},${f(y - 4)} L ${f(x)},${f(y + 5)}`, 1.4, K.ink500); }).join('')));
     if (o.ph >= 3) {
-      // P3: the belly opens like a pair of sluice doors (ink500 lit leaf / ink900 leaf) on a whirlpool core
-      s += `<path d="${smooth([[180, 256], [212, 252], [244, 258], [250, 296], [238, 330], [204, 336], [176, 326], [168, 292]], true)}" fill="${K.core['tide-king']}" ${X.O(1.6)}/>`;
+      // P3: the belly opens like a pair of sluice doors (ink500 lit leaf / ink900 leaf) on a whirlpool core.
+      // K5def (K1 review 1 R3): the doors stand closer — the opening between the leaves runs x 184…238 (was ≈ 178…248), so
+      // the light core plate no longer out-sizes the face. Core, whirlpool (r ≤ 25.9), art arcs and the two bubbles are
+      // pulled in to fit; the leaves keep their outer edges.
+      s += `<path d="${smooth([[190, 256], [212, 253], [236, 258], [242, 296], [232, 330], [206, 336], [186, 326], [180, 292]], true)}" fill="${K.core['tide-king']}" ${X.O(1.6)}/>`;
       let sp = 'M 210,296', a = 0;
-      for (let i = 1; i <= 26; i++) { a += 0.42; const r = 3 + i * 1.15; sp += ` L ${f(210 + Math.cos(a) * r)},${f(296 + Math.sin(a) * r * 0.78)}`; }
-      s += X.LW(sp, X.v(3.4, 5), K.ink) + X.art(X.LW('M 190,312 C 200,320 222,322 236,310', 1, K.ink300) + X.LW('M 186,278 C 196,268 222,266 236,278', 1, K.ink300));
-      s += `<circle cx="226" cy="272" r="${X.v(2.6, 3)}" fill="${K.paper50}" stroke="${K.ink}" stroke-width="1.4"/><circle cx="234" cy="262" r="${X.v(1.8, 2.4)}" fill="${K.paper50}" stroke="${K.ink}" stroke-width="1.2"/>`;
-      s += X.P('M 182,254 L 162,244 L 152,330 L 174,334 Z', K.ink500, 1.8) + X.P('M 240,256 L 262,248 L 268,326 L 244,336 Z', K.ink, 1.8);
+      for (let i = 1; i <= 26; i++) { a += 0.42; const r = 3 + i * 0.88; sp += ` L ${f(210 + Math.cos(a) * r)},${f(296 + Math.sin(a) * r * 0.78)}`; }
+      s += X.LW(sp, X.v(3.4, 5), K.ink) + X.art(X.LW('M 192,312 C 202,320 220,322 232,310', 1, K.ink300) + X.LW('M 190,279 C 198,269 220,267 232,278', 1, K.ink300));
+      s += `<circle cx="222" cy="274" r="${X.v(2.6, 3)}" fill="${K.paper50}" stroke="${K.ink}" stroke-width="1.4"/><circle cx="229" cy="264" r="${X.v(1.8, 2.4)}" fill="${K.paper50}" stroke="${K.ink}" stroke-width="1.2"/>`;
+      s += X.P('M 186,254 L 162,244 L 152,330 L 184,334 Z', K.ink500, 1.8) + X.P('M 237,256 L 262,248 L 268,326 L 239,336 Z', K.ink, 1.8);
     }
     return s;
   }
@@ -1226,16 +1235,35 @@ window.PN = window.PN || {};
     return { front, under };
   }
   // flood crest: the robe's bleed rises behind (windup, up to y 70 at the upper left) / collapses forward over the shoulder (attack)
+  // K5def (K1 review 1 R2): three foam claws on the crest lip — the triple crest line (flood-crest's triple-wave-keyline)
+  // running out into foam talons — so in mono the windup crest no longer reads as a kettle handle and the attack crest no
+  // longer as an elephant's trunk. Claw = [crest point b, outward normal n, length L, reach k, art / game width]: it grows
+  // from b along n + k·t (t = n turned +90° = the contour's running direction) and its tip hooks DOWN (along ±t, whichever
+  // points down: foam falls). Attack: the three claws sit on the lip itself (the curled end that read as the trunk's tip),
+  // pointing right, down-right and down. Windup: the lip is behind the raised far sleeve, so the claws sit on the visible
+  // upper-left crest. Reach, length and width differ from claw to claw (never a comb); an ink300 core carries the crest-line
+  // rhythm into each claw.
+  const CLAWS = {
+    1: [[45.3, 139.3, -0.973, -0.23, 26, 0.5, 9, 14], [62.6, 97.9, -0.83, -0.558, 32, 0.8, 10, 16], [91.9, 72.4, -0.399, -0.917, 22, 1.1, 8, 12]],
+    2: [[356.5, 157.2, 0.921, -0.389, 24, 0.5, 8, 13], [361.9, 191.9, 0.977, 0.214, 30, 0.8, 9, 15], [353.2, 205.8, 0.544, 0.839, 20, 0.5, 7, 12]]
+  };
+  const claws = (X, kind) => CLAWS[kind].map(([bx, by, nx, ny, L, k, wa, wg]) => {
+    const tx = -ny, ty = nx, dl = Math.hypot(nx + k * tx, ny + k * ty), ux = (nx + k * tx) / dl, uy = (ny + k * ty) / dl, hs = ty >= 0 ? 1 : -1;
+    const P = (a, b, c) => [bx + ux * L * a + hs * tx * L * b + nx * L * c, by + uy * L * a + hs * ty * L * b + ny * L * c];
+    const cl = [bx - nx * 4, by - ny * 4, ...P(0.55, 0, 0), ...P(0.95, 0.3, 0), ...P(0.7, 0.62, -0.2)];
+    const core = [bx + nx, by + ny, ...P(0.5, 0, 0), ...P(0.8, 0.22, 0), ...P(0.6, 0.45, -0.12)];
+    return X.TW(cl, X.v(wa, wg), 'start', K.ink) + X.TW(core, X.v(1.6, 3), 'start', K.ink300);
+  }).join('');
   function wave(X, kind) {
     const g = X.game;
     if (kind === 1) {
       const d = 'M 96,350 C 70,320 48,270 42,214 C 36,160 46,112 74,84 C 96,64 128,62 142,78 C 152,90 144,104 128,104 C 116,104 110,94 116,88 C 104,86 92,96 90,116 C 86,150 98,200 118,246 C 128,272 134,300 130,330 Z';
       return X.S(d, K.ink, 2.6, `<path d="M 74,84 C 96,64 128,62 142,78 L 130,82 C 118,74 100,76 86,92 C 70,112 62,150 64,196 L 52,200 C 46,150 52,108 74,84 Z" fill="${K.ink500}"/>` +
-        ['M 58,220 C 54,170 62,128 88,100', 'M 72,252 C 64,206 68,160 92,124', 'M 88,286 C 78,242 80,196 98,156'].map((p) => X.LW(p, X.v(1.6, 3.6), K.ink300)).join(''));
+        ['M 58,220 C 54,170 62,128 88,100', 'M 72,252 C 64,206 68,160 92,124', 'M 88,286 C 78,242 80,196 98,156'].map((p) => X.LW(p, X.v(1.6, 3.6), K.ink300)).join('')) + claws(X, 1);
     }
     const d = 'M 104,300 C 96,240 104,170 136,124 C 170,82 236,70 286,92 C 326,110 356,140 362,176 C 366,200 352,214 336,206 C 322,198 324,178 338,176 C 330,160 312,148 290,148 C 268,150 252,166 246,184 L 230,170 C 210,150 176,152 154,176 C 134,200 126,250 130,300 Z';
     return X.S(d, K.ink, 2.6, `<path d="M 136,124 C 170,82 236,70 286,92 L 280,102 C 236,84 180,96 150,132 Z" fill="${K.ink500}"/>` +
-      ['M 150,118 C 190,92 250,90 300,112', 'M 160,136 C 196,112 252,110 306,130', 'M 172,154 C 204,132 256,130 312,150'].map((p) => X.LW(p, X.v(1.6, 3.6), K.ink300)).join(''));
+      ['M 150,118 C 190,92 250,90 300,112', 'M 160,136 C 196,112 252,110 306,130', 'M 172,154 C 204,132 256,130 312,150'].map((p) => X.LW(p, X.v(1.6, 3.6), K.ink300)).join('')) + claws(X, 2);
   }
 
   C.parts['tide-king'] = function (X, S) {
@@ -2010,6 +2038,9 @@ window.PN = window.PN || {};
     const front = S.phase >= 2 ? (() => { const a = R.ruler.a, b = R.ruler.b, L = Math.hypot(b[0] - a[0], b[1] - a[1]); return [a[0] + (b[0] - a[0]) * (L - 6) / L, a[1] + (b[1] - a[1]) * (L - 6) / L]; })() : R.ruler.b.slice();
     // the aureole is drawn in the leaned body frame: its centre follows the lean (attack base +19.3, attack p3 −14.5 in x)
     const ac = R.L(D.AUR);
-    return { face: R.L(D.MASK), eye: R.L(D.facePt(D.EYE)), head: R.hd.slice(), aureole: { c: ac, r: D.AR2 }, rulerEnds: [R.ruler.a.slice(), front], batonTip: R.bat.t.slice(), muzzle: R.mv === 'p3' ? ac.slice() : front };
+    // K5def (K1 review 1 R9, main-session decision 2026-10-27): idle muzzle = the ruler's upper end held by the far hand
+    // (ruler.a [130,136]); `front` is the tip planted in the floor there. p3 move → aureole centre; windup / attack keep `front`.
+    // The game does not read this anchor (no muzzle field in the manifest); draw() output is unchanged.
+    return { face: R.L(D.MASK), eye: R.L(D.facePt(D.EYE)), head: R.hd.slice(), aureole: { c: ac, r: D.AR2 }, rulerEnds: [R.ruler.a.slice(), front], batonTip: R.bat.t.slice(), muzzle: R.mv === 'p3' ? ac.slice() : R.pose === 'idle' ? R.ruler.a.slice() : front };
   };
 })(window.PN);
