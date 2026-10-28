@@ -3,7 +3,7 @@ import test from 'node:test';
 import { SHARED_ENGINE_BUNDLE, resolveEngineBundle } from '../scripts/lib/engine-bundle.mjs';
 import { cappedMeta } from '../scripts/lib/headless-engine.mjs';
 import CATALOG from '../src/content/data/catalog.ts';
-import { BALANCE_PERSONAS, DEFAULT_FULL_SEEDS, EXTRA_PERSONAS, createFullBalanceReport, personasById, selectBalanceOffer } from '../scripts/lib/full-balance-runner.mjs';
+import { BALANCE_PERSONAS, DEFAULT_FULL_SEEDS, EXTRA_PERSONAS, createFullBalanceReport, parseCharacter, personasById, selectBalanceOffer } from '../scripts/lib/full-balance-runner.mjs';
 
 test('release balance matrix owns ten unique deterministic seeds', () => {
   assert.equal(DEFAULT_FULL_SEEDS.length, 10);
@@ -85,4 +85,15 @@ test('the capped account holds every permanent upgrade and every passive point (
   const meta = cappedMeta();
   assert.deepEqual(meta.upgrades, Object.fromEntries(Object.entries(CATALOG.metaUpgrades).map(([id, { max }]) => [id, max])));
   assert.deepEqual(meta.passives, Object.fromEntries(Object.entries(CATALOG.metaPassives).map(([id, { max }]) => [id, max])));
+});
+
+test('balance runs start as a character only when one is named (CON-10)', () => {
+  assert.equal(parseCharacter(undefined), null);
+  assert.equal(parseCharacter(''), null);
+  assert.deepEqual(parseCharacter('gyeol'), { id: 'gyeol', level: 0 });
+  assert.deepEqual(parseCharacter('dok:3'), { id: 'dok', level: 3 });
+  assert.throws(() => parseCharacter('dok:x'), /Invalid character/);
+  const report = (character) => createFullBalanceReport({ scenarios: [], seeds: [17], stages: [], personas: [], maxFrames: 1, character });
+  assert.equal('character' in report(null).summary, false, 'a run without a character keeps the summary, and so its fingerprint');
+  assert.deepEqual(report({ id: 'gyeol', level: 0 }).summary.character, { id: 'gyeol', level: 0 });
 });

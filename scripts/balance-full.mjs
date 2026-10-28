@@ -3,7 +3,7 @@ import path from 'node:path';
 import { Worker } from 'node:worker_threads';
 import { DEFAULT_STAGE_ADDRESSES } from './lib/balance-runner.mjs';
 import { resolveEngineBundle } from './lib/engine-bundle.mjs';
-import { BALANCE_PERSONAS, DEFAULT_FULL_SEEDS, createFullBalanceReport, personasById, runFullBalanceBatch } from './lib/full-balance-runner.mjs';
+import { BALANCE_PERSONAS, DEFAULT_FULL_SEEDS, createFullBalanceReport, parseCharacter, personasById, runFullBalanceBatch } from './lib/full-balance-runner.mjs';
 
 function parseIntegerList(value) {
   if (!value) return undefined;
@@ -69,6 +69,7 @@ const report = parallel
       personas,
       maxFrames,
       ruleSet: process.env.BALANCE_RULES ?? 'remaster',
+      character: parseCharacter(process.env.BALANCE_FULL_CHARACTER),
     })
   : await runFullBalanceBatch({ bundlePath, seeds, stages, maxFrames, personas });
 const outputPath = path.resolve(process.env.BALANCE_FULL_REPORT ?? 'artifacts/balance-full-report.json');

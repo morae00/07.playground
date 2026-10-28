@@ -5,9 +5,10 @@
 //   BALANCE_INFINITE_METAS   max (every upgrade and passive at its cap, the maxed persona's account), mid (half its
 //                            upgrades and passives), or both (default)
 //   BALANCE_RULE_PATCH       rule flags over the remaster rules, as JSON, e.g. {"infiniteRotation":false}
+//   BALANCE_INFINITE_CHARACTER the character to start as, id or id:level (none by default; CON-10)
 import { cappedMeta, createHeadlessCanvas, holdDirection, installHeadlessPlatform, standardOptions } from './lib/headless-engine.mjs';
 import { resolveEngineBundle } from './lib/engine-bundle.mjs';
-import { selectBalanceOffer } from './lib/full-balance-runner.mjs';
+import { parseCharacter, selectBalanceOffer } from './lib/full-balance-runner.mjs';
 
 installHeadlessPlatform();
 const { ProbedGameEngine } = await import(resolveEngineBundle());
@@ -15,6 +16,7 @@ const seeds = (process.env.BALANCE_INFINITE_SEEDS ?? '101,997,4099,104729,524287
 const maxFrames = 60 * 60 * Number(process.env.BALANCE_INFINITE_MINUTES ?? 30);
 const metas = (process.env.BALANCE_INFINITE_METAS ?? 'max,mid').split(',');
 const patch = process.env.BALANCE_RULE_PATCH ? JSON.parse(process.env.BALANCE_RULE_PATCH) : null;
+const character = parseCharacter(process.env.BALANCE_INFINITE_CHARACTER);
 const persona = { id: 'striker', skillPriority: ['blackSun', 'railSpear', 'boneMortar', 'chainSpark', 'needleStorm', 'fanKnives'], movePeriod: 150 };
 
 function metaFor(kind) {
@@ -44,6 +46,7 @@ function play(kind, seed) {
       if (event.type === 'chapter/turned') turns += 1;
       if (event.type === 'boss/spawned' && engine.probe.read().enemies.at(-1)?.boss?.role === 'field') fieldBosses += 1;
     });
+    if (character) engine.setCharacter(character);
     engine.startInfiniteRun(seed, true);
     const directions = ['d', 's', 'a', 'w'];
     let frame = 0;
@@ -64,7 +67,7 @@ const median = (values) => {
   return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
 };
 
-const report = { rules: 'remaster', patch, maxMinutes: maxFrames / 3600, metas: {} };
+const report = { rules: 'remaster', patch, ...(character ? { character } : {}), maxMinutes: maxFrames / 3600, metas: {} };
 for (const kind of metas) {
   const runs = seeds.map((seed) => play(kind, seed));
   report.metas[kind] = {

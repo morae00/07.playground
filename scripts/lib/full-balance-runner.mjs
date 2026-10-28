@@ -33,6 +33,20 @@ export const EXTRA_PERSONAS = Object.freeze([
   Object.freeze({ id: 'maxed', skillPriority: ['blackSun', 'railSpear', 'boneMortar', 'chainSpark', 'needleStorm', 'fanKnives'], movePeriod: 150, maxedMeta: true }),
 ]);
 
+/**
+ * CON-10: the character a run starts as, from `id` or `id:level` (BALANCE_FULL_CHARACTER), as the app passes it to
+ * GameEngine.setCharacter: its weapon at the level's start, and its perk (gyeol: +3% attack at level 0). Runs have no
+ * character unless one is named, which plays 0.1.0's start (the needle storm at Lv1) without a perk; the baselines were
+ * measured that way.
+ */
+export function parseCharacter(value) {
+  if (!value) return null;
+  const [id, level = '0'] = value.trim().split(':');
+  const parsed = Number(level);
+  if (!/^[a-z]+$/.test(id) || !Number.isInteger(parsed) || parsed < 0) throw new TypeError(`Invalid character: ${value} (id or id:level)`);
+  return { id, level: parsed };
+}
+
 /** Personas by id from the default and opt-in lists, in the order given. */
 export function personasById(ids) {
   const all = [...BALANCE_PERSONAS, ...EXTRA_PERSONAS];
@@ -237,7 +251,7 @@ function summarizeGroup(scenarios) {
   };
 }
 
-export function createFullBalanceReport({ scenarios, seeds, stages, personas, maxFrames, ruleSet = 'remaster' }) {
+export function createFullBalanceReport({ scenarios, seeds, stages, personas, maxFrames, ruleSet = 'remaster', character = null }) {
   const personaOrder = new Map(personas.map((persona, index) => [persona.id, index]));
   const seedOrder = new Map(seeds.map((seed, index) => [seed, index]));
   const orderedScenarios = [...scenarios].sort((left, right) => (
@@ -251,6 +265,8 @@ export function createFullBalanceReport({ scenarios, seeds, stages, personas, ma
   const byKind = Object.fromEntries(['normal', 'midBoss', 'finalBoss'].map((kind) => [kind, summarizeGroup(orderedScenarios.filter((item) => item.kind === kind))]));
   const summary = {
     ruleSet,
+    // Only when a run names one, so reports without a character keep their fingerprints.
+    ...(character ? { character } : {}),
     scenarioCount: orderedScenarios.length,
     stageCount: stages.length,
     seedCount: seeds.length,
@@ -282,9 +298,11 @@ export async function runFullBalanceBatch({
   personas = BALANCE_PERSONAS,
   maxFrames = 72_000,
   ruleSet = process.env.BALANCE_RULES ?? 'remaster',
+  character = parseCharacter(process.env.BALANCE_FULL_CHARACTER),
 } = {}) {
   installHeadlessPlatform();
-  const { ProbedGameEngine } = await import(bundlePath);
+  const { ProbedGameEngine, CHARACTERS } = await import(bundlePath);
+  if (character && !CHARACTERS[character.id]) throw new TypeError(`Unknown character: ${character.id}`);
   const scenarios = [];
 
   for (const address of stages) {
@@ -342,6 +360,7 @@ export async function runFullBalanceBatch({
             if (event.damage <= 1 + 1e-9) minimumHits += 1;
           }
         });
+        if (character) engine.setCharacter(character);
         engine.startRun(address.chapter, address.stage, seed);
         const { worldSize } = engine.probe.renderWorld(1);
         const context = { turn: seed % 2 === 0 ? 1 : -1, width: worldSize.width, height: worldSize.height };
@@ -395,5 +414,5 @@ export async function runFullBalanceBatch({
     }
   }
 
-  return createFullBalanceReport({ scenarios, seeds, stages, personas, maxFrames, ruleSet });
+  return createFullBalanceReport({ scenarios, seeds, stages, personas, maxFrames, ruleSet, character });
 }
