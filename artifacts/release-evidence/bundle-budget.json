@@ -43,8 +43,8 @@
       "passed": true
     },
     "installAssets": {
-      "bytes": 38258945,
-      "kib": 37362.25,
+      "bytes": 38259194,
+      "kib": 37362.49,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -1605,8 +1605,8 @@
     {
       "file": "assets/packs/skills/atlas-0.png",
       "category": "image",
-      "sourceBytes": 1274388,
-      "gzipBytes": 1270164
+      "sourceBytes": 1274637,
+      "gzipBytes": 1269967
     },
     {
       "file": "assets/packs/story/ending-1.webp",

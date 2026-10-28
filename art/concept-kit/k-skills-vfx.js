@@ -1111,7 +1111,11 @@ window.PN = window.PN || {};
     // grey ball with a star as a bomb). Awakened = a paper coin; its hole shows the ink disc. A 5-point sparkle sits on
     // the upper-left rim; nothing outside the coin in the upper-right quadrant. (The optional coin on edge behind was
     // tried and dropped: at 1x it stuck out like a pan handle.)
-    coinFever: (ink, cut, aw) => coin3q(-1, 2, 6.4, -20, 0.55, aw ? { face: 'p50', rim: 'p300', line: 'ink', lw: 1.1 } : { face: 'ink100', rim: 'ink700', line: 'ink', lw: 1.1 }) +
+    // K5def (K4 검수 2차 §5, deferred): the awakened coin turns to a diagonal disc — tilt −34° (was −20°), squash 0.7 (was
+    // 0.55), centre (−2, 3) off the disc centre (was (−1, 2)) — and is thicker (d 2.4): its paper.300 rim shows 1.3 below
+    // right and the hole's upper inner wall 2.0, so the hole reads as punched through, not as a dark pupil in a paper
+    // almond. The plain pop is unchanged.
+    coinFever: (ink, cut, aw) => (aw ? coin3q(-2, 3, 6.4, -34, 0.7, { face: 'p50', rim: 'p300', line: 'ink', lw: 1.1, d: 2.4 }) : coin3q(-1, 2, 6.4, -20, 0.55, { face: 'ink100', rim: 'ink700', line: 'ink', lw: 1.1 })) +
       F(starD(-5.5, -1.5, 2.6, 5, 171), 'p50', { st: 'ink', sw: 0.6 }),
     // needle from upper right to a point at lower left, three stitches under the point (nothing circles the disc centre)
     executionMark: (ink, cut, aw) => stitchArcs(-3, 2, 4.4, 62, [2, 1.6, 1.2], [2.2, 2], [[ink, 1.5]]) +
@@ -1155,10 +1159,11 @@ window.PN = window.PN || {};
   /** A tossed 엽전 in 3/4: face with a see-through square hole, a darker rim below for its thickness.
    * The rim is the face pushed down by d and has its own hole there, so through the face's hole one sees the far wall
    * (a rim-coloured band along the top of the hole) and then whatever lies behind the coin (K4 검수 1차 고침 5).
-   * o: {face, rim, line, lw} tokens (default ink.100 face, ink.700 rim, ink line 0.9). */
+   * o: {face, rim, line, lw} tokens (default ink.100 face, ink.700 rim, ink line 0.9); o.d (K5def, optional) = the
+   * thickness push, default min(1.6, ry / 2) as before (only the awakened pop passes it). */
   function coin3q(x, y, s, tilt, sq, o) {
     o = o || {};
-    const ry = s * (sq || 0.5), h = s * 0.3, v = h * (sq || 0.5) * 1.6, d = Math.min(1.6, ry * 0.5);
+    const ry = s * (sq || 0.5), h = s * 0.3, v = h * (sq || 0.5) * 1.6, d = o.d != null ? o.d : Math.min(1.6, ry * 0.5);
     const hole = (dy) => `M${f(-h)},${f(-v + dy)} L${f(-h)},${f(v + dy)} L${f(h)},${f(v + dy)} L${f(h)},${f(-v + dy)} Z`;
     const ln = o.line || 'ink', lw = o.lw || 0.9, eo = { rule: 'evenodd' };
     return G(tr(x, y, tilt), F(ellD(s, ry, 0, d) + ' ' + hole(d), o.rim || 'ink700', eo) + S(ellD(s, ry, 0, d), ln, lw) +
