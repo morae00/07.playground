@@ -48,8 +48,21 @@ export function rangedCapFor(def: ObjectiveDef | undefined, chapter: number) {
   return def?.rangedCap ? Math.min(OBJECTIVE_TABLE.maxRanged, base * def.rangedCap) : base;
 }
 
+/**
+ * P2-3 proposal (bonusGoalRetune rule): an objective's bonus goal with the retuned chapter's numbers, the kill target
+ * or the field boss window. Other goals stay as they are.
+ */
+export function retunedBonus(id: ObjectiveId, bonus: ObjectiveBonus, chapter: number): ObjectiveBonus {
+  const { kills, fieldBossWithin } = OBJECTIVE_TABLE.retune;
+  const byChapter = kills[id];
+  if (bonus.kind === 'kills' && byChapter) return { ...bonus, byChapter };
+  if (bonus.kind === 'fieldBosses' && bonus.within !== undefined) return { ...bonus, within: fieldBossWithin[chapter - 1] ?? bonus.within };
+  return bonus;
+}
+
 /** The goal's target on a stage: kills scale by chapter; field boss goals count the stage's field bosses. */
 export function bonusTarget(bonus: ObjectiveBonus, chapter: number, def: ObjectiveDef) {
+  if (bonus.kind === 'kills' && bonus.byChapter) return bonus.byChapter[chapter - 1] ?? bonus.count;
   // Elites come a few at a time in every chapter, so an elite goal does not grow with the crowds.
   if (bonus.kind === 'kills') return Math.round(bonus.count * (bonus.tier === 'elite' ? 1 : OBJECTIVE_TABLE.killScale[chapter - 1] ?? 1));
   if (bonus.kind === 'hold') return bonus.seconds;
@@ -87,7 +100,8 @@ export class StageObjective {
 
   /**
    * `modifiers` is false for the campaign's first stage, which teaches the game: it keeps its bonus goal but not the
-   * harder mix. `bonus` is false in practice runs, whose short clock cannot reach the goals.
+   * harder mix. `bonus` is false in practice runs, whose short clock cannot reach the goals. `retuned` takes the P2-3
+   * proposal's goals (bonusGoalRetune rule).
    */
   constructor(
     readonly id: ObjectiveId,
@@ -96,8 +110,10 @@ export class StageObjective {
     readonly modifiers = true,
     readonly bonus = true,
     elites = false,
+    retuned = false,
   ) {
-    this.def = objectiveDef(id, elites);
+    const def = objectiveDef(id, elites);
+    this.def = retuned ? { ...def, bonus: retunedBonus(id, def.bonus, chapter) } : def;
     this.eliteHunt = modifiers && elites && objectiveDef(id).eliteHunt !== undefined;
     this.tierRoll = modifiers ? shiftedTierRoll(this.def.mix) : { small: TIER_ROLL.small, medium: TIER_ROLL.medium };
     this.target = bonusTarget(this.def.bonus, chapter, this.def);

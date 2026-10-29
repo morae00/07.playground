@@ -325,6 +325,20 @@ CON-03 (stage objectives, `stageObjectives` rule) was piloted with the flag on a
 - All 640 runs: clears 38.9% to 35.9%, 37 flips (9 to a clear, 28 to a death). The giants and traps changes are the hardest, at 13 and 10 points. SYS-07's curve work starts from these numbers.
 - The personas never walk to a zone or a cache, so the hold and salvage goals need playtests. The field boss goals were met on 93-94% of clears, so decision D-04 (2026-10-02) counts only field bosses defeated within 60 s of arriving, and one that outlives the window fails the goal. SYS-10's elites gave the elite hunt its intended goal.
 
+R5 moved the goals again (balance audit P2-3). On f57e3c0 the team personas played the 23 stages whose goal is a kill count or the field bosses × 10 seeds: of their clears, the swarm met its goal on 94%, giants 88%, crossfire 79%, the elite hunt 67% (1 of 16 in Ch1-2, 44 of 51 in Ch3-5), and vanguard 24% (0 of 18 in Ch1-3). The horde (SYS-13) brings two to four times the kills the goals ask for, elites come a few at a time in Ch1-2 and by the dozen from Ch3, and SYS-12 doubled the field bosses' health after D-04 set its 60 s. The `bonusGoalRetune` rule (off in both rule sets until the team decides) takes each kill goal's target by chapter from about the median of those clears' kills and doubles the window to 120 s (`retune` in `src/content/data/objectives.ts`). Goals do not change how a run plays, so the same clears give the new rates exactly (a flag run of 4 of the stages agrees row for row):
+
+| Goal met on clears | today | 120 s window only | `bonusGoalRetune` | an easier set (30th percentile, 150 s) |
+|---|---:|---:|---:|---:|
+| swarm (50 clears) | 94% | 94% | 54% | 76% |
+| elite hunt (67) | 67% | 67% | 61% | 78% |
+| giants (25) | 88% | 88% | 64% | 76% |
+| crossfire (42) | 79% | 79% | 57% | 79% |
+| vanguard (34) | 24% | 44% | 44% | 50% |
+| all five (218) | 71% | 74% | 56% | 73% |
+
+- Vanguard stays hard in Ch1-3 (3 of 18 at 120 s): every team clear there is the survivor, and in 11 of the 18 a field boss outlives the stage, so no window reaches it.
+- Under the rule the HUD states the retuned goal; the stage card follows once the shipped rules turn it on. Some chapters rest on few clears (2 crossfire clears in Ch1, 4 swarm and 4 giants clears in Ch3).
+
 SYS-07 (difficulty curve, `difficultyCurve` rule) was tuned with three pilot sets, each against today's formulas and the chosen numbers:
 - The team: striker, survivor, and collector on 1, 4, 9 (normal), 5, and 10 of every chapter × 5 seeds.
 - `maxed` (an opt-in persona with every upgrade and passive at its cap) on six Ch5 stages × 10 seeds.

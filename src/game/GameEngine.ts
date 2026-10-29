@@ -2278,6 +2278,7 @@ export class GameEngine {
         !(this.chapter === 1 && this.stage === 1),
         !this.practiceRun,
         this.rules.eliteAffixes,
+        this.rules.bonusGoalRetune,
       )
       : null;
     // CON-02: a campaign boss stage sends its crowd alone first; the boss enters as the warm-up ends.

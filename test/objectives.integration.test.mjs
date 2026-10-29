@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createHeadlessCanvas, installHeadlessPlatform, localeTable, maxMeta, standardOptions } from '../scripts/lib/headless-engine.mjs';
+import OBJECTIVES from '../src/content/data/objectives.ts';
 
 // Stage objectives (CON-03): each normal stage's objective changes the stage and sets a bonus goal. Classic rules keep
 // the objective a label. Objectives rotate (stage + chapter - 2) mod 8 through swarm, holdLine, traps, elites,
@@ -266,4 +267,35 @@ test('CON-03: kill goals count their tier, practice runs have no bonus goal, and
   const landmark = stageRun(1, 3);
   assert.equal(landmark.probe.hud().landmark, 'torn-poster-crossing');
   landmark.engine.dispose();
+});
+
+test('P2-3 proposal: under bonusGoalRetune the kill goals and the field boss window take their chapter\'s retuned numbers', () => {
+  const { kills, fieldBossWithin } = OBJECTIVES.retune;
+  // 1-9 swarm (small kills), 2-6 crossfire (ranged kills), 2-3 the elite hunt (elite kills).
+  for (const [chapter, stage, id, now] of [[1, 9, 'swarm', 280], [2, 6, 'crossfire', 22], [2, 3, 'elites', 10]]) {
+    for (const retuned of [false, true]) {
+      const run = stageRun(chapter, stage, { patch: { bonusGoalRetune: retuned } });
+      try {
+        assert.equal(run.probe.hud().bonus.target, retuned ? kills[id][chapter - 1] : now, `${id} ${chapter}-${stage}`);
+      } finally {
+        run.engine.dispose();
+      }
+    }
+  }
+  // 1-8 vanguard: a field boss alive just under the window still counts, and just past it fails the goal.
+  const within = fieldBossWithin[0];
+  for (const [seconds, status] of [[within - 1, 'active'], [within + 1, 'failed']]) {
+    const run = stageRun(1, 8, { patch: { bonusGoalRetune: true } });
+    try {
+      run.probe.setSkills({});
+      run.probe.clear('enemies');
+      run.probe.setClock({ timeLeft: run.probe.hud().duration * (1 - 0.19) });
+      run.probe.step(2);
+      run.probe.haltSpawns();
+      run.probe.step(Math.round(60 * seconds));
+      assert.equal(run.probe.hud().bonus.status, status, `alive ${seconds} s with a ${within} s window`);
+    } finally {
+      run.engine.dispose();
+    }
+  }
 });

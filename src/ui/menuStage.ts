@@ -14,7 +14,7 @@ import {
 } from '../game/GameEngine';
 import type { BossDef } from '../game/engine/worldTypes';
 import { objectiveIdFor } from '../game/GameEngine';
-import { bonusGoal, bonusTarget, objectiveDef, rangedCapFor } from '../game/stageObjective';
+import { bonusGoal, bonusTarget, objectiveDef, rangedCapFor, retunedBonus } from '../game/stageObjective';
 import { text, type StringKey, type Text } from '../i18n/text';
 import { REMASTER_RULES } from '../game/rules';
 import type { MetaState, MetaUpgradeId, PassiveId } from '../platform/save';
@@ -61,7 +61,9 @@ export function stageObjective(chapter: number, stage: number): { goal: Text; ch
     if (def.fieldBoss) changes.push(text('objective.mod.fieldBoss', { x: def.fieldBoss.hp }));
     if (def.extraFieldBossMarks?.length) changes.push(text('objective.mod.extraFieldBoss', { n: def.extraFieldBossMarks.length }));
   }
-  return { goal: bonusGoal(def.bonus, bonusTarget(def.bonus, chapter, def)), changes };
+  // P2-3 proposal: the goal as the bonusGoalRetune rule sets it, once the shipped rules take it.
+  const bonus = REMASTER_RULES.bonusGoalRetune ? retunedBonus(id, def.bonus, chapter) : def.bonus;
+  return { goal: bonusGoal(bonus, bonusTarget(bonus, chapter, def)), changes };
 }
 
 /** A stage before the unlocked frontier is cleared; the frontier itself is the one to play next. */

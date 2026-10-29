@@ -10,7 +10,7 @@
 import { deepFreeze } from '../deepFreeze.ts';
 
 export type ObjectiveBonus =
-  | { kind: 'kills'; tier: 'small' | 'large' | 'ranged' | 'elite'; count: number }
+  | { kind: 'kills'; tier: 'small' | 'large' | 'ranged' | 'elite'; count: number; byChapter?: readonly number[] }
   | { kind: 'hold'; seconds: number; radius: number; moveEvery: number }
   | { kind: 'terrain'; seconds: number }
   | { kind: 'fieldBosses'; within?: number }
@@ -46,4 +46,22 @@ export default deepFreeze({
   /** A bonus goal met on a clear pays this share of the stage's floor gold (base, chapter, and stage parts). */
   bonusGoldShare: 0.5,
   maxRanged: 6,
+  /**
+   * Balance audit P2-3 proposal (bonusGoalRetune rule, off until the team decides), measured on f57e3c0: the team
+   * personas' clears of the 23 stages with these goals × 10 seeds, about half of which meet each goal.
+   * - kills: a kill goal's target by chapter, in place of count × killScale, at about the median of the clears' kills
+   *   of that kind (the elite hunt's counts elites). The rotation leaves swarm out of Ch5, giants out of Ch2, and
+   *   crossfire out of Ch3; their numbers there come from the chapters beside them.
+   * - fieldBossWithin: the field boss goals' window by chapter, in place of D-04's 60 s: twice it, as SYS-12 doubled
+   *   the field bosses' health after D-04.
+   */
+  retune: {
+    kills: {
+      swarm: [700, 1650, 2200, 4250, 5300],
+      giants: [48, 120, 300, 820, 1150],
+      crossfire: [20, 22, 40, 72, 160],
+      elites: [3, 4, 30, 30, 25],
+    } as Partial<Record<keyof typeof objectives, readonly number[]>>,
+    fieldBossWithin: [120, 120, 120, 120, 120],
+  },
 });

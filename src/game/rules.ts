@@ -224,6 +224,13 @@ export type RuleSet = Readonly<{
   rarityDamage: boolean;
   /** P2-1 proposal: every seeker of a boss-first weapon (bossbane) aims at the boss in range, not only the first. */
   bossFirstVolley: boolean;
+  /**
+   * P2-3 proposal (balance audit 2026-10-23; off until the team decides): bonus goals measured again after R5. The
+   * field boss goals' window (D-04) and the kill goals take their chapter's numbers from `retune` in
+   * src/content/data/objectives.ts: SYS-12 doubled the field bosses' health after D-04 set 60 s, and SYS-13's horde
+   * made the kill goals easy.
+   */
+  bonusGoalRetune: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -274,6 +281,7 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   awakeningScale: false,
   rarityDamage: false,
   bossFirstVolley: false,
+  bonusGoalRetune: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -319,12 +327,13 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   lightBonusHeal: true,
   awakeningGimmicks: true,
   bossWarmup: true,
-  // Proposals the team has not decided (balance audit P2-1): off until it does.
+  // Proposals the team has not decided (balance audit P2-1, P2-3): off until it does.
   lobScatter: false,
   lobSingle: false,
   awakeningScale: false,
   rarityDamage: false,
   bossFirstVolley: false,
+  bonusGoalRetune: false,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {
