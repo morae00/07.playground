@@ -6,7 +6,7 @@ export const ARSENAL = ARSENAL_TABLE.weapons;
 export const ARSENAL_IDS = Object.keys(ARSENAL) as ArsenalId[];
 /** Content tables reach the app as their default export only (TEC-05), so the awakening numbers come through here. */
 export const ARSENAL_AWAKENING = ARSENAL_TABLE.awakening;
-/** The balance audit's P2-1 proposals (each under its rule flag, off in both rule sets). */
+/** The balance audit's P2-1 numbers (each under its rule flag; decision 2026-10-28). */
 export const ARSENAL_RETUNE = ARSENAL_TABLE.retune;
 
 export const isArsenal = (id: SkillId): id is ArsenalId => id in ARSENAL;
@@ -16,15 +16,15 @@ export const lookOf = (id: SkillId) => (isArsenal(id) ? ARSENAL[id].look : id);
 
 const at = ([base, perLevel]: readonly [number, number], level: number) => base + perLevel * (level - 1);
 
-/** P2-1: which of the proposals' rule flags apply to a weapon's numbers (GameEngine.arsenalTuning). */
+/** P2-1: which of the tuning rule flags apply to a weapon's numbers (GameEngine.arsenalTuning). */
 export type ArsenalTuning = Readonly<{ id: ArsenalId; lobSingle: boolean; awakeningScale: boolean; rarityDamage: boolean }>;
 
 /** The kinds that fire `count` of something; a chain grows by its hops, and novas, halos, and beams by neither. */
-const COUNTED: ReadonlySet<ArsenalWeapon['kind']> = new Set(['volley', 'burst', 'spray', 'rear', 'seeker', 'strike', 'lob']);
+export const ARSENAL_COUNTED_KINDS: ReadonlySet<ArsenalWeapon['kind']> = new Set(['volley', 'burst', 'spray', 'rear', 'seeker', 'strike', 'lob']);
 
 /**
  * A weapon's numbers at a level: damage (times attack), cooldown (before attack speed), counts, and reach. `tuning`
- * applies the P2-1 proposals whose rule flags are on; without it the numbers are the arsenal rule's own.
+ * applies the P2-1 rule flags that are on; without it the numbers are the arsenal rule's own.
  */
 export function arsenalStats(weapon: ArsenalWeapon, level: number, awakened: boolean, tuning?: ArsenalTuning) {
   const awakening = ARSENAL_AWAKENING;
@@ -46,7 +46,7 @@ export function arsenalStats(weapon: ArsenalWeapon, level: number, awakened: boo
         jumps = Math.max(baseJumps, Math.round((baseJumps + 1) * share) - 1);
         damage *= ((baseJumps + 1) * share) / (jumps + 1);
         count = base;
-      } else if (COUNTED.has(weapon.kind)) {
+      } else if (ARSENAL_COUNTED_KINDS.has(weapon.kind)) {
         throws = base * share;
         count = Math.max(base, Math.round(throws));
         damage *= throws / count;
@@ -55,7 +55,7 @@ export function arsenalStats(weapon: ArsenalWeapon, level: number, awakened: boo
         damage *= share;
       }
     }
-    if (tuning.lobSingle && retune.lobScatter[tuning.id] !== undefined) {
+    if (tuning.lobSingle && retune.singleLobs.includes(tuning.id)) {
       damage *= (count / throws) * (1 + retune.lobFold * (throws - 1));
       count = 1;
     }

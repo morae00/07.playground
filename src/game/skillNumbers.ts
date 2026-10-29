@@ -6,12 +6,13 @@
 import SKILL_NUMBER_TABLE from '../content/data/skillNumbers.ts';
 import AWAKENINGS from '../content/data/awakenings.ts';
 import type { ArsenalId, CoreSkillId, SkillId } from './engine/worldTypes.ts';
-import { ARSENAL, ARSENAL_AWAKENING as AWAKENING, ARSENAL_IDS, arsenalStats } from './arsenal.ts';
+import { ARSENAL, ARSENAL_AWAKENING as AWAKENING, ARSENAL_COUNTED_KINDS, ARSENAL_IDS, arsenalStats, type ArsenalTuning } from './arsenal.ts';
 import { REMASTER_RULES } from './rules.ts';
 import { text, type StringKey, type Text, type TextParam } from '../i18n/text.ts';
 import {
   COIN_FEVER_FRENZY_ATTACK_SPEED_MULTIPLIER,
   COIN_FEVER_FRENZY_DURATION,
+  MAX_SKILL_LEVEL,
   PAPER_WARD_INVULNERABILITY_PER_LEVEL,
 } from './p1Core.ts';
 
@@ -89,14 +90,16 @@ const CORE_LEVEL_STATS: Record<CoreSkillId, (level: number) => SkillStats> = {
   executionMark: (level) => [['stat.crit', `+${pct(scaleAt(N.executionMark.critChance, level))}%`], ['stat.bossDamage', `+${pct(scaleAt(N.executionMark.bossDamage, level))}%`]],
 };
 
-/**
- * SYS-15: an arsenal weapon's card prints its damage and the number its kind grows by, as the shipped rules fire it
- * (the P2-1 proposals' rarity damage and single lobs once a build ships them on).
- */
+/** P2-1 (decision 2026-10-28): the tuning the shipped rules fire an arsenal weapon with, for its cards. */
+function cardTuning(id: ArsenalId): ArsenalTuning | undefined {
+  const { lobSingle, awakeningScale, rarityDamage } = REMASTER_RULES;
+  return lobSingle || awakeningScale || rarityDamage ? { id, lobSingle, awakeningScale, rarityDamage } : undefined;
+}
+
+/** SYS-15: an arsenal weapon's card prints its damage and the number its kind grows by, as the shipped rules fire it. */
 function arsenalLevelStats(id: ArsenalId) {
   const weapon = ARSENAL[id];
-  const { lobSingle, rarityDamage } = REMASTER_RULES;
-  const tuning = lobSingle || rarityDamage ? { id, lobSingle, awakeningScale: false, rarityDamage } : undefined;
+  const tuning = cardTuning(id);
   return (level: number): SkillStats => {
     const stats = arsenalStats(weapon, level, false, tuning);
     const damage: StatLine = ['stat.damage', `${pct(stats.damage)}%`];
@@ -141,12 +144,22 @@ const CORE_AWAKENING_TEXT: Record<CoreSkillId, Text> = {
   executionMark: text('skill.executionMark.awakening', { crit: pct(bonus(N.executionMark.critChance)), boss: pct(bonus(N.executionMark.bossDamage)), bonus: pct(N.executionMark.lowHpBossBonus) }),
 };
 
-/** SYS-15: an arsenal weapon's awakening names the count its kind grows (shots, blasts, or hops), if it has one. */
+/**
+ * SYS-15: an arsenal weapon's awakening card says what awakening at Lv.5 adds, from the numbers the shipped rules fire
+ * it with: the damage of each shot, blast, or hop, the count its kind grows (shots, blasts, or hops) when it grows, and
+ * reach. Under awakeningScale (decision 2026-10-28) the count grows by a fifth, rounded, and what rounding leaves goes
+ * into the damage, so the card names each weapon's own numbers.
+ */
 function arsenalAwakening(id: ArsenalId): Text {
-  const { kind } = ARSENAL[id];
-  const numbers = { damage: pct(AWAKENING.damage - 1), reach: pct(AWAKENING.reach - 1) };
-  if (kind === 'nova' || kind === 'halo' || kind === 'beam') return text('skill.arsenal.awakening.reach', numbers);
-  return text('skill.arsenal.awakening', { ...numbers, count: text(kind === 'chain' ? 'stat.jumps' : 'stat.projectiles') });
+  const weapon = ARSENAL[id];
+  const tuning = cardTuning(id);
+  const before = arsenalStats(weapon, MAX_SKILL_LEVEL, false, tuning);
+  const after = arsenalStats(weapon, MAX_SKILL_LEVEL, true, tuning);
+  const numbers = { damage: pct(after.damage / before.damage - 1), reach: pct(AWAKENING.reach - 1) };
+  const chain = weapon.kind === 'chain';
+  const [from, to] = chain ? [before.jumps, after.jumps] : [before.count, after.count];
+  if ((!chain && !ARSENAL_COUNTED_KINDS.has(weapon.kind)) || from === to) return text('skill.arsenal.awakening.reach', numbers);
+  return text('skill.arsenal.awakening', { ...numbers, count: text(chain ? 'stat.jumps' : 'stat.projectiles'), from, to });
 }
 
 export const SKILL_AWAKENING_TEXT: Record<SkillId, Text> = {

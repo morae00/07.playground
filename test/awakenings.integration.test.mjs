@@ -85,7 +85,9 @@ const SCENARIOS = {
   thornHalo: { setup: (f) => f(320, 0, { speed: 260 }), steps: 240, strip: (world) => marked(world, 'thorn') },
   starShards: { setup: (f) => [f(150, 0), f(150, 200)], steps: 90, watch: (world) => echoShot(world, 'starShards') },
   sunNeedles: { setup: (f) => f(400, 0), steps: 60, watch: (world) => world.projectiles.some((shot) => shot.skillId === 'sunNeedles' && shot.radius > ARSENAL.sunNeedles.size * 1.1) },
-  inkDrizzle: { setup: (f) => [f(150, 0), f(0, 250)][1], steps: 120, check: (r, off) => hurt(r, off) },
+  // Every other spray flies at the second enemy, a quarter turn from the first; unawakened ones wobble 22° at most
+  // round the first. (Since awakeningScale, P2-1, a cast is one wobbling shot, too few to be sure to hit it.)
+  inkDrizzle: { setup: (f) => [f(150, 0), f(0, 250)], steps: 120, watch: (world) => world.projectiles.some((shot) => shot.skillId === 'inkDrizzle' && Math.atan2(shot.vy, shot.vx) > Math.PI / 4) },
   pinHail: { setup: (f) => f(200, 0), steps: 90, watch: (world) => zone(world, 'pinHail') },
   // Shots behind the way the player last moved (right, until it moves).
   tailGuard: { setup: (f) => f(-120, 0, { tier: 'large' }), steps: 90, watch: (world, _, r) => mark(r, 'tailGuard') },
@@ -287,7 +289,8 @@ test('SYS-16: the awakening card adds the weapon\'s gimmick under the rule, and 
       const body = r.probe.previewOffer('inkDarts', 'awakening').body;
       if (rules === 'remaster') {
         assert.equal(body.key, 'skill.arsenal.awakening.gimmick');
-        assert.match(tx(body), /^피해 \+35%, 투사체 \+1, 범위·사거리 \+20%\. 먹 얼룩: .*3겹.*반경 70에 피해 120%\.$/);
+        // P2-1 awakeningScale: three darts at Lv.5 become four (3 × 1.2, rounded), and the 0.6 dart left goes into damage.
+        assert.match(tx(body), /^피해 \+22%, 투사체 3 → 4, 범위·사거리 \+20%\. 먹 얼룩: .*3겹.*반경 70에 피해 120%\.$/);
       } else {
         assert.equal(body.key, 'skill.arsenal.awakening');
       }

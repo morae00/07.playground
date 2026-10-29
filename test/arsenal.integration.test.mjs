@@ -129,13 +129,14 @@ test('SYS-15: lobs land after their delay, and the classic rules never offer the
   }
 });
 
-const PROPOSALS = { lobScatter: false, lobSingle: false, awakeningScale: false, rarityDamage: false, bossFirstVolley: false };
+// Balance audit P2-1 (user decision 2026-10-28): on in the remaster rules, off in the classic ones.
+const TUNING_OFF = { lobSingle: false, awakeningScale: false, rarityDamage: false, bossFirstVolley: false };
 
 /** Where a lob's blasts land in one cast at level 5 awakened, with `patch` over the remaster rules. */
-function lobBlasts(id, patch = {}) {
+function lobBlasts(id, patch = null) {
   const r = arena();
   try {
-    r.probe.patchRules({ ...PROPOSALS, ...patch });
+    if (patch) r.probe.patchRules(patch);
     r.probe.setSkills({ [id]: { level: 5, awakened: true } });
     const { player } = r.probe.read();
     const target = { x: player.x + 300, y: player.y };
@@ -149,28 +150,25 @@ function lobBlasts(id, patch = {}) {
   }
 }
 
-test('P2-1 proposals: off in both rule sets; the stacking lobs stack, spread, or throw one blast', () => {
-  for (const flag of Object.keys(PROPOSALS)) {
-    const r = arena();
+test('P2-1: the remaster rules tune the arsenal, the classic ones do not; ink pots throw one blast, not three on one spot', () => {
+  for (const rules of ['remaster', 'classic']) {
+    const r = arena(rules);
     try {
-      assert.equal(r.engine.ruleSet[flag], false, `${flag} is off in the remaster rules`);
+      for (const flag of Object.keys(TUNING_OFF)) assert.equal(r.engine.ruleSet[flag], rules === 'remaster', `${flag} under the ${rules} rules`);
     } finally {
       r.engine.dispose();
     }
   }
-  // Ink pots at level 5 awakened throw three: today all on the target, spread apart, or one.
-  const stacked = lobBlasts('inkPots');
+  // Ink pots at level 5 awakened threw three, all on the target; now one.
+  const stacked = lobBlasts('inkPots', TUNING_OFF);
   assert.equal(stacked.length, 3);
   assert.ok(stacked.every((d) => d < 2), `stacked ${stacked}`);
-  const spread = lobBlasts('inkPots', { lobScatter: true });
-  assert.equal(spread.length, 3);
-  assert.ok(spread.every((d) => Math.abs(d - 70) < 2), `spread ${spread}`);
-  assert.equal(lobBlasts('inkPots', { lobSingle: true }).length, 1);
+  assert.deepEqual(lobBlasts('inkPots'), [0]);
   // The cluster pots already scatter and are not one of the three.
-  assert.deepEqual(lobBlasts('clusterPots', { lobSingle: true }).length, lobBlasts('clusterPots').length);
+  assert.equal(lobBlasts('clusterPots').length, lobBlasts('clusterPots', TUNING_OFF).length);
 });
 
-test('P2-1 proposals: tuned numbers fold the count into damage, by rarity and awakening', () => {
+test('P2-1: tuned numbers fold the count into damage, by rarity and awakening', () => {
   const tuning = (id, flags) => ({ id, lobSingle: false, awakeningScale: false, rarityDamage: false, ...flags });
   const plain = arsenalStats(ARSENAL.inkPots, 5, true);
   assert.deepEqual(arsenalStats(ARSENAL.inkPots, 5, true, tuning('inkPots', {})), plain, 'no flag, no change');
@@ -191,11 +189,11 @@ test('P2-1 proposals: tuned numbers fold the count into damage, by rarity and aw
   assert.equal(rare.count, arsenalStats(ARSENAL.sealArrows, 3, false).count);
 });
 
-test('P2-1 proposals: with bossFirstVolley every bossbane seeker flies at the boss', () => {
+test('P2-1: with bossFirstVolley every bossbane seeker flies at the boss', () => {
   for (const volley of [false, true]) {
     const r = arena();
     try {
-      r.probe.patchRules({ ...PROPOSALS, bossFirstVolley: volley });
+      r.probe.patchRules({ bossFirstVolley: volley });
       r.probe.setSkills({ bossbane: { level: 5, awakened: true } });
       const { player } = r.probe.read();
       const boss = r.probe.spawnBoss('final', { x: player.x + 420, y: player.y, hp: 1e9 });
@@ -203,7 +201,7 @@ test('P2-1 proposals: with bossFirstVolley every bossbane seeker flies at the bo
       r.probe.step(1);
       const shots = r.probe.read().projectiles.filter((shot) => shot.skillId === 'bossbane');
       const atBoss = shots.filter((shot) => shot.vx > 0).length;
-      assert.equal(shots.length, arsenalStats(ARSENAL.bossbane, 5, true).count);
+      assert.equal(shots.length, arsenalStats(ARSENAL.bossbane, 5, true, { id: 'bossbane', lobSingle: true, awakeningScale: true, rarityDamage: true }).count);
       assert.equal(atBoss, volley ? shots.length : 1, `${atBoss} of ${shots.length} at the boss ${boss}`);
     } finally {
       r.engine.dispose();

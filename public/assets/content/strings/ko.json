@@ -874,7 +874,7 @@
  "skill.wardRing.summary": "가까이 붙은 적을 고리로 쳐서 밀어냅니다.",
  "skill.eclipseHalo": "일식 테",
  "skill.eclipseHalo.summary": "넓은 테를 무겁게 훑어 띠 안의 적을 크게 칩니다.",
- "skill.arsenal.awakening": "피해 +{damage}%, {count} +1, 범위·사거리 +{reach}%.",
+ "skill.arsenal.awakening": "피해 +{damage}%, {count} {from} → {to}, 범위·사거리 +{reach}%.",
  "skill.arsenal.awakening.reach": "피해 +{damage}%, 범위·사거리 +{reach}%.",
  "skill.arsenal.awakening.gimmick": "{base} {gimmick}",
  "skill.inkDarts.awakeningGimmick": "먹 얼룩: 맞힌 적에 얼룩이 {seconds}초 남고, {stacks}겹이 되면 터져 반경 {radius}에 피해 {damage}%.",

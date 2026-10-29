@@ -874,7 +874,7 @@
  "skill.wardRing.summary": "Strikes and pushes back enemies that come close.",
  "skill.eclipseHalo": "Eclipse Halo",
  "skill.eclipseHalo.summary": "Sweeps a wide band hard, hitting all within.",
- "skill.arsenal.awakening": "Damage +{damage}%, {count} +1, reach +{reach}%.",
+ "skill.arsenal.awakening": "Damage +{damage}%, {count} {from} → {to}, reach +{reach}%.",
  "skill.arsenal.awakening.reach": "Damage +{damage}%, reach +{reach}%.",
  "skill.arsenal.awakening.gimmick": "{base} {gimmick}",
  "skill.inkDarts.awakeningGimmick": "Ink stain: a struck enemy keeps a stain for {seconds}s; at {stacks} stains it bursts over {radius} for {damage}% damage.",

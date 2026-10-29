@@ -7,10 +7,10 @@
   },
   "budgets": {
     "appJs": {
-      "bytes": 154695,
-      "kib": 151.07,
+      "bytes": 154807,
+      "kib": 151.18,
       "baselineBytes": 128399,
-      "growthRatio": 0.20479910279675084,
+      "growthRatio": 0.20567138373351823,
       "warningBytes": 147658,
       "failBytes": 160498,
       "status": "warning",
@@ -35,16 +35,16 @@
       "passed": true
     },
     "initialAssets": {
-      "bytes": 2251299,
-      "kib": 2198.53,
+      "bytes": 2251316,
+      "kib": 2198.55,
       "warningBytes": 3145728,
       "failBytes": 4194304,
       "status": "passed",
       "passed": true
     },
     "installAssets": {
-      "bytes": 38258149,
-      "kib": 37361.47,
+      "bytes": 38258166,
+      "kib": 37361.49,
       "warningBytes": 209715200,
       "failBytes": 262144000,
       "status": "passed",
@@ -55,10 +55,10 @@
   "passed": true,
   "bundles": [
     {
-      "file": "assets/App-vAVNx2vh.js",
+      "file": "assets/App-CPf5OGZH.js",
       "category": "appJs",
-      "sourceBytes": 473652,
-      "gzipBytes": 151142
+      "sourceBytes": 473839,
+      "gzipBytes": 151253
     },
     {
       "file": "assets/atlas/common-0.png",
@@ -105,20 +105,20 @@
     {
       "file": "assets/content/strings/en.json",
       "category": "data",
-      "sourceBytes": 51246,
-      "gzipBytes": 15480
+      "sourceBytes": 51259,
+      "gzipBytes": 15481
     },
     {
       "file": "assets/content/strings/ko.json",
       "category": "data",
-      "sourceBytes": 56107,
+      "sourceBytes": 56120,
       "gzipBytes": 17592
     },
     {
       "file": "assets/content/tables.json",
       "category": "data",
-      "sourceBytes": 60911,
-      "gzipBytes": 11422
+      "sourceBytes": 60902,
+      "gzipBytes": 11421
     },
     {
       "file": "assets/enemy-icons-BEkQ6ASU.webp",
@@ -139,10 +139,10 @@
       "gzipBytes": 17903
     },
     {
-      "file": "assets/index-CnaiWiOH.js",
+      "file": "assets/index-BZFvgmty.js",
       "category": "appJs",
       "sourceBytes": 7500,
-      "gzipBytes": 3553
+      "gzipBytes": 3554
     },
     {
       "file": "assets/keyart-DFQzyQdB.webp",

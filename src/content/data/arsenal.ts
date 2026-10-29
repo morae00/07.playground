@@ -12,7 +12,8 @@
 //   [speed multiplier, seconds], `stun` [chance, seconds], `knockback`, `execute` (an ordinary enemy left under that
 //   share of its health falls), `crit` (extra crit chance), `boss` (damage multiplier on bosses).
 // - `look`: the active skill whose art draws it until the kit draws its own (icons alias the look's tile).
-// - Awakened at level 5 like every skill: `awakening` adds damage, one more of its count, and reach.
+// - Awakened at level 5 like every skill: `awakening` adds damage, one more of its count, and reach; under the
+//   awakeningScale rule `retune.awakeningCount` of its count instead (below).
 import type { ArsenalId, CoreSkillId } from '../../game/engine/worldTypes.ts';
 import { deepFreeze } from '../deepFreeze.ts';
 
@@ -99,16 +100,16 @@ const ARSENAL: Record<ArsenalId, ArsenalWeapon> = {
 };
 
 /**
- * Balance audit P2-1 proposals (2026-10-23), each read only under its rule flag, all off until the team decides:
- * - lobScatter (lobScatter rule): how far from the target the extra blasts of the three lobs that stack land. The
- *   lobSingle rule takes the same three.
- * - lobFold (lobSingle rule): each blast their count would add adds this share of a blast's damage to their one blast.
+ * Balance audit P2-1 (user decision 2026-10-28), each read under its rule flag (on in the remaster rules):
+ * - singleLobs, lobFold (lobSingle rule): the lobs that landed every blast of their count on one point throw one blast,
+ *   and each blast their count would add adds `lobFold` of a blast's damage to it.
  * - awakeningCount (awakeningScale rule): an awakening multiplies the count by 1 + this instead of adding one (the
- *   flat one gave the weapons 1.21 times their count on average at level 5).
- * - rarityDamage (rarityDamage rule): damage times this, by rarity.
+ *   flat one gave the weapons 1.21 times their count on average at level 5); what rounding leaves goes into damage.
+ * - rarityDamage (rarityDamage rule): damage times this, by rarity, fitted with the other three on so that power
+ *   (the weapon gauntlet's index) rises with rarity.
  */
 const RETUNE = {
-  lobScatter: { inkPots: 70, tarJar: 80, meteorBrush: 90 } as Partial<Record<ArsenalId, number>>,
+  singleLobs: ['inkPots', 'tarJar', 'meteorBrush'] as ArsenalId[],
   lobFold: 0.5,
   awakeningCount: 0.2,
   rarityDamage: { common: 1, rare: 1.25, epic: 1, legendary: 1, mythic: 1.1 } as Record<ArsenalWeapon['rarity'], number>,
