@@ -8,7 +8,7 @@ import OBJECTIVES from '../src/content/data/objectives.ts';
 // salvage, giants, crossfire, and vanguard.
 installHeadlessPlatform();
 Object.defineProperty(globalThis, 'performance', { value: { now: () => 0 }, configurable: true });
-const { ProbedGameEngine, installStrings, tx } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
+const { ProbedGameEngine, installStrings, stageObjective, tx } = await import(process.env.BLACKLINE_TEST_BUNDLE ?? '/tmp/blackline-survivor-p0/testing.mjs');
 installStrings(localeTable('ko'));
 
 function stageRun(chapter, stage, { rules = 'remaster', seed = 4711, options = {}, patch = null } = {}) {
@@ -73,7 +73,8 @@ test('CON-03: the swarm and giant objectives move one tier by 15 points; the oth
 test('CON-03: the first stage of the campaign keeps its bonus goal without the harder mix', () => {
   const run = stageRun(1, 1);
   try {
-    assert.equal(tx(run.probe.hud().bonus.goal), '소형 280마리 처치');
+    // P2-3 (bonusGoalRetune): Ch1's swarm goal is 700 small kills.
+    assert.equal(tx(run.probe.hud().bonus.goal), '소형 700마리 처치');
     run.probe.haltSpawns();
     near(tierShares(run).small, 0.58, 0.02, '1-1 small');
   } finally {
@@ -117,7 +118,7 @@ test('CON-03: the vanguard objective calls a third field boss at 18%; without el
     }
     assert.equal(vanguard.probe.read().enemies.filter((enemy) => enemy.isBoss).length, 1, 'vanguard: a field boss at 18%');
     assert.equal(plain.probe.read().enemies.filter((enemy) => enemy.isBoss).length, 0, 'the others wait for 36%');
-    assert.equal(tx(vanguard.probe.hud().bonus.goal), '필드 보스 3마리를 각각 나타난 뒤 60초 안에 처치');
+    assert.equal(tx(vanguard.probe.hud().bonus.goal), '필드 보스 3마리를 각각 나타난 뒤 120초 안에 처치');
   } finally {
     vanguard.engine.dispose();
     plain.engine.dispose();
@@ -139,6 +140,8 @@ test('CON-03: the vanguard objective calls a third field boss at 18%; without el
 });
 
 test('D-04: a field boss goal counts only field bosses defeated within 60 s of arriving, and one that outlives it fails the goal', () => {
+  // D-04's own window; the remaster rules widen it to 120 s since P2-3 (bonusGoalRetune, the test below).
+  const d04 = { patch: { bonusGoalRetune: false } };
   const callBoss = (run) => {
     // No skills, so the boss lives until the test says.
     run.probe.setSkills({});
@@ -147,7 +150,7 @@ test('D-04: a field boss goal counts only field bosses defeated within 60 s of a
     run.probe.step(2);
     return run.probe.read().enemies.find((enemy) => enemy.isBoss);
   };
-  const quick = stageRun(1, 8);
+  const quick = stageRun(1, 8, d04);
   try {
     const boss = callBoss(quick);
     quick.probe.haltSpawns();
@@ -158,7 +161,7 @@ test('D-04: a field boss goal counts only field bosses defeated within 60 s of a
   } finally {
     quick.engine.dispose();
   }
-  const slow = stageRun(1, 8);
+  const slow = stageRun(1, 8, d04);
   try {
     callBoss(slow);
     slow.probe.haltSpawns();
@@ -269,7 +272,7 @@ test('CON-03: kill goals count their tier, practice runs have no bonus goal, and
   landmark.engine.dispose();
 });
 
-test('P2-3 proposal: under bonusGoalRetune the kill goals and the field boss window take their chapter\'s retuned numbers', () => {
+test('P2-3 (decision 2026-10-28): under bonusGoalRetune the kill goals and the field boss window take their chapter\'s retuned numbers', () => {
   const { kills, fieldBossWithin } = OBJECTIVES.retune;
   // 1-9 swarm (small kills), 2-6 crossfire (ranged kills), 2-3 the elite hunt (elite kills).
   for (const [chapter, stage, id, now] of [[1, 9, 'swarm', 280], [2, 6, 'crossfire', 22], [2, 3, 'elites', 10]]) {
@@ -294,6 +297,25 @@ test('P2-3 proposal: under bonusGoalRetune the kill goals and the field boss win
       run.probe.haltSpawns();
       run.probe.step(Math.round(60 * seconds));
       assert.equal(run.probe.hud().bonus.status, status, `alive ${seconds} s with a ${within} s window`);
+    } finally {
+      run.engine.dispose();
+    }
+  }
+});
+
+test('P2-3: the stage card states the goal the remaster rules play: retuned kills and the 120 s window', () => {
+  const { kills, fieldBossWithin } = OBJECTIVES.retune;
+  for (const [chapter, stage, goal] of [
+    [1, 1, `소형 ${kills.swarm[0]}마리 처치`],
+    [4, 6, `소형 ${kills.swarm[3]}마리 처치`],
+    [5, 3, `원거리 적 ${kills.crossfire[4]}마리 처치`],
+    [3, 2, `정예 ${kills.elites[2]}마리 처치`],
+    [5, 4, `필드 보스 3마리를 각각 나타난 뒤 ${fieldBossWithin[4]}초 안에 처치`],
+  ]) {
+    assert.equal(tx(stageObjective(chapter, stage).goal), goal, `${chapter}-${stage}`);
+    const run = stageRun(chapter, stage);
+    try {
+      assert.equal(tx(run.probe.hud().bonus.goal), goal, `${chapter}-${stage} HUD`);
     } finally {
       run.engine.dispose();
     }

@@ -284,16 +284,16 @@ A normal stage keeps its survival clock. Under the `stageObjectives` rule its ob
 
 | Objective | Changes | Bonus goal |
 |---|---|---|
-| 소형 무리 압박전 (swarm) | small share +15 points, spawns ×1.2 | defeat 280 small enemies |
+| 소형 무리 압박전 (swarm) | small share +15 points, spawns ×1.2 | defeat 700 / 1,650 / 2,200 / 4,250 small enemies (Ch1-4) |
 | 중형 경계선 유지 (holdLine) | — | hold a marked zone for 30 s; it moves on every 10 s held |
 | 지형 함정 구역 (traps) | twice the terrain | spend at most 20 s in hazards |
-| 정예 추격전 (elites) | elites in every beat (SYS-10); without elites, field bosses with ×1.5 health and ×1.2 damage | defeat 10 elites; without elites, both field bosses, each within 60 s of arriving |
+| 정예 추격전 (elites) | elites in every beat (SYS-10); without elites, field bosses with ×1.5 health and ×1.2 damage | defeat 3 / 4 / 30 / 30 / 25 elites (Ch1-5); without elites, both field bosses, each within 120 s of arriving |
 | 자원 회수 압박전 (salvage) | — | recover 5 ink caches, one after another, by standing on each for 1.5 s |
-| 대형 개체 회피전 (giants) | large share +15 points | defeat 45 large enemies |
-| 투사체 포위망 (crossfire) | three times the ranged cap, up to 6 | defeat 14 ranged enemies |
-| 보스 전초 압박전 (vanguard) | a third field boss at 18% | defeat all three field bosses, each within 60 s of arriving (D-04) |
+| 대형 개체 회피전 (giants) | large share +15 points | defeat 48 / 300 / 820 / 1,150 large enemies (Ch1, 3-5) |
+| 투사체 포위망 (crossfire) | three times the ranged cap, up to 6 | defeat 20 / 22 / 72 / 160 ranged enemies (Ch1, 2, 4, 5) |
+| 보스 전초 압박전 (vanguard) | a third field boss at 18% | defeat all three field bosses, each within 120 s of arriving (D-04, P2-3) |
 
-- Kill goals scale by chapter (×1, 1.6, 3.5, 4.5, 5.5): later chapters bring far more enemies.
+- Kill goals are set by chapter, and the field boss window is 120 s (balance audit P2-3, user decision 2026-10-28, `bonusGoalRetune` rule; `retune` in `objectives.ts`): after R5's horde the clears brought two to four times the old kill goals (count × 1, 1.6, 3.5, 4.5, 5.5 by chapter, still the classic numbers), elites are scarce before Ch3, and SYS-12 doubled the field bosses' health after D-04 set 60 s. The targets sit near the median of the team personas' clears, so about half of them meet a goal. The objectives rotate, so swarm never falls in Ch5, giants in Ch2, or crossfire in Ch3.
 - G9's stage exception: a moved share takes 15 points at most, and the other two tiers split the rest in their 58:30:12 proportion. Hit radii and tier stats never change. The ranged cap (1-3) is raised on the crossfire stages only. Field bosses keep their 36% and 72% marks, and the vanguard adds one (G8). The stage card lists every change (`menuStage.ts` `stageObjective`).
 - The campaign's first stage teaches the game, so it keeps its bonus goal without the changes. Practice runs have no bonus goal: their clock is too short.
 - The zone and the caches draw from the objective's own random stream, so the rest of the stage keeps its draws. The world renderer draws them on the ground in the player's colours: the zone as an ally ring, a cache as a reward ring round an ink packet. The solid arc fills as the player stands in it.
@@ -305,7 +305,7 @@ A normal stage keeps its survival clock. Under the `stageObjectives` rule its ob
 The elite purple had nothing to mark, and the 정예 추격전 objective only strengthened field bosses. The `eliteAffixes` rule (remaster on, classic off) adds elites, with the numbers in `src/content/data/elites.ts`:
 - An elite is an ordinary enemy of any tier with one affix. Its radius, tier, and role stay the tier's (G9, V4, V6). It has 2.5 times the health and pays 3 times the XP.
 - 가속 (haste) moves 1.5 times as fast. 분열 (split) breaks into two enemies of the next tier down at half their usual health when it falls. 보호막 (shield) carries a barrier worth 60% of its max health that takes hits first and comes back after 4 s untouched. 흡수 오라 (drain) heals the enemies within 150 by 4% of their max health a second.
-- Elite beats (SYS-03) promote 12% of their spawns. On the elite hunt objective (CON-03) 6% of every spawn comes as an elite, and its bonus goal becomes ten elite kills in every chapter; the field bosses keep their usual strength. At most three elites are alive at once. A fallen elite drops a coin chest worth 12 times its coins, under the horde (SYS-13) at least 12, since most small enemies carry no coin of their own there (BUG-25).
+- Elite beats (SYS-03) promote 12% of their spawns. On the elite hunt objective (CON-03) 6% of every spawn comes as an elite, and its bonus goal becomes elite kills (3, 4, 30, 30, and 25 by chapter since P2-3; ten in every chapter before); the field bosses keep their usual strength. At most three elites are alive at once. A fallen elite drops a coin chest worth 12 times its coins, under the horde (SYS-13) at least 12, since most small enemies carry no coin of their own there (BUG-25).
 - The renderer outlines an elite in the elite purple (its sprite's cut-out nudged out, or a ring round a vector body) and marks its affix over its head. Its health bar shows unless health bars are off.
 
 ## Assists (SYS-07)

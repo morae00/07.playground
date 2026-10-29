@@ -21,5 +21,5 @@ export { OBSTACLE_CATALOGUE } from '../game/obstacleCatalogue';
 export { INFINITE_ROTATION, byMinute, dailySeed, infiniteDifficultyAt, infiniteKillScore, weeklySeed } from '../game/infiniteMode';
 export { settlementNotes } from '../ui/settlementNotes';
 export { installStrings, t, tp, tx } from '../i18n/strings';
-export { STAGE_PATH, chapterCleared, passiveEffect, smoothPath, stageBoss, stageRewardFloor, stageStatus, upgradeEffect } from '../ui/menuStage';
+export { STAGE_PATH, chapterCleared, passiveEffect, smoothPath, stageBoss, stageObjective, stageRewardFloor, stageStatus, upgradeEffect } from '../ui/menuStage';
 export { WORLD_LAYERS, XRAY_COVERAGE } from '../game/render/worldRenderer';

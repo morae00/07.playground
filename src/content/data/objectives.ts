@@ -6,6 +6,8 @@
 // - Kill goals scale by chapter (killScale), since later chapters bring far more enemies.
 // - fieldBosses.within: only field bosses defeated within that many seconds of appearing count, and one that outlives
 //   it fails the goal (decision D-04: the untimed goal was met on 93-94% of clears).
+// - Under the bonusGoalRetune rule (remaster, user decision 2026-10-28) `retune` below sets the kill targets by chapter
+//   and the window instead.
 // The stage card states every change (src/ui/menuStage.ts stageObjective).
 import { deepFreeze } from '../deepFreeze.ts';
 
@@ -47,8 +49,8 @@ export default deepFreeze({
   bonusGoldShare: 0.5,
   maxRanged: 6,
   /**
-   * Balance audit P2-3 proposal (bonusGoalRetune rule, off until the team decides), measured on f57e3c0: the team
-   * personas' clears of the 23 stages with these goals × 10 seeds, about half of which meet each goal.
+   * Balance audit P2-3 (bonusGoalRetune rule, user decision 2026-10-28), measured on f57e3c0: the team personas'
+   * clears of the 23 stages with these goals × 10 seeds, about half of which meet each goal.
    * - kills: a kill goal's target by chapter, in place of count × killScale, at about the median of the clears' kills
    *   of that kind (the elite hunt's counts elites). The rotation leaves swarm out of Ch5, giants out of Ch2, and
    *   crossfire out of Ch3; their numbers there come from the chapters beside them.

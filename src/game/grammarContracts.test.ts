@@ -55,11 +55,10 @@ test('rule versions: remaster rules are the default and classic rules keep every
   for (const [flag, value] of Object.entries(CLASSIC_RULES)) {
     if (typeof value === 'boolean') assert.equal(value, false, `classic rules must disable ${flag}`);
   }
-  // The team decided the last two experiments on 2026-10-02 (SYS-06 terrain, D-05; SYS-08 build depth, D-09), so the
-  // remaster rules enable every flag but the proposals below. An experiment the team has not decided stays off in both
-  // rule sets: the balance audit's bonus goal proposal (P2-3, 2026-10-23).
-  const undecided = new Set(['bonusGoalRetune']);
+  // The team decided the last two experiments on 2026-10-02 (SYS-06 terrain, D-05; SYS-08 build depth, D-09), and the
+  // balance audit's proposals on 2026-10-28 (P2-1, P2-3), so the remaster rules enable every flag. An experiment the team
+  // has not decided stays off in both rule sets.
   for (const [flag, value] of Object.entries(REMASTER_RULES)) {
-    if (typeof value === 'boolean') assert.equal(value, !undecided.has(flag), `remaster rules must ${undecided.has(flag) ? 'leave off' : 'enable'} ${flag}`);
+    if (typeof value === 'boolean') assert.equal(value, true, `remaster rules must enable ${flag}`);
   }
 });

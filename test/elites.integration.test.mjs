@@ -127,10 +127,11 @@ test('SYS-10: a shield takes hits first and comes back; a drain aura heals; a sp
   }
 });
 
-test('SYS-10: the elite hunt brings elites in every beat and asks for ten elite kills', () => {
+test('SYS-10: the elite hunt brings elites in every beat and asks for its chapter\'s elite kills', () => {
   const r = run(1, 4);
   try {
-    assert.equal(tx(r.probe.hud().bonus.goal), '정예 10마리 처치');
+    // Ten in every chapter until P2-3 (bonusGoalRetune, 2026-10-28) set them by chapter: 3 in Ch1.
+    assert.equal(tx(r.probe.hud().bonus.goal), '정예 3마리 처치');
     const elites = sampleSpawns(r, 1000);
     assert.ok(elites.length > 30, `elites outside elite beats too (${elites.length} of 1000)`);
     r.probe.clear('enemies');
