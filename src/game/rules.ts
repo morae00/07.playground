@@ -202,6 +202,28 @@ export type RuleSet = Readonly<{
    * drafts of a normal stage's opening instead of at once. Numbers in src/content/data/bossWarmup.ts.
    */
   bossWarmup: boolean;
+  /**
+   * P2-1 proposal (balance audit 2026-10-23; off in both rule sets until the team decides): ink pots, the tar jar, and
+   * the meteor brush land every blast of their count on one point, so the count quietly multiplies one spot's damage.
+   * Their extra blasts land apart instead, `retune.lobScatter` from the target, as the cluster pots' do. Numbers in
+   * src/content/data/arsenal.ts.
+   */
+  lobScatter: boolean;
+  /**
+   * P2-1 proposal, the other way: those three lobs throw one blast at every level, and each blast their count would
+   * have added adds `retune.lobFold` of a blast's damage to it.
+   */
+  lobSingle: boolean;
+  /**
+   * P2-1 proposal: an awakening multiplies an arsenal weapon's count (shots, blasts, or a chain's hits) by
+   * 1 + `retune.awakeningCount` instead of adding one, which doubled one-shot weapons and did nothing for novas, halos,
+   * and beams. What rounding leaves, or all of it for a weapon without a count, goes into its damage.
+   */
+  awakeningScale: boolean;
+  /** P2-1 proposal: arsenal weapons deal `retune.rarityDamage` of their damage by rarity, so power follows rarity. */
+  rarityDamage: boolean;
+  /** P2-1 proposal: every seeker of a boss-first weapon (bossbane) aims at the boss in range, not only the first. */
+  bossFirstVolley: boolean;
 }>;
 
 export const CLASSIC_RULES: RuleSet = Object.freeze({
@@ -247,6 +269,11 @@ export const CLASSIC_RULES: RuleSet = Object.freeze({
   lightBonusHeal: false,
   awakeningGimmicks: false,
   bossWarmup: false,
+  lobScatter: false,
+  lobSingle: false,
+  awakeningScale: false,
+  rarityDamage: false,
+  bossFirstVolley: false,
 });
 
 export const REMASTER_RULES: RuleSet = Object.freeze({
@@ -292,6 +319,12 @@ export const REMASTER_RULES: RuleSet = Object.freeze({
   lightBonusHeal: true,
   awakeningGimmicks: true,
   bossWarmup: true,
+  // Proposals the team has not decided (balance audit P2-1): off until it does.
+  lobScatter: false,
+  lobSingle: false,
+  awakeningScale: false,
+  rarityDamage: false,
+  bossFirstVolley: false,
 });
 
 export function ruleSetFor(id: RuleSetId | undefined): RuleSet {

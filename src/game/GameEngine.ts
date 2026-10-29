@@ -52,7 +52,7 @@ import BUILD_DEPTH, { type FusionId } from '../content/data/buildDepth';
 import ELITES from '../content/data/elites';
 import BOSS_TOUGHNESS from '../content/data/bossToughness';
 import HORDE from '../content/data/horde';
-import { ARSENAL, ARSENAL_AWAKENING, ARSENAL_IDS, arsenalStats, isArsenal } from './arsenal';
+import { ARSENAL, ARSENAL_AWAKENING, ARSENAL_IDS, ARSENAL_RETUNE, arsenalStats, isArsenal, type ArsenalTuning } from './arsenal';
 import AWAKENINGS from '../content/data/awakenings';
 import { CHARACTERS, applyCharacterPerk, characterStartLevel, type CharacterLoadout } from './characters';
 import BOMBERS from '../content/data/bombers';
@@ -2898,7 +2898,7 @@ export class GameEngine {
   protected fireArsenal(id: ArsenalId, skill: SkillState) {
     if ((this.skillCooldowns[id] ?? 0) > 0) return;
     const weapon = ARSENAL[id];
-    const stats = arsenalStats(weapon, skill.level, skill.awakened);
+    const stats = arsenalStats(weapon, skill.level, skill.awakened, this.arsenalTuning(id));
     const awake = this.rules.awakeningGimmicks && skill.awakened;
     const A = AWAKENINGS;
     const cast = this.casts[id] ?? 0;
@@ -2940,7 +2940,8 @@ export class GameEngine {
         const hit = new Set<number>();
         const boss = weapon.bossFirst ? this.enemies.find((enemy) => enemy.isBoss && enemy.hp > 0 && distance(enemy, this.player) < range) : undefined;
         for (let index = 0; index < stats.count; index += 1) {
-          const target = index === 0 && boss ? boss : this.findNearestEnemyFrom(px, py, range, hit);
+          // P2-1 proposal (bossFirstVolley): every seeker of a boss-first weapon goes to the boss, not only the first.
+          const target = boss && (index === 0 || this.rules.bossFirstVolley) ? boss : this.findNearestEnemyFrom(px, py, range, hit);
           if (!target) break;
           hit.add(target.id);
           shoot(Math.atan2(target.y - py, target.x - px), target.id);
@@ -2985,7 +2986,8 @@ export class GameEngine {
       case 'lob':
         for (let index = 0; index < stats.count; index += 1) {
           const angle = (index * Math.PI * 2) / stats.count;
-          const spread = stats.count > 1 ? weapon.scatter ?? 0 : 0;
+          // P2-1 proposal (lobScatter): the lobs that stack their blasts spread them instead.
+          const spread = stats.count > 1 ? (this.rules.lobScatter ? ARSENAL_RETUNE.lobScatter[id] : undefined) ?? weapon.scatter ?? 0 : 0;
           // K10 looks only: where and when it was thrown, for how long, its place in the cast, and its awakening.
           const delay = weapon.delay ?? 0.6;
           this.arsenalLobs.push({ at: this.elapsed + delay, x: near.x + Math.cos(angle) * spread, y: near.y + Math.sin(angle) * spread, radius: stats.radius, damage, id, x0: px, y0: py, born: this.elapsed, delay, k: index, awakened: skill.awakened });
@@ -3127,7 +3129,13 @@ export class GameEngine {
 
   /** SYS-16: an awakened weapon's own hit at its level, the base its gimmick's damage is a share of. */
   protected weaponHit(id: ArsenalId) {
-    return this.player.stats.attack * arsenalStats(ARSENAL[id], this.skills[id]?.level ?? 1, true).damage;
+    return this.player.stats.attack * arsenalStats(ARSENAL[id], this.skills[id]?.level ?? 1, true, this.arsenalTuning(id)).damage;
+  }
+
+  /** P2-1: the proposals that tune an arsenal weapon's numbers, when their rule flags are on (none by default). */
+  protected arsenalTuning(id: ArsenalId): ArsenalTuning | undefined {
+    if (!this.rules.lobSingle && !this.rules.awakeningScale && !this.rules.rarityDamage) return undefined;
+    return { id, lobSingle: this.rules.lobSingle, awakeningScale: this.rules.awakeningScale, rarityDamage: this.rules.rarityDamage };
   }
 
   /** SYS-16: what awakened weapons left on an enemy, made on first use. */

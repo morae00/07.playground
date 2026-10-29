@@ -56,8 +56,10 @@ test('rule versions: remaster rules are the default and classic rules keep every
     if (typeof value === 'boolean') assert.equal(value, false, `classic rules must disable ${flag}`);
   }
   // The team decided the last two experiments on 2026-10-02 (SYS-06 terrain, D-05; SYS-08 build depth, D-09), so the
-  // remaster rules enable every flag. An experiment the team has not decided stays off in both rule sets.
+  // remaster rules enable every flag but the proposals below. An experiment the team has not decided stays off in both
+  // rule sets: the balance audit's weapon proposals (P2-1, 2026-10-23).
+  const undecided = new Set(['lobScatter', 'lobSingle', 'awakeningScale', 'rarityDamage', 'bossFirstVolley']);
   for (const [flag, value] of Object.entries(REMASTER_RULES)) {
-    if (typeof value === 'boolean') assert.equal(value, true, `remaster rules must enable ${flag}`);
+    if (typeof value === 'boolean') assert.equal(value, !undecided.has(flag), `remaster rules must ${undecided.has(flag) ? 'leave off' : 'enable'} ${flag}`);
   }
 });

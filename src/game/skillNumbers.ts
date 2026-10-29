@@ -7,6 +7,7 @@ import SKILL_NUMBER_TABLE from '../content/data/skillNumbers.ts';
 import AWAKENINGS from '../content/data/awakenings.ts';
 import type { ArsenalId, CoreSkillId, SkillId } from './engine/worldTypes.ts';
 import { ARSENAL, ARSENAL_AWAKENING as AWAKENING, ARSENAL_IDS, arsenalStats } from './arsenal.ts';
+import { REMASTER_RULES } from './rules.ts';
 import { text, type StringKey, type Text, type TextParam } from '../i18n/text.ts';
 import {
   COIN_FEVER_FRENZY_ATTACK_SPEED_MULTIPLIER,
@@ -88,11 +89,16 @@ const CORE_LEVEL_STATS: Record<CoreSkillId, (level: number) => SkillStats> = {
   executionMark: (level) => [['stat.crit', `+${pct(scaleAt(N.executionMark.critChance, level))}%`], ['stat.bossDamage', `+${pct(scaleAt(N.executionMark.bossDamage, level))}%`]],
 };
 
-/** SYS-15: an arsenal weapon's card prints its damage and the number its kind grows by. */
+/**
+ * SYS-15: an arsenal weapon's card prints its damage and the number its kind grows by, as the shipped rules fire it
+ * (the P2-1 proposals' rarity damage and single lobs once a build ships them on).
+ */
 function arsenalLevelStats(id: ArsenalId) {
   const weapon = ARSENAL[id];
+  const { lobSingle, rarityDamage } = REMASTER_RULES;
+  const tuning = lobSingle || rarityDamage ? { id, lobSingle, awakeningScale: false, rarityDamage } : undefined;
   return (level: number): SkillStats => {
-    const stats = arsenalStats(weapon, level, false);
+    const stats = arsenalStats(weapon, level, false, tuning);
     const damage: StatLine = ['stat.damage', `${pct(stats.damage)}%`];
     if (weapon.kind === 'chain') return [damage, ['stat.jumps', times(stats.jumps)]];
     if (weapon.kind === 'nova' || weapon.kind === 'lob' || weapon.kind === 'halo') return [damage, ['stat.blastRadius', num(stats.radius)]];

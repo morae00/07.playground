@@ -98,5 +98,21 @@ const ARSENAL: Record<ArsenalId, ArsenalWeapon> = {
   eclipseHalo: { rarity: 'legendary', chapterMin: 4, tags: ['melee', 'area'], kind: 'halo', look: 'eclipseStep', damage: [1.6, 0.28], cooldown: [1.8, 0.07, 0.8], radius: [210, 10], inner: 110 },
 };
 
+/**
+ * Balance audit P2-1 proposals (2026-10-23), each read only under its rule flag, all off until the team decides:
+ * - lobScatter (lobScatter rule): how far from the target the extra blasts of the three lobs that stack land. The
+ *   lobSingle rule takes the same three.
+ * - lobFold (lobSingle rule): each blast their count would add adds this share of a blast's damage to their one blast.
+ * - awakeningCount (awakeningScale rule): an awakening multiplies the count by 1 + this instead of adding one (the
+ *   flat one gave the weapons 1.21 times their count on average at level 5).
+ * - rarityDamage (rarityDamage rule): damage times this, by rarity.
+ */
+const RETUNE = {
+  lobScatter: { inkPots: 70, tarJar: 80, meteorBrush: 90 } as Partial<Record<ArsenalId, number>>,
+  lobFold: 0.5,
+  awakeningCount: 0.2,
+  rarityDamage: { common: 1, rare: 1.25, epic: 1, legendary: 1, mythic: 1.1 } as Record<ArsenalWeapon['rarity'], number>,
+};
+
 /** An awakened weapon: damage x`damage`, `count` more of its count, reach x`reach`. */
-export default deepFreeze({ weapons: ARSENAL, awakening: { damage: 1.35, count: 1, reach: 1.2 } });
+export default deepFreeze({ weapons: ARSENAL, awakening: { damage: 1.35, count: 1, reach: 1.2 }, retune: RETUNE });

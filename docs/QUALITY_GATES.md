@@ -438,6 +438,28 @@ CON-08 (the endless rotation, `infiniteRotation` rule) was measured with `npm ru
 - Ink pots, the tar jar, and the meteor brush land every blast of their count on one point, so their count multiplies one spot's damage. The bossbane, the boss weapon, aims only its first seeker at the boss and deals 142 a second, below the ink darts' 210.
 - At level 1 (fingerprint 54ff1c6c68e8d354) the commons and rares kill a median 3 enemies in the minute, the legendaries 375.
 
+The audit's P2-1 proposals are rule flags, off in both rule sets until the team decides (numbers in `retune` of `src/content/data/arsenal.ts`): `lobScatter` (the three stacking lobs land their extra blasts 70-90 apart), `lobSingle` (they throw one blast, each blast their count would add adding half a blast's damage), `awakeningScale` (an awakening multiplies the count by 1.2 instead of adding one; what rounding leaves, or all of it for a weapon without a count, goes into damage), `bossFirstVolley` (every bossbane seeker aims at the boss), and `rarityDamage` (rare ×1.25, mythic ×1.1, fitted with `lobSingle`, `awakeningScale`, and `bossFirstVolley` on). The gauntlet at level 5 awakened, arsenal weapons only, kills / boss damage per second (rarity medians, then single weapons):
+
+| | today | lobScatter | lobSingle | awakeningScale | bossFirstVolley | all but lobScatter |
+|---|---:|---:|---:|---:|---:|---:|
+| common | 332 / 73 | 332 / 73 | 332 / 56 | 332 / 54 | 332 / 73 | 332 / 48 |
+| rare | 180 / 30 | 180 / 30 | 180 / 30 | 137 / 30 | 180 / 30 | 184 / 37 |
+| epic | 400 / 31 | 400 / 31 | 400 / 30.5 | 403 / 34 | 400 / 31 | 403 / 30 |
+| legendary | 714 / 104 | 714 / 104 | 714 / 69 | 669 / 83 | 714 / 104 | 669 / 59 |
+| mythic | 584 / 49 | 584 / 49 | 584 / 49 | 603 / 49 | 584 / 49 | 642 / 54 |
+| inversions: pairs, weapons (two tiers or more) | 86, 22 (11) | 88, 24 (12) | 84, 22 (11) | 84, 25 (12) | 84, 21 (10) | 75, 23 (11) |
+| ink pots (common) | 692 / 82 | 717 / 82 | 675 / 56 | 687 / 67 | 692 / 82 | 665 / 48 |
+| tar jar (epic) | 675 / 58 | 699 / 58 | 676 / 39 | 640 / 46 | 675 / 58 | 643 / 33 |
+| meteor brush (legendary) | 719 / 104 | 727 / 104 | 758 / 69 | 744 / 83 | 719 / 104 | 756 / 59 |
+| bossbane (legendary) | 82 / 142 | 82 / 142 | 82 / 142 | 43 / 171 | 82 / 418 | 43 / 334 |
+| judgment line (mythic) | 374 / 38 | 374 / 38 | 374 / 38 | 393 / 46 | 374 / 38 | 489 / 50 |
+| sun needles (mythic) | 584 / 53 | 584 / 53 | 584 / 53 | 603 / 65 | 584 / 53 | 642 / 71 |
+
+- Scatter does not undo the stacking: the blasts' radius (125 for awakened ink pots) is larger than the scatter, so the target still takes all three, and the wider ground kills more. One blast takes a third off the three lobs' boss damage and leaves their kills.
+- A proportional awakening takes from the one- and two-shot weapons (pin hail 196 to 153) and gives to the novas, halos, and beams (ink lance 404 / 32 to 511 / 38).
+- With the other four on (the last column), a power index (the geometric mean of kills and boss damage, each over the arsenal's median) rises with the rarity: common 0.68, rare 0.79, epic 1.03, legendary 1.33, mythic 1.67 (today 0.70, 0.58, 0.92, 1.34, 1.49). The single measures still do not, and most inversions are single weapons: the ink darts, brush quills, ink pots, and cluster pots beat many rarer ones, and the ink bloom, smoke tail, and ink drizzle trail everything. A weapon-by-weapon pass is the next step.
+- The pilot (seed 17) with those four: 9 of 24 clears against 8 (fingerprint 4d64ebdeac39f4de against 747e8d95f3612b02); one outcome flips, 5-1 striker to a clear. The `armory` persona on the pilot stages × 10 seeds: 15 of 60 against 16 (48cddacec103dc70 against df4add06f568bcda), 1-5 1 to 0, 5-1 7 to 5, 5-5 6 to 4, 5-10 2 to 6.
+
 ## Game rules and grammar
 
 Gameplay changes ship behind the rule set in `src/game/rules.ts`. `classic` reproduces 0.1.0 exactly and `remaster` is the default. The app never switches rule sets, so app builds fold GameEngine's `this.rules.<flag>` reads to the remaster values (`scripts/lib/fold-rules.mjs` in `vite.config.ts`, TEC-05) and the minifier drops the classic branches; tests, the balance harness, and benches build the engine unfolded and keep both. After changing how GameEngine reads its rules, `npm run test:folded-rules` must report that the folded engine plays exactly as the unfolded one (seeded balance runs and every remaster draw fingerprint; only the classic scenario may differ), and `test/releaseFoldRules.test.mjs` fails if a read escapes the folding. Infinite-mode records and replay fixtures are kept per rules version: the remaster rules (v2) may change freely until a build ships them, and after that the first change to seeded outcomes must raise `RULES_VERSION`. `test/grammarContracts.integration.test.mjs` pins the preserved game grammar (stage structure, draft sizes, radii, tier mix, deterministic replay) and one regression test per R0 gameplay fix.
